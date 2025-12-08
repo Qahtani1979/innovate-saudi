@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, Building2 } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Building2, Chrome } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { isAuthenticated, isLoadingAuth, login, signUp } = useAuth();
+  const { isAuthenticated, isLoadingAuth, login, signUp, signInWithGoogle, authError } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
@@ -30,9 +32,25 @@ export default function Auth() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoadingAuth) {
-      navigate('/home');
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, isLoadingAuth, navigate]);
+  }, [isAuthenticated, isLoadingAuth, navigate, location]);
+
+  // Show auth errors from URL (OAuth callback errors)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const error = params.get('error');
+    const errorDescription = params.get('error_description');
+    
+    if (error) {
+      toast({
+        title: 'Authentication Error',
+        description: errorDescription || error,
+        variant: 'destructive',
+      });
+    }
+  }, [location, toast]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -53,7 +71,8 @@ export default function Auth() {
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
-      navigate('/home');
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     } catch (error) {
       toast({
         title: 'Login failed',
@@ -102,7 +121,8 @@ export default function Auth() {
         title: 'Account created!',
         description: 'You have successfully signed up.',
       });
-      navigate('/home');
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     } catch (error) {
       let errorMessage = error.message || 'Failed to create account';
       if (error.message?.includes('already registered')) {
@@ -114,6 +134,21 @@ export default function Auth() {
         variant: 'destructive',
       });
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await signInWithGoogle();
+      // Redirect is handled by Supabase OAuth flow
+    } catch (error) {
+      toast({
+        title: 'Google Sign-In failed',
+        description: error.message || 'Failed to sign in with Google',
+        variant: 'destructive',
+      });
       setIsLoading(false);
     }
   };
@@ -145,6 +180,28 @@ export default function Auth() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Google Sign-In Button */}
+            <Button 
+              variant="outline" 
+              className="w-full mb-4 gap-2" 
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Chrome className="h-4 w-4" />
+              )}
+              Continue with Google
+            </Button>
+            
+            <div className="relative mb-4">
+              <Separator />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                or continue with email
+              </span>
+            </div>
+
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Login</TabsTrigger>
