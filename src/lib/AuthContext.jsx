@@ -233,10 +233,16 @@ export const AuthProvider = ({ children }) => {
     try {
       setAuthError(null);
       
+      // Use published domain if available, otherwise current origin
+      const publishedDomain = 'https://saudi-innovate-hub.lovable.app';
+      const redirectUrl = window.location.hostname.includes('lovable.app') 
+        ? `${publishedDomain}/`
+        : `${window.location.origin}/`;
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
