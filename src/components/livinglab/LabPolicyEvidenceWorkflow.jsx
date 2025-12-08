@@ -1,0 +1,156 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { useLanguage } from '../LanguageContext';
+import { Beaker, FileText, Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function LabPolicyEvidenceWorkflow({ livingLab }) {
+  const { t } = useLanguage();
+  const [generating, setGenerating] = useState(false);
+  const [policyDraft, setPolicyDraft] = useState(null);
+  const queryClient = useQueryClient();
+
+  const createPolicyMutation = useMutation({
+    mutationFn: (data) => base44.entities.PolicyRecommendation.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['policies'] });
+      toast.success(t({ en: 'Policy created from citizen evidence', ar: 'تم إنشاء السياسة من أدلة المواطنين' }));
+    }
+  });
+
+  const generateFromCitizenEvidence = async () => {
+    setGenerating(true);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate a policy recommendation based on citizen science findings from this living lab.
+
+Living Lab: ${livingLab.name_en}
+Research Focus: ${livingLab.research_focus_areas?.join(', ') || 'N/A'}
+Active Projects: ${livingLab.active_projects_count || 0}
+Key Findings: ${livingLab.research_outputs?.map(o => o.summary).join('; ') || 'N/A'}
+Citizen Feedback: ${livingLab.citizen_feedback_summary || 'N/A'}
+
+Generate a policy recommendation based on citizen evidence with:
+1. Title (EN + AR)
+2. Evidence summary from citizen participation
+3. Policy problem identified
+4. Recommended policy changes
+5. Expected citizen impact
+6. Implementation steps
+
+Return as JSON.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            title_en: { type: "string" },
+            title_ar: { type: "string" },
+            evidence_summary_en: { type: "string" },
+            evidence_summary_ar: { type: "string" },
+            problem_statement_en: { type: "string" },
+            problem_statement_ar: { type: "string" },
+            recommended_changes: { type: "array", items: { type: "string" } },
+            citizen_impact_en: { type: "string" },
+            citizen_impact_ar: { type: "string" },
+            implementation_steps: { type: "array", items: { type: "string" } }
+          }
+        }
+      });
+
+      setPolicyDraft(response);
+    } catch (error) {
+      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const createPolicy = async () => {
+    if (!policyDraft) return;
+
+    const policyData = {
+      ...policyDraft,
+      policy_type: 'citizen_evidence_based',
+      source_entity_type: 'LivingLab',
+      source_entity_id: livingLab.id,
+      workflow_stage: 'draft',
+      evidence_based: true,
+      citizen_participation: true
+    };
+
+    createPolicyMutation.mutate(policyData);
+    setPolicyDraft(null);
+  };
+
+  return (
+    <Card className="border-2 border-teal-300">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Beaker className="h-5 w-5 text-teal-600" />
+          {t({ en: 'Citizen Evidence → Policy', ar: 'أدلة المواطنين ← السياسة' })}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!policyDraft ? (
+          <div className="text-center p-6">
+            <p className="text-sm text-slate-600 mb-4">
+              {t({ 
+                en: 'Generate policy recommendation from citizen science findings',
+                ar: 'توليد توصية سياسة من نتائج علوم المواطنين'
+              })}
+            </p>
+            <Button 
+              onClick={generateFromCitizenEvidence} 
+              disabled={generating}
+              className="bg-teal-600"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t({ en: 'Analyzing Evidence...', ar: 'جاري تحليل الأدلة...' })}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {t({ en: 'Generate from Citizen Data', ar: 'توليد من بيانات المواطنين' })}
+                </>
+              )}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-4 bg-teal-50 rounded-lg border border-teal-200">
+              <h4 className="font-semibold text-teal-900 mb-2">
+                {policyDraft.title_en}
+              </h4>
+              <p className="text-sm text-slate-700 mb-3">{policyDraft.evidence_summary_en}</p>
+              <p className="text-sm text-slate-700 mb-3">{policyDraft.problem_statement_en}</p>
+              
+              <div className="text-xs">
+                <p className="font-semibold text-slate-700 mb-1">Recommended Changes:</p>
+                <ul className="space-y-1 text-slate-600">
+                  {policyDraft.recommended_changes?.map((change, idx) => (
+                    <li key={idx}>• {change}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button onClick={() => setPolicyDraft(null)} variant="outline" className="flex-1">
+                {t({ en: 'Cancel', ar: 'إلغاء' })}
+              </Button>
+              <Button onClick={createPolicy} className="flex-1 bg-green-600">
+                <FileText className="h-4 w-4 mr-2" />
+                {t({ en: 'Create Policy', ar: 'إنشاء السياسة' })}
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

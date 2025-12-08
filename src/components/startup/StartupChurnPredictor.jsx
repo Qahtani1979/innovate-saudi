@@ -1,0 +1,169 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useLanguage } from '../LanguageContext';
+import { AlertTriangle, Sparkles, TrendingDown, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function StartupChurnPredictor({ startupId }) {
+  const { t } = useLanguage();
+  const [predicting, setPredicting] = useState(false);
+  const [prediction, setPrediction] = useState(null);
+
+  const { data: startup } = useQuery({
+    queryKey: ['startup-churn', startupId],
+    queryFn: async () => {
+      const all = await base44.entities.StartupProfile.list();
+      return all.find(s => s.id === startupId);
+    }
+  });
+
+  const { data: solutions = [] } = useQuery({
+    queryKey: ['startup-solutions-churn', startupId],
+    queryFn: async () => {
+      const all = await base44.entities.Solution.list();
+      return all.filter(s => s.provider_id === startupId);
+    }
+  });
+
+  const { data: activities = [] } = useQuery({
+    queryKey: ['startup-activities-churn', startupId],
+    queryFn: async () => {
+      const all = await base44.entities.UserActivity.list();
+      const last30Days = new Date();
+      last30Days.setDate(last30Days.getDate() - 30);
+      return all.filter(a => 
+        a.entity_id === startupId && 
+        new Date(a.created_date) >= last30Days
+      );
+    }
+  });
+
+  const runPrediction = async () => {
+    setPredicting(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Predict churn risk for this startup on municipal innovation platform:
+
+STARTUP: ${startup?.name_en}
+DAYS ACTIVE: ${startup?.created_date ? Math.floor((new Date() - new Date(startup.created_date)) / (1000*60*60*24)) : 'N/A'}
+SOLUTIONS: ${solutions.length}
+PILOT SUCCESS RATE: ${startup?.pilot_success_rate || 0}%
+MUNICIPAL CLIENTS: ${startup?.municipal_clients_count || 0}
+RECENT ACTIVITY (30d): ${activities.length} events
+VERIFICATION: ${startup?.is_verified ? 'Yes' : 'No'}
+
+Analyze churn risk factors:
+1. Low platform engagement
+2. No successful pilots
+3. No municipal clients
+4. Declining activity
+5. Unverified status
+
+Return: churn_risk (low/medium/high), churn_probability (0-100), risk_factors, retention_recommendations`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            churn_risk: { type: "string" },
+            churn_probability: { type: "number" },
+            risk_factors: { type: "array", items: { type: "string" } },
+            retention_recommendations: { type: "array", items: { type: "string" } }
+          }
+        }
+      });
+
+      setPrediction(result);
+    } catch (error) {
+      toast.error(t({ en: 'Prediction failed', ar: 'فشل التنبؤ' }));
+    } finally {
+      setPredicting(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingDown className="h-5 w-5 text-red-600" />
+          {t({ en: 'Churn Risk Prediction', ar: 'التنبؤ بمخاطر المغادرة' })}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!prediction && (
+          <Button onClick={runPrediction} disabled={predicting} className="w-full">
+            {predicting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                {t({ en: 'Predict Churn Risk', ar: 'التنبؤ بالمخاطر' })}
+              </>
+            )}
+          </Button>
+        )}
+
+        {prediction && (
+          <div className="space-y-4">
+            <div className={`p-6 rounded-lg border-2 text-center ${
+              prediction.churn_risk === 'high' ? 'bg-red-50 border-red-400' :
+              prediction.churn_risk === 'medium' ? 'bg-amber-50 border-amber-400' :
+              'bg-green-50 border-green-400'
+            }`}>
+              <AlertTriangle className={`h-12 w-12 mx-auto mb-2 ${
+                prediction.churn_risk === 'high' ? 'text-red-600' :
+                prediction.churn_risk === 'medium' ? 'text-amber-600' :
+                'text-green-600'
+              }`} />
+              <p className="text-3xl font-bold mb-1">
+                {prediction.churn_probability}%
+              </p>
+              <Badge className={
+                prediction.churn_risk === 'high' ? 'bg-red-600' :
+                prediction.churn_risk === 'medium' ? 'bg-amber-600' :
+                'bg-green-600'
+              }>
+                {prediction.churn_risk.toUpperCase()} RISK
+              </Badge>
+            </div>
+
+            {prediction.risk_factors?.length > 0 && (
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <p className="font-semibold text-red-900 mb-2">
+                  {t({ en: 'Risk Factors', ar: 'عوامل المخاطرة' })}
+                </p>
+                <ul className="space-y-1">
+                  {prediction.risk_factors.map((factor, i) => (
+                    <li key={i} className="text-sm text-red-800">• {factor}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {prediction.retention_recommendations?.length > 0 && (
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="font-semibold text-blue-900 mb-2">
+                  {t({ en: 'Retention Actions', ar: 'إجراءات الاحتفاظ' })}
+                </p>
+                <ul className="space-y-1">
+                  {prediction.retention_recommendations.map((rec, i) => (
+                    <li key={i} className="text-sm text-blue-800">✓ {rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <Button onClick={runPrediction} variant="outline" className="w-full">
+              {t({ en: 'Re-analyze', ar: 'إعادة التحليل' })}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

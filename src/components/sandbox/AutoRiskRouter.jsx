@@ -1,0 +1,169 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useLanguage } from '../LanguageContext';
+import { AlertTriangle, Shield, ArrowRight, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function AutoRiskRouter({ entity, entityType }) {
+  const { t } = useLanguage();
+  const [analyzing, setAnalyzing] = useState(false);
+  const [riskAssessment, setRiskAssessment] = useState(null);
+
+  const assessRisk = async () => {
+    setAnalyzing(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Assess if this ${entityType} requires sandbox testing before full deployment:
+
+Title: ${entity.title_en || entity.name_en}
+Description: ${entity.description_en || entity.abstract_en}
+Sector: ${entity.sector || entity.sectors?.join(', ')}
+${entityType === 'challenge' ? `Severity: ${entity.severity_score}` : ''}
+${entityType === 'pilot' ? `Budget: ${entity.budget}, TRL: ${entity.trl_start}` : ''}
+${entityType === 'solution' ? `Maturity: ${entity.maturity_level}, TRL: ${entity.trl}` : ''}
+
+Evaluate:
+1. Regulatory risk level (0-100)
+2. Safety concerns
+3. Public impact risk
+4. Technical complexity risk
+5. Recommendation: sandbox_required, sandbox_recommended, or direct_pilot
+
+Provide sandbox recommendation if needed.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            regulatory_risk: { type: 'number' },
+            safety_risk: { type: 'number' },
+            public_impact_risk: { type: 'number' },
+            technical_risk: { type: 'number' },
+            overall_risk: { type: 'number' },
+            recommendation: { type: 'string' },
+            reasoning: { type: 'string' },
+            recommended_sandboxes: { 
+              type: 'array', 
+              items: { type: 'string' } 
+            }
+          }
+        }
+      });
+
+      setRiskAssessment(result);
+    } catch (error) {
+      toast.error(t({ en: 'Risk assessment failed', ar: 'فشل تقييم المخاطر' }));
+    }
+    setAnalyzing(false);
+  };
+
+  const routeToSandbox = async () => {
+    try {
+      // Create sandbox application automatically
+      await base44.entities.SandboxApplication.create({
+        applicant_email: (await base44.auth.me()).email,
+        source_entity_type: entityType,
+        source_entity_id: entity.id,
+        project_title: entity.title_en || entity.name_en,
+        project_description: entity.description_en || entity.abstract_en,
+        risk_level: riskAssessment.overall_risk >= 70 ? 'high' : riskAssessment.overall_risk >= 40 ? 'medium' : 'low',
+        status: 'pending'
+      });
+
+      toast.success(t({ en: 'Sandbox application created', ar: 'تم إنشاء طلب منطقة التجريب' }));
+    } catch (error) {
+      toast.error(t({ en: 'Failed to create application', ar: 'فشل إنشاء الطلب' }));
+    }
+  };
+
+  if (!entity) return null;
+
+  return (
+    <Card className="border-2 border-orange-300 bg-gradient-to-r from-orange-50 to-white">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-orange-900">
+          <Shield className="h-5 w-5" />
+          {t({ en: 'Risk-Based Sandbox Routing', ar: 'توجيه منطقة التجريب حسب المخاطر' })}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!riskAssessment && (
+          <div className="text-center py-6">
+            <AlertTriangle className="h-12 w-12 text-orange-600 mx-auto mb-3" />
+            <p className="text-sm text-slate-600 mb-4">
+              {t({ en: 'AI will assess if this requires sandbox testing before deployment', ar: 'سيقوم الذكاء بتقييم ما إذا كان هذا يتطلب اختبار منطقة التجريب قبل النشر' })}
+            </p>
+            <Button onClick={assessRisk} disabled={analyzing} className="gap-2">
+              {analyzing ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  {t({ en: 'Analyzing...', ar: 'يحلل...' })}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  {t({ en: 'Assess Risk', ar: 'تقييم المخاطر' })}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {riskAssessment && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-red-50 rounded">
+                <p className="text-xs text-slate-600">{t({ en: 'Regulatory Risk', ar: 'المخاطر التنظيمية' })}</p>
+                <p className="text-xl font-bold text-red-600">{riskAssessment.regulatory_risk}%</p>
+              </div>
+              <div className="p-3 bg-orange-50 rounded">
+                <p className="text-xs text-slate-600">{t({ en: 'Safety Risk', ar: 'مخاطر السلامة' })}</p>
+                <p className="text-xl font-bold text-orange-600">{riskAssessment.safety_risk}%</p>
+              </div>
+              <div className="p-3 bg-amber-50 rounded">
+                <p className="text-xs text-slate-600">{t({ en: 'Public Impact', ar: 'التأثير العام' })}</p>
+                <p className="text-xl font-bold text-amber-600">{riskAssessment.public_impact_risk}%</p>
+              </div>
+              <div className="p-3 bg-yellow-50 rounded">
+                <p className="text-xs text-slate-600">{t({ en: 'Technical Risk', ar: 'المخاطر التقنية' })}</p>
+                <p className="text-xl font-bold text-yellow-600">{riskAssessment.technical_risk}%</p>
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-lg border-2 ${
+              riskAssessment.recommendation === 'sandbox_required' ? 'bg-red-50 border-red-400' :
+              riskAssessment.recommendation === 'sandbox_recommended' ? 'bg-yellow-50 border-yellow-400' :
+              'bg-green-50 border-green-400'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className={
+                  riskAssessment.recommendation === 'sandbox_required' ? 'bg-red-600' :
+                  riskAssessment.recommendation === 'sandbox_recommended' ? 'bg-yellow-600' :
+                  'bg-green-600'
+                }>
+                  {t({ en: 'Overall Risk:', ar: 'المخاطر الإجمالية:' })} {riskAssessment.overall_risk}%
+                </Badge>
+              </div>
+              <p className="font-semibold text-sm mb-1">
+                {riskAssessment.recommendation === 'sandbox_required' 
+                  ? t({ en: '⚠️ Sandbox Testing REQUIRED', ar: '⚠️ اختبار منطقة التجريب مطلوب' })
+                  : riskAssessment.recommendation === 'sandbox_recommended'
+                  ? t({ en: '💡 Sandbox Testing Recommended', ar: '💡 اختبار منطقة التجريب موصى به' })
+                  : t({ en: '✅ Can proceed to direct pilot', ar: '✅ يمكن المتابعة للتجربة المباشرة' })}
+              </p>
+              <p className="text-sm text-slate-700">{riskAssessment.reasoning}</p>
+            </div>
+
+            {(riskAssessment.recommendation === 'sandbox_required' || riskAssessment.recommendation === 'sandbox_recommended') && (
+              <Button onClick={routeToSandbox} className="w-full bg-orange-600">
+                <ArrowRight className="h-4 w-4 mr-2" />
+                {t({ en: 'Route to Sandbox', ar: 'توجيه إلى منطقة التجريب' })}
+              </Button>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

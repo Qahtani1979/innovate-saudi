@@ -1,0 +1,193 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useLanguage } from '../components/LanguageContext';
+import { Calendar, ChevronLeft, ChevronRight, TestTube, Target, Users } from 'lucide-react';
+import ProtectedPage from '../components/permissions/ProtectedPage';
+
+function CalendarView() {
+  const { language, isRTL, t } = useLanguage();
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const { data: pilots = [] } = useQuery({
+    queryKey: ['pilots'],
+    queryFn: () => base44.entities.Pilot.list()
+  });
+
+  const { data: programs = [] } = useQuery({
+    queryKey: ['programs'],
+    queryFn: () => base44.entities.Program.list()
+  });
+
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => base44.auth.me()
+  });
+
+  const { data: expertAssignments = [] } = useQuery({
+    queryKey: ['expert-assignments-calendar', user?.email],
+    queryFn: async () => {
+      const assignments = await base44.entities.ExpertAssignment.list();
+      return assignments.filter(a => a.expert_email === user?.email && a.due_date);
+    },
+    enabled: !!user
+  });
+
+  const events = [
+    ...pilots.filter(p => p.timeline?.pilot_start).map(p => ({
+      ...p,
+      type: 'pilot',
+      date: p.timeline.pilot_start,
+      title: p.title_en,
+      icon: TestTube
+    })),
+    ...programs.filter(p => p.timeline?.program_start).map(p => ({
+      ...p,
+      type: 'program',
+      date: p.timeline.program_start,
+      title: p.name_en,
+      icon: Users
+    })),
+    ...expertAssignments.map(a => ({
+      ...a,
+      type: 'expert',
+      date: a.due_date,
+      title: `${a.assignment_type} - ${a.entity_type}`,
+      icon: Target
+    }))
+  ];
+
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+
+  return (
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-slate-900">
+          {t({ en: 'Calendar', ar: 'التقويم' })}
+        </h1>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-lg font-medium px-4">
+            {currentDate.toLocaleDateString(language, { month: 'long', year: 'numeric' })}
+          </span>
+          <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+              <div key={day} className="text-center text-sm font-semibold text-slate-600 p-2">
+                {day}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {Array.from({ length: firstDay }).map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-square" />
+            ))}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const dayEvents = events.filter(e => {
+                const eventDate = new Date(e.date);
+                return eventDate.getDate() === day &&
+                       eventDate.getMonth() === currentDate.getMonth() &&
+                       eventDate.getFullYear() === currentDate.getFullYear();
+              });
+
+              return (
+                <div key={day} className="aspect-square p-2 border rounded-lg hover:bg-slate-50 transition-colors">
+                  <p className="text-sm font-medium text-slate-900 mb-1">{day}</p>
+                  <div className="space-y-1">
+                    {dayEvents.slice(0, 2).map((event, j) => {
+                      const Icon = event.icon;
+                      return (
+                        <div key={j} className={`text-xs p-1 rounded ${
+                          event.type === 'pilot' ? 'bg-blue-100 text-blue-700' : 
+                          event.type === 'program' ? 'bg-purple-100 text-purple-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          <Icon className="h-3 w-3 inline mr-1" />
+                          {event.title.substring(0, 10)}...
+                        </div>
+                      );
+                    })}
+                    {dayEvents.length > 2 && (
+                      <p className="text-xs text-slate-500">+{dayEvents.length - 2} more</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t({ en: 'Upcoming Events', ar: 'الأحداث القادمة' })}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {events.slice(0, 5).map((event) => {
+                const Icon = event.icon;
+                return (
+                  <div key={event.id} className="p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-5 w-5 text-blue-600" />
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{event.title}</p>
+                        <p className="text-xs text-slate-600">{event.date}</p>
+                      </div>
+                      <Badge variant="outline">{event.type}</Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t({ en: 'This Month Summary', ar: 'ملخص هذا الشهر' })}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium">{t({ en: 'Pilot Launches', ar: 'إطلاق تجارب' })}</p>
+                  <p className="text-2xl font-bold text-blue-600">8</p>
+                </div>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium">{t({ en: 'Program Events', ar: 'فعاليات برامج' })}</p>
+                  <p className="text-2xl font-bold text-purple-600">5</p>
+                </div>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium">{t({ en: 'Milestones Due', ar: 'معالم مستحقة' })}</p>
+                  <p className="text-2xl font-bold text-green-600">12</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default ProtectedPage(CalendarView, { requiredPermissions: [] });

@@ -1,0 +1,198 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useLanguage } from '../LanguageContext';
+import { Microscope, Loader2, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function IdeaToRDConverter({ idea, onClose }) {
+  const { language, isRTL, t } = useLanguage();
+  const queryClient = useQueryClient();
+  const [enhancing, setEnhancing] = useState(false);
+
+  const [rdData, setRdData] = useState({
+    title_en: idea.title || '',
+    title_ar: '',
+    abstract_en: idea.description || '',
+    abstract_ar: '',
+    institution_en: '',
+    research_area_en: idea.category || '',
+    keywords: [idea.category],
+    methodology_en: '',
+    trl_start: 1,
+    trl_target: 4,
+    duration_months: 12,
+    budget: 500000
+  });
+
+  const enhanceWithAI = async () => {
+    setEnhancing(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Convert this citizen idea into an R&D project proposal:
+
+Idea: ${idea.title}
+Description: ${idea.description}
+
+Generate:
+1. R&D project title (EN & AR)
+2. Research abstract (EN & AR)
+3. Research methodology
+4. Expected outputs
+5. Keywords
+6. Duration estimate (months)
+7. Budget estimate`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            title_en: { type: 'string' },
+            title_ar: { type: 'string' },
+            abstract_en: { type: 'string' },
+            abstract_ar: { type: 'string' },
+            methodology_en: { type: 'string' },
+            keywords: { type: 'array', items: { type: 'string' } },
+            duration_months: { type: 'number' },
+            budget: { type: 'number' }
+          }
+        }
+      });
+
+      setRdData({ ...rdData, ...result });
+      toast.success(t({ en: 'AI enhancement complete', ar: 'تم التحسين' }));
+    } catch (error) {
+      toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
+    } finally {
+      setEnhancing(false);
+    }
+  };
+
+  const createRDMutation = useMutation({
+    mutationFn: async (data) => {
+      const rdProject = await base44.entities.RDProject.create({
+        ...data,
+        code: `RD-IDEA-${Date.now()}`,
+        status: 'proposal',
+        citizen_origin_idea_id: idea.id
+      });
+
+      await base44.entities.CitizenIdea.update(idea.id, {
+        status: 'converted_to_rd',
+        converted_rd_id: rdProject.id
+      });
+
+      await base44.functions.invoke('citizenNotifications', {
+        eventType: 'idea_converted_rd',
+        ideaId: idea.id,
+        rdProjectId: rdProject.id,
+        citizenEmail: idea.submitter_email
+      });
+
+      return rdProject;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['citizen-ideas']);
+      toast.success(t({ en: 'R&D project created!', ar: 'تم إنشاء مشروع بحثي!' }));
+      if (onClose) onClose();
+    }
+  });
+
+  return (
+    <Card className="max-w-4xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Microscope className="h-5 w-5 text-indigo-600" />
+          {t({ en: 'Convert Idea to R&D Project', ar: 'تحويل الفكرة إلى مشروع بحثي' })}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Button onClick={enhanceWithAI} disabled={enhancing} variant="outline" className="w-full">
+          {enhancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          {t({ en: 'AI Enhance R&D Proposal', ar: 'تحسين مقترح البحث' })}
+        </Button>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>{t({ en: 'R&D Title (EN)', ar: 'عنوان البحث (EN)' })}</Label>
+            <Input
+              value={rdData.title_en}
+              onChange={(e) => setRdData({ ...rdData, title_en: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label>{t({ en: 'Institution', ar: 'المؤسسة' })}</Label>
+            <Input
+              value={rdData.institution_en}
+              onChange={(e) => setRdData({ ...rdData, institution_en: e.target.value })}
+              placeholder="University / Research Center"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label>{t({ en: 'Research Abstract', ar: 'ملخص البحث' })}</Label>
+          <Textarea
+            value={rdData.abstract_en}
+            onChange={(e) => setRdData({ ...rdData, abstract_en: e.target.value })}
+            rows={4}
+          />
+        </div>
+
+        <div>
+          <Label>{t({ en: 'Research Methodology', ar: 'منهجية البحث' })}</Label>
+          <Textarea
+            value={rdData.methodology_en}
+            onChange={(e) => setRdData({ ...rdData, methodology_en: e.target.value })}
+            rows={4}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label>{t({ en: 'Duration (months)', ar: 'المدة (أشهر)' })}</Label>
+            <Input
+              type="number"
+              value={rdData.duration_months}
+              onChange={(e) => setRdData({ ...rdData, duration_months: parseInt(e.target.value) })}
+            />
+          </div>
+          <div>
+            <Label>{t({ en: 'TRL Start', ar: 'TRL البداية' })}</Label>
+            <Input
+              type="number"
+              min="1"
+              max="9"
+              value={rdData.trl_start}
+              onChange={(e) => setRdData({ ...rdData, trl_start: parseInt(e.target.value) })}
+            />
+          </div>
+          <div>
+            <Label>{t({ en: 'TRL Target', ar: 'TRL المستهدف' })}</Label>
+            <Input
+              type="number"
+              min="1"
+              max="9"
+              value={rdData.trl_target}
+              onChange={(e) => setRdData({ ...rdData, trl_target: parseInt(e.target.value) })}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onClose}>{t({ en: 'Cancel', ar: 'إلغاء' })}</Button>
+          <Button
+            onClick={() => createRDMutation.mutate(rdData)}
+            disabled={createRDMutation.isPending}
+            className="flex-1 bg-indigo-600"
+          >
+            {t({ en: 'Create R&D Project', ar: 'إنشاء مشروع بحثي' })}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

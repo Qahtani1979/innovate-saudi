@@ -1,0 +1,277 @@
+import React from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useLanguage } from '../components/LanguageContext';
+import { Activity, CheckCircle, AlertCircle, TrendingUp, Database, Zap, Clock, Users } from 'lucide-react';
+
+export default function SystemHealthDashboard() {
+  const { language, t } = useLanguage();
+
+  const { data: challenges = [] } = useQuery({
+    queryKey: ['challenges-health'],
+    queryFn: () => base44.entities.Challenge.list()
+  });
+
+  const { data: pilots = [] } = useQuery({
+    queryKey: ['pilots-health'],
+    queryFn: () => base44.entities.Pilot.list()
+  });
+
+  const { data: activities = [] } = useQuery({
+    queryKey: ['activities-health'],
+    queryFn: () => base44.entities.SystemActivity.list('-created_date', 100)
+  });
+
+  const { data: expertProfiles = [] } = useQuery({
+    queryKey: ['experts-health'],
+    queryFn: () => base44.entities.ExpertProfile.list()
+  });
+
+  const { data: expertAssignments = [] } = useQuery({
+    queryKey: ['assignments-health'],
+    queryFn: () => base44.entities.ExpertAssignment.list()
+  });
+
+  const { data: expertEvaluations = [] } = useQuery({
+    queryKey: ['evaluations-health'],
+    queryFn: () => base44.entities.ExpertEvaluation.list()
+  });
+
+  const activeExperts = expertProfiles.filter(e => e.is_active).length;
+  const pendingAssignments = expertAssignments.filter(a => a.status === 'pending').length;
+  const overdueAssignments = expertAssignments.filter(a => 
+    a.due_date && new Date(a.due_date) < new Date() && a.status !== 'completed'
+  ).length;
+  const expertSystemHealth = overdueAssignments > 0 ? 'warning' : pendingAssignments > 10 ? 'warning' : 'success';
+
+  const healthMetrics = [
+    {
+      label: { en: 'Platform Status', ar: 'حالة المنصة' },
+      value: 'Operational',
+      status: 'success',
+      icon: CheckCircle
+    },
+    {
+      label: { en: 'Database', ar: 'قاعدة البيانات' },
+      value: `${challenges.length + pilots.length} records`,
+      status: 'success',
+      icon: Database
+    },
+    {
+      label: { en: 'Activity Rate', ar: 'معدل النشاط' },
+      value: `${activities.length} / hour`,
+      status: 'success',
+      icon: Activity
+    },
+    {
+      label: { en: 'Response Time', ar: 'وقت الاستجابة' },
+      value: '< 200ms',
+      status: 'success',
+      icon: Zap
+    }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+          <Activity className="h-8 w-8 text-green-600" />
+          {t({ en: 'System Health', ar: 'صحة النظام' })}
+        </h1>
+        <p className="text-slate-600 mt-1">
+          {t({ en: 'Monitor platform performance and status', ar: 'مراقبة أداء وحالة المنصة' })}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {healthMetrics.map((metric, i) => {
+          const Icon = metric.icon;
+          return (
+            <Card key={i} className="border-2 border-green-200">
+              <CardContent className="pt-6 text-center">
+                <Icon className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{metric.value}</p>
+                <p className="text-sm text-slate-600">{metric.label[language]}</p>
+                <Badge className="mt-2 bg-green-100 text-green-800">
+                  {t({ en: 'Healthy', ar: 'سليم' })}
+                </Badge>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Expert System Health */}
+      <Card className={`border-2 ${expertSystemHealth === 'success' ? 'border-green-300 bg-green-50' : 'border-yellow-300 bg-yellow-50'}`}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-purple-600" />
+            {t({ en: 'Expert System Health', ar: 'صحة نظام الخبراء' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-white rounded-lg">
+              <p className="text-2xl font-bold text-purple-600">{activeExperts}</p>
+              <p className="text-xs text-slate-600">{t({ en: 'Active Experts', ar: 'خبراء نشطون' })}</p>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg">
+              <p className="text-2xl font-bold text-yellow-600">{pendingAssignments}</p>
+              <p className="text-xs text-slate-600">{t({ en: 'Pending', ar: 'معلق' })}</p>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg">
+              <p className={`text-2xl font-bold ${overdueAssignments > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {overdueAssignments}
+              </p>
+              <p className="text-xs text-slate-600">{t({ en: 'Overdue', ar: 'متأخر' })}</p>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg">
+              <p className="text-2xl font-bold text-green-600">
+                {expertEvaluations.length}
+              </p>
+              <p className="text-xs text-slate-600">{t({ en: 'Total Reviews', ar: 'إجمالي المراجعات' })}</p>
+            </div>
+          </div>
+          <Badge className={`mt-3 w-full justify-center ${expertSystemHealth === 'success' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+            {expertSystemHealth === 'success' ? '✅ Healthy' : '⚠️ Needs Attention'}
+          </Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-blue-600" />
+            {t({ en: 'Recent Activity', ar: 'النشاط الأخير' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {activities.slice(0, 10).map((activity, i) => (
+              <div key={i} className="flex items-center justify-between text-sm p-2 bg-slate-50 rounded">
+                <span className="text-slate-700">{activity.description}</span>
+                <span className="text-slate-500 text-xs">{activity.created_date}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Security & Operations */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <SecurityHeadersConfig />
+        <RateLimitingConfig />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <TestingDashboard />
+        <BackupScheduler />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <RedisCacheConfig />
+        <APIKeyManagement />
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">{t({ en: 'Security & Compliance', ar: 'الأمان والامتثال' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <BackendSecurityAudit />
+          <CSRFProtection />
+          <InputValidationMiddleware />
+          <SessionTokenSecurity />
+          <DataEncryptionConfig />
+          <ThreatDetectionSystem />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">{t({ en: 'Infrastructure & Performance', ar: 'البنية التحتية والأداء' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <DatabaseIndexing />
+          <QueryOptimizationPanel />
+          <ConnectionPoolingConfig />
+          <PerformanceMetrics />
+          <PerformanceProfiler />
+          <APIGatewayConfig />
+          <LoadBalancerConfig />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">{t({ en: 'Monitoring & Operations', ar: 'المراقبة والعمليات' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <MonitoringDashboard />
+          <LoggingConfig />
+          <AlertingSystem />
+          <AlertManagementSystem />
+          <AutomatedBackupSystem />
+          <DeploymentPipeline />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">{t({ en: 'Testing & Quality Assurance', ar: 'الاختبار وضمان الجودة' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <TestingDashboard />
+          <TestAutomationDashboard />
+          <UnitTestCoverage />
+          <IntegrationTestRunner />
+          <E2ETestRunner />
+          <ErrorBoundarySystem />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">{t({ en: 'Database & Queries', ar: 'قاعدة البيانات والاستعلامات' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <QueryMonitoringPanel />
+          <ConnectionPoolingConfig />
+          <DatabaseIndexing />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">{t({ en: 'Public & Citizen Engagement', ar: 'المشاركة العامة والمواطنين' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <VotingSystemBackend />
+          <IdeaToChallengeConverter />
+          <NewsPublishingWorkflow />
+          <OpenDataAPIDocumentation />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">{t({ en: 'Testing & Quality Assurance', ar: 'الاختبار وضمان الجودة' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <UnitTestCoverage />
+          <E2ETestingSuite />
+          <CICDPipeline />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">{t({ en: 'Integration & Communication', ar: 'التكامل والتواصل' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <WebSocketServer />
+          <PushNotificationConfig />
+          <WebhookBuilder />
+          <ImageCDNConfig />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-4">{t({ en: 'Mobile & Analytics', ar: 'الموبايل والتحليلات' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <MobileOptimizationPanel />
+          <NativeMobileApp />
+          <AdvancedAnalyticsDashboard />
+          <WidgetLibrary />
+          <VoiceNLUPanel />
+        </div>
+      </div>
+    </div>
+  );
+}

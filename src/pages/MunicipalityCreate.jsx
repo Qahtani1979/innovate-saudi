@@ -1,0 +1,231 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '../utils';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Save, ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useLanguage } from '../components/LanguageContext';
+import ProtectedPage from '../components/permissions/ProtectedPage';
+
+function MunicipalityCreate() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { language, isRTL, t } = useLanguage();
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const { data: regions = [] } = useQuery({
+    queryKey: ['regions'],
+    queryFn: () => base44.entities.Region.list()
+  });
+
+  const [formData, setFormData] = useState({
+    name_ar: '',
+    name_en: '',
+    region: '',
+    city_type: 'medium',
+    population: '',
+    contact_person: '',
+    contact_email: '',
+    mii_score: 50,
+    mii_rank: 0
+  });
+
+  const handleAIEnhancement = async () => {
+    if (!formData.name_en || !formData.region) {
+      toast.error(t({ en: 'Please enter municipality name and region first', ar: 'الرجاء إدخال اسم البلدية والمنطقة أولاً' }));
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Provide AI enhancement for this Saudi municipality:
+
+Municipality: ${formData.name_en} ${formData.name_ar ? `(${formData.name_ar})` : ''}
+Region: ${formData.region}
+Population: ${formData.population || 'N/A'}
+
+Generate:
+1. Professional description (AR + EN)
+2. Innovation focus areas (3-5 suggestions)
+3. Estimated MII baseline score (if known) with brief rationale`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            description_en: { type: 'string' },
+            description_ar: { type: 'string' },
+            focus_areas: { type: 'array', items: { type: 'string' } },
+            mii_estimate: { type: 'number' }
+          }
+        }
+      });
+
+      setFormData({
+        ...formData,
+        mii_score: result.mii_estimate || formData.mii_score
+      });
+      toast.success(t({ en: 'AI enhanced your municipality', ar: 'حسّن الذكاء بلديتك' }));
+    } catch (error) {
+      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
+    }
+    setAiLoading(false);
+  };
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Municipality.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['municipalities']);
+      toast.success(t({ en: 'Municipality created', ar: 'تم إنشاء البلدية' }));
+      navigate(createPageUrl('MunicipalityDashboard'));
+    }
+  });
+
+  return (
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="flex items-center gap-4">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t({ en: 'Back', ar: 'رجوع' })}
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">
+            {t({ en: 'Add Municipality', ar: 'إضافة بلدية' })}
+          </h1>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t({ en: 'Municipality Details', ar: 'تفاصيل البلدية' })}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{t({ en: 'Name (English)', ar: 'الاسم (إنجليزي)' })}</Label>
+              <Input
+                value={formData.name_en}
+                onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                placeholder="Riyadh Municipality"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t({ en: 'Name (Arabic)', ar: 'الاسم (عربي)' })}</Label>
+              <Input
+                value={formData.name_ar}
+                onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+                placeholder="أمانة الرياض"
+                dir="rtl"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{t({ en: 'Region', ar: 'المنطقة' })}</Label>
+              <Select value={formData.region} onValueChange={(v) => setFormData({...formData, region: v})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {regions.map(r => (
+                    <SelectItem key={r.id} value={r.name_en}>
+                      {language === 'ar' && r.name_ar ? r.name_ar : r.name_en}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t({ en: 'City Type', ar: 'نوع المدينة' })}</Label>
+              <Select value={formData.city_type} onValueChange={(v) => setFormData({...formData, city_type: v})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="metropolitan">Metropolitan</SelectItem>
+                  <SelectItem value="major">Major</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="small">Small</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{t({ en: 'Population', ar: 'عدد السكان' })}</Label>
+              <Input
+                type="number"
+                value={formData.population}
+                onChange={(e) => setFormData({...formData, population: parseInt(e.target.value)})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t({ en: 'MII Score', ar: 'نقاط MII' })}</Label>
+              <Input
+                type="number"
+                value={formData.mii_score}
+                onChange={(e) => setFormData({...formData, mii_score: parseFloat(e.target.value)})}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{t({ en: 'Contact Person', ar: 'جهة الاتصال' })}</Label>
+              <Input
+                value={formData.contact_person}
+                onChange={(e) => setFormData({...formData, contact_person: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t({ en: 'Contact Email', ar: 'البريد الإلكتروني' })}</Label>
+              <Input
+                type="email"
+                value={formData.contact_email}
+                onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-between gap-3">
+            <Button 
+              type="button" 
+              onClick={handleAIEnhancement}
+              disabled={aiLoading || !formData.name_en}
+              variant="outline"
+              className="gap-2"
+            >
+              {aiLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t({ en: 'AI Working...', ar: 'الذكاء يعمل...' })}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  {t({ en: 'AI Enhance', ar: 'تحسين ذكي' })}
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={() => createMutation.mutate(formData)}
+              disabled={!formData.name_en || !formData.region}
+              className="flex-1"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {t({ en: 'Create Municipality', ar: 'إنشاء البلدية' })}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default ProtectedPage(MunicipalityCreate, { requireAdmin: true });

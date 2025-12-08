@@ -1,0 +1,180 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { base44 } from '@/api/base44Client';
+import { useLanguage } from '../LanguageContext';
+import { Sparkles, Network, Users, Target, TrendingUp } from 'lucide-react';
+
+export default function AINetworkAnalysis({ organization }) {
+  const { t, isRTL } = useLanguage();
+  const [analysis, setAnalysis] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const generateAnalysis = async () => {
+    setLoading(true);
+    try {
+      const [orgs, solutions, pilots, rdProjects] = await Promise.all([
+        base44.entities.Organization.list(),
+        base44.entities.Solution.list().then(all => all.filter(s => s.provider_id === organization.id)),
+        base44.entities.Pilot.list(),
+        base44.entities.RDProject.list()
+      ]);
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze the network position and collaboration opportunities for this organization:
+
+Organization: ${organization.name_en}
+Type: ${organization.org_type}
+City: ${organization.city_id}
+Solutions: ${solutions.length}
+
+Context:
+- Total organizations: ${orgs.length}
+- Total pilots: ${pilots.length}
+- Total R&D projects: ${rdProjects.length}
+
+Provide:
+1. Network centrality score (0-100)
+2. Top 5 recommended partnership organizations (with rationale)
+3. Collaboration gaps
+4. Strategic positioning assessment
+5. Growth recommendations`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            centrality_score: { type: 'number' },
+            network_tier: { type: 'string' },
+            recommended_partners: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  organization_type: { type: 'string' },
+                  rationale: { type: 'string' },
+                  synergy_score: { type: 'number' }
+                }
+              }
+            },
+            collaboration_gaps: { type: 'array', items: { type: 'string' } },
+            strategic_position: { type: 'string' },
+            growth_recommendations: { type: 'array', items: { type: 'string' } }
+          }
+        }
+      });
+
+      setAnalysis(result);
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <Card className="border-2 border-purple-300">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Network className="h-5 w-5 text-purple-600" />
+          {t({ en: 'AI Network Analysis', ar: 'تحليل الشبكة الذكي' })}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!analysis && (
+          <div className="text-center py-8">
+            <Button onClick={generateAnalysis} disabled={loading} className="gap-2">
+              {loading ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  {t({ en: 'AI Analyzing Network...', ar: 'الذكاء يحلل الشبكة...' })}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  {t({ en: 'Generate Network Insights', ar: 'إنشاء رؤى الشبكة' })}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {analysis && (
+          <div className="space-y-4">
+            {/* Network Score */}
+            <div className="p-4 bg-gradient-to-br from-purple-50 to-white border border-purple-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium">{t({ en: 'Network Centrality Score', ar: 'درجة مركزية الشبكة' })}</p>
+                <Badge className="bg-purple-600 text-white">{analysis.centrality_score}/100</Badge>
+              </div>
+              <p className="text-xs text-slate-600 mb-2">{analysis.network_tier}</p>
+              <div className="h-2 bg-purple-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-purple-600 rounded-full"
+                  style={{ width: `${analysis.centrality_score}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Strategic Position */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <Target className="h-4 w-4 text-blue-600" />
+                {t({ en: 'Strategic Position', ar: 'الموقع الاستراتيجي' })}
+              </p>
+              <p className="text-sm text-slate-700">{analysis.strategic_position}</p>
+            </div>
+
+            {/* Recommended Partners */}
+            <div>
+              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                {t({ en: 'Recommended Partnership Opportunities', ar: 'فرص الشراكة الموصى بها' })}
+              </h4>
+              <div className="space-y-2">
+                {analysis.recommended_partners?.map((partner, i) => (
+                  <div key={i} className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-medium text-sm">{partner.organization_type}</p>
+                      <Badge className="bg-green-100 text-green-700">
+                        Synergy: {partner.synergy_score}/100
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-slate-600">{partner.rationale}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Gaps */}
+            <div>
+              <h4 className="font-semibold text-sm mb-2">{t({ en: 'Collaboration Gaps', ar: 'فجوات التعاون' })}</h4>
+              <div className="space-y-1">
+                {analysis.collaboration_gaps?.map((gap, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    <span>{gap}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Growth Recommendations */}
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+                {t({ en: 'Growth Recommendations', ar: 'توصيات النمو' })}
+              </h4>
+              <ul className="space-y-1">
+                {analysis.growth_recommendations?.map((rec, i) => (
+                  <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
+                    <span className="text-green-600">→</span>
+                    {rec}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

@@ -1,0 +1,258 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { useLanguage } from '../LanguageContext';
+import { toast } from 'sonner';
+import { Lightbulb, TrendingUp, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+
+export default function SolutionFeedbackLoop({ pilot }) {
+  const { language, isRTL, t } = useLanguage();
+  const queryClient = useQueryClient();
+
+  const [improvements, setImprovements] = useState('');
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [suggestions, setSuggestions] = useState(null);
+
+  const { data: solution } = useQuery({
+    queryKey: ['solution', pilot?.solution_id],
+    queryFn: async () => {
+      const solutions = await base44.entities.Solution.list();
+      return solutions.find(s => s.id === pilot?.solution_id);
+    },
+    enabled: !!pilot?.solution_id
+  });
+
+  const analyzeImprovements = async () => {
+    setAiAnalyzing(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze pilot results and generate solution improvement recommendations:
+
+Pilot: ${pilot.title_en}
+Solution: ${solution?.name_en || 'N/A'}
+KPIs: ${pilot.kpis?.map(k => `${k.name}: baseline ${k.baseline}, target ${k.target}, current ${k.current || 'N/A'}`).join('; ')}
+Issues: ${pilot.issues?.map(i => i.issue).join('; ') || 'None'}
+Lessons: ${pilot.lessons_learned?.map(l => l.lesson).join('; ') || 'None'}
+Evaluation: ${pilot.evaluation_summary_en || 'In progress'}
+
+Generate bilingual improvement recommendations:
+1. Feature enhancements (3-5 items)
+2. Performance optimizations (2-3 items)
+3. Integration improvements (2-3 items)
+4. Priority ranking`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            features: { 
+              type: 'array', 
+              items: { 
+                type: 'object',
+                properties: {
+                  en: { type: 'string' },
+                  ar: { type: 'string' },
+                  priority: { type: 'string' }
+                }
+              }
+            },
+            performance: { 
+              type: 'array', 
+              items: { 
+                type: 'object',
+                properties: {
+                  en: { type: 'string' },
+                  ar: { type: 'string' }
+                }
+              }
+            },
+            integration: { 
+              type: 'array', 
+              items: { 
+                type: 'object',
+                properties: {
+                  en: { type: 'string' },
+                  ar: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      setSuggestions(result);
+      toast.success(t({ en: 'AI analyzed pilot results', ar: 'تم تحليل نتائج التجربة' }));
+    } catch (error) {
+      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
+    } finally {
+      setAiAnalyzing(false);
+    }
+  };
+
+  const sendMutation = useMutation({
+    mutationFn: async (data) => {
+      await base44.integrations.Core.SendEmail({
+        to: solution?.contact_email || pilot.created_by,
+        subject: `Pilot Feedback: ${pilot.title_en}`,
+        body: `
+Pilot: ${pilot.title_en}
+Municipality: ${pilot.municipality_id}
+
+IMPROVEMENTS IDENTIFIED:
+${data.improvements}
+
+${data.ai_suggestions ? `
+
+AI ANALYSIS:
+${JSON.stringify(data.ai_suggestions, null, 2)}
+` : ''}
+
+Please review and update the solution accordingly.
+
+Best regards,
+Saudi Innovates Platform
+        `
+      });
+
+      // Create system activity
+      await base44.entities.SystemActivity.create({
+        entity_type: 'pilot',
+        entity_id: pilot.id,
+        activity_type: 'feedback_sent',
+        description: `Solution feedback sent to provider: ${solution?.provider_name || 'Provider'}`,
+        metadata: { improvements: data.improvements }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['system-activity']);
+      setImprovements('');
+      setSuggestions(null);
+      toast.success(t({ en: 'Feedback sent to provider', ar: 'تم إرسال الملاحظات للمزود' }));
+    }
+  });
+
+  if (!pilot.solution_id) {
+    return (
+      <Card>
+        <CardContent className="pt-6 text-center">
+          <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-3" />
+          <p className="text-slate-600">
+            {t({ en: 'No solution linked to this pilot', ar: 'لا يوجد حل مرتبط بهذه التجربة' })}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Lightbulb className="h-5 w-5 text-amber-600" />
+          {t({ en: 'Solution Improvement Feedback', ar: 'ملاحظات تحسين الحل' })}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-sm text-blue-900">
+            <strong>{t({ en: 'Solution:', ar: 'الحل:' })}</strong>{' '}
+            {solution ? (language === 'ar' && solution.name_ar ? solution.name_ar : solution.name_en) : 'N/A'}
+          </p>
+          <p className="text-xs text-slate-600 mt-1">
+            {t({ en: 'Provider:', ar: 'المزود:' })} {solution?.provider_name || 'N/A'}
+          </p>
+        </div>
+
+        <Button
+          onClick={analyzeImprovements}
+          disabled={aiAnalyzing}
+          variant="outline"
+          className="w-full border-purple-300 text-purple-700"
+        >
+          {aiAnalyzing ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <TrendingUp className="h-4 w-4 mr-2" />
+          )}
+          {t({ en: 'AI Analyze Pilot Results', ar: 'تحليل نتائج التجربة' })}
+        </Button>
+
+        {suggestions && (
+          <div className="space-y-3 p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="font-semibold text-purple-900">
+              {t({ en: 'AI Recommendations:', ar: 'التوصيات الذكية:' })}
+            </p>
+
+            {suggestions.features?.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-purple-800 mb-2">
+                  {t({ en: 'Feature Enhancements:', ar: 'تحسينات الميزات:' })}
+                </p>
+                <ul className="space-y-1">
+                  {suggestions.features.map((item, i) => (
+                    <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
+                      <CheckCircle2 className="h-3 w-3 text-purple-600 mt-0.5" />
+                      <span>{typeof item === 'object' ? (language === 'ar' ? item.ar : item.en) : item}</span>
+                      {item.priority && (
+                        <Badge className="text-xs">{item.priority}</Badge>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {suggestions.performance?.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-purple-800 mb-2">
+                  {t({ en: 'Performance:', ar: 'الأداء:' })}
+                </p>
+                <ul className="space-y-1">
+                  {suggestions.performance.map((item, i) => (
+                    <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
+                      <TrendingUp className="h-3 w-3 text-green-600 mt-0.5" />
+                      <span>{typeof item === 'object' ? (language === 'ar' ? item.ar : item.en) : item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div>
+          <label className="text-sm font-medium text-slate-700 mb-2 block">
+            {t({ en: 'Additional Feedback for Provider', ar: 'ملاحظات إضافية للمزود' })}
+          </label>
+          <Textarea
+            value={improvements}
+            onChange={(e) => setImprovements(e.target.value)}
+            rows={4}
+            placeholder={t({ 
+              en: 'What improvements should the provider make based on pilot learnings?',
+              ar: 'ما التحسينات التي يجب على المزود إجراؤها؟'
+            })}
+          />
+        </div>
+
+        <Button
+          onClick={() => sendMutation.mutate({ 
+            improvements, 
+            ai_suggestions: suggestions 
+          })}
+          disabled={!improvements || sendMutation.isPending}
+          className="w-full bg-gradient-to-r from-amber-600 to-orange-600"
+        >
+          {sendMutation.isPending ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Send className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+          )}
+          {t({ en: 'Send Feedback to Provider', ar: 'إرسال للمزود' })}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}

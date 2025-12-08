@@ -1,0 +1,194 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useLanguage } from '../LanguageContext';
+import { MessageSquare, Sparkles, Loader2, TrendingUp, MapPin } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function PublicFeedbackAggregator({ municipalityId }) {
+  const { language, t } = useLanguage();
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+
+  const { data: feedback = [] } = useQuery({
+    queryKey: ['public-feedback', municipalityId],
+    queryFn: async () => {
+      const all = await base44.entities.CitizenFeedback.list();
+      return municipalityId ? all.filter(f => f.challenge_id === municipalityId) : all;
+    }
+  });
+
+  const aggregateAndAnalyze = async () => {
+    setAnalyzing(true);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Aggregate and analyze public feedback:
+
+TOTAL FEEDBACK: ${feedback.length}
+Sample: ${feedback.slice(0, 30).map(f => 
+  `[${f.feedback_type}] ${f.content.substring(0, 100)} - Sentiment: ${f.sentiment || 'N/A'}`
+).join('\n')}
+
+Provide:
+1. Top 5 recurring themes/issues
+2. Sentiment breakdown (% positive/neutral/negative)
+3. Geographic clusters (if location data available)
+4. Priority recommendations (what to address first)
+5. Trend analysis (increasing/decreasing concerns)`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            themes: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  theme: { type: "string" },
+                  count: { type: "number" },
+                  priority: { type: "string" }
+                }
+              }
+            },
+            sentiment_breakdown: {
+              type: "object",
+              properties: {
+                positive: { type: "number" },
+                neutral: { type: "number" },
+                negative: { type: "number" }
+              }
+            },
+            geographic_clusters: { type: "array", items: { type: "string" } },
+            recommendations: { type: "array", items: { type: "string" } },
+            trend: { type: "string" }
+          }
+        }
+      });
+
+      setAnalysis(response);
+      toast.success(t({ en: 'Analysis complete', ar: 'التحليل مكتمل' }));
+    } catch (error) {
+      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  return (
+    <Card className="border-2 border-green-300">
+      <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-green-600" />
+            {t({ en: 'Public Feedback Aggregator', ar: 'مجمع التغذية الراجعة العامة' })}
+          </CardTitle>
+          <Button onClick={aggregateAndAnalyze} disabled={analyzing || feedback.length === 0} size="sm" className="bg-green-600">
+            {analyzing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            {t({ en: 'Analyze', ar: 'تحليل' })}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <div className="mb-4">
+          <p className="text-sm text-slate-700">
+            {t({ en: `Analyzing ${feedback.length} public feedback entries`, ar: `تحليل ${feedback.length} مدخلات من التغذية الراجعة` })}
+          </p>
+        </div>
+
+        {!analysis && !analyzing && (
+          <div className="text-center py-8">
+            <MessageSquare className="h-12 w-12 text-green-300 mx-auto mb-3" />
+            <p className="text-sm text-slate-600">
+              {t({ en: 'AI aggregates and analyzes public sentiment and themes', ar: 'الذكاء يجمع ويحلل المشاعر والمواضيع العامة' })}
+            </p>
+          </div>
+        )}
+
+        {analysis && (
+          <div className="space-y-4">
+            {analysis.sentiment_breakdown && (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 bg-green-50 rounded text-center">
+                  <p className="text-2xl font-bold text-green-600">{analysis.sentiment_breakdown.positive}%</p>
+                  <p className="text-xs text-slate-600">{t({ en: 'Positive', ar: 'إيجابي' })}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded text-center">
+                  <p className="text-2xl font-bold text-slate-600">{analysis.sentiment_breakdown.neutral}%</p>
+                  <p className="text-xs text-slate-600">{t({ en: 'Neutral', ar: 'محايد' })}</p>
+                </div>
+                <div className="p-3 bg-red-50 rounded text-center">
+                  <p className="text-2xl font-bold text-red-600">{analysis.sentiment_breakdown.negative}%</p>
+                  <p className="text-xs text-slate-600">{t({ en: 'Negative', ar: 'سلبي' })}</p>
+                </div>
+              </div>
+            )}
+
+            {analysis.themes?.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm text-slate-900 mb-2">
+                  {t({ en: '🔥 Top Themes', ar: '🔥 المواضيع الرئيسية' })}
+                </h4>
+                <div className="space-y-2">
+                  {analysis.themes.map((theme, i) => (
+                    <div key={i} className="p-3 bg-white rounded border flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-900">{theme.theme}</p>
+                        <p className="text-xs text-slate-600">{theme.count} mentions</p>
+                      </div>
+                      <Badge className={
+                        theme.priority === 'high' ? 'bg-red-100 text-red-700' :
+                        theme.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-blue-100 text-blue-700'
+                      }>{theme.priority}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {analysis.geographic_clusters?.length > 0 && (
+              <div className="p-3 bg-blue-50 rounded border border-blue-300">
+                <h4 className="font-semibold text-sm text-blue-900 mb-2 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  {t({ en: 'Geographic Hotspots', ar: 'النقاط الجغرافية الساخنة' })}
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {analysis.geographic_clusters.map((loc, i) => (
+                    <Badge key={i} variant="outline">{loc}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="p-3 bg-purple-50 rounded border border-purple-300">
+              <h4 className="font-semibold text-sm text-purple-900 mb-1 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                {t({ en: 'Trend:', ar: 'الاتجاه:' })}
+              </h4>
+              <p className="text-sm text-slate-700">{analysis.trend}</p>
+            </div>
+
+            {analysis.recommendations?.length > 0 && (
+              <div className="p-4 bg-amber-50 rounded border-2 border-amber-300">
+                <h4 className="font-semibold text-sm text-amber-900 mb-2">
+                  {t({ en: '💡 Recommendations', ar: '💡 التوصيات' })}
+                </h4>
+                <ul className="space-y-1">
+                  {analysis.recommendations.map((rec, i) => (
+                    <li key={i} className="text-sm text-slate-700">→ {rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

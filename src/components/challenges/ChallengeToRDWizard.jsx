@@ -1,0 +1,281 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLanguage } from '../LanguageContext';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Megaphone, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
+  const { language, isRTL, t } = useLanguage();
+  const queryClient = useQueryClient();
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [rdCallData, setRdCallData] = useState({
+    title_en: '',
+    title_ar: '',
+    research_area_en: challenge.sector || '',
+    research_area_ar: '',
+    objectives_en: '',
+    objectives_ar: '',
+    scope_en: '',
+    scope_ar: '',
+    challenge_ids: [challenge.id],
+    keywords: challenge.keywords || [],
+    focus_areas: [challenge.sector, challenge.sub_sector].filter(Boolean),
+    budget_range_min: 100000,
+    budget_range_max: 500000,
+    duration_months: 18,
+    max_proposals: 10,
+    status: 'draft',
+    call_type: 'applied_research'
+  });
+
+  const generateRDCall = async () => {
+    setAiGenerating(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a research program manager. Generate an R&D call from this municipal challenge:
+
+Challenge Title: ${challenge.title_en}
+Problem Statement: ${challenge.problem_statement_en}
+Desired Outcome: ${challenge.desired_outcome_en}
+Sector: ${challenge.sector}
+Root Causes: ${JSON.stringify(challenge.root_causes || [])}
+Keywords: ${JSON.stringify(challenge.keywords || [])}
+
+Generate:
+1. R&D call title (EN + AR) - compelling and research-focused
+2. Research objectives (EN + AR) - what research questions to investigate
+3. Research scope (EN + AR) - what areas to explore
+4. Expected deliverables (EN + AR)
+5. Research themes (keywords)
+6. Budget range estimate
+
+Make it compelling for academic researchers while addressing the municipal challenge.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            title_en: { type: 'string' },
+            title_ar: { type: 'string' },
+            research_area_ar: { type: 'string' },
+            objectives_en: { type: 'string' },
+            objectives_ar: { type: 'string' },
+            scope_en: { type: 'string' },
+            scope_ar: { type: 'string' },
+            expected_deliverables_en: { type: 'string' },
+            expected_deliverables_ar: { type: 'string' },
+            research_themes: { type: 'array', items: { type: 'string' } },
+            budget_range_min: { type: 'number' },
+            budget_range_max: { type: 'number' }
+          }
+        }
+      });
+
+      setRdCallData(prev => ({
+        ...prev,
+        ...result,
+        keywords: [...prev.keywords, ...result.research_themes]
+      }));
+
+      toast.success(t({ en: 'AI generated R&D call', ar: 'تم إنشاء دعوة البحث' }));
+    } catch (error) {
+      toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء' }));
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const createMutation = useMutation({
+    mutationFn: async (data) => {
+      const rdCall = await base44.entities.RDCall.create(data);
+      
+      // Create relation
+      await base44.entities.ChallengeRelation.create({
+        challenge_id: challenge.id,
+        related_entity_type: 'rd_call',
+        related_entity_id: rdCall.id,
+        relation_role: 'informed_by'
+      });
+
+      // Log activity
+      await base44.entities.SystemActivity.create({
+        activity_type: 'challenge_to_rd_call',
+        entity_type: 'challenge',
+        entity_id: challenge.id,
+        description_en: `Created R&D Call: ${rdCall.title_en}`,
+        metadata: { rd_call_id: rdCall.id }
+      });
+
+      return rdCall;
+    },
+    onSuccess: (rdCall) => {
+      queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['rd-calls'] });
+      toast.success(t({ en: 'R&D Call created!', ar: 'تم إنشاء دعوة البحث!' }));
+      onSuccess?.(rdCall);
+      onClose?.();
+    }
+  });
+
+  return (
+    <Card className="max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+      <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-indigo-50">
+        <CardTitle className="flex items-center gap-2">
+          <Megaphone className="h-5 w-5 text-purple-600" />
+          {t({ en: 'Create R&D Call from Challenge', ar: 'إنشاء دعوة بحث من التحدي' })}
+        </CardTitle>
+        <p className="text-sm text-slate-600 mt-2">
+          {t({ en: 'Transform municipal challenge into research opportunity', ar: 'تحويل التحدي البلدي إلى فرصة بحثية' })}
+        </p>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-6">
+        {/* Challenge Context */}
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <p className="text-xs font-medium text-blue-900 mb-2">
+            {t({ en: 'Source Challenge:', ar: 'التحدي المصدر:' })}
+          </p>
+          <p className="text-sm font-semibold text-slate-900">{challenge.title_en}</p>
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant="outline">{challenge.sector}</Badge>
+            <Badge>{challenge.priority}</Badge>
+          </div>
+        </div>
+
+        {/* AI Generation */}
+        <Button
+          onClick={generateRDCall}
+          disabled={aiGenerating}
+          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600"
+          size="lg"
+        >
+          {aiGenerating ? (
+            <>
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              {t({ en: 'AI Generating R&D Call...', ar: 'جاري إنشاء دعوة البحث...' })}
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-5 w-5 mr-2" />
+              {t({ en: 'Generate R&D Call with AI', ar: 'إنشاء دعوة بحث بالذكاء' })}
+            </>
+          )}
+        </Button>
+
+        {/* Form */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">{t({ en: 'Call Title (EN)', ar: 'عنوان الدعوة (EN)' })}</label>
+            <Input
+              value={rdCallData.title_en}
+              onChange={(e) => setRdCallData({ ...rdCallData, title_en: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">{t({ en: 'Call Title (AR)', ar: 'عنوان الدعوة (AR)' })}</label>
+            <Input
+              value={rdCallData.title_ar}
+              onChange={(e) => setRdCallData({ ...rdCallData, title_ar: e.target.value })}
+              dir="rtl"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">{t({ en: 'Research Objectives (EN)', ar: 'الأهداف (EN)' })}</label>
+            <Textarea
+              value={rdCallData.objectives_en}
+              onChange={(e) => setRdCallData({ ...rdCallData, objectives_en: e.target.value })}
+              rows={4}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">{t({ en: 'Research Objectives (AR)', ar: 'الأهداف (AR)' })}</label>
+            <Textarea
+              value={rdCallData.objectives_ar}
+              onChange={(e) => setRdCallData({ ...rdCallData, objectives_ar: e.target.value })}
+              rows={4}
+              dir="rtl"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">{t({ en: 'Scope (EN)', ar: 'النطاق (EN)' })}</label>
+            <Textarea
+              value={rdCallData.scope_en}
+              onChange={(e) => setRdCallData({ ...rdCallData, scope_en: e.target.value })}
+              rows={3}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">{t({ en: 'Scope (AR)', ar: 'النطاق (AR)' })}</label>
+            <Textarea
+              value={rdCallData.scope_ar}
+              onChange={(e) => setRdCallData({ ...rdCallData, scope_ar: e.target.value })}
+              rows={3}
+              dir="rtl"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="text-sm font-medium">{t({ en: 'Budget Min (SAR)', ar: 'الميزانية الدنيا' })}</label>
+            <Input
+              type="number"
+              value={rdCallData.budget_range_min}
+              onChange={(e) => setRdCallData({ ...rdCallData, budget_range_min: parseFloat(e.target.value) })}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">{t({ en: 'Budget Max (SAR)', ar: 'الميزانية القصوى' })}</label>
+            <Input
+              type="number"
+              value={rdCallData.budget_range_max}
+              onChange={(e) => setRdCallData({ ...rdCallData, budget_range_max: parseFloat(e.target.value) })}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">{t({ en: 'Duration (months)', ar: 'المدة (أشهر)' })}</label>
+            <Input
+              type="number"
+              value={rdCallData.duration_months}
+              onChange={(e) => setRdCallData({ ...rdCallData, duration_months: parseInt(e.target.value) })}
+            />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            {t({ en: 'Cancel', ar: 'إلغاء' })}
+          </Button>
+          <Button
+            onClick={() => createMutation.mutate(rdCallData)}
+            disabled={createMutation.isPending || !rdCallData.title_en || !rdCallData.title_ar}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600"
+          >
+            {createMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}
+              </>
+            ) : (
+              <>
+                <Megaphone className="h-4 w-4 mr-2" />
+                {t({ en: 'Create R&D Call', ar: 'إنشاء دعوة البحث' })}
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

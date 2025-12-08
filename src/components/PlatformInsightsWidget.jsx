@@ -1,0 +1,140 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useLanguage } from './LanguageContext';
+import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, Target, Loader2, RefreshCw } from 'lucide-react';
+
+export default function PlatformInsightsWidget() {
+  const { language, isRTL, t } = useLanguage();
+  const [generating, setGenerating] = useState(false);
+
+  const { data: insights = [], refetch } = useQuery({
+    queryKey: ['platform-insights'],
+    queryFn: async () => {
+      const all = await base44.entities.PlatformInsight.list('-created_date');
+      return all.filter(i => i.is_active).slice(0, 5);
+    }
+  });
+
+  const { data: challenges = [] } = useQuery({
+    queryKey: ['challenges-insights'],
+    queryFn: () => base44.entities.Challenge.list()
+  });
+
+  const generateFreshInsights = async () => {
+    setGenerating(true);
+    try {
+      const sectorCounts = challenges.reduce((acc, c) => {
+        acc[c.sector] = (acc[c.sector] || 0) + 1;
+        return acc;
+      }, {});
+
+      await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze platform trends and generate 3 strategic insights:
+
+Sector distribution: ${JSON.stringify(sectorCounts)}
+Total challenges: ${challenges.length}
+
+Generate insights about:
+1. Emerging trends (which sectors are growing)
+2. Strategic opportunities (gaps or patterns)
+3. Risk alerts (areas needing attention)`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            insights: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string' },
+                  title: { type: 'string' },
+                  description: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      refetch();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const insightIcons = {
+    trend: TrendingUp,
+    opportunity: Lightbulb,
+    alert: AlertTriangle,
+    recommendation: Target,
+    success: Sparkles
+  };
+
+  const insightColors = {
+    trend: 'bg-blue-50 border-blue-200 text-blue-700',
+    opportunity: 'bg-purple-50 border-purple-200 text-purple-700',
+    alert: 'bg-red-50 border-red-200 text-red-700',
+    recommendation: 'bg-green-50 border-green-200 text-green-700',
+    success: 'bg-amber-50 border-amber-200 text-amber-700'
+  };
+
+  return (
+    <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-white">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-purple-700">
+            <Sparkles className="h-5 w-5" />
+            {t({ en: 'AI Platform Insights', ar: 'رؤى المنصة الذكية' })}
+          </CardTitle>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={generateFreshInsights}
+            disabled={generating}
+          >
+            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {insights.length > 0 ? (
+          insights.map((insight) => {
+            const Icon = insightIcons[insight.insight_type] || Sparkles;
+            const colorClass = insightColors[insight.insight_type] || 'bg-slate-50 border-slate-200 text-slate-700';
+            
+            return (
+              <div key={insight.id} className={`p-3 rounded-lg border ${colorClass}`}>
+                <div className="flex items-start gap-2">
+                  <Icon className="h-4 w-4 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">
+                      {language === 'ar' && insight.title_ar ? insight.title_ar : insight.title_en}
+                    </p>
+                    {insight.description_en && (
+                      <p className="text-xs mt-1 opacity-90">
+                        {language === 'ar' && insight.description_ar ? insight.description_ar : insight.description_en}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="text-center py-6">
+            <Sparkles className="h-12 w-12 text-purple-300 mx-auto mb-2" />
+            <p className="text-sm text-slate-500">
+              {t({ en: 'No insights yet. Click refresh to generate.', ar: 'لا توجد رؤى بعد. انقر على التحديث للتوليد.' })}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

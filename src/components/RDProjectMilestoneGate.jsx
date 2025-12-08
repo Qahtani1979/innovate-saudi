@@ -1,0 +1,156 @@
+import React, { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { useLanguage } from './LanguageContext';
+import { CheckCircle2, X, Upload, FileText } from 'lucide-react';
+import { toast } from 'sonner';
+import FileUploader from './FileUploader';
+
+export default function RDProjectMilestoneGate({ project, milestone, onClose }) {
+  const { language, isRTL, t } = useLanguage();
+  const queryClient = useQueryClient();
+  
+  const [deliverables, setDeliverables] = useState({});
+  const [evidenceUrls, setEvidenceUrls] = useState([]);
+  const [approvalNotes, setApprovalNotes] = useState('');
+
+  const approveMutation = useMutation({
+    mutationFn: async (data) => {
+      const updatedMilestones = project.timeline?.milestones?.map(m => 
+        m.name === milestone.name 
+          ? {
+              ...m,
+              status: 'completed',
+              completed_date: new Date().toISOString(),
+              approval_status: 'approved',
+              approved_by: data.approver,
+              approval_date: new Date().toISOString(),
+              approval_comments: data.notes,
+              evidence_urls: data.evidence
+            }
+          : m
+      );
+
+      await base44.entities.RDProject.update(project.id, {
+        timeline: {
+          ...project.timeline,
+          milestones: updatedMilestones
+        }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['rd-project']);
+      toast.success(t({ en: 'Milestone approved', ar: 'تمت الموافقة على المعلم' }));
+      onClose();
+    }
+  });
+
+  const handleApprove = async () => {
+    const user = await base44.auth.me();
+    approveMutation.mutate({
+      approver: user.email,
+      notes: approvalNotes,
+      evidence: evidenceUrls,
+      deliverables
+    });
+  };
+
+  const expectedDeliverables = milestone.deliverables || [];
+
+  return (
+    <Card className="w-full" dir={isRTL ? 'rtl' : 'ltr'}>
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <CardTitle>{t({ en: 'Milestone Gate Approval', ar: 'موافقة بوابة المعلم' })}</CardTitle>
+        <Button variant="ghost" size="icon" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="p-4 bg-slate-50 rounded-lg">
+          <p className="text-sm font-semibold text-slate-900">{milestone.name}</p>
+          <p className="text-xs text-slate-600 mt-1">{milestone.description}</p>
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant="outline">{t({ en: 'Due', ar: 'موعد' })}: {milestone.due_date}</Badge>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Label className="text-base font-semibold">{t({ en: 'Expected Deliverables', ar: 'المخرجات المتوقعة' })}</Label>
+          {expectedDeliverables.length === 0 ? (
+            <p className="text-sm text-slate-500">{t({ en: 'No specific deliverables defined', ar: 'لا توجد مخرجات محددة' })}</p>
+          ) : (
+            <div className="space-y-2">
+              {expectedDeliverables.map((deliverable, i) => (
+                <div key={i} className="flex items-center space-x-2 p-3 border rounded-lg">
+                  <Checkbox
+                    checked={deliverables[deliverable] || false}
+                    onCheckedChange={(checked) => setDeliverables({ ...deliverables, [deliverable]: checked })}
+                  />
+                  <label className="text-sm flex-1 cursor-pointer">{deliverable}</label>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>{t({ en: 'Upload Evidence', ar: 'رفع الأدلة' })}</Label>
+          <FileUploader
+            type="document"
+            label={t({ en: 'Upload milestone evidence documents', ar: 'رفع وثائق أدلة المعلم' })}
+            maxSize={50}
+            onUploadComplete={(url) => setEvidenceUrls([...evidenceUrls, url])}
+          />
+          {evidenceUrls.length > 0 && (
+            <div className="space-y-1 mt-2">
+              {evidenceUrls.map((url, i) => (
+                <div key={i} className="flex items-center gap-2 p-2 border rounded bg-slate-50">
+                  <FileText className="h-4 w-4 text-slate-400" />
+                  <span className="text-xs text-slate-600 flex-1">{url.split('/').pop()}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEvidenceUrls(evidenceUrls.filter((_, idx) => idx !== i))}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>{t({ en: 'Approval Notes', ar: 'ملاحظات الموافقة' })}</Label>
+          <Textarea
+            value={approvalNotes}
+            onChange={(e) => setApprovalNotes(e.target.value)}
+            placeholder={t({ en: 'Add comments about milestone completion...', ar: 'أضف تعليقات حول إنجاز المعلم...' })}
+            rows={3}
+          />
+        </div>
+
+        <div className="flex gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            {t({ en: 'Cancel', ar: 'إلغاء' })}
+          </Button>
+          <Button
+            onClick={handleApprove}
+            disabled={approveMutation.isPending || evidenceUrls.length === 0}
+            className="flex-1 bg-green-600 hover:bg-green-700"
+          >
+            <CheckCircle2 className="h-4 w-4 mr-2" />
+            {t({ en: 'Approve Milestone', ar: 'الموافقة على المعلم' })}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
