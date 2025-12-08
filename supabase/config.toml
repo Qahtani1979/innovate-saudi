@@ -14,3 +14,45 @@ verify_jwt = false
 
 [functions.chat-agent]
 verify_jwt = true
+
+[functions.generate-embeddings]
+verify_jwt = false
+
+[functions.semantic-search]
+verify_jwt = false
+
+[functions.translate-policy]
+verify_jwt = false
+
+[functions.check-consensus]
+verify_jwt = false
+
+[functions.citizen-notifications]
+verify_jwt = false
+
+[functions.approve-delegation]
+verify_jwt = true
+
+[functions.validate-permission]
+verify_jwt = true
+
+[functions.check-field-security]
+verify_jwt = true
+
+[functions.budget-approval]
+verify_jwt = true
+
+[functions.initiative-launch]
+verify_jwt = true
+
+[functions.auto-notification-triggers]
+verify_jwt = false
+
+[functions.search-images]
+verify_jwt = false
+
+[functions.auto-matchmaker-enrollment]
+verify_jwt = false
+
+[functions.enroll-municipality-training]
+verify_jwt = false
