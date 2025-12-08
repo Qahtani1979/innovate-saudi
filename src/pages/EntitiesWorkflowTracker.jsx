@@ -1461,12 +1461,12 @@ function EntitiesWorkflowTracker() {
                           <div className="text-left">
                             <h3 className="font-semibold text-slate-900">{entity.name}</h3>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge className={
+                              <Badge className={`text-xs ${
                                 entity.coverage >= 95 ? 'bg-green-600' :
                                 entity.coverage >= 85 ? 'bg-blue-600' :
                                 entity.coverage >= 70 ? 'bg-amber-600' :
                                 'bg-red-600'
-                              } className="text-xs">
+                              }`}>
                                 {entity.coverage}%
                               </Badge>
                               <span className="text-xs text-slate-500">{entity.lifecycle.length} stages</span>

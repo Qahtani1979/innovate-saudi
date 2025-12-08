@@ -99,7 +99,7 @@ function GanttView() {
                                 {isOverdue && <AlertTriangle className="h-3 w-3 inline ml-1" />}
                               </p>
                             )}
-                            <Badge className={milestone.status === 'completed' ? 'bg-green-600' : 'bg-blue-600'} className="text-xs">
+                            <Badge className={`${milestone.status === 'completed' ? 'bg-green-600' : 'bg-blue-600'} text-xs`}>
                               {milestone.status}
                             </Badge>
                           </div>

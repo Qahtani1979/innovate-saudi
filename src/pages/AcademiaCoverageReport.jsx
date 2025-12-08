@@ -274,7 +274,7 @@ function AcademiaCoverageReport() {
         name: 'Proposal Submission & Review',
         stages: [
           { name: 'Researcher discovers call', page: 'RDCalls list', status: 'complete', automation: 'AI-matched call recommendations' },
-          { name: 'Check eligibility', page: 'ProposalEligibilityChecker', status: 'complete', automation: 'Auto-validation in wizard', page: 'ProposalWizard step 1' },
+          { name: 'Check eligibility', page: 'ProposalWizard step 1', status: 'complete', automation: 'Auto-validation in wizard' },
           { name: 'Draft proposal', page: 'ProposalWizard', status: 'complete', automation: 'ProposalSubmissionWizard with AI assistance' },
           { name: 'AI scoring preview', status: 'complete', automation: 'AIProposalScorer integrated', page: 'ProposalWizard AI tab' },
           { name: 'Collaborative editing with team', status: 'complete', automation: 'CollaborativeProposalEditor integrated', page: 'ProposalWizard collaboration' },

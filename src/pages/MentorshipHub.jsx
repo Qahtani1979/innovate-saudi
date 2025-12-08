@@ -151,7 +151,7 @@ function MentorshipHub() {
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <Badge className={statusColors[mentorship.status]} className="mb-2">
+                    <Badge className={`${statusColors[mentorship.status]} mb-2`}>
                       {mentorship.status?.replace(/_/g, ' ')}
                     </Badge>
                     <h3 className="font-semibold text-slate-900">

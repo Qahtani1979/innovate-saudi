@@ -903,7 +903,7 @@ function IdeasCoverageReport() {
       }
     },
 
-    userJourneys: [
+    detailedUserJourneys: [
       {
         persona: 'Citizen / Public User (Submitter)',
         journey: [
@@ -2027,7 +2027,7 @@ function IdeasCoverageReport() {
                     <p className="text-xs font-semibold text-slate-700 mb-2">Implementation Example:</p>
                     <div className="text-xs text-slate-700 space-y-1 font-mono bg-slate-50 p-2 rounded">
                       <div>{'{'}<span className="text-purple-600">hasPermission</span>('idea_moderate') && (</div>
-                      <div className="ml-3">{'<'}div{'>'}{'{'}idea.submitter_email{'}'}{'{'}'/'}div{'>'}</div>
+                      <div className="ml-3">{'<'}div{'>'}{'{'}idea.submitter_email{'}'}{'<'}/div{'>'}</div>
                       <div>{')}'}</div>
                     </div>
                     <p className="text-xs text-blue-600 mt-2">
