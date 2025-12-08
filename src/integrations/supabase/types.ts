@@ -98,6 +98,68 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_conversations: {
+        Row: {
+          agent_name: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          updated_at: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_name: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_name?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_requests: {
         Row: {
           approval_status: string | null

@@ -106,11 +106,110 @@ const integrations = {
   }
 };
 
+// Agents API for conversational AI
+const agents = {
+  createConversation: async ({ agent_name, metadata = {} }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to create a conversation');
+    }
+    
+    const { data, error } = await supabase
+      .from('ai_conversations')
+      .insert({
+        user_id: user.id,
+        user_email: user.email,
+        agent_name,
+        metadata
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('createConversation error:', error);
+      throw error;
+    }
+    
+    return { id: data.id, messages: [] };
+  },
+  
+  listConversations: async ({ agent_name }) => {
+    const { data, error } = await supabase
+      .from('ai_conversations')
+      .select('*')
+      .eq('agent_name', agent_name)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('listConversations error:', error);
+      throw error;
+    }
+    
+    return data || [];
+  },
+  
+  subscribeToConversation: (conversationId, callback) => {
+    // Initial fetch
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from('ai_messages')
+        .select('role, content, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+      
+      callback({ messages: data || [] });
+    };
+    
+    fetchMessages();
+    
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'ai_messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        () => {
+          fetchMessages();
+        }
+      )
+      .subscribe();
+    
+    // Return unsubscribe function
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },
+  
+  addMessage: async (conversation, { role, content }) => {
+    const { data, error } = await supabase.functions.invoke('chat-agent', {
+      body: {
+        conversationId: conversation.id,
+        message: content,
+        agentName: 'strategicAdvisor'
+      }
+    });
+    
+    if (error) {
+      console.error('addMessage error:', error);
+      throw error;
+    }
+    
+    return data;
+  }
+};
+
 // Create a client object that mimics base44 SDK structure
 export const base44 = {
   entities,
   auth,
   integrations,
+  agents,
 };
 
 export default base44;
