@@ -204,12 +204,57 @@ const agents = {
   }
 };
 
+// Function name mapping from camelCase to kebab-case
+const functionNameMap = {
+  'generateEmbeddings': 'generate-embeddings',
+  'semanticSearch': 'semantic-search',
+  'translatePolicy': 'translate-policy',
+  'checkConsensus': 'check-consensus',
+  'citizenNotifications': 'citizen-notifications',
+  'approveDelegation': 'approve-delegation',
+  'validatePermission': 'validate-permission',
+  'checkFieldSecurity': 'check-field-security',
+  'budgetApproval': 'budget-approval',
+  'initiativeLaunch': 'initiative-launch',
+  'autoNotificationTriggers': 'auto-notification-triggers',
+  'searchImages': 'search-images',
+  'autoMatchmakerEnrollment': 'auto-matchmaker-enrollment',
+  'enrollMunicipalityTraining': 'enroll-municipality-training',
+  'invokeLlm': 'invoke-llm',
+  'sendEmail': 'send-email',
+  'generateImage': 'generate-image',
+  'extractFileData': 'extract-file-data',
+  'chatAgent': 'chat-agent',
+};
+
+// Functions API - calls Supabase edge functions
+const functions = {
+  invoke: async (functionName, params = {}) => {
+    // Convert camelCase to kebab-case if mapping exists, otherwise use as-is
+    const edgeFunctionName = functionNameMap[functionName] || functionName;
+    
+    console.log(`Invoking edge function: ${edgeFunctionName} (from ${functionName})`);
+    
+    const { data, error } = await supabase.functions.invoke(edgeFunctionName, {
+      body: params
+    });
+    
+    if (error) {
+      console.error(`Function ${edgeFunctionName} error:`, error);
+      throw error;
+    }
+    
+    return { data };
+  }
+};
+
 // Create a client object that mimics base44 SDK structure
 export const base44 = {
   entities,
   auth,
   integrations,
   agents,
+  functions,
 };
 
 export default base44;
