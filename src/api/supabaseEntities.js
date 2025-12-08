@@ -224,69 +224,81 @@ function createEntityHandler(entityName) {
      * List all records with optional sort and limit
      */
     async list(sort, limit) {
-      let query = supabase.from(tableName).select('*');
-      
-      // Handle soft delete
-      query = query.or('is_deleted.is.null,is_deleted.eq.false');
-      
-      const { column, ascending } = parseSort(sort);
-      query = query.order(column, { ascending });
-      
-      if (limit) {
-        query = query.limit(limit);
+      try {
+        let query = supabase.from(tableName).select('*');
+        
+        const { column, ascending } = parseSort(sort);
+        query = query.order(column, { ascending, nullsFirst: false });
+        
+        if (limit) {
+          query = query.limit(limit);
+        }
+        
+        const { data, error } = await query;
+        if (error) {
+          console.error(`Error listing ${entityName}:`, error);
+          return [];
+        }
+        // Filter out soft-deleted records client-side
+        return (data || []).filter(item => !item.is_deleted);
+      } catch (e) {
+        console.error(`Error listing ${entityName}:`, e);
+        return [];
       }
-      
-      const { data, error } = await query;
-      if (error) {
-        console.error(`Error listing ${entityName}:`, error);
-        throw error;
-      }
-      return data || [];
     },
 
     /**
      * Filter records with conditions
      */
     async filter(filters, sort, limit) {
-      let query = supabase.from(tableName).select('*');
-      
-      // Handle soft delete
-      if (!filters?.is_deleted) {
-        query = query.or('is_deleted.is.null,is_deleted.eq.false');
+      try {
+        let query = supabase.from(tableName).select('*');
+        
+        query = applyFilters(query, filters);
+        
+        const { column, ascending } = parseSort(sort);
+        query = query.order(column, { ascending, nullsFirst: false });
+        
+        if (limit) {
+          query = query.limit(limit);
+        }
+        
+        const { data, error } = await query;
+        if (error) {
+          console.error(`Error filtering ${entityName}:`, error);
+          return [];
+        }
+        // Filter out soft-deleted records client-side unless explicitly included
+        if (filters?.is_deleted === undefined) {
+          return (data || []).filter(item => !item.is_deleted);
+        }
+        return data || [];
+      } catch (e) {
+        console.error(`Error filtering ${entityName}:`, e);
+        return [];
       }
-      
-      query = applyFilters(query, filters);
-      
-      const { column, ascending } = parseSort(sort);
-      query = query.order(column, { ascending });
-      
-      if (limit) {
-        query = query.limit(limit);
-      }
-      
-      const { data, error } = await query;
-      if (error) {
-        console.error(`Error filtering ${entityName}:`, error);
-        throw error;
-      }
-      return data || [];
     },
 
     /**
      * Get a single record by ID
      */
     async get(id) {
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error) {
-        console.error(`Error getting ${entityName} ${id}:`, error);
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from(tableName)
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        
+        if (error) {
+          console.error(`Error getting ${entityName} ${id}:`, error);
+          return null;
+        }
+        return data;
+      } catch (e) {
+        console.error(`Error getting ${entityName} ${id}:`, e);
+        return null;
       }
-      return data;
     },
 
     /**

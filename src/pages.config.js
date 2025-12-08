@@ -1,4 +1,5 @@
 import Home from './pages/Home';
+import Auth from './pages/Auth';
 import Challenges from './pages/Challenges';
 import ChallengeCreate from './pages/ChallengeCreate';
 import ChallengeDetail from './pages/ChallengeDetail';
@@ -934,6 +935,7 @@ export const PAGES = {
     "SpecializedSystemsClusterAudit": SpecializedSystemsClusterAudit,
     "Priority6MasterAudit": Priority6MasterAudit,
     "ModuleCoverageHub": ModuleCoverageHub,
+    "Auth": Auth,
 }
 
 export const pagesConfig = {
