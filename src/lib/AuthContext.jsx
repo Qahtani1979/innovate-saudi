@@ -15,6 +15,27 @@ export const AuthProvider = ({ children }) => {
   const [appPublicSettings, setAppPublicSettings] = useState({ public_settings: { requiresAuth: false } });
 
   useEffect(() => {
+    // Handle OAuth callback - check for tokens in URL hash
+    const handleOAuthCallback = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        console.log('OAuth callback detected, processing tokens...');
+        // Supabase will automatically detect and process the hash
+        // We just need to clean the URL after processing
+        const { data: { session: callbackSession }, error } = await supabase.auth.getSession();
+        
+        if (callbackSession && !error) {
+          // Clean the URL by removing the hash
+          window.history.replaceState(null, '', window.location.pathname);
+          console.log('OAuth callback processed successfully');
+        } else if (error) {
+          console.error('OAuth callback error:', error);
+        }
+      }
+    };
+
+    handleOAuthCallback();
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
@@ -29,6 +50,11 @@ export const AuthProvider = ({ children }) => {
           setTimeout(() => {
             fetchUserProfile(currentSession.user.id);
             fetchUserRoles(currentSession.user.id);
+            
+            // Create profile for OAuth users if it doesn't exist
+            if (event === 'SIGNED_IN') {
+              createOAuthProfile(currentSession.user);
+            }
           }, 0);
         } else {
           setUserProfile(null);
@@ -42,6 +68,29 @@ export const AuthProvider = ({ children }) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const createOAuthProfile = async (user) => {
+    try {
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        const metadata = user.user_metadata || {};
+        await supabase.from('user_profiles').insert({
+          user_id: user.id,
+          user_email: user.email,
+          full_name: metadata.full_name || metadata.name || '',
+          preferred_language: 'en',
+        });
+        console.log('OAuth profile created');
+      }
+    } catch (error) {
+      console.error('Error creating OAuth profile:', error);
+    }
+  };
 
   const checkAuth = async () => {
     try {
