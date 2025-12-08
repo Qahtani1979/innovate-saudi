@@ -2,3 +2,12 @@ project_id = "wneorgiqyvkkjmqootpe"
 
 [functions.invoke-llm]
 verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.extract-file-data]
+verify_jwt = false
+
+[functions.generate-image]
+verify_jwt = false
