@@ -18,9 +18,11 @@ export const AuthProvider = ({ children }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log('Auth state changed:', event, currentSession?.user?.email);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsAuthenticated(!!currentSession?.user);
+        setIsLoadingAuth(false);
         
         // Defer profile fetch to avoid deadlock
         if (currentSession?.user) {
@@ -83,9 +85,9 @@ export const AuthProvider = ({ children }) => {
         .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching user profile:', error);
       }
       
@@ -114,7 +116,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      setIsLoadingAuth(true);
       setAuthError(null);
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -131,14 +132,13 @@ export const AuthProvider = ({ children }) => {
       }
       
       return data;
-    } finally {
-      setIsLoadingAuth(false);
+    } catch (error) {
+      throw error;
     }
   };
 
   const signUp = async (email, password, metadata = {}) => {
     try {
-      setIsLoadingAuth(true);
       setAuthError(null);
       
       const redirectUrl = `${window.location.origin}/`;
@@ -162,17 +162,50 @@ export const AuthProvider = ({ children }) => {
       
       // Create user profile if signup successful
       if (data.user) {
-        await supabase.from('user_profiles').insert({
+        const { error: profileError } = await supabase.from('user_profiles').upsert({
           user_id: data.user.id,
           user_email: email,
           full_name: metadata.full_name || metadata.name,
           preferred_language: 'en',
-        });
+        }, { onConflict: 'user_id' });
+        
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
       }
       
       return data;
-    } finally {
-      setIsLoadingAuth(false);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      setAuthError(null);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      
+      if (error) {
+        setAuthError({
+          type: 'oauth_error',
+          message: error.message
+        });
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -186,7 +219,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       
       if (shouldRedirect) {
-        window.location.href = '/auth';
+        window.location.href = '/Auth';
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -194,7 +227,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    window.location.href = '/auth';
+    window.location.href = '/Auth';
   };
 
   const resetPassword = async (email) => {
@@ -231,13 +264,14 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings,
       login,
       signUp,
+      signInWithGoogle,
       logout,
       navigateToLogin,
       resetPassword,
       hasRole,
       isAdmin,
       checkAuth,
-      checkAppState: checkAuth, // Alias for compatibility
+      checkAppState: checkAuth,
     }}>
       {children}
     </AuthContext.Provider>
