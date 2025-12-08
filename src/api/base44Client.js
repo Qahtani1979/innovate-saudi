@@ -1,13 +1,15 @@
-import { createClient } from '@base44/sdk';
-import { appParams } from '@/lib/app-params';
+/**
+ * Supabase-based client that mimics the Base44 SDK interface
+ * This allows gradual migration from Base44 to Supabase
+ */
 
-const { appId, serverUrl, token, functionsVersion } = appParams;
+import { entities } from './supabaseEntities';
+import { auth } from './supabaseAuth';
 
-//Create a client with authentication required
-export const base44 = createClient({
-  appId,
-  serverUrl,
-  token,
-  functionsVersion,
-  requiresAuth: false
-});
+// Create a client object that mimics base44 SDK structure
+export const base44 = {
+  entities,
+  auth,
+};
+
+export default base44;
