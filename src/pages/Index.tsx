@@ -1,16 +1,7 @@
-import Header from "@/components/Header";
-import Hero from "@/components/Hero";
-import Footer from "@/components/Footer";
-
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1">
-        <Hero />
-        {/* Additional sections will be added when importing from GitHub */}
-      </main>
-      <Footer />
+    <div className="min-h-screen flex items-center justify-center">
+      <h1 className="text-2xl font-bold">Ready for import</h1>
     </div>
   );
 };
