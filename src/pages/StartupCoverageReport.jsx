@@ -319,7 +319,7 @@ function StartupCoverageReport() {
       }
     ],
 
-    components: [
+    detailedComponents: [
       { name: 'SolutionCreateWizard', path: 'components/solutions/SolutionCreateWizard.jsx', coverage: 100, status: 'integrated' },
       { name: 'CompetitiveAnalysisAI', path: 'components/solutions/CompetitiveAnalysisAI.jsx', coverage: 100, status: 'integrated' },
       { name: 'PriceComparisonTool', path: 'components/solutions/PriceComparisonTool.jsx', coverage: 100, status: 'integrated' },

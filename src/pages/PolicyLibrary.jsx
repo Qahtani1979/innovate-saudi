@@ -178,7 +178,7 @@ function PolicyLibrary() {
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <Badge className={categoryColors[policy.category]} className="mb-2">
+                      <Badge className={`${categoryColors[policy.category]} mb-2`}>
                         {policy.category}
                       </Badge>
                       <h3 className="font-semibold text-slate-900 mb-1">

@@ -1690,12 +1690,12 @@ function DataModelDocumentation() {
                               <h4 className="font-semibold text-slate-900">{entity.name}</h4>
                               <div className="flex items-center gap-2 mt-1">
                                 {entity.populated && (
-                                  <Badge className={
+                                  <Badge className={`text-xs ${
                                     entity.populated.startsWith('YES') ? 'bg-green-600' :
                                     entity.populated.startsWith('PARTIAL') ? 'bg-blue-600' :
                                     entity.populated.startsWith('SPARSE') ? 'bg-amber-600' :
                                     'bg-red-600'
-                                  } className="text-xs">
+                                  }`}>
                                     {entity.populated.split(' (')[0]}
                                   </Badge>
                                 )}
