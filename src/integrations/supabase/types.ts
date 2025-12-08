@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      challenge_activities: {
+        Row: {
+          activity_type: string
+          challenge_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          challenge_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          challenge_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_activities_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_solution_matches: {
+        Row: {
+          challenge_id: string | null
+          created_at: string | null
+          id: string
+          match_score: number | null
+          match_type: string | null
+          matched_at: string | null
+          matched_by: string | null
+          notes: string | null
+          solution_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          challenge_id?: string | null
+          created_at?: string | null
+          id?: string
+          match_score?: number | null
+          match_type?: string | null
+          matched_at?: string | null
+          matched_by?: string | null
+          notes?: string | null
+          solution_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          challenge_id?: string | null
+          created_at?: string | null
+          id?: string
+          match_score?: number | null
+          match_type?: string | null
+          matched_at?: string | null
+          matched_by?: string | null
+          notes?: string | null
+          solution_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_solution_matches_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_solution_matches_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenges: {
         Row: {
           affected_population: Json | null
@@ -319,6 +417,406 @@ export type Database = {
           },
         ]
       }
+      cities: {
+        Row: {
+          coordinates: Json | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          municipality_id: string | null
+          name_ar: string
+          name_en: string
+          population: number | null
+          region_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          coordinates?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          municipality_id?: string | null
+          name_ar: string
+          name_en: string
+          population?: number | null
+          region_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          coordinates?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          municipality_id?: string | null
+          name_ar?: string
+          name_en?: string
+          population?: number | null
+          region_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cities_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cities_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      citizen_ideas: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean | null
+          municipality_id: string | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+          votes_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          municipality_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+          votes_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          municipality_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+          votes_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "citizen_ideas_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          end_date: string | null
+          event_type: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean | null
+          is_virtual: boolean | null
+          location: string | null
+          location_ar: string | null
+          max_participants: number | null
+          municipality_id: string | null
+          program_id: string | null
+          registration_deadline: string | null
+          start_date: string | null
+          status: string | null
+          title_ar: string | null
+          title_en: string
+          updated_at: string | null
+          virtual_link: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          end_date?: string | null
+          event_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          is_virtual?: boolean | null
+          location?: string | null
+          location_ar?: string | null
+          max_participants?: number | null
+          municipality_id?: string | null
+          program_id?: string | null
+          registration_deadline?: string | null
+          start_date?: string | null
+          status?: string | null
+          title_ar?: string | null
+          title_en: string
+          updated_at?: string | null
+          virtual_link?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          end_date?: string | null
+          event_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean | null
+          is_virtual?: boolean | null
+          location?: string | null
+          location_ar?: string | null
+          max_participants?: number | null
+          municipality_id?: string | null
+          program_id?: string | null
+          registration_deadline?: string | null
+          start_date?: string | null
+          status?: string | null
+          title_ar?: string | null
+          title_en?: string
+          updated_at?: string | null
+          virtual_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expert_evaluations: {
+        Row: {
+          comments: string | null
+          created_at: string | null
+          criteria_scores: Json | null
+          entity_id: string
+          entity_type: string
+          evaluator_email: string | null
+          evaluator_id: string | null
+          evaluator_name: string | null
+          id: string
+          recommendation: string | null
+          score: number | null
+          status: string | null
+          submitted_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string | null
+          criteria_scores?: Json | null
+          entity_id: string
+          entity_type: string
+          evaluator_email?: string | null
+          evaluator_id?: string | null
+          evaluator_name?: string | null
+          id?: string
+          recommendation?: string | null
+          score?: number | null
+          status?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string | null
+          criteria_scores?: Json | null
+          entity_id?: string
+          entity_type?: string
+          evaluator_email?: string | null
+          evaluator_id?: string | null
+          evaluator_name?: string | null
+          id?: string
+          recommendation?: string | null
+          score?: number | null
+          status?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_documents: {
+        Row: {
+          author: string | null
+          category: string | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          document_type: string | null
+          download_count: number | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          is_published: boolean | null
+          sector_id: string | null
+          tags: string[] | null
+          title_ar: string | null
+          title_en: string
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          document_type?: string | null
+          download_count?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          sector_id?: string | null
+          tags?: string[] | null
+          title_ar?: string | null
+          title_en: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          document_type?: string | null
+          download_count?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          sector_id?: string | null
+          tags?: string[] | null
+          title_ar?: string | null
+          title_en?: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_documents_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      living_labs: {
+        Row: {
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          coordinates: Json | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          domain: string | null
+          facilities: Json | null
+          gallery_urls: string[] | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          location: string | null
+          municipality_id: string | null
+          name_ar: string | null
+          name_en: string
+          region_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          coordinates?: Json | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          domain?: string | null
+          facilities?: Json | null
+          gallery_urls?: string[] | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          location?: string | null
+          municipality_id?: string | null
+          name_ar?: string | null
+          name_en: string
+          region_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          coordinates?: Json | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          domain?: string | null
+          facilities?: Json | null
+          gallery_urls?: string[] | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          location?: string | null
+          municipality_id?: string | null
+          name_ar?: string | null
+          name_en?: string
+          region_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "living_labs_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "living_labs_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       municipalities: {
         Row: {
           active_challenges: number | null
@@ -423,6 +921,246 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          is_read: boolean | null
+          message: string | null
+          metadata: Json | null
+          title: string | null
+          type: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          metadata?: Json | null
+          title?: string | null
+          type: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          metadata?: Json | null
+          title?: string | null
+          type?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      organizations: {
+        Row: {
+          address: string | null
+          city_id: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          logo_url: string | null
+          name_ar: string | null
+          name_en: string
+          region_id: string | null
+          sector_id: string | null
+          type: string | null
+          updated_at: string | null
+          verification_date: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          city_id?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name_ar?: string | null
+          name_en: string
+          region_id?: string | null
+          sector_id?: string | null
+          type?: string | null
+          updated_at?: string | null
+          verification_date?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          city_id?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name_ar?: string | null
+          name_en?: string
+          region_id?: string | null
+          sector_id?: string | null
+          type?: string | null
+          updated_at?: string | null
+          verification_date?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_kpi_datapoints: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          kpi_id: string | null
+          notes: string | null
+          pilot_id: string | null
+          recorded_by: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          kpi_id?: string | null
+          notes?: string | null
+          pilot_id?: string | null
+          recorded_by?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          kpi_id?: string | null
+          notes?: string | null
+          pilot_id?: string | null
+          recorded_by?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_kpi_datapoints_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_kpis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_kpi_datapoints_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_kpis: {
+        Row: {
+          baseline: number | null
+          created_at: string | null
+          current_value: number | null
+          data_source: string | null
+          description: string | null
+          id: string
+          measurement_frequency: string | null
+          name: string
+          name_ar: string | null
+          pilot_id: string | null
+          status: string | null
+          target: number | null
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          baseline?: number | null
+          created_at?: string | null
+          current_value?: number | null
+          data_source?: string | null
+          description?: string | null
+          id?: string
+          measurement_frequency?: string | null
+          name: string
+          name_ar?: string | null
+          pilot_id?: string | null
+          status?: string | null
+          target?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          baseline?: number | null
+          created_at?: string | null
+          current_value?: number | null
+          data_source?: string | null
+          description?: string | null
+          id?: string
+          measurement_frequency?: string | null
+          name?: string
+          name_ar?: string | null
+          pilot_id?: string | null
+          status?: string | null
+          target?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_kpis_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pilots: {
         Row: {
@@ -899,6 +1637,89 @@ export type Database = {
         }
         Relationships: []
       }
+      rd_calls: {
+        Row: {
+          application_deadline: string | null
+          budget_currency: string | null
+          budget_total: number | null
+          call_type: string | null
+          challenge_ids: string[] | null
+          code: string | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          eligibility_criteria: Json | null
+          end_date: string | null
+          evaluation_criteria: Json | null
+          focus_areas: string[] | null
+          id: string
+          is_published: boolean | null
+          sector_id: string | null
+          start_date: string | null
+          status: string | null
+          timeline: Json | null
+          title_ar: string | null
+          title_en: string
+          updated_at: string | null
+        }
+        Insert: {
+          application_deadline?: string | null
+          budget_currency?: string | null
+          budget_total?: number | null
+          call_type?: string | null
+          challenge_ids?: string[] | null
+          code?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          eligibility_criteria?: Json | null
+          end_date?: string | null
+          evaluation_criteria?: Json | null
+          focus_areas?: string[] | null
+          id?: string
+          is_published?: boolean | null
+          sector_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          timeline?: Json | null
+          title_ar?: string | null
+          title_en: string
+          updated_at?: string | null
+        }
+        Update: {
+          application_deadline?: string | null
+          budget_currency?: string | null
+          budget_total?: number | null
+          call_type?: string | null
+          challenge_ids?: string[] | null
+          code?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          eligibility_criteria?: Json | null
+          end_date?: string | null
+          evaluation_criteria?: Json | null
+          focus_areas?: string[] | null
+          id?: string
+          is_published?: boolean | null
+          sector_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          timeline?: Json | null
+          title_ar?: string | null
+          title_en?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rd_calls_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rd_projects: {
         Row: {
           abstract_ar: string | null
@@ -1156,6 +1977,406 @@ export type Database = {
           workflow_stage?: string | null
         }
         Relationships: []
+      }
+      rd_proposals: {
+        Row: {
+          created_at: string | null
+          evaluation_notes: string | null
+          id: string
+          institution_name: string | null
+          rd_call_id: string | null
+          rd_project_id: string | null
+          reviewers: Json | null
+          score: number | null
+          status: string | null
+          submitted_at: string | null
+          submitter_email: string | null
+          submitter_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          evaluation_notes?: string | null
+          id?: string
+          institution_name?: string | null
+          rd_call_id?: string | null
+          rd_project_id?: string | null
+          reviewers?: Json | null
+          score?: number | null
+          status?: string | null
+          submitted_at?: string | null
+          submitter_email?: string | null
+          submitter_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          evaluation_notes?: string | null
+          id?: string
+          institution_name?: string | null
+          rd_call_id?: string | null
+          rd_project_id?: string | null
+          reviewers?: Json | null
+          score?: number | null
+          status?: string | null
+          submitted_at?: string | null
+          submitter_email?: string | null
+          submitter_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rd_proposals_rd_call_id_fkey"
+            columns: ["rd_call_id"]
+            isOneToOne: false
+            referencedRelation: "rd_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rd_proposals_rd_project_id_fkey"
+            columns: ["rd_project_id"]
+            isOneToOne: false
+            referencedRelation: "rd_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regions: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string
+          name_en: string
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar: string
+          name_en: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string
+          name_en?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      regulatory_exemptions: {
+        Row: {
+          applicable_entity_types: string[] | null
+          approval_authority: string | null
+          code: string | null
+          conditions: Json | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          exemption_type: string | null
+          id: string
+          regulation_reference: string | null
+          sector_id: string | null
+          status: string | null
+          title_ar: string | null
+          title_en: string
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          applicable_entity_types?: string[] | null
+          approval_authority?: string | null
+          code?: string | null
+          conditions?: Json | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          exemption_type?: string | null
+          id?: string
+          regulation_reference?: string | null
+          sector_id?: string | null
+          status?: string | null
+          title_ar?: string | null
+          title_en: string
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          applicable_entity_types?: string[] | null
+          approval_authority?: string | null
+          code?: string | null
+          conditions?: Json | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          exemption_type?: string | null
+          id?: string
+          regulation_reference?: string | null
+          sector_id?: string | null
+          status?: string | null
+          title_ar?: string | null
+          title_en?: string
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_exemptions_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sandbox_applications: {
+        Row: {
+          applicant_email: string | null
+          applicant_id: string | null
+          approved_at: string | null
+          created_at: string | null
+          duration_months: number | null
+          id: string
+          organization_name: string | null
+          project_description: string | null
+          project_title: string | null
+          requested_exemptions: string[] | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sandbox_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          applicant_email?: string | null
+          applicant_id?: string | null
+          approved_at?: string | null
+          created_at?: string | null
+          duration_months?: number | null
+          id?: string
+          organization_name?: string | null
+          project_description?: string | null
+          project_title?: string | null
+          requested_exemptions?: string[] | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sandbox_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          applicant_email?: string | null
+          applicant_id?: string | null
+          approved_at?: string | null
+          created_at?: string | null
+          duration_months?: number | null
+          id?: string
+          organization_name?: string | null
+          project_description?: string | null
+          project_title?: string | null
+          requested_exemptions?: string[] | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sandbox_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sandbox_applications_sandbox_id_fkey"
+            columns: ["sandbox_id"]
+            isOneToOne: false
+            referencedRelation: "sandboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sandboxes: {
+        Row: {
+          capacity: number | null
+          created_at: string | null
+          current_projects: number | null
+          description: string | null
+          description_ar: string | null
+          domain: string | null
+          end_date: string | null
+          exemptions_granted: string[] | null
+          id: string
+          is_active: boolean | null
+          living_lab_id: string | null
+          municipality_id: string | null
+          name: string
+          name_ar: string | null
+          regulatory_framework: Json | null
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string | null
+          current_projects?: number | null
+          description?: string | null
+          description_ar?: string | null
+          domain?: string | null
+          end_date?: string | null
+          exemptions_granted?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          living_lab_id?: string | null
+          municipality_id?: string | null
+          name: string
+          name_ar?: string | null
+          regulatory_framework?: Json | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string | null
+          current_projects?: number | null
+          description?: string | null
+          description_ar?: string | null
+          domain?: string | null
+          end_date?: string | null
+          exemptions_granted?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          living_lab_id?: string | null
+          municipality_id?: string | null
+          name?: string
+          name_ar?: string | null
+          regulatory_framework?: Json | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sandboxes_living_lab_id_fkey"
+            columns: ["living_lab_id"]
+            isOneToOne: false
+            referencedRelation: "living_labs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sandboxes_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sectors: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+          sector_id: string | null
+          subsector_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          sector_id?: string | null
+          subsector_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          sector_id?: string | null
+          subsector_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_subsector_id_fkey"
+            columns: ["subsector_id"]
+            isOneToOne: false
+            referencedRelation: "subsectors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       solutions: {
         Row: {
@@ -1426,6 +2647,291 @@ export type Database = {
           workflow_stage?: string | null
         }
         Relationships: []
+      }
+      strategic_plans: {
+        Row: {
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          end_year: number | null
+          id: string
+          kpis: Json | null
+          municipality_id: string | null
+          name_ar: string | null
+          name_en: string
+          objectives: Json | null
+          pillars: Json | null
+          start_year: number | null
+          status: string | null
+          updated_at: string | null
+          vision_ar: string | null
+          vision_en: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          end_year?: number | null
+          id?: string
+          kpis?: Json | null
+          municipality_id?: string | null
+          name_ar?: string | null
+          name_en: string
+          objectives?: Json | null
+          pillars?: Json | null
+          start_year?: number | null
+          status?: string | null
+          updated_at?: string | null
+          vision_ar?: string | null
+          vision_en?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          end_year?: number | null
+          id?: string
+          kpis?: Json | null
+          municipality_id?: string | null
+          name_ar?: string | null
+          name_en?: string
+          objectives?: Json | null
+          pillars?: Json | null
+          start_year?: number | null
+          status?: string | null
+          updated_at?: string | null
+          vision_ar?: string | null
+          vision_en?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_plans_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subsectors: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+          sector_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          sector_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          sector_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subsectors_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_activities: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_email: string | null
+          completed_date: string | null
+          created_at: string | null
+          description: string | null
+          description_ar: string | null
+          due_date: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json | null
+          priority: string | null
+          status: string | null
+          task_type: string | null
+          title: string
+          title_ar: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_email?: string | null
+          completed_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          description_ar?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string | null
+          task_type?: string | null
+          title: string
+          title_ar?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_email?: string | null
+          completed_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          description_ar?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string | null
+          task_type?: string | null
+          title?: string
+          title_ar?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          department: string | null
+          full_name: string | null
+          full_name_ar: string | null
+          id: string
+          interests: string[] | null
+          is_active: boolean | null
+          job_title: string | null
+          municipality_id: string | null
+          notification_preferences: Json | null
+          onboarding_completed: boolean | null
+          organization_id: string | null
+          phone: string | null
+          preferred_language: string | null
+          skills: string[] | null
+          updated_at: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          department?: string | null
+          full_name?: string | null
+          full_name_ar?: string | null
+          id?: string
+          interests?: string[] | null
+          is_active?: boolean | null
+          job_title?: string | null
+          municipality_id?: string | null
+          notification_preferences?: Json | null
+          onboarding_completed?: boolean | null
+          organization_id?: string | null
+          phone?: string | null
+          preferred_language?: string | null
+          skills?: string[] | null
+          updated_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          department?: string | null
+          full_name?: string | null
+          full_name_ar?: string | null
+          id?: string
+          interests?: string[] | null
+          is_active?: boolean | null
+          job_title?: string | null
+          municipality_id?: string | null
+          notification_preferences?: Json | null
+          onboarding_completed?: boolean | null
+          organization_id?: string | null
+          phone?: string | null
+          preferred_language?: string | null
+          skills?: string[] | null
+          updated_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
