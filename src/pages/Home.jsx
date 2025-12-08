@@ -158,12 +158,7 @@ function Home() {
               {t({ en: 'AI Assistant Active', ar: 'المساعد الذكي نشط' })}
             </span>
           </div>
-          <a href={base44.agents.getWhatsAppConnectURL('strategicAdvisor')} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white gap-2">
-              <MessageCircle className="h-4 w-4" />
-              {t({ en: 'WhatsApp Advisor', ar: 'مستشار واتساب' })}
-            </Button>
-          </a>
+          {/* WhatsApp Advisor - disabled pending integration */}
         </div>
       </div>
 
