@@ -8,24 +8,27 @@ export const auth = {
    * Get current user
    */
   async me() {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) throw error;
-    
-    if (!user) return null;
-    
-    // Get extended profile
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-    
-    return {
-      id: user.id,
-      email: user.email,
-      ...profile,
-      ...user.user_metadata,
-    };
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) return null;
+      
+      // Get extended profile (may not exist yet)
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      return {
+        id: user.id,
+        email: user.email,
+        ...(profile || {}),
+        ...user.user_metadata,
+      };
+    } catch (e) {
+      console.debug('Auth.me() error:', e);
+      return null;
+    }
   },
 
   /**

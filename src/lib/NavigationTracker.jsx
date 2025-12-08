@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { pagesConfig } from '@/pages.config';
 
 export default function NavigationTracker() {
     const location = useLocation();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const { Pages, mainPage } = pagesConfig;
     const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 
@@ -16,10 +16,12 @@ export default function NavigationTracker() {
             type: "app_changed_url",
             url: window.location.href
         }, '*');
-    }, [location]);
+    }, [location.pathname]);
 
     // Log user activity when navigating to a page
     useEffect(() => {
+        if (!isAuthenticated || !user?.email) return;
+
         // Extract page name from pathname
         const pathname = location.pathname;
         let pageName;
@@ -36,15 +38,31 @@ export default function NavigationTracker() {
                 key => key.toLowerCase() === pathSegment.toLowerCase()
             );
             
-            pageName = matchedKey || null;
+            pageName = matchedKey || pathSegment;
         }
 
-        if (isAuthenticated && pageName) {
-            base44.appLogs.logUserInApp(pageName).catch(() => {
+        // Log page view activity
+        const logPageView = async () => {
+            try {
+                await supabase.from('user_activities').insert({
+                    user_email: user.email,
+                    user_id: user.id,
+                    activity_type: 'page_view',
+                    page_url: pathname,
+                    metadata: {
+                        page_name: pageName,
+                        search: location.search,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+            } catch (error) {
                 // Silently fail - logging shouldn't break the app
-            });
-        }
-    }, [location, isAuthenticated, Pages, mainPageKey]);
+                console.debug('Failed to log page view:', error);
+            }
+        };
+        
+        logPageView();
+    }, [location.pathname, isAuthenticated, user, Pages, mainPageKey]);
 
     return null;
 }
