@@ -8370,70 +8370,121 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          achievement_badges: Json | null
           avatar_url: string | null
           bio: string | null
+          bio_ar: string | null
+          bio_en: string | null
+          contact_preferences: Json | null
+          contribution_count: number | null
+          cover_image_url: string | null
           created_at: string | null
           department: string | null
+          expertise_areas: string[] | null
           full_name: string | null
           full_name_ar: string | null
           id: string
           interests: string[] | null
           is_active: boolean | null
+          is_public: boolean | null
           job_title: string | null
+          last_profile_update: string | null
+          linkedin_url: string | null
           municipality_id: string | null
           notification_preferences: Json | null
           onboarding_completed: boolean | null
           organization_id: string | null
-          phone: string | null
+          phone_number: string | null
           preferred_language: string | null
+          profile_completion_percentage: number | null
           skills: string[] | null
+          social_links: Json | null
+          timezone: string | null
+          title_ar: string | null
+          title_en: string | null
           updated_at: string | null
           user_email: string | null
           user_id: string | null
+          verified: boolean | null
+          visibility_settings: Json | null
         }
         Insert: {
+          achievement_badges?: Json | null
           avatar_url?: string | null
           bio?: string | null
+          bio_ar?: string | null
+          bio_en?: string | null
+          contact_preferences?: Json | null
+          contribution_count?: number | null
+          cover_image_url?: string | null
           created_at?: string | null
           department?: string | null
+          expertise_areas?: string[] | null
           full_name?: string | null
           full_name_ar?: string | null
           id?: string
           interests?: string[] | null
           is_active?: boolean | null
+          is_public?: boolean | null
           job_title?: string | null
+          last_profile_update?: string | null
+          linkedin_url?: string | null
           municipality_id?: string | null
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           organization_id?: string | null
-          phone?: string | null
+          phone_number?: string | null
           preferred_language?: string | null
+          profile_completion_percentage?: number | null
           skills?: string[] | null
+          social_links?: Json | null
+          timezone?: string | null
+          title_ar?: string | null
+          title_en?: string | null
           updated_at?: string | null
           user_email?: string | null
           user_id?: string | null
+          verified?: boolean | null
+          visibility_settings?: Json | null
         }
         Update: {
+          achievement_badges?: Json | null
           avatar_url?: string | null
           bio?: string | null
+          bio_ar?: string | null
+          bio_en?: string | null
+          contact_preferences?: Json | null
+          contribution_count?: number | null
+          cover_image_url?: string | null
           created_at?: string | null
           department?: string | null
+          expertise_areas?: string[] | null
           full_name?: string | null
           full_name_ar?: string | null
           id?: string
           interests?: string[] | null
           is_active?: boolean | null
+          is_public?: boolean | null
           job_title?: string | null
+          last_profile_update?: string | null
+          linkedin_url?: string | null
           municipality_id?: string | null
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           organization_id?: string | null
-          phone?: string | null
+          phone_number?: string | null
           preferred_language?: string | null
+          profile_completion_percentage?: number | null
           skills?: string[] | null
+          social_links?: Json | null
+          timezone?: string | null
+          title_ar?: string | null
+          title_en?: string | null
           updated_at?: string | null
           user_email?: string | null
           user_id?: string | null
+          verified?: boolean | null
+          visibility_settings?: Json | null
         }
         Relationships: [
           {
