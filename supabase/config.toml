@@ -56,3 +56,21 @@ verify_jwt = false
 
 [functions.enroll-municipality-training]
 verify_jwt = false
+
+[functions.evaluation-notifications]
+verify_jwt = false
+
+[functions.points-automation]
+verify_jwt = false
+
+[functions.sla-automation]
+verify_jwt = false
+
+[functions.calculate-organization-reputation]
+verify_jwt = false
+
+[functions.auto-expert-assignment]
+verify_jwt = false
+
+[functions.challenge-rd-backlink]
+verify_jwt = false
