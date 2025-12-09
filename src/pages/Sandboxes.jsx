@@ -35,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SandboxesPage() {
   const { hasPermission } = usePermissions();
@@ -45,7 +47,7 @@ function SandboxesPage() {
   const [viewMode, setViewMode] = useState('grid');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const queryClient = useQueryClient();
 
@@ -84,19 +86,17 @@ function SandboxesPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const sandboxSummary = sandboxes.slice(0, 10).map(s => ({
-        name: s.name_en,
-        domain: s.domain,
-        status: s.status,
-        capacity: s.capacity,
-        current_pilots: s.current_pilots,
-        success_rate: s.success_rate
-      }));
+    const sandboxSummary = sandboxes.slice(0, 10).map(s => ({
+      name: s.name_en,
+      domain: s.domain,
+      status: s.status,
+      capacity: s.capacity,
+      current_pilots: s.current_pilots,
+      success_rate: s.success_rate
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze these regulatory sandboxes for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
+    const result = await invokeAI({
+      prompt: `Analyze these regulatory sandboxes for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Sandboxes: ${JSON.stringify(sandboxSummary)}
 
@@ -113,22 +113,19 @@ Provide bilingual insights (each item should have both English and Arabic versio
 3. Risk management strategies across sandboxes
 4. Expansion opportunities for new sandbox zones
 5. Best practices from high-performing sandboxes`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            capacity_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            domain_insights: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            risk_management: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            expansion_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            best_practices: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          capacity_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          domain_insights: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          risk_management: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          expansion_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          best_practices: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+    if (result.success) {
+      setAiInsights(result.data);
     }
   };
 
@@ -169,8 +166,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
-            <Sparkles className="h-4 w-4" />
+          <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
           </Button>
           <div className="flex items-center gap-1 border rounded-lg p-1">
@@ -218,6 +215,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
             </Button>
           </CardHeader>
           <CardContent>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />

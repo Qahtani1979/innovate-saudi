@@ -34,6 +34,8 @@ import {
 } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function RDProjectsPage() {
   const { hasPermission, isAdmin } = usePermissions();
@@ -43,7 +45,7 @@ function RDProjectsPage() {
   const [viewMode, setViewMode] = useState('grid');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const queryClient = useQueryClient();
 
   const { data: projects = [], isLoading } = useQuery({
@@ -90,19 +92,17 @@ function RDProjectsPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const projectSummary = projects.slice(0, 10).map(p => ({
-        title: p.title_en,
-        status: p.status,
-        institution: p.institution_en || p.institution,
-        research_area: p.research_area_en || p.research_area,
-        trl_current: p.trl_current || p.trl_start,
-        trl_target: p.trl_target
-      }));
+    const projectSummary = projects.slice(0, 10).map(p => ({
+      title: p.title_en,
+      status: p.status,
+      institution: p.institution_en || p.institution,
+      research_area: p.research_area_en || p.research_area,
+      trl_current: p.trl_current || p.trl_start,
+      trl_target: p.trl_target
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze these R&D projects for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
+    const result = await invokeAI({
+      prompt: `Analyze these R&D projects for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Projects: ${JSON.stringify(projectSummary)}
 
@@ -120,22 +120,19 @@ Provide bilingual insights (each item should have both English and Arabic versio
 5. Priority areas for new R&D initiatives aligned with Vision 2030
 
 Return each insight with both _en and _ar versions.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            trl_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            collaboration_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            priority_areas: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          trl_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          collaboration_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          priority_areas: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+    if (result.success) {
+      setAiInsights(result.data);
     }
   };
 
@@ -160,8 +157,8 @@ Return each insight with both _en and _ar versions.`,
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
-            <Sparkles className="h-4 w-4" />
+          <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
           </Button>
           <div className="flex items-center gap-1 border rounded-lg p-1">
@@ -204,6 +201,7 @@ Return each insight with both _en and _ar versions.`,
             </Button>
           </CardHeader>
           <CardContent>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
