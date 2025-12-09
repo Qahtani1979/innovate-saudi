@@ -19,6 +19,7 @@ import PublicFAQ from './pages/public/FAQ';
 import PublicForMunicipalities from './pages/public/ForMunicipalities';
 import PublicForProviders from './pages/public/ForProviders';
 import PublicForInnovators from './pages/public/ForInnovators';
+import PublicForResearchers from './pages/public/ForResearchers';
 import PublicChallenges from './pages/public/PublicChallenges';
 import PublicSolutions from './pages/public/PublicSolutions';
 import Privacy from './pages/public/Privacy';
@@ -87,6 +88,7 @@ const AuthenticatedApp = () => {
       <Route path="/for-municipalities" element={<PublicForMunicipalities />} />
       <Route path="/for-providers" element={<PublicForProviders />} />
       <Route path="/for-innovators" element={<PublicForInnovators />} />
+      <Route path="/for-researchers" element={<PublicForResearchers />} />
       <Route path="/public-challenges" element={<PublicChallenges />} />
       <Route path="/public-solutions" element={<PublicSolutions />} />
       <Route path="/privacy" element={<Privacy />} />
