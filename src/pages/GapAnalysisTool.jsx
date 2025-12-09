@@ -88,61 +88,60 @@ Include USE CASE scenarios:
 - "Identify urgent intervention areas for next quarter"
 - "Compare gap evolution: are we improving?"`,
       response_json_schema: {
-          type: 'object',
-          properties: {
-            underserved_sectors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  sector_en: { type: 'string' },
-                  sector_ar: { type: 'string' },
-                  severity: { type: 'string' },
-                  gap_description_en: { type: 'string' },
-                  gap_description_ar: { type: 'string' },
-                  recommendation_en: { type: 'string' },
-                  recommendation_ar: { type: 'string' }
-                }
+        type: 'object',
+        properties: {
+          underserved_sectors: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                sector_en: { type: 'string' },
+                sector_ar: { type: 'string' },
+                severity: { type: 'string' },
+                gap_description_en: { type: 'string' },
+                gap_description_ar: { type: 'string' },
+                recommendation_en: { type: 'string' },
+                recommendation_ar: { type: 'string' }
               }
-            },
-            innovation_gaps: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  gap_type_en: { type: 'string' },
-                  gap_type_ar: { type: 'string' },
-                  severity: { type: 'string' },
-                  description_en: { type: 'string' },
-                  description_ar: { type: 'string' },
-                  action_en: { type: 'string' },
-                  action_ar: { type: 'string' }
-                }
+            }
+          },
+          innovation_gaps: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                gap_type_en: { type: 'string' },
+                gap_type_ar: { type: 'string' },
+                severity: { type: 'string' },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' },
+                action_en: { type: 'string' },
+                action_ar: { type: 'string' }
               }
-            },
-            technology_gaps: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  technology_en: { type: 'string' },
-                  technology_ar: { type: 'string' },
-                  potential_impact_en: { type: 'string' },
-                  potential_impact_ar: { type: 'string' }
-                }
+            }
+          },
+          technology_gaps: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                technology_en: { type: 'string' },
+                technology_ar: { type: 'string' },
+                potential_impact_en: { type: 'string' },
+                potential_impact_ar: { type: 'string' }
               }
-            },
-            priority_actions: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  action_en: { type: 'string' },
-                  action_ar: { type: 'string' },
-                  priority: { type: 'string' },
-                  expected_impact_en: { type: 'string' },
-                  expected_impact_ar: { type: 'string' }
-                }
+            }
+          },
+          priority_actions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                action_en: { type: 'string' },
+                action_ar: { type: 'string' },
+                priority: { type: 'string' },
+                expected_impact_en: { type: 'string' },
+                expected_impact_ar: { type: 'string' }
               }
             }
           }
