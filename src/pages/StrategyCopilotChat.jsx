@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +7,15 @@ import { useLanguage } from '../components/LanguageContext';
 import { MessageSquare, Send, Sparkles, Loader2, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function StrategyCopilotChat() {
   const { language, t } = useLanguage();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -30,25 +31,21 @@ function StrategyCopilotChat() {
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setLoading(true);
 
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a strategic advisor for Saudi municipal innovation. Answer this question:
+    const result = await invokeAI({
+      prompt: `You are a strategic advisor for Saudi municipal innovation. Answer this question:
 
 ${input}
 
 You have access to data about challenges, pilots, R&D projects, programs, and strategic plans.
 Provide specific, actionable advice based on Saudi municipal context.
-Use data-driven insights when possible.`,
-        add_context_from_internet: false
-      });
+Use data-driven insights when possible.`
+    });
 
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    } catch (error) {
+    if (result.success) {
+      setMessages(prev => [...prev, { role: 'assistant', content: result.data }]);
+    } else {
       setMessages(prev => [...prev, { role: 'assistant', content: t({ en: 'Sorry, I encountered an error. Please try again.', ar: 'عذراً، واجهت خطأ. يرجى المحاولة مرة أخرى.' }) }]);
-    } finally {
-      setLoading(false);
     }
   };
 

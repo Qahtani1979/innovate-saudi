@@ -8,19 +8,19 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionRecommendationEngine({ challenge, userProfile, context = 'challenge' }) {
   const { language, isRTL, t } = useLanguage();
   const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateRecommendations = async () => {
-    setLoading(true);
-    try {
-      const solutions = await base44.entities.Solution.list();
-      
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Recommend the best 5 solutions for this ${context} in BOTH English and Arabic:
+    const solutions = await base44.entities.Solution.list();
+    
+    const result = await invokeAI({
+      prompt: `Recommend the best 5 solutions for this ${context} in BOTH English and Arabic:
 
 ${context === 'challenge' ? `Challenge: ${challenge?.title_en}
 Sector: ${challenge?.sector}
@@ -40,28 +40,29 @@ For each recommendation provide:
 2. Key match reasons (bilingual)
 3. Implementation considerations (bilingual)
 4. Expected impact (bilingual)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommendations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  solution_name: { type: 'string' },
-                  match_score: { type: 'number' },
-                  match_reasons: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-                  considerations: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-                  expected_impact: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommendations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                solution_name: { type: 'string' },
+                match_score: { type: 'number' },
+                match_reasons: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+                considerations: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
+                expected_impact: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } }
               }
             }
           }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       // Match recommendations with actual solution IDs
-      const enrichedRecommendations = result.recommendations.map(rec => {
+      const enrichedRecommendations = result.data.recommendations.map(rec => {
         const solution = solutions.find(s => s.name_en === rec.solution_name);
         return {
           ...rec,
@@ -71,10 +72,8 @@ For each recommendation provide:
       }).filter(r => r.solution_id);
 
       setRecommendations(enrichedRecommendations);
-    } catch (error) {
+    } else {
       toast.error(t({ en: 'Failed to generate recommendations', ar: 'فشل توليد التوصيات' }));
-    } finally {
-      setLoading(false);
     }
   };
 

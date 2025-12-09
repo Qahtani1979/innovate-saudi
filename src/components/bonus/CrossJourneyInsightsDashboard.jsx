@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Network, Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CrossJourneyInsightsDashboard() {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [insights, setInsights] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
@@ -34,10 +36,8 @@ export default function CrossJourneyInsightsDashboard() {
   });
 
   const analyzeCrossJourney = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze cross-journey patterns and insights:
+    const result = await invokeAI({
+      prompt: `Analyze cross-journey patterns and insights:
 
 CHALLENGES: ${challenges.length} (${challenges.filter(c => c.status === 'approved').length} approved)
 PILOTS: ${pilots.length} (${pilots.filter(p => p.stage === 'active').length} active)
@@ -53,34 +53,33 @@ Identify:
 3. Underutilized resources (labs, programs, partnerships)
 4. Success patterns (what works consistently)
 5. Strategic recommendations (3-5 actionable insights)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            cross_sector_patterns: { type: "array", items: { type: "string" } },
-            bottlenecks: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  stage: { type: "string" },
-                  description: { type: "string" },
-                  impact: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          cross_sector_patterns: { type: "array", items: { type: "string" } },
+          bottlenecks: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                stage: { type: "string" },
+                description: { type: "string" },
+                impact: { type: "string" }
               }
-            },
-            underutilized: { type: "array", items: { type: "string" } },
-            success_patterns: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          underutilized: { type: "array", items: { type: "string" } },
+          success_patterns: { type: "array", items: { type: "string" } },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setInsights(response);
+    if (result.success) {
+      setInsights(result.data);
       toast.success(t({ en: 'Cross-journey analysis complete', ar: 'التحليل المتقاطع مكتمل' }));
-    } catch (error) {
+    } else {
       toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 

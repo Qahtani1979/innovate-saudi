@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,17 +6,17 @@ import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Sparkles, Loader2, Shield } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RolloutRiskPredictor({ pilot, targetMunicipalities }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [riskAnalysis, setRiskAnalysis] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeRolloutRisks = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Predict scaling rollout risks:
+    const result = await invokeAI({
+      prompt: `Predict scaling rollout risks:
 
 PILOT: ${pilot.title_en}
 - Original city: ${pilot.municipality_id}
@@ -37,43 +36,42 @@ Provide:
 - Risk level (low/medium/high/critical)
 - Top 5 specific risks
 - Mitigation strategies`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            overall_risk_score: { type: "number" },
-            risk_level: { type: "string" },
-            dimension_scores: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          overall_risk_score: { type: "number" },
+          risk_level: { type: "string" },
+          dimension_scores: {
+            type: "object",
+            properties: {
+              technical: { type: "number" },
+              change_management: { type: "number" },
+              resources: { type: "number" },
+              political: { type: "number" },
+              budget: { type: "number" }
+            }
+          },
+          top_risks: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                technical: { type: "number" },
-                change_management: { type: "number" },
-                resources: { type: "number" },
-                political: { type: "number" },
-                budget: { type: "number" }
+                risk: { type: "string" },
+                probability: { type: "string" },
+                impact: { type: "string" }
               }
-            },
-            top_risks: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  risk: { type: "string" },
-                  probability: { type: "string" },
-                  impact: { type: "string" }
-                }
-              }
-            },
-            mitigation_strategies: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          mitigation_strategies: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setRiskAnalysis(response);
+    if (result.success) {
+      setRiskAnalysis(result.data);
       toast.success(t({ en: 'Risk analysis complete', ar: 'اكتمل تحليل المخاطر' }));
-    } catch (error) {
+    } else {
       toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
