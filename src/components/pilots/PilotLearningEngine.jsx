@@ -5,15 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { BookOpen, Sparkles, Loader2, ExternalLink } from 'lucide-react';
+import { BookOpen, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotLearningEngine({ pilot }) {
   const { language, t } = useLanguage();
-  const [finding, setFinding] = useState(false);
   const [similarPilots, setSimilarPilots] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: allPilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -22,16 +22,14 @@ export default function PilotLearningEngine({ pilot }) {
   });
 
   const findSimilar = async () => {
-    setFinding(true);
-    try {
-      const completed = allPilots.filter(p => 
-        p.stage === 'completed' && 
-        p.id !== pilot.id &&
-        p.sector === pilot.sector
-      );
+    const completed = allPilots.filter(p => 
+      p.stage === 'completed' && 
+      p.id !== pilot.id &&
+      p.sector === pilot.sector
+    );
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Find similar pilots and extract learnings:
+    const result = await invokeAI({
+      prompt: `Find similar pilots and extract learnings:
 
 CURRENT PILOT: ${pilot.title_en}
 SECTOR: ${pilot.sector}
@@ -50,33 +48,30 @@ Provide:
 2. Key lessons from each
 3. Best practices to adopt
 4. Pitfalls to avoid`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            similar_pilots: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  pilot_name: { type: "string" },
-                  similarity_score: { type: "number" },
-                  key_lessons: { type: "array", items: { type: "string" } },
-                  approach_used: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          similar_pilots: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                pilot_name: { type: "string" },
+                similarity_score: { type: "number" },
+                key_lessons: { type: "array", items: { type: "string" } },
+                approach_used: { type: "string" }
               }
-            },
-            best_practices: { type: "array", items: { type: "string" } },
-            pitfalls_to_avoid: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          best_practices: { type: "array", items: { type: "string" } },
+          pitfalls_to_avoid: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setSimilarPilots(response);
+    if (result.success) {
+      setSimilarPilots(result.data);
       toast.success(t({ en: 'Similar pilots found', ar: 'تجارب مشابهة وُجدت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
-    } finally {
-      setFinding(false);
     }
   };
 
@@ -88,8 +83,8 @@ Provide:
             <BookOpen className="h-5 w-5 text-teal-600" />
             {t({ en: 'Learning from Similar Pilots', ar: 'التعلم من التجارب المشابهة' })}
           </CardTitle>
-          <Button onClick={findSimilar} disabled={finding} size="sm" className="bg-teal-600">
-            {finding ? (
+          <Button onClick={findSimilar} disabled={isLoading || !isAvailable} size="sm" className="bg-teal-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -99,7 +94,9 @@ Provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!similarPilots && !finding && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
+        {!similarPilots && !isLoading && (
           <div className="text-center py-8">
             <BookOpen className="h-12 w-12 text-teal-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

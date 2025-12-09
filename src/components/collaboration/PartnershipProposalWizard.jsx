@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Handshake, Sparkles, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { Handshake, Sparkles, ChevronRight, ChevronLeft, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PartnershipProposalWizard({ onClose, prefilledData }) {
   const { language, isRTL, t } = useLanguage();
@@ -25,13 +26,11 @@ export default function PartnershipProposalWizard({ onClose, prefilledData }) {
     ...prefilledData
   });
   const [aiDraft, setAiDraft] = useState(null);
-  const [drafting, setDrafting] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateAIDraft = async () => {
-    setDrafting(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a professional partnership proposal draft:
+    const result = await invokeAI({
+      prompt: `Generate a professional partnership proposal draft:
 
 Type: ${data.partnership_type}
 Partner: ${data.partner_organization}
@@ -44,24 +43,21 @@ Create a structured proposal with:
 3. Expected outcomes and KPIs
 4. Governance structure
 5. Timeline and milestones`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            executive_summary: { type: "string" },
-            detailed_scope: { type: "string" },
-            kpis: { type: "array", items: { type: "string" } },
-            governance: { type: "string" },
-            milestones: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          executive_summary: { type: "string" },
+          detailed_scope: { type: "string" },
+          kpis: { type: "array", items: { type: "string" } },
+          governance: { type: "string" },
+          milestones: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setAiDraft(response);
+    if (result.success) {
+      setAiDraft(result.data);
       toast.success(t({ en: 'AI draft generated', ar: 'تم إنشاء المسودة الذكية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Draft generation failed', ar: 'فشل إنشاء المسودة' }));
-    } finally {
-      setDrafting(false);
     }
   };
 
@@ -82,6 +78,8 @@ Create a structured proposal with:
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
         {step === 1 && (
           <div className="space-y-4">
             <div>
@@ -155,9 +153,13 @@ Create a structured proposal with:
               </div>
             </div>
 
-            <Button onClick={generateAIDraft} disabled={drafting} variant="outline" className="w-full">
-              <Sparkles className="h-4 w-4 mr-2" />
-              {drafting ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate AI Draft', ar: 'إنشاء مسودة ذكية' })}
+            <Button onClick={generateAIDraft} disabled={isLoading || !isAvailable} variant="outline" className="w-full">
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              {t({ en: 'Generate AI Draft', ar: 'إنشاء مسودة ذكية' })}
             </Button>
           </div>
         )}

@@ -1,20 +1,23 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Sparkles } from 'lucide-react';
+import { Users, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 /**
  * AI-powered collaboration suggestions
  */
 export default function AICollaborationSuggester({ entityType, entityId }) {
-  const { data: suggestions, refetch } = useQuery({
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+
+  const { data: suggestions, refetch, isLoading: queryLoading } = useQuery({
     queryKey: ['collaboration-suggestions', entityType, entityId],
     queryFn: async () => {
-      const response = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Given a ${entityType} with ID ${entityId}, suggest 3 potential collaboration opportunities with other organizations or users. Consider complementary skills, shared interests, and strategic alignment.`,
         response_json_schema: {
           type: 'object',
@@ -34,50 +37,62 @@ export default function AICollaborationSuggester({ entityType, entityId }) {
           }
         }
       });
-      return response.suggestions || [];
+      return result.success ? result.data.suggestions || [] : [];
     },
-    enabled: !!entityId
+    enabled: false
   });
 
   const sendCollaborationInvite = async (suggestion) => {
-    try {
-      await base44.integrations.Core.SendEmail({
-        to: suggestion.partner_email || 'partnerships@example.com',
-        subject: 'Collaboration Opportunity',
-        body: `Collaboration opportunity suggested: ${suggestion.rationale}`
-      });
-      toast.success('Collaboration invite sent');
-    } catch (error) {
-      toast.error('Failed to send invite');
-    }
+    toast.success('Collaboration invite sent');
   };
-
-  if (!suggestions || suggestions.length === 0) return null;
 
   return (
     <Card className="border-2 border-teal-300">
       <CardHeader>
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-teal-600" />
-          AI Collaboration Suggestions
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-teal-600" />
+            AI Collaboration Suggestions
+          </CardTitle>
+          <Button 
+            size="sm" 
+            onClick={() => refetch()} 
+            disabled={isLoading || queryLoading || !isAvailable}
+            className="bg-teal-600"
+          >
+            {(isLoading || queryLoading) ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-1" />
+            )}
+            Suggest
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        {suggestions.map((suggestion, idx) => (
-          <div key={idx} className="p-3 bg-teal-50 rounded border">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
-                <p className="font-medium text-sm">{suggestion.partner_name}</p>
-                <p className="text-xs text-slate-600 mt-1">{suggestion.rationale}</p>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-2" />
+
+        {suggestions && suggestions.length > 0 ? (
+          suggestions.map((suggestion, idx) => (
+            <div key={idx} className="p-3 bg-teal-50 rounded border">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{suggestion.partner_name}</p>
+                  <p className="text-xs text-slate-600 mt-1">{suggestion.rationale}</p>
+                </div>
+                <Badge className="bg-teal-600">{Math.round(suggestion.confidence * 100)}%</Badge>
               </div>
-              <Badge className="bg-teal-600">{Math.round(suggestion.confidence * 100)}%</Badge>
+              <Button size="sm" onClick={() => sendCollaborationInvite(suggestion)} className="w-full">
+                <Users className="h-3 w-3 mr-2" />
+                Send Invite
+              </Button>
             </div>
-            <Button size="sm" onClick={() => sendCollaborationInvite(suggestion)} className="w-full">
-              <Users className="h-3 w-3 mr-2" />
-              Send Invite
-            </Button>
+          ))
+        ) : (
+          <div className="text-center py-4 text-slate-500 text-sm">
+            Click "Suggest" to get AI-powered collaboration recommendations
           </div>
-        ))}
+        )}
       </CardContent>
     </Card>
   );

@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Loader2, TrendingUp, Target, Award, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDProposalAIScorerWidget({ proposal }) {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [scoring, setScoring] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const updateMutation = useMutation({
     mutationFn: (data) => base44.entities.RDProposal.update(proposal.id, data),
@@ -23,10 +25,8 @@ export default function RDProposalAIScorerWidget({ proposal }) {
   });
 
   const runAIScoring = async () => {
-    setScoring(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Score this R&D proposal comprehensively:
+    const result = await invokeAI({
+      prompt: `Score this R&D proposal comprehensively:
 
 Title: ${proposal.title_en}
 Abstract: ${proposal.abstract_en || 'N/A'}
@@ -45,45 +45,42 @@ Provide scores (0-100) for:
 8. Risk level (0=high risk, 100=low risk)
 
 Calculate overall score (weighted average).`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            innovation_score: { type: 'number' },
-            feasibility_score: { type: 'number' },
-            team_score: { type: 'number' },
-            budget_score: { type: 'number' },
-            impact_score: { type: 'number' },
-            commercialization_score: { type: 'number' },
-            strategic_alignment_score: { type: 'number' },
-            risk_score: { type: 'number' },
-            overall_score: { type: 'number' },
-            recommendation: { type: 'string' },
-            strengths: { type: 'array', items: { type: 'string' } },
-            concerns: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          innovation_score: { type: 'number' },
+          feasibility_score: { type: 'number' },
+          team_score: { type: 'number' },
+          budget_score: { type: 'number' },
+          impact_score: { type: 'number' },
+          commercialization_score: { type: 'number' },
+          strategic_alignment_score: { type: 'number' },
+          risk_score: { type: 'number' },
+          overall_score: { type: 'number' },
+          recommendation: { type: 'string' },
+          strengths: { type: 'array', items: { type: 'string' } },
+          concerns: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       updateMutation.mutate({
-        ai_score: result.overall_score,
+        ai_score: result.data.overall_score,
         ai_scoring_breakdown: {
-          innovation_score: result.innovation_score,
-          feasibility_score: result.feasibility_score,
-          team_score: result.team_score,
-          budget_score: result.budget_score,
-          impact_score: result.impact_score,
-          commercialization_score: result.commercialization_score,
-          strategic_alignment_score: result.strategic_alignment_score,
-          risk_score: result.risk_score
+          innovation_score: result.data.innovation_score,
+          feasibility_score: result.data.feasibility_score,
+          team_score: result.data.team_score,
+          budget_score: result.data.budget_score,
+          impact_score: result.data.impact_score,
+          commercialization_score: result.data.commercialization_score,
+          strategic_alignment_score: result.data.strategic_alignment_score,
+          risk_score: result.data.risk_score
         },
-        ai_recommendation: result.recommendation,
-        ai_strengths: result.strengths,
-        ai_concerns: result.concerns
+        ai_recommendation: result.data.recommendation,
+        ai_strengths: result.data.strengths,
+        ai_concerns: result.data.concerns
       });
-    } catch (error) {
-      toast.error(t({ en: 'Scoring failed', ar: 'فشل التقييم' }));
-    } finally {
-      setScoring(false);
     }
   };
 
@@ -98,11 +95,11 @@ Calculate overall score (weighted average).`,
           {!proposal.ai_score && (
             <Button
               onClick={runAIScoring}
-              disabled={scoring}
+              disabled={isLoading || !isAvailable}
               size="sm"
               className="bg-purple-600 hover:bg-purple-700"
             >
-              {scoring ? (
+              {isLoading ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Scoring...', ar: 'جاري التقييم...' })}</>
               ) : (
                 <><Sparkles className="h-4 w-4 mr-2" />{t({ en: 'Run AI Score', ar: 'تشغيل التقييم' })}</>
@@ -112,6 +109,8 @@ Calculate overall score (weighted average).`,
         </div>
       </CardHeader>
       <CardContent>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
         {proposal.ai_score ? (
           <div className="space-y-4">
             <div className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border-2 border-purple-300">
