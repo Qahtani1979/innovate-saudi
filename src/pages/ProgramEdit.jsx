@@ -17,6 +17,8 @@ import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import AICurriculumGenerator from '../components/programs/AICurriculumGenerator';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ProgramEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -24,7 +26,7 @@ function ProgramEditPage() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: program, isLoading } = useQuery({
     queryKey: ['program', programId],
@@ -36,7 +38,6 @@ function ProgramEditPage() {
   });
 
   const [formData, setFormData] = useState(null);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [changedFields, setChangedFields] = useState({});
   const [autoSaveStatus, setAutoSaveStatus] = useState('saved');
@@ -143,9 +144,7 @@ function ProgramEditPage() {
   });
 
   const handleAIEnhance = async () => {
-    setIsAIProcessing(true);
-    try {
-      const prompt = `Enhance this program description with professional, detailed bilingual content:
+    const prompt = `Enhance this program description with professional, detailed bilingual content:
 
 Program: ${formData.name_en}
 Type: ${formData.program_type}
@@ -157,40 +156,36 @@ Generate comprehensive bilingual (English + Arabic) content:
 3. Detailed descriptions (EN + AR) - 250+ words each
 4. Program objectives (EN + AR)`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' }
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          objectives_en: { type: 'string' },
+          objectives_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setFormData(prev => ({
         ...prev,
-        name_en: result.name_en || prev.name_en,
-        name_ar: result.name_ar || prev.name_ar,
-        tagline_en: result.tagline_en || prev.tagline_en,
-        tagline_ar: result.tagline_ar || prev.tagline_ar,
-        description_en: result.description_en || prev.description_en,
-        description_ar: result.description_ar || prev.description_ar,
-        objectives_en: result.objectives_en || prev.objectives_en,
-        objectives_ar: result.objectives_ar || prev.objectives_ar
+        name_en: result.data.name_en || prev.name_en,
+        name_ar: result.data.name_ar || prev.name_ar,
+        tagline_en: result.data.tagline_en || prev.tagline_en,
+        tagline_ar: result.data.tagline_ar || prev.tagline_ar,
+        description_en: result.data.description_en || prev.description_en,
+        description_ar: result.data.description_ar || prev.description_ar,
+        objectives_en: result.data.objectives_en || prev.objectives_en,
+        objectives_ar: result.data.objectives_ar || prev.objectives_ar
       }));
-
       toast.success(t({ en: '✨ AI enhancement complete!', ar: '✨ تم التحسين!' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setIsAIProcessing(false);
     }
   };
 
@@ -300,7 +295,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <CardTitle>{t({ en: 'Program Information', ar: 'معلومات البرنامج' })}</CardTitle>
               <Button
                 onClick={handleAIEnhance}
-                disabled={isAIProcessing}
+                disabled={isAIProcessing || !isAvailable}
                 variant="outline"
                 size="sm"
               >
@@ -317,6 +312,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                 )}
               </Button>
             </div>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
           </CardHeader>
           <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-4">

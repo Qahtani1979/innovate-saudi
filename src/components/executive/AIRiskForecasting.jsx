@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, TrendingDown, Shield, Zap, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIRiskForecasting() {
   const { language, isRTL, t } = useLanguage();
-  const [forecasting, setForecasting] = useState(false);
   const [risks, setRisks] = useState(null);
+  const { invokeAI, status, isLoading: forecasting, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-risk'],
@@ -24,13 +26,11 @@ export default function AIRiskForecasting() {
   });
 
   const generateForecast = async () => {
-    setForecasting(true);
-    try {
-      const activePilots = pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring');
-      const criticalChallenges = challenges.filter(c => c.priority === 'tier_1' && c.status === 'approved');
+    const activePilots = pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring');
+    const criticalChallenges = challenges.filter(c => c.priority === 'tier_1' && c.status === 'approved');
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the Saudi municipal innovation ecosystem and forecast strategic risks:
+    const result = await invokeAI({
+      prompt: `Analyze the Saudi municipal innovation ecosystem and forecast strategic risks:
 
 Active Pilots: ${activePilots.length}
 Critical Challenges: ${criticalChallenges.length}
@@ -41,34 +41,31 @@ Based on this data, identify:
 2. Early warning indicators for each risk
 3. Recommended mitigation actions
 4. Timeline forecast (when risk might materialize: weeks/months)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            risks: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  severity: { type: 'string' },
-                  probability: { type: 'string' },
-                  early_indicators: { type: 'array', items: { type: 'string' } },
-                  mitigation: { type: 'array', items: { type: 'string' } },
-                  timeline: { type: 'string' },
-                  affected_areas: { type: 'array', items: { type: 'string' } }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          risks: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                severity: { type: 'string' },
+                probability: { type: 'string' },
+                early_indicators: { type: 'array', items: { type: 'string' } },
+                mitigation: { type: 'array', items: { type: 'string' } },
+                timeline: { type: 'string' },
+                affected_areas: { type: 'array', items: { type: 'string' } }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setRisks(result.risks);
+    if (result.success) {
+      setRisks(result.data?.risks);
       toast.success(t({ en: 'Risk forecast generated', ar: 'تم إنشاء توقع المخاطر' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate forecast', ar: 'فشل إنشاء التوقع' }));
-    } finally {
-      setForecasting(false);
     }
   };
 
@@ -88,7 +85,7 @@ Based on this data, identify:
           </CardTitle>
           <Button
             onClick={generateForecast}
-            disabled={forecasting}
+            disabled={forecasting || !isAvailable}
             size="sm"
           >
             {forecasting ? (
@@ -99,6 +96,7 @@ Based on this data, identify:
             {t({ en: 'Generate Forecast', ar: 'توليد التوقع' })}
           </Button>
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
       </CardHeader>
       <CardContent>
         {forecasting ? (
