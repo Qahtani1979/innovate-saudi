@@ -34,11 +34,12 @@ import ImpactReportGenerator from '../components/challenges/ImpactReportGenerato
 import RelationManager from '../components/RelationManager';
 import PolicyRecommendationManager from '../components/challenges/PolicyRecommendationManager';
 import ChallengeActivityLog from '../components/challenges/ChallengeActivityLog';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeDetail() {
   const [comment, setComment] = useState('');
   const [freshAiInsights, setFreshAiInsights] = useState(null);
-  const [generatingInsights, setGeneratingInsights] = useState(false);
   const [showSubmission, setShowSubmission] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showTreatment, setShowTreatment] = useState(false);
@@ -50,6 +51,7 @@ export default function ChallengeDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const challengeId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
+  const { invokeAI, status: aiStatus, isLoading: generatingInsights, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenge, isLoading } = useQuery({
     queryKey: ['challenge', challengeId],
@@ -247,7 +249,7 @@ Provide BILINGUAL (AR+EN) analysis:
 9. Resource requirements (team, budget, tech)
 10. Dependencies (what needs to happen first)`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -313,12 +315,14 @@ Provide BILINGUAL (AR+EN) analysis:
         }
       });
 
-      setFreshAiInsights(result);
-      toast.success(t({ en: 'Fresh AI insights generated', ar: 'تم إنشاء رؤى ذكية جديدة' }));
+      if (result.success) {
+        setFreshAiInsights(result.data);
+        toast.success(t({ en: 'Fresh AI insights generated', ar: 'تم إنشاء رؤى ذكية جديدة' }));
+      } else {
+        toast.error(t({ en: 'Failed to generate insights', ar: 'فشل إنشاء الرؤى' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate insights', ar: 'فشل إنشاء الرؤى' }));
-    } finally {
-      setGeneratingInsights(false);
     }
   };
 
@@ -2645,7 +2649,7 @@ Provide BILINGUAL (AR+EN) analysis:
                         const query = `${challenge.title_en} ${challenge.sector} municipal urban innovation best practices case studies`;
                         toast.success(t({ en: 'Fetching global intelligence...', ar: 'جاري جلب الذكاء العالمي...' }));
                         
-                        const result = await base44.integrations.Core.InvokeLLM({
+                        const result = await invokeAI({
                           prompt: `Research and provide real-world insights for this municipal challenge:
                           
 Challenge: ${challenge.title_en}
@@ -2658,7 +2662,6 @@ Find and summarize:
 3. Real benchmark data (success rate %, typical budget range, typical timeline)
 
 Provide specific, actionable intelligence.`,
-                          add_context_from_internet: true,
                           response_json_schema: {
                             type: 'object',
                             properties: {
@@ -2698,9 +2701,12 @@ Provide specific, actionable intelligence.`,
                           }
                         });
                         
-                        // Store in state to display
-                        setExternalIntelligence(result);
-                        toast.success(t({ en: 'Global insights loaded', ar: 'تم تحميل الرؤى العالمية' }));
+                        if (result.success) {
+                          setExternalIntelligence(result.data);
+                          toast.success(t({ en: 'Global insights loaded', ar: 'تم تحميل الرؤى العالمية' }));
+                        } else {
+                          toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
+                        }
                       } catch (error) {
                         toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
                       }

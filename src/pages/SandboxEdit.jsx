@@ -14,6 +14,8 @@ import { Save, Loader2, Sparkles, Plus, X } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SandboxEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -21,7 +23,7 @@ function SandboxEdit() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: sandbox, isLoading } = useQuery({
     queryKey: ['sandbox', sandboxId],
@@ -33,7 +35,6 @@ function SandboxEdit() {
   });
 
   const [formData, setFormData] = useState(null);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
 
   React.useEffect(() => {
     if (sandbox && !formData) {
@@ -51,7 +52,6 @@ function SandboxEdit() {
   });
 
   const handleAIEnhance = async () => {
-    setIsAIProcessing(true);
     try {
       const prompt = `Enhance this regulatory sandbox description with professional, detailed bilingual content:
 
@@ -66,7 +66,7 @@ Generate comprehensive bilingual (English + Arabic) content:
 3. Detailed descriptions (EN + AR) - 200+ words each
 4. Regulatory framework summary`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -82,22 +82,23 @@ Generate comprehensive bilingual (English + Arabic) content:
         }
       });
 
-      setFormData(prev => ({
-        ...prev,
-        name_en: result.name_en || prev.name_en,
-        name_ar: result.name_ar || prev.name_ar,
-        tagline_en: result.tagline_en || prev.tagline_en,
-        tagline_ar: result.tagline_ar || prev.tagline_ar,
-        description_en: result.description_en || prev.description_en,
-        description_ar: result.description_ar || prev.description_ar,
-        regulatory_framework: result.regulatory_framework || prev.regulatory_framework
-      }));
-
-      toast.success(t({ en: '✨ AI enhancement complete!', ar: '✨ تم التحسين!' }));
+      if (result.success) {
+        setFormData(prev => ({
+          ...prev,
+          name_en: result.data.name_en || prev.name_en,
+          name_ar: result.data.name_ar || prev.name_ar,
+          tagline_en: result.data.tagline_en || prev.tagline_en,
+          tagline_ar: result.data.tagline_ar || prev.tagline_ar,
+          description_en: result.data.description_en || prev.description_en,
+          description_ar: result.data.description_ar || prev.description_ar,
+          regulatory_framework: result.data.regulatory_framework || prev.regulatory_framework
+        }));
+        toast.success(t({ en: '✨ AI enhancement complete!', ar: '✨ تم التحسين!' }));
+      } else {
+        toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setIsAIProcessing(false);
     }
   };
 

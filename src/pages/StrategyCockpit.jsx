@@ -12,12 +12,14 @@ import ResourceAllocationView from '../components/strategy/ResourceAllocationVie
 import PartnershipNetwork from '../components/strategy/PartnershipNetwork';
 import BottleneckDetector from '../components/strategy/BottleneckDetector';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function StrategyCockpitPage() {
   const { language, isRTL, t } = useLanguage();
   const [showAIInsights, setShowAIInsights] = React.useState(false);
   const [aiInsights, setAiInsights] = React.useState(null);
-  const [aiLoading, setAiLoading] = React.useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: trendData = [] } = useQuery({
     queryKey: ['strategy-trends'],
@@ -80,9 +82,8 @@ function StrategyCockpitPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze this strategic portfolio for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Challenges: ${challenges.length}
@@ -109,11 +110,13 @@ Provide bilingual insights (each item should have both English and Arabic versio
           }
         }
       });
-      setAiInsights(result);
+      if (result.success) {
+        setAiInsights(result.data);
+      } else {
+        toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
