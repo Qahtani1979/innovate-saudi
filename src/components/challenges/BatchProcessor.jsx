@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Upload, FileText, AlertTriangle, CheckCircle2, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function BatchProcessor() {
   const { language, isRTL, t } = useLanguage();
@@ -15,6 +17,7 @@ export default function BatchProcessor() {
   const [extractedData, setExtractedData] = useState(null);
   const [validationResults, setValidationResults] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const handleFileUpload = async (e) => {
     const uploadedFile = e.target.files[0];
@@ -65,7 +68,7 @@ export default function BatchProcessor() {
   const validateData = async (challenges) => {
     setProcessing(true);
     try {
-      const validation = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Validate these ${challenges.length} challenges for import:
 
 ${challenges.map((c, i) => `${i+1}. ${c.title_en || c.title_ar}`).join('\n')}
@@ -115,8 +118,10 @@ Return validation results.`,
         }
       });
 
-      setValidationResults(validation);
-      toast.success(t({ en: 'Validation complete', ar: 'اكتمل التحقق' }));
+      if (result.success) {
+        setValidationResults(result.data);
+        toast.success(t({ en: 'Validation complete', ar: 'اكتمل التحقق' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Validation failed', ar: 'فشل التحقق' }));
     } finally {
@@ -155,6 +160,8 @@ Return validation results.`,
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mb-4" />
+          
           {!file ? (
             <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
               <FileText className="h-12 w-12 text-slate-400 mx-auto mb-4" />
@@ -167,9 +174,10 @@ Return validation results.`,
                 onChange={handleFileUpload}
                 className="hidden"
                 id="file-upload"
+                disabled={!isAvailable}
               />
               <label htmlFor="file-upload">
-                <Button asChild variant="outline">
+                <Button asChild variant="outline" disabled={!isAvailable}>
                   <span>
                     <Upload className="h-4 w-4 mr-2" />
                     {t({ en: 'Choose File', ar: 'اختر ملف' })}
@@ -189,7 +197,7 @@ Return validation results.`,
                 </Button>
               </div>
 
-              {processing && (
+              {(processing || isLoading) && (
                 <div className="text-center py-6">
                   <Loader2 className="h-8 w-8 text-blue-600 mx-auto mb-3 animate-spin" />
                   <p className="text-sm text-slate-600">
@@ -198,7 +206,7 @@ Return validation results.`,
                 </div>
               )}
 
-              {extractedData && validationResults && !processing && (
+              {extractedData && validationResults && !processing && !isLoading && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-4">
                     <Card className="bg-blue-50 border-blue-200">

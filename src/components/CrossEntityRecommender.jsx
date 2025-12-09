@@ -8,14 +8,15 @@ import { Sparkles, Loader2, ArrowRight, Target, TestTube, Microscope, Megaphone,
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CrossEntityRecommender({ sourceEntity, sourceType, recommendations = ['rdcalls', 'rdprojects', 'pilots', 'challenges'] }) {
   const { language, isRTL, t } = useLanguage();
-  const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const handleRecommend = async () => {
-    setLoading(true);
     try {
       const context = `
         Source: ${sourceType}
@@ -32,7 +33,7 @@ export default function CrossEntityRecommender({ sourceEntity, sourceType, recom
       const pilots = recommendations.includes('pilots') ? await base44.entities.Pilot.filter({ stage: 'active' }) : [];
       const challenges = recommendations.includes('challenges') ? await base44.entities.Challenge.filter({ status: 'approved' }) : [];
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze and recommend related entities for this ${sourceType}:
 
 ${context}
@@ -111,31 +112,31 @@ Return top 3-5 recommendations for EACH entity type with:
         }
       });
 
-      // Enrich with actual entities
-      const enriched = {
-        rdcalls: result.rdcall_recommendations?.map(r => ({
-          ...r,
-          entity: rdCalls.find(c => c.id === r.entity_id)
-        })).filter(r => r.entity) || [],
-        rdprojects: result.rdproject_recommendations?.map(r => ({
-          ...r,
-          entity: rdProjects.find(p => p.id === r.entity_id)
-        })).filter(r => r.entity) || [],
-        pilots: result.pilot_recommendations?.map(r => ({
-          ...r,
-          entity: pilots.find(p => p.id === r.entity_id)
-        })).filter(r => r.entity) || [],
-        challenges: result.challenge_recommendations?.map(r => ({
-          ...r,
-          entity: challenges.find(c => c.id === r.entity_id)
-        })).filter(r => r.entity) || []
-      };
+      if (result.success) {
+        // Enrich with actual entities
+        const enriched = {
+          rdcalls: result.data.rdcall_recommendations?.map(r => ({
+            ...r,
+            entity: rdCalls.find(c => c.id === r.entity_id)
+          })).filter(r => r.entity) || [],
+          rdprojects: result.data.rdproject_recommendations?.map(r => ({
+            ...r,
+            entity: rdProjects.find(p => p.id === r.entity_id)
+          })).filter(r => r.entity) || [],
+          pilots: result.data.pilot_recommendations?.map(r => ({
+            ...r,
+            entity: pilots.find(p => p.id === r.entity_id)
+          })).filter(r => r.entity) || [],
+          challenges: result.data.challenge_recommendations?.map(r => ({
+            ...r,
+            entity: challenges.find(c => c.id === r.entity_id)
+          })).filter(r => r.entity) || []
+        };
 
-      setResults(enriched);
+        setResults(enriched);
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate recommendations', ar: 'فشل توليد التوصيات' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -177,8 +178,8 @@ Return top 3-5 recommendations for EACH entity type with:
             <LinkIcon className="h-5 w-5" />
             {t({ en: 'AI Smart Connections', ar: 'الربط الذكي' })}
           </CardTitle>
-          <Button onClick={handleRecommend} disabled={loading} size="sm" className="bg-purple-600 hover:bg-purple-700">
-            {loading ? (
+          <Button onClick={handleRecommend} disabled={isLoading || !isAvailable} size="sm" className="bg-purple-600 hover:bg-purple-700">
+            {isLoading ? (
               <>
                 <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
                 {t({ en: 'Finding...', ar: 'جاري البحث...' })}
@@ -193,7 +194,9 @@ Return top 3-5 recommendations for EACH entity type with:
         </div>
       </CardHeader>
       <CardContent>
-        {!results && !loading && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!results && !isLoading && (
           <div className="text-center py-6">
             <LinkIcon className="h-12 w-12 text-purple-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">
@@ -202,7 +205,7 @@ Return top 3-5 recommendations for EACH entity type with:
           </div>
         )}
 
-        {loading && (
+        {isLoading && (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
             <span className={`${isRTL ? 'mr-3' : 'ml-3'} text-slate-600`}>

@@ -4,11 +4,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { RotateCcw, Loader2, AlertTriangle, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PilotPivotWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -16,9 +17,9 @@ function PilotPivotWorkflow({ pilot, onClose }) {
   const [rationale, setRationale] = useState('');
   const [proposedChanges, setProposedChanges] = useState('');
   const [impactAssessment, setImpactAssessment] = useState('');
-  const [generatingAnalysis, setGeneratingAnalysis] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const queryClient = useQueryClient();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const pivotTypes = [
     { value: 'scope_change', label: { en: 'Scope Change', ar: 'تغيير النطاق' } },
@@ -60,10 +61,8 @@ function PilotPivotWorkflow({ pilot, onClose }) {
   });
 
   const generateImpactAnalysis = async () => {
-    setGeneratingAnalysis(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the impact of this proposed pilot pivot:
+    const result = await invokeAI({
+      prompt: `Analyze the impact of this proposed pilot pivot:
 
 Pilot: ${pilot.title_en}
 Current Stage: ${pilot.stage}
@@ -82,26 +81,24 @@ Provide:
 5. Benefits of this pivot
 6. Alternative approaches to consider
 7. Recommendation (approve/defer/reject pivot with rationale)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            timeline_impact: { type: 'string' },
-            budget_impact: { type: 'string' },
-            success_probability_impact: { type: 'string' },
-            new_risks: { type: 'array', items: { type: 'string' } },
-            benefits: { type: 'array', items: { type: 'string' } },
-            alternatives: { type: 'array', items: { type: 'string' } },
-            recommendation: { type: 'string' },
-            rationale_ai: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          timeline_impact: { type: 'string' },
+          budget_impact: { type: 'string' },
+          success_probability_impact: { type: 'string' },
+          new_risks: { type: 'array', items: { type: 'string' } },
+          benefits: { type: 'array', items: { type: 'string' } },
+          alternatives: { type: 'array', items: { type: 'string' } },
+          recommendation: { type: 'string' },
+          rationale_ai: { type: 'string' }
         }
-      });
-      setAiAnalysis(result);
-      setImpactAssessment(result.rationale_ai);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate analysis', ar: 'فشل إنشاء التحليل' }));
-    } finally {
-      setGeneratingAnalysis(false);
+      }
+    });
+
+    if (result.success) {
+      setAiAnalysis(result.data);
+      setImpactAssessment(result.data.rationale_ai);
     }
   };
 
@@ -114,6 +111,8 @@ Provide:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="p-4 bg-white rounded-lg border border-amber-200">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
@@ -173,11 +172,11 @@ Provide:
 
         <Button
           onClick={generateImpactAnalysis}
-          disabled={!pivotType || !rationale || !proposedChanges || generatingAnalysis}
+          disabled={!pivotType || !rationale || !proposedChanges || isLoading || !isAvailable}
           variant="outline"
           className="w-full"
         >
-          {generatingAnalysis ? (
+          {isLoading ? (
             <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
           ) : (
             <Lightbulb className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

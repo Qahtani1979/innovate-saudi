@@ -8,12 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { MessageSquare, ThumbsUp, TrendingUp, ThumbsDown, Meh } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [newFeedback, setNewFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState('complaint');
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: feedbacks = [] } = useQuery({
     queryKey: ['citizen-feedback', challengeId || pilotId],
@@ -25,7 +28,7 @@ export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
 
   const addFeedbackMutation = useMutation({
     mutationFn: async (data) => {
-      const sentiment = await base44.integrations.Core.InvokeLLM({
+      const sentimentResult = await invokeAI({
         prompt: `Analyze sentiment of this citizen feedback: "${data.content}". Return: positive, neutral, or negative.`,
         response_json_schema: {
           type: "object",
@@ -35,6 +38,8 @@ export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
           }
         }
       });
+
+      const sentiment = sentimentResult.success ? sentimentResult.data : { sentiment: 'neutral', score: 0 };
 
       return base44.entities.CitizenFeedback.create({
         ...data,
@@ -81,6 +86,8 @@ export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+          
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 bg-green-50 rounded-lg text-center border border-green-200">
               <ThumbsUp className="h-6 w-6 text-green-600 mx-auto mb-1" />
@@ -139,7 +146,7 @@ export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
                 rows={3}
                 placeholder={t({ en: 'Share your feedback...', ar: 'شارك ملاحظاتك...' })}
               />
-              <Button onClick={handleSubmit} disabled={!newFeedback.trim()} className="w-full">
+              <Button onClick={handleSubmit} disabled={!newFeedback.trim() || isLoading || !isAvailable} className="w-full">
                 {t({ en: 'Submit Feedback', ar: 'إرسال' })}
               </Button>
             </div>
