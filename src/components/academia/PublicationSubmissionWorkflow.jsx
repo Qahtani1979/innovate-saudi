@@ -9,12 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { BookOpen, Plus, Upload, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [formData, setFormData] = useState({
     title: '',
     authors: '',
@@ -28,34 +30,28 @@ export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
   });
 
   const generateFromAI = async () => {
-    setGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate publication metadata suggestions for an R&D project output. Provide:
+    const response = await invokeAI({
+      prompt: `Generate publication metadata suggestions for an R&D project output. Provide:
 1. Suggested keywords (array of 5-7 relevant research terms)
 2. Potential journal/conference suggestions (3 options)
 3. Impact statement (1 paragraph explaining significance)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            keywords: { type: 'array', items: { type: 'string' } },
-            venues: { type: 'array', items: { type: 'string' } },
-            impact_statement: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          keywords: { type: 'array', items: { type: 'string' } },
+          venues: { type: 'array', items: { type: 'string' } },
+          impact_statement: { type: 'string' }
         }
-      });
+      }
+    });
 
+    if (response.success && response.data) {
       setFormData(prev => ({
         ...prev,
-        keywords: result.keywords,
-        abstract: result.impact_statement
+        keywords: response.data.keywords,
+        abstract: response.data.impact_statement
       }));
-
       toast.success(t({ en: 'AI suggestions generated', ar: 'تم إنشاء الاقتراحات الذكية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -176,17 +172,18 @@ export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
         {/* Step 2: Details & AI */}
         {step === 2 && (
           <div className="space-y-4">
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-2" />
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">
                 {t({ en: 'Publication Details', ar: 'تفاصيل النشر' })}
               </h3>
               <Button
                 onClick={generateFromAI}
-                disabled={generating}
+                disabled={isLoading || !isAvailable}
                 size="sm"
                 variant="outline"
               >
-                {generating ? (
+                {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
                   <Sparkles className="h-4 w-4 mr-2" />

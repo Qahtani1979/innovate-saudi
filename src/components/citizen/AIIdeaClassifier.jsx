@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Tags, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIIdeaClassifier({ idea, onClassified }) {
   const { language, t } = useLanguage();
-  const [classifying, setClassifying] = useState(false);
   const [classification, setClassification] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const classifyIdea = async () => {
-    setClassifying(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Classify citizen idea and detect issues:
+    const response = await invokeAI({
+      prompt: `Classify citizen idea and detect issues:
 
 IDEA: ${idea.content || idea.title}
 LOCATION: ${idea.location || 'Not specified'}
@@ -28,29 +27,26 @@ Provide:
 4. Sentiment (positive_suggestion, neutral, complaint)
 5. Similar existing challenges (if any patterns detected)
 6. Recommended priority (high/medium/low)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            sector: { type: "string" },
-            keywords: { type: "array", items: { type: "string" } },
-            is_spam: { type: "boolean" },
-            sentiment: { type: "string" },
-            similar_patterns: { type: "array", items: { type: "string" } },
-            priority: { type: "string" },
-            quality_score: { type: "number" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          sector: { type: "string" },
+          keywords: { type: "array", items: { type: "string" } },
+          is_spam: { type: "boolean" },
+          sentiment: { type: "string" },
+          similar_patterns: { type: "array", items: { type: "string" } },
+          priority: { type: "string" },
+          quality_score: { type: "number" }
         }
-      });
+      }
+    });
 
-      setClassification(response);
+    if (response.success && response.data) {
+      setClassification(response.data);
       if (onClassified) {
-        onClassified(response);
+        onClassified(response.data);
       }
       toast.success(t({ en: 'Idea classified', ar: 'الفكرة مصنفة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Classification failed', ar: 'فشل التصنيف' }));
-    } finally {
-      setClassifying(false);
     }
   };
 
@@ -62,8 +58,8 @@ Provide:
             <Tags className="h-5 w-5 text-green-600" />
             {t({ en: 'AI Classifier', ar: 'المصنف الذكي' })}
           </CardTitle>
-          <Button onClick={classifyIdea} disabled={classifying} size="sm" className="bg-green-600">
-            {classifying ? (
+          <Button onClick={classifyIdea} disabled={isLoading || !isAvailable} size="sm" className="bg-green-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -73,7 +69,9 @@ Provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!classification && !classifying && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        
+        {!classification && !isLoading && (
           <div className="text-center py-8">
             <Tags className="h-12 w-12 text-green-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { Microscope, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function IdeaToRDConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [enhancing, setEnhancing] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [rdData, setRdData] = useState({
     title_en: idea.title || '',
@@ -31,10 +33,8 @@ export default function IdeaToRDConverter({ idea, onClose }) {
   });
 
   const enhanceWithAI = async () => {
-    setEnhancing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Convert this citizen idea into an R&D project proposal:
+    const response = await invokeAI({
+      prompt: `Convert this citizen idea into an R&D project proposal:
 
 Idea: ${idea.title}
 Description: ${idea.description}
@@ -47,27 +47,24 @@ Generate:
 5. Keywords
 6. Duration estimate (months)
 7. Budget estimate`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            abstract_en: { type: 'string' },
-            abstract_ar: { type: 'string' },
-            methodology_en: { type: 'string' },
-            keywords: { type: 'array', items: { type: 'string' } },
-            duration_months: { type: 'number' },
-            budget: { type: 'number' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          abstract_en: { type: 'string' },
+          abstract_ar: { type: 'string' },
+          methodology_en: { type: 'string' },
+          keywords: { type: 'array', items: { type: 'string' } },
+          duration_months: { type: 'number' },
+          budget: { type: 'number' }
         }
-      });
+      }
+    });
 
-      setRdData({ ...rdData, ...result });
+    if (response.success && response.data) {
+      setRdData({ ...rdData, ...response.data });
       toast.success(t({ en: 'AI enhancement complete', ar: 'تم التحسين' }));
-    } catch (error) {
-      toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setEnhancing(false);
     }
   };
 
@@ -110,8 +107,10 @@ Generate:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={enhanceWithAI} disabled={enhancing} variant="outline" className="w-full">
-          {enhancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        
+        <Button onClick={enhanceWithAI} disabled={isLoading || !isAvailable} variant="outline" className="w-full">
+          {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'AI Enhance R&D Proposal', ar: 'تحسين مقترح البحث' })}
         </Button>
 

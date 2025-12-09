@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Network, Sparkles, Users, Target } from 'lucide-react';
+import { Network, Sparkles, Users, Target, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function StakeholderMapper({ entity, entityType }) {
   const { language, isRTL, t } = useLanguage();
   const [stakeholderMap, setStakeholderMap] = useState(null);
-  const [mapping, setMapping] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateMap = async () => {
-    setMapping(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Identify and map all stakeholders for this ${entityType}:
+    const response = await invokeAI({
+      prompt: `Identify and map all stakeholders for this ${entityType}:
 
 Title: ${entity.title_en || entity.name_en}
 Sector: ${entity.sector}
@@ -27,33 +26,30 @@ Provide comprehensive stakeholder mapping:
 2. Secondary stakeholders (indirect impact)
 3. Influencers (can affect success)
 4. Each with: power level (high/medium/low), interest level (high/medium/low), engagement strategy`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            stakeholders: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  type: { type: "string" },
-                  category: { type: "string" },
-                  power: { type: "string" },
-                  interest: { type: "string" },
-                  strategy: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          stakeholders: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                type: { type: "string" },
+                category: { type: "string" },
+                power: { type: "string" },
+                interest: { type: "string" },
+                strategy: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setStakeholderMap(response);
+    if (response.success && response.data) {
+      setStakeholderMap(response.data);
       toast.success(t({ en: 'Stakeholder map generated', ar: 'تم إنشاء خريطة الأطراف' }));
-    } catch (error) {
-      toast.error(t({ en: 'Mapping failed', ar: 'فشل التخطيط' }));
-    } finally {
-      setMapping(false);
     }
   };
 
@@ -65,13 +61,14 @@ Provide comprehensive stakeholder mapping:
             <Network className="h-5 w-5 text-blue-600" />
             {t({ en: 'AI Stakeholder Mapper', ar: 'مخطط الأطراف الذكي' })}
           </CardTitle>
-          <Button onClick={generateMap} disabled={mapping} size="sm" className="bg-blue-600">
-            <Sparkles className="h-4 w-4 mr-2" />
-            {mapping ? t({ en: 'Mapping...', ar: 'جاري التخطيط...' }) : t({ en: 'Generate Map', ar: 'إنشاء خريطة' })}
+          <Button onClick={generateMap} disabled={isLoading || !isAvailable} size="sm" className="bg-blue-600">
+            {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {isLoading ? t({ en: 'Mapping...', ar: 'جاري التخطيط...' }) : t({ en: 'Generate Map', ar: 'إنشاء خريطة' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
         {stakeholderMap ? (
           <div className="space-y-4">
             {['primary', 'secondary', 'influencer'].map(category => {

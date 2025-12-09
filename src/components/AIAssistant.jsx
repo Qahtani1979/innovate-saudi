@@ -5,13 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from './LanguageContext';
 import { Sparkles, X, Send, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIAssistant({ context = {} }) {
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const { language, isRTL, t } = useLanguage();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const quickActions = [
     { 
@@ -33,12 +35,11 @@ export default function AIAssistant({ context = {} }) {
   ];
 
   const handleSend = async () => {
-    if (!prompt.trim() || isLoading) return;
+    if (!prompt.trim() || isLoading || !isAvailable) return;
 
     const userMessage = { role: 'user', content: prompt };
     setMessages([...messages, userMessage]);
     setPrompt('');
-    setIsLoading(true);
 
     try {
       // Semantic search across platform entities
@@ -64,7 +65,7 @@ export default function AIAssistant({ context = {} }) {
         }
       };
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `You are the Saudi Innovates Platform AI Assistant with semantic search.
 Context: User is on page "${context.page}".
 Platform Data: ${JSON.stringify(platformContext)}
@@ -75,17 +76,19 @@ Provide:
 - Context-aware, actionable guidance
 - Search platform data when relevant
 - Suggest specific pages or entities
-- Be concise and bilingual when helpful (AR/EN)`,
-        add_context_from_internet: false
+- Be concise and bilingual when helpful (AR/EN)`
       });
 
-      const aiMessage = { role: 'assistant', content: response };
-      setMessages(prev => [...prev, aiMessage]);
+      if (response.success && response.data) {
+        const aiMessage = { role: 'assistant', content: typeof response.data === 'string' ? response.data : JSON.stringify(response.data) };
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        const errorMessage = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' };
+        setMessages(prev => [...prev, errorMessage]);
+      }
     } catch (error) {
       const errorMessage = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' };
       setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -125,6 +128,7 @@ Provide:
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="px-4 pt-2" />
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && (

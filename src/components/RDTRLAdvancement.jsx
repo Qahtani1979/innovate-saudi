@@ -11,6 +11,8 @@ import { useLanguage } from './LanguageContext';
 import { TrendingUp, X, FileText, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from './FileUploader';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDTRLAdvancement({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -18,8 +20,8 @@ export default function RDTRLAdvancement({ project, onClose }) {
   const [newTRL, setNewTRL] = useState(project.trl_current || project.trl_start);
   const [evidenceUrls, setEvidenceUrls] = useState([]);
   const [justification, setJustification] = useState('');
-  const [validating, setValidating] = useState(false);
   const [aiValidation, setAiValidation] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const advanceMutation = useMutation({
     mutationFn: async (data) => {
@@ -51,9 +53,7 @@ export default function RDTRLAdvancement({ project, onClose }) {
       return;
     }
 
-    setValidating(true);
-    try {
-      const prompt = `Validate TRL advancement for R&D project:
+    const prompt = `Validate TRL advancement for R&D project:
 
 Project: ${project.title_en}
 Current TRL: ${project.trl_current || project.trl_start}
@@ -82,27 +82,24 @@ Validate:
 
 Return structured validation.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            advancement_justified: { type: 'boolean' },
-            justification_reasoning: { type: 'string' },
-            trl_gap_appropriate: { type: 'boolean' },
-            evidence_sufficient: { type: 'boolean' },
-            missing_evidence: { type: 'array', items: { type: 'string' } },
-            recommendation: { type: 'string' },
-            confidence_score: { type: 'number' }
-          }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          advancement_justified: { type: 'boolean' },
+          justification_reasoning: { type: 'string' },
+          trl_gap_appropriate: { type: 'boolean' },
+          evidence_sufficient: { type: 'boolean' },
+          missing_evidence: { type: 'array', items: { type: 'string' } },
+          recommendation: { type: 'string' },
+          confidence_score: { type: 'number' }
         }
-      });
+      }
+    });
 
-      setAiValidation(result);
-    } catch (error) {
-      toast.error(t({ en: 'AI validation failed', ar: 'فشل التحقق الذكي' }));
-    } finally {
-      setValidating(false);
+    if (response.success && response.data) {
+      setAiValidation(response.data);
     }
   };
 
@@ -130,6 +127,7 @@ Return structured validation.`;
         </Button>
       </CardHeader>
       <CardContent className="space-y-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
         <div className="p-4 bg-slate-50 rounded-lg">
           <p className="text-sm font-semibold text-slate-900">{project.title_en}</p>
           <div className="flex items-center gap-4 mt-3">
@@ -203,11 +201,11 @@ Return structured validation.`;
         {!aiValidation && (
           <Button
             onClick={runAIValidation}
-            disabled={validating || !justification || evidenceUrls.length === 0}
+            disabled={isLoading || !isAvailable || !justification || evidenceUrls.length === 0}
             variant="outline"
             className="w-full"
           >
-            {validating ? (
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
