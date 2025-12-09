@@ -4210,6 +4210,45 @@ export type Database = {
         }
         Relationships: []
       }
+      permissions: {
+        Row: {
+          action: string | null
+          code: string
+          created_at: string | null
+          description: string | null
+          description_ar: string | null
+          entity_type: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          name_ar: string | null
+        }
+        Insert: {
+          action?: string | null
+          code: string
+          created_at?: string | null
+          description?: string | null
+          description_ar?: string | null
+          entity_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          name_ar?: string | null
+        }
+        Update: {
+          action?: string | null
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          description_ar?: string | null
+          entity_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          name_ar?: string | null
+        }
+        Relationships: []
+      }
       pilot_approvals: {
         Row: {
           approval_date: string | null
@@ -6543,13 +6582,16 @@ export type Database = {
           deleted_by: string | null
           deleted_date: string | null
           description: string | null
+          description_ar: string | null
           id: string
+          is_active: boolean | null
           is_custom: boolean | null
           is_deleted: boolean | null
           is_expert_role: boolean | null
           is_system_role: boolean | null
           min_years_experience: number | null
           name: string
+          name_ar: string | null
           parent_role_id: string | null
           permissions: string[] | null
           required_certifications: string[] | null
@@ -6564,13 +6606,16 @@ export type Database = {
           deleted_by?: string | null
           deleted_date?: string | null
           description?: string | null
+          description_ar?: string | null
           id?: string
+          is_active?: boolean | null
           is_custom?: boolean | null
           is_deleted?: boolean | null
           is_expert_role?: boolean | null
           is_system_role?: boolean | null
           min_years_experience?: number | null
           name: string
+          name_ar?: string | null
           parent_role_id?: string | null
           permissions?: string[] | null
           required_certifications?: string[] | null
@@ -6585,13 +6630,16 @@ export type Database = {
           deleted_by?: string | null
           deleted_date?: string | null
           description?: string | null
+          description_ar?: string | null
           id?: string
+          is_active?: boolean | null
           is_custom?: boolean | null
           is_deleted?: boolean | null
           is_expert_role?: boolean | null
           is_system_role?: boolean | null
           min_years_experience?: number | null
           name?: string
+          name_ar?: string | null
           parent_role_id?: string | null
           permissions?: string[] | null
           required_certifications?: string[] | null
@@ -8796,28 +8844,44 @@ export type Database = {
           bio: string | null
           bio_ar: string | null
           bio_en: string | null
+          certifications: Json | null
           city_id: string | null
           contact_preferences: Json | null
           contribution_count: number | null
           cover_image_url: string | null
           created_at: string | null
           cv_url: string | null
+          date_of_birth: string | null
+          degree: string | null
           department: string | null
+          department_ar: string | null
+          department_en: string | null
+          education_level: string | null
           expertise_areas: string[] | null
           extracted_data: Json | null
           full_name: string | null
           full_name_ar: string | null
+          full_name_en: string | null
+          gender: string | null
           id: string
           interests: string[] | null
           is_active: boolean | null
           is_public: boolean | null
           job_title: string | null
+          job_title_ar: string | null
+          job_title_en: string | null
+          languages: Json | null
           last_profile_update: string | null
           linkedin_url: string | null
+          location_city: string | null
+          location_region: string | null
           municipality_id: string | null
+          national_id: string | null
           notification_preferences: Json | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
+          organization_ar: string | null
+          organization_en: string | null
           organization_id: string | null
           phone_number: string | null
           preferred_language: string | null
@@ -8832,7 +8896,9 @@ export type Database = {
           user_id: string | null
           verified: boolean | null
           visibility_settings: Json | null
+          work_experience: Json | null
           work_phone: string | null
+          years_experience: number | null
         }
         Insert: {
           achievement_badges?: Json | null
@@ -8840,28 +8906,44 @@ export type Database = {
           bio?: string | null
           bio_ar?: string | null
           bio_en?: string | null
+          certifications?: Json | null
           city_id?: string | null
           contact_preferences?: Json | null
           contribution_count?: number | null
           cover_image_url?: string | null
           created_at?: string | null
           cv_url?: string | null
+          date_of_birth?: string | null
+          degree?: string | null
           department?: string | null
+          department_ar?: string | null
+          department_en?: string | null
+          education_level?: string | null
           expertise_areas?: string[] | null
           extracted_data?: Json | null
           full_name?: string | null
           full_name_ar?: string | null
+          full_name_en?: string | null
+          gender?: string | null
           id?: string
           interests?: string[] | null
           is_active?: boolean | null
           is_public?: boolean | null
           job_title?: string | null
+          job_title_ar?: string | null
+          job_title_en?: string | null
+          languages?: Json | null
           last_profile_update?: string | null
           linkedin_url?: string | null
+          location_city?: string | null
+          location_region?: string | null
           municipality_id?: string | null
+          national_id?: string | null
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
+          organization_ar?: string | null
+          organization_en?: string | null
           organization_id?: string | null
           phone_number?: string | null
           preferred_language?: string | null
@@ -8876,7 +8958,9 @@ export type Database = {
           user_id?: string | null
           verified?: boolean | null
           visibility_settings?: Json | null
+          work_experience?: Json | null
           work_phone?: string | null
+          years_experience?: number | null
         }
         Update: {
           achievement_badges?: Json | null
@@ -8884,28 +8968,44 @@ export type Database = {
           bio?: string | null
           bio_ar?: string | null
           bio_en?: string | null
+          certifications?: Json | null
           city_id?: string | null
           contact_preferences?: Json | null
           contribution_count?: number | null
           cover_image_url?: string | null
           created_at?: string | null
           cv_url?: string | null
+          date_of_birth?: string | null
+          degree?: string | null
           department?: string | null
+          department_ar?: string | null
+          department_en?: string | null
+          education_level?: string | null
           expertise_areas?: string[] | null
           extracted_data?: Json | null
           full_name?: string | null
           full_name_ar?: string | null
+          full_name_en?: string | null
+          gender?: string | null
           id?: string
           interests?: string[] | null
           is_active?: boolean | null
           is_public?: boolean | null
           job_title?: string | null
+          job_title_ar?: string | null
+          job_title_en?: string | null
+          languages?: Json | null
           last_profile_update?: string | null
           linkedin_url?: string | null
+          location_city?: string | null
+          location_region?: string | null
           municipality_id?: string | null
+          national_id?: string | null
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
+          organization_ar?: string | null
+          organization_en?: string | null
           organization_id?: string | null
           phone_number?: string | null
           preferred_language?: string | null
@@ -8920,7 +9020,9 @@ export type Database = {
           user_id?: string | null
           verified?: boolean | null
           visibility_settings?: Json | null
+          work_experience?: Json | null
           work_phone?: string | null
+          years_experience?: number | null
         }
         Relationships: [
           {
@@ -9123,6 +9225,11 @@ export type Database = {
         | "researcher"
         | "citizen"
         | "viewer"
+        | "expert"
+        | "investor"
+        | "ministry"
+        | "moderator"
+        | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -9257,6 +9364,11 @@ export const Constants = {
         "researcher",
         "citizen",
         "viewer",
+        "expert",
+        "investor",
+        "ministry",
+        "moderator",
+        "user",
       ],
     },
   },
