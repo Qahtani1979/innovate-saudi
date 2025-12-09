@@ -4,15 +4,16 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
 import { useLanguage } from '../LanguageContext';
 import { DollarSign, Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function DynamicPricingIntelligence({ solution }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [pricing, setPricing] = useState(null);
+  const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
@@ -20,16 +21,14 @@ export default function DynamicPricingIntelligence({ solution }) {
   });
 
   const analyzePricing = async () => {
-    setAnalyzing(true);
-    try {
-      const peers = solutions.filter(s => 
-        s.sectors?.some(sec => solution.sectors?.includes(sec)) &&
-        s.id !== solution.id &&
-        s.pricing_details?.setup_cost
-      );
+    const peers = solutions.filter(s => 
+      s.sectors?.some(sec => solution.sectors?.includes(sec)) &&
+      s.id !== solution.id &&
+      s.pricing_details?.setup_cost
+    );
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Pricing intelligence for solution:
+    const result = await invokeAI({
+      prompt: `Pricing intelligence for solution:
 
 SOLUTION: ${solution.name_en}
 MATURITY: ${solution.maturity_level}
@@ -48,32 +47,29 @@ Provide:
 3. Price elasticity estimate (win rate at different prices)
 4. Optimal price for conversion vs margin
 5. Market positioning advice`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            recommended_min: { type: "number" },
-            recommended_max: { type: "number" },
-            optimal_price: { type: "number" },
-            competitor_average: { type: "number" },
-            elasticity: {
-              type: "object",
-              properties: {
-                low_price_winrate: { type: "number" },
-                mid_price_winrate: { type: "number" },
-                high_price_winrate: { type: "number" }
-              }
-            },
-            positioning_advice: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommended_min: { type: "number" },
+          recommended_max: { type: "number" },
+          optimal_price: { type: "number" },
+          competitor_average: { type: "number" },
+          elasticity: {
+            type: "object",
+            properties: {
+              low_price_winrate: { type: "number" },
+              mid_price_winrate: { type: "number" },
+              high_price_winrate: { type: "number" }
+            }
+          },
+          positioning_advice: { type: "string" }
         }
-      });
+      }
+    });
 
-      setPricing(response);
+    if (result.success) {
+      setPricing(result.data);
       toast.success(t({ en: 'Pricing analysis complete', ar: 'تحليل التسعير مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -85,7 +81,7 @@ Provide:
             <DollarSign className="h-5 w-5 text-green-600" />
             {t({ en: 'Pricing Intelligence', ar: 'ذكاء التسعير' })}
           </CardTitle>
-          <Button onClick={analyzePricing} disabled={analyzing} size="sm" className="bg-green-600">
+          <Button onClick={analyzePricing} disabled={analyzing || !isAvailable} size="sm" className="bg-green-600">
             {analyzing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -96,6 +92,8 @@ Provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
         {!pricing && !analyzing && (
           <div className="text-center py-8">
             <DollarSign className="h-12 w-12 text-green-300 mx-auto mb-3" />

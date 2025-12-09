@@ -5,15 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Sparkles, TrendingUp, AlertTriangle, Award, Zap } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
+import { Sparkles, TrendingUp, AlertTriangle, Award, Zap, Loader2 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PatternRecognition() {
   const { language, isRTL, t } = useLanguage();
   const [patterns, setPatterns] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -31,14 +33,12 @@ function PatternRecognition() {
   });
 
   const analyzePatterns = async () => {
-    setAnalyzing(true);
-    try {
-      // Successful pilots data
-      const successfulPilots = pilots.filter(p => p.stage === 'scaled' || p.recommendation === 'scale');
-      const failedPilots = pilots.filter(p => p.stage === 'terminated' || p.recommendation === 'terminate');
+    // Successful pilots data
+    const successfulPilots = pilots.filter(p => p.stage === 'scaled' || p.recommendation === 'scale');
+    const failedPilots = pilots.filter(p => p.stage === 'terminated' || p.recommendation === 'terminate');
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze historical innovation data to identify success patterns and anti-patterns:
+    const result = await invokeAI({
+      prompt: `Analyze historical innovation data to identify success patterns and anti-patterns:
 
 SUCCESSFUL PILOTS (${successfulPilots.length}):
 ${successfulPilots.slice(0, 10).map(p => `- ${p.title_en}: Sector ${p.sector}, Budget ${p.budget}, Duration ${p.duration_weeks}w, Team ${p.team?.length || 'N/A'}`).join('\n')}
@@ -55,71 +55,68 @@ Identify:
 3. Optimal portfolio mix (% allocation across tracks)
 4. Sector-specific recommendations
 5. Municipality type patterns (which cities succeed with what approaches)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            success_patterns: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  pattern: { type: "string" },
-                  evidence: { type: "string" },
-                  success_rate: { type: "number" },
-                  recommendation: { type: "string" }
-                }
-              }
-            },
-            anti_patterns: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  pattern: { type: "string" },
-                  failure_rate: { type: "number" },
-                  avoid_by: { type: "string" }
-                }
-              }
-            },
-            optimal_mix: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          success_patterns: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                pilots: { type: "number" },
-                rd: { type: "number" },
-                programs: { type: "number" },
-                scaling: { type: "number" }
+                pattern: { type: "string" },
+                evidence: { type: "string" },
+                success_rate: { type: "number" },
+                recommendation: { type: "string" }
               }
-            },
-            sector_insights: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  sector: { type: "string" },
-                  insight: { type: "string" }
-                }
+            }
+          },
+          anti_patterns: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                pattern: { type: "string" },
+                failure_rate: { type: "number" },
+                avoid_by: { type: "string" }
               }
-            },
-            municipality_patterns: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  type: { type: "string" },
-                  pattern: { type: "string" }
-                }
+            }
+          },
+          optimal_mix: {
+            type: "object",
+            properties: {
+              pilots: { type: "number" },
+              rd: { type: "number" },
+              programs: { type: "number" },
+              scaling: { type: "number" }
+            }
+          },
+          sector_insights: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                sector: { type: "string" },
+                insight: { type: "string" }
+              }
+            }
+          },
+          municipality_patterns: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                type: { type: "string" },
+                pattern: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setPatterns(response);
+    if (result.success) {
+      setPatterns(result.data);
       toast.success(t({ en: 'Success patterns identified', ar: 'تم تحديد أنماط النجاح' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -141,11 +138,13 @@ Identify:
             {t({ en: 'ML-powered analysis of success patterns and portfolio optimization', ar: 'تحليل مدعوم بالتعلم الآلي لأنماط النجاح وتحسين المحفظة' })}
           </p>
         </div>
-        <Button onClick={analyzePatterns} disabled={analyzing} className="bg-gradient-to-r from-purple-600 to-pink-600">
-          <Sparkles className="h-4 w-4 mr-2" />
+        <Button onClick={analyzePatterns} disabled={analyzing || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
+          {analyzing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {analyzing ? t({ en: 'Analyzing...', ar: 'جاري التحليل...' }) : t({ en: 'Analyze Patterns', ar: 'تحليل الأنماط' })}
         </Button>
       </div>
+
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-green-50 to-white">

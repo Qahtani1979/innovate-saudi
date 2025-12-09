@@ -8,15 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Target, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Target, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ChallengeIdeaResponse() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const challengeId = urlParams.get('challenge_id');
-  const [enhancing, setEnhancing] = useState(false);
+  const { invokeAI, status, isLoading: enhancing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     challenge_alignment_id: challengeId || '',
@@ -44,10 +46,8 @@ function ChallengeIdeaResponse() {
   const enhanceWithAI = async () => {
     if (!selectedChallenge) return;
     
-    setEnhancing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a solution proposal for this challenge:
+    const result = await invokeAI({
+      prompt: `Generate a solution proposal for this challenge:
 
 Challenge: ${selectedChallenge.title_en}
 Description: ${selectedChallenge.description_en}
@@ -59,26 +59,23 @@ Generate a structured solution proposal with:
 3. Implementation plan
 4. Timeline
 5. Budget estimate`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            implementation_plan: { type: 'string' },
-            timeline_proposal: { type: 'string' },
-            budget_estimate: { type: 'number' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          implementation_plan: { type: 'string' },
+          timeline_proposal: { type: 'string' },
+          budget_estimate: { type: 'number' }
         }
-      });
+      }
+    });
 
-      setFormData({ ...formData, ...result });
+    if (result.success) {
+      setFormData({ ...formData, ...result.data });
       toast.success(t({ en: 'AI enhanced proposal', ar: 'تم تحسين المقترح' }));
-    } catch (error) {
-      toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setEnhancing(false);
     }
   };
 
@@ -108,6 +105,8 @@ Generate a structured solution proposal with:
         </p>
       </div>
 
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div>
@@ -130,7 +129,7 @@ Generate a structured solution proposal with:
             )}
           </div>
 
-          <Button onClick={enhanceWithAI} disabled={enhancing || !selectedChallenge} variant="outline" className="w-full">
+          <Button onClick={enhanceWithAI} disabled={enhancing || !selectedChallenge || !isAvailable} variant="outline" className="w-full">
             {enhancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'AI Enhance My Response', ar: 'تحسين ردي بالذكاء' })}
           </Button>

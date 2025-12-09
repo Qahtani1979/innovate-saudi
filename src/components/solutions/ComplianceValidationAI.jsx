@@ -7,12 +7,14 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Shield, Loader2, CheckCircle2, XCircle, AlertTriangle, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ComplianceValidationAI({ solution, onValidationComplete }) {
   const { t } = useLanguage();
-  const [validating, setValidating] = useState(false);
   const [validation, setValidation] = useState(null);
   const [uploadedDocs, setUploadedDocs] = useState([]);
+  const { invokeAI, status, isLoading: validating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -28,37 +30,35 @@ export default function ComplianceValidationAI({ solution, onValidationComplete 
   };
 
   const validateCompliance = async () => {
-    setValidating(true);
-    try {
-      // Extract data from uploaded compliance documents
-      const extractedData = [];
-      for (const doc of uploadedDocs) {
-        try {
-          const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-            file_url: doc.url,
-            json_schema: {
-              type: 'object',
-              properties: {
-                certification_name: { type: 'string' },
-                issuer: { type: 'string' },
-                issue_date: { type: 'string' },
-                expiry_date: { type: 'string' },
-                certification_number: { type: 'string' },
-                compliance_standards: { type: 'array', items: { type: 'string' } }
-              }
+    // Extract data from uploaded compliance documents
+    const extractedData = [];
+    for (const doc of uploadedDocs) {
+      try {
+        const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+          file_url: doc.url,
+          json_schema: {
+            type: 'object',
+            properties: {
+              certification_name: { type: 'string' },
+              issuer: { type: 'string' },
+              issue_date: { type: 'string' },
+              expiry_date: { type: 'string' },
+              certification_number: { type: 'string' },
+              compliance_standards: { type: 'array', items: { type: 'string' } }
             }
-          });
-          if (result.status === 'success') {
-            extractedData.push(result.output);
           }
-        } catch (error) {
-          console.error('Failed to extract from', doc.name);
+        });
+        if (result.status === 'success') {
+          extractedData.push(result.output);
         }
+      } catch (error) {
+        console.error('Failed to extract from', doc.name);
       }
+    }
 
-      // AI validation of compliance
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Validate compliance and certifications for this solution.
+    // AI validation of compliance
+    const result = await invokeAI({
+      prompt: `Validate compliance and certifications for this solution.
 
 SOLUTION:
 Name: ${solution.name_en}
@@ -89,39 +89,36 @@ Analyze and provide:
 7. Certification validation status (real/fake check)
 
 Be thorough and flag any discrepancies.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            compliance_score: { type: 'number' },
-            verified_certifications: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  status: { type: 'string', enum: ['verified', 'expired', 'invalid', 'pending'] },
-                  issuer: { type: 'string' },
-                  expiry_date: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          compliance_score: { type: 'number' },
+          verified_certifications: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                status: { type: 'string', enum: ['verified', 'expired', 'invalid', 'pending'] },
+                issuer: { type: 'string' },
+                expiry_date: { type: 'string' }
               }
-            },
-            missing_certifications: { type: 'array', items: { type: 'string' } },
-            expiring_soon: { type: 'array', items: { type: 'string' } },
-            compliance_risk: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
-            recommended_actions: { type: 'array', items: { type: 'string' } },
-            validation_notes: { type: 'string' },
-            discrepancies_found: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          missing_certifications: { type: 'array', items: { type: 'string' } },
+          expiring_soon: { type: 'array', items: { type: 'string' } },
+          compliance_risk: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+          recommended_actions: { type: 'array', items: { type: 'string' } },
+          validation_notes: { type: 'string' },
+          discrepancies_found: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setValidation(result);
-      onValidationComplete?.(result);
+    if (result.success) {
+      setValidation(result.data);
+      onValidationComplete?.(result.data);
       toast.success(t({ en: 'Validation complete', ar: 'اكتمل التحقق' }));
-    } catch (error) {
-      toast.error(t({ en: 'Validation failed', ar: 'فشل التحقق' }));
-    } finally {
-      setValidating(false);
     }
   };
 
@@ -141,6 +138,8 @@ Be thorough and flag any discrepancies.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
         {/* Document Upload */}
         <div className="p-4 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">
           <label className="cursor-pointer flex flex-col items-center gap-2">
@@ -173,7 +172,7 @@ Be thorough and flag any discrepancies.`,
 
         <Button
           onClick={validateCompliance}
-          disabled={validating}
+          disabled={validating || !isAvailable}
           className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
         >
           {validating ? (
