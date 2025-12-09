@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Lightbulb, Send, Sparkles, ArrowRight, ArrowLeft, CheckCircle2, 
-  Loader2, Globe, Star, Users, Trophy, Heart, Rocket, Languages
+  Loader2, Globe, Star, Users, Trophy, Heart, Rocket
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PublicHeader from '@/components/public/PublicHeader';
@@ -54,10 +55,7 @@ const recordSubmission = () => {
 };
 
 export default function PublicIdeaSubmission() {
-  const [language, setLanguage] = useState('en');
-  const isRTL = language === 'ar';
-  
-  const t = (translations) => translations[language] || translations.en;
+  const { language, isRTL, t } = useLanguage();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isAIProcessing, setIsAIProcessing] = useState(false);
@@ -392,19 +390,6 @@ export default function PublicIdeaSubmission() {
       <PublicHeader />
       
       <div className="container mx-auto px-4 py-12">
-        {/* Language Toggle */}
-        <div className="flex justify-end mb-6">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-            className="gap-2"
-          >
-            <Languages className="h-4 w-4" />
-            {language === 'en' ? 'العربية' : 'English'}
-          </Button>
-        </div>
-
         {/* Hero Section */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm mb-4">
