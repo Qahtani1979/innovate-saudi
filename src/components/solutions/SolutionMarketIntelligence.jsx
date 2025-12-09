@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Globe, DollarSign, Sparkles, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionMarketIntelligence({ solution }) {
   const { language, t } = useLanguage();
-  const [loading, setLoading] = useState(false);
   const [intel, setIntel] = useState(null);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const fetchIntelligence = async () => {
-    setLoading(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Provide market intelligence for this municipal innovation solution:
+    const response = await invokeAI({
+      prompt: `Provide market intelligence for this municipal innovation solution:
 
 Solution: ${solution.name_en}
 Category: ${solution.category}
@@ -29,26 +31,21 @@ Research and provide:
 4. Emerging technologies in this space
 5. Pricing benchmarks (if available)
 6. Success factors for market penetration`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            market_trends: { type: "array", items: { type: "string" } },
-            market_size: { type: "string" },
-            competitors: { type: "array", items: { type: "string" } },
-            emerging_tech: { type: "array", items: { type: "string" } },
-            pricing_insights: { type: "string" },
-            success_factors: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          market_trends: { type: "array", items: { type: "string" } },
+          market_size: { type: "string" },
+          competitors: { type: "array", items: { type: "string" } },
+          emerging_tech: { type: "array", items: { type: "string" } },
+          pricing_insights: { type: "string" },
+          success_factors: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setIntel(response);
-      toast.success(t({ en: 'Intelligence gathered', ar: 'جُمعت المعلومات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to fetch intelligence', ar: 'فشل جلب المعلومات' }));
-    } finally {
-      setLoading(false);
+    if (response.success) {
+      setIntel(response.data);
     }
   };
 
@@ -60,8 +57,8 @@ Research and provide:
             <Globe className="h-5 w-5 text-teal-600" />
             {t({ en: 'Market Intelligence', ar: 'ذكاء السوق' })}
           </CardTitle>
-          <Button onClick={fetchIntelligence} disabled={loading} size="sm" className="bg-teal-600">
-            {loading ? (
+          <Button onClick={fetchIntelligence} disabled={isLoading || !isAvailable} size="sm" className="bg-teal-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -71,7 +68,9 @@ Research and provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!intel && !loading && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!intel && !isLoading && (
           <div className="text-center py-8">
             <Globe className="h-12 w-12 text-teal-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

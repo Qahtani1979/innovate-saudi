@@ -1,27 +1,29 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { RefreshCw, Sparkles, Loader2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
 import { Progress } from "@/components/ui/progress";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AdaptiveManagement({ pilot }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
 
   const completedMilestones = pilot.milestones?.filter(m => m.status === 'completed').length || 0;
   const totalMilestones = pilot.milestones?.length || 1;
   const velocity = Math.round((completedMilestones / totalMilestones) * 100);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const getAdjustments = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Pilot adaptive management analysis:
+    const response = await invokeAI({
+      prompt: `Pilot adaptive management analysis:
 
 PILOT: ${pilot.title_en}
 PROGRESS: ${completedMilestones}/${totalMilestones} milestones (${velocity}%)
@@ -39,28 +41,24 @@ Recommend:
 3. Resource reallocation suggestions
 4. Impact assessment of changes
 5. Risk mitigation`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            recommendation_type: { 
-              type: "string",
-              enum: ["continue_as_planned", "reduce_scope", "extend_timeline", "add_resources", "pivot_approach"]
-            },
-            rationale: { type: "string" },
-            proposed_changes: { type: "array", items: { type: "string" } },
-            impact_assessment: { type: "string" },
-            new_velocity_estimate: { type: "number" },
-            risks: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommendation_type: { 
+            type: "string",
+            enum: ["continue_as_planned", "reduce_scope", "extend_timeline", "add_resources", "pivot_approach"]
+          },
+          rationale: { type: "string" },
+          proposed_changes: { type: "array", items: { type: "string" } },
+          impact_assessment: { type: "string" },
+          new_velocity_estimate: { type: "number" },
+          risks: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setRecommendations(response);
-      toast.success(t({ en: 'Analysis complete', ar: 'التحليل مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
+    if (response.success) {
+      setRecommendations(response.data);
     }
   };
 
@@ -72,8 +70,8 @@ Recommend:
             <RefreshCw className="h-5 w-5 text-blue-600" />
             {t({ en: 'Adaptive Management', ar: 'الإدارة التكيفية' })}
           </CardTitle>
-          <Button onClick={getAdjustments} disabled={analyzing} size="sm" className="bg-blue-600">
-            {analyzing ? (
+          <Button onClick={getAdjustments} disabled={isLoading || !isAvailable} size="sm" className="bg-blue-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -83,6 +81,8 @@ Recommend:
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-slate-700">{t({ en: 'Velocity', ar: 'السرعة' })}</span>
@@ -108,7 +108,7 @@ Recommend:
           </div>
         )}
 
-        {!recommendations && !analyzing && (
+        {!recommendations && !isLoading && (
           <div className="text-center py-6">
             <RefreshCw className="h-10 w-10 text-blue-300 mx-auto mb-2" />
             <p className="text-sm text-slate-600">

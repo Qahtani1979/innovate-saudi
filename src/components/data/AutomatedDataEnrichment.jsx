@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Database, Sparkles, Loader2, Check } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AutomatedDataEnrichment({ entity, entityType, onEnriched }) {
   const { language, t } = useLanguage();
-  const [enriching, setEnriching] = useState(false);
   const [enrichments, setEnrichments] = useState(null);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const enrichData = async () => {
-    setEnriching(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Enrich ${entityType} data with AI insights:
+    const response = await invokeAI({
+      prompt: `Enrich ${entityType} data with AI insights:
 
 CURRENT DATA: ${JSON.stringify(entity).substring(0, 800)}
 
@@ -27,44 +29,40 @@ Provide enrichments:
 4. Related entities (suggest connections to other challenges/pilots/solutions)
 5. Recommended KPIs (if not defined)
 6. Estimated complexity/priority (if missing)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            translations: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          translations: {
+            type: "object",
+            properties: {
+              title_ar: { type: "string" },
+              description_ar: { type: "string" }
+            }
+          },
+          tags: { type: "array", items: { type: "string" } },
+          sector: { type: "string" },
+          related_codes: { type: "array", items: { type: "string" } },
+          kpis: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                title_ar: { type: "string" },
-                description_ar: { type: "string" }
+                name: { type: "string" },
+                baseline: { type: "string" },
+                target: { type: "string" }
               }
-            },
-            tags: { type: "array", items: { type: "string" } },
-            sector: { type: "string" },
-            related_codes: { type: "array", items: { type: "string" } },
-            kpis: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  baseline: { type: "string" },
-                  target: { type: "string" }
-                }
-              }
-            },
-            priority: { type: "string" }
-          }
+            }
+          },
+          priority: { type: "string" }
         }
-      });
-
-      setEnrichments(response);
-      if (onEnriched) {
-        onEnriched(response);
       }
-      toast.success(t({ en: 'Data enriched', ar: 'البيانات أُثريت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Enrichment failed', ar: 'فشل الإثراء' }));
-    } finally {
-      setEnriching(false);
+    });
+
+    if (response.success) {
+      setEnrichments(response.data);
+      if (onEnriched) {
+        onEnriched(response.data);
+      }
     }
   };
 
@@ -76,8 +74,8 @@ Provide enrichments:
             <Database className="h-5 w-5 text-teal-600" />
             {t({ en: 'AI Data Enrichment', ar: 'إثراء البيانات بالذكاء' })}
           </CardTitle>
-          <Button onClick={enrichData} disabled={enriching} size="sm" className="bg-teal-600">
-            {enriching ? (
+          <Button onClick={enrichData} disabled={isLoading || !isAvailable} size="sm" className="bg-teal-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -87,7 +85,9 @@ Provide enrichments:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!enrichments && !enriching && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!enrichments && !isLoading && (
           <div className="text-center py-8">
             <Database className="h-12 w-12 text-teal-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">
