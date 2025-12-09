@@ -3,18 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { base44 } from '@/api/base44Client';
 import { Network, Loader2, Zap } from 'lucide-react';
-
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 export default function CausalGraphVisualizer({ challenge }) {
   const { language, isRTL, t } = useLanguage();
   const [graph, setGraph] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateCausalGraph = async () => {
-    setLoading(true);
-    try {
-      const prompt = `Analyze this municipal challenge and build a causal graph showing root causes, intermediate factors, and the main problem:
+    const prompt = `Analyze this municipal challenge and build a causal graph showing root causes, intermediate factors, and the main problem:
 
 Challenge: ${challenge.title_en}
 Description: ${challenge.description_en}
@@ -29,55 +27,52 @@ Create a causal graph structure showing:
 
 Return as hierarchical structure for visualization.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            deep_roots: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  cause: { type: 'string' },
-                  impact_level: { type: 'string' }
-                }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          deep_roots: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                cause: { type: 'string' },
+                impact_level: { type: 'string' }
               }
-            },
-            intermediate: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  factor: { type: 'string' },
-                  connected_to: { type: 'array', items: { type: 'string' } }
-                }
+            }
+          },
+          intermediate: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                factor: { type: 'string' },
+                connected_to: { type: 'array', items: { type: 'string' } }
               }
-            },
-            direct_causes: {
-              type: 'array',
-              items: { type: 'string' }
-            },
-            relationships: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  from: { type: 'string' },
-                  to: { type: 'string' },
-                  strength: { type: 'string' }
-                }
+            }
+          },
+          direct_causes: {
+            type: 'array',
+            items: { type: 'string' }
+          },
+          relationships: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                from: { type: 'string' },
+                to: { type: 'string' },
+                strength: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setGraph(result);
-    } catch (error) {
-      console.error('Graph generation error:', error);
-    } finally {
-      setLoading(false);
+    if (response.success && response.data) {
+      setGraph(response.data);
     }
   };
 
@@ -90,8 +85,8 @@ Return as hierarchical structure for visualization.`;
             {t({ en: 'Causal Graph', ar: 'الرسم البياني السببي' })}
           </CardTitle>
           {!graph && (
-            <Button size="sm" onClick={generateCausalGraph} disabled={loading}>
-              {loading ? (
+            <Button size="sm" onClick={generateCausalGraph} disabled={isLoading || !isAvailable}>
+              {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Zap className="h-4 w-4" />
@@ -101,6 +96,7 @@ Return as hierarchical structure for visualization.`;
           )}
         </div>
       </CardHeader>
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mx-6 mb-2" />
       {graph && (
         <CardContent className="space-y-4">
           {/* Deep Roots */}

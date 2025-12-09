@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Shield, Sparkles, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function KnowledgeQualityAuditor({ documentId }) {
   const { language, t } = useLanguage();
-  const [auditing, setAuditing] = useState(false);
   const [audit, setAudit] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const runAudit = async () => {
-    setAuditing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Audit knowledge document quality:
+    const response = await invokeAI({
+      prompt: `Audit knowledge document quality:
 
 Checklist:
 1. Accuracy (factual correctness)
@@ -26,31 +25,28 @@ Checklist:
 5. Actionability (provides clear steps)
 
 Score each 0-100 and suggest improvements.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            scores: {
-              type: "object",
-              properties: {
-                accuracy: { type: "number" },
-                completeness: { type: "number" },
-                clarity: { type: "number" },
-                relevance: { type: "number" },
-                actionability: { type: "number" }
-              }
-            },
-            overall: { type: "number" },
-            improvements: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          scores: {
+            type: "object",
+            properties: {
+              accuracy: { type: "number" },
+              completeness: { type: "number" },
+              clarity: { type: "number" },
+              relevance: { type: "number" },
+              actionability: { type: "number" }
+            }
+          },
+          overall: { type: "number" },
+          improvements: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setAudit(response);
+    if (response.success && response.data) {
+      setAudit(response.data);
       toast.success(t({ en: 'Audit complete', ar: 'التدقيق مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Audit failed', ar: 'فشل التدقيق' }));
-    } finally {
-      setAuditing(false);
     }
   };
 
@@ -62,13 +58,14 @@ Score each 0-100 and suggest improvements.`,
             <Shield className="h-5 w-5 text-green-600" />
             {t({ en: 'Quality Auditor', ar: 'مدقق الجودة' })}
           </CardTitle>
-          <Button onClick={runAudit} disabled={auditing} size="sm" className="bg-green-600">
-            {auditing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          <Button onClick={runAudit} disabled={isLoading || !isAvailable} size="sm" className="bg-green-600">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Run Audit', ar: 'تشغيل التدقيق' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
         {audit && (
           <div className="space-y-3">
             <div className="p-4 bg-gradient-to-r from-green-100 to-teal-100 rounded-lg border-2 border-green-300 text-center">

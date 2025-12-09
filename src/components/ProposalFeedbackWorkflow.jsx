@@ -9,12 +9,14 @@ import { useLanguage } from './LanguageContext';
 import { MessageSquare, X, Send, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { createNotification } from './AutoNotification';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState('');
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const feedbackMutation = useMutation({
     mutationFn: async (data) => {
@@ -44,14 +46,12 @@ export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
   });
 
   const generateAIFeedback = async () => {
-    setGenerating(true);
-    try {
-      const reviewScores = proposal.reviewer_scores || [];
-      const avgScore = reviewScores.length > 0 
-        ? reviewScores.reduce((sum, r) => sum + r.total, 0) / reviewScores.length 
-        : 0;
+    const reviewScores = proposal.reviewer_scores || [];
+    const avgScore = reviewScores.length > 0 
+      ? reviewScores.reduce((sum, r) => sum + r.total, 0) / reviewScores.length 
+      : 0;
 
-      const prompt = `Generate constructive feedback for a rejected R&D proposal:
+    const prompt = `Generate constructive feedback for a rejected R&D proposal:
 
 Proposal: ${proposal.title_en}
 Institution: ${proposal.lead_institution}
@@ -70,15 +70,10 @@ Generate:
 
 Tone: Professional, encouraging, specific`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt
-      });
+    const response = await invokeAI({ prompt });
 
-      setFeedback(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate feedback', ar: 'فشل إنشاء الملاحظات' }));
-    } finally {
-      setGenerating(false);
+    if (response.success && response.data) {
+      setFeedback(typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
     }
   };
 
@@ -103,16 +98,18 @@ Tone: Professional, encouraging, specific`;
           <p className="text-xs text-slate-600 mt-1">{proposal.lead_institution}</p>
         </div>
 
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-3" />
+
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>{t({ en: 'Feedback to Applicant', ar: 'الملاحظات للمتقدم' })}</Label>
             <Button
               onClick={generateAIFeedback}
-              disabled={generating}
+              disabled={isLoading || !isAvailable}
               variant="outline"
               size="sm"
             >
-              {generating ? (
+              {isLoading ? (
                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
               ) : (
                 <Sparkles className="h-3 w-3 mr-1" />

@@ -1,30 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { UserPlus, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIRoleAssigner({ userEmail, userName, organization }) {
   const { language, t } = useLanguage();
-  const [predicting, setPredicting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   useEffect(() => {
-    if (userEmail) {
+    if (userEmail && isAvailable) {
       predictRole();
     }
-  }, [userEmail]);
+  }, [userEmail, isAvailable]);
 
   const predictRole = async () => {
-    setPredicting(true);
-    try {
-      const emailDomain = userEmail.split('@')[1];
-      
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Determine optimal platform role based on user profile:
+    const emailDomain = userEmail.split('@')[1];
+    
+    const response = await invokeAI({
+      prompt: `Determine optimal platform role based on user profile:
 
 EMAIL: ${userEmail}
 DOMAIN: ${emailDomain}
@@ -45,29 +44,26 @@ Analyze:
 3. Likely responsibilities
 
 Return top 3 role suggestions with confidence scores and reasoning.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            suggestions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  role: { type: "string" },
-                  confidence: { type: "number" },
-                  reasoning: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          suggestions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                role: { type: "string" },
+                confidence: { type: "number" },
+                reasoning: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setSuggestions(response.suggestions || []);
-    } catch (error) {
-      toast.error(t({ en: 'Role prediction failed', ar: 'فشل توقع الدور' }));
-    } finally {
-      setPredicting(false);
+    if (response.success && response.data?.suggestions) {
+      setSuggestions(response.data.suggestions);
     }
   };
 
@@ -80,14 +76,16 @@ Return top 3 role suggestions with confidence scores and reasoning.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
-        {predicting && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        
+        {isLoading && (
           <div className="text-center py-8">
             <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-3 animate-spin" />
             <p className="text-sm text-slate-600">{t({ en: 'Analyzing profile...', ar: 'تحليل الملف...' })}</p>
           </div>
         )}
 
-        {!predicting && suggestions.length > 0 && (
+        {!isLoading && suggestions.length > 0 && (
           <div className="space-y-3">
             {suggestions.map((suggestion, idx) => (
               <div key={idx} className={`p-4 rounded-lg border-2 ${
