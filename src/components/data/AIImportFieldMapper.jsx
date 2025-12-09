@@ -6,19 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Sparkles, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIImportFieldMapper({ csvHeaders, entityName, onMappingComplete }) {
   const { language, t } = useLanguage();
   const [mapping, setMapping] = useState({});
-  const [analyzing, setAnalyzing] = useState(false);
   const [validation, setValidation] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeMapping = async () => {
-    setAnalyzing(true);
     try {
       const schema = await base44.entities[entityName].schema();
       
-      const response = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Map CSV columns to entity fields:
 
 CSV Headers: ${csvHeaders.join(', ')}
@@ -49,20 +50,20 @@ If no good match, suggest null.`,
         }
       });
 
-      const newMapping = {};
-      response.mappings.forEach(m => {
-        if (m.entity_field && m.entity_field !== 'null') {
-          newMapping[m.csv_column] = m.entity_field;
-        }
-      });
+      if (result.success) {
+        const newMapping = {};
+        result.data.mappings.forEach(m => {
+          if (m.entity_field && m.entity_field !== 'null') {
+            newMapping[m.csv_column] = m.entity_field;
+          }
+        });
 
-      setMapping(newMapping);
-      setValidation(response.mappings);
-      toast.success(t({ en: 'Mapping suggested', ar: 'التخطيط مقترح' }));
+        setMapping(newMapping);
+        setValidation(result.data.mappings);
+        toast.success(t({ en: 'Mapping suggested', ar: 'التخطيط مقترح' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -74,8 +75,8 @@ If no good match, suggest null.`,
             <FileText className="h-5 w-5 text-blue-600" />
             {t({ en: 'AI Field Mapper', ar: 'مخطط الحقول الذكي' })}
           </CardTitle>
-          <Button onClick={analyzeMapping} disabled={analyzing} size="sm" className="bg-blue-600">
-            {analyzing ? (
+          <Button onClick={analyzeMapping} disabled={isLoading || !isAvailable} size="sm" className="bg-blue-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -85,7 +86,9 @@ If no good match, suggest null.`,
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!validation && !analyzing && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mb-4" />
+        
+        {!validation && !isLoading && (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-blue-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

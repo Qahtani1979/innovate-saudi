@@ -1,48 +1,44 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Shield, Upload, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Shield, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from '../FileUploader';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CredentialVerificationAI({ profileType, profileId }) {
   const { language, isRTL, t } = useLanguage();
-  const [loading, setLoading] = useState(false);
   const [verification, setVerification] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const handleVerify = async (fileUrl) => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Verify the credentials for a ${profileType} profile.
+    const result = await invokeAI({
+      prompt: `Verify the credentials for a ${profileType} profile.
 Analyze the uploaded document and extract:
 1. Credential type (degree, certification, license, etc.)
 2. Issuing institution
 3. Date issued
 4. Verification status (appears legitimate / needs review / suspicious)
 5. Extracted key details`,
-        file_urls: [fileUrl],
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            credential_type: { type: 'string' },
-            issuer: { type: 'string' },
-            date_issued: { type: 'string' },
-            verification_status: { type: 'string', enum: ['legitimate', 'needs_review', 'suspicious'] },
-            details: { type: 'object' },
-            confidence_score: { type: 'number' }
-          }
+      file_urls: [fileUrl],
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          credential_type: { type: 'string' },
+          issuer: { type: 'string' },
+          date_issued: { type: 'string' },
+          verification_status: { type: 'string', enum: ['legitimate', 'needs_review', 'suspicious'] },
+          details: { type: 'object' },
+          confidence_score: { type: 'number' }
         }
-      });
-      setVerification(result);
+      }
+    });
+
+    if (result.success) {
+      setVerification(result.data);
       toast.success(t({ en: 'Verification complete', ar: 'اكتمل التحقق' }));
-    } catch (error) {
-      toast.error(t({ en: 'Verification failed', ar: 'فشل التحقق' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -55,13 +51,16 @@ Analyze the uploaded document and extract:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <FileUploader
           onUpload={(url) => handleVerify(url)}
           accept=".pdf,.jpg,.png"
           label={t({ en: 'Upload credential document', ar: 'رفع وثيقة الشهادة' })}
+          disabled={!isAvailable}
         />
 
-        {loading && (
+        {isLoading && (
           <div className="text-center py-6">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
             <p className="text-sm text-slate-600">{t({ en: 'AI is verifying credentials...', ar: 'الذكاء يتحقق من الشهادات...' })}</p>

@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,14 +6,16 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { Sparkles, TrendingUp, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AISuccessPredictor({ pilot, onPredictionComplete }) {
   const { language, isRTL, t } = useLanguage();
   const [prediction, setPrediction] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const predictMutation = useMutation({
-    mutationFn: async () => {
-      const prompt = `Analyze this pilot project and predict its success probability based on historical patterns:
+  const generatePrediction = async () => {
+    const prompt = `Analyze this pilot project and predict its success probability based on historical patterns:
 
 Pilot Details:
 - Title: ${pilot.title_en}
@@ -36,37 +36,35 @@ Consider factors:
 
 Provide analysis in JSON format.`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            success_probability: { type: "number", description: "0-100" },
-            confidence_level: { type: "string", enum: ["low", "medium", "high"] },
-            key_strengths: { type: "array", items: { type: "string" } },
-            risk_factors: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } },
-            comparison_to_similar_pilots: { type: "string" },
-            predicted_outcomes: {
-              type: "object",
-              properties: {
-                kpi_achievement: { type: "string" },
-                timeline_adherence: { type: "string" },
-                budget_efficiency: { type: "string" }
-              }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          success_probability: { type: "number", description: "0-100" },
+          confidence_level: { type: "string", enum: ["low", "medium", "high"] },
+          key_strengths: { type: "array", items: { type: "string" } },
+          risk_factors: { type: "array", items: { type: "string" } },
+          recommendations: { type: "array", items: { type: "string" } },
+          comparison_to_similar_pilots: { type: "string" },
+          predicted_outcomes: {
+            type: "object",
+            properties: {
+              kpi_achievement: { type: "string" },
+              timeline_adherence: { type: "string" },
+              budget_efficiency: { type: "string" }
             }
           }
         }
-      });
+      }
+    });
 
-      return response;
-    },
-    onSuccess: (data) => {
-      setPrediction(data);
-      if (onPredictionComplete) onPredictionComplete(data);
+    if (result.success) {
+      setPrediction(result.data);
+      if (onPredictionComplete) onPredictionComplete(result.data);
       toast.success(t({ en: 'AI prediction generated', ar: 'تم إنشاء التنبؤ الذكي' }));
     }
-  });
+  };
 
   const probabilityColor = (prob) => {
     if (prob >= 70) return 'text-green-600';
@@ -89,14 +87,16 @@ Provide analysis in JSON format.`;
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {!prediction ? (
           <div className="text-center py-6">
             <Button
-              onClick={() => predictMutation.mutate()}
-              disabled={predictMutation.isPending}
+              onClick={generatePrediction}
+              disabled={isLoading || !isAvailable}
               className="bg-gradient-to-r from-purple-600 to-blue-600"
             >
-              {predictMutation.isPending ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
@@ -225,8 +225,8 @@ Provide analysis in JSON format.`;
 
             <Button
               variant="outline"
-              onClick={() => predictMutation.mutate()}
-              disabled={predictMutation.isPending}
+              onClick={generatePrediction}
+              disabled={isLoading || !isAvailable}
               className="w-full"
             >
               {t({ en: 'Refresh Prediction', ar: 'تحديث التنبؤ' })}
