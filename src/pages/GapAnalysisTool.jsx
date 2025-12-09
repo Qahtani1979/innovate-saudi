@@ -11,11 +11,13 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function GapAnalysisTool() {
   const { language, isRTL, t } = useLanguage();
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
@@ -43,17 +45,15 @@ function GapAnalysisTool() {
   });
 
   const runGapAnalysis = async () => {
-    setAnalyzing(true);
-    try {
-      const sectorData = sectors.map(s => ({
-        sector: s.name_en,
-        challenges: challenges.filter(c => c.sector === s.code).length,
-        pilots: pilots.filter(p => p.sector === s.code).length,
-        solutions: solutions.filter(sol => sol.sectors?.includes(s.code)).length
-      }));
+    const sectorData = sectors.map(s => ({
+      sector: s.name_en,
+      challenges: challenges.filter(c => c.sector === s.code).length,
+      pilots: pilots.filter(p => p.sector === s.code).length,
+      solutions: solutions.filter(sol => sol.sectors?.includes(s.code)).length
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Perform COMPREHENSIVE gap analysis for Saudi municipal innovation ecosystem:
+    const result = await invokeAI({
+      prompt: `Perform COMPREHENSIVE gap analysis for Saudi municipal innovation ecosystem:
 
 CURRENT PORTFOLIO:
 ${JSON.stringify(sectorData, null, 2)}
@@ -147,14 +147,12 @@ Include USE CASE scenarios:
             }
           }
         }
-      });
+      }
+    });
 
-      setAiAnalysis(result);
+    if (result.success) {
+      setAiAnalysis(result.data);
       toast.success(t({ en: 'Gap analysis complete', ar: 'اكتمل تحليل الفجوات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -173,6 +171,7 @@ Include USE CASE scenarios:
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
       {/* Header */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-red-600 via-orange-600 to-amber-600 p-8 text-white">
         <h1 className="text-5xl font-bold mb-2">
@@ -226,7 +225,7 @@ Include USE CASE scenarios:
                 })}
               </p>
             </div>
-            <Button onClick={runGapAnalysis} disabled={analyzing} className="bg-gradient-to-r from-blue-600 to-purple-600">
+            <Button onClick={runGapAnalysis} disabled={analyzing || !isAvailable} className="bg-gradient-to-r from-blue-600 to-purple-600">
               {analyzing ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (

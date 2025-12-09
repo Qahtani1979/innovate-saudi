@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, AlertTriangle, CheckCircle2, Loader2, Brain } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 /**
  * ReviewerAI - AI Assistant for Reviewers/Approvers
@@ -18,13 +19,11 @@ export default function ReviewerAI({
   approvalRequest 
 }) {
   const { t, isRTL } = useLanguage();
-  const [loading, setLoading] = useState(false);
   const [aiReview, setAIReview] = useState(approvalRequest?.ai_review_assistance || null);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const runAIReview = async () => {
-    setLoading(true);
-    try {
-      const prompt = `
+    const prompt = `
 🚨🚨🚨 CRITICAL BILINGUAL REQUIREMENT 🚨🚨🚨
 
 You MUST return ALL text fields in BILINGUAL format: {"en": "English", "ar": "العربية"}
@@ -106,10 +105,10 @@ YOU MUST RETURN THIS EXACT JSON STRUCTURE:
 
 NEVER use plain strings. EVERY text field MUST be {"en": "...", "ar": "..."}.
 Write professional formal Arabic for Saudi government officials.
-      `;
+    `;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
+    const response = await invokeAI({
+      prompt,
         response_json_schema: {
           type: 'object',
           properties: {
@@ -192,13 +191,11 @@ Write professional formal Arabic for Saudi government officials.
             }
           }
         }
-      });
+      }
+    });
 
-      setAIReview(response);
-    } catch (error) {
-      console.error('AI review error:', error);
-    } finally {
-      setLoading(false);
+    if (response.success) {
+      setAIReview(response.data);
     }
   };
 
@@ -215,7 +212,7 @@ Write professional formal Arabic for Saudi government officials.
           <Button
             size="sm"
             onClick={runAIReview}
-            disabled={loading}
+            disabled={loading || !isAvailable}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {loading ? (
@@ -233,6 +230,7 @@ Write professional formal Arabic for Saudi government officials.
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {!aiReview && !loading && (
           <p className="text-sm text-slate-600 text-center py-4">
             {t({ 
