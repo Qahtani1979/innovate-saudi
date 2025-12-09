@@ -17,7 +17,7 @@ import SmartRecommendation from '../components/SmartRecommendation';
 import PlatformStatsWidget from '../components/PlatformStatsWidget';
 import MyWeekAhead from '../components/MyWeekAhead';
 import PlatformInsightsWidget from '../components/PlatformInsightsWidget';
-import FirstTimeWizard from '../components/FirstTimeWizard';
+// FirstTimeWizard moved to Layout.jsx
 import ActivityFeed from '../components/ActivityFeed';
 import QuickActionsPanel from '../components/QuickActionsPanel';
 import NationalMap from '../components/NationalMap';
@@ -83,7 +83,7 @@ function Home() {
     enabled: !!user
   });
 
-  const showOnboarding = userProfile && !userProfile.onboarding_progress?.completed;
+  // Onboarding wizard is now handled in Layout.jsx
 
   const stats = [
     {
@@ -429,8 +429,7 @@ function Home() {
       {/* Living Labs Dashboard */}
       <LivingLabDashboard />
 
-      {/* First-Time User Wizard */}
-      {showOnboarding && <FirstTimeWizard user={user} userProfile={userProfile} onComplete={() => {}} />}
+      {/* Onboarding wizard is now handled in Layout.jsx */}
 
       {/* Expert Assignments Widget (if user is expert) */}
       {myExpertAssignments.length > 0 && (
