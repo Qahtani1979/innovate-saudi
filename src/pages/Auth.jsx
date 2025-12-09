@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, Building2, Chrome } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Building2, Chrome, Globe } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { language, toggleLanguage, t } = useLanguage();
   const { toast } = useToast();
   const { isAuthenticated, isLoadingAuth, login, signUp, signInWithGoogle, authError } = useAuth();
   
@@ -162,14 +164,31 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4 relative">
+      {/* Language Selector */}
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleLanguage}
+          className="gap-2"
+        >
+          <Globe className="h-4 w-4" />
+          {language === 'en' ? 'العربية' : 'English'}
+        </Button>
+      </div>
+
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Building2 className="h-10 w-10 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Innovation Platform</h1>
-          <p className="text-muted-foreground mt-2">Municipal Innovation Management System</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            {t({ en: 'Innovation Platform', ar: 'منصة الابتكار' })}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            {t({ en: 'Municipal Innovation Management System', ar: 'نظام إدارة الابتكار البلدي' })}
+          </p>
         </div>
         
         <Card className="border-border/50 shadow-lg">
