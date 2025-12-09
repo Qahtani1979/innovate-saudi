@@ -81,7 +81,9 @@ export default function Onboarding() {
   };
 
   const handleSkip = async () => {
-    await checkAuth();
+    // Don't call checkAuth here - the OnboardingWizard handles the database update
+    // and navigation. Calling checkAuth would trigger checkOnboardingStatus which
+    // might redirect back to onboarding before the navigation completes
     navigate(createPageUrl('Home'));
   };
 

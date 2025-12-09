@@ -978,9 +978,14 @@ function LayoutContent({ children, currentPageName }) {
           <OnboardingWizard 
             onComplete={() => {
               setShowOnboarding(false);
+              // Refresh auth to get updated profile
               checkAuth?.();
             }}
-            onSkip={() => setShowOnboarding(false)}
+            onSkip={() => {
+              // OnboardingWizard handles DB update and navigation
+              // Just hide the wizard in the Layout
+              setShowOnboarding(false);
+            }}
           />
         )}
         </div>
