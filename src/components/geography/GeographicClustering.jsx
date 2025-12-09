@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { MapPin, Sparkles, TrendingUp } from 'lucide-react';
+import { MapPin, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function GeographicClustering({ entities, entityType = 'challenge' }) {
   const { t, language } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [clusters, setClusters] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeGeographicPatterns = async () => {
-    setAnalyzing(true);
-    try {
-      const entitiesWithGeo = entities.filter(e => e.coordinates || e.municipality_id);
-      
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze geographic patterns in ${entitiesWithGeo.length} ${entityType}s:
+    const entitiesWithGeo = entities.filter(e => e.coordinates || e.municipality_id);
+    
+    const result = await invokeAI({
+      prompt: `Analyze geographic patterns in ${entitiesWithGeo.length} ${entityType}s:
 
 Data: ${entitiesWithGeo.slice(0, 30).map(e => `
   Title: ${e.title_en || e.name_en}
@@ -33,45 +32,44 @@ Identify:
 3. Underserved areas (municipalities with few initiatives)
 4. Cross-city opportunities (similar ${entityType}s that could collaborate)
 5. Geographic gaps (areas needing attention)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            clusters: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  region: { type: 'string' },
-                  municipality_count: { type: 'number' },
-                  entity_count: { type: 'number' },
-                  common_themes: { type: 'array', items: { type: 'string' } },
-                  priority_level: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          clusters: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                region: { type: 'string' },
+                municipality_count: { type: 'number' },
+                entity_count: { type: 'number' },
+                common_themes: { type: 'array', items: { type: 'string' } },
+                priority_level: { type: 'string' }
               }
-            },
-            regional_patterns: { type: 'array', items: { type: 'string' } },
-            underserved_areas: { type: 'array', items: { type: 'string' } },
-            collaboration_opportunities: { 
-              type: 'array', 
-              items: {
-                type: 'object',
-                properties: {
-                  municipalities: { type: 'array', items: { type: 'string' } },
-                  theme: { type: 'string' },
-                  potential: { type: 'string' }
-                }
+            }
+          },
+          regional_patterns: { type: 'array', items: { type: 'string' } },
+          underserved_areas: { type: 'array', items: { type: 'string' } },
+          collaboration_opportunities: { 
+            type: 'array', 
+            items: {
+              type: 'object',
+              properties: {
+                municipalities: { type: 'array', items: { type: 'string' } },
+                theme: { type: 'string' },
+                potential: { type: 'string' }
               }
-            },
-            geographic_gaps: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          geographic_gaps: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setClusters(result);
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
+    if (result.success) {
+      setClusters(result.data);
+      toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
     }
-    setAnalyzing(false);
   };
 
   return (
@@ -83,21 +81,23 @@ Identify:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {!clusters && (
           <div className="text-center py-6">
             <Sparkles className="h-12 w-12 text-green-600 mx-auto mb-3" />
             <p className="text-sm text-slate-600 mb-4">
               {t({ en: 'AI will analyze geographic patterns and identify opportunities', ar: 'سيقوم الذكاء بتحليل الأنماط الجغرافية وتحديد الفرص' })}
             </p>
-            <Button onClick={analyzeGeographicPatterns} disabled={analyzing} className="gap-2">
-              {analyzing ? (
+            <Button onClick={analyzeGeographicPatterns} disabled={isLoading || !isAvailable} className="gap-2">
+              {isLoading ? (
                 <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   {t({ en: 'Analyzing...', ar: 'يحلل...' })}
                 </>
               ) : (
                 <>
-                  <Brain className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4" />
                   {t({ en: 'Analyze Geography', ar: 'تحليل الجغرافيا' })}
                 </>
               )}

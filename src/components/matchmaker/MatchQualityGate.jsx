@@ -5,19 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, CheckCircle2, AlertTriangle, Loader2, Network } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function MatchQualityGate({ application, matchedChallenges = [], onApprove }) {
   const { language, isRTL, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [qualityScores, setQualityScores] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const runQualityAnalysis = async () => {
-    setAnalyzing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze match quality for this Matchmaker application:
+    const result = await invokeAI({
+      prompt: `Analyze match quality for this Matchmaker application:
 
 APPLICATION:
 - Organization: ${application.organization_name_en}
@@ -39,27 +38,24 @@ Also provide:
 - recommendation (approve / review_required / reject)
 - concerns (array of strings)
 - opportunities (array of strings)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            sector_alignment: { type: 'number' },
-            capability_fit: { type: 'number' },
-            geographic_suitability: { type: 'number' },
-            strategic_priority: { type: 'number' },
-            overall_quality: { type: 'number' },
-            recommendation: { type: 'string' },
-            concerns: { type: 'array', items: { type: 'string' } },
-            opportunities: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          sector_alignment: { type: 'number' },
+          capability_fit: { type: 'number' },
+          geographic_suitability: { type: 'number' },
+          strategic_priority: { type: 'number' },
+          overall_quality: { type: 'number' },
+          recommendation: { type: 'string' },
+          concerns: { type: 'array', items: { type: 'string' } },
+          opportunities: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setQualityScores(result);
+    if (result.success) {
+      setQualityScores(result.data);
       toast.success(t({ en: 'Match quality analyzed', ar: 'تم تحليل جودة المطابقة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -75,6 +71,8 @@ Also provide:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="p-4 bg-white border rounded-lg">
           <p className="text-sm font-medium mb-2">{t({ en: 'Matched Challenges:', ar: 'التحديات المطابقة:' })}</p>
           <p className="text-2xl font-bold text-teal-600">{matchedChallenges.length}</p>
@@ -82,10 +80,10 @@ Also provide:
 
         <Button
           onClick={runQualityAnalysis}
-          disabled={analyzing || matchedChallenges.length === 0}
+          disabled={isLoading || !isAvailable || matchedChallenges.length === 0}
           className="w-full bg-teal-600 hover:bg-teal-700"
         >
-          {analyzing ? (
+          {isLoading ? (
             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}</>
           ) : (
             <><Sparkles className="h-4 w-4 mr-2" />{t({ en: 'Run AI Quality Analysis', ar: 'تشغيل تحليل الجودة الذكي' })}</>

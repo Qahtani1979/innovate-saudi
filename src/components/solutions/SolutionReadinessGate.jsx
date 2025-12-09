@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Shield, CheckCircle2, XCircle, AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionReadinessGate({ solution, onProceed }) {
   const { language, t } = useLanguage();
-  const [checking, setChecking] = useState(false);
   const [assessment, setAssessment] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const checkReadiness = async () => {
-    setChecking(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Assess if this solution is ready for municipal piloting:
+    const result = await invokeAI({
+      prompt: `Assess if this solution is ready for municipal piloting:
 
 SOLUTION: ${solution.name_en}
 PROVIDER: ${solution.provider_name}
@@ -37,33 +36,30 @@ Check against pilot readiness criteria:
 6. Compliance certifications
 
 Return: ready (boolean), score (0-100), blockers (critical issues), warnings (minor issues)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            ready: { type: "boolean" },
-            score: { type: "number" },
-            blockers: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  issue: { type: "string" },
-                  severity: { type: "string" },
-                  resolution: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          ready: { type: "boolean" },
+          score: { type: "number" },
+          blockers: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                issue: { type: "string" },
+                severity: { type: "string" },
+                resolution: { type: "string" }
               }
-            },
-            warnings: { type: "array", items: { type: "string" } },
-            passed_checks: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          warnings: { type: "array", items: { type: "string" } },
+          passed_checks: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setAssessment(response);
-    } catch (error) {
-      toast.error(t({ en: 'Readiness check failed', ar: 'فشل فحص الجاهزية' }));
-    } finally {
-      setChecking(false);
+    if (result.success) {
+      setAssessment(result.data);
     }
   };
 
@@ -76,6 +72,8 @@ Return: ready (boolean), score (0-100), blockers (critical issues), warnings (mi
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="p-4 bg-white rounded-lg border-2 border-blue-300">
           <p className="text-sm text-blue-900 font-medium mb-2">
             {t({ en: '🛡️ Quality Gate: Verify solution readiness before pilot', ar: '🛡️ بوابة الجودة: التحقق من جاهزية الحل قبل التجربة' })}
@@ -89,8 +87,8 @@ Return: ready (boolean), score (0-100), blockers (critical issues), warnings (mi
         </div>
 
         {!assessment && (
-          <Button onClick={checkReadiness} disabled={checking} className="w-full bg-blue-600 hover:bg-blue-700">
-            {checking ? (
+          <Button onClick={checkReadiness} disabled={isLoading || !isAvailable} className="w-full bg-blue-600 hover:bg-blue-700">
+            {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Checking...', ar: 'جاري الفحص...' })}
@@ -185,7 +183,7 @@ Return: ready (boolean), score (0-100), blockers (critical issues), warnings (mi
             )}
 
             <div className="flex gap-3">
-              <Button onClick={checkReadiness} variant="outline" className="flex-1">
+              <Button onClick={checkReadiness} disabled={isLoading || !isAvailable} variant="outline" className="flex-1">
                 {t({ en: 'Re-check', ar: 'إعادة الفحص' })}
               </Button>
               {assessment.ready && onProceed && (

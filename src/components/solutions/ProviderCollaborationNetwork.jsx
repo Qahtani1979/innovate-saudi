@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Users, Sparkles, Loader2, CheckCircle, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProviderCollaborationNetwork({ providerId }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
-  const [finding, setFinding] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
@@ -21,12 +22,10 @@ export default function ProviderCollaborationNetwork({ providerId }) {
   });
 
   const findPartners = async () => {
-    setFinding(true);
-    try {
-      const currentSolution = solutions.find(s => s.provider_id === providerId);
-      
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze complementary partnership opportunities for this provider:
+    const currentSolution = solutions.find(s => s.provider_id === providerId);
+    
+    const result = await invokeAI({
+      prompt: `Analyze complementary partnership opportunities for this provider:
 
 Provider Solution: ${currentSolution?.name_en}
 Sectors: ${currentSolution?.sectors?.join(', ')}
@@ -41,32 +40,29 @@ Suggest 3 partnership opportunities where solutions complement each other:
 1. Joint end-to-end solutions
 2. Feature gaps that others fill
 3. Geographic/sector expansion`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            partnerships: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  partner_solution: { type: "string" },
-                  synergy_score: { type: "number" },
-                  value_proposition: { type: "string" },
-                  target_challenges: { type: "string" },
-                  revenue_model: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          partnerships: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                partner_solution: { type: "string" },
+                synergy_score: { type: "number" },
+                value_proposition: { type: "string" },
+                target_challenges: { type: "string" },
+                revenue_model: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setSuggestions(response.partnerships);
+    if (result.success) {
+      setSuggestions(result.data.partnerships);
       toast.success(t({ en: 'Found partnership opportunities', ar: 'وُجدت فرص الشراكة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
-    } finally {
-      setFinding(false);
     }
   };
 
@@ -78,8 +74,8 @@ Suggest 3 partnership opportunities where solutions complement each other:
             <Users className="h-5 w-5 text-teal-600" />
             {t({ en: 'Provider Collaboration Network', ar: 'شبكة تعاون المقدمين' })}
           </CardTitle>
-          <Button onClick={findPartners} disabled={finding} size="sm" className="bg-teal-600">
-            {finding ? (
+          <Button onClick={findPartners} disabled={isLoading || !isAvailable} size="sm" className="bg-teal-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -89,7 +85,9 @@ Suggest 3 partnership opportunities where solutions complement each other:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!suggestions && !finding && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!suggestions && !isLoading && (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-teal-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">
