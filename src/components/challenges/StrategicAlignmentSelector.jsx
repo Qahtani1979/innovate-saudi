@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +15,7 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedPlans, setSelectedPlans] = useState(challenge?.strategic_plan_ids || []);
-  const [validating, setValidating] = useState(false);
+  const { invokeAI, status, isLoading: validating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans'],
@@ -74,7 +76,6 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
       return;
     }
 
-    setValidating(true);
     try {
       const selectedPlanObjects = strategicPlans.filter(p => selectedPlans.includes(p.id));
       
@@ -93,7 +94,7 @@ Analyze:
 3. Potential gaps or misalignments
 4. Recommendations to strengthen alignment`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -118,12 +119,12 @@ Analyze:
         }
       });
 
-      toast.success(t({ en: 'Validation complete - see analysis', ar: 'اكتمل التحقق - راجع التحليل' }));
-      console.log('Alignment validation:', result);
+      if (response.success) {
+        toast.success(t({ en: 'Validation complete - see analysis', ar: 'اكتمل التحقق - راجع التحليل' }));
+        console.log('Alignment validation:', response.data);
+      }
     } catch (error) {
       toast.error(t({ en: 'Validation failed', ar: 'فشل التحقق' }));
-    } finally {
-      setValidating(false);
     }
   };
 

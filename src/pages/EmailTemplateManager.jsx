@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,7 +66,7 @@ export default function EmailTemplateManager() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [previewTemplate, setPreviewTemplate] = useState(null);
-  const [enhancing, setEnhancing] = useState(false);
+  const { invokeAI, status, isLoading: enhancing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -90,9 +92,8 @@ export default function EmailTemplateManager() {
   };
 
   const enhanceWithAI = async () => {
-    setEnhancing(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Enhance this email template for citizen communication:
 
 Subject (EN): ${formData.subject_en}
@@ -114,12 +115,12 @@ Generate:
         }
       });
 
-      setFormData({ ...formData, ...result });
-      toast.success(t({ en: 'Template enhanced', ar: 'تم التحسين' }));
+      if (response.success) {
+        setFormData({ ...formData, ...response.data });
+        toast.success(t({ en: 'Template enhanced', ar: 'تم التحسين' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setEnhancing(false);
     }
   };
 

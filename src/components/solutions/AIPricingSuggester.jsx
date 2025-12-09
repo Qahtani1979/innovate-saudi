@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +11,10 @@ import { toast } from 'sonner';
 
 export default function AIPricingSuggester({ solution, onPricingComplete }) {
   const { language, isRTL, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [pricingData, setPricingData] = useState(null);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const handleAnalyzePricing = async () => {
-    setAnalyzing(true);
     try {
       // Find similar solutions for pricing comparison
       const solutions = await base44.entities.Solution.list();
@@ -25,7 +26,7 @@ export default function AIPricingSuggester({ solution, onPricingComplete }) {
         )
         .slice(0, 10);
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Analyze pricing for this solution in Saudi municipal market:
 
 Solution: ${solution?.name_en}
@@ -64,17 +65,17 @@ Provide BILINGUAL pricing intelligence (AR+EN):
         }
       });
 
-      setPricingData(result);
-      
-      if (onPricingComplete) {
-        onPricingComplete(result);
-      }
+      if (response.success) {
+        setPricingData(response.data);
+        
+        if (onPricingComplete) {
+          onPricingComplete(response.data);
+        }
 
-      toast.success(t({ en: '✅ Pricing analysis complete', ar: '✅ اكتمل تحليل التسعير' }));
+        toast.success(t({ en: '✅ Pricing analysis complete', ar: '✅ اكتمل تحليل التسعير' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Pricing analysis failed', ar: 'فشل تحليل التسعير' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 

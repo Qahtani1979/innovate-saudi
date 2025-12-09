@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Network, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function MultiPartyMatchmaker({ challengeId }) {
   const { language, t } = useLanguage();
-  const [finding, setFinding] = useState(false);
   const [consortium, setConsortium] = useState(null);
+  const { invokeAI, status, isLoading: finding, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const findConsortium = async () => {
-    setFinding(true);
     try {
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Create optimal consortium for complex challenge requiring:
 - Tech provider (IoT/sensors)
 - System integrator
@@ -42,12 +42,12 @@ Suggest 3-4 party consortium with clear roles and synergy explanation.`,
         }
       });
 
-      setConsortium(response.parties);
-      toast.success(t({ en: 'Consortium formed', ar: 'الكونسورتيوم شُكّل' }));
+      if (response.success) {
+        setConsortium(response.data.parties);
+        toast.success(t({ en: 'Consortium formed', ar: 'الكونسورتيوم شُكّل' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
-    } finally {
-      setFinding(false);
     }
   };
 
@@ -59,11 +59,12 @@ Suggest 3-4 party consortium with clear roles and synergy explanation.`,
             <Network className="h-5 w-5 text-purple-600" />
             {t({ en: 'Multi-Party Matchmaker', ar: 'مطابق متعدد الأطراف' })}
           </CardTitle>
-          <Button onClick={findConsortium} disabled={finding} size="sm" className="bg-purple-600">
+          <Button onClick={findConsortium} disabled={finding || !isAvailable} size="sm" className="bg-purple-600">
             {finding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Find Consortium', ar: 'إيجاد كونسورتيوم' })}
           </Button>
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
       </CardHeader>
       <CardContent className="pt-6">
         {consortium && (

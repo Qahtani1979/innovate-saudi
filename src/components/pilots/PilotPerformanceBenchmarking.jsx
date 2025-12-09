@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +13,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 
 export default function PilotPerformanceBenchmarking({ pilot }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [benchmark, setBenchmark] = useState(null);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: allPilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -20,7 +22,6 @@ export default function PilotPerformanceBenchmarking({ pilot }) {
   });
 
   const analyzeBenchmark = async () => {
-    setAnalyzing(true);
     try {
       const peers = allPilots.filter(p => 
         p.sector === pilot.sector && 
@@ -28,7 +29,7 @@ export default function PilotPerformanceBenchmarking({ pilot }) {
         p.stage === 'completed'
       );
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Benchmark pilot performance:
 
 PILOT: ${pilot.title_en}
@@ -65,12 +66,12 @@ Provide:
         }
       });
 
-      setBenchmark(response);
-      toast.success(t({ en: 'Benchmark complete', ar: 'المعيار مكتمل' }));
+      if (response.success) {
+        setBenchmark(response.data);
+        toast.success(t({ en: 'Benchmark complete', ar: 'المعيار مكتمل' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Benchmark failed', ar: 'فشل المعيار' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
