@@ -17,6 +17,7 @@ export default function PublicHeader() {
     { href: '/public-solutions', label: t({ en: 'Solutions', ar: 'الحلول' }) },
     { href: '/for-municipalities', label: t({ en: 'For Municipalities', ar: 'للبلديات' }) },
     { href: '/for-providers', label: t({ en: 'For Providers', ar: 'للمزودين' }) },
+    { href: '/for-innovators', label: t({ en: 'For Innovators', ar: 'للمبتكرين' }) },
     { href: '/faq', label: t({ en: 'FAQ', ar: 'الأسئلة الشائعة' }) },
     { href: '/contact', label: t({ en: 'Contact', ar: 'تواصل' }) },
   ];

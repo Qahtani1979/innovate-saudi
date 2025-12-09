@@ -147,6 +147,9 @@ function PublicPortal() {
               <Link to="/for-providers" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
                 {t({ en: 'For Providers', ar: 'للمزودين' })}
               </Link>
+              <Link to="/for-innovators" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'For Innovators', ar: 'للمبتكرين' })}
+              </Link>
               <Link to="/faq" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
                 {t({ en: 'FAQ', ar: 'الأسئلة الشائعة' })}
               </Link>
@@ -424,7 +427,7 @@ function PublicPortal() {
         )}
 
         {/* CTA Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 hover:shadow-lg transition-all">
             <CardContent className="pt-8 pb-8 text-center">
               <Building2 className="h-12 w-12 text-blue-600 mx-auto mb-4" />
@@ -454,6 +457,23 @@ function PublicPortal() {
               <Link to="/auth">
                 <Button className="bg-purple-600 hover:bg-purple-700">
                   {t({ en: 'Join as Provider', ar: 'انضم كمزود' })}
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-indigo-50 to-pink-50 border-2 border-indigo-200 hover:shadow-lg transition-all">
+            <CardContent className="pt-8 pb-8 text-center">
+              <Lightbulb className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                {t({ en: 'For Innovators', ar: 'للمبتكرين' })}
+              </h3>
+              <p className="text-sm text-slate-600 mb-6">
+                {t({ en: 'Submit proposals, access funding, pilot solutions', ar: 'قدم مقترحات، احصل على تمويل، جرب الحلول' })}
+              </p>
+              <Link to="/for-innovators">
+                <Button className="bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700">
+                  {t({ en: 'Learn More', ar: 'اعرف المزيد' })}
                 </Button>
               </Link>
             </CardContent>
