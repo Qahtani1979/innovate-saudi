@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Loader2, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function UnifiedEvaluationForm({ 
   entityType, 
@@ -19,7 +21,7 @@ export default function UnifiedEvaluationForm({
 }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [aiAssisting, setAiAssisting] = useState(false);
+  const { invokeAI, status, isLoading: aiAssisting, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [scores, setScores] = useState({
     feasibility_score: 50,
@@ -69,10 +71,8 @@ export default function UnifiedEvaluationForm({
   });
 
   const getAIAssistance = async () => {
-    setAiAssisting(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are evaluating a ${entityType} (ID: ${entityId}).
+    const response = await invokeAI({
+      prompt: `You are evaluating a ${entityType} (ID: ${entityId}).
         
 Based on best practices, suggest:
 1. Evaluation scores (0-100) for: feasibility, impact, innovation, cost-effectiveness, risk, strategic alignment
@@ -82,39 +82,36 @@ Based on best practices, suggest:
 5. Overall recommendation
 
 Be thorough and constructive.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            scores: {
-              type: 'object',
-              properties: {
-                feasibility_score: { type: 'number' },
-                impact_score: { type: 'number' },
-                innovation_score: { type: 'number' },
-                cost_effectiveness_score: { type: 'number' },
-                risk_score: { type: 'number' },
-                strategic_alignment_score: { type: 'number' }
-              }
-            },
-            strengths: { type: 'array', items: { type: 'string' } },
-            weaknesses: { type: 'array', items: { type: 'string' } },
-            improvements: { type: 'array', items: { type: 'string' } },
-            recommendation: { type: 'string' },
-            feedback: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          scores: {
+            type: 'object',
+            properties: {
+              feasibility_score: { type: 'number' },
+              impact_score: { type: 'number' },
+              innovation_score: { type: 'number' },
+              cost_effectiveness_score: { type: 'number' },
+              risk_score: { type: 'number' },
+              strategic_alignment_score: { type: 'number' }
+            }
+          },
+          strengths: { type: 'array', items: { type: 'string' } },
+          weaknesses: { type: 'array', items: { type: 'string' } },
+          improvements: { type: 'array', items: { type: 'string' } },
+          recommendation: { type: 'string' },
+          feedback: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setScores({ ...scores, ...result.scores });
-      setStrengths(result.strengths || ['', '', '']);
-      setWeaknesses(result.weaknesses || ['', '', '']);
-      setImprovements(result.improvements || ['', '', '']);
-      setFeedbackText(result.feedback || '');
+    if (response.success) {
+      setScores({ ...scores, ...response.data.scores });
+      setStrengths(response.data.strengths || ['', '', '']);
+      setWeaknesses(response.data.weaknesses || ['', '', '']);
+      setImprovements(response.data.improvements || ['', '', '']);
+      setFeedbackText(response.data.feedback || '');
       toast.success(t({ en: 'AI suggestions loaded', ar: 'تم تحميل اقتراحات الذكاء الاصطناعي' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI assistance failed', ar: 'فشل المساعد الذكي' }));
-    } finally {
-      setAiAssisting(false);
     }
   };
 
@@ -140,7 +137,7 @@ Be thorough and constructive.`,
           </CardTitle>
           <Button
             onClick={getAIAssistance}
-            disabled={aiAssisting}
+            disabled={aiAssisting || !isAvailable}
             variant="outline"
             className="gap-2"
           >
@@ -148,15 +145,14 @@ Be thorough and constructive.`,
             {t({ en: 'AI Assist', ar: 'المساعد الذكي' })}
           </Button>
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Overall Score Display */}
         <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
           <p className="text-sm text-slate-600 mb-2">{t({ en: 'Overall Score', ar: 'النقاط الإجمالية' })}</p>
           <p className="text-4xl font-bold text-blue-600">{overallScore.toFixed(1)}/100</p>
         </div>
 
-        {/* Score Criteria */}
         <div className="space-y-4">
           <h3 className="font-semibold text-slate-900">{t({ en: 'Evaluation Criteria', ar: 'معايير التقييم' })}</h3>
           {Object.entries(criteriaLabels).map(([key, label]) => (
@@ -177,7 +173,6 @@ Be thorough and constructive.`,
           ))}
         </div>
 
-        {/* Qualitative Feedback */}
         <div className="space-y-4">
           <div>
             <Label>{t({ en: 'Strengths (Top 3)', ar: 'نقاط القوة (أهم 3)' })}</Label>
@@ -244,7 +239,6 @@ Be thorough and constructive.`,
           </div>
         </div>
 
-        {/* Recommendation */}
         <div>
           <Label>{t({ en: 'Final Recommendation', ar: 'التوصية النهائية' })}</Label>
           <Select value={recommendation} onValueChange={setRecommendation}>
@@ -261,7 +255,6 @@ Be thorough and constructive.`,
           </Select>
         </div>
 
-        {/* Conditions (if conditional approval) */}
         {recommendation === 'approve_with_conditions' && (
           <div>
             <Label>{t({ en: 'Conditions for Approval', ar: 'شروط الموافقة' })}</Label>
@@ -290,7 +283,6 @@ Be thorough and constructive.`,
           </div>
         )}
 
-        {/* Submit */}
         <div className="flex gap-3 pt-4 border-t">
           <Button
             onClick={() => createEvaluationMutation.mutate()}

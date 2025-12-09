@@ -12,6 +12,8 @@ import { createPageUrl } from '../utils';
 import { AlertCircle, Plus, Search, Filter, Edit, Eye, LayoutGrid, List, Sparkles, Loader2, TrendingUp, Target, Zap, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MyChallenges() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,9 +21,10 @@ function MyChallenges() {
   const [sectorFilter, setSectorFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
   const [aiSuggestions, setAiSuggestions] = useState({});
-  const [analyzingId, setAnalyzingId] = useState(null);
   const { language, isRTL, t } = useLanguage();
   const [user, setUser] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const [analyzingId, setAnalyzingId] = useState(null);
 
   React.useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -102,7 +105,7 @@ Provide:
 3. Track recommendation (pilot/r_and_d/program/procurement/policy)
 4. One quick improvement tip`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -115,10 +118,10 @@ Provide:
         }
       });
 
-      setAiSuggestions(prev => ({ ...prev, [challengeId]: result }));
-      toast.success(t({ en: 'AI suggestions ready', ar: 'الاقتراحات الذكية جاهزة' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل الذكي' }));
+      if (response.success) {
+        setAiSuggestions(prev => ({ ...prev, [challengeId]: response.data }));
+        toast.success(t({ en: 'AI suggestions ready', ar: 'الاقتراحات الذكية جاهزة' }));
+      }
     } finally {
       setAnalyzingId(null);
     }

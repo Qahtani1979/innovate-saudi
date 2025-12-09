@@ -6,25 +6,25 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Sparkles, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function TaxonomyGapDetector({ sectors, subsectors, services }) {
   const { language, isRTL, t } = useLanguage();
   const [gaps, setGaps] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeGaps = async () => {
-    setAnalyzing(true);
-    try {
-      const taxonomyData = sectors.map(sector => ({
-        sector: sector.name_en,
-        subsector_count: subsectors.filter(ss => ss.sector_id === sector.id).length,
-        service_count: subsectors
-          .filter(ss => ss.sector_id === sector.id)
-          .reduce((sum, ss) => sum + services.filter(srv => srv.subsector_id === ss.id).length, 0)
-      }));
+    const taxonomyData = sectors.map(sector => ({
+      sector: sector.name_en,
+      subsector_count: subsectors.filter(ss => ss.sector_id === sector.id).length,
+      service_count: subsectors
+        .filter(ss => ss.sector_id === sector.id)
+        .reduce((sum, ss) => sum + services.filter(srv => srv.subsector_id === ss.id).length, 0)
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze taxonomy completeness for Saudi municipal innovation platform:
+    const response = await invokeAI({
+      prompt: `Analyze taxonomy completeness for Saudi municipal innovation platform:
 
 Current Taxonomy:
 ${JSON.stringify(taxonomyData, null, 2)}
@@ -37,54 +37,51 @@ Generate bilingual gap analysis:
 2. Missing services (subsectors without mapped services)
 3. Structural gaps (taxonomy imbalances or missing areas)
 4. Recommendations (specific additions needed)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            missing_subsectors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  sector_en: { type: 'string' },
-                  sector_ar: { type: 'string' },
-                  suggested_subsectors: { type: 'array', items: { type: 'string' } }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          missing_subsectors: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                sector_en: { type: 'string' },
+                sector_ar: { type: 'string' },
+                suggested_subsectors: { type: 'array', items: { type: 'string' } }
               }
-            },
-            missing_services: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  subsector_en: { type: 'string' },
-                  subsector_ar: { type: 'string' },
-                  suggested_services: { type: 'array', items: { type: 'string' } }
-                }
+            }
+          },
+          missing_services: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                subsector_en: { type: 'string' },
+                subsector_ar: { type: 'string' },
+                suggested_services: { type: 'array', items: { type: 'string' } }
               }
-            },
-            structural_gaps: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  gap_en: { type: 'string' },
-                  gap_ar: { type: 'string' },
-                  severity: { type: 'string' },
-                  recommendation_en: { type: 'string' },
-                  recommendation_ar: { type: 'string' }
-                }
+            }
+          },
+          structural_gaps: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                gap_en: { type: 'string' },
+                gap_ar: { type: 'string' },
+                severity: { type: 'string' },
+                recommendation_en: { type: 'string' },
+                recommendation_ar: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setGaps(result);
+    if (response.success) {
+      setGaps(response.data);
       toast.success(t({ en: 'Gap analysis complete', ar: 'اكتمل تحليل الفجوات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -101,17 +98,17 @@ Generate bilingual gap analysis:
                 {t({ en: 'Identify missing taxonomy elements and structural gaps', ar: 'تحديد عناصر التصنيف المفقودة والفجوات الهيكلية' })}
               </p>
             </div>
-            <Button onClick={analyzeGaps} disabled={analyzing} className="bg-orange-600">
+            <Button onClick={analyzeGaps} disabled={analyzing || !isAvailable} className="bg-orange-600">
               {analyzing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'Detect Gaps', ar: 'كشف الفجوات' })}
             </Button>
           </div>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-4" />
         </CardContent>
       </Card>
 
       {gaps && (
         <div className="space-y-6">
-          {/* Missing Subsectors */}
           {gaps.missing_subsectors?.length > 0 && (
             <Card className="border-2 border-yellow-200">
               <CardHeader>
@@ -139,7 +136,6 @@ Generate bilingual gap analysis:
             </Card>
           )}
 
-          {/* Missing Services */}
           {gaps.missing_services?.length > 0 && (
             <Card className="border-2 border-blue-200">
               <CardHeader>
@@ -167,7 +163,6 @@ Generate bilingual gap analysis:
             </Card>
           )}
 
-          {/* Structural Gaps */}
           {gaps.structural_gaps?.length > 0 && (
             <Card className="border-2 border-red-200">
               <CardHeader>
