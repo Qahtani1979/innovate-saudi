@@ -56,7 +56,7 @@ export default function ChallengeSubmissionWizard({ challenge, onClose }) {
 
   const generateAIBrief = async () => {
     const result = await invokeAI({
-        prompt: `Generate a bilingual submission brief for this challenge. CRITICAL: Provide ALL text in BOTH English AND Arabic.
+      prompt: `Generate a bilingual submission brief for this challenge. CRITICAL: Provide ALL text in BOTH English AND Arabic.
 
 Title: ${challenge.title_en}
 Description: ${challenge.description_en}
@@ -70,36 +70,35 @@ Provide (BILINGUAL - each field in both EN and AR):
 3. Expected complexity (low/medium/high with bilingual reason)
 4. Recommended reviewers (types of expertise needed - bilingual)
 5. Estimated review time (days)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            executive_summary_en: { type: 'string' },
-            executive_summary_ar: { type: 'string' },
-            key_highlights: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              } 
-            },
-            complexity: { type: 'string' },
-            complexity_reason_en: { type: 'string' },
-            complexity_reason_ar: { type: 'string' },
-            recommended_reviewers: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              } 
-            },
-            estimated_review_days: { type: 'number' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          executive_summary_en: { type: 'string' },
+          executive_summary_ar: { type: 'string' },
+          key_highlights: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' }
+              }
+            } 
+          },
+          complexity: { type: 'string' },
+          complexity_reason_en: { type: 'string' },
+          complexity_reason_ar: { type: 'string' },
+          recommended_reviewers: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' }
+              }
+            } 
+          },
+          estimated_review_days: { type: 'number' }
         }
       }
     });
