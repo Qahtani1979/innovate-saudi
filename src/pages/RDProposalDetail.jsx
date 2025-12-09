@@ -42,6 +42,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import RDProposalActivityLog from '../components/rd/RDProposalActivityLog';
 import RDProposalAIScorerWidget from '../components/rd/RDProposalAIScorerWidget';
 import RDProposalEscalationAutomation from '../components/rd/RDProposalEscalationAutomation';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function RDProposalDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -54,9 +56,9 @@ function RDProposalDetail() {
   const [showCollaborativeReview, setShowCollaborativeReview] = useState(false);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [comment, setComment] = useState('');
   const [user, setUser] = useState(null);
+  const { invokeAI, status, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
@@ -130,10 +132,8 @@ function RDProposalDetail() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this research proposal for Saudi municipal innovation R&D and provide strategic insights in BOTH English AND Arabic:
+    const result = await invokeAI({
+      prompt: `Analyze this research proposal for Saudi municipal innovation R&D and provide strategic insights in BOTH English AND Arabic:
 
 Proposal: ${proposal.title_en}
 Lead Institution: ${proposal.lead_institution}
@@ -152,22 +152,20 @@ Provide bilingual insights (each item should have both English and Arabic versio
 3. Alignment with Saudi Vision 2030 and municipal needs
 4. Commercialization and pilot transition potential
 5. Risk factors and mitigation recommendations`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strengths: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            improvements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            vision_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            pilot_potential: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          strengths: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          improvements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          vision_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          pilot_potential: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+
+    if (result.success) {
+      setAiInsights(result.data);
     }
   };
 
@@ -305,10 +303,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   {t({ en: 'Send Feedback', ar: 'إرسال ملاحظات' })}
                 </Button>
               )}
-              <Button className="bg-white text-teal-600 hover:bg-white/90" onClick={handleAIInsights}>
-                <Sparkles className="h-4 w-4 mr-2" />
+              <Button className="bg-white text-teal-600 hover:bg-white/90" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+                {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                 {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
               </Button>
+              <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
             </div>
           </div>
         </div>

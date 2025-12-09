@@ -11,12 +11,14 @@ import { DollarSign, PieChart, Sparkles, TrendingUp, Save, Download, Loader2, Lo
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function BudgetAllocationTool() {
   const { language, isRTL, t } = useLanguage();
   const [totalBudget, setTotalBudget] = useState(50000000);
   const [allocations, setAllocations] = useState({});
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [lockedCategories, setLockedCategories] = useState({});
   const [lastYearAllocations, setLastYearAllocations] = useState({
     pilots: 30,
@@ -52,10 +54,8 @@ function BudgetAllocationTool() {
   ];
 
   const handleAIOptimize = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Optimize budget allocation for Saudi municipal innovation platform:
+    const result = await invokeAI({
+      prompt: `Optimize budget allocation for Saudi municipal innovation platform:
 
 Total Budget: ${totalBudget} SAR
 Active Challenges: ${challenges.length} (by sector: ${sectors.map(s => `${s.name_en}: ${challenges.filter(c => c.sector === s.code).length}`).join(', ')})
@@ -77,42 +77,39 @@ Consider:
 4. Risk diversification
 
 Return percentage allocations and brief justification for each.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            allocations: {
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          allocations: {
+            type: 'object',
+            properties: {
+              pilots: { type: 'number' },
+              rd: { type: 'number' },
+              programs: { type: 'number' },
+              infrastructure: { type: 'number' },
+              scaling: { type: 'number' },
+              operations: { type: 'number' }
+            }
+          },
+          justification: { type: 'string' },
+          sector_priorities: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                pilots: { type: 'number' },
-                rd: { type: 'number' },
-                programs: { type: 'number' },
-                infrastructure: { type: 'number' },
-                scaling: { type: 'number' },
-                operations: { type: 'number' }
-              }
-            },
-            justification: { type: 'string' },
-            sector_priorities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  sector: { type: 'string' },
-                  allocation: { type: 'number' },
-                  reason: { type: 'string' }
-                }
+                sector: { type: 'string' },
+                allocation: { type: 'number' },
+                reason: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setAllocations(result.allocations || {});
+    if (result.success) {
+      setAllocations(result.data.allocations || {});
       toast.success(t({ en: 'AI optimized budget allocation', ar: 'تم تحسين توزيع الميزانية بالذكاء الاصطناعي' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to optimize', ar: 'فشل التحسين' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -201,7 +198,7 @@ Return percentage allocations and brief justification for each.`,
                 {t({ en: 'Let AI suggest optimal allocation based on challenges, priorities, and ROI', ar: 'دع الذكاء الاصطناعي يقترح التوزيع الأمثل بناءً على التحديات والأولويات والعائد' })}
               </p>
             </div>
-            <Button onClick={handleAIOptimize} disabled={aiLoading} className="bg-blue-600">
+            <Button onClick={handleAIOptimize} disabled={aiLoading || !isAvailable} className="bg-blue-600">
               {aiLoading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -209,6 +206,7 @@ Return percentage allocations and brief justification for each.`,
               )}
               {t({ en: 'Optimize', ar: 'تحسين' })}
             </Button>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
           </div>
         </CardContent>
       </Card>

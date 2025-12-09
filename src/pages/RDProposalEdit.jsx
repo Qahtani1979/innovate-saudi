@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../components/LanguageContext';
 import { Save, Loader2, Sparkles, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDProposalEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -19,7 +21,7 @@ export default function RDProposalEdit() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [aiEnhancing, setAiEnhancing] = useState(false);
+  const { invokeAI, status, isLoading: aiEnhancing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: proposal, isLoading } = useQuery({
     queryKey: ['rd-proposal', proposalId],
@@ -54,9 +56,7 @@ export default function RDProposalEdit() {
   });
 
   const handleAIEnhance = async () => {
-    setAiEnhancing(true);
-    try {
-      const prompt = `Enhance this research proposal with professional academic content:
+    const prompt = `Enhance this research proposal with professional academic content:
 
 Title: ${formData.title_en}
 Abstract: ${formData.abstract_en || 'N/A'}
@@ -73,40 +73,37 @@ Generate comprehensive bilingual (English + Arabic) enhanced content:
 7. Innovation claim (what makes it novel)
 8. 5-8 relevant keywords`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            abstract_en: { type: 'string' },
-            abstract_ar: { type: 'string' },
-            methodology_en: { type: 'string' },
-            methodology_ar: { type: 'string' },
-            impact_statement: { type: 'string' },
-            innovation_claim: { type: 'string' },
-            keywords: { type: 'array', items: { type: 'string' } },
-            expected_outputs: { type: 'array', items: { 
-              type: 'object',
-              properties: {
-                output: { type: 'string' },
-                type: { type: 'string' },
-                description: { type: 'string' }
-              }
-            }}
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          abstract_en: { type: 'string' },
+          abstract_ar: { type: 'string' },
+          methodology_en: { type: 'string' },
+          methodology_ar: { type: 'string' },
+          impact_statement: { type: 'string' },
+          innovation_claim: { type: 'string' },
+          keywords: { type: 'array', items: { type: 'string' } },
+          expected_outputs: { type: 'array', items: { 
+            type: 'object',
+            properties: {
+              output: { type: 'string' },
+              type: { type: 'string' },
+              description: { type: 'string' }
+            }
+          }}
         }
-      });
+      }
+    });
 
-      setFormData(prev => ({ ...prev, ...result }));
+    if (result.success) {
+      setFormData(prev => ({ ...prev, ...result.data }));
       toast.success(t({ en: '✨ AI academic enhancement complete!', ar: '✨ تم التحسين الأكاديمي الذكي!' }));
-    } catch (error) {
-      toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setAiEnhancing(false);
     }
   };
 
@@ -131,13 +128,14 @@ Generate comprehensive bilingual (English + Arabic) enhanced content:
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>{t({ en: 'Proposal Information', ar: 'معلومات المقترح' })}</CardTitle>
-            <Button onClick={handleAIEnhance} disabled={aiEnhancing} variant="outline" size="sm">
+            <Button onClick={handleAIEnhance} disabled={aiEnhancing || !isAvailable} variant="outline" size="sm">
               {aiEnhancing ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Enhancing...', ar: 'جاري التحسين...' })}</>
               ) : (
                 <><Sparkles className="h-4 w-4 mr-2" />{t({ en: 'AI Enhance', ar: 'تحسين ذكي' })}</>
               )}
             </Button>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

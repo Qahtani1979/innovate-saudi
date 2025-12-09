@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeImpactForecaster({ challenge }) {
   const { language, t } = useLanguage();
-  const [forecasting, setForecasting] = useState(false);
   const [forecast, setForecast] = useState(null);
+  const { invokeAI, status, isLoading: forecasting, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const generateForecast = async () => {
-    setForecasting(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Forecast impact if challenge is resolved:
+    const result = await invokeAI({
+      prompt: `Forecast impact if challenge is resolved:
 
 CHALLENGE: ${challenge.title_en}
 SECTOR: ${challenge.sector}
@@ -31,27 +30,24 @@ Predict if resolved:
 4. Citizen satisfaction: improvement percentage
 5. Confidence level: 0-100%
 6. ROI estimate: cost to solve vs annual value`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            mii_impact: { type: "number" },
-            complaint_reduction_percent: { type: "number" },
-            annual_savings_sar: { type: "number" },
-            satisfaction_improvement: { type: "number" },
-            confidence: { type: "number" },
-            roi_multiple: { type: "number" },
-            summary: { type: "string" },
-            comparison: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          mii_impact: { type: "number" },
+          complaint_reduction_percent: { type: "number" },
+          annual_savings_sar: { type: "number" },
+          satisfaction_improvement: { type: "number" },
+          confidence: { type: "number" },
+          roi_multiple: { type: "number" },
+          summary: { type: "string" },
+          comparison: { type: "string" }
         }
-      });
+      }
+    });
 
-      setForecast(response);
+    if (result.success) {
+      setForecast(result.data);
       toast.success(t({ en: 'Forecast generated', ar: 'التنبؤ مُنشأ' }));
-    } catch (error) {
-      toast.error(t({ en: 'Forecast failed', ar: 'فشل التنبؤ' }));
-    } finally {
-      setForecasting(false);
     }
   };
 
@@ -63,7 +59,7 @@ Predict if resolved:
             <TrendingUp className="h-5 w-5 text-green-600" />
             {t({ en: 'Impact Forecaster', ar: 'متنبئ التأثير' })}
           </CardTitle>
-          <Button onClick={generateForecast} disabled={forecasting} size="sm" className="bg-green-600">
+          <Button onClick={generateForecast} disabled={forecasting || !isAvailable} size="sm" className="bg-green-600">
             {forecasting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -74,6 +70,7 @@ Predict if resolved:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
         {!forecast && !forecasting && (
           <div className="text-center py-8">
             <TrendingUp className="h-12 w-12 text-green-300 mx-auto mb-3" />

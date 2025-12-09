@@ -14,6 +14,8 @@ import { Save, Loader2, Sparkles, X } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function OrganizationEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -42,7 +44,7 @@ function OrganizationEdit() {
   });
 
   const [formData, setFormData] = useState(null);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const { invokeAI, status, isLoading: isAIProcessing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   React.useEffect(() => {
     if (organization && !formData) {
@@ -65,9 +67,7 @@ function OrganizationEdit() {
   });
 
   const handleAIEnhance = async () => {
-    setIsAIProcessing(true);
-    try {
-      const prompt = `Enhance this organization profile with professional, detailed bilingual content:
+    const prompt = `Enhance this organization profile with professional, detailed bilingual content:
 
 Organization: ${formData.name_en}
 Type: ${formData.org_type}
@@ -77,32 +77,28 @@ Generate comprehensive bilingual (English + Arabic) content:
 1. Improved names (EN + AR)
 2. Professional descriptions (EN + AR) - 150+ words each`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' }
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setFormData(prev => ({
         ...prev,
-        name_en: result.name_en || prev.name_en,
-        name_ar: result.name_ar || prev.name_ar,
-        description_en: result.description_en || prev.description_en,
-        description_ar: result.description_ar || prev.description_ar
+        name_en: result.data.name_en || prev.name_en,
+        name_ar: result.data.name_ar || prev.name_ar,
+        description_en: result.data.description_en || prev.description_en,
+        description_ar: result.data.description_ar || prev.description_ar
       }));
-
       toast.success(t({ en: '✨ AI enhancement complete!', ar: '✨ تم التحسين!' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setIsAIProcessing(false);
     }
   };
 
@@ -129,7 +125,7 @@ Generate comprehensive bilingual (English + Arabic) content:
             <CardTitle>{t({ en: 'Organization Information', ar: 'معلومات الجهة' })}</CardTitle>
             <Button
               onClick={handleAIEnhance}
-              disabled={isAIProcessing}
+              disabled={isAIProcessing || !isAvailable}
               variant="outline"
               size="sm"
             >
@@ -146,6 +142,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               )}
             </Button>
           </div>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-4">

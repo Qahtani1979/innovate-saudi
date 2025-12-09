@@ -9,10 +9,13 @@ import { useLanguage } from '../LanguageContext';
 import { toast } from 'sonner';
 import { ShoppingCart, Sparkles, ArrowRight, Loader2, X, FileText, Shield } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotToProcurementWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { invokeAI, status, isLoading: aiGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     procurement_scope: '',
@@ -22,7 +25,6 @@ export default function PilotToProcurementWorkflow({ pilot, onClose }) {
     contract_duration_months: 12,
     rfp_text: ''
   });
-  const [aiGenerating, setAiGenerating] = useState(false);
 
   const { data: solution } = useQuery({
     queryKey: ['solution', pilot?.solution_id],
@@ -34,10 +36,8 @@ export default function PilotToProcurementWorkflow({ pilot, onClose }) {
   });
 
   const generateRFP = async () => {
-    setAiGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate procurement RFP based on successful pilot validation:
+    const result = await invokeAI({
+      prompt: `Generate procurement RFP based on successful pilot validation:
 
 Pilot: ${pilot.title_en}
 Solution Validated: ${solution?.name_en || 'N/A'}
@@ -53,35 +53,32 @@ Generate:
 4. RFP document text (bilingual)
 
 Return in both English and Arabic.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            scope_en: { type: 'string' },
-            scope_ar: { type: 'string' },
-            specs_en: { type: 'string' },
-            specs_ar: { type: 'string' },
-            criteria_en: { type: 'string' },
-            criteria_ar: { type: 'string' },
-            rfp_text_en: { type: 'string' },
-            rfp_text_ar: { type: 'string' },
-            estimated_value: { type: 'number' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          scope_en: { type: 'string' },
+          scope_ar: { type: 'string' },
+          specs_en: { type: 'string' },
+          specs_ar: { type: 'string' },
+          criteria_en: { type: 'string' },
+          criteria_ar: { type: 'string' },
+          rfp_text_en: { type: 'string' },
+          rfp_text_ar: { type: 'string' },
+          estimated_value: { type: 'number' }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setFormData({
-        procurement_scope: language === 'ar' ? result.scope_ar : result.scope_en,
-        technical_specs: language === 'ar' ? result.specs_ar : result.specs_en,
-        evaluation_criteria: language === 'ar' ? result.criteria_ar : result.criteria_en,
-        rfp_text: language === 'ar' ? result.rfp_text_ar : result.rfp_text_en,
-        estimated_value: result.estimated_value?.toString() || '',
+        procurement_scope: language === 'ar' ? result.data.scope_ar : result.data.scope_en,
+        technical_specs: language === 'ar' ? result.data.specs_ar : result.data.specs_en,
+        evaluation_criteria: language === 'ar' ? result.data.criteria_ar : result.data.criteria_en,
+        rfp_text: language === 'ar' ? result.data.rfp_text_ar : result.data.rfp_text_en,
+        estimated_value: result.data.estimated_value?.toString() || '',
         contract_duration_months: 12
       });
       toast.success(t({ en: 'RFP generated', ar: 'تم إنشاء طلب العروض' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setAiGenerating(false);
     }
   };
 
@@ -140,9 +137,11 @@ Return in both English and Arabic.`,
           )}
         </div>
 
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        
         <Button
           onClick={generateRFP}
-          disabled={aiGenerating}
+          disabled={aiGenerating || !isAvailable}
           variant="outline"
           className="w-full border-purple-300 text-purple-700"
         >
