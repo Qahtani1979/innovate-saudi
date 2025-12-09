@@ -8875,6 +8875,8 @@ export type Database = {
           linkedin_url: string | null
           location_city: string | null
           location_region: string | null
+          mobile_country_code: string | null
+          mobile_number: string | null
           municipality_id: string | null
           national_id: string | null
           notification_preferences: Json | null
@@ -8937,6 +8939,8 @@ export type Database = {
           linkedin_url?: string | null
           location_city?: string | null
           location_region?: string | null
+          mobile_country_code?: string | null
+          mobile_number?: string | null
           municipality_id?: string | null
           national_id?: string | null
           notification_preferences?: Json | null
@@ -8999,6 +9003,8 @@ export type Database = {
           linkedin_url?: string | null
           location_city?: string | null
           location_region?: string | null
+          mobile_country_code?: string | null
+          mobile_number?: string | null
           municipality_id?: string | null
           national_id?: string | null
           notification_preferences?: Json | null
