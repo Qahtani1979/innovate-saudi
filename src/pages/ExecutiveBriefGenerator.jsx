@@ -9,12 +9,14 @@ import { useLanguage } from '../components/LanguageContext';
 import { FileText, Download, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ExecutiveBriefGenerator() {
   const { language, isRTL, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [brief, setBrief] = useState(null);
   const [customTitle, setCustomTitle] = useState('');
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -37,12 +39,10 @@ function ExecutiveBriefGenerator() {
   });
 
   const generateBrief = async () => {
-    setGenerating(true);
-    try {
-      const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
-      
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a comprehensive 2-page executive brief for Saudi National Municipal Innovation Platform.
+    const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
+    
+    const response = await invokeAI({
+      prompt: `Generate a comprehensive 2-page executive brief for Saudi National Municipal Innovation Platform.
 
 CURRENT STATE:
 - Active Challenges: ${challenges.filter(c => c.status !== 'archived').length}
@@ -64,44 +64,41 @@ Generate a professional executive brief with these sections:
 5. Strategic Recommendations (3 key actions)
 
 Make it concise, data-driven, bilingual-ready.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            executive_summary_en: { type: "string" },
-            executive_summary_ar: { type: "string" },
-            progress_highlights: {
-              type: "array",
-              items: { type: "string" }
-            },
-            risk_alerts: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  risk: { type: "string" },
-                  severity: { type: "string" },
-                  mitigation: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          executive_summary_en: { type: "string" },
+          executive_summary_ar: { type: "string" },
+          progress_highlights: {
+            type: "array",
+            items: { type: "string" }
+          },
+          risk_alerts: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                risk: { type: "string" },
+                severity: { type: "string" },
+                mitigation: { type: "string" }
               }
-            },
-            next_quarter_priorities: {
-              type: "array",
-              items: { type: "string" }
-            },
-            strategic_recommendations: {
-              type: "array",
-              items: { type: "string" }
             }
+          },
+          next_quarter_priorities: {
+            type: "array",
+            items: { type: "string" }
+          },
+          strategic_recommendations: {
+            type: "array",
+            items: { type: "string" }
           }
         }
-      });
+      }
+    });
 
-      setBrief(response);
+    if (response.success) {
+      setBrief(response.data);
       toast.success(t({ en: 'Executive brief generated', ar: 'تم إنشاء الموجز التنفيذي' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -121,7 +118,24 @@ Make it concise, data-driven, bilingual-ready.`,
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={generateBrief} disabled={generating} className="bg-gradient-to-r from-blue-600 to-purple-600">
+          <Button onClick={generateBrief} disabled={generating || !isAvailable} className="bg-gradient-to-r from-blue-600 to-purple-600">
+            {generating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            {t({ en: 'Generate Brief', ar: 'إنشاء موجز' })}
+          </Button>
+          {brief && (
+            <Button onClick={exportPDF} variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              {t({ en: 'Export PDF', ar: 'تصدير PDF' })}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
             {generating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (

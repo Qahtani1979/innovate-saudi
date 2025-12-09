@@ -12,11 +12,14 @@ import { RefreshCw, AlertTriangle, Sparkles, Loader2, ArrowRight, CheckCircle2 }
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function IterationWorkflow() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { invokeAI, status, isLoading: generatingPlan, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: iterationPilots = [] } = useQuery({
     queryKey: ['iteration-pilots'],
@@ -28,13 +31,10 @@ function IterationWorkflow() {
 
   const [selectedPilot, setSelectedPilot] = useState(null);
   const [iterationPlan, setIterationPlan] = useState('');
-  const [generatingPlan, setGeneratingPlan] = useState(false);
 
   const generateIterationPlan = async (pilot) => {
-    setGeneratingPlan(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate iteration plan for this pilot that needs improvements:
+    const response = await invokeAI({
+      prompt: `Generate iteration plan for this pilot that needs improvements:
 
 Title: ${pilot.title_en}
 Sector: ${pilot.sector}
@@ -52,27 +52,24 @@ Provide:
 6. New success criteria
 
 Return as structured JSON.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            issues: { type: "array", items: { type: "string" } },
-            improvements: { type: "array", items: { type: "string" } },
-            revised_kpis: { type: "array", items: { type: "object" } },
-            timeline_weeks: { type: "number" },
-            budget_adjustment: { type: "string" },
-            new_success_criteria: { type: "array", items: { type: "string" } },
-            iteration_summary: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          issues: { type: "array", items: { type: "string" } },
+          improvements: { type: "array", items: { type: "string" } },
+          revised_kpis: { type: "array", items: { type: "object" } },
+          timeline_weeks: { type: "number" },
+          budget_adjustment: { type: "string" },
+          new_success_criteria: { type: "array", items: { type: "string" } },
+          iteration_summary: { type: "string" }
         }
-      });
+      }
+    });
 
-      setIterationPlan(response.iteration_summary);
-      setSelectedPilot({ ...pilot, iterationData: response });
+    if (response.success) {
+      setIterationPlan(response.data.iteration_summary);
+      setSelectedPilot({ ...pilot, iterationData: response.data });
       toast.success('AI generated iteration plan');
-    } catch (error) {
-      toast.error('Failed to generate plan');
-    } finally {
-      setGeneratingPlan(false);
     }
   };
 
@@ -109,6 +106,8 @@ Return as structured JSON.`,
           </div>
         </div>
       </div>
+
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       {/* Pilots List */}
       <div className="space-y-4">
@@ -195,7 +194,7 @@ Return as structured JSON.`,
                   <Button
                     variant="outline"
                     onClick={() => generateIterationPlan(pilot)}
-                    disabled={generatingPlan}
+                    disabled={generatingPlan || !isAvailable}
                     className="flex-1"
                   >
                     {generatingPlan ? (

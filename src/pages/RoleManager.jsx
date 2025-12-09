@@ -8,17 +8,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../components/LanguageContext';
-import { Shield, Plus, Edit, Trash2, Users, Save, X, Sparkles, Loader2 } from 'lucide-react';
+import { Shield, Plus, Edit, Trash2, Users, Save, X, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RoleManager() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [roleForm, setRoleForm] = useState({
     name: '',
@@ -99,38 +102,33 @@ export default function RoleManager() {
   };
 
   const handleAISuggest = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Based on this role: "${roleForm.name}" (${roleForm.description}), suggest appropriate permissions for a Saudi municipal innovation platform.
+    const response = await invokeAI({
+      prompt: `Based on this role: "${roleForm.name}" (${roleForm.description}), suggest appropriate permissions for a Saudi municipal innovation platform.
         
 Entities: Challenges, Pilots, Solutions, Programs, Municipalities, Organizations.
 Operations: create, read, update, delete.
 
 Provide recommendations for which operations this role should have access to.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            permissions: {
-              type: 'object',
-              properties: {
-                challenges: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
-                pilots: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
-                solutions: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
-                programs: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
-                municipalities: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
-                organizations: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } }
-              }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          permissions: {
+            type: 'object',
+            properties: {
+              challenges: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
+              pilots: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
+              solutions: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
+              programs: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
+              municipalities: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } },
+              organizations: { type: 'object', properties: { create: { type: 'boolean' }, read: { type: 'boolean' }, update: { type: 'boolean' }, delete: { type: 'boolean' } } }
             }
           }
         }
-      });
-      setRoleForm({ ...roleForm, permissions: result.permissions });
+      }
+    });
+    if (response.success) {
+      setRoleForm({ ...roleForm, permissions: response.data.permissions });
       toast.success(t({ en: 'AI suggestions applied', ar: 'تم تطبيق اقتراحات الذكاء' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI suggestion failed', ar: 'فشل اقتراح الذكاء' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -285,7 +283,7 @@ Provide recommendations for which operations this role should have access to.`,
                 <p className="font-semibold text-purple-900">{t({ en: 'AI Permission Suggester', ar: 'مقترح الصلاحيات الذكي' })}</p>
                 <p className="text-xs text-slate-600">{t({ en: 'Let AI recommend permissions based on role name', ar: 'دع الذكاء يوصي بالصلاحيات بناءً على اسم الدور' })}</p>
               </div>
-              <Button onClick={handleAISuggest} disabled={!roleForm.name || aiLoading} className="bg-purple-600">
+              <Button onClick={handleAISuggest} disabled={!roleForm.name || aiLoading || !isAvailable} className="bg-purple-600">
                 {aiLoading ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (

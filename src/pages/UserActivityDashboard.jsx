@@ -12,12 +12,14 @@ import FeatureUsageHeatmap from '../components/access/FeatureUsageHeatmap';
 import UserHealthScores from '../components/access/UserHealthScores';
 import PredictiveChurnAnalysis from '../components/access/PredictiveChurnAnalysis';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function UserActivityDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [anomalies, setAnomalies] = useState(null);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: accessLogs = [] } = useQuery({
     queryKey: ['access-logs'],
@@ -30,22 +32,20 @@ function UserActivityDashboard() {
   });
 
   const handleGenerateInsights = async () => {
-    setAiLoading(true);
-    try {
-      const topUsers = Object.entries(
-        accessLogs.reduce((acc, log) => {
-          acc[log.user_email] = (acc[log.user_email] || 0) + 1;
-          return acc;
-        }, {})
-      ).sort((a, b) => b[1] - a[1]).slice(0, 10);
-
-      const actionBreakdown = accessLogs.reduce((acc, log) => {
-        acc[log.action_type] = (acc[log.action_type] || 0) + 1;
+    const topUsers = Object.entries(
+      accessLogs.reduce((acc, log) => {
+        acc[log.user_email] = (acc[log.user_email] || 0) + 1;
         return acc;
-      }, {});
+      }, {})
+    ).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze user activity patterns for a Saudi municipal innovation platform:
+    const actionBreakdown = accessLogs.reduce((acc, log) => {
+      acc[log.action_type] = (acc[log.action_type] || 0) + 1;
+      return acc;
+    }, {});
+
+    const response = await invokeAI({
+      prompt: `Analyze user activity patterns for a Saudi municipal innovation platform:
 
 Total Actions: ${accessLogs.length}
 Total Users: ${users.length}
@@ -62,31 +62,26 @@ Provide bilingual insights on:
 2. Usage patterns and trends
 3. Productivity insights
 4. Recommendations for increasing adoption`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            engagement_health: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, score: { type: 'number' } } },
-            usage_patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            productivity_insights: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            adoption_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          engagement_health: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, score: { type: 'number' } } },
+          usage_patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          productivity_insights: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          adoption_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل الذكي' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+    if (response.success) {
+      setAiInsights(response.data);
     }
   };
 
   const handleDetectAnomalies = async () => {
-    setAiLoading(true);
-    try {
-      const suspiciousLogs = accessLogs.filter(log => log.is_suspicious || (log.anomaly_score || 0) > 70);
-      
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Detect access anomalies in this Saudi municipal innovation platform:
+    const suspiciousLogs = accessLogs.filter(log => log.is_suspicious || (log.anomaly_score || 0) > 70);
+    
+    const response = await invokeAI({
+      prompt: `Detect access anomalies in this Saudi municipal innovation platform:
 
 Total Access Logs: ${accessLogs.length}
 Flagged as Suspicious: ${suspiciousLogs.length}
@@ -99,22 +94,19 @@ Identify:
 2. Potential security risks
 3. Users with abnormal behavior
 4. Recommendations for monitoring`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            unusual_patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, severity: { type: 'string' } } } },
-            security_risks: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            flagged_users: { type: 'array', items: { type: 'string' } },
-            monitoring_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          unusual_patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, severity: { type: 'string' } } } },
+          security_risks: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          flagged_users: { type: 'array', items: { type: 'string' } },
+          monitoring_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAnomalies(result);
+      }
+    });
+    if (response.success) {
+      setAnomalies(response.data);
       toast.success(t({ en: 'Anomaly detection complete', ar: 'اكتمل اكتشاف الشذوذ' }));
-    } catch (error) {
-      toast.error(t({ en: 'Anomaly detection failed', ar: 'فشل اكتشاف الشذوذ' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -146,6 +138,8 @@ Identify:
           {t({ en: 'Monitor user engagement, detect anomalies, and optimize platform adoption', ar: 'مراقبة تفاعل المستخدمين واكتشاف الشذوذ وتحسين اعتماد المنصة' })}
         </p>
       </div>
+
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       {/* AI Action Buttons */}
       <div className="flex gap-3">
