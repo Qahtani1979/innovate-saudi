@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import UserJourneyMapper from '../components/access/UserJourneyMapper';
-import { User, Edit, Award, Briefcase, Mail, Globe, MapPin, Sparkles, Save, Upload, Plus, X, Calendar } from 'lucide-react';
+import { User, Edit, Award, Briefcase, Mail, Globe, MapPin, Sparkles, Save, Upload, Plus, X, Calendar, Linkedin, Phone, GraduationCap, Languages } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
 import ProfileCompletionAI from '../components/profiles/ProfileCompletionAI';
@@ -17,6 +17,15 @@ import ProfileVisibilityControl from '../components/users/ProfileVisibilityContr
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { 
+  ContactSection, 
+  ProfessionalSection, 
+  BioSection, 
+  LanguagesSection, 
+  CertificationsSection,
+  SkillsBadges,
+  WorkExperienceSection 
+} from '../components/profile/BilingualProfileDisplay';
 
 function UserProfile() {
   const { language, isRTL, t } = useLanguage();
@@ -282,57 +291,157 @@ function UserProfile() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* About / Bio */}
               <Card className="md:col-span-2">
                 <CardHeader>
                   <CardTitle>{t({ en: 'About', ar: 'نبذة' })}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-slate-700 whitespace-pre-wrap">
-                    {user?.bio || t({ en: 'No bio yet', ar: 'لا توجد سيرة بعد' })}
-                  </p>
-                  {user?.linkedin_url && (
-                    <a href={user.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline mt-3">
-                      <Globe className="h-4 w-4" />
-                      LinkedIn Profile
-                    </a>
+                <CardContent className="space-y-4">
+                  <BioSection 
+                    bioEn={profile?.bio_en || user?.bio} 
+                    bioAr={profile?.bio_ar} 
+                    showBoth={!!(profile?.bio_en && profile?.bio_ar)}
+                  />
+                  
+                  {/* Professional Info */}
+                  <div className="pt-4 border-t">
+                    <ProfessionalSection
+                      jobTitleEn={profile?.job_title_en || profile?.title_en}
+                      jobTitleAr={profile?.job_title_ar || profile?.title_ar}
+                      departmentEn={profile?.department_en}
+                      departmentAr={profile?.department_ar}
+                      organizationEn={profile?.organization_en}
+                      organizationAr={profile?.organization_ar}
+                      yearsExperience={profile?.years_experience}
+                      educationLevel={profile?.education_level}
+                      degree={profile?.degree}
+                    />
+                  </div>
+                  
+                  {/* Languages */}
+                  {profile?.languages && (
+                    <div className="pt-4 border-t">
+                      <LanguagesSection languages={profile.languages} />
+                    </div>
+                  )}
+                  
+                  {/* Certifications */}
+                  {profile?.certifications && (
+                    <div className="pt-4 border-t">
+                      <CertificationsSection certifications={profile.certifications} />
+                    </div>
+                  )}
+                  
+                  {/* Work Experience */}
+                  {profile?.work_experience && profile.work_experience.length > 0 && (
+                    <div className="pt-4 border-t">
+                      <WorkExperienceSection workExperience={profile.work_experience} />
+                    </div>
                   )}
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t({ en: 'Expertise', ar: 'الخبرة' })}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {user?.areas_of_expertise?.length > 0 ? user.areas_of_expertise.map((area, i) => (
-                      <Badge key={i} variant="outline">{area}</Badge>
-                    )) : <p className="text-xs text-slate-500">{t({ en: 'No expertise listed', ar: 'لا توجد خبرة' })}</p>}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Contact & Links */}
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t({ en: 'Contact', ar: 'التواصل' })}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ContactSection
+                      email={user?.email || profile?.user_email}
+                      phone={profile?.phone_number}
+                      mobileNumber={profile?.mobile_number}
+                      mobileCountryCode={profile?.mobile_country_code}
+                      workPhone={profile?.work_phone}
+                      linkedinUrl={profile?.linkedin_url}
+                      website={profile?.social_links?.website}
+                      locationCity={profile?.location_city}
+                      locationRegion={profile?.location_region}
+                      socialLinks={profile?.social_links}
+                    />
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t({ en: 'Expertise', ar: 'الخبرة' })}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SkillsBadges 
+                      skills={profile?.expertise_areas || user?.areas_of_expertise} 
+                      colorClass="bg-primary/10 text-primary"
+                    />
+                    {!(profile?.expertise_areas?.length || user?.areas_of_expertise?.length) && (
+                      <p className="text-xs text-muted-foreground">{t({ en: 'No expertise listed', ar: 'لا توجد خبرة' })}</p>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t({ en: 'Skills', ar: 'المهارات' })}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SkillsBadges 
+                      skills={profile?.skills || user?.skills} 
+                      colorClass="bg-secondary text-secondary-foreground"
+                    />
+                    {!(profile?.skills?.length || user?.skills?.length) && (
+                      <p className="text-xs text-muted-foreground">{t({ en: 'No skills listed', ar: 'لا توجد مهارات' })}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
 
+              {/* Stats */}
               <Card className="md:col-span-3">
                 <CardHeader>
                   <CardTitle>{t({ en: 'Contribution History', ar: 'تاريخ المساهمات' })}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      <p className="text-3xl font-bold text-blue-600">{user?.past_projects?.length || 0}</p>
-                      <p className="text-xs text-slate-600">{t({ en: 'Projects', ar: 'مشاريع' })}</p>
+                  <div className="grid grid-cols-4 gap-4 text-center">
+                    <div className="p-4 bg-primary/5 rounded-lg">
+                      <p className="text-3xl font-bold text-primary">{user?.past_projects?.length || 0}</p>
+                      <p className="text-xs text-muted-foreground">{t({ en: 'Projects', ar: 'مشاريع' })}</p>
                     </div>
-                    <div className="p-4 bg-purple-50 rounded-lg">
-                      <p className="text-3xl font-bold text-purple-600">{user?.skills?.length || 0}</p>
-                      <p className="text-xs text-slate-600">{t({ en: 'Skills', ar: 'مهارات' })}</p>
+                    <div className="p-4 bg-secondary/50 rounded-lg">
+                      <p className="text-3xl font-bold text-secondary-foreground">{(profile?.skills || user?.skills)?.length || 0}</p>
+                      <p className="text-xs text-muted-foreground">{t({ en: 'Skills', ar: 'مهارات' })}</p>
                     </div>
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <p className="text-3xl font-bold text-green-600">{user?.training_completed?.length || 0}</p>
-                      <p className="text-xs text-slate-600">{t({ en: 'Certifications', ar: 'شهادات' })}</p>
+                    <div className="p-4 bg-accent/50 rounded-lg">
+                      <p className="text-3xl font-bold text-accent-foreground">{user?.training_completed?.length || 0}</p>
+                      <p className="text-xs text-muted-foreground">{t({ en: 'Certifications', ar: 'شهادات' })}</p>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-3xl font-bold text-foreground">{profile?.contribution_count || 0}</p>
+                      <p className="text-xs text-muted-foreground">{t({ en: 'Contributions', ar: 'مساهمات' })}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+              
+              {/* CV Download if available */}
+              {profile?.cv_url && (
+                <Card className="md:col-span-3">
+                  <CardContent className="pt-6">
+                    <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <GraduationCap className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-medium">{t({ en: 'Resume / CV', ar: 'السيرة الذاتية' })}</p>
+                          <p className="text-xs text-muted-foreground">{t({ en: 'Download uploaded CV', ar: 'تحميل السيرة الذاتية' })}</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" asChild>
+                        <a href={profile.cv_url} target="_blank" rel="noopener noreferrer">
+                          {t({ en: 'Download', ar: 'تحميل' })}
+                        </a>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </TabsContent>

@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { Lightbulb, Users, DollarSign, Award, CheckCircle, Rocket, Sparkles, Target, Loader2 } from 'lucide-react';
+import { Lightbulb, Users, DollarSign, Award, CheckCircle, Rocket, Sparkles, Target, Loader2, Linkedin, Globe, Mail, Phone, MapPin, Calendar, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useState } from 'react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import StartupCredentialBadges from '../components/startup/StartupCredentialBadges';
+import { ContactSection, BioSection, SkillsBadges } from '../components/profile/BilingualProfileDisplay';
 
 function StartupProfile() {
   const { language, isRTL, t } = useLanguage();
@@ -85,24 +86,58 @@ Find 5 best-matching challenges from the platform that align with their capabili
   if (isLoading) return <div className="p-8">{t({ en: 'Loading...', ar: 'جارٍ التحميل...' })}</div>;
   if (!startup) return <div className="p-8">{t({ en: 'Startup not found', ar: 'لم يتم العثور على الشركة' })}</div>;
 
+  const s = startup[0];
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-start gap-6">
-            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
-              {startup[0]?.logo_url ? (
-                <img src={startup[0].logo_url} className="h-full w-full rounded-2xl object-cover" />
+          <div className={`flex items-start gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center flex-shrink-0">
+              {s?.logo_url ? (
+                <img src={s.logo_url} className="h-full w-full rounded-2xl object-cover" alt={s?.name_en} />
               ) : (
                 <Lightbulb className="h-12 w-12 text-white" />
               )}
             </div>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-slate-900">{startup[0]?.[`name_${language}`]}</h1>
-              <p className="text-lg text-slate-600 mt-1">{startup[0]?.[`tagline_${language}`]}</p>
+              {/* Bilingual Name */}
+              <h1 className="text-3xl font-bold text-foreground">
+                {language === 'ar' ? (s?.name_ar || s?.name_en) : s?.name_en}
+              </h1>
+              {s?.name_ar && s?.name_en && (
+                <p className="text-lg text-muted-foreground" dir={language === 'ar' ? 'ltr' : 'rtl'}>
+                  {language === 'ar' ? s?.name_en : s?.name_ar}
+                </p>
+              )}
+              
+              {/* Bilingual Tagline */}
+              <p className="text-lg text-muted-foreground mt-1">
+                {language === 'ar' ? (s?.tagline_ar || s?.tagline_en) : (s?.tagline_en || s?.tagline_ar)}
+              </p>
+              
+              {/* Stage & Founding */}
+              <div className={`flex items-center gap-4 mt-2 text-sm text-muted-foreground ${isRTL ? 'flex-row-reverse' : ''}`}>
+                {s?.stage && (
+                  <Badge variant="outline" className="capitalize">{s.stage.replace(/_/g, ' ')}</Badge>
+                )}
+                {s?.founding_year && (
+                  <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <Calendar className="h-4 w-4" />
+                    <span>{t({ en: 'Founded', ar: 'تأسست' })} {s.founding_year}</span>
+                  </div>
+                )}
+                {s?.team_size && (
+                  <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <Users className="h-4 w-4" />
+                    <span>{s.team_size} {t({ en: 'employees', ar: 'موظف' })}</span>
+                  </div>
+                )}
+              </div>
+              
               <div className="mt-3">
-                <StartupCredentialBadges startup={startup[0]} solutions={solutions} pilots={pilots} />
+                <StartupCredentialBadges startup={s} solutions={solutions} pilots={pilots} />
               </div>
             </div>
           </div>
@@ -110,13 +145,55 @@ Find 5 best-matching challenges from the platform that align with their capabili
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* About */}
+        {/* About - Bilingual */}
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>{t({ en: 'About', ar: 'نبذة' })}</CardTitle>
           </CardHeader>
+          <CardContent className="space-y-4">
+            <BioSection 
+              bioEn={s?.description_en} 
+              bioAr={s?.description_ar}
+              showBoth={!!(s?.description_en && s?.description_ar)}
+            />
+            
+            {/* Sectors */}
+            {s?.sectors?.length > 0 && (
+              <div className="pt-4 border-t">
+                <SkillsBadges 
+                  skills={s.sectors} 
+                  label={{ en: 'Sectors', ar: 'القطاعات' }}
+                  colorClass="bg-primary/10 text-primary"
+                />
+              </div>
+            )}
+            
+            {/* Technologies */}
+            {s?.technologies?.length > 0 && (
+              <div className="pt-4 border-t">
+                <SkillsBadges 
+                  skills={s.technologies} 
+                  label={{ en: 'Technologies', ar: 'التقنيات' }}
+                  colorClass="bg-secondary text-secondary-foreground"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Contact & Links */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t({ en: 'Contact', ar: 'التواصل' })}</CardTitle>
+          </CardHeader>
           <CardContent>
-            <p className="text-slate-700">{startup[0]?.[`description_${language}`]}</p>
+            <ContactSection
+              email={s?.contact_email}
+              phone={s?.contact_phone}
+              linkedinUrl={s?.linkedin_url}
+              website={s?.website_url}
+              location={s?.headquarters_location}
+            />
           </CardContent>
         </Card>
 
@@ -126,17 +203,17 @@ Find 5 best-matching challenges from the platform that align with their capabili
             <CardTitle>{t({ en: 'Performance', ar: 'الأداء' })}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+            <div className={`flex items-center justify-between p-3 bg-primary/5 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
               <span className="text-sm">{t({ en: 'Solutions', ar: 'الحلول' })}</span>
-              <span className="font-bold text-blue-600">{solutions.length}</span>
+              <span className="font-bold text-primary">{solutions.length}</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+            <div className={`flex items-center justify-between p-3 bg-secondary/50 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
               <span className="text-sm">{t({ en: 'Pilots', ar: 'التجارب' })}</span>
-              <span className="font-bold text-purple-600">{startup[0]?.pilot_count || 0}</span>
+              <span className="font-bold text-secondary-foreground">{s?.pilot_count || pilots.length || 0}</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+            <div className={`flex items-center justify-between p-3 bg-accent/50 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
               <span className="text-sm">{t({ en: 'Success Rate', ar: 'معدل النجاح' })}</span>
-              <span className="font-bold text-green-600">{startup[0]?.success_rate || 0}%</span>
+              <span className="font-bold text-accent-foreground">{s?.success_rate || 0}%</span>
             </div>
           </CardContent>
         </Card>
