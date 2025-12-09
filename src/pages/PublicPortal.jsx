@@ -150,11 +150,8 @@ function PublicPortal() {
               <Link to="/for-innovators" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
                 {t({ en: 'For Innovators', ar: 'للمبتكرين' })}
               </Link>
-              <Link to="/faq" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'FAQ', ar: 'الأسئلة الشائعة' })}
-              </Link>
-              <Link to="/contact" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'Contact', ar: 'تواصل' })}
+              <Link to="/for-researchers" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'For Researchers', ar: 'للباحثين' })}
               </Link>
             </div>
 
