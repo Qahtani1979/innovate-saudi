@@ -13,7 +13,6 @@ export default function PublicFooter() {
         { href: '/about', label: t({ en: 'About Us', ar: 'عن المنصة' }) },
         { href: '/public-challenges', label: t({ en: 'Challenges', ar: 'التحديات' }) },
         { href: '/public-solutions', label: t({ en: 'Solutions', ar: 'الحلول' }) },
-        { href: '/success-stories', label: t({ en: 'Success Stories', ar: 'قصص النجاح' }) },
       ]
     },
     forYou: {
@@ -30,7 +29,6 @@ export default function PublicFooter() {
       links: [
         { href: '/terms', label: t({ en: 'Terms of Service', ar: 'شروط الخدمة' }) },
         { href: '/privacy', label: t({ en: 'Privacy Policy', ar: 'سياسة الخصوصية' }) },
-        { href: '/accessibility', label: t({ en: 'Accessibility', ar: 'إمكانية الوصول' }) },
       ]
     }
   };

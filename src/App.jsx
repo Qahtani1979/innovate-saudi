@@ -78,11 +78,11 @@ const AuthenticatedApp = () => {
       } />
       
       {/* Public pages with PublicHeader/Footer */}
-      <Route path="/public/about" element={<PublicAbout />} />
-      <Route path="/public/contact" element={<PublicContact />} />
-      <Route path="/public/faq" element={<PublicFAQ />} />
-      <Route path="/public/for-municipalities" element={<PublicForMunicipalities />} />
-      <Route path="/public/for-providers" element={<PublicForProviders />} />
+      <Route path="/about" element={<PublicAbout />} />
+      <Route path="/contact" element={<PublicContact />} />
+      <Route path="/faq" element={<PublicFAQ />} />
+      <Route path="/for-municipalities" element={<PublicForMunicipalities />} />
+      <Route path="/for-providers" element={<PublicForProviders />} />
       <Route path="/public-challenges" element={<PublicChallenges />} />
       <Route path="/public-solutions" element={<PublicSolutions />} />
       
