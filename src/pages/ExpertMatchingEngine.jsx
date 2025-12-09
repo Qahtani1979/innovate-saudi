@@ -30,11 +30,12 @@ import {
   Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ExpertMatchingEnginePage() {
   const [entityType, setEntityType] = useState('challenge');
   const [selectedEntityId, setSelectedEntityId] = useState('');
-  const [matching, setMatching] = useState(false);
   const [matches, setMatches] = useState([]);
   const [selectedExperts, setSelectedExperts] = useState([]);
   const [dueDate, setDueDate] = useState('');
@@ -43,6 +44,7 @@ function ExpertMatchingEnginePage() {
   const [assignmentNotes, setAssignmentNotes] = useState('');
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { invokeAI, isLoading: matching, status, error, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
@@ -150,37 +152,35 @@ function ExpertMatchingEnginePage() {
       return;
     }
 
-    setMatching(true);
-    try {
-      const entityMap = {
-        challenge: challenges,
-        pilot: pilots,
-        solution: solutions,
-        rd_proposal: rdProposals,
-        rd_project: rdProjects,
-        program_application: programApps,
-        matchmaker_application: matchmakerApps,
-        scaling_plan: scalingPlans
-      };
+    const entityMap = {
+      challenge: challenges,
+      pilot: pilots,
+      solution: solutions,
+      rd_proposal: rdProposals,
+      rd_project: rdProjects,
+      program_application: programApps,
+      matchmaker_application: matchmakerApps,
+      scaling_plan: scalingPlans
+    };
 
-      const entities = entityMap[entityType] || [];
-      const entity = entities.find(e => e.id === selectedEntityId);
+    const entities = entityMap[entityType] || [];
+    const entity = entities.find(e => e.id === selectedEntityId);
 
-      if (!entity) {
-        toast.error(t({ en: 'Entity not found', ar: 'لم يتم العثور على الكيان' }));
-        return;
-      }
+    if (!entity) {
+      toast.error(t({ en: 'Entity not found', ar: 'لم يتم العثور على الكيان' }));
+      return;
+    }
 
-      const entityDesc = entity.title_en || entity.name_en || entity.description_en || entity.abstract_en || '';
-      const entitySector = entity.sector || entity.research_area_en || '';
+    const entityDesc = entity.title_en || entity.name_en || entity.description_en || entity.abstract_en || '';
+    const entitySector = entity.sector || entity.research_area_en || '';
 
-      // Calculate expert workload
-      const expertWorkload = {};
-      existingAssignments.filter(a => ['pending', 'in_progress'].includes(a.status)).forEach(a => {
-        expertWorkload[a.expert_email] = (expertWorkload[a.expert_email] || 0) + (a.hours_estimated || 0);
-      });
+    // Calculate expert workload
+    const expertWorkload = {};
+    existingAssignments.filter(a => ['pending', 'in_progress'].includes(a.status)).forEach(a => {
+      expertWorkload[a.expert_email] = (expertWorkload[a.expert_email] || 0) + (a.hours_estimated || 0);
+    });
 
-      const prompt = `Match experts to this ${entityType}:
+    const prompt = `Match experts to this ${entityType}:
 
 Entity: ${entityDesc.substring(0, 400)}
 Sector: ${entitySector}
@@ -199,29 +199,30 @@ Return top 10 most relevant experts considering:
 
 Include match scores (0-100) and reasons.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            matches: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  expert_email: { type: 'string' },
-                  match_score: { type: 'number' },
-                  reason: { type: 'string' },
-                  availability_ok: { type: 'boolean' },
-                  potential_conflict: { type: 'boolean' }
-                }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          matches: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                expert_email: { type: 'string' },
+                match_score: { type: 'number' },
+                reason: { type: 'string' },
+                availability_ok: { type: 'boolean' },
+                potential_conflict: { type: 'boolean' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      const matchedExperts = result.matches.map(m => {
+    if (result.success && result.data?.matches) {
+      const matchedExperts = result.data.matches.map(m => {
         const expertData = experts.find(e => e.user_email === m.expert_email);
         const currentWorkload = expertWorkload[m.expert_email] || 0;
         const availableHours = Math.max(0, (expertData?.availability_hours_per_month || 20) - currentWorkload);
@@ -239,10 +240,6 @@ Include match scores (0-100) and reasons.`;
 
       setMatches(matchedExperts);
       toast.success(t({ en: 'AI matching complete', ar: 'اكتملت المطابقة الذكية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
-    } finally {
-      setMatching(false);
     }
   };
 
@@ -283,6 +280,7 @@ Include match scores (0-100) and reasons.`;
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">

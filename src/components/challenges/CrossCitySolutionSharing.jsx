@@ -6,14 +6,16 @@ import { useLanguage } from '../LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Share2, CheckCircle2, Loader2, MapPin } from 'lucide-react';
+import { Share2, CheckCircle2, Loader2, Zap } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CrossCitySolutionSharing({ challenge }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedCities, setSelectedCities] = useState([]);
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, isLoading: generating, status, error, rateLimitInfo } = useAIWithFallback();
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-for-sharing'],
@@ -63,9 +65,7 @@ View details: ${window.location.origin}/challenge/${challenge.id}`
   });
 
   const autoSuggestCities = async () => {
-    setGenerating(true);
-    try {
-      const prompt = `Recommend which municipalities should adopt this solution:
+    const prompt = `Recommend which municipalities should adopt this solution:
 
 Challenge: ${challenge.title_en}
 Sector: ${challenge.sector}
@@ -79,37 +79,34 @@ Recommend top 5 municipalities that would benefit most, considering:
 - Sector alignment
 - Geographic proximity`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommended_cities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  municipality_name: { type: 'string' },
-                  reason: { type: 'string' },
-                  priority: { type: 'string' }
-                }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommended_cities: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                municipality_name: { type: 'string' },
+                reason: { type: 'string' },
+                priority: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      const cityNames = result.recommended_cities.map(r => r.municipality_name);
+    if (result.success && result.data?.recommended_cities) {
+      const cityNames = result.data.recommended_cities.map(r => r.municipality_name);
       const cityIds = municipalities.filter(m => 
         cityNames.some(name => m.name_en.includes(name) || name.includes(m.name_en))
       ).map(m => m.id);
       
       setSelectedCities(cityIds);
       toast.success(t({ en: 'Cities recommended by AI', ar: 'المدن الموصى بها من الذكاء الاصطناعي' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate recommendations', ar: 'فشل إنشاء التوصيات' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -122,6 +119,8 @@ Recommend top 5 municipalities that would benefit most, considering:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         <div className="flex gap-2">
           <Button size="sm" onClick={autoSuggestCities} disabled={generating} variant="outline">
             {generating ? (

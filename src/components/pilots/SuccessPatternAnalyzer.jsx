@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SuccessPatternAnalyzer({ sector }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [patterns, setPatterns] = useState(null);
+  const { invokeAI, isLoading: analyzing, status, error, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['successful-pilots', sector],
@@ -27,10 +29,8 @@ export default function SuccessPatternAnalyzer({ sector }) {
   });
 
   const analyzePatterns = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze success patterns from ${pilots.length} successful pilots in ${sector} sector:
+    const result = await invokeAI({
+      prompt: `Analyze success patterns from ${pilots.length} successful pilots in ${sector} sector:
 
 ${pilots.slice(0, 10).map(p => `
 PILOT: ${p.title_en}
@@ -48,26 +48,23 @@ Identify:
 4. Budget efficiency patterns
 5. Key methodologies used
 6. Critical success criteria`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            optimal_team_size: { type: "string" },
-            avg_duration_weeks: { type: "number" },
-            avg_budget_range: { type: "string" },
-            common_methodologies: { type: "array", items: { type: "string" } },
-            success_factors: { type: "array", items: { type: "string" } },
-            critical_criteria: { type: "array", items: { type: "string" } },
-            replication_template: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          optimal_team_size: { type: "string" },
+          avg_duration_weeks: { type: "number" },
+          avg_budget_range: { type: "string" },
+          common_methodologies: { type: "array", items: { type: "string" } },
+          success_factors: { type: "array", items: { type: "string" } },
+          critical_criteria: { type: "array", items: { type: "string" } },
+          replication_template: { type: "string" }
         }
-      });
+      }
+    });
 
-      setPatterns(response);
+    if (result.success && result.data) {
+      setPatterns(result.data);
       toast.success(t({ en: 'Patterns identified', ar: 'الأنماط محددة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -90,6 +87,8 @@ Identify:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        
         {!patterns && !analyzing && (
           <div className="text-center py-8">
             <TrendingUp className="h-12 w-12 text-purple-300 mx-auto mb-3" />
