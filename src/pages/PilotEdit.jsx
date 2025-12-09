@@ -77,7 +77,6 @@ function PilotEditPage() {
   });
 
   const [formData, setFormData] = useState(null);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
 
   // Initialize form and auto-save recovery
   useEffect(() => {
@@ -1379,11 +1378,10 @@ function PilotEditPage() {
                       toast.error('Please link a challenge first');
                       return;
                     }
-                    setIsAIProcessing(true);
                     try {
                       const challenge = challenges.find(c => c.id === formData.challenge_id);
                       const solution = solutions.find(s => s.id === formData.solution_id);
-                      const response = await base44.integrations.Core.InvokeLLM({
+                      const response = await invokeAI({
                         prompt: `Generate optimal team for this pilot:
 Challenge: ${challenge?.title_en}
 Solution: ${solution?.name_en || 'TBD'}
@@ -1411,12 +1409,12 @@ Return JSON with: name (realistic Arabic name), role, organization, email (name@
                           }
                         }
                       });
-                      setFormData(prev => ({ ...prev, team: response.team }));
-                      toast.success('✨ AI generated team');
+                      if (response.success) {
+                        setFormData(prev => ({ ...prev, team: response.data?.team }));
+                        toast.success('✨ AI generated team');
+                      }
                     } catch (error) {
                       toast.error('Failed: ' + error.message);
-                    } finally {
-                      setIsAIProcessing(false);
                     }
                   }}
                   disabled={isAIProcessing || !formData.challenge_id}
@@ -1521,11 +1519,10 @@ Return JSON with: name (realistic Arabic name), role, organization, email (name@
                       toast.error('Please link a challenge first');
                       return;
                     }
-                    setIsAIProcessing(true);
                     try {
                       const challenge = challenges.find(c => c.id === formData.challenge_id);
                       const municipality = municipalities.find(m => m.id === formData.municipality_id);
-                      const response = await base44.integrations.Core.InvokeLLM({
+                      const response = await invokeAI({
                         prompt: `Identify stakeholders for this pilot:
 Challenge: ${challenge?.title_en}
 Municipality: ${municipality?.name_en}
@@ -1551,12 +1548,12 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                           }
                         }
                       });
-                      setFormData(prev => ({ ...prev, stakeholders: response.stakeholders }));
-                      toast.success('✨ AI mapped stakeholders');
+                      if (response.success) {
+                        setFormData(prev => ({ ...prev, stakeholders: response.data?.stakeholders }));
+                        toast.success('✨ AI mapped stakeholders');
+                      }
                     } catch (error) {
                       toast.error('Failed: ' + error.message);
-                    } finally {
-                      setIsAIProcessing(false);
                     }
                   }}
                   disabled={isAIProcessing || !formData.challenge_id}
@@ -2218,9 +2215,8 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                       toast.error('Please set total budget and description first');
                       return;
                     }
-                    setIsAIProcessing(true);
                     try {
-                      const response = await base44.integrations.Core.InvokeLLM({
+                      const response = await invokeAI({
                         prompt: `Optimize budget allocation for this pilot:
 Total Budget: ${formData.budget} ${formData.budget_currency}
 Description: ${formData.description_en}
@@ -2266,16 +2262,16 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                           }
                         }
                       });
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        budget_breakdown: response.budget_breakdown,
-                        funding_sources: response.funding_sources 
-                      }));
-                      toast.success('✨ AI optimized budget');
+                      if (response.success) {
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          budget_breakdown: response.data?.budget_breakdown,
+                          funding_sources: response.data?.funding_sources 
+                        }));
+                        toast.success('✨ AI optimized budget');
+                      }
                     } catch (error) {
                       toast.error('Failed: ' + error.message);
-                    } finally {
-                      setIsAIProcessing(false);
                     }
                   }}
                   disabled={isAIProcessing || !formData.budget}
