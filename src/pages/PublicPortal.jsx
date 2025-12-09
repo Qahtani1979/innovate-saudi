@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import { 
   Sparkles, TrendingUp, Award, MapPin, Target, TestTube, Lightbulb, 
   CheckCircle2, Users, Building2, Rocket, BarChart3, Globe, BookOpen,
@@ -133,16 +132,19 @@ function PublicPortal() {
             </div>
             
             <div className="hidden md:flex items-center gap-6">
-              <Link to={createPageUrl('About')} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+              <Link to="/about" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
                 {t({ en: 'About', ar: 'عن المنصة' })}
               </Link>
-              <Link to={createPageUrl('PublicSolutionsMarketplace')} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+              <Link to="/public-challenges" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'Challenges', ar: 'التحديات' })}
+              </Link>
+              <Link to="/public-solutions" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
                 {t({ en: 'Solutions', ar: 'الحلول' })}
               </Link>
-              <Link to={createPageUrl('News')} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'News', ar: 'الأخبار' })}
+              <Link to="/for-municipalities" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'For Municipalities', ar: 'للبلديات' })}
               </Link>
-              <Link to={createPageUrl('Contact')} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+              <Link to="/contact" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
                 {t({ en: 'Contact', ar: 'تواصل' })}
               </Link>
             </div>
@@ -215,7 +217,7 @@ function PublicPortal() {
                   {t({ en: 'Join the Platform', ar: 'انضم للمنصة' })}
                 </Button>
               </Link>
-              <Link to={createPageUrl('PublicSolutionsMarketplace')}>
+              <Link to="/public-solutions">
                 <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/20 px-8">
                   <Play className="h-5 w-5 mr-2" />
                   {t({ en: 'Explore Solutions', ar: 'استكشف الحلول' })}
@@ -296,7 +298,7 @@ function PublicPortal() {
                 </h2>
                 <p className="text-slate-600">{t({ en: 'Top performing municipalities by MII score', ar: 'البلديات الأعلى أداءً حسب مؤشر الابتكار' })}</p>
               </div>
-              <Link to={createPageUrl('MII')}>
+              <Link to="/auth">
                 <Button variant="outline">
                   {t({ en: 'View All Rankings', ar: 'عرض جميع الترتيبات' })}
                   <ChevronRight className="h-4 w-4 ml-1" />
@@ -380,7 +382,7 @@ function PublicPortal() {
                 </h2>
                 <p className="text-slate-600">{t({ en: 'Market-ready solutions from verified providers', ar: 'حلول جاهزة للسوق من مزودين معتمدين' })}</p>
               </div>
-              <Link to={createPageUrl('PublicSolutionsMarketplace')}>
+              <Link to="/public-solutions">
                 <Button variant="outline">
                   {t({ en: 'Browse Marketplace', ar: 'تصفح السوق' })}
                   <ChevronRight className="h-4 w-4 ml-1" />
@@ -487,7 +489,7 @@ function PublicPortal() {
                       ar: 'شارك أفكارك لتحسين مدينتك. صوت على مقترحات المجتمع. ساعد في تشكيل مستقبل الخدمات البلدية.'
                     })}
                   </p>
-                  <Link to={createPageUrl('PublicIdeaSubmission')}>
+                  <Link to="/auth">
                     <Button size="lg" className="bg-amber-600 hover:bg-amber-700">
                       <Lightbulb className="h-5 w-5 mr-2" />
                       {t({ en: 'Submit Your Idea', ar: 'قدم فكرتك' })}
@@ -523,7 +525,7 @@ function PublicPortal() {
                 {t({ en: 'Create Free Account', ar: 'أنشئ حساب مجاني' })}
               </Button>
             </Link>
-            <Link to={createPageUrl('Contact')}>
+            <Link to="/contact">
               <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/20 px-10">
                 <MessageSquare className="h-5 w-5 mr-2" />
                 {t({ en: 'Talk to Our Team', ar: 'تحدث مع فريقنا' })}
@@ -547,14 +549,14 @@ function PublicPortal() {
             </div>
             
             <div className="flex items-center gap-6 text-sm text-slate-400">
-              <Link to={createPageUrl('About')} className="hover:text-white transition-colors">
+              <Link to="/about" className="hover:text-white transition-colors">
                 {t({ en: 'About', ar: 'عن المنصة' })}
               </Link>
-              <Link to={createPageUrl('Contact')} className="hover:text-white transition-colors">
+              <Link to="/contact" className="hover:text-white transition-colors">
                 {t({ en: 'Contact', ar: 'تواصل' })}
               </Link>
-              <Link to={createPageUrl('News')} className="hover:text-white transition-colors">
-                {t({ en: 'News', ar: 'الأخبار' })}
+              <Link to="/faq" className="hover:text-white transition-colors">
+                {t({ en: 'FAQ', ar: 'الأسئلة الشائعة' })}
               </Link>
             </div>
             
