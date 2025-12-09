@@ -465,6 +465,11 @@ import RelationshipEntitiesClusterAudit from './pages/RelationshipEntitiesCluste
 import SpecializedSystemsClusterAudit from './pages/SpecializedSystemsClusterAudit';
 import Priority6MasterAudit from './pages/Priority6MasterAudit';
 import ModuleCoverageHub from './pages/ModuleCoverageHub';
+import ResearcherDashboard from './pages/ResearcherDashboard';
+import ResearcherOnboarding from './pages/ResearcherOnboarding';
+import CitizenOnboarding from './pages/CitizenOnboarding';
+import MunicipalityStaffOnboarding from './pages/MunicipalityStaffOnboarding';
+import StartupOnboarding from './pages/StartupOnboarding';
 import __Layout from './Layout.jsx';
 
 
@@ -935,6 +940,11 @@ export const PAGES = {
     "SpecializedSystemsClusterAudit": SpecializedSystemsClusterAudit,
     "Priority6MasterAudit": Priority6MasterAudit,
     "ModuleCoverageHub": ModuleCoverageHub,
+    "ResearcherDashboard": ResearcherDashboard,
+    "ResearcherOnboarding": ResearcherOnboarding,
+    "CitizenOnboarding": CitizenOnboarding,
+    "MunicipalityStaffOnboarding": MunicipalityStaffOnboarding,
+    "StartupOnboarding": StartupOnboarding,
     "Auth": Auth,
 }
 

@@ -345,6 +345,22 @@ Based on this information:
     toast.success(t({ en: 'Applied!', ar: 'تم التطبيق!' }));
   };
 
+  // Check if specialized wizard is needed
+  const needsSpecializedWizard = (persona) => {
+    return ['municipality_staff', 'provider', 'researcher', 'citizen'].includes(persona);
+  };
+
+  // Get specialized wizard page
+  const getSpecializedWizardPage = (persona) => {
+    const wizardMap = {
+      municipality_staff: 'MunicipalityStaffOnboarding',
+      provider: 'StartupOnboarding',
+      researcher: 'ResearcherOnboarding',
+      citizen: 'CitizenOnboarding'
+    };
+    return wizardMap[persona] || null;
+  };
+
   const handleComplete = async () => {
     if (!user?.id) {
       toast.error(t({ en: 'User not found. Please try logging in again.', ar: 'المستخدم غير موجود. يرجى تسجيل الدخول مرة أخرى.' }));
@@ -354,6 +370,9 @@ Based on this information:
     setIsSubmitting(true);
     
     try {
+      // If specialized wizard needed, mark basic onboarding complete but redirect to specialized wizard
+      const redirectToSpecialized = needsSpecializedWizard(formData.selectedPersona);
+      
       const updatePayload = {
         full_name: formData.full_name || null,
         job_title: formData.job_title || null,
@@ -366,13 +385,15 @@ Based on this information:
         cv_url: formData.cv_url || null,
         linkedin_url: formData.linkedin_url || null,
         work_phone: formData.work_phone || null,
-        onboarding_completed: true,
-        onboarding_completed_at: new Date().toISOString(),
+        // Only mark complete if no specialized wizard needed
+        onboarding_completed: !redirectToSpecialized,
+        onboarding_completed_at: redirectToSpecialized ? null : new Date().toISOString(),
         profile_completion_percentage: calculateProfileCompletion(formData),
         extracted_data: {
           years_of_experience: formData.years_of_experience,
           imported_from_cv: !!formData.cv_url,
-          imported_from_linkedin: !!formData.linkedin_url
+          imported_from_linkedin: !!formData.linkedin_url,
+          selected_persona: formData.selectedPersona
         },
         updated_at: new Date().toISOString()
       };
@@ -418,17 +439,24 @@ Based on this information:
       if (checkAuth) {
         await checkAuth();
       }
-      
-      toast.success(t({ en: 'Welcome aboard! Your profile is set up.', ar: 'مرحباً بك! تم إعداد ملفك الشخصي.' }));
-      
-      const landingPage = getLandingPage();
-      console.log('Navigating to:', landingPage);
-      
-      onComplete?.(formData);
-      
-      setTimeout(() => {
-        navigate(createPageUrl(landingPage));
-      }, 300);
+
+      // Redirect to specialized wizard or landing page
+      if (redirectToSpecialized) {
+        const specializedPage = getSpecializedWizardPage(formData.selectedPersona);
+        toast.success(t({ en: 'Great! Now let\'s complete your specialized profile.', ar: 'رائع! الآن دعنا نكمل ملفك المتخصص.' }));
+        onComplete?.(formData);
+        setTimeout(() => {
+          navigate(createPageUrl(specializedPage));
+        }, 300);
+      } else {
+        toast.success(t({ en: 'Welcome aboard! Your profile is set up.', ar: 'مرحباً بك! تم إعداد ملفك الشخصي.' }));
+        const landingPage = getLandingPage();
+        console.log('Navigating to:', landingPage);
+        onComplete?.(formData);
+        setTimeout(() => {
+          navigate(createPageUrl(landingPage));
+        }, 300);
+      }
       
     } catch (error) {
       console.error('Onboarding error:', error);
