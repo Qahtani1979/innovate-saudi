@@ -1,8 +1,9 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// This is a utility function that can be used with the hook in components
 export async function checkContentModeration(text) {
   try {
     const result = await base44.integrations.Core.InvokeLLM({
@@ -33,6 +34,25 @@ Return scores and findings.`,
     console.error('Content moderation failed:', error);
     return { toxicity_score: 0, spam_score: 0, is_appropriate: true, issues: [] };
   }
+}
+
+// Hook-based version for components
+export function useContentModeration() {
+  const [isChecking, setIsChecking] = React.useState(false);
+  const [result, setResult] = React.useState(null);
+
+  const checkContent = React.useCallback(async (text) => {
+    setIsChecking(true);
+    try {
+      const moderationResult = await checkContentModeration(text);
+      setResult(moderationResult);
+      return moderationResult;
+    } finally {
+      setIsChecking(false);
+    }
+  }, []);
+
+  return { checkContent, isChecking, result };
 }
 
 export default function ContentModerationAlert({ moderationResult }) {

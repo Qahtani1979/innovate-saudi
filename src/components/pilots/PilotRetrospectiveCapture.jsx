@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
-import { FileText, Sparkles, Loader2, CheckCircle } from 'lucide-react';
+import { FileText, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotRetrospectiveCapture({ pilot }) {
   const { language, t } = useLanguage();
@@ -17,13 +19,11 @@ export default function PilotRetrospectiveCapture({ pilot }) {
     unexpected_outcomes: '',
     recommendations: ''
   });
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateReportCard = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate Pilot Report Card:
+    const result = await invokeAI({
+      prompt: `Generate Pilot Report Card:
 
 PILOT: ${pilot.title_en}
 WHAT WORKED: ${retrospective.what_worked}
@@ -39,23 +39,24 @@ Create comprehensive report card:
 3. Challenges faced (3-5 bullets)
 4. Key learnings (3-5 bullets)
 5. Recommendations for future pilots (3-5 bullets)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            executive_summary: { type: "string" },
-            success_factors: { type: "array", items: { type: "string" } },
-            challenges_faced: { type: "array", items: { type: "string" } },
-            key_learnings: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          executive_summary: { type: "string" },
+          success_factors: { type: "array", items: { type: "string" } },
+          challenges_faced: { type: "array", items: { type: "string" } },
+          key_learnings: { type: "array", items: { type: "string" } },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       await base44.entities.KnowledgeDocument.create({
         title_en: `Pilot Report Card: ${pilot.title_en}`,
         title_ar: `بطاقة تقرير التجربة: ${pilot.title_ar || pilot.title_en}`,
         category: 'pilot_retrospective',
-        content_en: JSON.stringify(response, null, 2),
+        content_en: JSON.stringify(result.data, null, 2),
         entity_type: 'pilot',
         entity_id: pilot.id,
         tags: [pilot.sector, 'retrospective', 'lessons_learned']
@@ -63,10 +64,6 @@ Create comprehensive report card:
 
       queryClient.invalidateQueries(['knowledge']);
       toast.success(t({ en: 'Report card created', ar: 'بطاقة التقرير أُنشئت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -79,6 +76,8 @@ Create comprehensive report card:
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div>
           <label className="text-sm font-medium text-slate-700 mb-2 block">
             {t({ en: 'What worked well?', ar: 'ما الذي نجح؟' })}
@@ -129,10 +128,10 @@ Create comprehensive report card:
 
         <Button 
           onClick={generateReportCard} 
-          disabled={generating || !retrospective.what_worked}
+          disabled={isLoading || !isAvailable || !retrospective.what_worked}
           className="w-full bg-purple-600"
         >
-          {generating ? (
+          {isLoading ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <Sparkles className="h-4 w-4 mr-2" />
