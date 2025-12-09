@@ -63,6 +63,12 @@ export default function PublicIdeaSubmission() {
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [rateLimitInfo, setRateLimitInfo] = useState({ allowed: true, remaining: MAX_SUBMISSIONS_PER_DAY });
+  
+  // Check rate limit on mount and after submissions
+  useEffect(() => {
+    setRateLimitInfo(checkRateLimit());
+  }, [submitted]);
   
   // Step 1: Initial input
   const [initialIdea, setInitialIdea] = useState('');
@@ -168,12 +174,14 @@ export default function PublicIdeaSubmission() {
 
   // Submit idea
   const handleSubmit = async () => {
+    // Re-check rate limit
     const rateLimit = checkRateLimit();
     if (!rateLimit.allowed) {
       toast.error(t({ 
-        en: `Daily limit reached. You can submit ${MAX_SUBMISSIONS_PER_DAY} ideas per day.`, 
-        ar: `تم الوصول إلى الحد اليومي. يمكنك تقديم ${MAX_SUBMISSIONS_PER_DAY} أفكار يوميًا.` 
+        en: `Daily limit reached. You can submit ${MAX_SUBMISSIONS_PER_DAY} ideas per day. Please come back tomorrow!`, 
+        ar: `تم الوصول إلى الحد اليومي. يمكنك تقديم ${MAX_SUBMISSIONS_PER_DAY} أفكار يوميًا. يرجى العودة غدًا!` 
       }));
+      setRateLimitInfo(rateLimit);
       return;
     }
 
@@ -187,7 +195,17 @@ export default function PublicIdeaSubmission() {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
+      // Build metadata including contact info
+      const submissionMetadata = {
+        original_input: initialIdea,
+        ai_generated: true,
+        contact_name: contactInfo.is_anonymous ? null : contactInfo.name,
+        contact_email: contactInfo.is_anonymous ? null : contactInfo.email,
+        is_anonymous: contactInfo.is_anonymous,
+        submitted_at: new Date().toISOString()
+      };
+
+      const { data: insertedIdea, error } = await supabase
         .from('citizen_ideas')
         .insert({
           title: language === 'ar' ? formData.title_ar : formData.title,
@@ -197,15 +215,57 @@ export default function PublicIdeaSubmission() {
           tags: formData.tags,
           status: 'pending',
           is_published: false
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
       
+      // Send confirmation email if contact provided
+      if (!contactInfo.is_anonymous && contactInfo.email) {
+        try {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            },
+            body: JSON.stringify({
+              to: contactInfo.email,
+              subject: language === 'ar' 
+                ? 'شكرًا لمشاركة فكرتك - بلدي للابتكار' 
+                : 'Thank you for your idea - Baladi Innovation',
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #10b981;">${language === 'ar' ? 'شكرًا لمشاركة فكرتك!' : 'Thank you for sharing your idea!'}</h2>
+                  <p>${language === 'ar' ? `مرحبًا ${contactInfo.name || ''},` : `Hello ${contactInfo.name || ''},`}</p>
+                  <p>${language === 'ar' 
+                    ? 'لقد استلمنا فكرتك وسيتم مراجعتها من قبل فريقنا.' 
+                    : 'We have received your idea and it will be reviewed by our team.'}</p>
+                  <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <strong>${language === 'ar' ? 'عنوان الفكرة:' : 'Idea Title:'}</strong><br/>
+                    ${formData.title}
+                  </div>
+                  <p style="color: #6b7280; font-size: 14px;">
+                    ${language === 'ar' 
+                      ? 'سنتواصل معك إذا كانت لدينا أي أسئلة.' 
+                      : 'We will contact you if we have any questions.'}
+                  </p>
+                </div>
+              `
+            })
+          });
+        } catch (emailError) {
+          console.log('Email notification failed (non-critical):', emailError);
+        }
+      }
+      
       recordSubmission();
+      setRateLimitInfo(checkRateLimit());
       setSubmitted(true);
       toast.success(t({ 
-        en: 'Your idea has been submitted!', 
-        ar: 'تم إرسال فكرتك!' 
+        en: 'Your idea has been submitted successfully!', 
+        ar: 'تم إرسال فكرتك بنجاح!' 
       }));
     } catch (error) {
       console.error('Submit error:', error);
@@ -364,6 +424,48 @@ export default function PublicIdeaSubmission() {
           </p>
         </div>
 
+        {/* Rate Limit Notice */}
+        {!rateLimitInfo.allowed ? (
+          <div className="max-w-3xl mx-auto mb-8">
+            <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 flex items-start gap-3">
+              <div className="p-2 bg-amber-100 rounded-full">
+                <Lightbulb className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-800">
+                  {t({ en: 'Daily Limit Reached', ar: 'تم الوصول إلى الحد اليومي' })}
+                </h3>
+                <p className="text-amber-700 text-sm mt-1">
+                  {t({ 
+                    en: `You've submitted ${MAX_SUBMISSIONS_PER_DAY} ideas today. Come back tomorrow to share more ideas!`,
+                    ar: `لقد قدمت ${MAX_SUBMISSIONS_PER_DAY} أفكار اليوم. عد غدًا لمشاركة المزيد من الأفكار!`
+                  })}
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3 border-amber-300 text-amber-700 hover:bg-amber-100"
+                  onClick={() => window.location.href = '/public-challenges'}
+                >
+                  {t({ en: 'View Active Challenges Instead', ar: 'عرض التحديات النشطة بدلاً من ذلك' })}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : rateLimitInfo.remaining <= 2 && (
+          <div className="max-w-3xl mx-auto mb-8">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-3">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              <p className="text-blue-700 text-sm">
+                {t({ 
+                  en: `You have ${rateLimitInfo.remaining} idea${rateLimitInfo.remaining === 1 ? '' : 's'} remaining today.`,
+                  ar: `لديك ${rateLimitInfo.remaining} ${rateLimitInfo.remaining === 1 ? 'فكرة متبقية' : 'أفكار متبقية'} اليوم.`
+                })}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Progress Steps */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-4">
@@ -443,13 +545,17 @@ export default function PublicIdeaSubmission() {
                 {/* AI Generate Button */}
                 <Button
                   onClick={handleAIGenerate}
-                  disabled={isAIProcessing || initialIdea.length < 20}
+                  disabled={isAIProcessing || initialIdea.length < 20 || !rateLimitInfo.allowed}
                   className="w-full h-14 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                 >
                   {isAIProcessing ? (
                     <>
                       <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                       {t({ en: 'AI is analyzing your idea...', ar: 'الذكاء الاصطناعي يحلل فكرتك...' })}
+                    </>
+                  ) : !rateLimitInfo.allowed ? (
+                    <>
+                      {t({ en: 'Daily limit reached', ar: 'تم الوصول إلى الحد اليومي' })}
                     </>
                   ) : (
                     <>
@@ -462,8 +568,8 @@ export default function PublicIdeaSubmission() {
                 {/* Rate limit info */}
                 <p className="text-center text-sm text-slate-500">
                   {t({ 
-                    en: `You can submit up to ${MAX_SUBMISSIONS_PER_DAY} ideas per day. Remaining today: ${checkRateLimit().remaining}`, 
-                    ar: `يمكنك تقديم ${MAX_SUBMISSIONS_PER_DAY} أفكار يوميًا. المتبقي اليوم: ${checkRateLimit().remaining}` 
+                    en: `You can submit up to ${MAX_SUBMISSIONS_PER_DAY} ideas per day. Remaining today: ${rateLimitInfo.remaining}`, 
+                    ar: `يمكنك تقديم ${MAX_SUBMISSIONS_PER_DAY} أفكار يوميًا. المتبقي اليوم: ${rateLimitInfo.remaining}` 
                   })}
                 </p>
               </CardContent>
