@@ -7,17 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Loader2, BookOpen, Plus, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AICurriculumGenerator({ programType, duration_weeks, objectives, onCurriculumGenerated }) {
   const { t, language } = useLanguage();
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [curriculum, setCurriculum] = useState(null);
 
   const generateCurriculum = async () => {
-    setGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Design a comprehensive ${duration_weeks}-week curriculum for a ${programType} program.
+    const result = await invokeAI({
+      prompt: `Design a comprehensive ${duration_weeks}-week curriculum for a ${programType} program.
 
 Objectives: ${objectives || 'General innovation and entrepreneurship'}
 
@@ -30,33 +30,30 @@ Generate week-by-week curriculum with:
 - Resources needed
 
 Make it practical for Saudi municipal innovation context.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            curriculum: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  week: { type: 'number' },
-                  topic_en: { type: 'string' },
-                  topic_ar: { type: 'string' },
-                  objectives: { type: 'array', items: { type: 'string' } },
-                  activities: { type: 'array', items: { type: 'string' } },
-                  deliverables: { type: 'array', items: { type: 'string' } }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          curriculum: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                week: { type: 'number' },
+                topic_en: { type: 'string' },
+                topic_ar: { type: 'string' },
+                objectives: { type: 'array', items: { type: 'string' } },
+                activities: { type: 'array', items: { type: 'string' } },
+                deliverables: { type: 'array', items: { type: 'string' } }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setCurriculum(result.curriculum);
+    if (result.success) {
+      setCurriculum(result.data?.curriculum);
       toast.success(t({ en: 'Curriculum generated!', ar: 'تم توليد المنهج!' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 

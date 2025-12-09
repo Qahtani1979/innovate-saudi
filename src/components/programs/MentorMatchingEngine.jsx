@@ -6,17 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Heart, Sparkles, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function MentorMatchingEngine({ participants, mentors }) {
   const { language, t } = useLanguage();
-  const [matching, setMatching] = useState(false);
+  const { invokeAI, status, isLoading: matching, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [matches, setMatches] = useState([]);
 
   const generateMatches = async () => {
-    setMatching(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Match ${participants.length} startups with ${mentors.length} mentors:
+    const result = await invokeAI({
+      prompt: `Match ${participants.length} startups with ${mentors.length} mentors:
 
 STARTUPS (sample):
 ${participants.slice(0, 10).map(p => `- ${p.startup_name}: ${p.sector}, ${p.startup_stage}, Needs: ${p.mentorship_needs || 'general guidance'}`).join('\n')}
@@ -29,33 +29,30 @@ For each startup, suggest best 2 mentors considering:
 2. Stage expertise
 3. Specific needs match
 4. Mentor availability`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            matches: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  startup: { type: "string" },
-                  mentor_1: { type: "string" },
-                  mentor_2: { type: "string" },
-                  rationale_1: { type: "string" },
-                  rationale_2: { type: "string" },
-                  match_score: { type: "number" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          matches: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                startup: { type: "string" },
+                mentor_1: { type: "string" },
+                mentor_2: { type: "string" },
+                rationale_1: { type: "string" },
+                rationale_2: { type: "string" },
+                match_score: { type: "number" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setMatches(response.matches || []);
-      toast.success(t({ en: `${response.matches?.length || 0} matches created`, ar: `تم إنشاء ${response.matches?.length || 0} مطابقة` }));
-    } catch (error) {
-      toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
-    } finally {
-      setMatching(false);
+    if (result.success) {
+      setMatches(result.data?.matches || []);
+      toast.success(t({ en: `${result.data?.matches?.length || 0} matches created`, ar: `تم إنشاء ${result.data?.matches?.length || 0} مطابقة` }));
     }
   };
 

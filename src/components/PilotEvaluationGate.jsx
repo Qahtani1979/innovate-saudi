@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Award, Loader2, CheckCircle2, TrendingUp, RotateCcw, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PilotEvaluationGate({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [recommendation, setRecommendation] = useState('');
   const [summary, setSummary] = useState('');
-  const [generatingEvaluation, setGeneratingEvaluation] = useState(false);
+  const { invokeAI, status, isLoading: generatingEvaluation, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [aiEvaluation, setAiEvaluation] = useState(null);
   const queryClient = useQueryClient();
 
@@ -44,10 +46,8 @@ function PilotEvaluationGate({ pilot, onClose }) {
   });
 
   const generateAIEvaluation = async () => {
-    setGeneratingEvaluation(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Evaluate this completed pilot and provide a comprehensive assessment:
+    const result = await invokeAI({
+      prompt: `Evaluate this completed pilot and provide a comprehensive assessment:
 
 Title: ${pilot.title_en}
 Sector: ${pilot.sector}
@@ -68,28 +68,26 @@ Provide:
 5. Recommendation (scale/iterate/pivot/terminate) with detailed rationale
 6. Key success factors
 7. Areas for improvement`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            performance_score: { type: 'number' },
-            performance_explanation: { type: 'string' },
-            kpi_summary: { type: 'string' },
-            unexpected_outcomes: { type: 'array', items: { type: 'string' } },
-            scalability_assessment: { type: 'string' },
-            recommendation: { type: 'string' },
-            rationale: { type: 'string' },
-            success_factors: { type: 'array', items: { type: 'string' } },
-            improvement_areas: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          performance_score: { type: 'number' },
+          performance_explanation: { type: 'string' },
+          kpi_summary: { type: 'string' },
+          unexpected_outcomes: { type: 'array', items: { type: 'string' } },
+          scalability_assessment: { type: 'string' },
+          recommendation: { type: 'string' },
+          rationale: { type: 'string' },
+          success_factors: { type: 'array', items: { type: 'string' } },
+          improvement_areas: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setAiEvaluation(result);
-      setSummary(result.performance_explanation);
-      setRecommendation(result.recommendation);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate evaluation', ar: 'فشل إنشاء التقييم' }));
-    } finally {
-      setGeneratingEvaluation(false);
+      }
+    });
+
+    if (result.success) {
+      setAiEvaluation(result.data);
+      setSummary(result.data?.performance_explanation || '');
+      setRecommendation(result.data?.recommendation || '');
     }
   };
 
