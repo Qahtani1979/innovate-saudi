@@ -39,7 +39,7 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
     }).slice(0, 30);
 
     const result = await invokeAI({
-        prompt: `Perform bilateral matching between this provider and available challenges:
+      prompt: `Perform bilateral matching between this provider and available challenges:
 
 PROVIDER:
 - Organization: ${application.organization_name_en}
@@ -64,21 +64,20 @@ Return top ${preferences.max_matches} matches with:
 - capability_fit (0-100)
 - strategic_fit (0-100)
 - match_rationale (1 sentence)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            matches: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  challenge_code: { type: 'string' },
-                  match_score: { type: 'number' },
-                  sector_fit: { type: 'number' },
-                  capability_fit: { type: 'number' },
-                  strategic_fit: { type: 'number' },
-                  match_rationale: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          matches: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                challenge_code: { type: 'string' },
+                match_score: { type: 'number' },
+                sector_fit: { type: 'number' },
+                capability_fit: { type: 'number' },
+                strategic_fit: { type: 'number' },
+                match_rationale: { type: 'string' }
               }
             }
           }
