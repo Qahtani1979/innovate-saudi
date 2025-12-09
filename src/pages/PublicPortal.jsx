@@ -512,7 +512,7 @@ function PublicPortal() {
                       ar: 'شارك أفكارك لتحسين مدينتك. صوت على مقترحات المجتمع. ساعد في تشكيل مستقبل الخدمات البلدية.'
                     })}
                   </p>
-                  <Link to="/auth">
+                  <Link to="/public-idea-submission">
                     <Button size="lg" className="bg-amber-600 hover:bg-amber-700">
                       <Lightbulb className="h-5 w-5 mr-2" />
                       {t({ en: 'Submit Your Idea', ar: 'قدم فكرتك' })}
