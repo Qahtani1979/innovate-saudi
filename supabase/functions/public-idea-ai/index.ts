@@ -1,17 +1,39 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple hash function for cache keys
+function hashString(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Normalize text for cache comparison (lowercase, trim, remove extra spaces)
+function normalizeText(text: string): string {
+  return text.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Initialize Supabase client with service role for DB operations
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
   try {
-    const { idea, municipality } = await req.json();
+    const { idea, municipality, session_id, user_id, user_type = 'anonymous' } = await req.json();
 
     if (!idea || idea.trim().length < 20) {
       return new Response(
@@ -20,12 +42,83 @@ serve(async (req) => {
       );
     }
 
+    // Generate session ID if not provided (client should send one)
+    const effectiveSessionId = session_id || `anon_${hashString(req.headers.get('x-forwarded-for') || 'unknown')}`;
+    
+    // Check rate limit using database function
+    console.log(`Checking rate limit for session: ${effectiveSessionId}, user_type: ${user_type}`);
+    
+    const { data: rateLimitData, error: rateLimitError } = await supabase
+      .rpc('check_ai_rate_limit', {
+        p_session_id: effectiveSessionId,
+        p_user_id: user_id || null,
+        p_user_type: user_type,
+        p_endpoint: 'public-idea-ai'
+      });
+
+    if (rateLimitError) {
+      console.error('Rate limit check error:', rateLimitError);
+      // Continue anyway if rate limit check fails (graceful degradation)
+    } else if (rateLimitData && !rateLimitData.allowed) {
+      console.log(`Rate limit exceeded for session: ${effectiveSessionId}`, rateLimitData);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded. Please try again later.',
+          rate_limit: rateLimitData
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check cache for similar ideas
+    const normalizedIdea = normalizeText(idea);
+    const cacheKey = hashString(normalizedIdea + (municipality || ''));
+    
+    console.log(`Checking cache for key: ${cacheKey}`);
+    
+    const { data: cachedResult, error: cacheError } = await supabase
+      .from('ai_analysis_cache')
+      .select('result, id, hit_count')
+      .eq('input_hash', cacheKey)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (cachedResult && !cacheError) {
+      console.log(`Cache hit for key: ${cacheKey}, hit_count: ${cachedResult.hit_count}`);
+      
+      // Update hit count
+      await supabase
+        .from('ai_analysis_cache')
+        .update({ hit_count: cachedResult.hit_count + 1 })
+        .eq('id', cachedResult.id);
+
+      // Still record usage for rate limiting purposes
+      await supabase
+        .from('ai_usage_tracking')
+        .insert({
+          session_id: effectiveSessionId,
+          user_id: user_id || null,
+          endpoint: 'public-idea-ai',
+          tokens_used: 0 // No tokens used for cached response
+        });
+
+      return new Response(
+        JSON.stringify({ 
+          ...cachedResult.result, 
+          _cached: true,
+          _rate_limit: rateLimitData 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // No cache hit, call AI
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-const prompt = `You are a municipal innovation analyst helping citizens submit ideas for city improvement.
+    const prompt = `You are a municipal innovation analyst helping citizens submit ideas for city improvement.
 
 Analyze this citizen's idea and generate a structured submission:
 
@@ -54,6 +147,8 @@ Generate the following in BOTH English and Arabic:
 
 Be encouraging and constructive. Focus on the positive potential while being realistic about feasibility.`;
 
+    console.log('Calling AI gateway...');
+    
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -117,7 +212,7 @@ Be encouraging and constructive. Focus on the positive potential while being rea
       
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+          JSON.stringify({ error: 'AI service rate limit exceeded. Please try again later.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -141,8 +236,46 @@ Be encouraging and constructive. Focus on the positive potential while being rea
 
     const result = JSON.parse(toolCall.function.arguments);
 
+    // Record AI usage
+    const tokensUsed = aiResult.usage?.total_tokens || 0;
+    console.log(`AI call successful, tokens used: ${tokensUsed}`);
+    
+    await supabase
+      .from('ai_usage_tracking')
+      .insert({
+        session_id: effectiveSessionId,
+        user_id: user_id || null,
+        endpoint: 'public-idea-ai',
+        tokens_used: tokensUsed
+      });
+
+    // Cache the result
+    const { error: cacheInsertError } = await supabase
+      .from('ai_analysis_cache')
+      .upsert({
+        input_hash: cacheKey,
+        input_text: idea.substring(0, 500), // Store first 500 chars for reference
+        endpoint: 'public-idea-ai',
+        result: result,
+        hit_count: 1,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+      }, {
+        onConflict: 'input_hash'
+      });
+
+    if (cacheInsertError) {
+      console.error('Cache insert error:', cacheInsertError);
+      // Continue anyway, caching failure shouldn't block response
+    } else {
+      console.log(`Cached result for key: ${cacheKey}`);
+    }
+
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ 
+        ...result, 
+        _cached: false,
+        _rate_limit: rateLimitData 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

@@ -226,6 +226,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_analysis_cache: {
+        Row: {
+          created_at: string
+          endpoint: string
+          expires_at: string
+          hit_count: number | null
+          id: string
+          input_hash: string
+          input_text: string
+          result: Json
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          expires_at?: string
+          hit_count?: number | null
+          id?: string
+          input_hash: string
+          input_text: string
+          result: Json
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          expires_at?: string
+          hit_count?: number | null
+          id?: string
+          input_hash?: string
+          input_text?: string
+          result?: Json
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           agent_name: string
@@ -287,6 +320,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_rate_limits: {
+        Row: {
+          created_at: string
+          daily_limit: number
+          description: string | null
+          hourly_limit: number | null
+          id: string
+          updated_at: string
+          user_type: string
+        }
+        Insert: {
+          created_at?: string
+          daily_limit: number
+          description?: string | null
+          hourly_limit?: number | null
+          id?: string
+          updated_at?: string
+          user_type: string
+        }
+        Update: {
+          created_at?: string
+          daily_limit?: number
+          description?: string | null
+          hourly_limit?: number | null
+          id?: string
+          updated_at?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
+      ai_usage_tracking: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          session_id: string
+          tokens_used: number | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          session_id: string
+          tokens_used?: number | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          session_id?: string
+          tokens_used?: number | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       approval_requests: {
         Row: {
@@ -9283,6 +9376,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_ai_rate_limit: {
+        Args: {
+          p_endpoint?: string
+          p_session_id: string
+          p_user_id?: string
+          p_user_type?: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

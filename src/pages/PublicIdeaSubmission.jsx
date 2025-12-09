@@ -54,6 +54,17 @@ const recordSubmission = () => {
   }
 };
 
+// Generate or retrieve session ID for rate limiting
+const getSessionId = () => {
+  const SESSION_KEY = 'public_idea_session_id';
+  let sessionId = localStorage.getItem(SESSION_KEY);
+  if (!sessionId) {
+    sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    localStorage.setItem(SESSION_KEY, sessionId);
+  }
+  return sessionId;
+};
+
 export default function PublicIdeaSubmission() {
   const { language, isRTL, t } = useLanguage();
   
@@ -62,6 +73,10 @@ export default function PublicIdeaSubmission() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [rateLimitInfo, setRateLimitInfo] = useState({ allowed: true, remaining: MAX_SUBMISSIONS_PER_DAY });
+  const [serverRateLimitInfo, setServerRateLimitInfo] = useState(null); // Server-side AI rate limit
+  
+  // Get session ID for this user
+  const sessionId = getSessionId();
   
   // Check rate limit on mount and after submissions
   useEffect(() => {
@@ -129,15 +144,41 @@ export default function PublicIdeaSubmission() {
         },
         body: JSON.stringify({
           idea: initialIdea,
-          municipality: municipality ? `${municipality.name_en} (${municipality.name_ar})` : null
+          municipality: municipality ? `${municipality.name_en} (${municipality.name_ar})` : null,
+          session_id: sessionId,
+          user_type: 'anonymous' // Public users are anonymous
         })
       });
 
-      if (!response.ok) {
-        throw new Error('AI generation failed');
+      const result = await response.json();
+
+      // Handle rate limit errors
+      if (response.status === 429) {
+        const remaining = result.rate_limit?.daily_remaining || 0;
+        setServerRateLimitInfo(result.rate_limit);
+        toast.error(t({ 
+          en: `AI analysis limit reached. You have ${remaining} analyses remaining today.`, 
+          ar: `تم الوصول إلى حد التحليل. لديك ${remaining} تحليلات متبقية اليوم.` 
+        }));
+        return;
       }
 
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'AI generation failed');
+      }
+
+      // Update server rate limit info if provided
+      if (result._rate_limit) {
+        setServerRateLimitInfo(result._rate_limit);
+      }
+
+      // Show cache hit notification
+      if (result._cached) {
+        toast.info(t({ 
+          en: 'Retrieved from our analysis cache for faster results!', 
+          ar: 'تم استرجاع النتائج من الذاكرة المؤقتة للحصول على نتائج أسرع!' 
+        }));
+      }
       
       setFormData({
         title: result.title_en || '',
@@ -551,12 +592,22 @@ export default function PublicIdeaSubmission() {
                 </Button>
 
                 {/* Rate limit info */}
-                <p className="text-center text-sm text-slate-500">
-                  {t({ 
-                    en: `You can submit up to ${MAX_SUBMISSIONS_PER_DAY} ideas per day. Remaining today: ${rateLimitInfo.remaining}`, 
-                    ar: `يمكنك تقديم ${MAX_SUBMISSIONS_PER_DAY} أفكار يوميًا. المتبقي اليوم: ${rateLimitInfo.remaining}` 
-                  })}
-                </p>
+                <div className="text-center text-sm text-slate-500 space-y-1">
+                  <p>
+                    {t({ 
+                      en: `Submissions: ${rateLimitInfo.remaining}/${MAX_SUBMISSIONS_PER_DAY} remaining today`, 
+                      ar: `الإرسال: ${rateLimitInfo.remaining}/${MAX_SUBMISSIONS_PER_DAY} متبقي اليوم` 
+                    })}
+                  </p>
+                  {serverRateLimitInfo && (
+                    <p className="text-indigo-600">
+                      {t({ 
+                        en: `AI Analyses: ${serverRateLimitInfo.daily_remaining}/${serverRateLimitInfo.daily_limit} remaining today`, 
+                        ar: `تحليلات الذكاء الاصطناعي: ${serverRateLimitInfo.daily_remaining}/${serverRateLimitInfo.daily_limit} متبقي اليوم` 
+                      })}
+                    </p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
