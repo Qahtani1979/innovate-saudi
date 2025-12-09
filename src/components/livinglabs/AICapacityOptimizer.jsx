@@ -2,26 +2,28 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, TrendingUp, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AICapacityOptimizer({ livingLab }) {
   const { t, isRTL } = useLanguage();
   const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateAnalysis = async () => {
-    setLoading(true);
-    try {
-      const [bookings, projects] = await Promise.all([
-        base44.entities.LivingLabBooking.filter({ living_lab_id: livingLab.id }).catch(() => []),
-        base44.entities.RDProject.filter({ living_lab_id: livingLab.id }).catch(() => [])
-      ]);
+    const [bookings, projects] = await Promise.all([
+      base44.entities.LivingLabBooking.filter({ living_lab_id: livingLab.id }).catch(() => []),
+      base44.entities.RDProject.filter({ living_lab_id: livingLab.id }).catch(() => [])
+    ]);
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this Living Lab's capacity and provide optimization recommendations:
+    const result = await invokeAI({
+      prompt: `Analyze this Living Lab's capacity and provide optimization recommendations:
 
 Lab: ${livingLab.name_en}
 Type: ${livingLab.type}
@@ -38,24 +40,22 @@ Provide:
 4. Capacity expansion recommendations
 5. Scheduling optimization suggestions
 6. Resource allocation improvements`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            utilization_rate: { type: 'number' },
-            peak_periods: { type: 'array', items: { type: 'string' } },
-            underutilized: { type: 'array', items: { type: 'string' } },
-            expansion_recommendations: { type: 'array', items: { type: 'string' } },
-            scheduling_tips: { type: 'array', items: { type: 'string' } },
-            allocation_improvements: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          utilization_rate: { type: 'number' },
+          peak_periods: { type: 'array', items: { type: 'string' } },
+          underutilized: { type: 'array', items: { type: 'string' } },
+          expansion_recommendations: { type: 'array', items: { type: 'string' } },
+          scheduling_tips: { type: 'array', items: { type: 'string' } },
+          allocation_improvements: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setAnalysis(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate analysis', ar: 'فشل توليد التحليل' }));
+    if (result.success) {
+      setAnalysis(result.data);
     }
-    setLoading(false);
   };
 
   return (
@@ -78,7 +78,8 @@ Provide:
                 ar: 'سيحلل الذكاء أنماط استخدام المختبر ويقدم توصيات التحسين'
               })}
             </p>
-            <Button onClick={generateAnalysis} disabled={loading} className="gap-2">
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+            <Button onClick={generateAnalysis} disabled={loading || !isAvailable} className="gap-2">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />

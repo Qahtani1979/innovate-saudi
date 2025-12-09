@@ -7,17 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Lightbulb, Users, Loader2, Plus, Trash2, Edit2, Languages } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function InnovationFramingGenerator({ challenge, onFramingGenerated }) {
-  const [generating, setGenerating] = useState(false);
   const [framing, setFraming] = useState(challenge?.innovation_framing || null);
   const [editingItem, setEditingItem] = useState(null);
   const { language, isRTL, t } = useLanguage();
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateFraming = async () => {
-    setGenerating(true);
-    try {
-      const prompt = `Transform this municipal PROBLEM into innovation OPPORTUNITIES. Generate BILINGUAL content (English AND Arabic).
+    const prompt = `Transform this municipal PROBLEM into innovation OPPORTUNITIES. Generate BILINGUAL content (English AND Arabic).
 
 Challenge: ${challenge.title_en} / ${challenge.title_ar || ''}
 Description: ${challenge.description_en} / ${challenge.description_ar || ''}
@@ -35,79 +35,76 @@ Generate innovation framing:
 
 ALL content BILINGUAL, ACTIONABLE, INSPIRING.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            hmw_questions: {
-              type: 'array',
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            what_if_scenarios: {
-              type: 'array',
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            guiding_questions: {
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          hmw_questions: {
+            type: 'array',
+            items: { 
               type: 'object',
               properties: {
-                for_startups: {
-                  type: 'array',
-                  items: { 
-                    type: 'object',
-                    properties: {
-                      en: { type: 'string' },
-                      ar: { type: 'string' }
-                    }
+                en: { type: 'string' },
+                ar: { type: 'string' }
+              }
+            }
+          },
+          what_if_scenarios: {
+            type: 'array',
+            items: { 
+              type: 'object',
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' }
+              }
+            }
+          },
+          guiding_questions: {
+            type: 'object',
+            properties: {
+              for_startups: {
+                type: 'array',
+                items: { 
+                  type: 'object',
+                  properties: {
+                    en: { type: 'string' },
+                    ar: { type: 'string' }
                   }
-                },
-                for_researchers: {
-                  type: 'array',
-                  items: { 
-                    type: 'object',
-                    properties: {
-                      en: { type: 'string' },
-                      ar: { type: 'string' }
-                    }
+                }
+              },
+              for_researchers: {
+                type: 'array',
+                items: { 
+                  type: 'object',
+                  properties: {
+                    en: { type: 'string' },
+                    ar: { type: 'string' }
                   }
-                },
-                technology_opportunities: {
-                  type: 'array',
-                  items: { 
-                    type: 'object',
-                    properties: {
-                      en: { type: 'string' },
-                      ar: { type: 'string' }
-                    }
+                }
+              },
+              technology_opportunities: {
+                type: 'array',
+                items: { 
+                  type: 'object',
+                  properties: {
+                    en: { type: 'string' },
+                    ar: { type: 'string' }
                   }
                 }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setFraming(result);
+    if (result.success) {
+      setFraming(result.data);
       if (onFramingGenerated) {
-        onFramingGenerated(result);
+        onFramingGenerated(result.data);
       }
       toast.success(t({ en: 'Innovation framing generated!', ar: 'تم توليد التأطير الابتكاري!' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -154,19 +151,17 @@ ALL content BILINGUAL, ACTIONABLE, INSPIRING.`;
       return;
     }
 
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Translate to ${targetLang === 'ar' ? 'Arabic' : 'English'}:\n${sourceText}`,
-        response_json_schema: {
-          type: 'object',
-          properties: { translation: { type: 'string' } }
-        }
-      });
-      
-      updateItem(category, index, targetLang, result.translation, subcategory);
+    const result = await invokeAI({
+      prompt: `Translate to ${targetLang === 'ar' ? 'Arabic' : 'English'}:\n${sourceText}`,
+      response_json_schema: {
+        type: 'object',
+        properties: { translation: { type: 'string' } }
+      }
+    });
+    
+    if (result.success) {
+      updateItem(category, index, targetLang, result.data?.translation, subcategory);
       toast.success(t({ en: 'Translated', ar: 'تمت الترجمة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Translation failed', ar: 'فشلت الترجمة' }));
     }
   };
 
@@ -184,9 +179,10 @@ ALL content BILINGUAL, ACTIONABLE, INSPIRING.`;
               ar: 'حوّل المشكلة إلى فرص مع أسئلة مولدة بالذكاء'
             })}
           </p>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
           <Button
             onClick={generateFraming}
-            disabled={generating}
+            disabled={generating || !isAvailable}
             className="bg-gradient-to-r from-purple-600 to-pink-600"
           >
             {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}

@@ -12,11 +12,13 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function RDPortfolioPlanner() {
   const { language, isRTL, t } = useLanguage();
   const [aiRecommendations, setAiRecommendations] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects'],
@@ -39,15 +41,13 @@ function RDPortfolioPlanner() {
   });
 
   const generatePortfolioPlan = async () => {
-    setLoading(true);
-    try {
-      const gapChallenges = challenges.filter(c => 
-        !pilots.some(p => p.challenge_id === c.id) && 
-        !rdProjects.some(r => r.challenge_ids?.includes(c.id))
-      );
+    const gapChallenges = challenges.filter(c => 
+      !pilots.some(p => p.challenge_id === c.id) && 
+      !rdProjects.some(r => r.challenge_ids?.includes(c.id))
+    );
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create a strategic R&D portfolio plan for Saudi municipal innovation:
+    const result = await invokeAI({
+      prompt: `Create a strategic R&D portfolio plan for Saudi municipal innovation:
 
 Current State:
 - Active R&D Projects: ${rdProjects.length}
@@ -63,58 +63,55 @@ Generate bilingual recommendations for:
 5. Expected TRL progression targets
 
 Each recommendation should include English and Arabic versions.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommended_calls: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title_en: { type: 'string' },
-                  title_ar: { type: 'string' },
-                  focus_area_en: { type: 'string' },
-                  focus_area_ar: { type: 'string' },
-                  budget: { type: 'number' },
-                  timeline_en: { type: 'string' },
-                  timeline_ar: { type: 'string' },
-                  expected_projects: { type: 'number' },
-                  priority: { type: 'string' }
-                }
-              }
-            },
-            research_themes: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  theme_en: { type: 'string' },
-                  theme_ar: { type: 'string' },
-                  budget_percentage: { type: 'number' },
-                  rationale_en: { type: 'string' },
-                  rationale_ar: { type: 'string' }
-                }
-              }
-            },
-            portfolio_balance: {
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommended_calls: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                short_term_percentage: { type: 'number' },
-                long_term_percentage: { type: 'number' },
-                justification_en: { type: 'string' },
-                justification_ar: { type: 'string' }
+                title_en: { type: 'string' },
+                title_ar: { type: 'string' },
+                focus_area_en: { type: 'string' },
+                focus_area_ar: { type: 'string' },
+                budget: { type: 'number' },
+                timeline_en: { type: 'string' },
+                timeline_ar: { type: 'string' },
+                expected_projects: { type: 'number' },
+                priority: { type: 'string' }
               }
+            }
+          },
+          research_themes: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                theme_en: { type: 'string' },
+                theme_ar: { type: 'string' },
+                budget_percentage: { type: 'number' },
+                rationale_en: { type: 'string' },
+                rationale_ar: { type: 'string' }
+              }
+            }
+          },
+          portfolio_balance: {
+            type: 'object',
+            properties: {
+              short_term_percentage: { type: 'number' },
+              long_term_percentage: { type: 'number' },
+              justification_en: { type: 'string' },
+              justification_ar: { type: 'string' }
             }
           }
         }
-      });
+      }
+    });
 
-      setAiRecommendations(result);
+    if (result.success) {
+      setAiRecommendations(result.data);
       toast.success(t({ en: 'Portfolio plan generated', ar: 'تم إنشاء خطة المحفظة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate plan', ar: 'فشل إنشاء الخطة' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -196,7 +193,7 @@ Each recommendation should include English and Arabic versions.`,
                 {t({ en: 'Generate optimized R&D call plan based on challenge gaps and strategic priorities', ar: 'إنشاء خطة دعوات بحثية محسنة بناءً على فجوات التحديات والأولويات الاستراتيجية' })}
               </p>
             </div>
-            <Button onClick={generatePortfolioPlan} disabled={loading} className="bg-gradient-to-r from-purple-600 to-pink-600">
+            <Button onClick={generatePortfolioPlan} disabled={loading || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
               {loading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -204,6 +201,7 @@ Each recommendation should include English and Arabic versions.`,
               )}
               {t({ en: 'Generate Plan', ar: 'إنشاء خطة' })}
             </Button>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
           </div>
         </CardContent>
       </Card>
