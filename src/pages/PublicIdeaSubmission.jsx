@@ -76,10 +76,12 @@ export default function PublicIdeaSubmission() {
     description_ar: '',
     category: '',
     tags: [],
+    tags_ar: [],
     impact_score: 0,
     feasibility_score: 0,
     suggested_category: '',
-    ai_summary: ''
+    ai_summary: '',
+    ai_summary_ar: ''
   });
   
   const [contactInfo, setContactInfo] = useState({
@@ -139,11 +141,13 @@ export default function PublicIdeaSubmission() {
         description: result.description_en || '',
         description_ar: result.description_ar || '',
         category: result.category || 'other',
-        tags: result.tags || [],
+        tags: result.tags_en || result.tags || [],
+        tags_ar: result.tags_ar || [],
         impact_score: result.impact_score || 50,
         feasibility_score: result.feasibility_score || 50,
         suggested_category: result.suggested_category || '',
-        ai_summary: result.ai_summary || ''
+        ai_summary: result.ai_summary_en || result.ai_summary || '',
+        ai_summary_ar: result.ai_summary_ar || ''
       });
       
       setCurrentStep(2);
@@ -227,10 +231,12 @@ export default function PublicIdeaSubmission() {
       description_ar: '',
       category: '',
       tags: [],
+      tags_ar: [],
       impact_score: 0,
       feasibility_score: 0,
       suggested_category: '',
-      ai_summary: ''
+      ai_summary: '',
+      ai_summary_ar: ''
     });
     setContactInfo({ name: '', email: '', is_anonymous: false });
   };
@@ -483,7 +489,7 @@ export default function PublicIdeaSubmission() {
               </CardHeader>
               <CardContent className="pt-8 space-y-6">
                 {/* AI Analysis Summary */}
-                {formData.ai_summary && (
+                {(formData.ai_summary || formData.ai_summary_ar) && (
                   <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="h-4 w-4 text-indigo-600" />
@@ -491,7 +497,7 @@ export default function PublicIdeaSubmission() {
                         {t({ en: 'AI Analysis', ar: 'تحليل الذكاء الاصطناعي' })}
                       </span>
                     </div>
-                    <p className="text-slate-700">{formData.ai_summary}</p>
+                    <p className="text-slate-700">{language === 'ar' ? (formData.ai_summary_ar || formData.ai_summary) : formData.ai_summary}</p>
                   </div>
                 )}
 
@@ -566,13 +572,13 @@ export default function PublicIdeaSubmission() {
                 </div>
 
                 {/* Tags */}
-                {formData.tags.length > 0 && (
+                {(formData.tags.length > 0 || formData.tags_ar?.length > 0) && (
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       {t({ en: 'Tags', ar: 'الكلمات المفتاحية' })}
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {formData.tags.map((tag, idx) => (
+                      {(language === 'ar' && formData.tags_ar?.length > 0 ? formData.tags_ar : formData.tags).map((tag, idx) => (
                         <Badge key={idx} variant="secondary">{tag}</Badge>
                       ))}
                     </div>

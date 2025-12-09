@@ -25,7 +25,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const prompt = `You are a municipal innovation analyst helping citizens submit ideas for city improvement.
+const prompt = `You are a municipal innovation analyst helping citizens submit ideas for city improvement.
 
 Analyze this citizen's idea and generate a structured submission:
 
@@ -45,10 +45,12 @@ Generate the following in BOTH English and Arabic:
    - Keeps the language professional but accessible
 4. description_ar: Arabic translation of the description
 5. category: Best matching category from: transport, infrastructure, environment, digital_services, parks, waste, safety, health, education, other
-6. tags: 5-8 relevant keywords/tags for searchability
-7. impact_score: Estimated impact score (0-100) based on potential benefit to citizens
-8. feasibility_score: Estimated feasibility score (0-100) based on implementation complexity
-9. ai_summary: A brief 1-2 sentence summary of the AI's assessment of this idea
+6. tags_en: 5-8 relevant keywords/tags in English for searchability
+7. tags_ar: 5-8 relevant keywords/tags in Arabic for searchability
+8. impact_score: Estimated impact score (0-100) based on potential benefit to citizens
+9. feasibility_score: Estimated feasibility score (0-100) based on implementation complexity
+10. ai_summary_en: A brief 1-2 sentence summary of the AI's assessment in English
+11. ai_summary_ar: A brief 1-2 sentence summary of the AI's assessment in Arabic
 
 Be encouraging and constructive. Focus on the positive potential while being realistic about feasibility.`;
 
@@ -84,16 +86,22 @@ Be encouraging and constructive. Focus on the positive potential while being rea
                     type: "string", 
                     enum: ["transport", "infrastructure", "environment", "digital_services", "parks", "waste", "safety", "health", "education", "other"]
                   },
-                  tags: { 
+                  tags_en: { 
                     type: "array", 
                     items: { type: "string" },
-                    description: "Relevant keywords/tags"
+                    description: "Relevant keywords/tags in English"
+                  },
+                  tags_ar: { 
+                    type: "array", 
+                    items: { type: "string" },
+                    description: "Relevant keywords/tags in Arabic"
                   },
                   impact_score: { type: "number", description: "Impact score 0-100" },
                   feasibility_score: { type: "number", description: "Feasibility score 0-100" },
-                  ai_summary: { type: "string", description: "Brief AI assessment summary" }
+                  ai_summary_en: { type: "string", description: "Brief AI assessment summary in English" },
+                  ai_summary_ar: { type: "string", description: "Brief AI assessment summary in Arabic" }
                 },
-                required: ["title_en", "title_ar", "description_en", "description_ar", "category", "tags", "impact_score", "feasibility_score", "ai_summary"],
+                required: ["title_en", "title_ar", "description_en", "description_ar", "category", "tags_en", "tags_ar", "impact_score", "feasibility_score", "ai_summary_en", "ai_summary_ar"],
                 additionalProperties: false
               }
             }
