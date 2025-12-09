@@ -7,12 +7,14 @@ import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Shield, TrendingUp, DollarSign, Clock, Users, Zap, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Progress } from "@/components/ui/progress";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PreFlightRiskSimulator({ pilot }) {
   const { language, isRTL, t } = useLanguage();
   const [riskAssessment, setRiskAssessment] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [mitigationPlans, setMitigationPlans] = useState({});
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   useEffect(() => {
     if (pilot) {
@@ -21,9 +23,7 @@ export default function PreFlightRiskSimulator({ pilot }) {
   }, [pilot?.id]);
 
   const simulateRisks = async () => {
-    setLoading(true);
     try {
-      // Query similar historical pilots
       const allPilots = await base44.entities.Pilot.list();
       
       const budgetMin = (pilot.budget || 0) * 0.7;
@@ -37,7 +37,6 @@ export default function PreFlightRiskSimulator({ pilot }) {
         (p.stage === 'completed' || p.stage === 'scaled' || p.stage === 'terminated')
       );
 
-      // Calculate risk probabilities
       const totalSimilar = similarPilots.length;
       const failedPilots = similarPilots.filter(p => 
         p.stage === 'terminated' || (p.success_probability || 0) < 50
@@ -84,8 +83,7 @@ export default function PreFlightRiskSimulator({ pilot }) {
         }
       };
 
-      // Generate AI mitigation strategies
-      const aiResponse = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Generate mitigation strategies for this pilot launch based on risk assessment:
 
 Pilot: ${pilot.title_en}
@@ -125,11 +123,13 @@ Return as structured JSON.`,
         }
       });
 
-      setRiskAssessment({ risks, mitigations: aiResponse.mitigations, recommendation: aiResponse.overall_recommendation, similarPilots: totalSimilar });
+      if (result.success) {
+        setRiskAssessment({ risks, mitigations: result.data.mitigations, recommendation: result.data.overall_recommendation, similarPilots: totalSimilar });
+      } else {
+        setRiskAssessment({ risks, mitigations: {}, recommendation: '', similarPilots: totalSimilar });
+      }
     } catch (error) {
       console.error('Risk simulation failed:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -196,9 +196,9 @@ Return as structured JSON.`,
         <p className="text-sm text-slate-600 mt-2">
           {t({ en: 'Based on', ar: 'بناءً على' })} {similarPilots} {t({ en: 'similar pilots', ar: 'تجربة مماثلة' })}
         </p>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Risk Radar */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <ResponsiveContainer width="100%" height={250}>
@@ -233,7 +233,6 @@ Return as structured JSON.`,
           </div>
         </div>
 
-        {/* Mitigation Strategies */}
         <div>
           <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-600" />
@@ -268,7 +267,6 @@ Return as structured JSON.`,
           </div>
         </div>
 
-        {/* Overall Recommendation */}
         {recommendation && (
           <div className={`p-4 rounded-lg border-2 ${
             riskLevel === 'high' ? 'bg-red-50 border-red-300' :
@@ -282,7 +280,6 @@ Return as structured JSON.`,
           </div>
         )}
 
-        {/* Action Summary */}
         <div className="flex items-center justify-between p-4 bg-slate-100 rounded-lg">
           <div>
             <p className="text-sm font-medium text-slate-900">
@@ -298,7 +295,7 @@ Return as structured JSON.`,
               {riskLevel === 'low' && t({ en: '✅ Low risk - proceed with standard monitoring', ar: '✅ مخاطر منخفضة - تابع بالمراقبة القياسية' })}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={simulateRisks} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={simulateRisks} disabled={loading || !isAvailable}>
             <Sparkles className="h-4 w-4 mr-2" />
             {t({ en: 'Refresh', ar: 'تحديث' })}
           </Button>

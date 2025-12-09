@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Lightbulb, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDToSolutionConverter({ rdProject, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [aiGenerating, setAiGenerating] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [solutionData, setSolutionData] = useState({
     name_en: rdProject.title_en || '',
     name_ar: rdProject.title_ar || '',
@@ -35,10 +37,8 @@ export default function RDToSolutionConverter({ rdProject, onClose, onSuccess })
   });
 
   const generateCommercialProfile = async () => {
-    setAiGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are an R&D commercialization expert. Generate a commercial solution profile from this research project:
+    const result = await invokeAI({
+      prompt: `You are an R&D commercialization expert. Generate a commercial solution profile from this research project:
 
 Research Title: ${rdProject.title_en}
 Abstract: ${rdProject.abstract_en}
@@ -56,48 +56,44 @@ Generate:
 6. Technical specifications summary
 
 Be compelling and highlight practical municipal applications.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            value_proposition: { type: 'string' },
-            use_cases: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  sector: { type: 'string' },
-                  description: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          value_proposition: { type: 'string' },
+          use_cases: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                sector: { type: 'string' },
+                description: { type: 'string' }
               }
-            },
-            pricing_model: { type: 'string' },
-            technical_specifications: { type: 'object' }
-          }
+            }
+          },
+          pricing_model: { type: 'string' },
+          technical_specifications: { type: 'object' }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setSolutionData(prev => ({
         ...prev,
-        tagline_en: result.tagline_en,
-        tagline_ar: result.tagline_ar,
-        description_en: result.description_en,
-        description_ar: result.description_ar,
-        value_proposition: result.value_proposition,
-        use_cases: result.use_cases,
-        pricing_model: result.pricing_model,
-        technical_specifications: result.technical_specifications
+        tagline_en: result.data.tagline_en,
+        tagline_ar: result.data.tagline_ar,
+        description_en: result.data.description_en,
+        description_ar: result.data.description_ar,
+        value_proposition: result.data.value_proposition,
+        use_cases: result.data.use_cases,
+        pricing_model: result.data.pricing_model,
+        technical_specifications: result.data.technical_specifications
       }));
-
       toast.success(t({ en: 'AI generated commercial profile', ar: 'تم إنشاء الملف التجاري بالذكاء' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء الذكي' }));
-    } finally {
-      setAiGenerating(false);
     }
   };
 
@@ -105,13 +101,11 @@ Be compelling and highlight practical municipal applications.`,
     mutationFn: async (data) => {
       const solution = await base44.entities.Solution.create(data);
       
-      // Update R&D project with commercialization notes
       await base44.entities.RDProject.update(rdProject.id, {
         commercialization_notes: `Commercialized as Solution ${solution.id}`,
         commercialization_solution_id: solution.id
       });
 
-      // Create activity log
       await base44.entities.SystemActivity.create({
         activity_type: 'rd_commercialized',
         entity_type: 'rd_project',
@@ -152,9 +146,9 @@ Be compelling and highlight practical municipal applications.`,
         <p className="text-sm text-slate-600 mt-2">
           {t({ en: 'Transform research outputs into a market-ready solution', ar: 'تحويل مخرجات البحث إلى حل جاهز للسوق' })}
         </p>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        {/* TRL Warning */}
         {rdProject.trl_current < 7 && (
           <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -172,7 +166,6 @@ Be compelling and highlight practical municipal applications.`,
           </div>
         )}
 
-        {/* R&D Context */}
         <div className="p-4 bg-purple-50 rounded-lg">
           <p className="text-xs font-medium text-purple-900 mb-2">
             {t({ en: 'Source R&D Project:', ar: 'المشروع البحثي المصدر:' })}
@@ -184,14 +177,13 @@ Be compelling and highlight practical municipal applications.`,
           </div>
         </div>
 
-        {/* AI Generation */}
         <div className="flex justify-end">
           <Button
             onClick={generateCommercialProfile}
-            disabled={aiGenerating}
+            disabled={isLoading || !isAvailable}
             className="bg-gradient-to-r from-purple-600 to-blue-600"
           >
-            {aiGenerating ? (
+            {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Generating...', ar: 'جاري الإنشاء...' })}
@@ -205,7 +197,6 @@ Be compelling and highlight practical municipal applications.`,
           </Button>
         </div>
 
-        {/* Form Fields */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium">{t({ en: 'Solution Name (EN)', ar: 'اسم الحل (EN)' })}</label>
@@ -298,7 +289,6 @@ Be compelling and highlight practical municipal applications.`,
           />
         </div>
 
-        {/* Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
             {t({ en: 'Cancel', ar: 'إلغاء' })}

@@ -7,17 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Users, Sparkles, Loader2, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PeerLearningNetwork({ programId, participants }) {
   const { language, t } = useLanguage();
-  const [forming, setForming] = useState(false);
   const [pods, setPods] = useState(null);
+  const { invokeAI, status, isLoading: forming, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const formPods = async () => {
-    setForming(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Form optimal learning pods for this program cohort:
+    const result = await invokeAI({
+      prompt: `Form optimal learning pods for this program cohort:
 
 Participants: ${participants?.slice(0, 15).map(p => 
   `${p.startup_name || p.organization_name} - Sector: ${p.sector} - Experience: ${p.experience_level || 'N/A'}`
@@ -28,31 +28,28 @@ Create 3-5 learning pods (3-5 people each) with:
 2. Sector diversity
 3. Experience level balance
 4. Collaboration potential`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            pods: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  pod_name: { type: "string" },
-                  members: { type: "array", items: { type: "string" } },
-                  focus_areas: { type: "array", items: { type: "string" } },
-                  synergy_score: { type: "number" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          pods: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                pod_name: { type: "string" },
+                members: { type: "array", items: { type: "string" } },
+                focus_areas: { type: "array", items: { type: "string" } },
+                synergy_score: { type: "number" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setPods(response.pods);
+    if (result.success) {
+      setPods(result.data.pods);
       toast.success(t({ en: 'Learning pods formed', ar: 'مجموعات التعلم شُكلت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Formation failed', ar: 'فشل التشكيل' }));
-    } finally {
-      setForming(false);
     }
   };
 
@@ -65,12 +62,13 @@ Create 3-5 learning pods (3-5 people each) with:
             {t({ en: 'Peer Learning Network', ar: 'شبكة التعلم من الأقران' })}
           </CardTitle>
           {!pods && (
-            <Button onClick={formPods} disabled={forming} size="sm" className="bg-indigo-600">
+            <Button onClick={formPods} disabled={forming || !isAvailable} size="sm" className="bg-indigo-600">
               {forming ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'Form Pods', ar: 'تشكيل المجموعات' })}
             </Button>
           )}
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="pt-6">
         {!pods && !forming && (
