@@ -866,42 +866,16 @@ Return comprehensive suggestions for all fields.`,
   };
 
   const handleSkip = async () => {
-    if (!user?.id) {
-      onSkip?.();
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          onboarding_completed: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Skip update error:', error);
-        throw error;
-      }
-
-      await queryClient.invalidateQueries(['user-profile']);
-      
-      // Call the onSkip callback first
-      onSkip?.();
-      
-      // Only navigate if we're on the dedicated onboarding page
-      // When shown as overlay in Layout, we don't need to navigate
-      const isOnOnboardingPage = window.location.pathname.toLowerCase().includes('/onboarding');
-      if (isOnOnboardingPage) {
-        navigate(createPageUrl('Home'));
-      }
-    } catch (error) {
-      console.error('Skip error:', error);
-      toast.error(t({ en: 'Could not skip onboarding', ar: 'تعذر تخطي الإعداد' }));
-    } finally {
-      setIsSubmitting(false);
+    // Skip just dismisses the onboarding for this session
+    // It does NOT mark onboarding_completed as true
+    // User will see onboarding again on next login until they complete it
+    
+    onSkip?.();
+    
+    // Only navigate if we're on the dedicated onboarding page
+    const isOnOnboardingPage = window.location.pathname.toLowerCase().includes('/onboarding');
+    if (isOnOnboardingPage) {
+      navigate(createPageUrl('Home'));
     }
   };
 
