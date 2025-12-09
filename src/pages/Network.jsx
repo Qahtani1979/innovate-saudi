@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +44,7 @@ function NetworkPage() {
   const [viewMode, setViewMode] = useState('grid');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const queryClient = useQueryClient();
 
@@ -85,7 +87,6 @@ function NetworkPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
     try {
       const orgSummary = organizations.slice(0, 20).map(o => ({
         name: o.name_en,
@@ -94,7 +95,7 @@ function NetworkPage() {
         is_partner: o.is_partner
       }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Analyze this innovation ecosystem network for Saudi municipalities and provide strategic insights in BOTH English AND Arabic:
 
 Organizations: ${JSON.stringify(orgSummary)}
@@ -122,11 +123,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
           }
         }
       });
-      setAiInsights(result);
+      if (response.success) {
+        setAiInsights(response.data);
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 

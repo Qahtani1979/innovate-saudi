@@ -109,7 +109,7 @@ Write professional formal Arabic for Saudi government officials.
 
     const response = await invokeAI({
       prompt,
-        response_json_schema: {
+      response_json_schema: {
           type: 'object',
           properties: {
             risk_score: { type: 'number' },
