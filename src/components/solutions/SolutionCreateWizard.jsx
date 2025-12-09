@@ -21,14 +21,16 @@ import FileUploader from '../FileUploader';
 import { toast } from 'sonner';
 import CompetitiveAnalysisWidget from './CompetitiveAnalysisWidget';
 import AIPricingSuggester from './AIPricingSuggester';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionCreateWizard({ onComplete }) {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [matchingChallenges, setMatchingChallenges] = useState([]);
+  const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-active'],
@@ -132,9 +134,7 @@ export default function SolutionCreateWizard({ onComplete }) {
       return;
     }
 
-    setIsAIProcessing(true);
-    try {
-      const prompt = `Analyze this innovation solution for Saudi municipal innovation and provide comprehensive BILINGUAL enhancement (Arabic + English):
+    const prompt = `Analyze this innovation solution for Saudi municipal innovation and provide comprehensive BILINGUAL enhancement (Arabic + English):
 
 Current data:
 Name EN: ${formData.name_en}
@@ -159,42 +159,44 @@ Generate:
 11. Keywords for searchability (8-12 keywords)
 12. Competitive advantages (3-5 key differentiators)`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            features: { type: 'array', items: { type: 'string' } },
-            use_cases: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  description: { type: 'string' },
-                  sector: { type: 'string' }
-                }
+    const aiResult = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          features: { type: 'array', items: { type: 'string' } },
+          use_cases: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                description: { type: 'string' },
+                sector: { type: 'string' }
               }
-            },
-            technology_stack: { type: 'array', items: { type: 'string' } },
-            value_proposition: { type: 'string' },
-            sectors: { type: 'array', items: { type: 'string' } },
-            maturity_level: { type: 'string' },
-            trl: { type: 'number' },
-            trl_justification: { type: 'string' },
-            keywords: { type: 'array', items: { type: 'string' } },
-            competitive_advantages: { type: 'array', items: { type: 'string' } },
-            trl_assessment_confidence: { type: 'number' }
-          }
+            }
+          },
+          technology_stack: { type: 'array', items: { type: 'string' } },
+          value_proposition: { type: 'string' },
+          sectors: { type: 'array', items: { type: 'string' } },
+          maturity_level: { type: 'string' },
+          trl: { type: 'number' },
+          trl_justification: { type: 'string' },
+          keywords: { type: 'array', items: { type: 'string' } },
+          competitive_advantages: { type: 'array', items: { type: 'string' } },
+          trl_assessment_confidence: { type: 'number' }
         }
-      });
+      }
+    });
 
+    if (aiResult.success) {
+      const result = aiResult.data;
       setFormData(prev => ({
         ...prev,
         name_en: result.name_en || prev.name_en,
@@ -247,10 +249,6 @@ Generate:
       }
 
       toast.success(t({ en: '✨ AI enhancement complete!', ar: '✨ تم التحسين الذكي!' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين الذكي' }));
-    } finally {
-      setIsAIProcessing(false);
     }
   };
 

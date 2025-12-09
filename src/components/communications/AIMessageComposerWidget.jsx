@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
 import { MessageSquare, Sparkles, Loader2, Languages } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIMessageComposerWidget({ context }) {
   const { language, t } = useLanguage();
   const [intent, setIntent] = useState('');
   const [tone, setTone] = useState('professional');
-  const [generating, setGenerating] = useState(false);
   const [draft, setDraft] = useState('');
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const composeDraft = async () => {
     if (!intent) return;
     
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Compose a ${tone} ${language === 'ar' ? 'Arabic' : 'English'} message:
+    const result = await invokeAI({
+      prompt: `Compose a ${tone} ${language === 'ar' ? 'Arabic' : 'English'} message:
 
 Intent: ${intent}
 Context: ${context?.type || 'General'} ${context?.entity || ''}
@@ -33,49 +32,41 @@ Requirements:
 - Culturally appropriate for Saudi context
 
 Write the message:`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            message: { type: "string" },
-            subject: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          message: { type: "string" },
+          subject: { type: "string" }
         }
-      });
+      }
+    });
 
-      setDraft(response.message);
+    if (result.success) {
+      setDraft(result.data.message);
       toast.success(t({ en: 'Draft generated', ar: 'المسودة مولدة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
   const translate = async () => {
     if (!draft) return;
     
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Translate this message to ${language === 'ar' ? 'English' : 'Arabic'}:
+    const result = await invokeAI({
+      prompt: `Translate this message to ${language === 'ar' ? 'English' : 'Arabic'}:
 
 ${draft}
 
 Maintain the same tone and intent.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            translated: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          translated: { type: "string" }
         }
-      });
+      }
+    });
 
-      setDraft(response.translated);
+    if (result.success) {
+      setDraft(result.data.translated);
       toast.success(t({ en: 'Translated', ar: 'مترجم' }));
-    } catch (error) {
-      toast.error(t({ en: 'Translation failed', ar: 'فشلت الترجمة' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -88,6 +79,7 @@ Maintain the same tone and intent.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-2">
             {t({ en: 'What do you want to communicate?', ar: 'ماذا تريد أن توصل؟' })}

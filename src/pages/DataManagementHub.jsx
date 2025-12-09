@@ -394,12 +394,11 @@ Using web search:
     setAiFixing(true);
     setAiFixResults(null);
 
-    try {
-      const { orphanedCities, orphanedOrgs } = getOrphanedRecords();
-      const qualityIssues = getDataQualityIssues();
+    const { orphanedCities, orphanedOrgs } = getOrphanedRecords();
+    const qualityIssues = getDataQualityIssues();
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a data integrity expert for Saudi Municipal Innovation Platform. Analyze ALL data issues and provide comprehensive fix recommendations.
+    const result = await invokeAI({
+      prompt: `You are a data integrity expert for Saudi Municipal Innovation Platform. Analyze ALL data issues and provide comprehensive fix recommendations.
 
 Available Regions: ${regions.map(r => `${r.id}: ${r.name_en}`).join(', ')}
 Available Cities: ${cities.map(c => `${c.id}: ${c.name_en} (region: ${c.region_id})`).join(', ')}
@@ -491,15 +490,13 @@ Provide specific fixes with actions (DELETE, REASSIGN, FIX_PARTNERSHIP, ENRICH_D
             total_issues: { type: 'number' },
             critical_count: { type: 'number' }
           }
-        }
-      });
+      }
+    });
 
-      setAiFixResults(result);
-    } catch (error) {
-      toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل الذكي' }));
-    } finally {
-      setAiFixing(false);
+    if (result.success) {
+      setAiFixResults(result.data);
     }
+    setAiFixing(false);
   };
 
   const applyFixMutation = useMutation({
