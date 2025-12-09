@@ -7,14 +7,19 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { CheckCircle2, XCircle, Clock, Sparkles, Loader2, FileText } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Sparkles, Loader2, FileText, TrendingUp } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ProgramApplicationEvaluationHub() {
   const { language, isRTL, t } = useLanguage();
   const [aiScores, setAiScores] = useState({});
+  const [aiInsights, setAiInsights] = useState(null);
+  const [scoringApp, setScoringApp] = useState(null);
+  const { invokeAI, status, isLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const queryClient = useQueryClient();
 
   const { data: applications = [] } = useQuery({
@@ -38,10 +43,13 @@ function ProgramApplicationEvaluationHub() {
   const pending = applications.filter(a => a.status === 'submitted' || a.status === 'under_review');
   const reviewed = applications.filter(a => a.status === 'accepted' || a.status === 'rejected');
 
+  const totalApplicants = applications.length;
+  const acceptedApplicants = applications.filter(a => a.status === 'accepted').length;
+
   const getAIScore = async (app) => {
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Evaluate this program application and provide scoring:
+    setScoringApp(app.id);
+    const result = await invokeAI({
+      prompt: `Evaluate this program application and provide scoring:
 
 Applicant: ${app.applicant_name}
 Organization: ${app.organization_name || 'N/A'}
@@ -55,23 +63,24 @@ Score on these criteria (0-100):
 4. Resource availability
 
 Also provide overall recommendation (ACCEPT/DEFER/REJECT) with reasoning.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            alignment_score: { type: 'number' },
-            readiness_score: { type: 'number' },
-            impact_score: { type: 'number' },
-            resources_score: { type: 'number' },
-            overall_score: { type: 'number' },
-            recommendation: { type: 'string' },
-            reasoning: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          alignment_score: { type: 'number' },
+          readiness_score: { type: 'number' },
+          impact_score: { type: 'number' },
+          resources_score: { type: 'number' },
+          overall_score: { type: 'number' },
+          recommendation: { type: 'string' },
+          reasoning: { type: 'string' }
         }
-      });
-      setAiScores({ ...aiScores, [app.id]: result });
-    } catch (error) {
-      console.error(error);
+      }
+    });
+
+    if (result.success) {
+      setAiScores({ ...aiScores, [app.id]: result.data });
     }
+    setScoringApp(null);
   };
 
   const handleDecision = (appId, decision) => {
@@ -170,8 +179,8 @@ Also provide overall recommendation (ACCEPT/DEFER/REJECT) with reasoning.`,
                       <p className="text-sm text-slate-600">{app.organization_name}</p>
                       <Badge className="mt-2">{app.program_id}</Badge>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => getAIScore(app)}>
-                      <Sparkles className="h-4 w-4" />
+                    <Button size="sm" variant="outline" onClick={() => getAIScore(app)} disabled={(isLoading && scoringApp === app.id) || !isAvailable}>
+                      {isLoading && scoringApp === app.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     </Button>
                   </div>
 

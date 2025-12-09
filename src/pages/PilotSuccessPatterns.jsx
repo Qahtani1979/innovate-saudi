@@ -10,11 +10,13 @@ import { BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tool
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PilotSuccessPatternsPage() {
   const { language, isRTL, t } = useLanguage();
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: successfulPilots = [] } = useQuery({
     queryKey: ['successful-pilots'],
@@ -30,22 +32,20 @@ function PilotSuccessPatternsPage() {
   });
 
   const generateAIPatterns = async () => {
-    setLoading(true);
-    try {
-      const pilotSummary = successfulPilots.map(p => ({
-        sector: p.sector,
-        success_probability: p.success_probability,
-        budget: p.budget,
-        duration_weeks: p.duration_weeks,
-        team_size: p.team?.length || 0,
-        stakeholder_count: p.stakeholders?.length || 0,
-        kpi_count: p.kpis?.length || 0,
-        stage: p.stage,
-        launch_month: p.timeline?.pilot_start ? new Date(p.timeline.pilot_start).getMonth() + 1 : null
-      }));
+    const pilotSummary = successfulPilots.map(p => ({
+      sector: p.sector,
+      success_probability: p.success_probability,
+      budget: p.budget,
+      duration_weeks: p.duration_weeks,
+      team_size: p.team?.length || 0,
+      stakeholder_count: p.stakeholders?.length || 0,
+      kpi_count: p.kpis?.length || 0,
+      stage: p.stage,
+      launch_month: p.timeline?.pilot_start ? new Date(p.timeline.pilot_start).getMonth() + 1 : null
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze these ${successfulPilots.length} successful municipal innovation pilots and identify success patterns:
+    const result = await invokeAI({
+      prompt: `Analyze these ${successfulPilots.length} successful municipal innovation pilots and identify success patterns:
 
 Pilot Data: ${JSON.stringify(pilotSummary)}
 
@@ -64,41 +64,38 @@ For each pattern, provide:
 - Statistical evidence (e.g., "78% success rate vs 45% baseline")
 - Confidence level (high/medium/low)
 - Actionable recommendation`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            top_patterns: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  pattern: { type: 'string' },
-                  evidence: { type: 'string' },
-                  confidence: { type: 'string' },
-                  recommendation: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          top_patterns: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                pattern: { type: 'string' },
+                evidence: { type: 'string' },
+                confidence: { type: 'string' },
+                recommendation: { type: 'string' }
               }
-            },
-            success_playbook: { type: 'string' },
-            case_studies: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  key_success_factors: { type: 'array', items: { type: 'string' } }
-                }
+            }
+          },
+          success_playbook: { type: 'string' },
+          case_studies: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                key_success_factors: { type: 'array', items: { type: 'string' } }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setAiAnalysis(result);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+    if (result.success) {
+      setAiAnalysis(result.data);
     }
   };
 
@@ -147,11 +144,13 @@ For each pattern, provide:
             {t({ en: 'Learn from successful pilots to replicate best practices', ar: 'التعلم من التجارب الناجحة لتكرار أفضل الممارسات' })}
           </p>
         </div>
-        <Button onClick={generateAIPatterns} disabled={loading || successfulPilots.length === 0} className="bg-purple-600">
-          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
-        </Button>
-      </div>
+        <div className="flex items-center gap-3">
+          <Button onClick={generateAIPatterns} disabled={loading || successfulPilots.length === 0 || !isAvailable} className="bg-purple-600">
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
+          </Button>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
