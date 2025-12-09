@@ -1,12 +1,15 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 
-// This is a utility function that can be used with the hook in components
-export async function checkContentModeration(text) {
-  try {
-    const result = await base44.integrations.Core.InvokeLLM({
+// Hook-based version for components
+export function useContentModeration() {
+  const [result, setResult] = React.useState(null);
+  const { invokeAI, isLoading: isChecking } = useAIWithFallback({ showToasts: false });
+
+  const checkContent = React.useCallback(async (text) => {
+    const response = await invokeAI({
       prompt: `Analyze this citizen-submitted text for content moderation:
 
 Text: "${text}"
@@ -29,30 +32,45 @@ Return scores and findings.`,
       }
     });
 
-    return result;
-  } catch (error) {
-    console.error('Content moderation failed:', error);
-    return { toxicity_score: 0, spam_score: 0, is_appropriate: true, issues: [] };
-  }
-}
-
-// Hook-based version for components
-export function useContentModeration() {
-  const [isChecking, setIsChecking] = React.useState(false);
-  const [result, setResult] = React.useState(null);
-
-  const checkContent = React.useCallback(async (text) => {
-    setIsChecking(true);
-    try {
-      const moderationResult = await checkContentModeration(text);
-      setResult(moderationResult);
-      return moderationResult;
-    } finally {
-      setIsChecking(false);
+    if (response.success) {
+      setResult(response.data);
+      return response.data;
     }
-  }, []);
+    return { toxicity_score: 0, spam_score: 0, is_appropriate: true, issues: [] };
+  }, [invokeAI]);
 
   return { checkContent, isChecking, result };
+}
+
+// Utility function for standalone use
+export async function checkContentModeration(text, invokeAI) {
+  const response = await invokeAI({
+    prompt: `Analyze this citizen-submitted text for content moderation:
+
+Text: "${text}"
+
+Detect:
+1. Toxicity (profanity, hate speech, threats) - score 0-100
+2. Spam likelihood - score 0-100
+3. Is appropriate for public platform - boolean
+4. Issues found (array of strings)
+
+Return scores and findings.`,
+    response_json_schema: {
+      type: "object",
+      properties: {
+        toxicity_score: { type: "number" },
+        spam_score: { type: "number" },
+        is_appropriate: { type: "boolean" },
+        issues: { type: "array", items: { type: "string" } }
+      }
+    }
+  });
+
+  if (response.success) {
+    return response.data;
+  }
+  return { toxicity_score: 0, spam_score: 0, is_appropriate: true, issues: [] };
 }
 
 export default function ContentModerationAlert({ moderationResult }) {

@@ -7,11 +7,13 @@ import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, ExternalLink, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 
 export default function SimilarPolicyDetector({ policyData, onDismiss }) {
   const { language, isRTL, t } = useLanguage();
   const [similarPolicies, setSimilarPolicies] = useState([]);
   const [isChecking, setIsChecking] = useState(false);
+  const { invokeAI } = useAIWithFallback({ showToasts: false });
 
   useEffect(() => {
     checkSimilarPolicies();
@@ -57,7 +59,7 @@ export default function SimilarPolicyDetector({ policyData, onDismiss }) {
       }
 
       // Strategy 2: AI-powered semantic analysis (for new policies without embeddings)
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze this new policy and find semantically similar policies from the database:
 
 NEW POLICY:
@@ -101,14 +103,16 @@ Only return policies with >60% similarity.`,
         }
       });
 
-      const similarWithScores = result.similar_policies
-        .map(s => {
-          const policy = allPolicies.find(p => p.id === s.policy_id);
-          return policy ? { ...policy, similarity_score: s.similarity_score, similarity_reason: s.reason } : null;
-        })
-        .filter(Boolean);
+      if (result.success && result.data?.similar_policies) {
+        const similarWithScores = result.data.similar_policies
+          .map(s => {
+            const policy = allPolicies.find(p => p.id === s.policy_id);
+            return policy ? { ...policy, similarity_score: s.similarity_score, similarity_reason: s.reason } : null;
+          })
+          .filter(Boolean);
 
-      setSimilarPolicies(similarWithScores);
+        setSimilarPolicies(similarWithScores);
+      }
     } catch (error) {
       console.error('Similar policy check failed:', error);
     } finally {

@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../LanguageContext';
-import { Calendar, Mail, Phone, FileText, Video, MessageSquare, Send, Loader2, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { Calendar, FileText, Send, Loader2, Sparkles, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function MatchmakerEngagementHub({ application, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
@@ -18,7 +19,7 @@ export default function MatchmakerEngagementHub({ application, onUpdate }) {
     participants: '',
     notes: ''
   });
-  const [generatingProposal, setGeneratingProposal] = useState(false);
+  const { invokeAI, status, isLoading: generatingProposal, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const addEngagement = () => {
     const log = application.engagement_log || [];
@@ -36,10 +37,8 @@ export default function MatchmakerEngagementHub({ application, onUpdate }) {
   };
 
   const generateProposal = async () => {
-    setGeneratingProposal(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a partnership proposal template for this Matchmaker application:
+    const result = await invokeAI({
+      prompt: `Generate a partnership proposal template for this Matchmaker application:
 
 Organization: ${application.organization_name_en}
 Sectors: ${application.sectors?.join(', ')}
@@ -53,25 +52,21 @@ Generate professional proposal in both English and Arabic with:
 5. Implementation timeline
 6. Success metrics
 7. Next steps`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            executive_summary_en: { type: 'string' },
-            executive_summary_ar: { type: 'string' },
-            collaboration_model_en: { type: 'string' },
-            collaboration_model_ar: { type: 'string' },
-            timeline: { type: 'string' },
-            success_metrics: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          executive_summary_en: { type: 'string' },
+          executive_summary_ar: { type: 'string' },
+          collaboration_model_en: { type: 'string' },
+          collaboration_model_ar: { type: 'string' },
+          timeline: { type: 'string' },
+          success_metrics: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      // In real implementation, format as PDF and save
+    if (result.success) {
       toast.success(t({ en: 'Proposal generated', ar: 'تم إنشاء المقترح' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGeneratingProposal(false);
     }
   };
 
@@ -160,9 +155,10 @@ Generate professional proposal in both English and Arabic with:
           </TabsContent>
 
           <TabsContent value="materials" className="mt-4 space-y-3">
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
             <Button
               onClick={generateProposal}
-              disabled={generatingProposal}
+              disabled={generatingProposal || !isAvailable}
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
               {generatingProposal ? (
