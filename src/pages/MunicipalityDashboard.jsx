@@ -22,6 +22,8 @@ import {
 import { toast } from 'sonner';
 import MunicipalPolicyTracker from '../components/policy/MunicipalPolicyTracker';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MunicipalityDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -29,7 +31,8 @@ function MunicipalityDashboard() {
   const [user, setUser] = React.useState(null);
   const [showAIInsights, setShowAIInsights] = React.useState(false);
   const [aiInsights, setAiInsights] = React.useState(null);
-  const [aiLoading, setAiLoading] = React.useState(false);
+  
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   React.useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -185,10 +188,8 @@ function MunicipalityDashboard() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the Municipality Innovation ecosystem:
+    const result = await invokeAI({
+      prompt: `Analyze the Municipality Innovation ecosystem:
 
 Total Municipalities: ${municipalities.length}
 Average MII Score: ${(municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / municipalities.length).toFixed(1)}
@@ -201,22 +202,21 @@ Provide:
 3. Peer municipalities to learn from
 4. Quick wins for MII improvement
 5. Collaboration opportunities`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            innovation_gaps: { type: 'array', items: { type: 'string' } },
-            priority_areas: { type: 'array', items: { type: 'string' } },
-            peer_learning: { type: 'array', items: { type: 'string' } },
-            quick_wins: { type: 'array', items: { type: 'string' } },
-            collaboration_opportunities: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          innovation_gaps: { type: 'array', items: { type: 'string' } },
+          priority_areas: { type: 'array', items: { type: 'string' } },
+          peer_learning: { type: 'array', items: { type: 'string' } },
+          quick_wins: { type: 'array', items: { type: 'string' } },
+          collaboration_opportunities: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate insights', ar: 'فشل توليد الرؤى' }));
+      }
+    });
+    
+    if (result.success && result.data) {
+      setAiInsights(result.data);
     }
-    setAiLoading(false);
   };
 
   return (

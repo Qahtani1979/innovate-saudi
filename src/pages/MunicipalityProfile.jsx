@@ -30,6 +30,8 @@ import PeerBenchmarkingTool from '../components/municipalities/PeerBenchmarkingT
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MunicipalityProfile() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -37,7 +39,8 @@ function MunicipalityProfile() {
   const { language, isRTL, t } = useLanguage();
   const [showAIInsights, setShowAIInsights] = React.useState(false);
   const [aiInsights, setAiInsights] = React.useState(null);
-  const [aiLoading, setAiLoading] = React.useState(false);
+  
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: municipality, isLoading } = useQuery({
     queryKey: ['municipality', municipalityId],
@@ -95,10 +98,8 @@ function MunicipalityProfile() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this Saudi municipality for innovation performance and provide strategic insights in BOTH English AND Arabic:
+    const result = await invokeAI({
+      prompt: `Analyze this Saudi municipality for innovation performance and provide strategic insights in BOTH English AND Arabic:
 
 Municipality: ${municipality.name_en}
 Region: ${municipality.region}
@@ -116,22 +117,20 @@ Provide bilingual insights (each item should have both English and Arabic versio
 3. Capacity building needs
 4. Partnership opportunities with other municipalities
 5. Quick wins for score improvement`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            mii_improvements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            sector_focus: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            capacity_building: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            partnership_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            quick_wins: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          mii_improvements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          sector_focus: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          capacity_building: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          partnership_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          quick_wins: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+    
+    if (result.success && result.data) {
+      setAiInsights(result.data);
     }
   };
 

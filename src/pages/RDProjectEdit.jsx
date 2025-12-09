@@ -14,6 +14,8 @@ import { Save, Loader2, Sparkles, Plus, X } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function RDProjectEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -32,7 +34,8 @@ function RDProjectEditPage() {
   });
 
   const [formData, setFormData] = useState(null);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  
+  const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   React.useEffect(() => {
     if (project && !formData) {
@@ -55,9 +58,7 @@ function RDProjectEditPage() {
   });
 
   const handleAIEnhance = async () => {
-    setIsAIProcessing(true);
-    try {
-      const prompt = `Enhance this R&D project with comprehensive professional academic and technical content for Saudi municipal innovation:
+    const prompt = `Enhance this R&D project with comprehensive professional academic and technical content for Saudi municipal innovation:
 
 Project Title: ${formData.title_en || formData.title_ar || 'Untitled Project'}
 Institution: ${formData.institution_en || formData.institution || 'Unknown'}
@@ -85,8 +86,8 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
 12. Impact assessment with bilingual content (academic, practical, policy impacts in EN + AR)
 13. Pilot opportunities with bilingual descriptions (2-3 potential pilot scenarios in Saudi municipalities)`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
+    const result = await invokeAI({
+      prompt,
         response_json_schema: {
           type: 'object',
           properties: {
@@ -150,45 +151,41 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
                 }
               }
             }
-          }
-        }
-      });
-
+      }
+    });
+    
+    if (result.success && result.data) {
       setFormData(prev => ({
         ...prev,
-        title_en: result.title_en || prev.title_en,
-        title_ar: result.title_ar || prev.title_ar,
-        tagline_en: result.tagline_en || prev.tagline_en,
-        tagline_ar: result.tagline_ar || prev.tagline_ar,
-        abstract_en: result.abstract_en || prev.abstract_en,
-        abstract_ar: result.abstract_ar || prev.abstract_ar,
-        institution_en: result.institution_en || prev.institution_en,
-        institution_ar: result.institution_ar || prev.institution_ar,
-        research_area_en: result.research_area_en || prev.research_area_en,
-        research_area_ar: result.research_area_ar || prev.research_area_ar,
-        methodology_en: result.methodology_en || prev.methodology_en,
-        methodology_ar: result.methodology_ar || prev.methodology_ar,
-        funding_source_en: result.funding_source_en || prev.funding_source_en,
-        funding_source_ar: result.funding_source_ar || prev.funding_source_ar,
-        principal_investigator: result.principal_investigator ? {
+        title_en: result.data.title_en || prev.title_en,
+        title_ar: result.data.title_ar || prev.title_ar,
+        tagline_en: result.data.tagline_en || prev.tagline_en,
+        tagline_ar: result.data.tagline_ar || prev.tagline_ar,
+        abstract_en: result.data.abstract_en || prev.abstract_en,
+        abstract_ar: result.data.abstract_ar || prev.abstract_ar,
+        institution_en: result.data.institution_en || prev.institution_en,
+        institution_ar: result.data.institution_ar || prev.institution_ar,
+        research_area_en: result.data.research_area_en || prev.research_area_en,
+        research_area_ar: result.data.research_area_ar || prev.research_area_ar,
+        methodology_en: result.data.methodology_en || prev.methodology_en,
+        methodology_ar: result.data.methodology_ar || prev.methodology_ar,
+        funding_source_en: result.data.funding_source_en || prev.funding_source_en,
+        funding_source_ar: result.data.funding_source_ar || prev.funding_source_ar,
+        principal_investigator: result.data.principal_investigator ? {
           ...prev.principal_investigator,
-          name_en: result.principal_investigator.name_en || prev.principal_investigator?.name_en,
-          name_ar: result.principal_investigator.name_ar || prev.principal_investigator?.name_ar,
-          title_en: result.principal_investigator.title_en || prev.principal_investigator?.title_en,
-          title_ar: result.principal_investigator.title_ar || prev.principal_investigator?.title_ar
+          name_en: result.data.principal_investigator.name_en || prev.principal_investigator?.name_en,
+          name_ar: result.data.principal_investigator.name_ar || prev.principal_investigator?.name_ar,
+          title_en: result.data.principal_investigator.title_en || prev.principal_investigator?.title_en,
+          title_ar: result.data.principal_investigator.title_ar || prev.principal_investigator?.title_ar
         } : prev.principal_investigator,
-        keywords: result.keywords || prev.keywords,
-        research_themes: result.research_themes || prev.research_themes,
-        expected_outputs: result.expected_outputs || prev.expected_outputs,
-        impact_assessment: result.impact_assessment || prev.impact_assessment,
-        pilot_opportunities: result.pilot_opportunities || prev.pilot_opportunities
+        keywords: result.data.keywords || prev.keywords,
+        research_themes: result.data.research_themes || prev.research_themes,
+        expected_outputs: result.data.expected_outputs || prev.expected_outputs,
+        impact_assessment: result.data.impact_assessment || prev.impact_assessment,
+        pilot_opportunities: result.data.pilot_opportunities || prev.pilot_opportunities
       }));
 
       toast.success(t({ en: '✨ AI enhancement complete! All bilingual fields updated.', ar: '✨ تم التحسين! تم تحديث جميع الحقول ثنائية اللغة.' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setIsAIProcessing(false);
     }
   };
 
