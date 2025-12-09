@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/select";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MIIPage() {
   const { language, isRTL, t } = useLanguage();
@@ -38,7 +40,8 @@ function MIIPage() {
   const [selectedMunicipalities, setSelectedMunicipalities] = useState([]);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: municipalities = [], isLoading } = useQuery({
     queryKey: ['municipalities'],
@@ -78,7 +81,6 @@ function MIIPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
     try {
       const topMunicipalities = municipalities.slice(0, 10).map(m => ({
         name: m.name_en,
@@ -88,7 +90,7 @@ function MIIPage() {
         completed_pilots: m.completed_pilots
       }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze the Municipal Innovation Index (MII) performance across Saudi municipalities and provide strategic insights in BOTH English AND Arabic:
 
 Top Municipalities: ${JSON.stringify(topMunicipalities)}
@@ -116,11 +118,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
           }
         }
       });
-      setAiInsights(result);
+      if (result.success && result.data) {
+        setAiInsights(result.data);
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 

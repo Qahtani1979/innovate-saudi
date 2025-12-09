@@ -12,12 +12,14 @@ import { Save, ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MunicipalityCreate() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: regions = [] } = useQuery({
     queryKey: ['regions'],
@@ -41,9 +43,8 @@ function MunicipalityCreate() {
       toast.error(t({ en: 'Please enter municipality name and region first', ar: 'الرجاء إدخال اسم البلدية والمنطقة أولاً' }));
       return;
     }
-    setAiLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Provide AI enhancement for this Saudi municipality:
 
 Municipality: ${formData.name_en} ${formData.name_ar ? `(${formData.name_ar})` : ''}
@@ -65,15 +66,16 @@ Generate:
         }
       });
 
-      setFormData({
-        ...formData,
-        mii_score: result.mii_estimate || formData.mii_score
-      });
-      toast.success(t({ en: 'AI enhanced your municipality', ar: 'حسّن الذكاء بلديتك' }));
+      if (result.success && result.data) {
+        setFormData({
+          ...formData,
+          mii_score: result.data.mii_estimate || formData.mii_score
+        });
+        toast.success(t({ en: 'AI enhanced your municipality', ar: 'حسّن الذكاء بلديتك' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
     }
-    setAiLoading(false);
   };
 
   const createMutation = useMutation({
