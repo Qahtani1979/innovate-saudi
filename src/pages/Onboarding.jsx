@@ -1,12 +1,38 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { userProfile, userRoles, checkAuth } = useAuth();
+  const { user, userProfile, userRoles, checkAuth, isAuthenticated, isLoadingAuth } = useAuth();
+
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!isLoadingAuth && !isAuthenticated) {
+      navigate('/auth', { replace: true, state: { from: { pathname: '/onboarding' } } });
+    }
+  }, [isLoadingAuth, isAuthenticated, navigate]);
+
+  // Show loading while checking auth
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const handleComplete = async () => {
     // Refresh auth state to get updated onboarding status and profile
