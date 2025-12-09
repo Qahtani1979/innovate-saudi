@@ -14,6 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
+      ab_assignments: {
+        Row: {
+          assigned_at: string
+          experiment_id: string | null
+          id: string
+          user_email: string | null
+          user_id: string | null
+          variant: string
+        }
+        Insert: {
+          assigned_at?: string
+          experiment_id?: string | null
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+          variant: string
+        }
+        Update: {
+          assigned_at?: string
+          experiment_id?: string | null
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+          variant?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ab_assignments_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "ab_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ab_conversions: {
+        Row: {
+          assignment_id: string | null
+          conversion_type: string
+          conversion_value: number | null
+          created_at: string
+          experiment_id: string | null
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          assignment_id?: string | null
+          conversion_type: string
+          conversion_value?: number | null
+          created_at?: string
+          experiment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          assignment_id?: string | null
+          conversion_type?: string
+          conversion_value?: number | null
+          created_at?: string
+          experiment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ab_conversions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "ab_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ab_conversions_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "ab_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ab_experiments: {
+        Row: {
+          allocation_percentages: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: string | null
+          target_audience: Json | null
+          updated_at: string
+          variants: Json
+        }
+        Insert: {
+          allocation_percentages?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: string | null
+          target_audience?: Json | null
+          updated_at?: string
+          variants?: Json
+        }
+        Update: {
+          allocation_percentages?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: string | null
+          target_audience?: Json | null
+          updated_at?: string
+          variants?: Json
+        }
+        Relationships: []
+      }
       access_logs: {
         Row: {
           action: string
@@ -3781,6 +3909,45 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_events: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          persona: string | null
+          step_name: string | null
+          step_number: number | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          persona?: string | null
+          step_name?: string | null
+          step_number?: number | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          persona?: string | null
+          step_name?: string | null
+          step_number?: number | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       organization_partnerships: {
         Row: {
           agreement_url: string | null
@@ -5511,6 +5678,51 @@ export type Database = {
           video_url?: string | null
           website?: string | null
           workflow_stage?: string | null
+        }
+        Relationships: []
+      }
+      progressive_profiling_prompts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          dismissed_count: number | null
+          field_name: string
+          id: string
+          is_completed: boolean | null
+          last_shown_at: string | null
+          priority: number | null
+          prompt_message_ar: string | null
+          prompt_message_en: string | null
+          prompt_type: string
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          dismissed_count?: number | null
+          field_name: string
+          id?: string
+          is_completed?: boolean | null
+          last_shown_at?: string | null
+          priority?: number | null
+          prompt_message_ar?: string | null
+          prompt_message_en?: string | null
+          prompt_type: string
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          dismissed_count?: number | null
+          field_name?: string
+          id?: string
+          is_completed?: boolean | null
+          last_shown_at?: string | null
+          priority?: number | null
+          prompt_message_ar?: string | null
+          prompt_message_en?: string | null
+          prompt_type?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -8847,6 +9059,42 @@ export type Database = {
           updated_at?: string | null
           vendor_type?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      welcome_emails_sent: {
+        Row: {
+          email_type: string | null
+          id: string
+          metadata: Json | null
+          persona: string | null
+          sent_at: string
+          status: string | null
+          subject: string | null
+          user_email: string
+          user_id: string | null
+        }
+        Insert: {
+          email_type?: string | null
+          id?: string
+          metadata?: Json | null
+          persona?: string | null
+          sent_at?: string
+          status?: string | null
+          subject?: string | null
+          user_email: string
+          user_id?: string | null
+        }
+        Update: {
+          email_type?: string | null
+          id?: string
+          metadata?: Json | null
+          persona?: string | null
+          sent_at?: string
+          status?: string | null
+          subject?: string | null
+          user_email?: string
+          user_id?: string | null
         }
         Relationships: []
       }

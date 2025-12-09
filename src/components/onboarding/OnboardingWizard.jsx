@@ -15,6 +15,7 @@ import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
+import useOnboardingAnalytics from '@/hooks/useOnboardingAnalytics';
 import { 
   CheckCircle2, ArrowRight, ArrowLeft, Sparkles, 
   Building2, Lightbulb, FlaskConical, Users, Eye,
@@ -23,6 +24,19 @@ import {
   Upload, FileText, Linkedin, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Send welcome email via edge function
+const sendWelcomeEmail = async (userId, userEmail, userName, persona, language) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+      body: { userId, userEmail, userName, persona, language }
+    });
+    if (error) console.warn('Welcome email failed:', error);
+    else console.log('Welcome email sent:', data);
+  } catch (err) {
+    console.warn('Failed to send welcome email:', err);
+  }
+};
 
 const PERSONAS = [
   {
