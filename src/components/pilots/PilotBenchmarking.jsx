@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { BarChart3, TrendingUp, TrendingDown, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotBenchmarking({ pilot }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [benchmarks, setBenchmarks] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: similarPilots = [] } = useQuery({
     queryKey: ['similar-pilots', pilot.sector],
@@ -27,17 +29,15 @@ export default function PilotBenchmarking({ pilot }) {
   });
 
   const runBenchmark = async () => {
-    setAnalyzing(true);
-    try {
-      const context = similarPilots.map(p => ({
-        title: p.title_en,
-        duration: p.duration_months,
-        budget: p.budget_allocated,
-        kpi_achievement: p.overall_score
-      }));
+    const context = similarPilots.map(p => ({
+      title: p.title_en,
+      duration: p.duration_months,
+      budget: p.budget_allocated,
+      kpi_achievement: p.overall_score
+    }));
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Compare this pilot against similar completed pilots:
+    const response = await invokeAI({
+      prompt: `Compare this pilot against similar completed pilots:
 
 Current Pilot: ${pilot.title_en}
 - Duration: ${pilot.duration_months} months
@@ -52,23 +52,20 @@ Provide:
 2. Areas where this pilot outperforms peers
 3. Areas where this pilot underperforms
 4. Specific recommendations based on what top performers did`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            percentile: { type: "string" },
-            strengths: { type: "array", items: { type: "string" } },
-            weaknesses: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          percentile: { type: "string" },
+          strengths: { type: "array", items: { type: "string" } },
+          weaknesses: { type: "array", items: { type: "string" } },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setBenchmarks(response);
+    if (response.success) {
+      setBenchmarks(response.data);
       toast.success(t({ en: 'Benchmark complete', ar: 'اكتمل القياس' }));
-    } catch (error) {
-      toast.error(t({ en: 'Benchmark failed', ar: 'فشل القياس' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -80,8 +77,8 @@ Provide:
             <BarChart3 className="h-5 w-5 text-indigo-600" />
             {t({ en: 'Performance Benchmarking', ar: 'قياس الأداء' })}
           </CardTitle>
-          <Button onClick={runBenchmark} disabled={analyzing || similarPilots.length === 0} size="sm" className="bg-indigo-600">
-            {analyzing ? (
+          <Button onClick={runBenchmark} disabled={isLoading || similarPilots.length === 0 || !isAvailable} size="sm" className="bg-indigo-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -91,7 +88,9 @@ Provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!benchmarks && !analyzing && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
+        {!benchmarks && !isLoading && (
           <div className="text-center py-8">
             <BarChart3 className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

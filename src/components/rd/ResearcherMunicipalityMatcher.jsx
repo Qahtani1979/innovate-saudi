@@ -9,11 +9,13 @@ import { Users, Sparkles, Loader2, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ResearcherMunicipalityMatcher({ researcherProfile }) {
   const { language, isRTL, t } = useLanguage();
-  const [matching, setMatching] = useState(false);
   const [matches, setMatches] = useState([]);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
@@ -26,10 +28,8 @@ export default function ResearcherMunicipalityMatcher({ researcherProfile }) {
   });
 
   const findMatches = async () => {
-    setMatching(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Match researcher with municipalities that have challenges in their expertise:
+    const response = await invokeAI({
+      prompt: `Match researcher with municipalities that have challenges in their expertise:
 
 RESEARCHER: ${researcherProfile.full_name_en}
 EXPERTISE: ${researcherProfile.research_areas?.join(', ')}
@@ -43,32 +43,29 @@ Find top 5 municipalities with matching challenges. For each:
 2. Number of relevant challenges
 3. Match reason
 4. Collaboration opportunity`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            matches: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  municipality: { type: "string" },
-                  challenge_count: { type: "number" },
-                  match_score: { type: "number" },
-                  reason: { type: "string" },
-                  opportunity: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          matches: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                municipality: { type: "string" },
+                challenge_count: { type: "number" },
+                match_score: { type: "number" },
+                reason: { type: "string" },
+                opportunity: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setMatches(response.matches || []);
+    if (response.success) {
+      setMatches(response.data?.matches || []);
       toast.success(t({ en: 'Matches found', ar: 'وُجدت مطابقات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
-    } finally {
-      setMatching(false);
     }
   };
 
@@ -80,8 +77,8 @@ Find top 5 municipalities with matching challenges. For each:
             <Users className="h-5 w-5 text-blue-600" />
             {t({ en: 'Municipality Collaboration Matcher', ar: 'مطابق التعاون مع البلديات' })}
           </CardTitle>
-          <Button onClick={findMatches} disabled={matching} size="sm" className="bg-blue-600">
-            {matching ? (
+          <Button onClick={findMatches} disabled={isLoading || !isAvailable} size="sm" className="bg-blue-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -91,7 +88,9 @@ Find top 5 municipalities with matching challenges. For each:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!matches.length && !matching && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
+        {!matches.length && !isLoading && (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-blue-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">
