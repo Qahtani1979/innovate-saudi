@@ -1443,6 +1443,82 @@ export type Database = {
         }
         Relationships: []
       }
+      citizen_profiles: {
+        Row: {
+          accessibility_needs: string | null
+          city_id: string | null
+          created_at: string | null
+          id: string
+          interests: string[] | null
+          is_verified: boolean | null
+          language_preference: string | null
+          municipality_id: string | null
+          neighborhood: string | null
+          notification_preferences: Json | null
+          participation_areas: string[] | null
+          region_id: string | null
+          updated_at: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          accessibility_needs?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          id?: string
+          interests?: string[] | null
+          is_verified?: boolean | null
+          language_preference?: string | null
+          municipality_id?: string | null
+          neighborhood?: string | null
+          notification_preferences?: Json | null
+          participation_areas?: string[] | null
+          region_id?: string | null
+          updated_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          accessibility_needs?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          id?: string
+          interests?: string[] | null
+          is_verified?: boolean | null
+          language_preference?: string | null
+          municipality_id?: string | null
+          neighborhood?: string | null
+          notification_preferences?: Json | null
+          participation_areas?: string[] | null
+          region_id?: string | null
+          updated_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "citizen_profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "citizen_profiles_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "citizen_profiles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       citizen_votes: {
         Row: {
           created_at: string | null
@@ -3531,6 +3607,74 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      municipality_staff_profiles: {
+        Row: {
+          certifications: Json | null
+          created_at: string | null
+          cv_url: string | null
+          department: string | null
+          employee_id: string | null
+          extracted_cv_data: Json | null
+          id: string
+          is_verified: boolean | null
+          job_title: string | null
+          municipality_id: string | null
+          specializations: string[] | null
+          updated_at: string | null
+          user_email: string | null
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          years_of_experience: number | null
+        }
+        Insert: {
+          certifications?: Json | null
+          created_at?: string | null
+          cv_url?: string | null
+          department?: string | null
+          employee_id?: string | null
+          extracted_cv_data?: Json | null
+          id?: string
+          is_verified?: boolean | null
+          job_title?: string | null
+          municipality_id?: string | null
+          specializations?: string[] | null
+          updated_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          years_of_experience?: number | null
+        }
+        Update: {
+          certifications?: Json | null
+          created_at?: string | null
+          cv_url?: string | null
+          department?: string | null
+          employee_id?: string | null
+          extracted_cv_data?: Json | null
+          id?: string
+          is_verified?: boolean | null
+          job_title?: string | null
+          municipality_id?: string | null
+          specializations?: string[] | null
+          updated_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          years_of_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "municipality_staff_profiles_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       news_articles: {
         Row: {
@@ -8437,12 +8581,15 @@ export type Database = {
           bio: string | null
           bio_ar: string | null
           bio_en: string | null
+          city_id: string | null
           contact_preferences: Json | null
           contribution_count: number | null
           cover_image_url: string | null
           created_at: string | null
+          cv_url: string | null
           department: string | null
           expertise_areas: string[] | null
+          extracted_data: Json | null
           full_name: string | null
           full_name_ar: string | null
           id: string
@@ -8455,6 +8602,7 @@ export type Database = {
           municipality_id: string | null
           notification_preferences: Json | null
           onboarding_completed: boolean | null
+          onboarding_completed_at: string | null
           organization_id: string | null
           phone_number: string | null
           preferred_language: string | null
@@ -8469,6 +8617,7 @@ export type Database = {
           user_id: string | null
           verified: boolean | null
           visibility_settings: Json | null
+          work_phone: string | null
         }
         Insert: {
           achievement_badges?: Json | null
@@ -8476,12 +8625,15 @@ export type Database = {
           bio?: string | null
           bio_ar?: string | null
           bio_en?: string | null
+          city_id?: string | null
           contact_preferences?: Json | null
           contribution_count?: number | null
           cover_image_url?: string | null
           created_at?: string | null
+          cv_url?: string | null
           department?: string | null
           expertise_areas?: string[] | null
+          extracted_data?: Json | null
           full_name?: string | null
           full_name_ar?: string | null
           id?: string
@@ -8494,6 +8646,7 @@ export type Database = {
           municipality_id?: string | null
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           organization_id?: string | null
           phone_number?: string | null
           preferred_language?: string | null
@@ -8508,6 +8661,7 @@ export type Database = {
           user_id?: string | null
           verified?: boolean | null
           visibility_settings?: Json | null
+          work_phone?: string | null
         }
         Update: {
           achievement_badges?: Json | null
@@ -8515,12 +8669,15 @@ export type Database = {
           bio?: string | null
           bio_ar?: string | null
           bio_en?: string | null
+          city_id?: string | null
           contact_preferences?: Json | null
           contribution_count?: number | null
           cover_image_url?: string | null
           created_at?: string | null
+          cv_url?: string | null
           department?: string | null
           expertise_areas?: string[] | null
+          extracted_data?: Json | null
           full_name?: string | null
           full_name_ar?: string | null
           id?: string
@@ -8533,6 +8690,7 @@ export type Database = {
           municipality_id?: string | null
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           organization_id?: string | null
           phone_number?: string | null
           preferred_language?: string | null
@@ -8547,8 +8705,16 @@ export type Database = {
           user_id?: string | null
           verified?: boolean | null
           visibility_settings?: Json | null
+          work_phone?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "user_profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_profiles_municipality_id_fkey"
             columns: ["municipality_id"]

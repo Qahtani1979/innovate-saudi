@@ -16,7 +16,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import { 
   Users, ArrowRight, ArrowLeft, CheckCircle2, 
-  MapPin, Heart, Bell, Loader2, Sparkles
+  MapPin, Heart, Bell, Loader2, Sparkles, Award
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -41,11 +41,11 @@ const INTEREST_AREAS = [
 ];
 
 const PARTICIPATION_TYPES = [
-  { id: 'ideas', label: { en: 'Submit Ideas', ar: 'تقديم الأفكار' } },
-  { id: 'voting', label: { en: 'Vote on Initiatives', ar: 'التصويت على المبادرات' } },
-  { id: 'pilots', label: { en: 'Participate in Pilots', ar: 'المشاركة في التجارب' } },
-  { id: 'feedback', label: { en: 'Give Feedback', ar: 'تقديم الملاحظات' } },
-  { id: 'events', label: { en: 'Attend Events', ar: 'حضور الفعاليات' } }
+  { id: 'ideas', label: { en: 'Submit Ideas', ar: 'تقديم الأفكار' }, icon: '💡' },
+  { id: 'voting', label: { en: 'Vote on Initiatives', ar: 'التصويت على المبادرات' }, icon: '🗳️' },
+  { id: 'pilots', label: { en: 'Participate in Pilots', ar: 'المشاركة في التجارب' }, icon: '🧪' },
+  { id: 'feedback', label: { en: 'Give Feedback', ar: 'تقديم الملاحظات' }, icon: '💬' },
+  { id: 'events', label: { en: 'Attend Events', ar: 'حضور الفعاليات' }, icon: '📅' }
 ];
 
 export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
@@ -134,6 +134,24 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
 
       if (profileError) throw profileError;
 
+      // Create citizen profile
+      await supabase.from('citizen_profiles').upsert({
+        user_id: user.id,
+        user_email: user.email,
+        city_id: formData.city_id,
+        neighborhood: formData.neighborhood,
+        interests: formData.interests,
+        participation_areas: formData.participation_types,
+        notification_preferences: {
+          new_challenges: formData.notify_new_challenges,
+          pilot_opportunities: formData.notify_pilot_opportunities,
+          events: formData.notify_events,
+          weekly_digest: formData.notify_weekly_digest
+        },
+        language_preference: language,
+        is_verified: false
+      }, { onConflict: 'user_id' });
+
       // Initialize citizen points record
       await supabase.from('citizen_points').upsert({
         user_id: user.id,
@@ -146,7 +164,7 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
       await queryClient.invalidateQueries(['user-profile']);
       if (checkAuth) await checkAuth();
 
-      toast.success(t({ en: 'Welcome to the community!', ar: 'مرحباً بك في المجتمع!' }));
+      toast.success(t({ en: 'Welcome to the community! You earned 10 welcome points!', ar: 'مرحباً بك في المجتمع! لقد ربحت 10 نقاط ترحيبية!' }));
       onComplete?.(formData);
       navigate(createPageUrl('CitizenDashboard'));
     } catch (error) {
@@ -300,7 +318,7 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
                   <Label className="mb-3 block">
                     {t({ en: 'How would you like to participate?', ar: 'كيف تريد المشاركة؟' })}
                   </Label>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {PARTICIPATION_TYPES.map((type) => (
                       <div
                         key={type.id}
@@ -312,7 +330,7 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <Checkbox checked={formData.participation_types.includes(type.id)} />
+                          <span className="text-lg">{type.icon}</span>
                           <span className="text-sm">{type.label[language]}</span>
                         </div>
                       </div>
@@ -393,37 +411,36 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
                 </h2>
                 <p className="text-amber-700">
                   {t({ 
-                    en: 'You earned 10 points as a welcome bonus! Start exploring and contributing.',
-                    ar: 'حصلت على 10 نقاط كمكافأة ترحيبية! ابدأ الاستكشاف والمساهمة.'
+                    en: 'Start exploring challenges, submitting ideas, and earning points!',
+                    ar: 'ابدأ باستكشاف التحديات وتقديم الأفكار وكسب النقاط!'
                   })}
                 </p>
 
-                <div className="p-4 bg-white rounded-lg border text-left">
-                  <p className="text-sm text-muted-foreground mb-2">{t({ en: 'Your Interests', ar: 'اهتماماتك' })}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.interests.map((id) => {
-                      const interest = INTEREST_AREAS.find(i => i.id === id);
-                      return interest ? (
-                        <Badge key={id} variant="outline" className="text-sm">
-                          {interest.icon} {interest.label[language]}
-                        </Badge>
-                      ) : null;
-                    })}
+                {/* Welcome Bonus */}
+                <div className="p-4 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg border border-amber-200">
+                  <div className="flex items-center justify-center gap-2 text-amber-800">
+                    <Award className="h-6 w-6" />
+                    <span className="text-lg font-bold">+10 {t({ en: 'Welcome Points', ar: 'نقاط ترحيبية' })}!</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="p-3 bg-orange-100 rounded-lg">
-                    <p className="text-2xl font-bold text-orange-600">10</p>
-                    <p className="text-xs text-orange-700">{t({ en: 'Points', ar: 'نقاط' })}</p>
-                  </div>
-                  <div className="p-3 bg-amber-100 rounded-lg">
-                    <p className="text-2xl font-bold text-amber-600">1</p>
-                    <p className="text-xs text-amber-700">{t({ en: 'Level', ar: 'المستوى' })}</p>
-                  </div>
-                  <div className="p-3 bg-orange-100 rounded-lg">
-                    <p className="text-2xl font-bold text-orange-600">🎉</p>
-                    <p className="text-xs text-orange-700">{t({ en: 'Welcome!', ar: 'أهلاً!' })}</p>
+                <div className="p-4 bg-white rounded-lg border text-left">
+                  <p className="text-sm text-muted-foreground mb-2">{t({ en: 'Your Profile', ar: 'ملفك' })}</p>
+                  <div className="space-y-2">
+                    <p><strong>{t({ en: 'City:', ar: 'المدينة:' })}</strong> {cities.find(c => c.id === formData.city_id)?.[language === 'ar' ? 'name_ar' : 'name_en']}</p>
+                    <div>
+                      <strong>{t({ en: 'Interests:', ar: 'الاهتمامات:' })}</strong>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {formData.interests.map((id, idx) => {
+                          const interest = INTEREST_AREAS.find(i => i.id === id);
+                          return (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {interest?.icon} {interest?.label[language]}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -454,10 +471,10 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
               <Button
                 onClick={handleComplete}
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-orange-600 to-amber-600"
+                className="bg-gradient-to-r from-amber-600 to-orange-600"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                {t({ en: 'Start Exploring', ar: 'ابدأ الاستكشاف' })}
+                {t({ en: 'Complete & Start', ar: 'إكمال والبدء' })}
               </Button>
             )}
           </div>
