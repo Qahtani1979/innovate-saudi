@@ -11,6 +11,8 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function EnhancedMatchingEngine({ application, onMatchComplete }) {
   const { language, isRTL, t } = useLanguage();
@@ -21,7 +23,7 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
     max_matches: 10,
     include_tier_1_only: false
   });
-  const [matching, setMatching] = useState(false);
+  const { invokeAI, status, isLoading: matching, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [matches, setMatches] = useState([]);
 
   const { data: challenges = [] } = useQuery({
@@ -30,15 +32,13 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
   });
 
   const runBilateralMatching = async () => {
-    setMatching(true);
-    try {
-      const filteredChallenges = challenges.filter(c => {
-        if (preferences.include_tier_1_only && c.priority !== 'tier_1') return false;
-        if (preferences.preferred_sectors.length > 0 && !preferences.preferred_sectors.includes(c.sector)) return false;
-        return true;
-      }).slice(0, 30);
+    const filteredChallenges = challenges.filter(c => {
+      if (preferences.include_tier_1_only && c.priority !== 'tier_1') return false;
+      if (preferences.preferred_sectors.length > 0 && !preferences.preferred_sectors.includes(c.sector)) return false;
+      return true;
+    }).slice(0, 30);
 
-      const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeAI({
         prompt: `Perform bilateral matching between this provider and available challenges:
 
 PROVIDER:
@@ -83,19 +83,17 @@ Return top ${preferences.max_matches} matches with:
             }
           }
         }
-      });
+      }
+    });
 
-      const enrichedMatches = result.matches.map(m => ({
+    if (result.success) {
+      const enrichedMatches = (result.data?.matches || []).map(m => ({
         ...challenges.find(c => c.code === m.challenge_code),
         ...m
       })).filter(m => m.id);
 
       setMatches(enrichedMatches);
       toast.success(t({ en: `${enrichedMatches.length} matches found`, ar: `تم العثور على ${enrichedMatches.length} مطابقات` }));
-    } catch (error) {
-      toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
-    } finally {
-      setMatching(false);
     }
   };
 
@@ -106,6 +104,7 @@ Return top ${preferences.max_matches} matches with:
           <Network className="h-5 w-5 text-purple-600" />
           {t({ en: 'Enhanced Matching Engine (AI)', ar: 'محرك المطابقة المحسّن (ذكاء)' })}
         </CardTitle>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Preferences */}

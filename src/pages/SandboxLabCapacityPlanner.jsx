@@ -10,11 +10,13 @@ import { Beaker, Shield, Sparkles, Calendar, TrendingUp, Loader2, AlertCircle } 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SandboxLabCapacityPlanner() {
   const { language, isRTL, t } = useLanguage();
   const [aiRecommendations, setAiRecommendations] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes'],
@@ -37,10 +39,8 @@ function SandboxLabCapacityPlanner() {
   });
 
   const analyzeCapacity = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze sandbox and living lab capacity for Saudi municipal innovation:
+    const result = await invokeAI({
+      prompt: `Analyze sandbox and living lab capacity for Saudi municipal innovation:
 
 Sandboxes: ${sandboxes.length}
 - Active: ${sandboxes.filter(s => s.status === 'active').length}
@@ -103,15 +103,12 @@ Generate bilingual capacity analysis:
               }
             }
           }
-        }
-      });
+      }
+    });
 
-      setAiRecommendations(result);
+    if (result.success) {
+      setAiRecommendations(result.data);
       toast.success(t({ en: 'Capacity analysis complete', ar: 'اكتمل تحليل السعة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -154,11 +151,12 @@ Generate bilingual capacity analysis:
                 {t({ en: 'Analyze utilization, identify bottlenecks, and recommend expansions', ar: 'تحليل الاستخدام وتحديد الاختناقات والتوصية بالتوسعات' })}
               </p>
             </div>
-            <Button onClick={analyzeCapacity} disabled={loading} className="bg-gradient-to-r from-teal-600 to-blue-600">
+            <Button onClick={analyzeCapacity} disabled={loading || !isAvailable} className="bg-gradient-to-r from-teal-600 to-blue-600">
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'Analyze Capacity', ar: 'تحليل السعة' })}
             </Button>
           </div>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
         </CardContent>
       </Card>
 

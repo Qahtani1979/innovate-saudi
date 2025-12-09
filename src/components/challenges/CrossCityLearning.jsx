@@ -9,11 +9,13 @@ import { MapPin, Sparkles, BookOpen, Loader2, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CrossCityLearning({ challenge }) {
   const { language, isRTL, t } = useLanguage();
   const [similarCases, setSimilarCases] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: allChallenges = [] } = useQuery({
     queryKey: ['challenges'],
@@ -21,21 +23,18 @@ export default function CrossCityLearning({ challenge }) {
   });
 
   const findSimilarSolutions = async () => {
-    setLoading(true);
-    try {
-      const resolvedChallenges = allChallenges.filter(c => 
-        c.status === 'resolved' && 
-        c.id !== challenge.id &&
-        c.sector === challenge.sector
-      );
+    const resolvedChallenges = allChallenges.filter(c => 
+      c.status === 'resolved' && 
+      c.id !== challenge.id &&
+      c.sector === challenge.sector
+    );
 
-      if (resolvedChallenges.length === 0) {
-        toast.info(t({ en: 'No similar resolved challenges found', ar: 'لم يتم العثور على تحديات محلولة مشابهة' }));
-        setLoading(false);
-        return;
-      }
+    if (resolvedChallenges.length === 0) {
+      toast.info(t({ en: 'No similar resolved challenges found', ar: 'لم يتم العثور على تحديات محلولة مشابهة' }));
+      return;
+    }
 
-      const response = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeAI({
         prompt: `Current Challenge: "${challenge.title_en}" - ${challenge.description_en}
 
 Find the 3 most similar resolved challenges from this list and explain how they were solved:
@@ -66,14 +65,12 @@ For each similar challenge, provide:
             }
           }
         }
-      });
+      }
+    });
 
-      setSimilarCases(response.similar_cases || []);
+    if (result.success) {
+      setSimilarCases(result.data?.similar_cases || []);
       toast.success(t({ en: 'Similar cases found', ar: 'تم العثور على حالات مشابهة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -85,7 +82,7 @@ For each similar challenge, provide:
             <MapPin className="h-5 w-5 text-blue-600" />
             {t({ en: 'Learning from Other Cities', ar: 'التعلم من المدن الأخرى' })}
           </CardTitle>
-          <Button onClick={findSimilarSolutions} disabled={loading} size="sm" className="bg-blue-600">
+          <Button onClick={findSimilarSolutions} disabled={loading || !isAvailable} size="sm" className="bg-blue-600">
             {loading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -94,6 +91,7 @@ For each similar challenge, provide:
             {t({ en: 'Find Solutions', ar: 'ابحث عن حلول' })}
           </Button>
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
       </CardHeader>
       <CardContent className="pt-6">
         {!similarCases && !loading && (

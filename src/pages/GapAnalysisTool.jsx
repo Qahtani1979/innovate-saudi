@@ -87,7 +87,7 @@ Include USE CASE scenarios:
 - "Plan next R&D call based on these gaps"
 - "Identify urgent intervention areas for next quarter"
 - "Compare gap evolution: are we improving?"`,
-        response_json_schema: {
+      response_json_schema: {
           type: 'object',
           properties: {
             underserved_sectors: {
