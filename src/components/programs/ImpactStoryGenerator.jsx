@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Sparkles, Loader2, Copy, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ImpactStoryGenerator({ programId, graduates }) {
   const { language, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [stories, setStories] = useState([]);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateStories = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate compelling impact stories for program graduates:
+    const result = await invokeAI({
+      prompt: `Generate compelling impact stories for program graduates:
 
 PROGRAM: Innovation Accelerator
 GRADUATES: ${graduates.length}
@@ -30,35 +29,32 @@ For top 3 performers, create:
 3. Key metrics
 4. Quote from founder
 5. Social media caption`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            stories: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  startup: { type: "string" },
-                  headline_en: { type: "string" },
-                  headline_ar: { type: "string" },
-                  story_en: { type: "string" },
-                  story_ar: { type: "string" },
-                  metrics: { type: "array", items: { type: "string" } },
-                  quote: { type: "string" },
-                  social_caption: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          stories: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                startup: { type: "string" },
+                headline_en: { type: "string" },
+                headline_ar: { type: "string" },
+                story_en: { type: "string" },
+                story_ar: { type: "string" },
+                metrics: { type: "array", items: { type: "string" } },
+                quote: { type: "string" },
+                social_caption: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setStories(response.stories || []);
-      toast.success(t({ en: `${response.stories?.length || 0} stories generated`, ar: `تم إنشاء ${response.stories?.length || 0} قصة` }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGenerating(false);
+    if (result.success) {
+      setStories(result.data.stories || []);
+      toast.success(t({ en: `${result.data.stories?.length || 0} stories generated`, ar: `تم إنشاء ${result.data.stories?.length || 0} قصة` }));
     }
   };
 
@@ -75,8 +71,8 @@ For top 3 performers, create:
             <FileText className="h-5 w-5 text-indigo-600" />
             {t({ en: 'AI Impact Story Generator', ar: 'مولد قصص التأثير الذكي' })}
           </CardTitle>
-          <Button onClick={generateStories} disabled={generating} size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600">
-            {generating ? (
+          <Button onClick={generateStories} disabled={isLoading || !isAvailable} size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -86,7 +82,9 @@ For top 3 performers, create:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!stories.length && !generating && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
+        {!stories.length && !isLoading && (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

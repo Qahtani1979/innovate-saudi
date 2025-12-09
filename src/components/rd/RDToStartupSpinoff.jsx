@@ -4,16 +4,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Rocket, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
+import { Rocket, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDToStartupSpinoff({ rdProject, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState(1);
   const [spinoffData, setSpinoffData] = useState({
     startup_name: '',
     commercialization_potential_score: 0,
@@ -21,12 +21,11 @@ export default function RDToStartupSpinoff({ rdProject, onClose }) {
     founding_team: [],
     business_model: ''
   });
-  const [aiAssessing, setAiAssessing] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const assessCommercializationMutation = useMutation({
-    mutationFn: async () => {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Assess commercialization potential for this R&D project:
+  const assessCommercialization = async () => {
+    const result = await invokeAI({
+      prompt: `Assess commercialization potential for this R&D project:
 Project: ${rdProject.title_en}
 Research Area: ${rdProject.research_area_en}
 TRL: ${rdProject.trl_current}
@@ -38,29 +37,28 @@ Provide:
 3. Recommended startup name
 4. Suggested business model
 5. Key value propositions`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            commercialization_score: { type: 'number' },
-            market_readiness: { type: 'string' },
-            startup_name_suggestion: { type: 'string' },
-            business_model: { type: 'string' },
-            value_propositions: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          commercialization_score: { type: 'number' },
+          market_readiness: { type: 'string' },
+          startup_name_suggestion: { type: 'string' },
+          business_model: { type: 'string' },
+          value_propositions: { type: 'array', items: { type: 'string' } }
         }
-      });
-      return result;
-    },
-    onSuccess: (result) => {
+      }
+    });
+
+    if (result.success) {
       setSpinoffData(prev => ({
         ...prev,
-        startup_name: result.startup_name_suggestion,
-        commercialization_potential_score: result.commercialization_score,
-        business_model: result.business_model
+        startup_name: result.data.startup_name_suggestion,
+        commercialization_potential_score: result.data.commercialization_score,
+        business_model: result.data.business_model
       }));
       toast.success(t({ en: 'Assessment complete', ar: 'اكتمل التقييم' }));
     }
-  });
+  };
 
   const createSpinoffMutation = useMutation({
     mutationFn: async () => {
@@ -108,6 +106,8 @@ Provide:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
         <div className="p-4 bg-blue-50 rounded border border-blue-200">
           <p className="font-semibold text-blue-900">{rdProject.title_en}</p>
           <div className="flex gap-2 mt-2">
@@ -117,11 +117,11 @@ Provide:
         </div>
 
         <Button
-          onClick={() => assessCommercializationMutation.mutate()}
-          disabled={assessCommercializationMutation.isPending}
+          onClick={assessCommercialization}
+          disabled={isLoading || !isAvailable}
           className="w-full bg-purple-600"
         >
-          {assessCommercializationMutation.isPending ? (
+          {isLoading ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <Sparkles className="h-4 w-4 mr-2" />

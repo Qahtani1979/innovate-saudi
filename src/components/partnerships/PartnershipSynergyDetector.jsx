@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Zap, Sparkles, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PartnershipSynergyDetector({ challengeId }) {
   const { language, t } = useLanguage();
-  const [detecting, setDetecting] = useState(false);
   const [opportunities, setOpportunities] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations'],
@@ -20,10 +22,8 @@ export default function PartnershipSynergyDetector({ challengeId }) {
   });
 
   const detectSynergies = async () => {
-    setDetecting(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Identify multi-party collaboration opportunities:
+    const result = await invokeAI({
+      prompt: `Identify multi-party collaboration opportunities:
 
 Available Organizations (${organizations.length}):
 ${organizations.slice(0, 20).map(o => `
@@ -39,32 +39,29 @@ Find synergies where 2-3 organizations could collaborate:
 - Strategic alignment
 
 Recommend top 3 multi-party collaboration opportunities.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            opportunities: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  partners: { type: "array", items: { type: "string" } },
-                  synergy_score: { type: "number" },
-                  use_case: { type: "string" },
-                  value_proposition: { type: "string" },
-                  complementarity: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          opportunities: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                partners: { type: "array", items: { type: "string" } },
+                synergy_score: { type: "number" },
+                use_case: { type: "string" },
+                value_proposition: { type: "string" },
+                complementarity: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setOpportunities(response.opportunities || []);
+    if (result.success) {
+      setOpportunities(result.data.opportunities || []);
       toast.success(t({ en: 'Synergies detected', ar: 'التآزرات مكتشفة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Detection failed', ar: 'فشل الكشف' }));
-    } finally {
-      setDetecting(false);
     }
   };
 
@@ -76,8 +73,8 @@ Recommend top 3 multi-party collaboration opportunities.`,
             <Zap className="h-5 w-5 text-orange-600" />
             {t({ en: 'Synergy Detector', ar: 'كاشف التآزر' })}
           </CardTitle>
-          <Button onClick={detectSynergies} disabled={detecting} size="sm" className="bg-orange-600">
-            {detecting ? (
+          <Button onClick={detectSynergies} disabled={isLoading || !isAvailable} size="sm" className="bg-orange-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -87,7 +84,9 @@ Recommend top 3 multi-party collaboration opportunities.`,
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!opportunities && !detecting && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
+        {!opportunities && !isLoading && (
           <div className="text-center py-8">
             <Zap className="h-12 w-12 text-orange-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

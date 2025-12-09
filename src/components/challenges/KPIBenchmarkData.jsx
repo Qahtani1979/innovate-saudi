@@ -3,18 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { base44 } from '@/api/base44Client';
-import { TrendingUp, Award, Globe, Loader2 } from 'lucide-react';
+import { Award, Globe, Loader2 } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function KPIBenchmarkData({ kpi, sector }) {
   const { language, isRTL, t } = useLanguage();
   const [benchmarks, setBenchmarks] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const fetchBenchmarks = async () => {
-    setLoading(true);
-    try {
-      const prompt = `Find international and Saudi benchmark data for this KPI:
+    const prompt = `Find international and Saudi benchmark data for this KPI:
       
 KPI: ${kpi.name}
 Sector: ${sector || 'municipal services'}
@@ -28,52 +27,48 @@ Provide benchmark values from:
 
 Return structured data with sources.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            international_best: { 
-              type: 'object',
-              properties: {
-                value: { type: 'string' },
-                source: { type: 'string' },
-                year: { type: 'number' }
-              }
-            },
-            saudi_average: { 
-              type: 'object',
-              properties: {
-                value: { type: 'string' },
-                source: { type: 'string' }
-              }
-            },
-            gcc_average: { 
-              type: 'object',
-              properties: {
-                value: { type: 'string' },
-                source: { type: 'string' }
-              }
-            },
-            saudi_leader: { 
-              type: 'object',
-              properties: {
-                city: { type: 'string' },
-                value: { type: 'string' },
-                source: { type: 'string' }
-              }
-            },
-            interpretation: { type: 'string' }
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          international_best: { 
+            type: 'object',
+            properties: {
+              value: { type: 'string' },
+              source: { type: 'string' },
+              year: { type: 'number' }
+            }
+          },
+          saudi_average: { 
+            type: 'object',
+            properties: {
+              value: { type: 'string' },
+              source: { type: 'string' }
+            }
+          },
+          gcc_average: { 
+            type: 'object',
+            properties: {
+              value: { type: 'string' },
+              source: { type: 'string' }
+            }
+          },
+          saudi_leader: { 
+            type: 'object',
+            properties: {
+              city: { type: 'string' },
+              value: { type: 'string' },
+              source: { type: 'string' }
+            }
+          },
+          interpretation: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setBenchmarks(result);
-    } catch (error) {
-      console.error('Benchmark fetch error:', error);
-    } finally {
-      setLoading(false);
+    if (result.success) {
+      setBenchmarks(result.data);
     }
   };
 
@@ -86,8 +81,8 @@ Return structured data with sources.`;
             {t({ en: 'Benchmark Data', ar: 'بيانات المقارنة المرجعية' })}
           </CardTitle>
           {!benchmarks && (
-            <Button size="sm" onClick={fetchBenchmarks} disabled={loading}>
-              {loading ? (
+            <Button size="sm" onClick={fetchBenchmarks} disabled={isLoading || !isAvailable}>
+              {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Globe className="h-4 w-4" />
@@ -96,6 +91,7 @@ Return structured data with sources.`;
             </Button>
           )}
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
       </CardHeader>
       {benchmarks && (
         <CardContent className="space-y-3">
