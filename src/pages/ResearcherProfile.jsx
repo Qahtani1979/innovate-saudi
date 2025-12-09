@@ -9,12 +9,14 @@ import { Microscope, FileText, Award, Users, Globe, Sparkles, Loader2, Linkedin,
 import { useState } from 'react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { ContactSection, BioSection, SkillsBadges, ProfessionalSection } from '../components/profile/BilingualProfileDisplay';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ResearcherProfile() {
   const { language, isRTL, t } = useLanguage();
   const researcherId = new URLSearchParams(window.location.search).get('id');
   const [collaborators, setCollaborators] = useState([]);
-  const [loadingCollab, setLoadingCollab] = useState(false);
+  const { invokeAI, status, isLoading: loadingCollab, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: researcher } = useQuery({
     queryKey: ['researcherProfile', researcherId],
@@ -25,40 +27,35 @@ function ResearcherProfile() {
   });
 
   const findCollaborators = async () => {
-    setLoadingCollab(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Find potential collaborators for this researcher:
+    const result = await invokeAI({
+      prompt: `Find potential collaborators for this researcher:
 Name: ${researcher?.full_name_en}
 Research Areas: ${researcher?.research_areas?.join(', ')}
 Expertise: ${researcher?.expertise_keywords?.join(', ')}
 Institution: ${researcher?.institution_id}
 
 Suggest 5 researchers or institutions who would be ideal collaborators based on complementary expertise.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            collaborators: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  institution: { type: 'string' },
-                  expertise: { type: 'array', items: { type: 'string' } },
-                  match_score: { type: 'number' },
-                  collaboration_potential: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          collaborators: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                institution: { type: 'string' },
+                expertise: { type: 'array', items: { type: 'string' } },
+                match_score: { type: 'number' },
+                collaboration_potential: { type: 'string' }
               }
             }
           }
         }
-      });
-      setCollaborators(result.collaborators || []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoadingCollab(false);
+      }
+    });
+    if (result.success) {
+      setCollaborators(result.data?.collaborators || []);
     }
   };
 
@@ -265,7 +262,8 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button onClick={findCollaborators} disabled={loadingCollab} className="bg-teal-600">
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+            <Button onClick={findCollaborators} disabled={loadingCollab || !isAvailable} className="bg-teal-600">
               {loadingCollab ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'Find Potential Collaborators', ar: 'ابحث عن متعاونين محتملين' })}
             </Button>
