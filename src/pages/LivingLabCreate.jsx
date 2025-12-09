@@ -15,13 +15,15 @@ import { Beaker, ChevronLeft, ChevronRight, FileText, Building2, Wifi, Users, Sa
 import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function LivingLabCreate() {
   const navigate = useNavigate();
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     code: '',
@@ -75,10 +77,9 @@ function LivingLabCreate() {
       toast.error(t({ en: 'Please enter lab name first', ar: 'الرجاء إدخال اسم المختبر أولاً' }));
       return;
     }
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Enhance this Living Lab proposal with professional content:
+
+    const result = await invokeAI({
+      prompt: `Enhance this Living Lab proposal with professional content:
         
 Lab Name: ${formData.name_en}
 Type: ${formData.type || 'N/A'}
@@ -90,34 +91,34 @@ Provide bilingual enhancements:
 3. Clear objectives for research and testing (AR + EN)
 4. Suggested equipment catalog (5-7 items)
 5. Key capabilities this lab should offer`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' },
-            equipment_suggestions: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          objectives_en: { type: 'string' },
+          objectives_ar: { type: 'string' },
+          equipment_suggestions: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setFormData({
         ...formData,
-        tagline_en: result.tagline_en,
-        tagline_ar: result.tagline_ar,
-        description_en: result.description_en,
-        description_ar: result.description_ar,
-        objectives_en: result.objectives_en,
-        objectives_ar: result.objectives_ar
+        tagline_en: result.data.tagline_en,
+        tagline_ar: result.data.tagline_ar,
+        description_en: result.data.description_en,
+        description_ar: result.data.description_ar,
+        objectives_en: result.data.objectives_en,
+        objectives_ar: result.data.objectives_ar
       });
       toast.success(t({ en: 'AI enhanced your proposal', ar: 'حسّن الذكاء مقترحك' }));
-    } catch (error) {
+    } else {
       toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين الذكي' }));
     }
-    setAiLoading(false);
   };
 
   const createMutation = useMutation({

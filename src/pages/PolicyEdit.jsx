@@ -18,6 +18,8 @@ import PolicyConflictDetector from '../components/policy/PolicyConflictDetector'
 import PolicyEditHistory from '../components/policy/PolicyEditHistory';
 import PolicyAmendmentWizard from '../components/policy/PolicyAmendmentWizard';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PolicyEdit() {
   const { language, isRTL, t } = useLanguage();
@@ -27,10 +29,10 @@ function PolicyEdit() {
   const policyId = urlParams.get('id');
   const [formData, setFormData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
-  const [isEnhancing, setIsEnhancing] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
   const [showAmendmentWizard, setShowAmendmentWizard] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: isEnhancing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: policy, isLoading } = useQuery({
     queryKey: ['policy', policyId],
@@ -162,31 +164,28 @@ function PolicyEdit() {
   });
 
   const handleAIAssist = async () => {
-    setIsEnhancing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Enhance this Saudi municipal policy with professional Arabic content:
+    const result = await invokeAI({
+      prompt: `Enhance this Saudi municipal policy with professional Arabic content:
 
 Title AR: ${formData.title_ar}
 Recommendation AR: ${formData.recommendation_text_ar}
 Framework: ${formData.regulatory_framework}
 
 TASK: Provide enhanced Arabic version with formal government policy language suitable for ministerial review. Make it more precise, professional, and aligned with Saudi regulatory standards.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_ar: { type: 'string' },
-            recommendation_text_ar: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_ar: { type: 'string' },
+          recommendation_text_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setFormData(prev => ({ ...prev, ...result }));
+    if (result.success) {
+      setFormData(prev => ({ ...prev, ...result.data }));
       toast.success(t({ en: 'AI enhancement applied', ar: 'تم التحسين الذكي' }));
-    } catch (error) {
+    } else {
       toast.error(t({ en: 'AI assist failed', ar: 'فشل المساعد' }));
-    } finally {
-      setIsEnhancing(false);
     }
   };
 

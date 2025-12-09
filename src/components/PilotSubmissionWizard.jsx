@@ -8,14 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Send, CheckCircle2, AlertCircle, Loader2, FileText, Users, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PilotSubmissionWizard({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [step, setStep] = useState(1);
   const [submissionNote, setSubmissionNote] = useState('');
-  const [generatingBrief, setGeneratingBrief] = useState(false);
   const [submissionBrief, setSubmissionBrief] = useState(null);
   const queryClient = useQueryClient();
+  const { invokeAI, status: aiStatus, isLoading: generatingBrief, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const readinessChecks = [
     { id: 'design_complete', label: { en: 'Design completed', ar: 'التصميم مكتمل' }, required: true },
@@ -54,10 +56,8 @@ function PilotSubmissionWizard({ pilot, onClose }) {
   });
 
   const generateSubmissionBrief = async () => {
-    setGeneratingBrief(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a concise submission brief for this pilot project to help approvers make a decision:
+    const result = await invokeAI({
+      prompt: `Generate a concise submission brief for this pilot project to help approvers make a decision:
 
 Title: ${pilot.title_en}
 Sector: ${pilot.sector}
@@ -73,24 +73,24 @@ Provide:
 4. Resource requirements summary
 5. Risk assessment (top 3 risks)
 6. Recommendation (approve/defer/reject with rationale)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            executive_summary: { type: 'string' },
-            strategic_alignment: { type: 'string' },
-            expected_outcomes: { type: 'array', items: { type: 'string' } },
-            resource_summary: { type: 'string' },
-            top_risks: { type: 'array', items: { type: 'string' } },
-            recommendation: { type: 'string' },
-            rationale: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          executive_summary: { type: 'string' },
+          strategic_alignment: { type: 'string' },
+          expected_outcomes: { type: 'array', items: { type: 'string' } },
+          resource_summary: { type: 'string' },
+          top_risks: { type: 'array', items: { type: 'string' } },
+          recommendation: { type: 'string' },
+          rationale: { type: 'string' }
         }
-      });
-      setSubmissionBrief(result);
-    } catch (error) {
+      }
+    });
+
+    if (result.success) {
+      setSubmissionBrief(result.data);
+    } else {
       toast.error(t({ en: 'Failed to generate brief', ar: 'فشل إنشاء الملخص' }));
-    } finally {
-      setGeneratingBrief(false);
     }
   };
 
