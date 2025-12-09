@@ -7,10 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Beaker, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function LabPolicyEvidenceWorkflow({ livingLab }) {
   const { t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [policyDraft, setPolicyDraft] = useState(null);
   const queryClient = useQueryClient();
 
@@ -23,10 +25,8 @@ export default function LabPolicyEvidenceWorkflow({ livingLab }) {
   });
 
   const generateFromCitizenEvidence = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a policy recommendation based on citizen science findings from this living lab.
+    const result = await invokeAI({
+      prompt: `Generate a policy recommendation based on citizen science findings from this living lab.
 
 Living Lab: ${livingLab.name_en}
 Research Focus: ${livingLab.research_focus_areas?.join(', ') || 'N/A'}
@@ -43,28 +43,25 @@ Generate a policy recommendation based on citizen evidence with:
 6. Implementation steps
 
 Return as JSON.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title_en: { type: "string" },
-            title_ar: { type: "string" },
-            evidence_summary_en: { type: "string" },
-            evidence_summary_ar: { type: "string" },
-            problem_statement_en: { type: "string" },
-            problem_statement_ar: { type: "string" },
-            recommended_changes: { type: "array", items: { type: "string" } },
-            citizen_impact_en: { type: "string" },
-            citizen_impact_ar: { type: "string" },
-            implementation_steps: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title_en: { type: "string" },
+          title_ar: { type: "string" },
+          evidence_summary_en: { type: "string" },
+          evidence_summary_ar: { type: "string" },
+          problem_statement_en: { type: "string" },
+          problem_statement_ar: { type: "string" },
+          recommended_changes: { type: "array", items: { type: "string" } },
+          citizen_impact_en: { type: "string" },
+          citizen_impact_ar: { type: "string" },
+          implementation_steps: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setPolicyDraft(response);
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
+    if (result.success) {
+      setPolicyDraft(result.data);
     }
   };
 

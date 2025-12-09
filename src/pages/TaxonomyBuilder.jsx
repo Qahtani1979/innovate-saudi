@@ -14,6 +14,8 @@ import TaxonomyVisualization from '../components/taxonomy/TaxonomyVisualization'
 import ServiceManager from '../components/taxonomy/ServiceManager';
 import TaxonomyGapDetector from '../components/taxonomy/TaxonomyGapDetector';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function TaxonomyBuilder() {
   const { language, isRTL, t } = useLanguage();
@@ -23,7 +25,7 @@ function TaxonomyBuilder() {
   const [editingItem, setEditingItem] = useState(null);
   const [newSector, setNewSector] = useState(null);
   const [newSubsector, setNewSubsector] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [showWizard, setShowWizard] = useState(false);
   const queryClient = useQueryClient();
 
@@ -100,10 +102,8 @@ function TaxonomyBuilder() {
   });
 
   const generateAISuggestions = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze current taxonomy and suggest improvements for Saudi municipal innovation:
+    const result = await invokeAI({
+      prompt: `Analyze current taxonomy and suggest improvements for Saudi municipal innovation:
 
 Current Sectors: ${sectors.map(s => s.name_en).join(', ')}
 Total Subsectors: ${subsectors.length}
@@ -115,34 +115,30 @@ Provide bilingual suggestions for:
 3. Service gaps and missing service types
 
 Focus on Vision 2030, smart cities, and municipal service excellence.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            suggested_sectors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name_en: { type: 'string' },
-                  name_ar: { type: 'string' },
-                  code: { type: 'string' },
-                  description_en: { type: 'string' },
-                  description_ar: { type: 'string' },
-                  rationale_en: { type: 'string' },
-                  rationale_ar: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          suggested_sectors: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name_en: { type: 'string' },
+                name_ar: { type: 'string' },
+                code: { type: 'string' },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' },
+                rationale_en: { type: 'string' },
+                rationale_ar: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       toast.success(t({ en: 'AI suggestions generated', ar: 'تم إنشاء اقتراحات ذكية' }));
-      // You could display these in a modal or card
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل الإنشاء' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 

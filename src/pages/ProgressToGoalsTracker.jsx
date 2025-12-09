@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { Target, TrendingUp, AlertTriangle, CheckCircle2, Sparkles, Calendar, Zap } from 'lucide-react';
+import { Target, TrendingUp, AlertTriangle, CheckCircle2, Sparkles, Calendar, Zap, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ProgressToGoalsTracker() {
   const { language, isRTL, t } = useLanguage();
   const [aiRecommendations, setAiRecommendations] = useState(null);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans'],
@@ -70,7 +73,7 @@ function ProgressToGoalsTracker() {
       ...calculateKPIProgress(kpi)
     }));
 
-    const response = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeAI({
       prompt: `Analyze KPI progress and provide specific, actionable recommendations to achieve targets.
 
 Strategic KPIs:
@@ -96,7 +99,9 @@ For each off-track or at-risk KPI, suggest specific actions to improve velocity.
       }
     });
 
-    setAiRecommendations(response);
+    if (result.success) {
+      setAiRecommendations(result.data);
+    }
   };
 
   const statusConfig = {
