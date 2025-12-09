@@ -6,17 +6,17 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Shield, ArrowRight, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AutoRiskRouter({ entity, entityType }) {
   const { t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [riskAssessment, setRiskAssessment] = useState(null);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const assessRisk = async () => {
-    setAnalyzing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Assess if this ${entityType} requires sandbox testing before full deployment:
+    const result = await invokeAI({
+      prompt: `Assess if this ${entityType} requires sandbox testing before full deployment:
 
 Title: ${entity.title_en || entity.name_en}
 Description: ${entity.description_en || entity.abstract_en}
@@ -33,29 +33,27 @@ Evaluate:
 5. Recommendation: sandbox_required, sandbox_recommended, or direct_pilot
 
 Provide sandbox recommendation if needed.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            regulatory_risk: { type: 'number' },
-            safety_risk: { type: 'number' },
-            public_impact_risk: { type: 'number' },
-            technical_risk: { type: 'number' },
-            overall_risk: { type: 'number' },
-            recommendation: { type: 'string' },
-            reasoning: { type: 'string' },
-            recommended_sandboxes: { 
-              type: 'array', 
-              items: { type: 'string' } 
-            }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          regulatory_risk: { type: 'number' },
+          safety_risk: { type: 'number' },
+          public_impact_risk: { type: 'number' },
+          technical_risk: { type: 'number' },
+          overall_risk: { type: 'number' },
+          recommendation: { type: 'string' },
+          reasoning: { type: 'string' },
+          recommended_sandboxes: { 
+            type: 'array', 
+            items: { type: 'string' } 
           }
         }
-      });
+      }
+    });
 
-      setRiskAssessment(result);
-    } catch (error) {
-      toast.error(t({ en: 'Risk assessment failed', ar: 'فشل تقييم المخاطر' }));
+    if (result.success) {
+      setRiskAssessment(result.data);
     }
-    setAnalyzing(false);
   };
 
   const routeToSandbox = async () => {
@@ -88,13 +86,14 @@ Provide sandbox recommendation if needed.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {!riskAssessment && (
           <div className="text-center py-6">
             <AlertTriangle className="h-12 w-12 text-orange-600 mx-auto mb-3" />
             <p className="text-sm text-slate-600 mb-4">
               {t({ en: 'AI will assess if this requires sandbox testing before deployment', ar: 'سيقوم الذكاء بتقييم ما إذا كان هذا يتطلب اختبار منطقة التجريب قبل النشر' })}
             </p>
-            <Button onClick={assessRisk} disabled={analyzing} className="gap-2">
+            <Button onClick={assessRisk} disabled={analyzing || !isAvailable} className="gap-2">
               {analyzing ? (
                 <>
                   <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />

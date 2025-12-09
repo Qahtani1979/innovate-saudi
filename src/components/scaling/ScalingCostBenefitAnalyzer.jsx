@@ -1,23 +1,22 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { DollarSign, Sparkles, Loader2, TrendingUp } from 'lucide-react';
+import { DollarSign, Sparkles, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ScalingCostBenefitAnalyzer({ pilot, targetMunicipalities }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [forecast, setForecast] = useState(null);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeCostBenefit = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Calculate cost-benefit analysis for scaling pilot:
+    const result = await invokeAI({
+      prompt: `Calculate cost-benefit analysis for scaling pilot:
 
 PILOT: ${pilot.title_en}
 - Current budget: ${pilot.budget}
@@ -31,42 +30,39 @@ For scaling to ${targetMunicipalities.length} cities, estimate:
 4. 3-year ROI
 5. Cost per municipality
 6. Benefit variance (best/worst case)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            total_cost: { type: "number" },
-            annual_benefit: { type: "number" },
-            break_even_months: { type: "number" },
-            three_year_roi: { type: "number" },
-            cost_per_municipality: { type: "number" },
-            benefit_variance: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          total_cost: { type: "number" },
+          annual_benefit: { type: "number" },
+          break_even_months: { type: "number" },
+          three_year_roi: { type: "number" },
+          cost_per_municipality: { type: "number" },
+          benefit_variance: {
+            type: "object",
+            properties: {
+              best_case: { type: "number" },
+              worst_case: { type: "number" }
+            }
+          },
+          cashflow_projection: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                best_case: { type: "number" },
-                worst_case: { type: "number" }
-              }
-            },
-            cashflow_projection: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  month: { type: "number" },
-                  cost: { type: "number" },
-                  benefit: { type: "number" }
-                }
+                month: { type: "number" },
+                cost: { type: "number" },
+                benefit: { type: "number" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setForecast(response);
+    if (result.success) {
+      setForecast(result.data);
       toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -78,7 +74,7 @@ For scaling to ${targetMunicipalities.length} cities, estimate:
             <DollarSign className="h-5 w-5 text-green-600" />
             {t({ en: 'AI Cost-Benefit Analyzer', ar: 'محلل التكلفة والعائد الذكي' })}
           </CardTitle>
-          <Button onClick={analyzeCostBenefit} disabled={analyzing} size="sm" className="bg-green-600">
+          <Button onClick={analyzeCostBenefit} disabled={analyzing || !isAvailable} size="sm" className="bg-green-600">
             {analyzing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -89,6 +85,7 @@ For scaling to ${targetMunicipalities.length} cities, estimate:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {!forecast && !analyzing && (
           <div className="text-center py-8">
             <DollarSign className="h-12 w-12 text-green-300 mx-auto mb-3" />
