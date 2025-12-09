@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { Network, Building2, Rocket, GraduationCap, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PartnershipNetwork() {
   const { language, isRTL, t } = useLanguage();
   const [aiSuggestions, setAiSuggestions] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -56,10 +58,8 @@ export default function PartnershipNetwork() {
   const totalCollaborations = collaborations.length;
 
   const generateAISuggestions = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze partnership network for Saudi municipal innovation and suggest new collaboration opportunities:
+    const response = await invokeAI({
+      prompt: `Analyze partnership network for Saudi municipal innovation and suggest new collaboration opportunities:
 
 Current Network:
 - Organizations: ${uniqueOrgs.length}
@@ -69,32 +69,30 @@ Current Network:
 
 Suggest 5 specific partnership opportunities in format:
 "[Org A] + [Org B] could collaborate on [Challenge/Opportunity]"`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            suggestions: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  partner1: { type: 'string' },
-                  partner2: { type: 'string' },
-                  opportunity_en: { type: 'string' },
-                  opportunity_ar: { type: 'string' },
-                  rationale_en: { type: 'string' },
-                  rationale_ar: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          suggestions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                partner1: { type: 'string' },
+                partner2: { type: 'string' },
+                opportunity_en: { type: 'string' },
+                opportunity_ar: { type: 'string' },
+                rationale_en: { type: 'string' },
+                rationale_ar: { type: 'string' }
               }
             }
           }
         }
-      });
-      setAiSuggestions(result.suggestions);
+      }
+    });
+
+    if (response.success && response.data?.suggestions) {
+      setAiSuggestions(response.data.suggestions);
       toast.success(t({ en: 'AI suggestions generated', ar: 'تم إنشاء الاقتراحات الذكية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate suggestions', ar: 'فشل إنشاء الاقتراحات' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -107,13 +105,14 @@ Suggest 5 specific partnership opportunities in format:
               <Network className="h-5 w-5" />
               {t({ en: 'Partnership Network', ar: 'شبكة الشراكات' })}
             </CardTitle>
-            <Button onClick={generateAISuggestions} disabled={loading} variant="outline">
-              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            <Button onClick={generateAISuggestions} disabled={isLoading || !isAvailable} variant="outline">
+              {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'AI Suggest', ar: 'اقتراح ذكي' })}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="p-4 bg-blue-50 rounded-lg text-center">
               <Building2 className="h-8 w-8 text-blue-600 mx-auto mb-2" />

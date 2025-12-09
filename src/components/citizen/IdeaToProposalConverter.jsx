@@ -9,11 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, FileText, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [proposalData, setProposalData] = useState({
     title_en: '',
     title_ar: '',
@@ -62,10 +64,8 @@ export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
   });
 
   const generateWithAI = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Convert this citizen idea into a structured innovation proposal.
+    const response = await invokeAI({
+      prompt: `Convert this citizen idea into a structured innovation proposal.
 
 IDEA:
 Title: ${idea.title || idea.title_en || idea.title_ar}
@@ -83,49 +83,46 @@ Generate a structured innovation proposal with:
 7. Success metrics (3-5 measurable outcomes)
 
 Be specific and actionable. Make it implementation-ready.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title_en: { type: "string" },
-            title_ar: { type: "string" },
-            description_en: { type: "string" },
-            description_ar: { type: "string" },
-            implementation_plan_en: { type: "string" },
-            implementation_plan_ar: { type: "string" },
-            budget_estimate: { type: "number" },
-            duration_weeks: { type: "number" },
-            team_composition: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  role_en: { type: "string" },
-                  role_ar: { type: "string" },
-                  count: { type: "number" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title_en: { type: "string" },
+          title_ar: { type: "string" },
+          description_en: { type: "string" },
+          description_ar: { type: "string" },
+          implementation_plan_en: { type: "string" },
+          implementation_plan_ar: { type: "string" },
+          budget_estimate: { type: "number" },
+          duration_weeks: { type: "number" },
+          team_composition: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                role_en: { type: "string" },
+                role_ar: { type: "string" },
+                count: { type: "number" }
               }
-            },
-            success_metrics_proposed: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  metric_en: { type: "string" },
-                  metric_ar: { type: "string" },
-                  target: { type: "string" }
-                }
+            }
+          },
+          success_metrics_proposed: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                metric_en: { type: "string" },
+                metric_ar: { type: "string" },
+                target: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setProposalData(response);
+    if (response.success && response.data) {
+      setProposalData(response.data);
       toast.success(t({ en: 'AI generated proposal', ar: 'تم توليد المقترح بالذكاء' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد الذكي' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -166,14 +163,16 @@ Be specific and actionable. Make it implementation-ready.`,
             <p className="text-xs text-slate-600 mt-1">{idea.description?.slice(0, 200)}...</p>
           </div>
 
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
           {/* AI Generate Button */}
           <Button
             onClick={generateWithAI}
-            disabled={generating}
+            disabled={isLoading || !isAvailable}
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
             size="lg"
           >
-            {generating ? (
+            {isLoading ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                 {t({ en: 'Generating Structured Proposal...', ar: 'توليد مقترح منظم...' })}
