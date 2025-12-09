@@ -6,13 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Activity, AlertTriangle, TrendingUp, Zap, Target, Loader2, Sparkles, Users } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function PipelineHealthDashboardPage() {
   const { language, isRTL, t } = useLanguage();
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-pipeline'],
@@ -83,10 +85,8 @@ function PipelineHealthDashboardPage() {
   ];
 
   const generateAIAnalysis = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this innovation pipeline health and provide recommendations:
+    const result = await invokeAI({
+      prompt: `Analyze this innovation pipeline health and provide recommendations:
 
 Pipeline stages: ${JSON.stringify(stages)}
 Conversion rate (Challenge→Pilot): ${conversionRate}%
@@ -98,21 +98,19 @@ Provide:
 2. Top 3 bottlenecks identified
 3. Recommended actions to improve flow
 4. Risk areas requiring attention`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            health_score: { type: 'number' },
-            bottlenecks: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'array', items: { type: 'string' } },
-            risks: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          health_score: { type: 'number' },
+          bottlenecks: { type: 'array', items: { type: 'string' } },
+          recommendations: { type: 'array', items: { type: 'string' } },
+          risks: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setAiAnalysis(result);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      }
+    });
+    
+    if (result.success) {
+      setAiAnalysis(result.data);
     }
   };
 
@@ -129,10 +127,13 @@ Provide:
             {t({ en: 'Monitor innovation pipeline flow and bottlenecks', ar: 'مراقبة تدفق خط الابتكار والاختناقات' })}
           </p>
         </div>
-        <Button onClick={generateAIAnalysis} disabled={loading} className="bg-purple-600">
-          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
-        </Button>
+        <div className="flex items-center gap-3">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          <Button onClick={generateAIAnalysis} disabled={loading || !isAvailable} className="bg-purple-600">
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
+          </Button>
+        </div>
       </div>
 
       {/* Health Score */}
