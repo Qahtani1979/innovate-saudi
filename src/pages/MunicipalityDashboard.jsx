@@ -5,9 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import QuickSolutionsMarketplace from '../components/municipalities/QuickSolutionsMarketplace';
 import MIIImprovementAI from '../components/municipalities/MIIImprovementAI';
 import PeerBenchmarkingTool from '../components/municipalities/PeerBenchmarkingTool';
+import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
+import ProfileCompletenessCoach from '../components/onboarding/ProfileCompletenessCoach';
+import ProgressiveProfilingPrompt from '../components/onboarding/ProgressiveProfilingPrompt';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
@@ -21,6 +25,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function MunicipalityDashboard() {
   const { language, isRTL, t } = useLanguage();
+  const { user: authUser, userProfile } = useAuth();
   const [user, setUser] = React.useState(null);
   const [showAIInsights, setShowAIInsights] = React.useState(false);
   const [aiInsights, setAiInsights] = React.useState(null);
@@ -353,6 +358,15 @@ Provide:
           </CardContent>
         </Card>
       )}
+
+      {/* Profile Completeness & First Action */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ProfileCompletenessCoach profile={userProfile} role="municipality_admin" />
+        <FirstActionRecommender user={{ role: 'municipality_admin', email: authUser?.email || user?.email || '' }} />
+      </div>
+
+      {/* Progressive Profiling Prompt */}
+      <ProgressiveProfilingPrompt />
 
       {/* Municipality AI Tools */}
       {myMunicipality && (
