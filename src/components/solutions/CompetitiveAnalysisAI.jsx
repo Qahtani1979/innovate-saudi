@@ -4,24 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CompetitiveAnalysisAI({ solution, allSolutions }) {
   const { language, isRTL, t } = useLanguage();
   const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const handleAnalyze = async () => {
-    setLoading(true);
-    try {
-      const competitors = allSolutions.filter(s => 
-        s.id !== solution.id && 
-        s.sectors?.some(sec => solution.sectors?.includes(sec))
-      ).slice(0, 5);
+    const competitors = allSolutions.filter(s => 
+      s.id !== solution.id && 
+      s.sectors?.some(sec => solution.sectors?.includes(sec))
+    ).slice(0, 5);
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Perform competitive analysis for this solution in BOTH English and Arabic:
+    const { success, data } = await invokeAI({
+      prompt: `Perform competitive analysis for this solution in BOTH English and Arabic:
 
 Solution: ${solution.name_en}
 Provider: ${solution.provider_name}
@@ -38,23 +36,21 @@ Provide bilingual analysis:
 3. Pricing competitiveness
 4. Target market fit
 5. Recommendations for improvement`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            positioning: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-            differentiators: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            pricing_analysis: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-            market_fit: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-            recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            competitive_score: { type: 'number' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          positioning: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
+          differentiators: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          pricing_analysis: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
+          market_fit: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
+          recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          competitive_score: { type: 'number' }
         }
-      });
-      setAnalysis(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate analysis', ar: 'فشل توليد التحليل' }));
-    } finally {
-      setLoading(false);
+      }
+    });
+
+    if (success) {
+      setAnalysis(data);
     }
   };
 
@@ -67,8 +63,9 @@ Provide bilingual analysis:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {!analysis ? (
-          <Button onClick={handleAnalyze} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700">
+          <Button onClick={handleAnalyze} disabled={loading || !isAvailable} className="w-full bg-purple-600 hover:bg-purple-700">
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
