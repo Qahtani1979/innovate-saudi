@@ -13,6 +13,31 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState({ public_settings: { requiresAuth: false } });
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
+  // Check if user needs onboarding and redirect
+  const checkOnboardingStatus = (profile) => {
+    if (!profile) return false;
+    
+    // User needs onboarding if onboarding_completed is explicitly false or null/undefined
+    const needsIt = profile.onboarding_completed !== true;
+    setNeedsOnboarding(needsIt);
+    
+    // Only redirect to onboarding if:
+    // 1. User needs onboarding
+    // 2. Not already on auth page or onboarding-related pages
+    const currentPath = window.location.pathname.toLowerCase();
+    const onboardingPaths = ['/auth', '/onboarding', '/startup-onboarding', '/municipality-staff-onboarding', 
+      '/researcher-onboarding', '/citizen-onboarding', '/expert-onboarding'];
+    const isOnOnboardingPage = onboardingPaths.some(p => currentPath.includes(p.toLowerCase()));
+    
+    if (needsIt && !isOnOnboardingPage) {
+      // Redirect to main onboarding wizard
+      window.location.href = '/onboarding';
+    }
+    
+    return needsIt;
+  };
 
   useEffect(() => {
     // Handle OAuth callback - check for tokens in URL hash
@@ -59,6 +84,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           setUserProfile(null);
           setUserRoles([]);
+          setNeedsOnboarding(false);
         }
       }
     );
@@ -141,6 +167,11 @@ export const AuthProvider = ({ children }) => {
       }
       
       setUserProfile(data);
+      
+      // Check if user needs onboarding after profile is fetched
+      if (data) {
+        checkOnboardingStatus(data);
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error);
     }
@@ -332,6 +363,7 @@ export const AuthProvider = ({ children }) => {
       isLoadingPublicSettings,
       authError,
       appPublicSettings,
+      needsOnboarding,
       login,
       signUp,
       signInWithGoogle,
