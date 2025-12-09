@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
-import { Sparkles, Users, Loader2, CheckCircle2, X, Calendar, Clock } from 'lucide-react';
+import { Sparkles, Users, Loader2, X, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function LivingLabExpertMatching({ lab, projectNeeds, onClose }) {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
-  const [matching, setMatching] = useState(false);
+  const { invokeAI, status, isLoading: matching, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [matches, setMatches] = useState(null);
   const [selectedExpert, setSelectedExpert] = useState(null);
   const [bookingDetails, setBookingDetails] = useState({
@@ -26,9 +28,7 @@ export default function LivingLabExpertMatching({ lab, projectNeeds, onClose }) 
   });
 
   const handleAIMatching = async () => {
-    setMatching(true);
-    try {
-      const prompt = `Match research experts with a project need at this Living Lab:
+    const prompt = `Match research experts with a project need at this Living Lab:
 
 Lab: ${lab.name_en}
 Type: ${lab.type}
@@ -54,30 +54,31 @@ MATCHING RULES:
 
 Return top 3 expert matches with scores and consultation recommendations.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            matches: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  expert_name: { type: 'string' },
-                  match_score: { type: 'number' },
-                  reasoning: { type: 'string' },
-                  suggested_topics: { type: 'array', items: { type: 'string' } },
-                  recommended_duration: { type: 'string' }
-                }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          matches: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                expert_name: { type: 'string' },
+                match_score: { type: 'number' },
+                reasoning: { type: 'string' },
+                suggested_topics: { type: 'array', items: { type: 'string' } },
+                recommended_duration: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       // Map to expert objects
-      const mappedMatches = result.matches.map(m => {
+      const mappedMatches = result.data.matches.map(m => {
         const expert = lab.expert_network?.find(e => e.name === m.expert_name);
         return {
           ...m,
@@ -87,10 +88,6 @@ Return top 3 expert matches with scores and consultation recommendations.`;
 
       setMatches(mappedMatches);
       toast.success(t({ en: 'Expert matches found', ar: 'تم العثور على خبراء مناسبين' }));
-    } catch (error) {
-      toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
-    } finally {
-      setMatching(false);
     }
   };
 
@@ -161,10 +158,12 @@ Saudi Innovates Platform`
           </p>
         </div>
 
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
         {!matches && !selectedExpert && (
           <Button
             onClick={handleAIMatching}
-            disabled={matching}
+            disabled={matching || !isAvailable}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
             {matching ? (

@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, TrendingUp, Users, Award, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIProgramSuccessPredictor({ program }) {
   const { t } = useLanguage();
   const [predictions, setPredictions] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeProgramSuccess = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this innovation program and predict its success metrics:
+    const result = await invokeAI({
+      prompt: `Analyze this innovation program and predict its success metrics:
 
 Program: ${program.name_en}
 Type: ${program.program_type}
@@ -29,27 +28,25 @@ Operator: ${program.operator_organization_id || 'N/A'}
 Previous Cohorts: ${program.cohort_number || 0}
 
 Predict success metrics with confidence scores:`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            graduation_rate: { type: 'number', description: 'Expected % completing program (0-100)' },
-            graduation_confidence: { type: 'number', description: 'Confidence 0-100' },
-            post_program_employment_rate: { type: 'number', description: 'Expected % employed/successful post-program (0-100)' },
-            employment_confidence: { type: 'number', description: 'Confidence 0-100' },
-            participant_satisfaction: { type: 'number', description: 'Expected satisfaction 1-10' },
-            satisfaction_confidence: { type: 'number', description: 'Confidence 0-100' },
-            key_success_factors: { type: 'array', items: { type: 'string' } },
-            risk_factors: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          graduation_rate: { type: 'number', description: 'Expected % completing program (0-100)' },
+          graduation_confidence: { type: 'number', description: 'Confidence 0-100' },
+          post_program_employment_rate: { type: 'number', description: 'Expected % employed/successful post-program (0-100)' },
+          employment_confidence: { type: 'number', description: 'Confidence 0-100' },
+          participant_satisfaction: { type: 'number', description: 'Expected satisfaction 1-10' },
+          satisfaction_confidence: { type: 'number', description: 'Confidence 0-100' },
+          key_success_factors: { type: 'array', items: { type: 'string' } },
+          risk_factors: { type: 'array', items: { type: 'string' } },
+          recommendations: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setPredictions(result);
+      }
+    });
+
+    if (result.success) {
+      setPredictions(result.data);
       toast.success(t({ en: 'Predictions generated', ar: 'تم توليد التنبؤات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate predictions', ar: 'فشل توليد التنبؤات' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -61,7 +58,7 @@ Predict success metrics with confidence scores:`,
             <Sparkles className="h-5 w-5" />
             {t({ en: 'AI Success Predictor', ar: 'متنبئ النجاح الذكي' })}
           </CardTitle>
-          <Button onClick={analyzeProgramSuccess} disabled={loading} size="sm">
+          <Button onClick={analyzeProgramSuccess} disabled={loading || !isAvailable} size="sm">
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -76,6 +73,7 @@ Predict success metrics with confidence scores:`,
           </Button>
         </div>
       </CardHeader>
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
       {predictions && (
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

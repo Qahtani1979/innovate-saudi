@@ -8,13 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, XCircle, AlertTriangle, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function StrategicPlanApprovalGate({ plan, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [decision, setDecision] = useState('');
   const [comments, setComments] = useState('');
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const queryClient = useQueryClient();
 
   const approvalMutation = useMutation({
@@ -33,10 +35,8 @@ export default function StrategicPlanApprovalGate({ plan, onClose }) {
   });
 
   const generateAIBrief = async () => {
-    setAnalyzing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this strategic plan and provide executive decision brief in BOTH English and Arabic:
+    const result = await invokeAI({
+      prompt: `Analyze this strategic plan and provide executive decision brief in BOTH English and Arabic:
 
 Plan: ${plan.name_en}
 Duration: ${plan.start_year} - ${plan.end_year}
@@ -50,25 +50,22 @@ Provide:
 2. Potential risks or gaps
 3. Feasibility assessment
 4. Recommendation (approve/revise/reject) with justification`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strengths: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            risks: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            feasibility_en: { type: 'string' },
-            feasibility_ar: { type: 'string' },
-            recommendation: { type: 'string' },
-            justification_en: { type: 'string' },
-            justification_ar: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          strengths: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          risks: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          feasibility_en: { type: 'string' },
+          feasibility_ar: { type: 'string' },
+          recommendation: { type: 'string' },
+          justification_en: { type: 'string' },
+          justification_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setAiAnalysis(result);
-    } catch (error) {
-      toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل الذكي' }));
-    } finally {
-      setAnalyzing(false);
+    if (result.success) {
+      setAiAnalysis(result.data);
     }
   };
 
@@ -129,7 +126,7 @@ Provide:
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <p className="font-semibold text-purple-900">{t({ en: 'AI Decision Brief', ar: 'ملخص القرار الذكي' })}</p>
-              <Button onClick={generateAIBrief} disabled={analyzing} size="sm" variant="outline">
+              <Button onClick={generateAIBrief} disabled={analyzing || !isAvailable} size="sm" variant="outline">
                 {analyzing ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
@@ -137,6 +134,7 @@ Provide:
                 )}
                 {t({ en: 'Generate', ar: 'إنشاء' })}
               </Button>
+              <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
             </div>
             {aiAnalysis && (
               <div className="space-y-3">
