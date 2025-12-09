@@ -151,11 +151,11 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
       const { error } = await supabase
         .from('role_requests')
         .insert({
+          user_id: user?.id,
           user_email: user?.email,
           requested_role: role,
           justification: justification,
-          status: 'pending',
-          requested_date: new Date().toISOString()
+          status: 'pending'
         });
       
       if (error) throw error;

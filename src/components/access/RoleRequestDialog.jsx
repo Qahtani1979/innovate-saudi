@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { UserPlus, Send, AlertCircle } from 'lucide-react';
 import {
   Dialog,
@@ -22,41 +23,74 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from 'sonner';
 
-export default function RoleRequestDialog({ open, onOpenChange, user, availableRoles }) {
-  const { t } = useLanguage();
+// Predefined role types for the platform
+const ROLE_OPTIONS = [
+  { id: 'municipality_staff', name: { en: 'Municipality Staff', ar: 'موظف بلدية' } },
+  { id: 'provider', name: { en: 'Solution Provider', ar: 'مزود حلول' } },
+  { id: 'researcher', name: { en: 'Researcher / Academic', ar: 'باحث / أكاديمي' } },
+  { id: 'expert', name: { en: 'Expert / Evaluator', ar: 'خبير / مقيّم' } },
+  { id: 'program_manager', name: { en: 'Program Manager', ar: 'مدير برنامج' } },
+  { id: 'pilot_manager', name: { en: 'Pilot Manager', ar: 'مدير تجربة' } },
+  { id: 'moderator', name: { en: 'Moderator', ar: 'مشرف' } },
+  { id: 'admin', name: { en: 'Administrator', ar: 'مسؤول' } },
+];
+
+export default function RoleRequestDialog({ open, onOpenChange, availableRoles }) {
+  const { t, language } = useLanguage();
+  const { user, userProfile } = useAuth();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
-    requested_role_id: '',
+    requested_role: '',
     justification: ''
   });
   const [rateLimitError, setRateLimitError] = useState(null);
   const [remainingRequests, setRemainingRequests] = useState(3);
 
+  const roleOptions = availableRoles || ROLE_OPTIONS;
+
   // Check rate limit on mount
-  React.useEffect(() => {
-    if (open && user?.email) {
-      base44.entities.RoleRequest.filter({
-        user_email: user.email,
-        requested_date: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() }
-      }).then(recentRequests => {
-        setRemainingRequests(3 - recentRequests.length);
-        if (recentRequests.length >= 3) {
-          setRateLimitError(t({ 
-            en: 'Maximum 3 role requests per 24 hours reached. Please try again tomorrow.', 
-            ar: 'تم الوصول إلى الحد الأقصى 3 طلبات في 24 ساعة. يرجى المحاولة غداً.' 
-          }));
-        }
-      });
-    }
-  }, [open, user?.email]);
+  useQuery({
+    queryKey: ['role-request-rate-limit', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return { count: 0 };
+      
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      const { data, error } = await supabase
+        .from('role_requests')
+        .select('id')
+        .eq('user_email', user.email)
+        .gte('created_at', twentyFourHoursAgo);
+      
+      if (error) throw error;
+      
+      const count = data?.length || 0;
+      setRemainingRequests(3 - count);
+      
+      if (count >= 3) {
+        setRateLimitError(t({ 
+          en: 'Maximum 3 role requests per 24 hours reached. Please try again tomorrow.', 
+          ar: 'تم الوصول إلى الحد الأقصى 3 طلبات في 24 ساعة. يرجى المحاولة غداً.' 
+        }));
+      }
+      
+      return { count };
+    },
+    enabled: open && !!user?.email,
+  });
 
   const createRequestMutation = useMutation({
     mutationFn: async (data) => {
       // Final rate limit check before submission
-      const recentRequests = await base44.entities.RoleRequest.filter({
-        user_email: user.email,
-        requested_date: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() }
-      });
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      const { data: recentRequests, error: checkError } = await supabase
+        .from('role_requests')
+        .select('id')
+        .eq('user_email', user.email)
+        .gte('created_at', twentyFourHoursAgo);
+      
+      if (checkError) throw checkError;
       
       if (recentRequests.length >= 3) {
         throw new Error(t({ 
@@ -65,13 +99,17 @@ export default function RoleRequestDialog({ open, onOpenChange, user, availableR
         }));
       }
 
-      return await base44.entities.RoleRequest.create({
-        user_email: user.email,
-        requested_role_id: data.requested_role_id,
-        justification: data.justification,
-        status: 'pending',
-        requested_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('role_requests')
+        .insert({
+          user_id: user?.id,
+          user_email: user?.email,
+          requested_role: data.requested_role,
+          justification: data.justification,
+          status: 'pending'
+        });
+      
+      if (error) throw error;
     },
     onError: (error) => {
       setRateLimitError(error.message);
@@ -79,15 +117,16 @@ export default function RoleRequestDialog({ open, onOpenChange, user, availableR
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['role-requests']);
+      queryClient.invalidateQueries(['role-request-rate-limit']);
       toast.success(t({ en: 'Role request submitted!', ar: 'تم إرسال طلب الدور!' }));
       onOpenChange(false);
-      setFormData({ requested_role_id: '', justification: '' });
+      setFormData({ requested_role: '', justification: '' });
       setRateLimitError(null);
     }
   });
 
   const handleSubmit = () => {
-    if (!formData.requested_role_id || !formData.justification) {
+    if (!formData.requested_role || !formData.justification) {
       toast.error(t({ en: 'Please fill all fields', ar: 'يرجى ملء جميع الحقول' }));
       return;
     }
@@ -113,18 +152,18 @@ export default function RoleRequestDialog({ open, onOpenChange, user, availableR
         </DialogHeader>
 
         {rateLimitError && (
-          <Alert className="bg-red-50 border-red-200">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
+          <Alert className="bg-destructive/10 border-destructive/20">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-destructive">
               {rateLimitError}
             </AlertDescription>
           </Alert>
         )}
 
         {!rateLimitError && remainingRequests < 3 && (
-          <Alert className="bg-amber-50 border-amber-200">
+          <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
             <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-800">
+            <AlertDescription className="text-amber-800 dark:text-amber-200">
               {t({ 
                 en: `${remainingRequests} request(s) remaining in the next 24 hours`, 
                 ar: `${remainingRequests} طلب متبقي في الـ 24 ساعة القادمة` 
@@ -139,17 +178,17 @@ export default function RoleRequestDialog({ open, onOpenChange, user, availableR
               {t({ en: 'Select Role', ar: 'اختر الدور' })}
             </label>
             <Select 
-              value={formData.requested_role_id} 
-              onValueChange={(v) => setFormData({ ...formData, requested_role_id: v })}
+              value={formData.requested_role} 
+              onValueChange={(v) => setFormData({ ...formData, requested_role: v })}
               disabled={remainingRequests <= 0}
             >
               <SelectTrigger>
                 <SelectValue placeholder={t({ en: 'Choose a role...', ar: 'اختر دوراً...' })} />
               </SelectTrigger>
               <SelectContent>
-                {availableRoles?.map((role) => (
+                {roleOptions.map((role) => (
                   <SelectItem key={role.id} value={role.id}>
-                    {role.name}
+                    {typeof role.name === 'object' ? role.name[language] : role.name}
                   </SelectItem>
                 ))}
               </SelectContent>
