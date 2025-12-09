@@ -2,23 +2,23 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Users, Sparkles, Loader2, BookOpen } from 'lucide-react';
+import { Users, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PeerMunicipalityLearningHub({ municipalityId, scalingPlan }) {
   const { language, t } = useLanguage();
-  const [finding, setFinding] = useState(false);
   const [peerMatches, setPeerMatches] = useState([]);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const findPeers = async () => {
-    setFinding(true);
     try {
       const municipalities = await base44.entities.Municipality.list();
       const currentMuni = municipalities.find(m => m.id === municipalityId);
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Find peer municipalities for knowledge sharing:
 
 CURRENT MUNICIPALITY: ${currentMuni?.name_en}
@@ -57,12 +57,12 @@ Find top 5 peer municipalities that:
         }
       });
 
-      setPeerMatches(response.peer_matches || []);
-      toast.success(t({ en: `${response.peer_matches?.length || 0} peers found`, ar: `${response.peer_matches?.length || 0} أقران وُجدوا` }));
+      if (result.success) {
+        setPeerMatches(result.data.peer_matches || []);
+        toast.success(t({ en: `${result.data.peer_matches?.length || 0} peers found`, ar: `${result.data.peer_matches?.length || 0} أقران وُجدوا` }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
-    } finally {
-      setFinding(false);
     }
   };
 
@@ -74,8 +74,8 @@ Find top 5 peer municipalities that:
             <Users className="h-5 w-5 text-indigo-600" />
             {t({ en: 'Peer Municipality Learning Hub', ar: 'مركز التعلم من البلديات النظيرة' })}
           </CardTitle>
-          <Button onClick={findPeers} disabled={finding} size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600">
-            {finding ? (
+          <Button onClick={findPeers} disabled={isLoading || !isAvailable} size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -85,7 +85,9 @@ Find top 5 peer municipalities that:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!peerMatches.length && !finding && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!peerMatches.length && !isLoading && (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

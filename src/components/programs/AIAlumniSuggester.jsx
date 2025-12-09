@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Award, Lightbulb, TestTube, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIAlumniSuggester({ program, applications }) {
   const { t } = useLanguage();
   const [suggestions, setSuggestions] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateSuggestions = async () => {
     const graduates = applications?.filter(a => a.status === 'accepted') || [];
@@ -20,10 +21,8 @@ export default function AIAlumniSuggester({ program, applications }) {
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze program graduates and suggest next steps:
+    const result = await invokeAI({
+      prompt: `Analyze program graduates and suggest next steps:
 
 Program: ${program.name_en}
 Type: ${program.program_type}
@@ -35,22 +34,20 @@ Based on program focus and graduate profiles, suggest:
 2. Which graduates should pilot their innovations
 3. Potential partnerships between graduates and municipalities
 4. Alumni who could mentor next cohort`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            solution_candidates: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, reason: { type: 'string' }, solution_potential: { type: 'string' } } } },
-            pilot_candidates: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, reason: { type: 'string' }, pilot_idea: { type: 'string' } } } },
-            partnership_opportunities: { type: 'array', items: { type: 'object', properties: { graduate: { type: 'string' }, municipality: { type: 'string' }, opportunity: { type: 'string' } } } },
-            mentor_candidates: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          solution_candidates: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, reason: { type: 'string' }, solution_potential: { type: 'string' } } } },
+          pilot_candidates: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, reason: { type: 'string' }, pilot_idea: { type: 'string' } } } },
+          partnership_opportunities: { type: 'array', items: { type: 'object', properties: { graduate: { type: 'string' }, municipality: { type: 'string' }, opportunity: { type: 'string' } } } },
+          mentor_candidates: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setSuggestions(result);
+      }
+    });
+
+    if (result.success) {
+      setSuggestions(result.data);
       toast.success(t({ en: 'Suggestions generated', ar: 'تم توليد الاقتراحات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate suggestions', ar: 'فشل توليد الاقتراحات' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -62,8 +59,8 @@ Based on program focus and graduate profiles, suggest:
             <Award className="h-5 w-5" />
             {t({ en: 'AI Alumni Suggester', ar: 'مقترح الخريجين الذكي' })}
           </CardTitle>
-          <Button onClick={generateSuggestions} disabled={loading} size="sm">
-            {loading ? (
+          <Button onClick={generateSuggestions} disabled={isLoading || !isAvailable} size="sm">
+            {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
@@ -76,6 +73,7 @@ Based on program focus and graduate profiles, suggest:
             )}
           </Button>
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
       </CardHeader>
       {suggestions && (
         <CardContent className="space-y-4">
