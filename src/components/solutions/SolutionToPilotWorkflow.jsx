@@ -9,11 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, TestTube, Loader2, CheckCircle2, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [selectedChallengeId, setSelectedChallengeId] = useState('');
   const [selectedMunicipalityId, setSelectedMunicipalityId] = useState('');
   const [pilotData, setPilotData] = useState({
@@ -62,12 +64,10 @@ export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }
       return;
     }
 
-    setGenerating(true);
-    try {
-      const challenge = challenges.find(c => c.id === selectedChallengeId);
-      
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Design a pilot to test this solution for a challenge.
+    const challenge = challenges.find(c => c.id === selectedChallengeId);
+    
+    const response = await invokeAI({
+      prompt: `Design a pilot to test this solution for a challenge.
 
 SOLUTION:
 Name: ${solution.name_en}
@@ -87,37 +87,34 @@ Generate pilot design:
 - Success KPIs (3-5 measurable metrics)
 - Test methodology
 - Budget estimate`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title_en: { type: "string" },
-            title_ar: { type: "string" },
-            hypothesis: { type: "string" },
-            objective_en: { type: "string" },
-            objective_ar: { type: "string" },
-            methodology: { type: "string" },
-            kpis: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name_en: { type: "string" },
-                  name_ar: { type: "string" },
-                  target: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title_en: { type: "string" },
+          title_ar: { type: "string" },
+          hypothesis: { type: "string" },
+          objective_en: { type: "string" },
+          objective_ar: { type: "string" },
+          methodology: { type: "string" },
+          kpis: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name_en: { type: "string" },
+                name_ar: { type: "string" },
+                target: { type: "string" }
               }
-            },
-            budget_estimate: { type: "number" }
-          }
+            }
+          },
+          budget_estimate: { type: "number" }
         }
-      });
+      }
+    });
 
-      setPilotData(response);
+    if (response.success) {
+      setPilotData(response.data);
       toast.success(t({ en: 'AI designed pilot', ar: 'تم تصميم التجربة' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -151,6 +148,8 @@ Generate pilot design:
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
           <div className="p-4 bg-teal-50 rounded-lg border border-teal-200">
             <p className="text-sm font-semibold text-teal-900 mb-1">
               {t({ en: 'Solution:', ar: 'الحل:' })}
@@ -196,7 +195,7 @@ Generate pilot design:
 
           <Button
             onClick={generateWithAI}
-            disabled={generating || !selectedChallengeId || !selectedMunicipalityId}
+            disabled={generating || !selectedChallengeId || !selectedMunicipalityId || !isAvailable}
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
             size="lg"
           >

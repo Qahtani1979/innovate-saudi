@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Globe, Award, Sparkles, Loader2 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function InternationalBenchmarkingSuite() {
   const { language, isRTL, t } = useLanguage();
   const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const benchmarkData = [
     { metric: 'MII Score', Saudi: 72, Dubai: 81, Singapore: 87, Barcelona: 79 },
@@ -22,10 +24,8 @@ function InternationalBenchmarkingSuite() {
   ];
 
   const generateBenchmarkAnalysis = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze Saudi innovation performance vs global leaders:
+    const response = await invokeAI({
+      prompt: `Analyze Saudi innovation performance vs global leaders:
 
 ${JSON.stringify(benchmarkData)}
 
@@ -34,22 +34,18 @@ Identify:
 2. Critical performance gaps
 3. Best practices from top performers
 4. Priority improvement areas`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strengths: { type: 'array', items: { type: 'string' } },
-            gaps: { type: 'array', items: { type: 'string' } },
-            best_practices: { type: 'array', items: { type: 'string' } },
-            priorities: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          strengths: { type: 'array', items: { type: 'string' } },
+          gaps: { type: 'array', items: { type: 'string' } },
+          best_practices: { type: 'array', items: { type: 'string' } },
+          priorities: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setAnalysis(result);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      }
+    });
+    if (response.success) {
+      setAnalysis(response.data);
     }
   };
 
@@ -64,11 +60,13 @@ Identify:
             {t({ en: 'Compare with global smart city leaders', ar: 'المقارنة مع قادة المدن الذكية العالميين' })}
           </p>
         </div>
-        <Button onClick={generateBenchmarkAnalysis} disabled={loading} className="bg-purple-600">
+        <Button onClick={generateBenchmarkAnalysis} disabled={loading || !isAvailable} className="bg-purple-600">
           {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'Generate Analysis', ar: 'توليد التحليل' })}
         </Button>
       </div>
+
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       {/* Radar Comparison */}
       <Card>
