@@ -16,7 +16,7 @@ import {
 import { motion } from 'framer-motion';
 
 function PublicPortal() {
-  const { language, isRTL, t } = useLanguage();
+  const { language, isRTL, t, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
 
   // Fetch public data using Supabase
@@ -148,6 +148,15 @@ function PublicPortal() {
             </div>
 
             <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleLanguage}
+                className="text-slate-600 gap-2"
+              >
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">{language === 'en' ? 'العربية' : 'English'}</span>
+              </Button>
               <Link to="/auth">
                 <Button variant="ghost" size="sm" className="text-slate-600">
                   <LogIn className="h-4 w-4 mr-2" />

@@ -12,12 +12,13 @@ export default function PublicHeader() {
 
   const navLinks = [
     { href: '/', label: t({ en: 'Home', ar: 'الرئيسية' }) },
-    { href: '/about', label: t({ en: 'About', ar: 'عن المنصة' }) },
+    { href: '/public/about', label: t({ en: 'About', ar: 'عن المنصة' }) },
     { href: '/public-challenges', label: t({ en: 'Challenges', ar: 'التحديات' }) },
     { href: '/public-solutions', label: t({ en: 'Solutions', ar: 'الحلول' }) },
-    { href: '/for-municipalities', label: t({ en: 'For Municipalities', ar: 'للبلديات' }) },
-    { href: '/for-providers', label: t({ en: 'For Providers', ar: 'للمزودين' }) },
-    { href: '/contact', label: t({ en: 'Contact', ar: 'تواصل' }) },
+    { href: '/public/for-municipalities', label: t({ en: 'For Municipalities', ar: 'للبلديات' }) },
+    { href: '/public/for-providers', label: t({ en: 'For Providers', ar: 'للمزودين' }) },
+    { href: '/public/faq', label: t({ en: 'FAQ', ar: 'الأسئلة الشائعة' }) },
+    { href: '/public/contact', label: t({ en: 'Contact', ar: 'تواصل' }) },
   ];
 
   const isActive = (href) => location.pathname === href;
