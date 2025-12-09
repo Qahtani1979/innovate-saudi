@@ -5,14 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { Sparkles, Loader2, TestTube, Microscope, Calendar, ShoppingCart, FileText } from 'lucide-react';
+import { Sparkles, Loader2, TestTube, Microscope, Calendar, ShoppingCart, FileText, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 
 export default function TrackAssignment({ challenge }) {
-  const { language, isRTL, t } = useLanguage();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
-  const [analyzing, setAnalyzing] = useState(false);
   const [suggestion, setSuggestion] = useState(null);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const trackIcons = {
     pilot: TestTube,
@@ -41,10 +47,8 @@ export default function TrackAssignment({ challenge }) {
   });
 
   const analyzeTrack = async () => {
-    setAnalyzing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this municipal challenge and recommend the best treatment track:
+    const { success, data } = await invokeAI({
+      prompt: `Analyze this municipal challenge and recommend the best treatment track:
 Title: ${challenge.title_en}
 Description: ${challenge.description_en}
 Severity Score: ${challenge.severity_score}
@@ -59,20 +63,19 @@ Tracks available:
 - none: No specific track
 
 Return JSON with: recommended_track, confidence (0-100), reasoning (array of strings)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommended_track: { type: 'string' },
-            confidence: { type: 'number' },
-            reasoning: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommended_track: { type: 'string' },
+          confidence: { type: 'number' },
+          reasoning: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setSuggestion(result);
-    } catch (error) {
-      toast.error('AI analysis failed');
+      }
+    });
+
+    if (success && data) {
+      setSuggestion(data);
     }
-    setAnalyzing(false);
   };
 
   const Icon = trackIcons[challenge.track] || Calendar;
@@ -80,12 +83,17 @@ Return JSON with: recommended_track, confidence (0-100), reasoning (array of str
   return (
     <Card className="bg-gradient-to-br from-blue-50 to-teal-50 border-blue-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Icon className="h-5 w-5 text-blue-600" />
-          {t({ en: 'Treatment Track', ar: 'مسار المعالجة' })}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Icon className="h-5 w-5 text-blue-600" />
+            {t({ en: 'Treatment Track', ar: 'مسار المعالجة' })}
+          </CardTitle>
+          <AIOptionalBadge />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails={true} />
+        
         <div className="flex items-center gap-3">
           <p className="text-sm text-slate-600">{t({ en: 'Current Track:', ar: 'المسار الحالي:' })}</p>
           <Badge className={trackColors[challenge.track || 'none']}>
@@ -95,17 +103,28 @@ Return JSON with: recommended_track, confidence (0-100), reasoning (array of str
 
         <Button
           onClick={analyzeTrack}
-          disabled={analyzing}
+          disabled={isLoading || !isAvailable}
           variant="outline"
           className="w-full"
         >
-          {analyzing ? (
+          {isLoading ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <Sparkles className="h-4 w-4 mr-2" />
           )}
-          {analyzing ? t({ en: 'Analyzing...', ar: 'جاري التحليل...' }) : t({ en: 'AI Recommend Track', ar: 'توصية ذكية بالمسار' })}
+          {isLoading ? t({ en: 'Analyzing...', ar: 'جاري التحليل...' }) : t({ en: 'AI Recommend Track', ar: 'توصية ذكية بالمسار' })}
         </Button>
+
+        {status === AI_STATUS.RATE_LIMITED && (
+          <div className="p-3 bg-muted rounded-lg border">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <p className="text-sm text-muted-foreground">
+                {t({ en: 'You can still assign a track manually using the buttons below.', ar: 'لا يزال بإمكانك تعيين مسار يدويًا باستخدام الأزرار أدناه.' })}
+              </p>
+            </div>
+          </div>
+        )}
 
         {suggestion && (
           <div className="p-4 bg-white rounded-lg border border-blue-200">

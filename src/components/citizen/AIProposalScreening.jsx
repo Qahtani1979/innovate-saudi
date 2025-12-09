@@ -4,18 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, CheckCircle2, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
+import { Sparkles, CheckCircle2, AlertTriangle, XCircle, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 
 export default function AIProposalScreening({ proposal, onScreeningComplete }) {
-  const [isScreening, setIsScreening] = useState(false);
   const [screeningResults, setScreeningResults] = useState(proposal.ai_pre_screening || null);
+  
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const runAIScreening = async () => {
-    setIsScreening(true);
-    try {
-      const aiResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: `AI Pre-Screen this Innovation Proposal for completeness and quality:
+    const { success, data } = await invokeAI({
+      prompt: `AI Pre-Screen this Innovation Proposal for completeness and quality:
 
 Title: ${proposal.title_en}
 Description: ${proposal.description_en}
@@ -38,67 +42,45 @@ Assess the following criteria:
 10. Auto Recommendation: approve_for_expert_review | request_clarification | reject_incomplete | merge_with_existing
 
 Provide structured assessment.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            proposal_completeness_score: { type: "number" },
-            feasibility_score: { type: "number" },
-            innovation_type_classification: { type: "string" },
-            budget_reasonability: { type: "boolean" },
-            budget_reasonability_score: { type: "number" },
-            team_adequacy: { type: "boolean" },
-            team_adequacy_score: { type: "number" },
-            strategic_alignment_preliminary: { type: "number" },
-            duplicate_check: { type: "boolean" },
-            auto_recommendation: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          proposal_completeness_score: { type: "number" },
+          feasibility_score: { type: "number" },
+          innovation_type_classification: { type: "string" },
+          budget_reasonability: { type: "boolean" },
+          budget_reasonability_score: { type: "number" },
+          team_adequacy: { type: "boolean" },
+          team_adequacy_score: { type: "number" },
+          strategic_alignment_preliminary: { type: "number" },
+          duplicate_check: { type: "boolean" },
+          auto_recommendation: { type: "string" }
         }
-      });
+      }
+    });
 
-      // Update proposal with screening results
-      await base44.entities.InnovationProposal.update(proposal.id, {
-        ai_pre_screening: aiResponse,
-        ai_evaluation_score: Math.round(
-          (aiResponse.proposal_completeness_score +
-           aiResponse.feasibility_score +
-           aiResponse.budget_reasonability_score +
-           aiResponse.team_adequacy_score +
-           aiResponse.strategic_alignment_preliminary) / 5
-        )
-      });
+    if (success && data) {
+      try {
+        // Update proposal with screening results
+        await base44.entities.InnovationProposal.update(proposal.id, {
+          ai_pre_screening: data,
+          ai_evaluation_score: Math.round(
+            (data.proposal_completeness_score +
+             data.feasibility_score +
+             data.budget_reasonability_score +
+             data.team_adequacy_score +
+             data.strategic_alignment_preliminary) / 5
+          )
+        });
 
-      setScreeningResults(aiResponse);
-      toast.success('AI screening complete');
-      onScreeningComplete?.(aiResponse);
-    } catch (error) {
-      toast.error('Screening failed: ' + error.message);
-    } finally {
-      setIsScreening(false);
+        setScreeningResults(data);
+        toast.success('AI screening complete');
+        onScreeningComplete?.(data);
+      } catch (updateError) {
+        toast.error('Failed to save screening results');
+      }
     }
   };
-
-  if (!screeningResults) {
-    return (
-      <Card className="border-2 border-purple-300">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-600" />
-            AI Pre-Screening Required
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-slate-600 mb-4">
-            Run AI screening to assess proposal completeness, feasibility, budget reasonability, and team adequacy.
-          </p>
-          <Button onClick={runAIScreening} disabled={isScreening} className="bg-purple-600">
-            {isScreening && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            <Sparkles className="h-4 w-4 mr-2" />
-            Run AI Screening
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const getStatusIcon = (score) => {
     if (score >= 70) return <CheckCircle2 className="h-5 w-5 text-green-600" />;
@@ -111,6 +93,46 @@ Provide structured assessment.`,
     if (score >= 40) return 'text-yellow-600';
     return 'text-red-600';
   };
+
+  if (!screeningResults) {
+    return (
+      <Card className="border-2 border-purple-300">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              AI Pre-Screening Required
+            </CardTitle>
+            <AIOptionalBadge />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails={true} />
+          
+          <p className="text-sm text-slate-600">
+            Run AI screening to assess proposal completeness, feasibility, budget reasonability, and team adequacy.
+          </p>
+          
+          <Button onClick={runAIScreening} disabled={isLoading || !isAvailable} className="bg-purple-600">
+            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Sparkles className="h-4 w-4 mr-2" />
+            Run AI Screening
+          </Button>
+
+          {status === AI_STATUS.RATE_LIMITED && (
+            <div className="p-3 bg-muted rounded-lg border">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <p className="text-sm text-muted-foreground">
+                  You can still review this proposal manually or wait for AI to become available.
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-2 border-purple-300 bg-purple-50">
@@ -207,8 +229,8 @@ Provide structured assessment.`,
           </div>
         )}
 
-        <Button onClick={runAIScreening} disabled={isScreening} variant="outline" size="sm">
-          {isScreening && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+        <Button onClick={runAIScreening} disabled={isLoading || !isAvailable} variant="outline" size="sm">
+          {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Re-run Screening
         </Button>
       </CardContent>
