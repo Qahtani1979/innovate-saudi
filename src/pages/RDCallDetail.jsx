@@ -25,6 +25,8 @@ import ReviewerAutoAssignment from '../components/ReviewerAutoAssignment';
 import CommitteeMeetingScheduler from '../components/CommitteeMeetingScheduler';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function RDCallDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -41,9 +43,9 @@ function RDCallDetailPage() {
   const [showAutoAssign, setShowAutoAssign] = useState(false);
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   React.useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -116,10 +118,8 @@ function RDCallDetailPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this R&D Call for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
+    const response = await invokeAI({
+      prompt: `Analyze this R&D Call for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Call: ${call.title_en}
 Type: ${call.call_type}
@@ -136,22 +136,19 @@ Provide bilingual insights (each item should have both English and Arabic versio
 3. Recommendations to attract quality proposals
 4. Potential collaboration opportunities with universities/research centers
 5. Risk factors and mitigation suggestions`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strategic_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            expected_impact: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            proposal_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            collaboration_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          strategic_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          expected_impact: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          proposal_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          collaboration_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+    if (response.success) {
+      setAiInsights(response.data);
     }
   };
 
@@ -326,6 +323,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
             </Button>
           </CardHeader>
           <CardContent>
+            <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} className="mb-4" />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-teal-600" />

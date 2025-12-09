@@ -4,15 +4,18 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, X, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [checking, setChecking] = useState(false);
   const [results, setResults] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const updateMutation = useMutation({
     mutationFn: async (data) => {
@@ -26,9 +29,7 @@ export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }
   });
 
   const runEligibilityCheck = async () => {
-    setChecking(true);
-    try {
-      const prompt = `Evaluate R&D proposal eligibility:
+    const prompt = `Evaluate R&D proposal eligibility:
 
 Proposal:
 - Institution: ${proposal.lead_institution}
@@ -51,33 +52,30 @@ Evaluate these criteria:
 
 Return structured check results.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            overall_eligible: { type: 'boolean' },
-            checks: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  criterion: { type: 'string' },
-                  passed: { type: 'boolean' },
-                  reason: { type: 'string' }
-                }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          overall_eligible: { type: 'boolean' },
+          checks: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                criterion: { type: 'string' },
+                passed: { type: 'boolean' },
+                reason: { type: 'string' }
               }
-            },
-            recommendation: { type: 'string' }
-          }
+            }
+          },
+          recommendation: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setResults(result);
-    } catch (error) {
-      toast.error(t({ en: 'Eligibility check failed', ar: 'فشل فحص الأهلية' }));
-    } finally {
-      setChecking(false);
+    if (response.success) {
+      setResults(response.data);
     }
   };
 
@@ -104,20 +102,22 @@ Return structured check results.`;
           <p className="text-xs text-slate-600 mt-1">{proposal.lead_institution}</p>
         </div>
 
-        {!results && !checking && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
+        {!results && !isLoading && (
           <div className="text-center py-8">
             <Sparkles className="h-12 w-12 text-blue-600 mx-auto mb-4" />
             <p className="text-sm text-slate-600 mb-4">
               {t({ en: 'AI will validate proposal against call eligibility criteria', ar: 'سيتحقق الذكاء الاصطناعي من المقترح مقابل معايير الأهلية' })}
             </p>
-            <Button onClick={runEligibilityCheck} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={runEligibilityCheck} disabled={!isAvailable} className="bg-blue-600 hover:bg-blue-700">
               <Sparkles className="h-4 w-4 mr-2" />
               {t({ en: 'Run Eligibility Check', ar: 'تشغيل فحص الأهلية' })}
             </Button>
           </div>
         )}
 
-        {checking && (
+        {isLoading && (
           <div className="text-center py-8">
             <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
             <p className="text-sm text-slate-600">

@@ -8,11 +8,13 @@ import { useLanguage } from '../components/LanguageContext';
 import { Cpu, Sparkles, TrendingUp, Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function TechnologyRoadmap() {
   const { language, isRTL, t } = useLanguage();
   const [aiRoadmap, setAiRoadmap] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -30,10 +32,8 @@ function TechnologyRoadmap() {
   });
 
   const generateRoadmap = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create a comprehensive technology adoption roadmap for Saudi municipal innovation:
+    const response = await invokeAI({
+      prompt: `Create a comprehensive technology adoption roadmap for Saudi municipal innovation:
 
 Current Technology Landscape:
 - Pilot Technologies: ${pilots.map(p => p.technology_stack?.map(t => t.technology).join(', ')).filter(Boolean).slice(0, 10).join('; ')}
@@ -50,73 +50,70 @@ Generate bilingual technology roadmap for municipal innovation (2025-2030):
 6. **Skills & Capacity Gaps** - Training needs for each tech
 
 Return detailed roadmap with timelines, sectors, and implementation guidance.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            emerging_tech: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  tech_name_en: { type: 'string' },
-                  tech_name_ar: { type: 'string' },
-                  sectors: { type: 'array', items: { type: 'string' } },
-                  use_cases_en: { type: 'string' },
-                  use_cases_ar: { type: 'string' },
-                  timeline: { type: 'string' },
-                  priority: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          emerging_tech: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                tech_name_en: { type: 'string' },
+                tech_name_ar: { type: 'string' },
+                sectors: { type: 'array', items: { type: 'string' } },
+                use_cases_en: { type: 'string' },
+                use_cases_ar: { type: 'string' },
+                timeline: { type: 'string' },
+                priority: { type: 'string' }
               }
-            },
-            maturing_tech: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  tech_name_en: { type: 'string' },
-                  tech_name_ar: { type: 'string' },
-                  current_stage: { type: 'string' },
-                  pilots_count: { type: 'number' },
-                  next_steps_en: { type: 'string' },
-                  next_steps_ar: { type: 'string' }
-                }
+            }
+          },
+          maturing_tech: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                tech_name_en: { type: 'string' },
+                tech_name_ar: { type: 'string' },
+                current_stage: { type: 'string' },
+                pilots_count: { type: 'number' },
+                next_steps_en: { type: 'string' },
+                next_steps_ar: { type: 'string' }
               }
-            },
-            mainstream_tech: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  tech_name_en: { type: 'string' },
-                  tech_name_ar: { type: 'string' },
-                  deployment_readiness: { type: 'string' },
-                  scaling_plan_en: { type: 'string' },
-                  scaling_plan_ar: { type: 'string' }
-                }
+            }
+          },
+          mainstream_tech: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                tech_name_en: { type: 'string' },
+                tech_name_ar: { type: 'string' },
+                deployment_readiness: { type: 'string' },
+                scaling_plan_en: { type: 'string' },
+                scaling_plan_ar: { type: 'string' }
               }
-            },
-            sector_tech_map: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  sector_en: { type: 'string' },
-                  sector_ar: { type: 'string' },
-                  priority_technologies: { type: 'array', items: { type: 'string' } },
-                  investment_recommendation: { type: 'string' }
-                }
+            }
+          },
+          sector_tech_map: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                sector_en: { type: 'string' },
+                sector_ar: { type: 'string' },
+                priority_technologies: { type: 'array', items: { type: 'string' } },
+                investment_recommendation: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setAiRoadmap(result);
+    if (response.success) {
+      setAiRoadmap(response.data);
       toast.success(t({ en: 'Technology roadmap generated', ar: 'تم إنشاء خارطة التقنية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل الإنشاء' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -148,11 +145,12 @@ Return detailed roadmap with timelines, sectors, and implementation guidance.`,
                 {t({ en: 'Analyze current technology landscape and generate adoption roadmap', ar: 'تحليل المشهد التقني الحالي وإنشاء خارطة الاعتماد' })}
               </p>
             </div>
-            <Button onClick={generateRoadmap} disabled={loading} className="bg-gradient-to-r from-blue-600 to-purple-600">
+            <Button onClick={generateRoadmap} disabled={loading || !isAvailable} className="bg-gradient-to-r from-blue-600 to-purple-600">
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'Generate Roadmap', ar: 'إنشاء خارطة' })}
             </Button>
           </div>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-4" />
         </CardContent>
       </Card>
 

@@ -14,6 +14,8 @@ import { Save, Loader2, Sparkles } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function LivingLabEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -21,7 +23,7 @@ function LivingLabEdit() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: lab, isLoading } = useQuery({
     queryKey: ['living-lab', labId],
@@ -41,10 +43,8 @@ function LivingLabEdit() {
   }, [lab]);
 
   const handleAIEnhancement = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Enhance this Living Lab content professionally:
+    const response = await invokeAI({
+      prompt: `Enhance this Living Lab content professionally:
         
 Lab: ${formData.name_en}
 Current Description: ${formData.description_en || 'N/A'}
@@ -54,25 +54,23 @@ Provide bilingual improvements:
 1. Enhanced tagline
 2. Improved description
 3. Refined objectives`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          objectives_en: { type: 'string' },
+          objectives_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setFormData({ ...formData, ...result });
+    if (response.success) {
+      setFormData({ ...formData, ...response.data });
       toast.success(t({ en: 'AI enhanced content', ar: 'حسّن الذكاء المحتوى' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
     }
-    setAiLoading(false);
   };
 
   const updateMutation = useMutation({
@@ -106,6 +104,8 @@ Provide bilingual improvements:
           <CardTitle>{t({ en: 'Lab Information', ar: 'معلومات المختبر' })}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Name (English)</Label>
@@ -293,7 +293,7 @@ Provide bilingual improvements:
             <Button 
               type="button" 
               onClick={handleAIEnhancement}
-              disabled={aiLoading}
+              disabled={aiLoading || !isAvailable}
               variant="outline"
               className="gap-2"
             >
