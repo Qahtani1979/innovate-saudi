@@ -5,15 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { TrendingUp, AlertTriangle, Sparkles, Target, Zap } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Sparkles, Target, Zap, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PredictiveForecastingDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [forecasts, setForecasts] = useState(null);
-  const [forecasting, setForecasting] = useState(false);
+  const { invokeAI, status, isLoading: forecasting, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -31,18 +33,16 @@ function PredictiveForecastingDashboard() {
   });
 
   const generateForecasts = async () => {
-    setForecasting(true);
-    try {
-      const currentMetrics = {
-        mii_avg: municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / municipalities.length,
-        pilot_count: pilots.length,
-        pilot_success_rate: pilots.filter(p => p.stage === 'scaled').length / pilots.length,
-        challenge_resolution_rate: challenges.filter(c => c.status === 'resolved').length / challenges.length,
-        active_pilots: pilots.filter(p => p.stage === 'active').length
-      };
+    const currentMetrics = {
+      mii_avg: municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / municipalities.length,
+      pilot_count: pilots.length,
+      pilot_success_rate: pilots.filter(p => p.stage === 'scaled').length / pilots.length,
+      challenge_resolution_rate: challenges.filter(c => c.status === 'resolved').length / challenges.length,
+      active_pilots: pilots.filter(p => p.stage === 'active').length
+    };
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Based on current trajectory, forecast key metrics for next 12, 24, and 36 months.
+    const result = await invokeAI({
+      prompt: `Based on current trajectory, forecast key metrics for next 12, 24, and 36 months.
 
 Current State:
 - Average MII Score: ${currentMetrics.mii_avg.toFixed(1)}
@@ -57,34 +57,31 @@ Predict realistic values for 12, 24, and 36 months ahead. Include:
 3. Challenge resolution rate
 4. Warnings if targets will be missed
 5. Intervention suggestions to improve trajectory`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            forecasts: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  months_ahead: { type: "number" },
-                  mii_score: { type: "number" },
-                  pilot_count: { type: "number" },
-                  challenge_resolution_rate: { type: "number" },
-                  confidence: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          forecasts: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                months_ahead: { type: "number" },
+                mii_score: { type: "number" },
+                pilot_count: { type: "number" },
+                challenge_resolution_rate: { type: "number" },
+                confidence: { type: "string" }
               }
-            },
-            warnings: { type: "array", items: { type: "string" } },
-            interventions: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          warnings: { type: "array", items: { type: "string" } },
+          interventions: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setForecasts(response);
+    if (result.success) {
+      setForecasts(result.data);
       toast.success(t({ en: 'Forecasts generated', ar: 'تم إنشاء التنبؤات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Forecast failed', ar: 'فشل التنبؤ' }));
-    } finally {
-      setForecasting(false);
     }
   };
 
@@ -111,11 +108,12 @@ Predict realistic values for 12, 24, and 36 months ahead. Include:
             {t({ en: 'ML-powered forecasting for strategic metrics', ar: 'التنبؤ المدعوم بالتعلم الآلي للمقاييس الاستراتيجية' })}
           </p>
         </div>
-        <Button onClick={generateForecasts} disabled={forecasting} className="bg-gradient-to-r from-purple-600 to-pink-600">
-          <Sparkles className="h-4 w-4 mr-2" />
+        <Button onClick={generateForecasts} disabled={forecasting || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
+          {forecasting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {forecasting ? t({ en: 'Forecasting...', ar: 'جاري التنبؤ...' }) : t({ en: 'Generate Forecasts', ar: 'توليد التنبؤات' })}
         </Button>
       </div>
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       {/* Current State */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

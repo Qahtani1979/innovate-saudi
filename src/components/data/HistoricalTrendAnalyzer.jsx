@@ -8,11 +8,13 @@ import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function HistoricalTrendAnalyzer({ entityType, metric }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [insights, setInsights] = useState(null);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: trends = [] } = useQuery({
     queryKey: ['trends', entityType, metric],
@@ -28,10 +30,8 @@ export default function HistoricalTrendAnalyzer({ entityType, metric }) {
   }));
 
   const analyzePattern = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze trend pattern:
+    const result = await invokeAI({
+      prompt: `Analyze trend pattern:
 
 METRIC: ${metric}
 DATA POINTS: ${trends.length}
@@ -43,24 +43,21 @@ Identify:
 3. Anomalies or inflection points
 4. Forecast for next quarter
 5. Recommendations based on trend`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            trend_direction: { type: "string" },
-            rate_of_change: { type: "string" },
-            anomalies: { type: "array", items: { type: "string" } },
-            forecast: { type: "string" },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          trend_direction: { type: "string" },
+          rate_of_change: { type: "string" },
+          anomalies: { type: "array", items: { type: "string" } },
+          forecast: { type: "string" },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setInsights(response);
+    if (result.success) {
+      setInsights(result.data);
       toast.success(t({ en: 'Analysis complete', ar: 'التحليل مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -72,7 +69,7 @@ Identify:
             <TrendingUp className="h-5 w-5 text-teal-600" />
             {t({ en: 'Trend Analysis', ar: 'تحليل الاتجاه' })}
           </CardTitle>
-          <Button onClick={analyzePattern} disabled={analyzing || trends.length < 3} size="sm" className="bg-teal-600">
+          <Button onClick={analyzePattern} disabled={analyzing || trends.length < 3 || !isAvailable} size="sm" className="bg-teal-600">
             {analyzing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -81,6 +78,7 @@ Identify:
             {t({ en: 'Analyze', ar: 'تحليل' })}
           </Button>
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
       </CardHeader>
       <CardContent className="pt-6">
         {chartData.length > 0 && (
