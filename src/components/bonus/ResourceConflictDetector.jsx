@@ -6,12 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { AlertCircle, Sparkles, Loader2, Users } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ResourceConflictDetector() {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [conflicts, setConflicts] = useState(null);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -29,15 +34,13 @@ export default function ResourceConflictDetector() {
   });
 
   const detectConflicts = async () => {
-    setAnalyzing(true);
-    try {
-      // Collect all resource allocations
-      const activePilots = pilots.filter(p => ['active', 'preparation'].includes(p.stage));
-      const activePrograms = programs.filter(p => p.status === 'active');
-      const activeRD = rdProjects.filter(r => r.status === 'active');
+    // Collect all resource allocations
+    const activePilots = pilots.filter(p => ['active', 'preparation'].includes(p.stage));
+    const activePrograms = programs.filter(p => p.status === 'active');
+    const activeRD = rdProjects.filter(r => r.status === 'active');
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze resource conflicts across platform:
+    const response = await invokeAI({
+      prompt: `Analyze resource conflicts across platform:
 
 ACTIVE PILOTS (${activePilots.length}):
 ${activePilots.slice(0, 5).map(p => 
@@ -59,54 +62,50 @@ Detect:
 2. Budget conflicts (municipality exceeding capacity)
 3. Timeline overlaps (same sandbox/lab double-booked)
 4. Expertise gaps (high-demand skills bottlenecks)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            team_conflicts: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  person: { type: "string" },
-                  assigned_to: { type: "array", items: { type: "string" } },
-                  severity: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          team_conflicts: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                person: { type: "string" },
+                assigned_to: { type: "array", items: { type: "string" } },
+                severity: { type: "string" }
               }
-            },
-            budget_conflicts: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  municipality: { type: "string" },
-                  total_allocated: { type: "number" },
-                  capacity: { type: "number" },
-                  overage: { type: "number" }
-                }
+            }
+          },
+          budget_conflicts: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                municipality: { type: "string" },
+                total_allocated: { type: "number" },
+                capacity: { type: "number" },
+                overage: { type: "number" }
               }
-            },
-            timeline_conflicts: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  resource: { type: "string" },
-                  overlapping_items: { type: "array", items: { type: "string" } },
-                  dates: { type: "string" }
-                }
+            }
+          },
+          timeline_conflicts: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                resource: { type: "string" },
+                overlapping_items: { type: "array", items: { type: "string" } },
+                dates: { type: "string" }
               }
-            },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setConflicts(response);
-      toast.success(t({ en: 'Conflicts detected', ar: 'كُشفت النزاعات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
+    if (response.success) {
+      setConflicts(response.data);
     }
   };
 
@@ -118,8 +117,8 @@ Detect:
             <AlertCircle className="h-5 w-5 text-red-600" />
             {t({ en: 'Resource Conflict Detector', ar: 'كاشف تعارض الموارد' })}
           </CardTitle>
-          <Button onClick={detectConflicts} disabled={analyzing} size="sm" className="bg-red-600">
-            {analyzing ? (
+          <Button onClick={detectConflicts} disabled={isLoading || !isAvailable} size="sm" className="bg-red-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -129,7 +128,9 @@ Detect:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!conflicts && !analyzing && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!conflicts && !isLoading && (
           <div className="text-center py-8">
             <AlertCircle className="h-12 w-12 text-red-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

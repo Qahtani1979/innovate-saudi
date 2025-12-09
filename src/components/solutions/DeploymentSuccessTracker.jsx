@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Target, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
+import { Target, Sparkles, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function DeploymentSuccessTracker({ solution }) {
   const { language, isRTL, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [prediction, setPrediction] = useState(null);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const deployments = solution.deployments || [];
   const avgSatisfaction = deployments.length > 0
@@ -21,10 +25,8 @@ export default function DeploymentSuccessTracker({ solution }) {
   const activeDeployments = deployments.filter(d => d.status === 'active').length;
 
   const predictRenewal = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Predict renewal probability for solution deployments:
+    const response = await invokeAI({
+      prompt: `Predict renewal probability for solution deployments:
 
 SOLUTION: ${solution.name_en}
 DEPLOYMENTS: ${deployments.length}
@@ -35,32 +37,28 @@ For each active deployment, predict:
 1. Renewal probability (0-100%)
 2. Key risk factors
 3. Actions to improve renewal likelihood`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            overall_renewal_probability: { type: "number" },
-            deployment_predictions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  client: { type: "string" },
-                  renewal_probability: { type: "number" },
-                  risk_factors: { type: "array", items: { type: "string" } },
-                  recommendations: { type: "array", items: { type: "string" } }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          overall_renewal_probability: { type: "number" },
+          deployment_predictions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                client: { type: "string" },
+                renewal_probability: { type: "number" },
+                risk_factors: { type: "array", items: { type: "string" } },
+                recommendations: { type: "array", items: { type: "string" } }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setPrediction(response);
-      toast.success(t({ en: 'Renewal prediction complete', ar: 'اكتمل توقع التجديد' }));
-    } catch (error) {
-      toast.error(t({ en: 'Prediction failed', ar: 'فشل التوقع' }));
-    } finally {
-      setAnalyzing(false);
+    if (response.success) {
+      setPrediction(response.data);
     }
   };
 
@@ -78,8 +76,8 @@ For each active deployment, predict:
             <Target className="h-5 w-5 text-teal-600" />
             {t({ en: 'Deployment Success Tracking', ar: 'تتبع نجاح النشر' })}
           </CardTitle>
-          <Button onClick={predictRenewal} disabled={analyzing} size="sm" className="bg-teal-600">
-            {analyzing ? (
+          <Button onClick={predictRenewal} disabled={isLoading || !isAvailable} size="sm" className="bg-teal-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -89,6 +87,8 @@ For each active deployment, predict:
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="grid grid-cols-3 gap-4">
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-center">
             <p className="text-2xl font-bold text-blue-600">{deployments.length}</p>

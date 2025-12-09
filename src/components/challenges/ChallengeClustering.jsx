@@ -9,11 +9,17 @@ import { Network, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeClustering() {
   const { language, isRTL, t } = useLanguage();
   const [clusters, setClusters] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
@@ -21,12 +27,10 @@ export default function ChallengeClustering() {
   });
 
   const analyzeClusters = async () => {
-    setAnalyzing(true);
-    try {
-      const activeChallenges = challenges.filter(c => c.status !== 'archived' && c.status !== 'resolved');
+    const activeChallenges = challenges.filter(c => c.status !== 'archived' && c.status !== 'resolved');
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze these ${activeChallenges.length} challenges and group them into meaningful clusters:
+    const response = await invokeAI({
+      prompt: `Analyze these ${activeChallenges.length} challenges and group them into meaningful clusters:
 
 ${activeChallenges.map((c, i) => `${i+1}. ${c.title_en || c.title_ar} - ${c.sector} - ${c.municipality_id}`).join('\n')}
 
@@ -36,33 +40,29 @@ Identify:
 3. Auto-generate tags for each cluster
 
 Return clusters with challenge IDs.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            clusters: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  theme: { type: "string" },
-                  challenge_ids: { type: "array", items: { type: "string" } },
-                  suggested_tags: { type: "array", items: { type: "string" } },
-                  mega_challenge_recommended: { type: "boolean" },
-                  mega_challenge_description: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          clusters: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                theme: { type: "string" },
+                challenge_ids: { type: "array", items: { type: "string" } },
+                suggested_tags: { type: "array", items: { type: "string" } },
+                mega_challenge_recommended: { type: "boolean" },
+                mega_challenge_description: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setClusters(response.clusters);
-      toast.success(t({ en: 'Clusters identified', ar: 'تم تحديد العناقيد' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
+    if (response.success && response.data?.clusters) {
+      setClusters(response.data.clusters);
     }
   };
 
@@ -94,8 +94,8 @@ Return clusters with challenge IDs.`,
               <Network className="h-5 w-5" />
               {t({ en: 'Challenge Clustering & Smart Grouping', ar: 'تجميع التحديات والتجميع الذكي' })}
             </CardTitle>
-            <Button onClick={analyzeClusters} disabled={analyzing} className="bg-gradient-to-r from-purple-600 to-pink-600">
-              {analyzing ? (
+            <Button onClick={analyzeClusters} disabled={isLoading || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
+              {isLoading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4 mr-2" />
@@ -105,7 +105,9 @@ Return clusters with challenge IDs.`,
           </div>
         </CardHeader>
         <CardContent>
-          {!clusters && !analyzing && (
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+          
+          {!clusters && !isLoading && (
             <div className="text-center py-12">
               <Network className="h-16 w-16 text-purple-300 mx-auto mb-4" />
               <p className="text-slate-600">
