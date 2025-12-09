@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Bell, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AINotificationRouter({ notification, userPreferences }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [routing, setRouting] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeAndRoute = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze notification and determine optimal routing:
+    const result = await invokeAI({
+      prompt: `Analyze notification and determine optimal routing:
 
 NOTIFICATION: ${notification.title} - ${notification.message}
 TYPE: ${notification.notification_type}
@@ -27,24 +26,21 @@ Determine:
 2. Delivery channels (email, sms, in_app, digest)
 3. Timing (immediate, scheduled, digest_only)
 4. Priority score (0-100)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            urgency: { type: "string" },
-            channels: { type: "array", items: { type: "string" } },
-            timing: { type: "string" },
-            priority: { type: "number" },
-            reasoning: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          urgency: { type: "string" },
+          channels: { type: "array", items: { type: "string" } },
+          timing: { type: "string" },
+          priority: { type: "number" },
+          reasoning: { type: "string" }
         }
-      });
+      }
+    });
 
-      setRouting(response);
+    if (result.success) {
+      setRouting(result.data);
       toast.success(t({ en: 'Routing analyzed', ar: 'التوجيه محلل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -63,8 +59,8 @@ Determine:
             <Bell className="h-5 w-5 text-indigo-600" />
             {t({ en: 'Smart Notification Router', ar: 'موجه الإشعارات الذكي' })}
           </CardTitle>
-          <Button onClick={analyzeAndRoute} disabled={analyzing} size="sm" className="bg-indigo-600">
-            {analyzing ? (
+          <Button onClick={analyzeAndRoute} disabled={isLoading || !isAvailable} size="sm" className="bg-indigo-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -74,7 +70,9 @@ Determine:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!routing && !analyzing && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!routing && !isLoading && (
           <div className="text-center py-8">
             <Bell className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

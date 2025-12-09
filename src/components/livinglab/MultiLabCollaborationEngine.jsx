@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Network, Sparkles, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function MultiLabCollaborationEngine({ currentLabId }) {
   const { language, t } = useLanguage();
-  const [finding, setFinding] = useState(false);
   const [opportunities, setOpportunities] = useState([]);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: labs = [] } = useQuery({
     queryKey: ['living-labs'],
@@ -21,10 +23,8 @@ export default function MultiLabCollaborationEngine({ currentLabId }) {
   const currentLab = labs.find(l => l.id === currentLabId);
 
   const findCollaborations = async () => {
-    setFinding(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Find collaboration opportunities between living labs:
+    const result = await invokeAI({
+      prompt: `Find collaboration opportunities between living labs:
 
 CURRENT LAB: ${currentLab?.name_en}
 - Focus: ${currentLab?.research_themes?.join(', ')}
@@ -40,32 +40,29 @@ Suggest top 5 collaboration opportunities:
 2. Expertise exchange (complementary research areas)
 3. Joint research projects
 4. Resource optimization`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            opportunities: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  partner_lab: { type: "string" },
-                  opportunity_type: { type: "string" },
-                  description: { type: "string" },
-                  benefit: { type: "string" },
-                  synergy_score: { type: "number" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          opportunities: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                partner_lab: { type: "string" },
+                opportunity_type: { type: "string" },
+                description: { type: "string" },
+                benefit: { type: "string" },
+                synergy_score: { type: "number" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setOpportunities(response.opportunities || []);
-      toast.success(t({ en: `${response.opportunities?.length || 0} opportunities found`, ar: `${response.opportunities?.length || 0} فرصة وُجدت` }));
-    } catch (error) {
-      toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
-    } finally {
-      setFinding(false);
+    if (result.success) {
+      setOpportunities(result.data.opportunities || []);
+      toast.success(t({ en: `${result.data.opportunities?.length || 0} opportunities found`, ar: `${result.data.opportunities?.length || 0} فرصة وُجدت` }));
     }
   };
 
@@ -77,8 +74,8 @@ Suggest top 5 collaboration opportunities:
             <Network className="h-5 w-5 text-indigo-600" />
             {t({ en: 'Multi-Lab Collaboration Finder', ar: 'باحث التعاون متعدد المختبرات' })}
           </CardTitle>
-          <Button onClick={findCollaborations} disabled={finding} size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600">
-            {finding ? (
+          <Button onClick={findCollaborations} disabled={isLoading || !isAvailable} size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -88,7 +85,9 @@ Suggest top 5 collaboration opportunities:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!opportunities.length && !finding && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!opportunities.length && !isLoading && (
           <div className="text-center py-8">
             <Network className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

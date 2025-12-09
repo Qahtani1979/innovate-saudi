@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Shield, Sparkles, Loader2, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIRegulatoryGapAnalyzer({ application }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeRegulatory = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze regulatory compliance for sandbox application:
+    const result = await invokeAI({
+      prompt: `Analyze regulatory compliance for sandbox application:
 
 PROJECT: ${application.project_name}
 SECTOR: ${application.sector}
@@ -29,34 +28,31 @@ Identify:
 3. Precedent cases from database
 4. Estimated approval timeline
 5. Risk level (low/medium/high)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            conflicts: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  regulation: { type: "string" },
-                  conflict_description: { type: "string" },
-                  severity: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          conflicts: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                regulation: { type: "string" },
+                conflict_description: { type: "string" },
+                severity: { type: "string" }
               }
-            },
-            required_exemptions: { type: "array", items: { type: "string" } },
-            precedents: { type: "array", items: { type: "string" } },
-            estimated_approval_weeks: { type: "number" },
-            risk_level: { type: "string" }
-          }
+            }
+          },
+          required_exemptions: { type: "array", items: { type: "string" } },
+          precedents: { type: "array", items: { type: "string" } },
+          estimated_approval_weeks: { type: "number" },
+          risk_level: { type: "string" }
         }
-      });
+      }
+    });
 
-      setAnalysis(response);
+    if (result.success) {
+      setAnalysis(result.data);
       toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -68,8 +64,8 @@ Identify:
             <Shield className="h-5 w-5 text-orange-600" />
             {t({ en: 'AI Regulatory Gap Analyzer', ar: 'محلل الفجوات التنظيمية الذكي' })}
           </CardTitle>
-          <Button onClick={analyzeRegulatory} disabled={analyzing} size="sm" className="bg-orange-600">
-            {analyzing ? (
+          <Button onClick={analyzeRegulatory} disabled={isLoading || !isAvailable} size="sm" className="bg-orange-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -79,7 +75,9 @@ Identify:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!analysis && !analyzing && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!analysis && !isLoading && (
           <div className="text-center py-8">
             <Shield className="h-12 w-12 text-orange-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

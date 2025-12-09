@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { MessageSquare, Sparkles, Loader2, TrendingUp, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PublicFeedbackAggregator({ municipalityId }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: feedback = [] } = useQuery({
     queryKey: ['public-feedback', municipalityId],
@@ -22,14 +24,12 @@ export default function PublicFeedbackAggregator({ municipalityId }) {
   });
 
   const aggregateAndAnalyze = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Aggregate and analyze public feedback:
+    const result = await invokeAI({
+      prompt: `Aggregate and analyze public feedback:
 
 TOTAL FEEDBACK: ${feedback.length}
 Sample: ${feedback.slice(0, 30).map(f => 
-  `[${f.feedback_type}] ${f.content.substring(0, 100)} - Sentiment: ${f.sentiment || 'N/A'}`
+  `[${f.feedback_type}] ${f.content?.substring(0, 100) || ''} - Sentiment: ${f.sentiment || 'N/A'}`
 ).join('\n')}
 
 Provide:
@@ -38,41 +38,38 @@ Provide:
 3. Geographic clusters (if location data available)
 4. Priority recommendations (what to address first)
 5. Trend analysis (increasing/decreasing concerns)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            themes: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  theme: { type: "string" },
-                  count: { type: "number" },
-                  priority: { type: "string" }
-                }
-              }
-            },
-            sentiment_breakdown: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          themes: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                positive: { type: "number" },
-                neutral: { type: "number" },
-                negative: { type: "number" }
+                theme: { type: "string" },
+                count: { type: "number" },
+                priority: { type: "string" }
               }
-            },
-            geographic_clusters: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } },
-            trend: { type: "string" }
-          }
+            }
+          },
+          sentiment_breakdown: {
+            type: "object",
+            properties: {
+              positive: { type: "number" },
+              neutral: { type: "number" },
+              negative: { type: "number" }
+            }
+          },
+          geographic_clusters: { type: "array", items: { type: "string" } },
+          recommendations: { type: "array", items: { type: "string" } },
+          trend: { type: "string" }
         }
-      });
+      }
+    });
 
-      setAnalysis(response);
+    if (result.success) {
+      setAnalysis(result.data);
       toast.success(t({ en: 'Analysis complete', ar: 'التحليل مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -84,8 +81,8 @@ Provide:
             <MessageSquare className="h-5 w-5 text-green-600" />
             {t({ en: 'Public Feedback Aggregator', ar: 'مجمع التغذية الراجعة العامة' })}
           </CardTitle>
-          <Button onClick={aggregateAndAnalyze} disabled={analyzing || feedback.length === 0} size="sm" className="bg-green-600">
-            {analyzing ? (
+          <Button onClick={aggregateAndAnalyze} disabled={isLoading || !isAvailable || feedback.length === 0} size="sm" className="bg-green-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -95,13 +92,15 @@ Provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="mb-4">
           <p className="text-sm text-slate-700">
             {t({ en: `Analyzing ${feedback.length} public feedback entries`, ar: `تحليل ${feedback.length} مدخلات من التغذية الراجعة` })}
           </p>
         </div>
 
-        {!analysis && !analyzing && (
+        {!analysis && !isLoading && (
           <div className="text-center py-8">
             <MessageSquare className="h-12 w-12 text-green-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

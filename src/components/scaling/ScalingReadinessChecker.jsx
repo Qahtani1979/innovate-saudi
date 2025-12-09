@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { Shield, CheckCircle2, AlertTriangle, Target, FileText, Users, DollarSign, Sparkles, Loader2 } from 'lucide-react';
+import { Shield, Target, FileText, Users, DollarSign, Sparkles, Loader2 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ScalingReadinessChecker({ pilot }) {
   const { language, isRTL, t } = useLanguage();
   const [readinessScore, setReadinessScore] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   useEffect(() => {
     if (pilot) {
@@ -19,26 +20,24 @@ export default function ScalingReadinessChecker({ pilot }) {
   }, [pilot?.id]);
 
   const calculateReadiness = async () => {
-    setLoading(true);
-    try {
-      // Calculate component scores
-      const kpiScore = calculateKPIScore(pilot);
-      const costModelScore = calculateCostModelScore(pilot);
-      const stakeholderScore = calculateStakeholderScore(pilot);
-      const documentationScore = calculateDocumentationScore(pilot);
-      const riskScore = calculateRiskScore(pilot);
+    // Calculate component scores
+    const kpiScore = calculateKPIScore(pilot);
+    const costModelScore = calculateCostModelScore(pilot);
+    const stakeholderScore = calculateStakeholderScore(pilot);
+    const documentationScore = calculateDocumentationScore(pilot);
+    const riskScore = calculateRiskScore(pilot);
 
-      const totalScore = Math.round(
-        kpiScore * 0.3 +
-        costModelScore * 0.2 +
-        stakeholderScore * 0.2 +
-        documentationScore * 0.15 +
-        riskScore * 0.15
-      );
+    const totalScore = Math.round(
+      kpiScore * 0.3 +
+      costModelScore * 0.2 +
+      stakeholderScore * 0.2 +
+      documentationScore * 0.15 +
+      riskScore * 0.15
+    );
 
-      // Get AI enhancement suggestions
-      const aiSuggestions = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this pilot's scaling readiness and provide specific improvement actions:
+    // Get AI enhancement suggestions
+    const result = await invokeAI({
+      prompt: `Analyze this pilot's scaling readiness and provide specific improvement actions:
 
 Pilot: ${pilot.title_en}
 Overall Readiness: ${totalScore}%
@@ -49,35 +48,39 @@ Overall Readiness: ${totalScore}%
 - Risk Mitigation: ${riskScore}%
 
 For each dimension below 80%, provide 2-3 specific actionable steps to improve.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            kpi_actions: { type: 'array', items: { type: 'string' } },
-            cost_actions: { type: 'array', items: { type: 'string' } },
-            stakeholder_actions: { type: 'array', items: { type: 'string' } },
-            documentation_actions: { type: 'array', items: { type: 'string' } },
-            risk_actions: { type: 'array', items: { type: 'string' } },
-            overall_recommendation: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          kpi_actions: { type: 'array', items: { type: 'string' } },
+          cost_actions: { type: 'array', items: { type: 'string' } },
+          stakeholder_actions: { type: 'array', items: { type: 'string' } },
+          documentation_actions: { type: 'array', items: { type: 'string' } },
+          risk_actions: { type: 'array', items: { type: 'string' } },
+          overall_recommendation: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setReadinessScore({
-        total: totalScore,
-        components: {
-          kpi: kpiScore,
-          cost: costModelScore,
-          stakeholder: stakeholderScore,
-          documentation: documentationScore,
-          risk: riskScore
-        },
-        actions: aiSuggestions
-      });
-    } catch (error) {
-      console.error('Readiness calculation failed:', error);
-    } finally {
-      setLoading(false);
-    }
+    const actions = result.success ? result.data : {
+      kpi_actions: [],
+      cost_actions: [],
+      stakeholder_actions: [],
+      documentation_actions: [],
+      risk_actions: [],
+      overall_recommendation: ''
+    };
+
+    setReadinessScore({
+      total: totalScore,
+      components: {
+        kpi: kpiScore,
+        cost: costModelScore,
+        stakeholder: stakeholderScore,
+        documentation: documentationScore,
+        risk: riskScore
+      },
+      actions
+    });
   };
 
   const calculateKPIScore = (p) => {
@@ -114,16 +117,17 @@ For each dimension below 80%, provide 2-3 specific actionable steps to improve.`
     return Math.round((mitigated / p.risks.length) * 100);
   };
 
-  if (loading || !readinessScore) {
+  if (isLoading || !readinessScore) {
     return (
       <Card className="border-2 border-blue-300">
         <CardContent className="pt-6">
-          {loading ? (
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+          {isLoading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-3" />
               <span>{t({ en: 'Calculating readiness...', ar: 'حساب الجاهزية...' })}</span>
             </div>
-          ) : null}
+          )}
         </CardContent>
       </Card>
     );
@@ -230,7 +234,7 @@ For each dimension below 80%, provide 2-3 specific actionable steps to improve.`
             {readinessLevel === 'conditional' && t({ en: '🟡 Address moderate gaps for optimal scaling', ar: '🟡 عالج الفجوات المتوسطة للتوسع الأمثل' })}
             {readinessLevel === 'ready' && t({ en: '🟢 Pilot meets scaling readiness criteria', ar: '🟢 التجربة تستوفي معايير جاهزية التوسع' })}
           </p>
-          <Button variant="outline" size="sm" onClick={calculateReadiness} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={calculateReadiness} disabled={isLoading || !isAvailable}>
             <Sparkles className="h-4 w-4 mr-2" />
             {t({ en: 'Refresh', ar: 'تحديث' })}
           </Button>
