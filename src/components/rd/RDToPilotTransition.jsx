@@ -10,11 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { TestTube, Sparkles, Loader2, AlertCircle, Microscope } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [aiGenerating, setAiGenerating] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
   const [pilotData, setPilotData] = useState({
     title_en: '',
@@ -47,9 +49,8 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
       return;
     }
 
-    setAiGenerating(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `You are a pilot design expert. Generate a pilot test plan from this R&D project:
 
 Research Title: ${rdProject.title_en}
@@ -93,17 +94,16 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
         }
       });
 
-      setPilotData(prev => ({
-        ...prev,
-        ...result,
-        municipality_id: selectedMunicipality
-      }));
-
-      toast.success(t({ en: 'AI generated pilot design', ar: 'تم إنشاء تصميم التجربة' }));
+      if (result.success && result.data) {
+        setPilotData(prev => ({
+          ...prev,
+          ...result.data,
+          municipality_id: selectedMunicipality
+        }));
+        toast.success(t({ en: 'AI generated pilot design', ar: 'تم إنشاء تصميم التجربة' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setAiGenerating(false);
     }
   };
 

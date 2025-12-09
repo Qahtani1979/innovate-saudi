@@ -36,6 +36,8 @@ import {
 } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ProgramsPage() {
   const { hasPermission, isAdmin } = usePermissions();
@@ -48,8 +50,9 @@ function ProgramsPage() {
   const [viewMode, setViewMode] = useState('grid');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const queryClient = useQueryClient();
+  
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: programs = [], isLoading } = useQuery({
     queryKey: ['programs'],
@@ -112,7 +115,6 @@ function ProgramsPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
     try {
       const programSummary = programs.slice(0, 15).map(p => ({
         name: p.name_en,
@@ -122,7 +124,7 @@ function ProgramsPage() {
         outcomes: p.outcomes
       }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze these innovation programs for Saudi municipalities and provide strategic insights in BOTH English AND Arabic:
 
 Programs: ${JSON.stringify(programSummary)}
@@ -150,11 +152,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
           }
         }
       });
-      setAiInsights(result);
+      if (result.success && result.data) {
+        setAiInsights(result.data);
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
