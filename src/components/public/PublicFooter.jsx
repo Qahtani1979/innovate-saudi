@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
-import { Building2, Mail, Phone, MapPin, Globe } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, Sparkles } from 'lucide-react';
 
 export default function PublicFooter() {
   const { language, isRTL, t } = useLanguage();
@@ -34,27 +34,29 @@ export default function PublicFooter() {
   };
 
   return (
-    <footer className="bg-muted/50 border-t">
+    <footer className="bg-slate-900 text-white">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-          {/* Brand Column */}
+          {/* Brand Column - Same logo as PublicPortal */}
           <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <Building2 className="h-8 w-8 text-primary" />
-              <span className="font-bold text-lg text-foreground">
-                {t({ en: 'Innovation Platform', ar: 'منصة الابتكار' })}
+            <Link to="/" className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-bold text-lg">
+                {t({ en: 'Saudi Innovates', ar: 'الابتكار السعودي' })}
               </span>
             </Link>
-            <p className="text-muted-foreground text-sm mb-6 max-w-sm">
+            <p className="text-slate-400 text-sm mb-6 max-w-sm">
               {t({ 
                 en: 'Empowering municipalities to innovate and deliver better services through smart solutions.', 
                 ar: 'تمكين البلديات من الابتكار وتقديم خدمات أفضل من خلال الحلول الذكية.' 
               })}
             </p>
-            <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="space-y-2 text-sm text-slate-400">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                <span>info@innovation-platform.sa</span>
+                <span>info@saudi-innovates.sa</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4" />
@@ -70,13 +72,13 @@ export default function PublicFooter() {
           {/* Links Columns */}
           {Object.values(footerLinks).map((section, index) => (
             <div key={index}>
-              <h3 className="font-semibold text-foreground mb-4">{section.title}</h3>
+              <h3 className="font-semibold text-white mb-4">{section.title}</h3>
               <ul className="space-y-2">
                 {section.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
                     <Link 
                       to={link.href} 
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      className="text-sm text-slate-400 hover:text-white transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -88,12 +90,12 @@ export default function PublicFooter() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} {t({ en: 'Innovation Platform. All rights reserved.', ar: 'منصة الابتكار. جميع الحقوق محفوظة.' })}
+        <div className="border-t border-slate-700 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-slate-500">
+            © {new Date().getFullYear()} {t({ en: 'Ministry of Municipal and Rural Affairs. All rights reserved.', ar: 'وزارة الشؤون البلدية والقروية. جميع الحقوق محفوظة.' })}
           </p>
           <div className="flex items-center gap-4">
-            <Link to="#" className="text-muted-foreground hover:text-foreground">
+            <Link to="#" className="text-slate-400 hover:text-white">
               <Globe className="h-5 w-5" />
             </Link>
           </div>

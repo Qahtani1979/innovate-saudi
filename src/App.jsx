@@ -20,6 +20,8 @@ import PublicForMunicipalities from './pages/public/ForMunicipalities';
 import PublicForProviders from './pages/public/ForProviders';
 import PublicChallenges from './pages/public/PublicChallenges';
 import PublicSolutions from './pages/public/PublicSolutions';
+import Privacy from './pages/public/Privacy';
+import Terms from './pages/public/Terms';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -85,6 +87,8 @@ const AuthenticatedApp = () => {
       <Route path="/for-providers" element={<PublicForProviders />} />
       <Route path="/public-challenges" element={<PublicChallenges />} />
       <Route path="/public-solutions" element={<PublicSolutions />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       
       {/* All other pages */}
       {Object.entries(Pages).map(([pageName, Page]) => {

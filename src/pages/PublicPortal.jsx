@@ -144,6 +144,12 @@ function PublicPortal() {
               <Link to="/for-municipalities" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
                 {t({ en: 'For Municipalities', ar: 'للبلديات' })}
               </Link>
+              <Link to="/for-providers" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'For Providers', ar: 'للمزودين' })}
+              </Link>
+              <Link to="/faq" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'FAQ', ar: 'الأسئلة الشائعة' })}
+              </Link>
               <Link to="/contact" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
                 {t({ en: 'Contact', ar: 'تواصل' })}
               </Link>
@@ -557,6 +563,12 @@ function PublicPortal() {
               </Link>
               <Link to="/faq" className="hover:text-white transition-colors">
                 {t({ en: 'FAQ', ar: 'الأسئلة الشائعة' })}
+              </Link>
+              <Link to="/privacy" className="hover:text-white transition-colors">
+                {t({ en: 'Privacy', ar: 'الخصوصية' })}
+              </Link>
+              <Link to="/terms" className="hover:text-white transition-colors">
+                {t({ en: 'Terms', ar: 'الشروط' })}
               </Link>
             </div>
             

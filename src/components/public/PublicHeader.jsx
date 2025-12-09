@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Building2, Globe, Menu, X } from 'lucide-react';
+import { Globe, Menu, Sparkles } from 'lucide-react';
 
 export default function PublicHeader() {
   const { language, isRTL, toggleLanguage, t } = useLanguage();
@@ -24,13 +24,15 @@ export default function PublicHeader() {
   const isActive = (href) => location.pathname === href;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-lg">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <Building2 className="h-8 w-8 text-primary" />
-          <span className="font-bold text-lg text-foreground hidden sm:inline">
-            {t({ en: 'Innovation Platform', ar: 'منصة الابتكار' })}
+        {/* Logo - Same as PublicPortal */}
+        <Link to="/" className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-white" />
+          </div>
+          <span className="font-bold text-xl text-slate-900 hidden sm:inline">
+            {t({ en: 'Saudi Innovates', ar: 'الابتكار السعودي' })}
           </span>
         </Link>
 
