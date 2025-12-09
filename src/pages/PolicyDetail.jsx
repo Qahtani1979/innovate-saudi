@@ -48,8 +48,6 @@ export default function PolicyDetail() {
   const [user, setUser] = useState(null);
   
   const { invokeAI, status: aiStatus, isLoading: isAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const [showAmendmentWizard, setShowAmendmentWizard] = useState(false);
-  const [user, setUser] = useState(null);
   const urlParams = new URLSearchParams(window.location.search);
   const policyId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
@@ -256,6 +254,7 @@ YOU MUST return this EXACT structure with bilingual text:
               }
             }
           }
+        }
     });
     
     if (result.success && result.data) {
