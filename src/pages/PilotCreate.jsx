@@ -374,7 +374,7 @@ function PilotCreatePage() {
         Return 8-12 specific, actionable safety protocol items in bilingual format (AR + EN).
       `;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -395,9 +395,13 @@ function PilotCreatePage() {
         }
       });
 
+      if (!result.success) {
+        throw new Error('AI generation failed');
+      }
+
       setFormData(prev => ({
         ...prev,
-        safety_protocols: result.safety_protocols || []
+        safety_protocols: result.data?.safety_protocols || []
       }));
 
       setSafetyChecklistGenerated(true);
@@ -454,7 +458,7 @@ function PilotCreatePage() {
         Ensure milestones are evenly distributed across the pilot duration.
       `;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -480,8 +484,12 @@ function PilotCreatePage() {
         }
       });
 
+      if (!result.success) {
+        throw new Error('AI generation failed');
+      }
+
       // Sort milestones by due date
-      const sortedMilestones = (result.milestones || []).sort((a, b) => 
+      const sortedMilestones = (result.data?.milestones || []).sort((a, b) => 
         new Date(a.due_date) - new Date(b.due_date)
       );
 
@@ -1148,10 +1156,9 @@ function PilotCreatePage() {
                         toast.error('Please select a challenge first');
                         return;
                       }
-                      setIsAIProcessing(true);
                       try {
                         const challenge = challenges.find(c => c.id === formData.challenge_id);
-                        const response = await base44.integrations.Core.InvokeLLM({
+                        const response = await invokeAI({
                           prompt: `Generate an optimal team composition for this pilot project:
 Challenge: ${challenge?.title_en}
 Sector: ${formData.sector}
@@ -1184,12 +1191,12 @@ Return as JSON array with: name (realistic Arabic name), role, organization (mun
                             }
                           }
                         });
-                        setFormData(prev => ({ ...prev, team: response.team }));
-                        toast.success('AI generated team structure');
+                        if (response.success) {
+                          setFormData(prev => ({ ...prev, team: response.data?.team }));
+                          toast.success('AI generated team structure');
+                        }
                       } catch (error) {
                         toast.error('Failed to generate team: ' + error.message);
-                      } finally {
-                        setIsAIProcessing(false);
                       }
                     }}
                     disabled={isAIProcessing || !formData.challenge_id}
@@ -1294,10 +1301,9 @@ Return as JSON array with: name (realistic Arabic name), role, organization (mun
                         toast.error('Please select a challenge first');
                         return;
                       }
-                      setIsAIProcessing(true);
                       try {
                         const challenge = challenges.find(c => c.id === formData.challenge_id);
-                        const response = await base44.integrations.Core.InvokeLLM({
+                        const response = await invokeAI({
                           prompt: `Identify key stakeholders for this municipal innovation pilot:
 Challenge: ${challenge?.title_en}
 Sector: ${formData.sector}
@@ -1329,12 +1335,12 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                             }
                           }
                         });
-                        setFormData(prev => ({ ...prev, stakeholders: response.stakeholders }));
-                        toast.success('AI mapped stakeholders');
+                        if (response.success) {
+                          setFormData(prev => ({ ...prev, stakeholders: response.data?.stakeholders }));
+                          toast.success('AI mapped stakeholders');
+                        }
                       } catch (error) {
                         toast.error('Failed to map stakeholders: ' + error.message);
-                      } finally {
-                        setIsAIProcessing(false);
                       }
                     }}
                     disabled={isAIProcessing || !formData.challenge_id}
@@ -1577,10 +1583,9 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         toast.error('Please describe the pilot first');
                         return;
                       }
-                      setIsAIProcessing(true);
                       try {
                         const solution = solutions.find(s => s.id === formData.solution_id);
-                        const response = await base44.integrations.Core.InvokeLLM({
+                        const response = await invokeAI({
                           prompt: `Recommend technology stack for this pilot:
 Description: ${formData.description_en}
 Solution: ${solution?.name_en || 'TBD'}
@@ -1613,12 +1618,12 @@ Return JSON with: category, technology, version, purpose`,
                             }
                           }
                         });
-                        setFormData(prev => ({ ...prev, technology_stack: response.technology_stack }));
-                        toast.success('✨ AI recommended tech stack');
+                        if (response.success) {
+                          setFormData(prev => ({ ...prev, technology_stack: response.data?.technology_stack }));
+                          toast.success('✨ AI recommended tech stack');
+                        }
                       } catch (error) {
                         toast.error('Failed: ' + error.message);
-                      } finally {
-                        setIsAIProcessing(false);
                       }
                     }}
                     disabled={isAIProcessing || !formData.description_en}
@@ -2255,9 +2260,8 @@ Return JSON with: category, technology, version, purpose`,
                       toast.error('Please set total budget and describe the pilot first');
                       return;
                     }
-                    setIsAIProcessing(true);
                     try {
-                      const response = await base44.integrations.Core.InvokeLLM({
+                      const response = await invokeAI({
                         prompt: `Optimize budget allocation for this pilot:
 Total Budget: ${formData.budget} ${formData.budget_currency}
 Description: ${formData.description_en}
@@ -2303,16 +2307,16 @@ Ensure total equals ${formData.budget}. Return JSON array with: category, amount
                           }
                         }
                       });
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        budget_breakdown: response.budget_breakdown,
-                        funding_sources: response.funding_sources 
-                      }));
-                      toast.success('AI optimized budget allocation');
+                      if (response.success) {
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          budget_breakdown: response.data?.budget_breakdown,
+                          funding_sources: response.data?.funding_sources 
+                        }));
+                        toast.success('AI optimized budget allocation');
+                      }
                     } catch (error) {
                       toast.error('Failed to optimize budget: ' + error.message);
-                    } finally {
-                      setIsAIProcessing(false);
                     }
                   }}
                   disabled={isAIProcessing || !formData.budget}
