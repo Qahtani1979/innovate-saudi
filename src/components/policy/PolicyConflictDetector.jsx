@@ -5,15 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { AlertCircle, Loader2, Shield, AlertTriangle } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+import { AlertCircle, Loader2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PolicyConflictDetector({ policy }) {
   const { language, isRTL, t } = useLanguage();
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [conflicts, setConflicts] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: allPolicies = [] } = useQuery({
     queryKey: ['all-policies'],
@@ -21,15 +21,13 @@ export default function PolicyConflictDetector({ policy }) {
   });
 
   const detectConflicts = async () => {
-    setIsAnalyzing(true);
-    try {
-      const activePolicies = allPolicies.filter(p => 
-        p.id !== policy.id && 
-        ['published', 'active', 'council_approval', 'ministry_approval'].includes(p.workflow_stage || p.status)
-      );
+    const activePolicies = allPolicies.filter(p => 
+      p.id !== policy.id && 
+      ['published', 'active', 'council_approval', 'ministry_approval'].includes(p.workflow_stage || p.status)
+    );
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a Saudi legal and policy expert. Analyze this policy for conflicts with existing policies.
+    const result = await invokeAI({
+      prompt: `You are a Saudi legal and policy expert. Analyze this policy for conflicts with existing policies.
 
 POLICY TO ANALYZE (ARABIC):
 Title: ${policy.title_ar}
@@ -51,64 +49,60 @@ Identify:
 4. Gaps (missing prerequisite policies)
 
 Return structured analysis in Arabic:`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            has_conflicts: { type: 'boolean' },
-            direct_conflicts: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  policy_title: { type: 'string' },
-                  conflict_type: { type: 'string' },
-                  description: { type: 'string' },
-                  severity: { type: 'string', enum: ['high', 'medium', 'low'] }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          has_conflicts: { type: 'boolean' },
+          direct_conflicts: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                policy_title: { type: 'string' },
+                conflict_type: { type: 'string' },
+                description: { type: 'string' },
+                severity: { type: 'string', enum: ['high', 'medium', 'low'] }
               }
-            },
-            overlaps: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  policy_title: { type: 'string' },
-                  overlap_area: { type: 'string' }
-                }
-              }
-            },
-            dependencies: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  policy_needed: { type: 'string' },
-                  reason: { type: 'string' }
-                }
-              }
-            },
-            recommendations: {
-              type: 'array',
-              items: { type: 'string' }
             }
+          },
+          overlaps: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                policy_title: { type: 'string' },
+                overlap_area: { type: 'string' }
+              }
+            }
+          },
+          dependencies: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                policy_needed: { type: 'string' },
+                reason: { type: 'string' }
+              }
+            }
+          },
+          recommendations: {
+            type: 'array',
+            items: { type: 'string' }
           }
         }
-      });
+      }
+    });
 
-      setConflicts(result);
-      
-      if (result.has_conflicts && result.direct_conflicts?.length > 0) {
+    if (result.success) {
+      setConflicts(result.data);
+      if (result.data.has_conflicts && result.data.direct_conflicts?.length > 0) {
         toast.warning(t({ 
-          en: `Found ${result.direct_conflicts.length} potential conflicts`, 
-          ar: `تم العثور على ${result.direct_conflicts.length} تعارضات محتملة` 
+          en: `Found ${result.data.direct_conflicts.length} potential conflicts`, 
+          ar: `تم العثور على ${result.data.direct_conflicts.length} تعارضات محتملة` 
         }));
       } else {
         toast.success(t({ en: 'No conflicts detected', ar: 'لم يتم اكتشاف تعارضات' }));
       }
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -122,12 +116,12 @@ Return structured analysis in Arabic:`,
           </CardTitle>
           <Button
             onClick={detectConflicts}
-            disabled={isAnalyzing}
+            disabled={isLoading || !isAvailable}
             size="sm"
             variant="outline"
             className="gap-2"
           >
-            {isAnalyzing ? (
+            {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Shield className="h-4 w-4" />
@@ -137,6 +131,8 @@ Return structured analysis in Arabic:`,
         </div>
       </CardHeader>
       <CardContent>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
         {!conflicts ? (
           <div className="text-center py-8">
             <AlertCircle className="h-12 w-12 text-slate-300 mx-auto mb-3" />
@@ -146,7 +142,6 @@ Return structured analysis in Arabic:`,
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Direct Conflicts */}
             {conflicts.direct_conflicts?.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-red-900 mb-2">
@@ -177,7 +172,6 @@ Return structured analysis in Arabic:`,
               </div>
             )}
 
-            {/* Overlaps */}
             {conflicts.overlaps?.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-amber-900 mb-2">
@@ -194,7 +188,6 @@ Return structured analysis in Arabic:`,
               </div>
             )}
 
-            {/* Dependencies */}
             {conflicts.dependencies?.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-blue-900 mb-2">
@@ -211,7 +204,6 @@ Return structured analysis in Arabic:`,
               </div>
             )}
 
-            {/* Recommendations */}
             {conflicts.recommendations?.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-green-900 mb-2">

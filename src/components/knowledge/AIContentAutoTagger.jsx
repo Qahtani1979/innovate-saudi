@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Tags, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIContentAutoTagger({ document, onTagsGenerated }) {
   const { language, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateTags = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze document and suggest metadata tags:
+    const result = await invokeAI({
+      prompt: `Analyze document and suggest metadata tags:
 
 TITLE: ${document.title_en || document.title}
 CONTENT: ${(document.content_en || document.content || '').substring(0, 500)}
@@ -28,27 +27,24 @@ Extract:
 3. Categories (best_practice, case_study, guide, template, etc.)
 4. Related entities (mention Challenge codes, Pilot codes, municipalities)
 5. Topics/themes`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            sector: { type: "string" },
-            keywords: { type: "array", items: { type: "string" } },
-            categories: { type: "array", items: { type: "string" } },
-            related_entity_codes: { type: "array", items: { type: "string" } },
-            themes: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          sector: { type: "string" },
+          keywords: { type: "array", items: { type: "string" } },
+          categories: { type: "array", items: { type: "string" } },
+          related_entity_codes: { type: "array", items: { type: "string" } },
+          themes: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setSuggestedTags(response);
+    if (result.success) {
+      setSuggestedTags(result.data);
       if (onTagsGenerated) {
-        onTagsGenerated(response);
+        onTagsGenerated(result.data);
       }
       toast.success(t({ en: 'Tags generated', ar: 'الوسوم أُنشئت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -60,8 +56,8 @@ Extract:
             <Tags className="h-5 w-5 text-green-600" />
             {t({ en: 'AI Auto-Tagger', ar: 'الوسم التلقائي الذكي' })}
           </CardTitle>
-          <Button onClick={generateTags} disabled={generating} size="sm" className="bg-green-600">
-            {generating ? (
+          <Button onClick={generateTags} disabled={isLoading || !isAvailable} size="sm" className="bg-green-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -71,7 +67,9 @@ Extract:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!suggestedTags && !generating && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
+        {!suggestedTags && !isLoading && (
           <div className="text-center py-8">
             <Tags className="h-12 w-12 text-green-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

@@ -1,53 +1,48 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function MIIForecastingEngine({ municipalityId }) {
   const { language, t } = useLanguage();
-  const [forecasting, setForecasting] = useState(false);
   const [forecast, setForecast] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateForecast = async () => {
-    setForecasting(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Forecast MII score for next 12 months based on:
+    const result = await invokeAI({
+      prompt: `Forecast MII score for next 12 months based on:
 - Current score: 68
 - Active pilots: 5
 - Planned investments: Infrastructure upgrade, 2 new programs
 - Historical trend: +3 points/year
 
 Provide monthly forecast with reasoning.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            forecasts: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  month: { type: "string" },
-                  score: { type: "number" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          forecasts: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                month: { type: "string" },
+                score: { type: "number" }
               }
-            },
-            drivers: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          drivers: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setForecast(response);
+    if (result.success) {
+      setForecast(result.data);
       toast.success(t({ en: 'Forecast generated', ar: 'التنبؤ مُولد' }));
-    } catch (error) {
-      toast.error(t({ en: 'Forecast failed', ar: 'فشل التنبؤ' }));
-    } finally {
-      setForecasting(false);
     }
   };
 
@@ -59,13 +54,15 @@ Provide monthly forecast with reasoning.`,
             <TrendingUp className="h-5 w-5 text-blue-600" />
             {t({ en: 'MII Forecasting', ar: 'التنبؤ بالمؤشر' })}
           </CardTitle>
-          <Button onClick={generateForecast} disabled={forecasting} size="sm" className="bg-blue-600">
-            {forecasting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          <Button onClick={generateForecast} disabled={isLoading || !isAvailable} size="sm" className="bg-blue-600">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Forecast', ar: 'تنبؤ' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
         {forecast && (
           <div className="space-y-4">
             <ResponsiveContainer width="100%" height={200}>
