@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Target, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function MIIImprovementPlanner({ municipalityId, currentScore }) {
   const { language, t } = useLanguage();
-  const [planning, setPlanning] = useState(false);
   const [plan, setPlan] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generatePlan = async () => {
-    setPlanning(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create MII improvement plan:
+    const result = await invokeAI({
+      prompt: `Create MII improvement plan:
 
 Current Score: ${currentScore}
 Target: +10 points in 12 months
@@ -25,22 +23,19 @@ Recommend:
 1. Quick wins (low effort, high impact)
 2. Strategic initiatives (high effort, high impact)
 3. Timeline and priorities`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            quick_wins: { type: "array", items: { type: "string" } },
-            strategic: { type: "array", items: { type: "string" } },
-            timeline: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          quick_wins: { type: "array", items: { type: "string" } },
+          strategic: { type: "array", items: { type: "string" } },
+          timeline: { type: "string" }
         }
-      });
+      }
+    });
 
-      setPlan(response);
+    if (result.success) {
+      setPlan(result.data);
       toast.success(t({ en: 'Plan generated', ar: 'الخطة مُولدت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Planning failed', ar: 'فشل التخطيط' }));
-    } finally {
-      setPlanning(false);
     }
   };
 
@@ -52,13 +47,15 @@ Recommend:
             <Target className="h-5 w-5 text-green-600" />
             {t({ en: 'MII Improvement Planner', ar: 'مخطط تحسين المؤشر' })}
           </CardTitle>
-          <Button onClick={generatePlan} disabled={planning} size="sm" className="bg-green-600">
-            {planning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          <Button onClick={generatePlan} disabled={isLoading || !isAvailable} size="sm" className="bg-green-600">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Generate', ar: 'توليد' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {plan && (
           <div className="space-y-3">
             <div className="p-3 bg-green-50 rounded border-2 border-green-200">

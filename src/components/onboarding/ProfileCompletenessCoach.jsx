@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,11 +6,13 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Target, Sparkles, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProfileCompletenessCoach({ profile, role }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const requiredFields = {
     municipality_admin: ['bio_en', 'title_en', 'organization_id', 'expertise_areas'],
@@ -25,10 +26,8 @@ export default function ProfileCompletenessCoach({ profile, role }) {
   const completeness = Math.round((filledFields.length / fields.length) * 100);
 
   const getSuggestions = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Provide profile completion suggestions:
+    const result = await invokeAI({
+      prompt: `Provide profile completion suggestions:
 
 ROLE: ${role}
 CURRENT PROFILE: ${JSON.stringify(profile || {})}
@@ -39,31 +38,28 @@ Suggest:
 2. Why each field matters
 3. Example content for each field
 4. Priority ranking`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            suggestions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  field: { type: "string" },
-                  importance: { type: "string" },
-                  impact_description: { type: "string" },
-                  example: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          suggestions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                field: { type: "string" },
+                importance: { type: "string" },
+                impact_description: { type: "string" },
+                example: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setSuggestions(response.suggestions || []);
+    if (result.success) {
+      setSuggestions(result.data.suggestions || []);
       toast.success(t({ en: 'Suggestions generated', ar: 'الاقتراحات أُنشئت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -86,6 +82,8 @@ Suggest:
       </CardHeader>
       <CardContent className="pt-6">
         <div className="space-y-4">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+          
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-slate-600">
@@ -97,8 +95,8 @@ Suggest:
           </div>
 
           {completeness < 100 && !suggestions.length && (
-            <Button onClick={getSuggestions} disabled={analyzing} className="w-full bg-gradient-to-r from-purple-600 to-pink-600">
-              {analyzing ? (
+            <Button onClick={getSuggestions} disabled={isLoading || !isAvailable} className="w-full bg-gradient-to-r from-purple-600 to-pink-600">
+              {isLoading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4 mr-2" />

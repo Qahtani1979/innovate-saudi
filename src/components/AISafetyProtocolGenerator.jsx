@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from './LanguageContext';
 import { Sparkles, Shield, Loader2, Copy, Download } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AISafetyProtocolGenerator({ projectData, sandbox, onGenerated }) {
   const { language, isRTL, t } = useLanguage();
   const [protocol, setProtocol] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const generateMutation = useMutation({
-    mutationFn: async () => {
-      const prompt = `Generate comprehensive safety protocols for this sandbox project:
+  const generateProtocol = async () => {
+    const prompt = `Generate comprehensive safety protocols for this sandbox project:
 
 Project: ${projectData.project_title}
 Description: ${projectData.project_description}
@@ -37,53 +37,51 @@ Create detailed safety protocols including:
 
 Format as structured document with sections.`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            public_safety_measures: {
-              type: "array",
-              items: { type: "string" }
-            },
-            emergency_response: {
-              type: "array",
-              items: { type: "string" }
-            },
-            monitoring_requirements: {
-              type: "array",
-              items: { type: "string" }
-            },
-            risk_mitigation: {
-              type: "array",
-              items: { type: "string" }
-            },
-            incident_response: {
-              type: "array",
-              items: { type: "string" }
-            },
-            communication_plan: { type: "string" },
-            equipment_standards: {
-              type: "array",
-              items: { type: "string" }
-            },
-            personnel_training: {
-              type: "array",
-              items: { type: "string" }
-            },
-            review_schedule: { type: "string" },
-            full_document: { type: "string", description: "Complete formatted document" }
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          public_safety_measures: {
+            type: "array",
+            items: { type: "string" }
+          },
+          emergency_response: {
+            type: "array",
+            items: { type: "string" }
+          },
+          monitoring_requirements: {
+            type: "array",
+            items: { type: "string" }
+          },
+          risk_mitigation: {
+            type: "array",
+            items: { type: "string" }
+          },
+          incident_response: {
+            type: "array",
+            items: { type: "string" }
+          },
+          communication_plan: { type: "string" },
+          equipment_standards: {
+            type: "array",
+            items: { type: "string" }
+          },
+          personnel_training: {
+            type: "array",
+            items: { type: "string" }
+          },
+          review_schedule: { type: "string" },
+          full_document: { type: "string", description: "Complete formatted document" }
         }
-      });
+      }
+    });
 
-      return response;
-    },
-    onSuccess: (data) => {
-      setProtocol(data);
+    if (result.success) {
+      setProtocol(result.data);
       toast.success(t({ en: 'Safety protocol generated', ar: 'تم إنشاء بروتوكول السلامة' }));
     }
-  });
+  };
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(protocol.full_document);
@@ -105,14 +103,16 @@ Format as structured document with sections.`;
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {!protocol ? (
           <div className="text-center py-6">
             <Button
-              onClick={() => generateMutation.mutate()}
-              disabled={generateMutation.isPending || !projectData.project_title}
+              onClick={generateProtocol}
+              disabled={isLoading || !isAvailable || !projectData.project_title}
               className="bg-gradient-to-r from-green-600 to-emerald-600"
             >
-              {generateMutation.isPending ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Generating...', ar: 'جاري الإنشاء...' })}
@@ -134,10 +134,10 @@ Format as structured document with sections.`;
                   {t({ en: 'Public Safety Measures', ar: 'تدابير السلامة العامة' })}
                 </p>
                 <ul className="text-sm text-slate-600 space-y-1">
-                  {protocol.public_safety_measures.slice(0, 3).map((item, idx) => (
+                  {protocol.public_safety_measures?.slice(0, 3).map((item, idx) => (
                     <li key={idx}>• {item}</li>
                   ))}
-                  {protocol.public_safety_measures.length > 3 && (
+                  {protocol.public_safety_measures?.length > 3 && (
                     <li className="text-green-600">+ {protocol.public_safety_measures.length - 3} more...</li>
                   )}
                 </ul>
@@ -148,10 +148,10 @@ Format as structured document with sections.`;
                   {t({ en: 'Emergency Response', ar: 'الاستجابة للطوارئ' })}
                 </p>
                 <ul className="text-sm text-slate-600 space-y-1">
-                  {protocol.emergency_response.slice(0, 3).map((item, idx) => (
+                  {protocol.emergency_response?.slice(0, 3).map((item, idx) => (
                     <li key={idx}>• {item}</li>
                   ))}
-                  {protocol.emergency_response.length > 3 && (
+                  {protocol.emergency_response?.length > 3 && (
                     <li className="text-green-600">+ {protocol.emergency_response.length - 3} more...</li>
                   )}
                 </ul>

@@ -1,25 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
-import { Award, Sparkles, Loader2, TrendingUp } from 'lucide-react';
+import { Award, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function IPCommercializationTracker({ project }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
-  const [analyzing, setAnalyzing] = useState(false);
   const [assessment, setAssessment] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeCommercial = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze commercialization potential for this R&D project:
+    const result = await invokeAI({
+      prompt: `Analyze commercialization potential for this R&D project:
 
 Title: ${project.title_en}
 Research Area: ${project.research_area_en}
@@ -34,25 +30,22 @@ Assess:
 3. Market size estimate
 4. Potential licensees (startup types)
 5. Timeline to market`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            commercial_score: { type: "number" },
-            pathway: { type: "string" },
-            market_size: { type: "string" },
-            potential_licensees: { type: "array", items: { type: "string" } },
-            timeline: { type: "string" },
-            next_steps: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          commercial_score: { type: "number" },
+          pathway: { type: "string" },
+          market_size: { type: "string" },
+          potential_licensees: { type: "array", items: { type: "string" } },
+          timeline: { type: "string" },
+          next_steps: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setAssessment(response);
+    if (result.success) {
+      setAssessment(result.data);
       toast.success(t({ en: 'Assessment complete', ar: 'التقييم مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -66,13 +59,15 @@ Assess:
             <Award className="h-5 w-5 text-purple-600" />
             {t({ en: 'IP & Commercialization', ar: 'الملكية الفكرية والتسويق' })}
           </CardTitle>
-          <Button onClick={analyzeCommercial} disabled={analyzing} size="sm" className="bg-purple-600">
-            {analyzing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          <Button onClick={analyzeCommercial} disabled={isLoading || !isAvailable} size="sm" className="bg-purple-600">
+            {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Assess Potential', ar: 'تقييم الإمكانية' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {/* Patent Pipeline */}
         <div>
           <h4 className="font-semibold text-sm text-slate-900 mb-3">

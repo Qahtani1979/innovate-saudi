@@ -1,23 +1,22 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Loader2, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionSuccessPredictor({ solution, challenge }) {
   const { t } = useLanguage();
-  const [predicting, setPredicting] = useState(false);
   const [prediction, setPrediction] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const predictSuccess = async () => {
-    setPredicting(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Predict the success probability of this solution in a municipal pilot based on historical patterns.
+    const result = await invokeAI({
+      prompt: `Predict the success probability of this solution in a municipal pilot based on historical patterns.
 
 SOLUTION:
 Name: ${solution.name_en}
@@ -46,35 +45,32 @@ Analyze:
 7. Budget risk assessment
 
 Provide data-driven prediction with specific reasoning.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            success_probability: { type: 'number' },
-            confidence_level: { type: 'string', enum: ['low', 'medium', 'high'] },
-            success_factors: { type: 'array', items: { type: 'string' } },
-            risk_factors: { type: 'array', items: { type: 'string' } },
-            similar_patterns: { type: 'array', items: { type: 'string' } },
-            preparation_steps: { type: 'array', items: { type: 'string' } },
-            timeline_prediction: {
-              type: 'object',
-              properties: {
-                best_case_months: { type: 'number' },
-                likely_months: { type: 'number' },
-                worst_case_months: { type: 'number' }
-              }
-            },
-            budget_risk: { type: 'string', enum: ['low', 'medium', 'high'] },
-            overall_recommendation: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          success_probability: { type: 'number' },
+          confidence_level: { type: 'string', enum: ['low', 'medium', 'high'] },
+          success_factors: { type: 'array', items: { type: 'string' } },
+          risk_factors: { type: 'array', items: { type: 'string' } },
+          similar_patterns: { type: 'array', items: { type: 'string' } },
+          preparation_steps: { type: 'array', items: { type: 'string' } },
+          timeline_prediction: {
+            type: 'object',
+            properties: {
+              best_case_months: { type: 'number' },
+              likely_months: { type: 'number' },
+              worst_case_months: { type: 'number' }
+            }
+          },
+          budget_risk: { type: 'string', enum: ['low', 'medium', 'high'] },
+          overall_recommendation: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setPrediction(result);
+    if (result.success) {
+      setPrediction(result.data);
       toast.success(t({ en: 'Prediction complete', ar: 'اكتمل التنبؤ' }));
-    } catch (error) {
-      toast.error(t({ en: 'Prediction failed', ar: 'فشل التنبؤ' }));
-    } finally {
-      setPredicting(false);
     }
   };
 
@@ -90,12 +86,14 @@ Provide data-driven prediction with specific reasoning.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <Button
           onClick={predictSuccess}
-          disabled={predicting}
+          disabled={isLoading || !isAvailable}
           className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
         >
-          {predicting ? (
+          {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               {t({ en: 'Analyzing historical patterns...', ar: 'جاري تحليل الأنماط...' })}
