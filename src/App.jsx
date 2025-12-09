@@ -24,6 +24,7 @@ import PublicChallenges from './pages/public/PublicChallenges';
 import PublicSolutions from './pages/public/PublicSolutions';
 import Privacy from './pages/public/Privacy';
 import Terms from './pages/public/Terms';
+import PublicIdeaSubmission from './pages/PublicIdeaSubmission';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -93,6 +94,7 @@ const AuthenticatedApp = () => {
       <Route path="/public-solutions" element={<PublicSolutions />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
+      <Route path="/public-idea-submission" element={<PublicIdeaSubmission />} />
       
       {/* All other pages */}
       {Object.entries(Pages).map(([pageName, Page]) => {
