@@ -7,27 +7,27 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Calculator, Sparkles, Loader2, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AutomatedMIICalculator({ municipalityId }) {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [calculating, setCalculating] = useState(false);
   const [miiResult, setMiiResult] = useState(null);
+  const { invokeAI, status, isLoading: calculating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const calculateMII = async () => {
-    setCalculating(true);
-    try {
-      const [challenges, pilots, solutions] = await Promise.all([
-        base44.entities.Challenge.list(),
-        base44.entities.Pilot.list(),
-        base44.entities.Solution.list()
-      ]);
+    const [challenges, pilots, solutions] = await Promise.all([
+      base44.entities.Challenge.list(),
+      base44.entities.Pilot.list(),
+      base44.entities.Solution.list()
+    ]);
 
-      const muniChallenges = challenges.filter(c => c.municipality_id === municipalityId);
-      const muniPilots = pilots.filter(p => p.municipality_id === municipalityId);
+    const muniChallenges = challenges.filter(c => c.municipality_id === municipalityId);
+    const muniPilots = pilots.filter(p => p.municipality_id === municipalityId);
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Calculate Municipal Innovation Index (MII) for municipality:
+    const { success, data } = await invokeAI({
+      prompt: `Calculate Municipal Innovation Index (MII) for municipality:
 
 CHALLENGES: ${muniChallenges.length} (${muniChallenges.filter(c => c.status === 'resolved').length} resolved)
 PILOTS: ${muniPilots.length} (${muniPilots.filter(p => p.stage === 'active').length} active, ${muniPilots.filter(p => p.stage === 'scaled').length} scaled)
@@ -39,42 +39,39 @@ Calculate MII score (0-100) based on:
 4. Challenge Resolution (20%): resolved challenges
 
 Provide dimension scores and overall MII.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            overall_score: { type: "number" },
-            dimensions: {
-              type: "object",
-              properties: {
-                innovation_capacity: { type: "number" },
-                pilot_success: { type: "number" },
-                scaling_achievement: { type: "number" },
-                challenge_resolution: { type: "number" }
-              }
-            },
-            interpretation: { type: "string" },
-            improvement_areas: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          overall_score: { type: "number" },
+          dimensions: {
+            type: "object",
+            properties: {
+              innovation_capacity: { type: "number" },
+              pilot_success: { type: "number" },
+              scaling_achievement: { type: "number" },
+              challenge_resolution: { type: "number" }
+            }
+          },
+          interpretation: { type: "string" },
+          improvement_areas: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setMiiResult(response);
+    if (success) {
+      setMiiResult(data);
       
       await base44.entities.MIIResult.create({
         municipality_id: municipalityId,
         year: new Date().getFullYear(),
         quarter: Math.floor(new Date().getMonth() / 3) + 1,
-        overall_score: response.overall_score,
-        dimension_scores: response.dimensions,
+        overall_score: data.overall_score,
+        dimension_scores: data.dimensions,
         calculation_method: 'AI-automated'
       });
 
       queryClient.invalidateQueries(['mii-results']);
       toast.success(t({ en: 'MII calculated', ar: 'المؤشر محسوب' }));
-    } catch (error) {
-      toast.error(t({ en: 'Calculation failed', ar: 'فشل الحساب' }));
-    } finally {
-      setCalculating(false);
     }
   };
 
@@ -86,14 +83,17 @@ Provide dimension scores and overall MII.`,
             <Calculator className="h-5 w-5 text-amber-600" />
             {t({ en: 'Automated MII Calculator', ar: 'حاسبة المؤشر التلقائية' })}
           </CardTitle>
-          <Button onClick={calculateMII} disabled={calculating} size="sm" className="bg-amber-600">
-            {calculating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
-            )}
-            {t({ en: 'Calculate', ar: 'حساب' })}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={calculateMII} disabled={calculating || !isAvailable} size="sm" className="bg-amber-600">
+              {calculating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              {t({ en: 'Calculate', ar: 'حساب' })}
+            </Button>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-6">

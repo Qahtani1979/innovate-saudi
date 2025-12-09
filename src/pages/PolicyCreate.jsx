@@ -16,6 +16,8 @@ import { Link } from 'react-router-dom';
 import SimilarPolicyDetector from '../components/policy/SimilarPolicyDetector';
 import PolicyTemplateLibrary from '../components/policy/PolicyTemplateLibrary';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PolicyCreate() {
   const { language, isRTL, t } = useLanguage();
@@ -27,7 +29,7 @@ function PolicyCreate() {
   const templateId = urlParams.get('template');
   
   const [currentStep, setCurrentStep] = useState(templateId ? 2 : 1);
-  const [isAIHelping, setIsAIHelping] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: isAIHelping, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [initialThoughts, setInitialThoughts] = useState('');
   const [linkedEntities, setLinkedEntities] = useState(
     prefilledChallengeId 
@@ -210,9 +212,7 @@ function PolicyCreate() {
       return;
     }
 
-    setIsAIHelping(true);
-    try {
-      let contextPrompt = `You are a senior public policy expert specializing in Saudi municipal governance and regulatory frameworks.
+    let contextPrompt = `You are a senior public policy expert specializing in Saudi municipal governance and regulatory frameworks.
 
 USER'S INPUT AND CURRENT FORM DATA (ARABIC):
 Initial Thoughts: ${initialThoughts || 'N/A'}
@@ -231,14 +231,14 @@ INSTRUCTIONS:
 LINKED ENTITY CONTEXT (${linkedEntities.length} entities):
 `;
 
-      // Add context for all linked entities
-      linkedEntities.forEach((link, idx) => {
-        if (!link.type || !link.id) return;
+    // Add context for all linked entities
+    linkedEntities.forEach((link, idx) => {
+      if (!link.type || !link.id) return;
 
-        if (link.type === 'challenge') {
-          const challenge = challenges.find(c => c.id === link.id);
-          if (challenge) {
-            contextPrompt += `\n[${idx + 1}] Challenge: ${challenge.code || ''} - ${challenge.title_en}
+      if (link.type === 'challenge') {
+        const challenge = challenges.find(c => c.id === link.id);
+        if (challenge) {
+          contextPrompt += `\n[${idx + 1}] Challenge: ${challenge.code || ''} - ${challenge.title_en}
 Problem Statement EN: ${challenge.problem_statement_en || challenge.description_en || 'N/A'}
 Problem Statement AR: ${challenge.problem_statement_ar || challenge.description_ar || 'N/A'}
 Sector: ${challenge.sector || 'N/A'}
@@ -246,43 +246,43 @@ Municipality: ${challenge.municipality_id || 'N/A'}
 Affected Population: ${challenge.affected_population_size || 'N/A'}
 Root Causes: ${challenge.root_causes?.join(', ') || 'N/A'}
 `;
-          }
         }
+      }
 
-        if (link.type === 'pilot') {
-          const pilot = pilots.find(p => p.id === link.id);
-          if (pilot) {
-            contextPrompt += `\n[${idx + 1}] Pilot: ${pilot.code} - ${pilot.title_en}
+      if (link.type === 'pilot') {
+        const pilot = pilots.find(p => p.id === link.id);
+        if (pilot) {
+          contextPrompt += `\n[${idx + 1}] Pilot: ${pilot.code} - ${pilot.title_en}
 Objective: ${pilot.objective_en || 'N/A'}
 Stage: ${pilot.stage || 'N/A'}
 Success Factors: ${pilot.success_factors?.join(', ') || 'N/A'}
 `;
-          }
         }
+      }
 
-        if (link.type === 'rd_project') {
-          const rd = rdProjects.find(r => r.id === link.id);
-          if (rd) {
-            contextPrompt += `\n[${idx + 1}] R&D Project: ${rd.code} - ${rd.title_en}
+      if (link.type === 'rd_project') {
+        const rd = rdProjects.find(r => r.id === link.id);
+        if (rd) {
+          contextPrompt += `\n[${idx + 1}] R&D Project: ${rd.code} - ${rd.title_en}
 Research Area: ${rd.research_area_en || 'N/A'}
 TRL: ${rd.trl_current || rd.trl_start || 'N/A'}
 `;
-          }
         }
+      }
 
-        if (link.type === 'program') {
-          const prog = programs.find(p => p.id === link.id);
-          if (prog) {
-            contextPrompt += `\n[${idx + 1}] Program: ${prog.code} - ${prog.name_en}
+      if (link.type === 'program') {
+        const prog = programs.find(p => p.id === link.id);
+        if (prog) {
+          contextPrompt += `\n[${idx + 1}] Program: ${prog.code} - ${prog.name_en}
 Type: ${prog.program_type || 'N/A'}
 Focus Areas: ${prog.focus_areas?.join(', ') || 'N/A'}
 `;
-          }
         }
-      });
+      }
+    });
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `${contextPrompt}
+    const { success, data } = await invokeAI({
+      prompt: `${contextPrompt}
 
 As a PUBLIC POLICY EXPERT, develop a comprehensive, actionable policy recommendation IN ARABIC:
 
@@ -330,72 +330,69 @@ As a PUBLIC POLICY EXPERT, develop a comprehensive, actionable policy recommenda
 13. IMPLEMENTATION COMPLEXITY: low/medium/high/very_high (legal, political, administrative barriers)
 
 CRITICAL: All text fields must be in ARABIC. This is for Saudi government use.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_ar: { type: 'string' },
-            recommendation_text_ar: { type: 'string' },
-            regulatory_framework: { type: 'string' },
-            regulatory_change_needed: { type: 'boolean' },
-            timeline_months: { type: 'number' },
-            priority_level: { type: 'string' },
-            impact_score: { type: 'number' },
-            policy_type: { type: 'string' },
-            implementation_complexity: { type: 'string' },
-            implementation_steps: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  ar: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_ar: { type: 'string' },
+          recommendation_text_ar: { type: 'string' },
+          regulatory_framework: { type: 'string' },
+          regulatory_change_needed: { type: 'boolean' },
+          timeline_months: { type: 'number' },
+          priority_level: { type: 'string' },
+          impact_score: { type: 'number' },
+          policy_type: { type: 'string' },
+          implementation_complexity: { type: 'string' },
+          implementation_steps: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                ar: { type: 'string' }
               }
-            },
-            stakeholder_involvement_ar: { type: 'string' },
-            success_metrics: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  metric_ar: { type: 'string' },
-                  target: { type: 'string' },
-                  unit: { type: 'string' }
-                }
-              }
-            },
-            affected_stakeholders: {
-              type: 'array',
-              items: { type: 'string' }
             }
+          },
+          stakeholder_involvement_ar: { type: 'string' },
+          success_metrics: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                metric_ar: { type: 'string' },
+                target: { type: 'string' },
+                unit: { type: 'string' }
+              }
+            }
+          },
+          affected_stakeholders: {
+            type: 'array',
+            items: { type: 'string' }
           }
         }
-      });
+      }
+    });
 
+    if (success) {
       setFormData(prev => ({
         ...prev,
-        title_ar: result.title_ar || prev.title_ar,
-        recommendation_text_ar: result.recommendation_text_ar || prev.recommendation_text_ar,
-        regulatory_framework: result.regulatory_framework || prev.regulatory_framework,
-        regulatory_change_needed: result.regulatory_change_needed ?? prev.regulatory_change_needed,
-        timeline_months: result.timeline_months || prev.timeline_months,
-        priority_level: result.priority_level || prev.priority_level,
-        impact_score: result.impact_score || prev.impact_score,
-        policy_type: result.policy_type || prev.policy_type,
-        implementation_complexity: result.implementation_complexity || prev.implementation_complexity,
-        implementation_steps: result.implementation_steps?.length > 0 ? result.implementation_steps : prev.implementation_steps,
-        stakeholder_involvement_ar: result.stakeholder_involvement_ar || prev.stakeholder_involvement_ar,
-        success_metrics: result.success_metrics?.length > 0 ? result.success_metrics : prev.success_metrics,
-        affected_stakeholders: result.affected_stakeholders?.length > 0 ? result.affected_stakeholders : prev.affected_stakeholders
+        title_ar: data.title_ar || prev.title_ar,
+        recommendation_text_ar: data.recommendation_text_ar || prev.recommendation_text_ar,
+        regulatory_framework: data.regulatory_framework || prev.regulatory_framework,
+        regulatory_change_needed: data.regulatory_change_needed ?? prev.regulatory_change_needed,
+        timeline_months: data.timeline_months || prev.timeline_months,
+        priority_level: data.priority_level || prev.priority_level,
+        impact_score: data.impact_score || prev.impact_score,
+        policy_type: data.policy_type || prev.policy_type,
+        implementation_complexity: data.implementation_complexity || prev.implementation_complexity,
+        implementation_steps: data.implementation_steps?.length > 0 ? data.implementation_steps : prev.implementation_steps,
+        stakeholder_involvement_ar: data.stakeholder_involvement_ar || prev.stakeholder_involvement_ar,
+        success_metrics: data.success_metrics?.length > 0 ? data.success_metrics : prev.success_metrics,
+        affected_stakeholders: data.affected_stakeholders?.length > 0 ? data.affected_stakeholders : prev.affected_stakeholders
       }));
 
       if (currentStep === 1) {
         setCurrentStep(2);
       }
       toast.success(t({ en: '✨ AI generated policy framework!', ar: '✨ تم إنشاء الإطار السياسي!' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI assist failed', ar: 'فشل المساعد الذكي' }));
-    } finally {
-      setIsAIHelping(false);
     }
   };
 

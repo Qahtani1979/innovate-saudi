@@ -14,12 +14,14 @@ import { Save, Loader2, Sparkles } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function RDCallCreate() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [aiDrafting, setAiDrafting] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiDrafting, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     code: '',
@@ -94,10 +96,9 @@ function RDCallCreate() {
       toast.error(t({ en: 'Please enter a title first', ar: 'يرجى إدخال العنوان أولاً' }));
       return;
     }
-    setAiDrafting(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a complete R&D call for Saudi municipal innovation based on:
+
+    const { success, data } = await invokeAI({
+      prompt: `Generate a complete R&D call for Saudi municipal innovation based on:
 Title: ${formData.title_en}
 Call Type: ${formData.call_type}
 
@@ -114,75 +115,74 @@ Create comprehensive bilingual content for a professional research funding call.
 10. 3-5 submission requirements
 
 Make the content specific to Saudi Arabia's municipal innovation context and Vision 2030 goals.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' },
-            eligibility_criteria: { type: 'array', items: { type: 'string' } },
-            expected_outcomes: { type: 'array', items: { type: 'string' } },
-            research_themes: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  theme: { type: 'string' },
-                  description: { type: 'string' }
-                }
-              } 
-            },
-            evaluation_criteria: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  criterion: { type: 'string' },
-                  description: { type: 'string' },
-                  weight: { type: 'number' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          objectives_en: { type: 'string' },
+          objectives_ar: { type: 'string' },
+          eligibility_criteria: { type: 'array', items: { type: 'string' } },
+          expected_outcomes: { type: 'array', items: { type: 'string' } },
+          research_themes: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                theme: { type: 'string' },
+                description: { type: 'string' }
               }
-            },
-            submission_requirements: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  requirement: { type: 'string' },
-                  description: { type: 'string' },
-                  mandatory: { type: 'boolean' }
-                }
+            } 
+          },
+          evaluation_criteria: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                criterion: { type: 'string' },
+                description: { type: 'string' },
+                weight: { type: 'number' }
               }
-            },
-            focus_areas: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          submission_requirements: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                requirement: { type: 'string' },
+                description: { type: 'string' },
+                mandatory: { type: 'boolean' }
+              }
+            }
+          },
+          focus_areas: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
+
+    if (success) {
       setFormData(prev => ({
         ...prev,
-        title_ar: result.title_ar || prev.title_ar,
-        tagline_en: result.tagline_en || prev.tagline_en,
-        tagline_ar: result.tagline_ar || prev.tagline_ar,
-        description_en: result.description_en || prev.description_en,
-        description_ar: result.description_ar || prev.description_ar,
-        objectives_en: result.objectives_en || prev.objectives_en,
-        objectives_ar: result.objectives_ar || prev.objectives_ar,
-        eligibility_criteria: result.eligibility_criteria || prev.eligibility_criteria,
-        expected_outcomes: result.expected_outcomes || prev.expected_outcomes,
-        research_themes: result.research_themes || prev.research_themes,
-        evaluation_criteria: result.evaluation_criteria || prev.evaluation_criteria,
-        submission_requirements: result.submission_requirements || prev.submission_requirements,
-        focus_areas: result.focus_areas || prev.focus_areas
+        title_ar: data.title_ar || prev.title_ar,
+        tagline_en: data.tagline_en || prev.tagline_en,
+        tagline_ar: data.tagline_ar || prev.tagline_ar,
+        description_en: data.description_en || prev.description_en,
+        description_ar: data.description_ar || prev.description_ar,
+        objectives_en: data.objectives_en || prev.objectives_en,
+        objectives_ar: data.objectives_ar || prev.objectives_ar,
+        eligibility_criteria: data.eligibility_criteria || prev.eligibility_criteria,
+        expected_outcomes: data.expected_outcomes || prev.expected_outcomes,
+        research_themes: data.research_themes || prev.research_themes,
+        evaluation_criteria: data.evaluation_criteria || prev.evaluation_criteria,
+        submission_requirements: data.submission_requirements || prev.submission_requirements,
+        focus_areas: data.focus_areas || prev.focus_areas
       }));
       toast.success(t({ en: '✨ AI draft complete! All fields populated.', ar: '✨ تم إكمال المسودة! تم ملء جميع الحقول.' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI draft failed', ar: 'فشل إنشاء المسودة' }));
     }
-    setAiDrafting(false);
   };
 
   return (
@@ -200,13 +200,16 @@ Make the content specific to Saudi Arabia's municipal innovation context and Vis
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>{t({ en: 'Call Information', ar: 'معلومات الدعوة' })}</CardTitle>
-            <Button onClick={handleAIDraft} disabled={aiDrafting} variant="outline">
-              {aiDrafting ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Drafting...', ar: 'جاري الصياغة...' })}</>
-              ) : (
-                <><Sparkles className="h-4 w-4 mr-2" />{t({ en: 'AI Draft Complete Call', ar: 'صياغة كاملة ذكية' })}</>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleAIDraft} disabled={aiDrafting || !isAvailable} variant="outline">
+                {aiDrafting ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Drafting...', ar: 'جاري الصياغة...' })}</>
+                ) : (
+                  <><Sparkles className="h-4 w-4 mr-2" />{t({ en: 'AI Draft Complete Call', ar: 'صياغة كاملة ذكية' })}</>
+                )}
+              </Button>
+              <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

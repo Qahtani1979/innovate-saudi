@@ -5,14 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Network, Sparkles, TrendingUp, Users, Building2, Zap, Target } from 'lucide-react';
+import { Network, Sparkles, TrendingUp, Users, Building2, Zap, Target, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function NetworkIntelligence() {
   const { language, isRTL, t } = useLanguage();
   const [networkAnalysis, setNetworkAnalysis] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations'],
@@ -30,16 +32,14 @@ function NetworkIntelligence() {
   });
 
   const analyzeNetwork = async () => {
-    setAnalyzing(true);
-    try {
-      const collaborationData = pilots.map(p => ({
-        pilot: p.title_en,
-        stakeholders: p.stakeholders?.map(s => s.name) || [],
-        team: p.team?.map(t => t.organization) || []
-      }));
+    const collaborationData = pilots.map(p => ({
+      pilot: p.title_en,
+      stakeholders: p.stakeholders?.map(s => s.name) || [],
+      team: p.team?.map(t => t.organization) || []
+    }));
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the innovation network and detect patterns:
+    const { success, data } = await invokeAI({
+      prompt: `Analyze the innovation network and detect patterns:
 
 Organizations: ${organizations.length}
 Active Pilots: ${pilots.length}
@@ -54,64 +54,61 @@ Provide:
 3. Network gaps (sectors/cities lacking connections)
 4. Strategic connector recommendations (who to introduce to whom)
 5. Collaboration health score (0-100)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            top_connectors: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  organization: { type: "string" },
-                  connection_count: { type: "number" },
-                  influence_score: { type: "number" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          top_connectors: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                organization: { type: "string" },
+                connection_count: { type: "number" },
+                influence_score: { type: "number" }
               }
-            },
-            clusters: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  cluster_name: { type: "string" },
-                  members: { type: "array", items: { type: "string" } },
-                  focus: { type: "string" }
-                }
+            }
+          },
+          clusters: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                cluster_name: { type: "string" },
+                members: { type: "array", items: { type: "string" } },
+                focus: { type: "string" }
               }
-            },
-            gaps: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  area: { type: "string" },
-                  issue: { type: "string" },
-                  recommendation: { type: "string" }
-                }
+            }
+          },
+          gaps: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                area: { type: "string" },
+                issue: { type: "string" },
+                recommendation: { type: "string" }
               }
-            },
-            introductions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  party_a: { type: "string" },
-                  party_b: { type: "string" },
-                  synergy: { type: "string" }
-                }
+            }
+          },
+          introductions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                party_a: { type: "string" },
+                party_b: { type: "string" },
+                synergy: { type: "string" }
               }
-            },
-            health_score: { type: "number" }
-          }
+            }
+          },
+          health_score: { type: "number" }
         }
-      });
+      }
+    });
 
-      setNetworkAnalysis(response);
+    if (success) {
+      setNetworkAnalysis(data);
       toast.success(t({ en: 'Network analysis complete', ar: 'اكتمل تحليل الشبكة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -126,10 +123,13 @@ Provide:
             {t({ en: 'AI-powered network analysis and partnership optimization', ar: 'تحليل الشبكة المدعوم بالذكاء الاصطناعي وتحسين الشراكات' })}
           </p>
         </div>
-        <Button onClick={analyzeNetwork} disabled={analyzing} className="bg-gradient-to-r from-purple-600 to-pink-600">
-          <Sparkles className="h-4 w-4 mr-2" />
-          {analyzing ? t({ en: 'Analyzing...', ar: 'جاري التحليل...' }) : t({ en: 'Analyze Network', ar: 'تحليل الشبكة' })}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={analyzeNetwork} disabled={analyzing || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
+            {analyzing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {analyzing ? t({ en: 'Analyzing...', ar: 'جاري التحليل...' }) : t({ en: 'Analyze Network', ar: 'تحليل الشبكة' })}
+          </Button>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

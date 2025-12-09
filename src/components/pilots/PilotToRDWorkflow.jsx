@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tantml:react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Microscope, Sparkles, Loader2, TestTube } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotToRDWorkflow({ pilot, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [aiGenerating, setAiGenerating] = useState(false);
+  const { invokeAI, status, isLoading: aiGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [rdData, setRdData] = useState({
     title_en: `Research Follow-up: ${pilot.title_en || ''}`,
     title_ar: `متابعة بحثية: ${pilot.title_ar || ''}`,
@@ -34,10 +36,8 @@ export default function PilotToRDWorkflow({ pilot, onClose, onSuccess }) {
   });
 
   const generateResearchProposal = async () => {
-    setAiGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a research methodology expert. Generate an R&D project proposal from this completed pilot:
+    const { success, data } = await invokeAI({
+      prompt: `You are a research methodology expert. Generate an R&D project proposal from this completed pilot:
 
 Pilot Title: ${pilot.title_en}
 Sector: ${pilot.sector}
@@ -53,46 +53,42 @@ Generate:
 4. Research themes and keywords
 
 Focus on advancing TRL from ${pilot.trl_current || 6} to 8-9.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            abstract_en: { type: 'string' },
-            abstract_ar: { type: 'string' },
-            research_area_ar: { type: 'string' },
-            methodology_en: { type: 'string' },
-            methodology_ar: { type: 'string' },
-            expected_outputs: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  output_en: { type: 'string' },
-                  output_ar: { type: 'string' },
-                  type: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          abstract_en: { type: 'string' },
+          abstract_ar: { type: 'string' },
+          research_area_ar: { type: 'string' },
+          methodology_en: { type: 'string' },
+          methodology_ar: { type: 'string' },
+          expected_outputs: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                output_en: { type: 'string' },
+                output_ar: { type: 'string' },
+                type: { type: 'string' }
               }
-            },
-            research_themes: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          research_themes: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (success) {
       setRdData(prev => ({
         ...prev,
-        abstract_en: result.abstract_en,
-        abstract_ar: result.abstract_ar,
-        research_area_ar: result.research_area_ar,
-        methodology_en: result.methodology_en,
-        methodology_ar: result.methodology_ar,
-        expected_outputs: result.expected_outputs,
-        research_themes: [...prev.research_themes, ...result.research_themes]
+        abstract_en: data.abstract_en,
+        abstract_ar: data.abstract_ar,
+        research_area_ar: data.research_area_ar,
+        methodology_en: data.methodology_en,
+        methodology_ar: data.methodology_ar,
+        expected_outputs: data.expected_outputs,
+        research_themes: [...prev.research_themes, ...data.research_themes]
       }));
-
       toast.success(t({ en: 'AI generated research proposal', ar: 'تم إنشاء المقترح البحثي' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setAiGenerating(false);
     }
   };
 
@@ -154,10 +150,10 @@ Focus on advancing TRL from ${pilot.trl_current || 6} to 8-9.`,
         </div>
 
         {/* AI Generation */}
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-2">
           <Button
             onClick={generateResearchProposal}
-            disabled={aiGenerating}
+            disabled={aiGenerating || !isAvailable}
             className="bg-gradient-to-r from-purple-600 to-indigo-600"
           >
             {aiGenerating ? (
@@ -172,6 +168,7 @@ Focus on advancing TRL from ${pilot.trl_current || 6} to 8-9.`,
               </>
             )}
           </Button>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         </div>
 
         {/* Form */}
