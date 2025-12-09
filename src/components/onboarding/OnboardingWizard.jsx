@@ -114,7 +114,7 @@ const STEPS = [
 ];
 
 export default function OnboardingWizard({ onComplete, onSkip }) {
-  const { language, isRTL, t } = useLanguage();
+  const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth, userRoles } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -566,16 +566,28 @@ Based on this information:
                 {t({ en: 'Personalize your experience', ar: 'خصص تجربتك' })}
               </p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleSkip}
-              disabled={isSubmitting}
-              className="text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <X className="h-4 w-4 mr-1" />
-              {t({ en: 'Skip', ar: 'تخطي' })}
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Language Toggle */}
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleLanguage}
+                className="text-white/70 hover:text-white hover:bg-white/10 font-medium"
+              >
+                <Globe className="h-4 w-4 mr-1" />
+                {language === 'en' ? 'عربي' : 'English'}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleSkip}
+                disabled={isSubmitting}
+                className="text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <X className="h-4 w-4 mr-1" />
+                {t({ en: 'Skip', ar: 'تخطي' })}
+              </Button>
+            </div>
           </div>
 
           {/* Step Progress */}
