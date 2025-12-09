@@ -10,11 +10,13 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function FailureAnalysisDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiInsights, setAiInsights] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-failure'],
@@ -54,10 +56,8 @@ function FailureAnalysisDashboard() {
   const COLORS = ['#ef4444', '#f59e0b', '#eab308', '#84cc16', '#10b981'];
 
   const generateAIInsights = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze innovation failures and provide strategic insights:
+    const result = await invokeAI({
+      prompt: `Analyze innovation failures and provide strategic insights:
 
 Terminated pilots: ${terminatedPilots.length}
 Archived challenges: ${archivedChallenges.length}
@@ -69,21 +69,19 @@ Provide:
 2. Preventive measures for future initiatives
 3. Lessons learned that should be documented
 4. Process improvements to reduce failure rates`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            failure_patterns: { type: 'array', items: { type: 'string' } },
-            preventive_measures: { type: 'array', items: { type: 'string' } },
-            lessons_learned: { type: 'array', items: { type: 'string' } },
-            process_improvements: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          failure_patterns: { type: 'array', items: { type: 'string' } },
+          preventive_measures: { type: 'array', items: { type: 'string' } },
+          lessons_learned: { type: 'array', items: { type: 'string' } },
+          process_improvements: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      }
+    });
+    
+    if (result.success) {
+      setAiInsights(result.data);
     }
   };
 
@@ -100,11 +98,13 @@ Provide:
             {t({ en: 'Learn from failures to improve future success', ar: 'التعلم من الإخفاقات لتحسين النجاح المستقبلي' })}
           </p>
         </div>
-        <Button onClick={generateAIInsights} disabled={loading} className="bg-purple-600">
+        <Button onClick={generateAIInsights} disabled={loading || !isAvailable} className="bg-purple-600">
           {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
         </Button>
       </div>
+      
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

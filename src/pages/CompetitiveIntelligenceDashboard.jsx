@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Globe, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function CompetitiveIntelligenceDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [insights, setInsights] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const competitors = [
     { city: 'Dubai', pilots: 234, mii: 81, scaling: 35 },
@@ -27,10 +27,8 @@ function CompetitiveIntelligenceDashboard() {
   ];
 
   const generateInsights = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze competitive landscape:
+    const result = await invokeAI({
+      prompt: `Analyze competitive landscape:
 
 Competitors: ${JSON.stringify(competitors)}
 
@@ -39,21 +37,19 @@ Provide:
 2. Critical gaps vs best-in-class
 3. Best practices to adopt
 4. Strategic recommendations`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strengths: { type: 'array', items: { type: 'string' } },
-            gaps: { type: 'array', items: { type: 'string' } },
-            best_practices: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          strengths: { type: 'array', items: { type: 'string' } },
+          gaps: { type: 'array', items: { type: 'string' } },
+          best_practices: { type: 'array', items: { type: 'string' } },
+          recommendations: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setInsights(result);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      }
+    });
+    
+    if (result.success) {
+      setInsights(result.data);
     }
   };
 
@@ -68,11 +64,13 @@ Provide:
             {t({ en: 'Benchmark against global innovation leaders', ar: 'المقارنة مع قادة الابتكار العالميين' })}
           </p>
         </div>
-        <Button onClick={generateInsights} disabled={loading} className="bg-purple-600">
+        <Button onClick={generateInsights} disabled={loading || !isAvailable} className="bg-purple-600">
           {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
         </Button>
       </div>
+      
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       {/* Comparison Chart */}
       <Card>
