@@ -11,12 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Sparkles, Loader2, ChevronRight, ChevronLeft, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ContractGeneratorWizard({ solution, pilot, onComplete, onCancel }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
-  const [isAIGenerating, setIsAIGenerating] = useState(false);
+  const { invokeAI, status, isLoading: isAIGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   
   const [contractData, setContractData] = useState({
     contract_number: `CTR-${Date.now()}`,
@@ -46,75 +48,71 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
     { title: { en: 'Review', ar: 'مراجعة' }, icon: CheckCircle2 }
   ];
 
-  const generateContractMutation = useMutation({
-    mutationFn: async () => {
-      setIsAIGenerating(true);
-      
-      const prompt = `Generate a comprehensive solution deployment contract in bilingual format (Arabic + English).
-      
-      Context:
-      - Solution: ${solution?.name_en}
-      - Description: ${solution?.description_en}
-      - Provider: ${solution?.provider_name}
-      - Pilot: ${pilot?.title_en}
-      - Budget: ${pilot?.budget} SAR
-      - Duration: ${pilot?.duration_weeks} weeks
-      
-      Generate:
-      1. Detailed terms and conditions (AR + EN)
-      2. 5-7 deliverables with timelines
-      3. 4-5 payment milestones linked to deliverables
-      4. KPIs and success criteria
-      5. Termination clauses
-      6. Support and maintenance terms`;
+  const generateContract = async () => {
+    const prompt = `Generate a comprehensive solution deployment contract in bilingual format (Arabic + English).
+    
+    Context:
+    - Solution: ${solution?.name_en}
+    - Description: ${solution?.description_en}
+    - Provider: ${solution?.provider_name}
+    - Pilot: ${pilot?.title_en}
+    - Budget: ${pilot?.budget} SAR
+    - Duration: ${pilot?.duration_weeks} weeks
+    
+    Generate:
+    1. Detailed terms and conditions (AR + EN)
+    2. 5-7 deliverables with timelines
+    3. 4-5 payment milestones linked to deliverables
+    4. KPIs and success criteria
+    5. Termination clauses
+    6. Support and maintenance terms`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            terms_en: { type: 'string' },
-            terms_ar: { type: 'string' },
-            deliverables: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  deliverable_name: { type: 'string' },
-                  due_date: { type: 'string' },
-                  status: { type: 'string' }
-                }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          terms_en: { type: 'string' },
+          terms_ar: { type: 'string' },
+          deliverables: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                deliverable_name: { type: 'string' },
+                due_date: { type: 'string' },
+                status: { type: 'string' }
               }
-            },
-            payment_milestones: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  milestone_name: { type: 'string' },
-                  amount: { type: 'number' },
-                  due_date: { type: 'string' }
-                }
+            }
+          },
+          payment_milestones: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                milestone_name: { type: 'string' },
+                amount: { type: 'number' },
+                due_date: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setContractData(prev => ({
         ...prev,
-        terms_and_conditions: result.terms_en,
-        deliverables: result.deliverables || [],
+        terms_and_conditions: result.data?.terms_en || '',
+        deliverables: result.data?.deliverables || [],
         payment_terms: {
           payment_schedule: 'milestone_based',
-          payment_milestones: result.payment_milestones || []
+          payment_milestones: result.data?.payment_milestones || []
         }
       }));
-
-      setIsAIGenerating(false);
       toast.success(t({ en: 'Contract generated', ar: 'تم توليد العقد' }));
     }
-  });
+  };
 
   const createContractMutation = useMutation({
     mutationFn: async (data) => {
@@ -162,14 +160,15 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
 
         {currentStep === 0 && (
           <div className="space-y-4">
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-900">
                 {t({ en: 'Generate a contract using AI based on solution and pilot details', ar: 'توليد عقد باستخدام الذكاء الاصطناعي بناءً على تفاصيل الحل والتجربة' })}
               </p>
             </div>
             <Button 
-              onClick={() => generateContractMutation.mutate()} 
-              disabled={isAIGenerating}
+              onClick={generateContract} 
+              disabled={isAIGenerating || !isAvailable}
               className="w-full"
             >
               {isAIGenerating ? (

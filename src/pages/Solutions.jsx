@@ -32,6 +32,8 @@ import {
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SolutionsPage() {
   const { hasPermission, isAdmin } = usePermissions();
@@ -42,7 +44,7 @@ function SolutionsPage() {
   const [selectedSolutions, setSelectedSolutions] = useState([]);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { language, isRTL, t } = useLanguage();
 
   const queryClient = useQueryClient();
@@ -107,19 +109,17 @@ function SolutionsPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const solutionSummary = solutions.slice(0, 15).map(s => ({
-        name: s.name_en,
-        provider: s.provider_name,
-        maturity: s.maturity_level,
-        deployments: s.deployment_count,
-        success_rate: s.success_rate,
-        sectors: s.sectors
-      }));
+    const solutionSummary = solutions.slice(0, 15).map(s => ({
+      name: s.name_en,
+      provider: s.provider_name,
+      maturity: s.maturity_level,
+      deployments: s.deployment_count,
+      success_rate: s.success_rate,
+      sectors: s.sectors
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this solution portfolio for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
+    const result = await invokeAI({
+      prompt: `Analyze this solution portfolio for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Solutions: ${JSON.stringify(solutionSummary)}
 
@@ -135,22 +135,19 @@ Provide bilingual insights (each item should have both English and Arabic versio
 3. Deployment acceleration strategies
 4. High-potential solutions for scaling
 5. Market development recommendations`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            landscape_gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            ecosystem_health: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            deployment_strategies: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            high_potential_solutions: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            market_development: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          landscape_gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          ecosystem_health: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          deployment_strategies: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          high_potential_solutions: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          market_development: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+    if (result.success) {
+      setAiInsights(result.data);
     }
   };
 
@@ -165,8 +162,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           <p className="text-slate-600 mt-2">{t({ en: 'Discover validated solutions from providers across the ecosystem', ar: 'اكتشف الحلول المعتمدة من مقدمي الخدمات عبر النظام البيئي' })}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
-            <Sparkles className="h-4 w-4" />
+          <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
           </Button>
           {hasPermission('solution_create') && (
@@ -193,6 +190,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
             </Button>
           </CardHeader>
           <CardContent>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-yellow-600" />

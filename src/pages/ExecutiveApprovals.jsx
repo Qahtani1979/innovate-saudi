@@ -10,14 +10,16 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { CheckCircle2, X, FileText, AlertCircle, DollarSign, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ExecutiveApprovals() {
   const { language, isRTL, t } = useLanguage();
   const [selectedItem, setSelectedItem] = useState(null);
   const [decision, setDecision] = useState('');
   const [comments, setComments] = useState('');
-  const [generatingBrief, setGeneratingBrief] = useState(false);
   const [aiBrief, setAiBrief] = useState(null);
+  const { invokeAI, status, isLoading: generatingBrief, isAvailable, rateLimitInfo } = useAIWithFallback();
   const queryClient = useQueryClient();
 
   const { data: pilots = [] } = useQuery({
@@ -48,10 +50,8 @@ export default function ExecutiveApprovals() {
   });
 
   const generateAIBrief = async (item, type) => {
-    setGeneratingBrief(true);
-    try {
-      const prompt = type === 'pilot' ? 
-        `Generate executive decision brief for this pilot:
+    const prompt = type === 'pilot' ? 
+      `Generate executive decision brief for this pilot:
 Title: ${item.title_en}
 Budget: ${item.budget} SAR
 Municipality: ${item.municipality_id}
@@ -64,34 +64,31 @@ Provide:
 3. Expected impact (quantified if possible)
 4. Budget justification
 5. Recommendation (approve/conditional/defer/reject)` :
-        `Generate executive brief for R&D Call:
+      `Generate executive brief for R&D Call:
 Title: ${item.title_en}
 Budget: ${item.budget_total} SAR
 Theme: ${item.theme_en}
 
 Provide strategic analysis and recommendation.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strategic_alignment: { type: 'string' },
-            risk_level: { type: 'string' },
-            risk_reasons: { type: 'array', items: { type: 'string' } },
-            expected_impact: { type: 'string' },
-            budget_justification: { type: 'string' },
-            recommendation: { type: 'string' },
-            key_considerations: { type: 'array', items: { type: 'string' } }
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          strategic_alignment: { type: 'string' },
+          risk_level: { type: 'string' },
+          risk_reasons: { type: 'array', items: { type: 'string' } },
+          expected_impact: { type: 'string' },
+          budget_justification: { type: 'string' },
+          recommendation: { type: 'string' },
+          key_considerations: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setAiBrief(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate brief', ar: 'فشل إنشاء الملخص' }));
-    } finally {
-      setGeneratingBrief(false);
+    if (result.success) {
+      setAiBrief(result.data);
     }
   };
 
@@ -220,7 +217,7 @@ Provide strategic analysis and recommendation.`;
                     <span>{t({ en: 'Review Item', ar: 'مراجعة العنصر' })}</span>
                     <Button
                       onClick={() => generateAIBrief(selectedItem, selectedItem.type)}
-                      disabled={generatingBrief}
+                      disabled={generatingBrief || !isAvailable}
                       size="sm"
                       variant="outline"
                     >
@@ -234,6 +231,7 @@ Provide strategic analysis and recommendation.`;
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
                   <div>
                     <Badge className="mb-2">{selectedItem.itemType}</Badge>
                     <h3 className="font-bold text-lg">

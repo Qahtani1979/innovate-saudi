@@ -11,12 +11,15 @@ import { Target, TrendingUp, AlertTriangle, CheckCircle2, Activity, Sparkles, Lo
 import KPIAlertConfig from '../components/kpi/KPIAlertConfig';
 import DashboardBuilder from '../components/kpi/DashboardBuilder';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function StrategicKPITracker() {
   const { language, isRTL, t } = useLanguage();
   const [selectedYear, setSelectedYear] = useState(2025);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -111,19 +114,17 @@ function StrategicKPITracker() {
   const offTrack = strategicKPIs.filter(k => k.status === 'off_track').length;
 
   const generateAIInsights = async () => {
-    setAiLoading(true);
-    try {
-      const kpiData = strategicKPIs.map(kpi => ({
-        name: kpi.name_en,
-        baseline: kpi.baseline,
-        current: kpi.current,
-        target: kpi.target,
-        progress: ((kpi.current - kpi.baseline) / (kpi.target - kpi.baseline)) * 100,
-        status: kpi.status
-      }));
+    const kpiData = strategicKPIs.map(kpi => ({
+      name: kpi.name_en,
+      baseline: kpi.baseline,
+      current: kpi.current,
+      target: kpi.target,
+      progress: ((kpi.current - kpi.baseline) / (kpi.target - kpi.baseline)) * 100,
+      status: kpi.status
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze strategic KPI performance for Saudi municipal innovation platform:
+    const result = await invokeAI({
+      prompt: `Analyze strategic KPI performance for Saudi municipal innovation platform:
 
 KPI Performance:
 ${JSON.stringify(kpiData, null, 2)}
@@ -138,69 +139,66 @@ Generate bilingual AI insights:
 4. **Target Adjustment** - Suggest realistic target revisions if needed
 5. **Alert Recommendations** - When should stakeholders be notified
 6. **Intervention Strategies** - Specific actions to improve at-risk KPIs`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            anomalies: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  kpi_en: { type: 'string' },
-                  kpi_ar: { type: 'string' },
-                  anomaly_en: { type: 'string' },
-                  anomaly_ar: { type: 'string' },
-                  severity: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          anomalies: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                kpi_en: { type: 'string' },
+                kpi_ar: { type: 'string' },
+                anomaly_en: { type: 'string' },
+                anomaly_ar: { type: 'string' },
+                severity: { type: 'string' }
               }
-            },
-            forecasts: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  kpi_en: { type: 'string' },
-                  kpi_ar: { type: 'string' },
-                  forecast_en: { type: 'string' },
-                  forecast_ar: { type: 'string' },
-                  confidence: { type: 'string' }
-                }
+            }
+          },
+          forecasts: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                kpi_en: { type: 'string' },
+                kpi_ar: { type: 'string' },
+                forecast_en: { type: 'string' },
+                forecast_ar: { type: 'string' },
+                confidence: { type: 'string' }
               }
-            },
-            correlations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  correlation_en: { type: 'string' },
-                  correlation_ar: { type: 'string' },
-                  strength: { type: 'string' }
-                }
+            }
+          },
+          correlations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                correlation_en: { type: 'string' },
+                correlation_ar: { type: 'string' },
+                strength: { type: 'string' }
               }
-            },
-            interventions: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  kpi_en: { type: 'string' },
-                  kpi_ar: { type: 'string' },
-                  strategy_en: { type: 'string' },
-                  strategy_ar: { type: 'string' },
-                  urgency: { type: 'string' }
-                }
+            }
+          },
+          interventions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                kpi_en: { type: 'string' },
+                kpi_ar: { type: 'string' },
+                strategy_en: { type: 'string' },
+                strategy_ar: { type: 'string' },
+                urgency: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setAiInsights(result);
+    if (result.success) {
+      setAiInsights(result.data);
       toast.success(t({ en: 'AI insights generated', ar: 'تم إنشاء الرؤى الذكية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate insights', ar: 'فشل إنشاء الرؤى' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -236,10 +234,11 @@ Generate bilingual AI insights:
                 {t({ en: 'Anomaly detection, forecasting, correlation analysis, and intervention strategies', ar: 'كشف الشذوذ والتنبؤ وتحليل الارتباط واستراتيجيات التدخل' })}
               </p>
             </div>
-            <Button onClick={generateAIInsights} disabled={aiLoading} className="bg-gradient-to-r from-purple-600 to-pink-600">
+            <Button onClick={generateAIInsights} disabled={aiLoading || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
               {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'AI Analyze', ar: 'تحليل ذكي' })}
             </Button>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
           </div>
         </CardContent>
       </Card>

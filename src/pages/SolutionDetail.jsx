@@ -46,6 +46,8 @@ import ComplianceValidationAI from '../components/solutions/ComplianceValidation
 import RealTimeMarketIntelligence from '../components/solutions/RealTimeMarketIntelligence';
 import TRLAssessmentTool from '../components/solutions/TRLAssessmentTool';
 import SolutionRDCollaborationProposal from '../components/solutions/SolutionRDCollaborationProposal';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SolutionDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -55,7 +57,7 @@ function SolutionDetailPage() {
   const [comment, setComment] = React.useState('');
   const [showAIInsights, setShowAIInsights] = React.useState(false);
   const [aiInsights, setAiInsights] = React.useState(null);
-  const [aiLoading, setAiLoading] = React.useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [showVerification, setShowVerification] = React.useState(false);
   const [showDeployment, setShowDeployment] = React.useState(false);
   const [showReview, setShowReview] = React.useState(false);
@@ -116,10 +118,8 @@ function SolutionDetailPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this solution for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
+    const result = await invokeAI({
+      prompt: `Analyze this solution for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Solution: ${solution.name_en}
 Provider: ${solution.provider_name}
@@ -137,22 +137,19 @@ Provide bilingual insights (each item should have both English and Arabic versio
 3. Implementation recommendations
 4. Potential challenges and municipalities that would benefit
 5. Scaling and partnership opportunities`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            market_fit: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            competitive_advantages: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            implementation_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            potential_municipalities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            scaling_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          market_fit: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          competitive_advantages: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          implementation_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          potential_municipalities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          scaling_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+    if (result.success) {
+      setAiInsights(result.data);
     }
   };
 
@@ -316,8 +313,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   </a>
                 </Button>
               )}
-              <Button className="bg-white text-indigo-600 hover:bg-white/90" onClick={handleAIInsights}>
-                <Sparkles className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              <Button className="bg-white text-indigo-600 hover:bg-white/90" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+                {aiLoading ? <Loader2 className={`h-4 w-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} /> : <Sparkles className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />}
                 {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
               </Button>
             </div>
@@ -338,6 +335,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
             </Button>
           </CardHeader>
           <CardContent>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
