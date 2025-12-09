@@ -178,11 +178,11 @@ Saudi Innovates Platform`
                       <Badge className="bg-purple-100 text-purple-700 text-xs">
                         AI Score: {app.ai_score}
                       </Badge>
-                      <Badge className={
+                      <Badge className={`text-xs ${
                         app.ai_recommendation === 'accept' ? 'bg-green-100 text-green-700' :
                         app.ai_recommendation === 'waitlist' ? 'bg-yellow-100 text-yellow-700' :
                         'bg-red-100 text-red-700'
-                      } className="text-xs">
+                      }`}>
                         {app.ai_recommendation}
                       </Badge>
                     </div>
