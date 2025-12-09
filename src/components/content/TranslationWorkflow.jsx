@@ -5,12 +5,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Languages, CheckCircle, AlertCircle, Sparkles, Send } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function TranslationWorkflow({ entity, entityType, onUpdate }) {
   const { t } = useLanguage();
-  const [translating, setTranslating] = useState(false);
   const [translations, setTranslations] = useState({});
 
   const fields = entityType === 'Challenge' 
@@ -21,10 +21,13 @@ export default function TranslationWorkflow({ entity, entityType, onUpdate }) {
 
   const hasTranslations = fields.every(f => entity[f]);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const generateTranslations = async () => {
-    setTranslating(true);
-    try {
-      const prompt = `Translate the following ${entityType} content to Arabic (formal, professional):
+    const prompt = `Translate the following ${entityType} content to Arabic (formal, professional):
 
 Title (EN): ${entity.title_en || entity.name_en}
 Description (EN): ${entity.description_en}
@@ -32,24 +35,20 @@ ${entity.tagline_en ? `Tagline (EN): ${entity.tagline_en}` : ''}
 
 Provide translations in JSON format with keys: title_ar, description_ar, tagline_ar`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_ar: { type: 'string' },
-            description_ar: { type: 'string' },
-            tagline_ar: { type: 'string' }
-          }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_ar: { type: 'string' },
+          description_ar: { type: 'string' },
+          tagline_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setTranslations(result);
-      toast.success(t({ en: 'Translations generated', ar: 'تم إنشاء الترجمات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Translation failed', ar: 'فشلت الترجمة' }));
-    } finally {
-      setTranslating(false);
+    if (response.success) {
+      setTranslations(response.data);
     }
   };
 
@@ -85,6 +84,8 @@ Provide translations in JSON format with keys: title_ar, description_ar, tagline
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {!hasTranslations && (
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
             {t({ en: 'Arabic content is missing. Generate AI translations or add manually.', ar: 'المحتوى العربي مفقود. أنشئ ترجمات ذكية أو أضف يدوياً.' })}
@@ -93,11 +94,11 @@ Provide translations in JSON format with keys: title_ar, description_ar, tagline
 
         <Button 
           onClick={generateTranslations} 
-          disabled={translating}
+          disabled={isLoading || !isAvailable}
           className="w-full bg-blue-600"
         >
           <Sparkles className="h-4 w-4 mr-2" />
-          {translating 
+          {isLoading 
             ? t({ en: 'Generating...', ar: 'جارٍ الإنشاء...' })
             : t({ en: 'Generate AI Translations', ar: 'إنشاء ترجمات ذكية' })
           }

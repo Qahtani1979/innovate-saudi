@@ -11,7 +11,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { 
-  TrendingUp, TrendingDown, AlertCircle, CheckCircle2, 
+  AlertCircle, CheckCircle2, 
   Upload, Loader2, RefreshCw, Database 
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,6 +23,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function EnhancedKPITracker({ pilot }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,6 +32,11 @@ export default function EnhancedKPITracker({ pilot }) {
   const [selectedKPI, setSelectedKPI] = useState(null);
   const [manualValue, setManualValue] = useState('');
   const [apiEndpoint, setApiEndpoint] = useState('');
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading: aiLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const { data: pilotKPIs = [] } = useQuery({
     queryKey: ['pilot-kpis', pilot.id],
@@ -59,7 +66,6 @@ export default function EnhancedKPITracker({ pilot }) {
         source: 'manual'
       });
 
-      // Update current value in PilotKPI
       await base44.entities.PilotKPI.update(kpiId, {
         current_value: parseFloat(value),
         last_updated: new Date().toISOString()
@@ -75,12 +81,11 @@ export default function EnhancedKPITracker({ pilot }) {
 
   const autoIngestMutation = useMutation({
     mutationFn: async ({ kpiId, endpoint }) => {
-      // Simulate API data ingestion - in production, this would call actual external APIs
       const prompt = `Extract KPI value from this data source endpoint: ${endpoint}
       
 Parse the response and return the numeric KPI value.`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt,
         response_json_schema: {
           type: "object",
@@ -92,19 +97,21 @@ Parse the response and return the numeric KPI value.`;
         }
       });
 
-      await base44.entities.PilotKPIDatapoint.create({
-        pilot_kpi_id: kpiId,
-        timestamp: response.timestamp || new Date().toISOString(),
-        value: response.value,
-        source: 'automated',
-        notes: `Auto-ingested from ${endpoint}. ${response.source_notes || ''}`
-      });
+      if (response.success) {
+        await base44.entities.PilotKPIDatapoint.create({
+          pilot_kpi_id: kpiId,
+          timestamp: response.data.timestamp || new Date().toISOString(),
+          value: response.data.value,
+          source: 'automated',
+          notes: `Auto-ingested from ${endpoint}. ${response.data.source_notes || ''}`
+        });
 
-      await base44.entities.PilotKPI.update(kpiId, {
-        current_value: response.value,
-        last_updated: new Date().toISOString(),
-        data_source: endpoint
-      });
+        await base44.entities.PilotKPI.update(kpiId, {
+          current_value: response.data.value,
+          last_updated: new Date().toISOString(),
+          data_source: endpoint
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilot-kpis']);
@@ -151,16 +158,17 @@ Parse the response and return the numeric KPI value.`;
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+          
           {pilotKPIs.length > 0 ? (
             pilotKPIs.map((kpi) => {
               const trend = getKPITrend(kpi.id);
-              const status = getKPIStatus(kpi);
-              const StatusIcon = status.icon;
+              const kpiStatus = getKPIStatus(kpi);
+              const StatusIcon = kpiStatus.icon;
               const progress = calculateProgress(kpi);
 
               return (
                 <div key={kpi.id} className="p-4 border rounded-lg space-y-3">
-                  {/* Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h4 className="font-semibold text-slate-900">
@@ -169,16 +177,15 @@ Parse the response and return the numeric KPI value.`;
                       <p className="text-sm text-slate-600 mt-1">{kpi.unit}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={status.status === 'on_track' ? 'bg-green-100 text-green-700' : 
-                                      status.status === 'at_risk' ? 'bg-yellow-100 text-yellow-700' :
+                      <Badge className={kpiStatus.status === 'on_track' ? 'bg-green-100 text-green-700' : 
+                                      kpiStatus.status === 'at_risk' ? 'bg-yellow-100 text-yellow-700' :
                                       'bg-red-100 text-red-700'}>
-                        {status.status.replace(/_/g, ' ')}
+                        {kpiStatus.status.replace(/_/g, ' ')}
                       </Badge>
-                      <StatusIcon className={`h-5 w-5 ${status.color}`} />
+                      <StatusIcon className={`h-5 w-5 ${kpiStatus.color}`} />
                     </div>
                   </div>
 
-                  {/* Values */}
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-slate-500">{t({ en: 'Baseline:', ar: 'الأساس:' })}</span>
@@ -194,7 +201,6 @@ Parse the response and return the numeric KPI value.`;
                     </div>
                   </div>
 
-                  {/* Progress Bar */}
                   <div>
                     <div className="flex justify-between text-xs text-slate-600 mb-1">
                       <span>{t({ en: 'Progress', ar: 'التقدم' })}</span>
@@ -203,7 +209,6 @@ Parse the response and return the numeric KPI value.`;
                     <Progress value={progress} className="h-2" />
                   </div>
 
-                  {/* Trend Chart */}
                   {trend.length > 0 && (
                     <div className="mt-4">
                       <p className="text-xs text-slate-600 mb-2">
@@ -221,7 +226,6 @@ Parse the response and return the numeric KPI value.`;
                     </div>
                   )}
 
-                  {/* Data Source Info */}
                   <div className="flex items-center gap-2 text-xs text-slate-500">
                     <span>{t({ en: 'Source:', ar: 'المصدر:' })}</span>
                     <Badge variant="outline" className="text-xs">
@@ -234,7 +238,6 @@ Parse the response and return the numeric KPI value.`;
                     )}
                   </div>
 
-                  {/* Actions */}
                   <div className="flex gap-2 pt-2 border-t">
                     <Dialog>
                       <DialogTrigger asChild>
@@ -284,6 +287,7 @@ Parse the response and return the numeric KPI value.`;
                           variant="outline" 
                           size="sm"
                           onClick={() => setSelectedKPI(kpi.id)}
+                          disabled={!isAvailable}
                         >
                           <RefreshCw className="h-3 w-3 mr-2" />
                           {t({ en: 'Auto Ingest', ar: 'استيراد تلقائي' })}
@@ -307,10 +311,10 @@ Parse the response and return the numeric KPI value.`;
                           </div>
                           <Button
                             onClick={() => autoIngestMutation.mutate({ kpiId: kpi.id, endpoint: apiEndpoint })}
-                            disabled={!apiEndpoint || autoIngestMutation.isPending}
+                            disabled={!apiEndpoint || autoIngestMutation.isPending || aiLoading}
                             className="w-full bg-blue-600"
                           >
-                            {autoIngestMutation.isPending ? (
+                            {autoIngestMutation.isPending || aiLoading ? (
                               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t({ en: 'Ingesting...', ar: 'جاري الاستيراد...' })}</>
                             ) : (
                               <>{t({ en: 'Ingest Data', ar: 'استيراد البيانات' })}</>

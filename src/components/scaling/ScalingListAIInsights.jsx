@@ -1,24 +1,26 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Loader2, X, TrendingUp } from 'lucide-react';
-import { toast } from 'sonner';
+import { Sparkles, Loader2, X } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ScalingListAIInsights({ completedPilots, scaledPilots }) {
   const { t, isRTL } = useLanguage();
   const [insights, setInsights] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const generateInsights = async () => {
     setVisible(true);
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the national scaling pipeline:
+    
+    const response = await invokeAI({
+      prompt: `Analyze the national scaling pipeline:
 
 Pilots Ready to Scale: ${completedPilots.length}
 Already Scaled: ${scaledPilots.length}
@@ -32,27 +34,26 @@ Provide strategic insights:
 3. Sector-based scaling opportunities
 4. Budget optimization strategies
 5. Risk mitigation for national rollout`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            priority_pilots: { type: 'array', items: { type: 'string' } },
-            geographic_strategy: { type: 'array', items: { type: 'string' } },
-            sector_opportunities: { type: 'array', items: { type: 'string' } },
-            budget_optimization: { type: 'array', items: { type: 'string' } },
-            risk_mitigation: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          priority_pilots: { type: 'array', items: { type: 'string' } },
+          geographic_strategy: { type: 'array', items: { type: 'string' } },
+          sector_opportunities: { type: 'array', items: { type: 'string' } },
+          budget_optimization: { type: 'array', items: { type: 'string' } },
+          risk_mitigation: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate insights', ar: 'فشل توليد الرؤى' }));
+      }
+    });
+
+    if (response.success) {
+      setInsights(response.data);
     }
-    setLoading(false);
   };
 
   if (!visible) {
     return (
-      <Button onClick={generateInsights} variant="outline" className="gap-2">
+      <Button onClick={generateInsights} variant="outline" className="gap-2" disabled={!isAvailable}>
         <Sparkles className="h-4 w-4" />
         {t({ en: 'AI Scaling Insights', ar: 'رؤى التوسع الذكية' })}
       </Button>
@@ -73,7 +74,9 @@ Provide strategic insights:
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
             <span className={`${isRTL ? 'mr-3' : 'ml-3'} text-slate-600`}>{t({ en: 'Analyzing...', ar: 'يحلل...' })}</span>
