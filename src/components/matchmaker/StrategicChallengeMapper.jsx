@@ -8,11 +8,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { Target, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function StrategicChallengeMapper({ application, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
   const [selectedChallenges, setSelectedChallenges] = useState(application.strategic_challenges || []);
-  const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['strategic-challenges'],
@@ -23,10 +25,8 @@ export default function StrategicChallengeMapper({ application, onUpdate }) {
   });
 
   const handleAIMatch = async () => {
-    setAiAnalyzing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Match this application to strategic challenges for bonus points.
+    const result = await invokeAI({
+      prompt: `Match this application to strategic challenges for bonus points.
 
 APPLICATION:
 - Organization: ${application.organization_name_en}
@@ -47,33 +47,30 @@ For each challenge this application could address, return:
 - relevance_score (0-100)
 - bonus_points (suggest 5, 10, or 15 based on fit strength)
 - reason_en/reason_ar (why it matches)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            matches: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  challenge_id: { type: 'string' },
-                  challenge_code: { type: 'string' },
-                  relevance_score: { type: 'number' },
-                  bonus_points: { type: 'number' },
-                  reason_en: { type: 'string' },
-                  reason_ar: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          matches: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                challenge_id: { type: 'string' },
+                challenge_code: { type: 'string' },
+                relevance_score: { type: 'number' },
+                bonus_points: { type: 'number' },
+                reason_en: { type: 'string' },
+                reason_ar: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setSelectedChallenges(result.matches || []);
-      toast.success(t({ en: `AI found ${result.matches?.length || 0} relevant challenges`, ar: `وجد الذكاء ${result.matches?.length || 0} تحديات مناسبة` }));
-    } catch (error) {
-      toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAiAnalyzing(false);
+    if (result.success) {
+      setSelectedChallenges(result.data.matches || []);
+      toast.success(t({ en: `AI found ${result.data.matches?.length || 0} relevant challenges`, ar: `وجد الذكاء ${result.data.matches?.length || 0} تحديات مناسبة` }));
     }
   };
 
@@ -100,13 +97,15 @@ For each challenge this application could address, return:
             <Target className="h-5 w-5 text-amber-600" />
             {t({ en: 'Strategic Challenge Alignment', ar: 'التوافق مع التحديات الاستراتيجية' })}
           </div>
-          <Button onClick={handleAIMatch} disabled={aiAnalyzing} variant="outline" size="sm">
-            {aiAnalyzing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          <Button onClick={handleAIMatch} disabled={isLoading || !isAvailable} variant="outline" size="sm">
+            {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'AI Match', ar: 'مطابقة ذكية' })}
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
           <p className="text-sm text-amber-900">
             {t({

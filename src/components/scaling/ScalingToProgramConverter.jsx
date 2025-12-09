@@ -3,15 +3,15 @@ import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ScalingToProgramConverter({ scalingPlan, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [generating, setGenerating] = useState(false);
   const [programData, setProgramData] = useState({
     name_en: '',
     name_ar: '',
@@ -19,6 +19,7 @@ export default function ScalingToProgramConverter({ scalingPlan, onClose, onSucc
     objectives_ar: '',
     curriculum: []
   });
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const createProgramMutation = useMutation({
     mutationFn: async (data) => {
@@ -48,10 +49,8 @@ export default function ScalingToProgramConverter({ scalingPlan, onClose, onSucc
   });
 
   const generateWithAI = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Design a knowledge transfer training program from scaling initiative lessons.
+    const result = await invokeAI({
+      prompt: `Design a knowledge transfer training program from scaling initiative lessons.
 
 SCALING PLAN:
 Title: ${scalingPlan.title_en}
@@ -67,37 +66,34 @@ Generate training program:
 - Success metrics
 
 Extract best practices and common challenges from scaling data.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            name_en: { type: "string" },
-            name_ar: { type: "string" },
-            tagline_en: { type: "string" },
-            tagline_ar: { type: "string" },
-            objectives_en: { type: "string" },
-            objectives_ar: { type: "string" },
-            curriculum: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  week: { type: "number" },
-                  topic_en: { type: "string" },
-                  topic_ar: { type: "string" },
-                  activities: { type: "array", items: { type: "string" } }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          name_en: { type: "string" },
+          name_ar: { type: "string" },
+          tagline_en: { type: "string" },
+          tagline_ar: { type: "string" },
+          objectives_en: { type: "string" },
+          objectives_ar: { type: "string" },
+          curriculum: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                week: { type: "number" },
+                topic_en: { type: "string" },
+                topic_ar: { type: "string" },
+                activities: { type: "array", items: { type: "string" } }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setProgramData(response);
+    if (result.success) {
+      setProgramData(result.data);
       toast.success(t({ en: 'AI generated program', ar: 'تم توليد البرنامج' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -132,6 +128,8 @@ Extract best practices and common challenges from scaling data.`,
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+          
           <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
             <p className="text-sm font-semibold text-orange-900 mb-2">
               {t({ en: 'Scaling Plan:', ar: 'خطة التوسع:' })}
@@ -144,11 +142,11 @@ Extract best practices and common challenges from scaling data.`,
 
           <Button
             onClick={generateWithAI}
-            disabled={generating}
+            disabled={isLoading || !isAvailable}
             className="w-full bg-gradient-to-r from-orange-600 to-amber-600"
             size="lg"
           >
-            {generating ? (
+            {isLoading ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                 {t({ en: 'Generating Curriculum...', ar: 'توليد المنهج...' })}

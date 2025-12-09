@@ -8,18 +8,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Mail, Send, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AutomatedMatchNotifier({ match, provider, challenge }) {
   const { language, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [emailContent, setEmailContent] = useState('');
   const queryClient = useQueryClient();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateEmail = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate personalized email to startup about new match:
+    const result = await invokeAI({
+      prompt: `Generate personalized email to startup about new match:
 
 PROVIDER: ${provider.name_en}
 CHALLENGE: ${challenge.title_en}
@@ -34,21 +34,18 @@ Create professional email:
 - Clear next steps
 - Professional but engaging tone
 - In English (Arabic can follow)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            subject: { type: "string" },
-            body: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          subject: { type: "string" },
+          body: { type: "string" }
         }
-      });
+      }
+    });
 
-      setEmailContent(`Subject: ${response.subject}\n\n${response.body}`);
+    if (result.success) {
+      setEmailContent(`Subject: ${result.data.subject}\n\n${result.data.body}`);
       toast.success(t({ en: 'Email generated', ar: 'تم إنشاء البريد' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -87,14 +84,16 @@ Create professional email:
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {!emailContent && (
           <div className="text-center py-6">
             <Mail className="h-12 w-12 text-blue-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600 mb-4">
               {t({ en: 'AI generates personalized notification emails for matches', ar: 'الذكاء ينشئ رسائل إشعار مخصصة للمطابقات' })}
             </p>
-            <Button onClick={generateEmail} disabled={generating} className="bg-gradient-to-r from-blue-600 to-cyan-600">
-              {generating ? (
+            <Button onClick={generateEmail} disabled={isLoading || !isAvailable} className="bg-gradient-to-r from-blue-600 to-cyan-600">
+              {isLoading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4 mr-2" />
@@ -111,7 +110,7 @@ Create professional email:
                 <Badge className="bg-green-100 text-green-700">
                   {t({ en: 'AI Generated', ar: 'منشأ بالذكاء' })}
                 </Badge>
-                <Button variant="outline" size="sm" onClick={generateEmail} disabled={generating}>
+                <Button variant="outline" size="sm" onClick={generateEmail} disabled={isLoading || !isAvailable}>
                   {t({ en: 'Regenerate', ar: 'إعادة إنشاء' })}
                 </Button>
               </div>
@@ -126,7 +125,7 @@ Create professional email:
             <div className="flex gap-2">
               <Button 
                 onClick={() => sendNotification.mutate()} 
-                disabled={sendNotification.isLoading}
+                disabled={sendNotification.isPending}
                 className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600"
               >
                 <Send className="h-4 w-4 mr-2" />
