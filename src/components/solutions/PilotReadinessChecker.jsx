@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { CheckCircle, AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotReadinessChecker({ solution }) {
   const { language, t } = useLanguage();
-  const [checking, setChecking] = useState(false);
   const [assessment, setAssessment] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: checking, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const checkReadiness = async () => {
-    setChecking(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Assess pilot readiness for this solution:
+    const result = await invokeAI({
+      prompt: `Assess pilot readiness for this solution:
 
 SOLUTION: ${solution.name_en}
 TRL: ${solution.trl}
@@ -33,44 +32,43 @@ Check readiness across:
 6. Support infrastructure
 
 Provide score (0-100), gaps, and action items.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            overall_score: { type: "number" },
-            ready_for_pilot: { type: "boolean" },
-            dimension_scores: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          overall_score: { type: "number" },
+          ready_for_pilot: { type: "boolean" },
+          dimension_scores: {
+            type: "object",
+            properties: {
+              technical: { type: "number" },
+              team: { type: "number" },
+              documentation: { type: "number" },
+              compliance: { type: "number" },
+              integration: { type: "number" },
+              support: { type: "number" }
+            }
+          },
+          gaps: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                technical: { type: "number" },
-                team: { type: "number" },
-                documentation: { type: "number" },
-                compliance: { type: "number" },
-                integration: { type: "number" },
-                support: { type: "number" }
+                area: { type: "string" },
+                issue: { type: "string" },
+                severity: { type: "string" }
               }
-            },
-            gaps: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  area: { type: "string" },
-                  issue: { type: "string" },
-                  severity: { type: "string" }
-                }
-              }
-            },
-            action_items: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          action_items: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setAssessment(response);
+    if (result.success) {
+      setAssessment(result.data);
       toast.success(t({ en: 'Assessment complete', ar: 'اكتمل التقييم' }));
-    } catch (error) {
+    } else {
       toast.error(t({ en: 'Assessment failed', ar: 'فشل التقييم' }));
-    } finally {
-      setChecking(false);
     }
   };
 

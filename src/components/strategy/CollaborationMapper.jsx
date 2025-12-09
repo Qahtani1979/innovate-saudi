@@ -5,14 +5,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Network, Sparkles, Loader2, Mail } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CollaborationMapper() {
   const { language, isRTL, t } = useLanguage();
   const [projectDescription, setProjectDescription] = useState('');
   const [partners, setPartners] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const findPartners = async () => {
     if (!projectDescription) {
@@ -20,10 +21,8 @@ export default function CollaborationMapper() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Find optimal partners for this R&D project/challenge:
+    const result = await invokeAI({
+      prompt: `Find optimal partners for this R&D project/challenge:
 
 ${projectDescription}
 
@@ -32,35 +31,35 @@ Suggest 5 potential partners (universities, startups, municipalities) with:
 - Why this partner? (expertise match)
 - Past performance/track record
 - Suggested role in collaboration`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            partners: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  type: { type: 'string' },
-                  expertise_en: { type: 'string' },
-                  expertise_ar: { type: 'string' },
-                  rationale_en: { type: 'string' },
-                  rationale_ar: { type: 'string' },
-                  role_en: { type: 'string' },
-                  role_ar: { type: 'string' },
-                  match_score: { type: 'number' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          partners: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                type: { type: 'string' },
+                expertise_en: { type: 'string' },
+                expertise_ar: { type: 'string' },
+                rationale_en: { type: 'string' },
+                rationale_ar: { type: 'string' },
+                role_en: { type: 'string' },
+                role_ar: { type: 'string' },
+                match_score: { type: 'number' }
               }
             }
           }
         }
-      });
-      setPartners(result.partners);
+      }
+    });
+
+    if (result.success) {
+      setPartners(result.data.partners);
       toast.success(t({ en: 'Partners identified', ar: 'تم تحديد الشركاء' }));
-    } catch (error) {
+    } else {
       toast.error(t({ en: 'Failed to find partners', ar: 'فشل العثور على شركاء' }));
-    } finally {
-      setLoading(false);
     }
   };
 
