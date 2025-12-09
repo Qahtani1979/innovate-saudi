@@ -9,6 +9,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { CheckCircle2, X, Sparkles, Send, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -16,7 +18,6 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
   const [step, setStep] = useState(1);
   const [notes, setNotes] = useState('');
   const [aiBrief, setAiBrief] = useState(null);
-  const [generatingBrief, setGeneratingBrief] = useState(false);
   
   const [checklist, setChecklist] = useState({
     title_complete: false,
@@ -27,6 +28,11 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
     timeline_realistic: false,
     outputs_defined: false,
     eligibility_met: false
+  });
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
   });
 
   const submitMutation = useMutation({
@@ -47,9 +53,7 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
   });
 
   const generateAIBrief = async () => {
-    setGeneratingBrief(true);
-    try {
-      const prompt = `Generate a concise submission brief for this R&D proposal:
+    const prompt = `Generate a concise submission brief for this R&D proposal:
 
 Title: ${proposal.title_en}
 Research Area: ${proposal.research_area}
@@ -63,25 +67,22 @@ Provide:
 3. Potential concerns (2 points)
 4. Recommendation for reviewers (approve/conditional/reject with brief reason)`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            executive_summary: { type: 'string' },
-            strengths: { type: 'array', items: { type: 'string' } },
-            concerns: { type: 'array', items: { type: 'string' } },
-            recommendation: { type: 'string' }
-          }
+    const { success, data } = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          executive_summary: { type: 'string' },
+          strengths: { type: 'array', items: { type: 'string' } },
+          concerns: { type: 'array', items: { type: 'string' } },
+          recommendation: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setAiBrief(result);
+    if (success && data) {
+      setAiBrief(data);
       toast.success(t({ en: 'AI brief generated', ar: 'تم إنشاء الملخص الذكي' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate brief', ar: 'فشل إنشاء الملخص' }));
-    } finally {
-      setGeneratingBrief(false);
     }
   };
 
@@ -110,6 +111,8 @@ Provide:
         </p>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         {/* Step 1: Readiness Checklist */}
         {step === 1 && (
           <div className="space-y-4">
@@ -168,10 +171,10 @@ Provide:
             {!aiBrief ? (
               <Button
                 onClick={generateAIBrief}
-                disabled={generatingBrief}
+                disabled={isLoading || !isAvailable}
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
               >
-                {generatingBrief ? (
+                {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     {t({ en: 'Generating...', ar: 'جاري الإنشاء...' })}

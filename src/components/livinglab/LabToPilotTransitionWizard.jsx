@@ -9,13 +9,19 @@ import { Rocket, Sparkles, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function LabToPilotTransitionWizard({ rdProject }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [generating, setGenerating] = useState(false);
   const [pilotDraft, setPilotDraft] = useState(null);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const createPilotMutation = useMutation({
     mutationFn: (pilotData) => base44.entities.Pilot.create(pilotData),
@@ -27,10 +33,8 @@ export default function LabToPilotTransitionWizard({ rdProject }) {
   });
 
   const generatePilotDraft = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Convert R&D project to municipal pilot proposal:
+    const { success, data } = await invokeAI({
+      prompt: `Convert R&D project to municipal pilot proposal:
 
 R&D PROJECT: ${rdProject.title_en}
 OBJECTIVES: ${rdProject.objectives_en}
@@ -48,38 +52,35 @@ Generate pilot proposal:
 7. Timeline estimate (weeks)
 8. Budget estimate (SAR)
 9. Recommended municipality type (large/medium/small city)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title_en: { type: "string" },
-            objective_en: { type: "string" },
-            hypothesis: { type: "string" },
-            methodology: { type: "string" },
-            scope: { type: "string" },
-            kpis: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  baseline: { type: "string" },
-                  target: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title_en: { type: "string" },
+          objective_en: { type: "string" },
+          hypothesis: { type: "string" },
+          methodology: { type: "string" },
+          scope: { type: "string" },
+          kpis: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                baseline: { type: "string" },
+                target: { type: "string" }
               }
-            },
-            duration_weeks: { type: "number" },
-            budget_estimate: { type: "number" },
-            municipality_recommendation: { type: "string" }
-          }
+            }
+          },
+          duration_weeks: { type: "number" },
+          budget_estimate: { type: "number" },
+          municipality_recommendation: { type: "string" }
         }
-      });
+      }
+    });
 
-      setPilotDraft(response);
+    if (success && data) {
+      setPilotDraft(data);
       toast.success(t({ en: 'Draft generated', ar: 'المسودة أُنشئت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -103,14 +104,16 @@ Generate pilot proposal:
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         {!pilotDraft && (
           <div className="text-center py-8">
             <Rocket className="h-12 w-12 text-teal-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600 mb-4">
               {t({ en: 'AI converts lab research into ready-to-deploy pilot proposal', ar: 'الذكاء يحول بحث المختبر إلى مقترح تجربة جاهز للنشر' })}
             </p>
-            <Button onClick={generatePilotDraft} disabled={generating} className="bg-gradient-to-r from-teal-600 to-cyan-600">
-              {generating ? (
+            <Button onClick={generatePilotDraft} disabled={isLoading || !isAvailable} className="bg-gradient-to-r from-teal-600 to-cyan-600">
+              {isLoading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4 mr-2" />
