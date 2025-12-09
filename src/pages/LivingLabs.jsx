@@ -89,11 +89,6 @@ Provide:
     }
   };
 
-  const { data: labs = [] } = useQuery({
-    queryKey: ['living-labs'],
-    queryFn: () => base44.entities.LivingLab.list()
-  });
-
   const { data: bookings = [] } = useQuery({
     queryKey: ['lab-bookings'],
     queryFn: () => base44.entities.LivingLabBooking.list()
