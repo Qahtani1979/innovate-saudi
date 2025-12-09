@@ -347,7 +347,7 @@ Based on this information:
 
   // Check if specialized wizard is needed
   const needsSpecializedWizard = (persona) => {
-    return ['municipality_staff', 'provider', 'researcher', 'citizen'].includes(persona);
+    return ['municipality_staff', 'provider', 'researcher', 'citizen', 'expert'].includes(persona);
   };
 
   // Get specialized wizard page
@@ -356,7 +356,8 @@ Based on this information:
       municipality_staff: 'MunicipalityStaffOnboarding',
       provider: 'StartupOnboarding',
       researcher: 'ResearcherOnboarding',
-      citizen: 'CitizenOnboarding'
+      citizen: 'CitizenOnboarding',
+      expert: 'ExpertOnboarding'
     };
     return wizardMap[persona] || null;
   };
