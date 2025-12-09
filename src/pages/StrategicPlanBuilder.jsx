@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
-import { Target, Plus, Save, Sparkles } from 'lucide-react';
+import { Target, Plus, Save, Sparkles, Loader2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function StrategicPlanBuilder() {
   const { language, t } = useLanguage();
@@ -19,6 +21,7 @@ function StrategicPlanBuilder() {
     vision_ar: '',
     objectives: []
   });
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const savePlan = useMutation({
     mutationFn: (data) => base44.entities.StrategicPlan.create(data),
@@ -28,39 +31,37 @@ function StrategicPlanBuilder() {
     }
   });
 
-  const generateWithAI = useMutation({
-    mutationFn: async () => {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a strategic plan for a municipal innovation initiative. Include:
+  const generateWithAI = async () => {
+    const result = await invokeAI({
+      prompt: `Generate a strategic plan for a municipal innovation initiative. Include:
 1. Vision statement
 2. 3-5 strategic objectives
 3. Key focus areas
 
 Format as JSON with title_en, vision_en, and objectives array.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title_en: { type: "string" },
-            vision_en: { type: "string" },
-            objectives: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name_en: { type: "string" },
-                  description_en: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title_en: { type: "string" },
+          vision_en: { type: "string" },
+          objectives: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name_en: { type: "string" },
+                description_en: { type: "string" }
               }
             }
           }
         }
-      });
-      return result;
-    },
-    onSuccess: (data) => {
-      setPlan({ ...plan, ...data });
+      }
+    });
+    
+    if (result.success) {
+      setPlan({ ...plan, ...result.data });
     }
-  });
+  };
 
   return (
     <div className="space-y-6">
@@ -71,10 +72,13 @@ Format as JSON with title_en, vision_en, and objectives array.`,
             {t({ en: 'Strategic Plan Builder', ar: 'بناء الخطة الاستراتيجية' })}
           </h1>
         </div>
-        <Button onClick={() => generateWithAI.mutate()} disabled={generateWithAI.isPending}>
-          <Sparkles className="h-4 w-4 mr-2" />
-          {t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
-        </Button>
+        <div className="flex items-center gap-3">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          <Button onClick={generateWithAI} disabled={generating || !isAvailable}>
+            {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
+          </Button>
+        </div>
       </div>
 
       <Card>

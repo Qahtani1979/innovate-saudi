@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,15 +6,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sparkles, Send, Loader2, X, CheckCircle, Bot, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from './LanguageContext';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
-export default function AIFormAssistant({ onDataExtracted, entityType = 'Challenge', municipalities = [] }) {
+export default function AIFormAssistant({ onDataExtracted, entityType = 'Challenge', municipalities = [], challenges = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState(null);
   const scrollRef = useRef(null);
   const { language, t } = useLanguage();
+  const { invokeAI, status, isLoading: isProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -49,39 +50,37 @@ export default function AIFormAssistant({ onDataExtracted, entityType = 'Challen
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setIsProcessing(true);
 
-    try {
-      // Build conversation history
-      const conversationHistory = messages.map(m => 
-        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
-      ).join('\n') + `\nUser: ${input}`;
+    // Build conversation history
+    const conversationHistory = messages.map(m => 
+      `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
+    ).join('\n') + `\nUser: ${input}`;
 
-      // Detect user's language from their last message
-      const userLanguage = /[\u0600-\u06FF]/.test(input) ? 'ar' : 'en';
+    // Detect user's language from their last message
+    const userLanguage = /[\u0600-\u06FF]/.test(input) ? 'ar' : 'en';
 
-      // Enhanced municipality mapping for Challenge entity
-      const municipalityMapping = municipalities.length > 0 ? `
-      Available municipalities (use ID for municipality_id field):
-      ${municipalities.map(m => `- ${m.name_en} (ID: ${m.id})`).join('\n')}
-      ` : '';
+    // Enhanced municipality mapping for Challenge entity
+    const municipalityMapping = municipalities.length > 0 ? `
+    Available municipalities (use ID for municipality_id field):
+    ${municipalities.map(m => `- ${m.name_en} (ID: ${m.id})`).join('\n')}
+    ` : '';
 
-      // Enhanced challenge matching for Solution entity
-      const challengeContext = challenges.length > 0 && entityType === 'Solution' ? `
-      
-      Available Challenges (analyze and match to this solution):
-      ${challenges.slice(0, 20).map(c => `
-      - Code: ${c.code}
-        Title: ${c.title_en}
-        Sector: ${c.sector}
-        Description: ${c.description_en?.substring(0, 200)}
-      `).join('\n')}
-      
-      Task: Analyze the solution and identify which challenges it could address.
-      Return an array of challenge codes that match.
-      ` : '';
+    // Enhanced challenge matching for Solution entity
+    const challengeContext = challenges.length > 0 && entityType === 'Solution' ? `
+    
+    Available Challenges (analyze and match to this solution):
+    ${challenges.slice(0, 20).map(c => `
+    - Code: ${c.code}
+      Title: ${c.title_en}
+      Sector: ${c.sector}
+      Description: ${c.description_en?.substring(0, 200)}
+    `).join('\n')}
+    
+    Task: Analyze the solution and identify which challenges it could address.
+    Return an array of challenge codes that match.
+    ` : '';
 
-      const prompt = `You are an AI assistant for Saudi National Municipal Innovation Platform. Extract COMPLETE structured data from the conversation.
+    const prompt = `You are an AI assistant for Saudi National Municipal Innovation Platform. Extract COMPLETE structured data from the conversation.
 
 CONVERSATION:
 ${conversationHistory}
@@ -124,130 +123,132 @@ JSON response format:
   "next_questions": ["What should I ask next?"]
 }`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            response: { type: 'string' },
-            has_enough_data: { type: 'boolean' },
-            extracted_data: {
-              type: 'object',
-              properties: {
-                title_en: { type: 'string' },
-                title_ar: { type: 'string' },
-                tagline_en: { type: 'string' },
-                tagline_ar: { type: 'string' },
-                description_en: { type: 'string' },
-                description_ar: { type: 'string' },
-                problem_statement_en: { type: 'string' },
-                problem_statement_ar: { type: 'string' },
-                current_situation_en: { type: 'string' },
-                current_situation_ar: { type: 'string' },
-                desired_outcome_en: { type: 'string' },
-                desired_outcome_ar: { type: 'string' },
-                root_cause_en: { type: 'string' },
-                root_cause_ar: { type: 'string' },
-                root_causes: { type: 'array', items: { type: 'string' } },
-                theme: { type: 'string' },
-                sector: { type: 'string', enum: ['urban_design', 'transport', 'environment', 'digital_services', 'health', 'education', 'safety', 'economic_development', 'social_services', 'other'] },
-                sub_sector: { type: 'string' },
-                challenge_type: { type: 'string', enum: ['service_quality', 'infrastructure', 'efficiency', 'innovation', 'safety', 'environmental', 'digital_transformation', 'other'] },
-                category: { type: 'string' },
-                municipality_id: { type: 'string' },
-                city_id: { type: 'string' },
-                region_id: { type: 'string' },
-                service_id: { type: 'string' },
-                affected_services: { type: 'array', items: { type: 'string' } },
-                ministry_service: { type: 'string' },
-                responsible_agency: { type: 'string' },
-                department: { type: 'string' },
-                challenge_owner: { type: 'string' },
-                challenge_owner_email: { type: 'string' },
-                reviewer: { type: 'string' },
-                source: { type: 'string' },
-                strategic_goal: { type: 'string' },
-                entry_date: { type: 'string' },
-                processing_date: { type: 'string' },
-                priority: { type: 'string', enum: ['tier_1', 'tier_2', 'tier_3', 'tier_4'] },
-                track: { type: 'string', enum: ['pilot', 'r_and_d', 'program', 'procurement', 'policy', 'none'] },
-                severity_score: { type: 'number' },
-                impact_score: { type: 'number' },
-                overall_score: { type: 'number' },
-                affected_population: { 
-                  type: 'object',
-                  properties: {
-                    size: { type: 'number' },
-                    demographics: { type: 'string' },
-                    location: { type: 'string' }
-                  }
-                },
-                affected_population_size: { type: 'number' },
-                coordinates: {
-                  type: 'object',
-                  properties: {
-                    latitude: { type: 'number' },
-                    longitude: { type: 'number' }
-                  }
-                },
-                kpis: { 
-                  type: 'array', 
-                  items: { 
-                    type: 'object',
-                    properties: {
-                      name: { type: 'string' },
-                      baseline: { type: 'string' },
-                      target: { type: 'string' }
-                    }
-                  }
-                },
-                stakeholders: { 
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      name: { type: 'string' },
-                      role: { type: 'string' },
-                      involvement: { type: 'string' }
-                    }
-                  }
-                },
-                data_evidence: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      type: { type: 'string' },
-                      source: { type: 'string' },
-                      value: { type: 'string' },
-                      date: { type: 'string' },
-                      url: { type: 'string' }
-                    }
-                  }
-                },
-                constraints: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      type: { type: 'string' },
-                      description: { type: 'string' }
-                    }
-                  }
-                },
-                keywords: { type: 'array', items: { type: 'string' } },
-                budget_estimate: { type: 'number' },
-                timeline_estimate: { type: 'string' },
-                related_questions_count: { type: 'number' },
-                matched_challenge_codes: { type: 'array', items: { type: 'string' } }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          response: { type: 'string' },
+          has_enough_data: { type: 'boolean' },
+          extracted_data: {
+            type: 'object',
+            properties: {
+              title_en: { type: 'string' },
+              title_ar: { type: 'string' },
+              tagline_en: { type: 'string' },
+              tagline_ar: { type: 'string' },
+              description_en: { type: 'string' },
+              description_ar: { type: 'string' },
+              problem_statement_en: { type: 'string' },
+              problem_statement_ar: { type: 'string' },
+              current_situation_en: { type: 'string' },
+              current_situation_ar: { type: 'string' },
+              desired_outcome_en: { type: 'string' },
+              desired_outcome_ar: { type: 'string' },
+              root_cause_en: { type: 'string' },
+              root_cause_ar: { type: 'string' },
+              root_causes: { type: 'array', items: { type: 'string' } },
+              theme: { type: 'string' },
+              sector: { type: 'string', enum: ['urban_design', 'transport', 'environment', 'digital_services', 'health', 'education', 'safety', 'economic_development', 'social_services', 'other'] },
+              sub_sector: { type: 'string' },
+              challenge_type: { type: 'string', enum: ['service_quality', 'infrastructure', 'efficiency', 'innovation', 'safety', 'environmental', 'digital_transformation', 'other'] },
+              category: { type: 'string' },
+              municipality_id: { type: 'string' },
+              city_id: { type: 'string' },
+              region_id: { type: 'string' },
+              service_id: { type: 'string' },
+              affected_services: { type: 'array', items: { type: 'string' } },
+              ministry_service: { type: 'string' },
+              responsible_agency: { type: 'string' },
+              department: { type: 'string' },
+              challenge_owner: { type: 'string' },
+              challenge_owner_email: { type: 'string' },
+              reviewer: { type: 'string' },
+              source: { type: 'string' },
+              strategic_goal: { type: 'string' },
+              entry_date: { type: 'string' },
+              processing_date: { type: 'string' },
+              priority: { type: 'string', enum: ['tier_1', 'tier_2', 'tier_3', 'tier_4'] },
+              track: { type: 'string', enum: ['pilot', 'r_and_d', 'program', 'procurement', 'policy', 'none'] },
+              severity_score: { type: 'number' },
+              impact_score: { type: 'number' },
+              overall_score: { type: 'number' },
+              affected_population: { 
+                type: 'object',
+                properties: {
+                  size: { type: 'number' },
+                  demographics: { type: 'string' },
+                  location: { type: 'string' }
+                }
               },
-              required: ['title_en', 'title_ar', 'description_en', 'description_ar', 'sector']
+              affected_population_size: { type: 'number' },
+              coordinates: {
+                type: 'object',
+                properties: {
+                  latitude: { type: 'number' },
+                  longitude: { type: 'number' }
+                }
+              },
+              kpis: { 
+                type: 'array', 
+                items: { 
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    baseline: { type: 'string' },
+                    target: { type: 'string' }
+                  }
+                }
+              },
+              stakeholders: { 
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    role: { type: 'string' },
+                    involvement: { type: 'string' }
+                  }
+                }
+              },
+              data_evidence: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    type: { type: 'string' },
+                    source: { type: 'string' },
+                    value: { type: 'string' },
+                    date: { type: 'string' },
+                    url: { type: 'string' }
+                  }
+                }
+              },
+              constraints: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    type: { type: 'string' },
+                    description: { type: 'string' }
+                  }
+                }
+              },
+              keywords: { type: 'array', items: { type: 'string' } },
+              budget_estimate: { type: 'number' },
+              timeline_estimate: { type: 'string' },
+              related_questions_count: { type: 'number' },
+              matched_challenge_codes: { type: 'array', items: { type: 'string' } }
             },
-            next_questions: { type: 'array', items: { type: 'string' } }
-          }
+            required: ['title_en', 'title_ar', 'description_en', 'description_ar', 'sector']
+          },
+          next_questions: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (response.success) {
+      const result = response.data;
       const assistantMessage = {
         role: 'assistant',
         content: result.response,
@@ -273,11 +274,8 @@ JSON response format:
           timestamp: new Date()
         }]);
       }
-
-    } catch (error) {
-      toast.error('AI assistant error: ' + error.message);
-    } finally {
-      setIsProcessing(false);
+    } else {
+      toast.error('AI assistant error');
     }
   };
 

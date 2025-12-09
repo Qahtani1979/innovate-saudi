@@ -10,11 +10,13 @@ import { createPageUrl } from '../utils';
 import { Calendar, Users, TrendingUp, Target, Sparkles, Loader2, Award } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ProgramsControlDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiInsights, setAiInsights] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-control'],
@@ -42,10 +44,8 @@ function ProgramsControlDashboard() {
   const chartData = Object.values(programTypeData);
 
   const generatePortfolioInsights = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this program portfolio:
+    const result = await invokeAI({
+      prompt: `Analyze this program portfolio:
 
 Total programs: ${programs.length}
 Active: ${activePrograms.length}
@@ -59,21 +59,19 @@ Provide:
 2. Gaps in program offerings
 3. Success patterns across program types
 4. Recommendations for new programs`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            balance_score: { type: 'number' },
-            gaps: { type: 'array', items: { type: 'string' } },
-            success_patterns: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          balance_score: { type: 'number' },
+          gaps: { type: 'array', items: { type: 'string' } },
+          success_patterns: { type: 'array', items: { type: 'string' } },
+          recommendations: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      }
+    });
+    
+    if (result.success) {
+      setAiInsights(result.data);
     }
   };
 
@@ -95,7 +93,8 @@ Provide:
               {t({ en: 'ROI Analytics', ar: 'تحليلات العائد' })}
             </Button>
           </Link>
-          <Button onClick={generatePortfolioInsights} disabled={loading} className="bg-purple-600">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          <Button onClick={generatePortfolioInsights} disabled={loading || !isAvailable} className="bg-purple-600">
             {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Portfolio Insights', ar: 'رؤى المحفظة' })}
           </Button>

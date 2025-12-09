@@ -11,13 +11,16 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { CheckCircle2, XCircle, Clock, AlertCircle, TestTube, Microscope, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function Approvals() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [comments, setComments] = useState({});
   const [aiBriefs, setAiBriefs] = useState({});
-  const [generatingBrief, setGeneratingBrief] = useState({});
+  const { invokeAI, status, isLoading: generatingBrief, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const [currentBriefId, setCurrentBriefId] = useState(null);
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['pending-challenges'],
@@ -61,12 +64,11 @@ export default function Approvals() {
   };
 
   const generateAIBrief = async (entity, id) => {
-    setGeneratingBrief({ ...generatingBrief, [id]: true });
-    try {
-      const item = entity === 'Challenge' ? challenges.find(c => c.id === id) : pilots.find(p => p.id === id);
-      
-      const prompt = entity === 'Challenge' 
-        ? `Generate approval decision brief for this challenge:
+    setCurrentBriefId(id);
+    const item = entity === 'Challenge' ? challenges.find(c => c.id === id) : pilots.find(p => p.id === id);
+    
+    const prompt = entity === 'Challenge' 
+      ? `Generate approval decision brief for this challenge:
 Title: ${item.title_en}
 Sector: ${item.sector}
 Priority: ${item.priority}
@@ -74,7 +76,7 @@ Description: ${item.description_en?.substring(0, 300)}
 Score: ${item.overall_score}
 
 Provide: approval recommendation (approve/reject/conditional), rationale, key risks, required actions, suggested track (pilot/R&D/policy)`
-        : `Generate approval decision brief for this pilot:
+      : `Generate approval decision brief for this pilot:
 Title: ${item.title_en}
 Sector: ${item.sector}
 Budget: ${item.budget} ${item.budget_currency}
@@ -84,27 +86,27 @@ KPIs: ${item.kpis?.length || 0} defined
 
 Provide: approval recommendation, budget assessment, risk analysis, readiness score, required conditions`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            recommendation: { type: "string", enum: ["approve", "reject", "conditional"] },
-            rationale: { type: "string" },
-            key_risks: { type: "array", items: { type: "string" } },
-            conditions: { type: "array", items: { type: "string" } },
-            readiness_score: { type: "number" }
-          }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommendation: { type: "string", enum: ["approve", "reject", "conditional"] },
+          rationale: { type: "string" },
+          key_risks: { type: "array", items: { type: "string" } },
+          conditions: { type: "array", items: { type: "string" } },
+          readiness_score: { type: "number" }
         }
-      });
-      
-      setAiBriefs({ ...aiBriefs, [id]: response });
+      }
+    });
+    
+    if (response.success) {
+      setAiBriefs({ ...aiBriefs, [id]: response.data });
       toast.success('AI decision brief generated');
-    } catch (error) {
+    } else {
       toast.error('Failed to generate brief');
-    } finally {
-      setGeneratingBrief({ ...generatingBrief, [id]: false });
     }
+    setCurrentBriefId(null);
   };
 
   return (
