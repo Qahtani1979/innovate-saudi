@@ -27,6 +27,8 @@ import SandboxProjectExitWizard from '../components/SandboxProjectExitWizard';
 import SandboxInfrastructureReadinessGate from '../components/SandboxInfrastructureReadinessGate';
 import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SandboxDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -34,11 +36,12 @@ export default function SandboxDetail() {
   const { language, isRTL, t } = useLanguage();
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [showLaunchChecklist, setShowLaunchChecklist] = useState(false);
   const [showExitWizard, setShowExitWizard] = useState(false);
   const [showInfrastructureGate, setShowInfrastructureGate] = useState(false);
   const [selectedPilotForExit, setSelectedPilotForExit] = useState(null);
+  
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: sandbox, isLoading } = useQuery({
     queryKey: ['sandbox', sandboxId],
@@ -91,9 +94,8 @@ export default function SandboxDetail() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze this regulatory sandbox for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Sandbox: ${sandbox.name_en}
@@ -122,11 +124,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
           }
         }
       });
-      setAiInsights(result);
+      if (result.success && result.data) {
+        setAiInsights(result.data);
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
