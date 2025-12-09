@@ -198,21 +198,21 @@ flowchart TB
 
 ## Testing Checklist
 
-### Persona Flow Tests
-- [ ] Municipality Staff: Auth → OnboardingWizard → MunicipalityStaffOnboarding → MunicipalityDashboard
-- [ ] Startup/Provider: Auth → OnboardingWizard → StartupOnboarding → StartupDashboard
-- [ ] Researcher: Auth → OnboardingWizard → ResearcherOnboarding → ResearcherDashboard
-- [ ] Citizen: Auth → OnboardingWizard → CitizenOnboarding → CitizenDashboard
-- [ ] Expert: Auth → OnboardingWizard → ExpertOnboarding → AdminDashboard
+### Persona Flow Tests ✅
+- [x] Municipality Staff: Auth → OnboardingWizard → MunicipalityStaffOnboarding → MunicipalityDashboard
+- [x] Startup/Provider: Auth → OnboardingWizard → StartupOnboarding → StartupDashboard
+- [x] Researcher: Auth → OnboardingWizard → ResearcherOnboarding → ResearcherDashboard
+- [x] Citizen: Auth → OnboardingWizard → CitizenOnboarding → CitizenDashboard
+- [x] Expert: Auth → OnboardingWizard → ExpertOnboarding → AdminDashboard
 
-### Feature Tests
-- [ ] CV upload extracts profile data
-- [ ] LinkedIn URL analysis works
-- [ ] AI suggestions generate correctly
-- [ ] Welcome email sends on completion
-- [ ] onboarding_completed flag prevents re-display
-- [ ] Role request creates approval_request
-- [ ] Progressive profiling prompts appear for incomplete profiles
+### Feature Tests ✅
+- [x] CV upload extracts profile data
+- [x] LinkedIn URL analysis works
+- [x] AI suggestions generate correctly
+- [x] Welcome email sends on completion
+- [x] onboarding_completed flag prevents re-display
+- [x] Role request creates approval_request
+- [x] Progressive profiling prompts appear for incomplete profiles
 
 ---
 
