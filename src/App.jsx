@@ -12,6 +12,15 @@ import { LanguageProvider } from '@/components/LanguageContext';
 import LanguagePersistence from '@/components/ui/LanguagePersistence';
 import PublicPortal from './pages/PublicPortal';
 
+// Public pages imports
+import PublicAbout from './pages/public/About';
+import PublicContact from './pages/public/Contact';
+import PublicFAQ from './pages/public/FAQ';
+import PublicForMunicipalities from './pages/public/ForMunicipalities';
+import PublicForProviders from './pages/public/ForProviders';
+import PublicChallenges from './pages/public/PublicChallenges';
+import PublicSolutions from './pages/public/PublicSolutions';
+
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -67,6 +76,15 @@ const AuthenticatedApp = () => {
           <PublicPortal />
         )
       } />
+      
+      {/* Public pages with PublicHeader/Footer */}
+      <Route path="/public/about" element={<PublicAbout />} />
+      <Route path="/public/contact" element={<PublicContact />} />
+      <Route path="/public/faq" element={<PublicFAQ />} />
+      <Route path="/public/for-municipalities" element={<PublicForMunicipalities />} />
+      <Route path="/public/for-providers" element={<PublicForProviders />} />
+      <Route path="/public-challenges" element={<PublicChallenges />} />
+      <Route path="/public-solutions" element={<PublicSolutions />} />
       
       {/* All other pages */}
       {Object.entries(Pages).map(([pageName, Page]) => {
