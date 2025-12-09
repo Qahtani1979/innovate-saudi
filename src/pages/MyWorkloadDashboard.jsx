@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function MyWorkloadDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiPriorities, setAiPriorities] = useState(null);
-  const [loadingAI, setLoadingAI] = useState(false);
+  const { invokeAI, status, isLoading: loadingAI, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: user } = useQuery({
     queryKey: ['me'],
@@ -62,16 +64,14 @@ function MyWorkloadDashboard() {
   });
 
   const generateAIPriorities = async () => {
-    setLoadingAI(true);
-    try {
-      const workItems = [
-        ...myChallenges.map(c => ({ type: 'challenge', code: c.code, title: c.title_en, status: c.status, priority: c.priority })),
-        ...myPilots.map(p => ({ type: 'pilot', code: p.code, title: p.title_en, stage: p.stage })),
-        ...myTasks.filter(t => t.status !== 'completed').map(t => ({ type: 'task', title: t.title, due_date: t.due_date, priority: t.priority }))
-      ];
+    const workItems = [
+      ...myChallenges.map(c => ({ type: 'challenge', code: c.code, title: c.title_en, status: c.status, priority: c.priority })),
+      ...myPilots.map(p => ({ type: 'pilot', code: p.code, title: p.title_en, stage: p.stage })),
+      ...myTasks.filter(t => t.status !== 'completed').map(t => ({ type: 'task', title: t.title, due_date: t.due_date, priority: t.priority }))
+    ];
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this user's workload and identify top 3 priorities for TODAY with clear reasoning:
+    const { success, data } = await invokeAI({
+      prompt: `Analyze this user's workload and identify top 3 priorities for TODAY with clear reasoning:
 
 Work items: ${JSON.stringify(workItems.slice(0, 20))}
 
@@ -80,29 +80,27 @@ For each priority, provide:
 2. Why it's urgent/important
 3. Recommended action
 4. Estimated time needed`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            priorities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  item: { type: 'string' },
-                  urgency_reason: { type: 'string' },
-                  recommended_action: { type: 'string' },
-                  estimated_minutes: { type: 'number' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          priorities: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                item: { type: 'string' },
+                urgency_reason: { type: 'string' },
+                recommended_action: { type: 'string' },
+                estimated_minutes: { type: 'number' }
               }
             }
           }
         }
-      });
-      setAiPriorities(result.priorities || []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoadingAI(false);
+      }
+    });
+
+    if (success) {
+      setAiPriorities(data.priorities || []);
     }
   };
 
@@ -123,10 +121,13 @@ For each priority, provide:
             {t({ en: 'Unified view of all your responsibilities', ar: 'عرض موحد لجميع مسؤولياتك' })}
           </p>
         </div>
-        <Button onClick={generateAIPriorities} disabled={loadingAI} className="bg-purple-600">
-          {loadingAI ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {t({ en: 'AI Prioritize', ar: 'الأولوية بالذكاء' })}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={generateAIPriorities} disabled={loadingAI || !isAvailable} className="bg-purple-600">
+            {loadingAI ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {t({ en: 'AI Prioritize', ar: 'الأولوية بالذكاء' })}
+          </Button>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        </div>
       </div>
 
       {/* AI Priorities */}

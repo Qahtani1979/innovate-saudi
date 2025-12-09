@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Zap, Sparkles, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function FastTrackEligibilityChecker({ application }) {
   const { language, t } = useLanguage();
-  const [checking, setChecking] = useState(false);
   const [eligibility, setEligibility] = useState(null);
+  const { invokeAI, status, isLoading: checking, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const checkEligibility = async () => {
-    setChecking(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Determine fast-track eligibility for sandbox project:
+    const { success, data } = await invokeAI({
+      prompt: `Determine fast-track eligibility for sandbox project:
 
 PROJECT: ${application.project_name}
 TECHNOLOGY: ${application.technology_description}
@@ -36,33 +35,30 @@ Assess:
 - Criteria met (which ones)
 - Estimated approval time (hours)
 - Recommendations if not eligible`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            eligible: { type: "boolean" },
-            criteria_met: {
-              type: "object",
-              properties: {
-                proven_technology: { type: "boolean" },
-                limited_scope: { type: "boolean" },
-                low_risk: { type: "boolean" },
-                minimal_exemptions: { type: "boolean" },
-                standard_safety: { type: "boolean" }
-              }
-            },
-            approval_hours: { type: "number" },
-            confidence: { type: "number" },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          eligible: { type: "boolean" },
+          criteria_met: {
+            type: "object",
+            properties: {
+              proven_technology: { type: "boolean" },
+              limited_scope: { type: "boolean" },
+              low_risk: { type: "boolean" },
+              minimal_exemptions: { type: "boolean" },
+              standard_safety: { type: "boolean" }
+            }
+          },
+          approval_hours: { type: "number" },
+          confidence: { type: "number" },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setEligibility(response);
+    if (success) {
+      setEligibility(data);
       toast.success(t({ en: 'Eligibility check complete', ar: 'اكتمل فحص الأهلية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Check failed', ar: 'فشل الفحص' }));
-    } finally {
-      setChecking(false);
     }
   };
 
@@ -74,14 +70,17 @@ Assess:
             <Zap className="h-5 w-5 text-green-600" />
             {t({ en: 'Fast-Track Eligibility Checker', ar: 'فاحص أهلية المسار السريع' })}
           </CardTitle>
-          <Button onClick={checkEligibility} disabled={checking} size="sm" className="bg-green-600">
-            {checking ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
-            )}
-            {t({ en: 'Check', ar: 'فحص' })}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={checkEligibility} disabled={checking || !isAvailable} size="sm" className="bg-green-600">
+              {checking ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              {t({ en: 'Check', ar: 'فحص' })}
+            </Button>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-6">

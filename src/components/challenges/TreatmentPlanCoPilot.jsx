@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function TreatmentPlanCoPilot({ challenge }) {
   const { language, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [plan, setPlan] = useState(null);
+  const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const generatePlan = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate treatment plan for challenge:
+    const { success, data } = await invokeAI({
+      prompt: `Generate treatment plan for challenge:
 
 CHALLENGE: ${challenge.title_en}
 SECTOR: ${challenge.sector}
@@ -30,36 +29,33 @@ Based on similar challenges, suggest:
 4. Resource allocation (team size, budget range)
 5. Key success factors
 6. Potential risks and mitigation`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            recommended_approach: { type: "string" },
-            milestones: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  duration: { type: "string" },
-                  deliverables: { type: "array", items: { type: "string" } }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommended_approach: { type: "string" },
+          milestones: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                duration: { type: "string" },
+                deliverables: { type: "array", items: { type: "string" } }
               }
-            },
-            timeline_weeks: { type: "number" },
-            team_size: { type: "string" },
-            budget_estimate: { type: "string" },
-            success_factors: { type: "array", items: { type: "string" } },
-            risks: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          timeline_weeks: { type: "number" },
+          team_size: { type: "string" },
+          budget_estimate: { type: "string" },
+          success_factors: { type: "array", items: { type: "string" } },
+          risks: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setPlan(response);
+    if (success) {
+      setPlan(data);
       toast.success(t({ en: 'Treatment plan generated', ar: 'خطة المعالجة أُنشئت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -71,14 +67,17 @@ Based on similar challenges, suggest:
             <Sparkles className="h-5 w-5 text-indigo-600" />
             {t({ en: 'AI Treatment Plan Co-Pilot', ar: 'مساعد خطة المعالجة الذكي' })}
           </CardTitle>
-          <Button onClick={generatePlan} disabled={generating} size="sm" className="bg-indigo-600">
-            {generating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
-            )}
-            {t({ en: 'Generate Plan', ar: 'إنشاء خطة' })}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={generatePlan} disabled={generating || !isAvailable} size="sm" className="bg-indigo-600">
+              {generating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              {t({ en: 'Generate Plan', ar: 'إنشاء خطة' })}
+            </Button>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
