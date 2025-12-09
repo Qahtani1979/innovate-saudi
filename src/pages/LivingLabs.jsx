@@ -31,6 +31,8 @@ import { createPageUrl } from '../utils';
 import { Progress } from "@/components/ui/progress";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function LivingLabsPage() {
   const { hasPermission } = usePermissions();
@@ -40,18 +42,21 @@ function LivingLabsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+
+  const { data: labs = [] } = useQuery({
+    queryKey: ['living-labs'],
+    queryFn: () => base44.entities.LivingLab.list()
+  });
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const typeDist = Object.entries(labs.reduce((acc, l) => { acc[l.type] = (acc[l.type] || 0) + 1; return acc; }, {}))
-        .map(([type, count]) => `- ${type}: ${count}`).join('\n');
-      
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the Living Labs ecosystem and provide strategic insights:
+    const typeDist = Object.entries(labs.reduce((acc, l) => { acc[l.type] = (acc[l.type] || 0) + 1; return acc; }, {}))
+      .map(([type, count]) => `- ${type}: ${count}`).join('\n');
+    
+    const result = await invokeAI({
+      prompt: `Analyze the Living Labs ecosystem and provide strategic insights:
 
 Total Labs: ${labs.length}
 Active Labs: ${labs.filter(l => l.status === 'active').length}
@@ -65,22 +70,23 @@ Provide:
 3. New lab type suggestions
 4. Partnership opportunities between labs
 5. Resource sharing strategies`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            coverage_gaps: { type: 'array', items: { type: 'string' } },
-            utilization_tips: { type: 'array', items: { type: 'string' } },
-            new_lab_suggestions: { type: 'array', items: { type: 'string' } },
-            partnership_opportunities: { type: 'array', items: { type: 'string' } },
-            resource_sharing: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          coverage_gaps: { type: 'array', items: { type: 'string' } },
+          utilization_tips: { type: 'array', items: { type: 'string' } },
+          new_lab_suggestions: { type: 'array', items: { type: 'string' } },
+          partnership_opportunities: { type: 'array', items: { type: 'string' } },
+          resource_sharing: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
+      }
+    });
+    
+    if (result.success) {
+      setAiInsights(result.data);
+    } else {
       toast.error(t({ en: 'Failed to generate insights', ar: 'فشل توليد الرؤى' }));
     }
-    setAiLoading(false);
   };
 
   const { data: labs = [] } = useQuery({
@@ -131,6 +137,7 @@ Provide:
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-slate-900">
@@ -164,8 +171,8 @@ Provide:
               <Map className="h-4 w-4" />
             </Button>
           </div>
-          <Button onClick={handleAIInsights} variant="outline" className="gap-2">
-            <Sparkles className="h-4 w-4" />
+          <Button onClick={handleAIInsights} variant="outline" className="gap-2" disabled={aiLoading || !isAvailable}>
+            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
           </Button>
           {hasPermission('livinglab_manage') && (

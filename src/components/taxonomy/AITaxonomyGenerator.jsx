@@ -6,23 +6,23 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Brain, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AITaxonomyGenerator({ onGenerate }) {
   const { t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateTaxonomy = async () => {
-    setGenerating(true);
-    try {
-      const [challenges, solutions, sectors] = await Promise.all([
-        base44.entities.Challenge.list(),
-        base44.entities.Solution.list(),
-        base44.entities.Sector.list()
-      ]);
+    const [challenges, solutions, sectors] = await Promise.all([
+      base44.entities.Challenge.list(),
+      base44.entities.Solution.list(),
+      base44.entities.Sector.list()
+    ]);
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the platform data and suggest taxonomy improvements:
+    const result = await invokeAI({
+      prompt: `Analyze the platform data and suggest taxonomy improvements:
 
 Current Sectors (${sectors.length}): ${sectors.map(s => s.name_en).join(', ')}
 Total Challenges: ${challenges.length}
@@ -37,56 +37,56 @@ Provide:
 3. Missing services (municipal services not in catalog)
 4. Taxonomy gaps (areas with many challenges but no clear sector)
 5. Consolidation opportunities (overlapping sectors/services)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            missing_sectors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name_en: { type: 'string' },
-                  name_ar: { type: 'string' },
-                  code: { type: 'string' },
-                  rationale: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          missing_sectors: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name_en: { type: 'string' },
+                name_ar: { type: 'string' },
+                code: { type: 'string' },
+                rationale: { type: 'string' }
               }
-            },
-            suggested_subsectors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  sector_name: { type: 'string' },
-                  subsector_name_en: { type: 'string' },
-                  subsector_name_ar: { type: 'string' },
-                  rationale: { type: 'string' }
-                }
+            }
+          },
+          suggested_subsectors: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                sector_name: { type: 'string' },
+                subsector_name_en: { type: 'string' },
+                subsector_name_ar: { type: 'string' },
+                rationale: { type: 'string' }
               }
-            },
-            missing_services: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name_en: { type: 'string' },
-                  name_ar: { type: 'string' },
-                  sector: { type: 'string' },
-                  rationale: { type: 'string' }
-                }
+            }
+          },
+          missing_services: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name_en: { type: 'string' },
+                name_ar: { type: 'string' },
+                sector: { type: 'string' },
+                rationale: { type: 'string' }
               }
-            },
-            taxonomy_gaps: { type: 'array', items: { type: 'string' } },
-            consolidation_opportunities: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          taxonomy_gaps: { type: 'array', items: { type: 'string' } },
+          consolidation_opportunities: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setSuggestions(result);
-    } catch (error) {
+    if (result.success) {
+      setSuggestions(result.data);
+    } else {
       toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
     }
-    setGenerating(false);
   };
 
   const applySuggestion = async (type, item) => {
@@ -138,13 +138,14 @@ Provide:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {!suggestions && (
           <div className="text-center py-8">
             <Sparkles className="h-16 w-16 text-purple-600 mx-auto mb-4" />
             <p className="text-sm text-slate-600 mb-4">
               {t({ en: 'AI will analyze your data and suggest taxonomy improvements', ar: 'سيقوم الذكاء بتحليل بياناتك واقتراح تحسينات التصنيف' })}
             </p>
-            <Button onClick={generateTaxonomy} disabled={generating} className="gap-2">
+            <Button onClick={generateTaxonomy} disabled={generating || !isAvailable} className="gap-2">
               {generating ? (
                 <>
                   <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />

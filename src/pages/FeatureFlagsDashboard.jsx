@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { Flag, TrendingUp, Users, Sparkles, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function FeatureFlagsDashboard() {
   const { language, isRTL, t } = useLanguage();
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [flags, setFlags] = useState([
     { id: 1, name: 'AI Matching Engine', enabled: true, rollout: 100, users: 1250, experiments: 0 },
     { id: 2, name: 'Advanced Analytics', enabled: true, rollout: 75, users: 938, experiments: 1 },
@@ -21,10 +22,8 @@ function FeatureFlagsDashboard() {
   ]);
 
   const handleAIExperimentDesign = async (flag) => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Design an A/B experiment for feature: ${flag.name}
+    const result = await invokeAI({
+      prompt: `Design an A/B experiment for feature: ${flag.name}
 Current rollout: ${flag.rollout}%
 Active users: ${flag.users}
 
@@ -34,28 +33,27 @@ Suggest:
 3. Sample size calculation
 4. Duration recommendation
 5. Risk assessment`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            hypothesis: { type: 'string' },
-            success_metrics: { type: 'array', items: { type: 'string' } },
-            sample_size: { type: 'number' },
-            duration_days: { type: 'number' },
-            risks: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          hypothesis: { type: 'string' },
+          success_metrics: { type: 'array', items: { type: 'string' } },
+          sample_size: { type: 'number' },
+          duration_days: { type: 'number' },
+          risks: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
+    
+    if (result.success) {
       toast.success(t({ en: 'Experiment designed', ar: 'تم تصميم التجربة' }));
-      console.log('Experiment Design:', result);
-    } catch (error) {
-      toast.error(t({ en: 'AI design failed', ar: 'فشل التصميم' }));
-    } finally {
-      setAiLoading(false);
+      console.log('Experiment Design:', result.data);
     }
   };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-amber-600 via-orange-600 to-red-600 p-8 text-white">
         <h1 className="text-5xl font-bold mb-2">
           {t({ en: '🚩 Feature Flags & Experimentation', ar: '🚩 أعلام الميزات والتجريب' })}
@@ -120,7 +118,7 @@ Suggest:
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleAIExperimentDesign(flag)} disabled={aiLoading}>
+                  <Button size="sm" variant="outline" onClick={() => handleAIExperimentDesign(flag)} disabled={aiLoading || !isAvailable}>
                     <Sparkles className="h-3 w-3" />
                   </Button>
                   <Switch checked={flag.enabled} onCheckedChange={(v) => {
