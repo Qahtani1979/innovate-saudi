@@ -127,11 +127,18 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
   const [aiSuggestions, setAiSuggestions] = useState(null);
   
   const [formData, setFormData] = useState({
-    full_name: '',
-    job_title: '',
-    department: '',
-    bio: '',
-    organization: '',
+    // Bilingual fields
+    full_name_en: '',
+    full_name_ar: '',
+    job_title_en: '',
+    job_title_ar: '',
+    department_en: '',
+    department_ar: '',
+    organization_en: '',
+    organization_ar: '',
+    bio_en: '',
+    bio_ar: '',
+    // Single language fields
     selectedPersona: null,
     expertise_areas: [],
     interests: [],
@@ -140,38 +147,107 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     cv_url: '',
     linkedin_url: '',
     years_of_experience: 0,
-    work_phone: ''
+    work_phone: '',
+    // New fields
+    national_id: '',
+    date_of_birth: '',
+    gender: '',
+    education_level: '',
+    degree: '',
+    certifications: [],
+    languages: [],
+    location_city: '',
+    location_region: '',
+    preferred_language: language
   });
+  
+  const [isTranslating, setIsTranslating] = useState({});
 
   // Initialize form data from existing profile
   useEffect(() => {
     if (userProfile || user) {
       setFormData(prev => ({
         ...prev,
-        full_name: userProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '',
-        job_title: userProfile?.job_title || '',
-        department: userProfile?.department || '',
-        bio: userProfile?.bio || userProfile?.bio_en || '',
-        organization: userProfile?.organization || '',
+        full_name_en: userProfile?.full_name_en || userProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+        full_name_ar: userProfile?.full_name_ar || '',
+        job_title_en: userProfile?.job_title_en || userProfile?.job_title || '',
+        job_title_ar: userProfile?.job_title_ar || '',
+        department_en: userProfile?.department_en || userProfile?.department || '',
+        department_ar: userProfile?.department_ar || '',
+        organization_en: userProfile?.organization_en || '',
+        organization_ar: userProfile?.organization_ar || '',
+        bio_en: userProfile?.bio_en || userProfile?.bio || '',
+        bio_ar: userProfile?.bio_ar || '',
         expertise_areas: userProfile?.expertise_areas || [],
         interests: userProfile?.interests || [],
         linkedin_url: userProfile?.linkedin_url || '',
         cv_url: userProfile?.cv_url || '',
+        national_id: userProfile?.national_id || '',
+        date_of_birth: userProfile?.date_of_birth || '',
+        gender: userProfile?.gender || '',
+        education_level: userProfile?.education_level || '',
+        degree: userProfile?.degree || '',
+        certifications: userProfile?.certifications || [],
+        languages: userProfile?.languages || [],
+        location_city: userProfile?.location_city || '',
+        location_region: userProfile?.location_region || '',
+        preferred_language: userProfile?.preferred_language || language,
       }));
     }
-  }, [userProfile, user]);
+  }, [userProfile, user, language]);
+
+  // Auto-translate function
+  const autoTranslate = async (field, sourceText, sourceLang) => {
+    if (!sourceText?.trim()) return;
+    
+    const targetLang = sourceLang === 'en' ? 'ar' : 'en';
+    const targetField = field.replace(`_${sourceLang}`, `_${targetLang}`);
+    
+    setIsTranslating(prev => ({ ...prev, [targetField]: true }));
+    
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Translate the following text from ${sourceLang === 'en' ? 'English' : 'Arabic'} to ${targetLang === 'en' ? 'English' : 'Arabic'}. 
+Keep it professional and formal. Only return the translated text, nothing else.
+
+Text to translate: ${sourceText}`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            translation: { type: 'string' }
+          }
+        }
+      });
+      
+      if (result?.translation) {
+        setFormData(prev => ({ ...prev, [targetField]: result.translation }));
+        toast.success(t({ en: 'Translation complete', ar: 'اكتملت الترجمة' }));
+      }
+    } catch (error) {
+      console.error('Translation error:', error);
+      toast.error(t({ en: 'Translation failed', ar: 'فشلت الترجمة' }));
+    } finally {
+      setIsTranslating(prev => ({ ...prev, [targetField]: false }));
+    }
+  };
 
   const progress = (currentStep / STEPS.length) * 100;
   const selectedPersona = PERSONAS.find(p => p.id === formData.selectedPersona);
 
   const calculateProfileCompletion = (data) => {
     let score = 0;
-    if (data.full_name) score += 20;
-    if (data.job_title) score += 15;
-    if (data.bio) score += 15;
-    if (data.selectedPersona) score += 20;
-    if (data.expertise_areas?.length > 0) score += 15;
-    if (data.cv_url || data.linkedin_url) score += 15;
+    if (data.full_name_en || data.full_name_ar) score += 15;
+    if (data.full_name_en && data.full_name_ar) score += 5; // Bonus for both languages
+    if (data.job_title_en || data.job_title_ar) score += 10;
+    if (data.bio_en || data.bio_ar) score += 10;
+    if (data.selectedPersona) score += 15;
+    if (data.expertise_areas?.length > 0) score += 10;
+    if (data.cv_url || data.linkedin_url) score += 10;
+    if (data.national_id) score += 5;
+    if (data.education_level) score += 5;
+    if (data.location_city || data.location_region) score += 5;
+    if (data.languages?.length > 0) score += 5;
+    if (data.years_of_experience > 0) score += 5;
     return Math.min(score, 100);
   };
 
@@ -223,19 +299,20 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
 
       if (extracted.status === 'success' && extracted.output) {
         const output = extracted.output;
+        // Determine language of extracted text (assume English for CV)
         setFormData(prev => ({
           ...prev,
-          full_name: output.full_name || prev.full_name,
-          job_title: output.job_title || prev.job_title,
-          organization: output.organization || prev.organization,
-          department: output.department || prev.department,
+          full_name_en: output.full_name || prev.full_name_en,
+          job_title_en: output.job_title || prev.job_title_en,
+          organization_en: output.organization || prev.organization_en,
+          department_en: output.department || prev.department_en,
           years_of_experience: output.years_of_experience || prev.years_of_experience,
           expertise_areas: output.expertise_areas?.length > 0 ? output.expertise_areas : prev.expertise_areas,
-          bio: output.bio || prev.bio,
+          bio_en: output.bio || prev.bio_en,
           linkedin_url: output.linkedin_url || prev.linkedin_url,
           work_phone: output.phone || prev.work_phone
         }));
-        toast.success(t({ en: 'CV data extracted successfully!', ar: 'تم استخراج بيانات السيرة الذاتية بنجاح!' }));
+        toast.success(t({ en: 'CV data extracted! Click translate buttons to add Arabic.', ar: 'تم استخراج بيانات السيرة! انقر على أزرار الترجمة لإضافة العربية.' }));
       }
     } catch (error) {
       console.error('CV extraction error:', error);
@@ -279,11 +356,11 @@ Return a JSON with these fields.`,
       if (result) {
         setFormData(prev => ({
           ...prev,
-          job_title: result.likely_title || prev.job_title,
+          job_title_en: result.likely_title || prev.job_title_en,
           expertise_areas: result.expertise_areas?.length > 0 
             ? [...new Set([...prev.expertise_areas, ...result.expertise_areas])].slice(0, 5)
             : prev.expertise_areas,
-          bio: result.suggested_bio || prev.bio
+          bio_en: result.suggested_bio || prev.bio_en
         }));
         toast.success(t({ en: 'LinkedIn profile analyzed!', ar: 'تم تحليل ملف LinkedIn!' }));
       }
@@ -350,7 +427,12 @@ Based on this information:
 
   const applyAISuggestion = (field, value) => {
     if (field === 'bio') {
-      setFormData(prev => ({ ...prev, bio: value }));
+      // Apply to the appropriate language field
+      if (language === 'ar') {
+        setFormData(prev => ({ ...prev, bio_ar: value }));
+      } else {
+        setFormData(prev => ({ ...prev, bio_en: value }));
+      }
     } else if (field === 'persona') {
       setFormData(prev => ({ ...prev, selectedPersona: value }));
     } else if (field === 'expertise') {
@@ -389,17 +471,39 @@ Based on this information:
       const redirectToSpecialized = needsSpecializedWizard(formData.selectedPersona);
       
       const updatePayload = {
-        full_name: formData.full_name || null,
-        job_title: formData.job_title || null,
-        department: formData.department || null,
-        bio: formData.bio || null,
-        bio_en: formData.bio || null,
-        organization: formData.organization || null,
+        // Bilingual fields
+        full_name: formData.full_name_en || formData.full_name_ar || null,
+        full_name_en: formData.full_name_en || null,
+        full_name_ar: formData.full_name_ar || null,
+        job_title: formData.job_title_en || formData.job_title_ar || null,
+        job_title_en: formData.job_title_en || null,
+        job_title_ar: formData.job_title_ar || null,
+        department: formData.department_en || formData.department_ar || null,
+        department_en: formData.department_en || null,
+        department_ar: formData.department_ar || null,
+        organization_en: formData.organization_en || null,
+        organization_ar: formData.organization_ar || null,
+        bio: formData.bio_en || formData.bio_ar || null,
+        bio_en: formData.bio_en || null,
+        bio_ar: formData.bio_ar || null,
+        // Arrays and other fields
         expertise_areas: formData.expertise_areas?.length > 0 ? formData.expertise_areas : null,
         interests: formData.interests?.length > 0 ? formData.interests : null,
         cv_url: formData.cv_url || null,
         linkedin_url: formData.linkedin_url || null,
         work_phone: formData.work_phone || null,
+        // New fields
+        national_id: formData.national_id || null,
+        date_of_birth: formData.date_of_birth || null,
+        gender: formData.gender || null,
+        education_level: formData.education_level || null,
+        degree: formData.degree || null,
+        certifications: formData.certifications?.length > 0 ? formData.certifications : [],
+        languages: formData.languages?.length > 0 ? formData.languages : [],
+        location_city: formData.location_city || null,
+        location_region: formData.location_region || null,
+        years_experience: formData.years_of_experience || 0,
+        preferred_language: formData.preferred_language || language,
         // Only mark complete if no specialized wizard needed
         onboarding_completed: !redirectToSpecialized,
         onboarding_completed_at: redirectToSpecialized ? null : new Date().toISOString(),
@@ -530,7 +634,7 @@ Based on this information:
     switch (currentStep) {
       case 1: return true;
       case 2: return true; // Import step is optional
-      case 3: return formData.full_name?.trim().length > 0;
+      case 3: return (formData.full_name_en?.trim().length > 0 || formData.full_name_ar?.trim().length > 0);
       case 4: return true;
       case 5: return formData.selectedPersona !== null;
       case 6: return true;
@@ -774,51 +878,147 @@ Based on this information:
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {formData.cv_url || formData.linkedin_url 
-                    ? t({ en: 'Review and edit the imported data', ar: 'راجع وحرر البيانات المستوردة' })
-                    : t({ en: 'Tell us about yourself', ar: 'أخبرنا عن نفسك' })
+                    ? t({ en: 'Review and edit the imported data. Fields are bilingual.', ar: 'راجع وحرر البيانات المستوردة. الحقول ثنائية اللغة.' })
+                    : t({ en: 'Tell us about yourself in both languages', ar: 'أخبرنا عن نفسك باللغتين' })
                   }
                 </p>
               </CardHeader>
               <CardContent className="space-y-5">
-                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                  <Label className="text-base font-semibold text-blue-900 mb-3 block">
+                {/* Full Name - Bilingual */}
+                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg space-y-3">
+                  <Label className="text-base font-semibold text-blue-900 block">
                     {t({ en: 'Full Name *', ar: 'الاسم الكامل *' })}
                   </Label>
-                  <Input
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    placeholder={t({ en: 'Your full name', ar: 'اسمك الكامل' })}
-                    className="h-12 text-base border-2"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">English</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => autoTranslate('full_name_en', formData.full_name_en, 'en')}
+                          disabled={!formData.full_name_en || isTranslating.full_name_ar}
+                        >
+                          {isTranslating.full_name_ar ? <Loader2 className="h-3 w-3 animate-spin" /> : '→ عربي'}
+                        </Button>
+                      </div>
+                      <Input
+                        value={formData.full_name_en}
+                        onChange={(e) => setFormData({ ...formData, full_name_en: e.target.value })}
+                        placeholder="Your full name"
+                        className="h-11 text-base border-2"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">العربية</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => autoTranslate('full_name_ar', formData.full_name_ar, 'ar')}
+                          disabled={!formData.full_name_ar || isTranslating.full_name_en}
+                        >
+                          {isTranslating.full_name_en ? <Loader2 className="h-3 w-3 animate-spin" /> : 'EN ←'}
+                        </Button>
+                      </div>
+                      <Input
+                        value={formData.full_name_ar}
+                        onChange={(e) => setFormData({ ...formData, full_name_ar: e.target.value })}
+                        placeholder="اسمك الكامل"
+                        className="h-11 text-base border-2"
+                        dir="rtl"
+                      />
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}</Label>
-                    <Input
-                      value={formData.job_title}
-                      onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-                      placeholder={t({ en: 'e.g., Innovation Manager', ar: 'مثال: مدير الابتكار' })}
-                    />
+                {/* Job Title - Bilingual */}
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">English</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => autoTranslate('job_title_en', formData.job_title_en, 'en')}
+                          disabled={!formData.job_title_en || isTranslating.job_title_ar}
+                        >
+                          {isTranslating.job_title_ar ? <Loader2 className="h-3 w-3 animate-spin" /> : '→ عربي'}
+                        </Button>
+                      </div>
+                      <Input
+                        value={formData.job_title_en}
+                        onChange={(e) => setFormData({ ...formData, job_title_en: e.target.value })}
+                        placeholder="e.g., Innovation Manager"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">العربية</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => autoTranslate('job_title_ar', formData.job_title_ar, 'ar')}
+                          disabled={!formData.job_title_ar || isTranslating.job_title_en}
+                        >
+                          {isTranslating.job_title_en ? <Loader2 className="h-3 w-3 animate-spin" /> : 'EN ←'}
+                        </Button>
+                      </div>
+                      <Input
+                        value={formData.job_title_ar}
+                        onChange={(e) => setFormData({ ...formData, job_title_ar: e.target.value })}
+                        placeholder="مثال: مدير الابتكار"
+                        dir="rtl"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t({ en: 'Organization', ar: 'المنظمة' })}</Label>
+                </div>
+
+                {/* Organization - Bilingual */}
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Organization', ar: 'المنظمة' })}</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Input
-                      value={formData.organization}
-                      onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                      placeholder={t({ en: 'Your organization name', ar: 'اسم منظمتك' })}
+                      value={formData.organization_en}
+                      onChange={(e) => setFormData({ ...formData, organization_en: e.target.value })}
+                      placeholder="Organization name (English)"
+                    />
+                    <Input
+                      value={formData.organization_ar}
+                      onChange={(e) => setFormData({ ...formData, organization_ar: e.target.value })}
+                      placeholder="اسم المنظمة (عربي)"
+                      dir="rtl"
                     />
                   </div>
                 </div>
 
+                {/* Department & Experience */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t({ en: 'Department', ar: 'القسم' })}</Label>
-                    <Input
-                      value={formData.department}
-                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      placeholder={t({ en: 'Your department', ar: 'قسمك' })}
-                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={formData.department_en}
+                        onChange={(e) => setFormData({ ...formData, department_en: e.target.value })}
+                        placeholder="English"
+                      />
+                      <Input
+                        value={formData.department_ar}
+                        onChange={(e) => setFormData({ ...formData, department_ar: e.target.value })}
+                        placeholder="عربي"
+                        dir="rtl"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>{t({ en: 'Years of Experience', ar: 'سنوات الخبرة' })}</Label>
@@ -831,14 +1031,170 @@ Based on this information:
                   </div>
                 </div>
                 
+                {/* Bio - Bilingual */}
                 <div className="space-y-2">
                   <Label>{t({ en: 'Short Bio', ar: 'نبذة قصيرة' })}</Label>
-                  <Textarea
-                    value={formData.bio}
-                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                    rows={3}
-                    placeholder={t({ en: 'Tell us about yourself and your interests...', ar: 'أخبرنا قليلاً عن نفسك واهتماماتك...' })}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">English</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => autoTranslate('bio_en', formData.bio_en, 'en')}
+                          disabled={!formData.bio_en || isTranslating.bio_ar}
+                        >
+                          {isTranslating.bio_ar ? <Loader2 className="h-3 w-3 animate-spin" /> : '→ عربي'}
+                        </Button>
+                      </div>
+                      <Textarea
+                        value={formData.bio_en}
+                        onChange={(e) => setFormData({ ...formData, bio_en: e.target.value })}
+                        rows={3}
+                        placeholder="Tell us about yourself..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">العربية</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => autoTranslate('bio_ar', formData.bio_ar, 'ar')}
+                          disabled={!formData.bio_ar || isTranslating.bio_en}
+                        >
+                          {isTranslating.bio_en ? <Loader2 className="h-3 w-3 animate-spin" /> : 'EN ←'}
+                        </Button>
+                      </div>
+                      <Textarea
+                        value={formData.bio_ar}
+                        onChange={(e) => setFormData({ ...formData, bio_ar: e.target.value })}
+                        rows={3}
+                        placeholder="أخبرنا عن نفسك..."
+                        dir="rtl"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Fields Section */}
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="font-semibold mb-4 text-blue-900">
+                    {t({ en: 'Additional Information (Optional)', ar: 'معلومات إضافية (اختياري)' })}
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'National ID / Iqama', ar: 'الهوية الوطنية / الإقامة' })}</Label>
+                      <Input
+                        value={formData.national_id}
+                        onChange={(e) => setFormData({ ...formData, national_id: e.target.value })}
+                        placeholder="1234567890"
+                        maxLength={10}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'Date of Birth', ar: 'تاريخ الميلاد' })}</Label>
+                      <Input
+                        type="date"
+                        value={formData.date_of_birth}
+                        onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'Gender', ar: 'الجنس' })}</Label>
+                      <select
+                        value={formData.gender}
+                        onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                        className="w-full h-10 px-3 border border-input rounded-md bg-background"
+                      >
+                        <option value="">{t({ en: 'Select...', ar: 'اختر...' })}</option>
+                        <option value="male">{t({ en: 'Male', ar: 'ذكر' })}</option>
+                        <option value="female">{t({ en: 'Female', ar: 'أنثى' })}</option>
+                        <option value="other">{t({ en: 'Prefer not to say', ar: 'أفضل عدم الإفصاح' })}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'Education Level', ar: 'المستوى التعليمي' })}</Label>
+                      <select
+                        value={formData.education_level}
+                        onChange={(e) => setFormData({ ...formData, education_level: e.target.value })}
+                        className="w-full h-10 px-3 border border-input rounded-md bg-background"
+                      >
+                        <option value="">{t({ en: 'Select...', ar: 'اختر...' })}</option>
+                        <option value="high_school">{t({ en: 'High School', ar: 'ثانوية' })}</option>
+                        <option value="diploma">{t({ en: 'Diploma', ar: 'دبلوم' })}</option>
+                        <option value="bachelor">{t({ en: 'Bachelor\'s Degree', ar: 'بكالوريوس' })}</option>
+                        <option value="master">{t({ en: 'Master\'s Degree', ar: 'ماجستير' })}</option>
+                        <option value="doctorate">{t({ en: 'Doctorate/PhD', ar: 'دكتوراه' })}</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'Field of Study / Degree', ar: 'التخصص / الشهادة' })}</Label>
+                      <Input
+                        value={formData.degree}
+                        onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
+                        placeholder={t({ en: 'e.g., Computer Science', ar: 'مثال: علوم الحاسب' })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'City', ar: 'المدينة' })}</Label>
+                      <Input
+                        value={formData.location_city}
+                        onChange={(e) => setFormData({ ...formData, location_city: e.target.value })}
+                        placeholder={t({ en: 'e.g., Riyadh', ar: 'مثال: الرياض' })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'Region', ar: 'المنطقة' })}</Label>
+                      <Input
+                        value={formData.location_region}
+                        onChange={(e) => setFormData({ ...formData, location_region: e.target.value })}
+                        placeholder={t({ en: 'e.g., Central Region', ar: 'مثال: المنطقة الوسطى' })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Language Preference */}
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <Label className="text-sm font-medium text-purple-900 block mb-2">
+                    {t({ en: 'Preferred Display Language', ar: 'لغة العرض المفضلة' })}
+                  </Label>
+                  <div className="flex gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="preferred_language"
+                        value="en"
+                        checked={formData.preferred_language === 'en'}
+                        onChange={(e) => setFormData({ ...formData, preferred_language: e.target.value })}
+                        className="accent-purple-600"
+                      />
+                      <span className="text-sm">English</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="preferred_language"
+                        value="ar"
+                        checked={formData.preferred_language === 'ar'}
+                        onChange={(e) => setFormData({ ...formData, preferred_language: e.target.value })}
+                        className="accent-purple-600"
+                      />
+                      <span className="text-sm">العربية</span>
+                    </label>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1093,10 +1449,29 @@ Based on this information:
                   <div className="p-4 bg-white rounded-lg border text-left max-w-md mx-auto">
                     <h3 className="font-semibold mb-3">{t({ en: 'Your Profile Summary', ar: 'ملخص ملفك' })}</h3>
                     <div className="space-y-2 text-sm">
-                      <p><strong>{t({ en: 'Name:', ar: 'الاسم:' })}</strong> {formData.full_name}</p>
-                      {formData.job_title && <p><strong>{t({ en: 'Title:', ar: 'المسمى:' })}</strong> {formData.job_title}</p>}
-                      {formData.organization && <p><strong>{t({ en: 'Organization:', ar: 'المنظمة:' })}</strong> {formData.organization}</p>}
+                      <p>
+                        <strong>{t({ en: 'Name:', ar: 'الاسم:' })}</strong>{' '}
+                        {language === 'ar' ? (formData.full_name_ar || formData.full_name_en) : (formData.full_name_en || formData.full_name_ar)}
+                      </p>
+                      {(formData.job_title_en || formData.job_title_ar) && (
+                        <p>
+                          <strong>{t({ en: 'Title:', ar: 'المسمى:' })}</strong>{' '}
+                          {language === 'ar' ? (formData.job_title_ar || formData.job_title_en) : (formData.job_title_en || formData.job_title_ar)}
+                        </p>
+                      )}
+                      {(formData.organization_en || formData.organization_ar) && (
+                        <p>
+                          <strong>{t({ en: 'Organization:', ar: 'المنظمة:' })}</strong>{' '}
+                          {language === 'ar' ? (formData.organization_ar || formData.organization_en) : (formData.organization_en || formData.organization_ar)}
+                        </p>
+                      )}
                       <p><strong>{t({ en: 'Role:', ar: 'الدور:' })}</strong> {selectedPersona?.title[language]}</p>
+                      {formData.education_level && (
+                        <p><strong>{t({ en: 'Education:', ar: 'التعليم:' })}</strong> {formData.education_level} {formData.degree && `- ${formData.degree}`}</p>
+                      )}
+                      {formData.location_city && (
+                        <p><strong>{t({ en: 'Location:', ar: 'الموقع:' })}</strong> {formData.location_city}{formData.location_region && `, ${formData.location_region}`}</p>
+                      )}
                       {formData.expertise_areas?.length > 0 && (
                         <div>
                           <strong>{t({ en: 'Expertise:', ar: 'الخبرات:' })}</strong>
@@ -1107,6 +1482,9 @@ Based on this information:
                           </div>
                         </div>
                       )}
+                      {formData.languages?.length > 0 && (
+                        <p><strong>{t({ en: 'Languages:', ar: 'اللغات:' })}</strong> {formData.languages.join(', ')}</p>
+                      )}
                       {(formData.cv_url || formData.linkedin_url) && (
                         <p className="text-green-600 flex items-center gap-1 mt-2">
                           <CheckCircle2 className="h-4 w-4" />
@@ -1116,6 +1494,9 @@ Based on this information:
                           {formData.linkedin_url && ' LinkedIn'}
                         </p>
                       )}
+                      <p className="text-purple-600 text-xs mt-2">
+                        <strong>{t({ en: 'Display Language:', ar: 'لغة العرض:' })}</strong> {formData.preferred_language === 'ar' ? 'العربية' : 'English'}
+                      </p>
                     </div>
                     <div className="mt-3 pt-3 border-t">
                       <div className="flex items-center gap-2">
