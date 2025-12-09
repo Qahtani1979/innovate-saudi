@@ -10,11 +10,14 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { Shield, CheckCircle2, X, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionVerificationWizard({ solution, onClose }) {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
+  const { invokeAI, status, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const verificationChecks = {
     step1_documentation: [
@@ -44,13 +47,10 @@ export default function SolutionVerificationWizard({ solution, onClose }) {
   });
 
   const [verificationNotes, setVerificationNotes] = useState('');
-  const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState(null);
 
   const runAIAnalysis = async () => {
-    setAiAnalyzing(true);
-    try {
-      const prompt = `Analyze this solution for verification in Saudi municipal innovation marketplace:
+    const prompt = `Analyze this solution for verification in Saudi municipal innovation marketplace:
 
 Solution: ${solution.name_en}
 Provider: ${solution.provider_name} (${solution.provider_type})
@@ -70,27 +70,24 @@ Provide:
 4. Recommended conditions if conditional approval
 5. Suggested priority level for marketplace`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommendation: { type: 'string' },
-            risk_level: { type: 'string' },
-            concerns: { type: 'array', items: { type: 'string' } },
-            conditions: { type: 'array', items: { type: 'string' } },
-            suggested_priority: { type: 'string' },
-            reasoning: { type: 'string' }
-          }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommendation: { type: 'string' },
+          risk_level: { type: 'string' },
+          concerns: { type: 'array', items: { type: 'string' } },
+          conditions: { type: 'array', items: { type: 'string' } },
+          suggested_priority: { type: 'string' },
+          reasoning: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setAiRecommendation(result);
+    if (response.success) {
+      setAiRecommendation(response.data);
       toast.success(t({ en: 'AI analysis completed', ar: 'التحليل الذكي مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل الذكي' }));
-    } finally {
-      setAiAnalyzing(false);
     }
   };
 
@@ -113,7 +110,6 @@ Provide:
         link: `/SolutionDetail?id=${solution.id}`
       });
 
-      // Trigger auto-enrollment to Matchmaker
       try {
         await base44.functions.invoke('autoMatchmakerEnrollment', { solution_id: solution.id });
       } catch (error) {
@@ -149,7 +145,6 @@ Provide:
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Progress */}
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-blue-900">{solution?.name_en}</p>
@@ -161,7 +156,6 @@ Provide:
           </p>
         </div>
 
-        {/* Step Navigation */}
         <div className="flex gap-2">
           {steps.map((step) => (
             <Button
@@ -176,7 +170,6 @@ Provide:
           ))}
         </div>
 
-        {/* Current Step Checks */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-900">{steps[currentStep - 1].title[isRTL ? 'ar' : 'en']}</p>
@@ -194,12 +187,12 @@ Provide:
           ))}
         </div>
 
-        {/* AI Analysis */}
         {currentStep === 3 && (
           <div className="border-t pt-4">
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
             <Button
               onClick={runAIAnalysis}
-              disabled={aiAnalyzing}
+              disabled={aiAnalyzing || !isAvailable}
               className="w-full bg-purple-600 hover:bg-purple-700 mb-4"
             >
               {aiAnalyzing ? (
@@ -247,7 +240,6 @@ Provide:
           </div>
         )}
 
-        {/* Notes */}
         <div>
           <label className="text-sm font-medium text-slate-700 mb-2 block">
             {t({ en: 'Verification Notes', ar: 'ملاحظات التحقق' })}
@@ -260,7 +252,6 @@ Provide:
           />
         </div>
 
-        {/* Navigation */}
         <div className="flex gap-3 pt-4 border-t">
           {currentStep < 3 && (
             <Button

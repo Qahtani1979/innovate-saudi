@@ -34,6 +34,8 @@ import RDProjectFinalEvaluationPanel from '../components/rd/RDProjectFinalEvalua
 import IPManagementWidget from '../components/rd/IPManagementWidget';
 import TRLVisualization from '../components/rd/TRLVisualization';
 import PolicyImpactTracker from '../components/rd/PolicyImpactTracker';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDProjectDetail() {
   const { hasPermission, user } = usePermissions();
@@ -50,12 +52,12 @@ export default function RDProjectDetail() {
   const [showTRLAdvancement, setShowTRLAdvancement] = useState(false);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [showSolutionConverter, setShowSolutionConverter] = useState(false);
   const [showPolicyConverter, setShowPolicyConverter] = useState(false);
   const [showTRLAssessment, setShowTRLAssessment] = useState(false);
   const [showFinalEvaluation, setShowFinalEvaluation] = useState(false);
   const queryClient = useQueryClient();
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['rd-project', projectId],
@@ -115,10 +117,8 @@ export default function RDProjectDetail() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this R&D project for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
+    const response = await invokeAI({
+      prompt: `Analyze this R&D project for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Project: ${project.title_en}
 Institution: ${project.institution_en || project.institution}
@@ -136,22 +136,19 @@ Provide bilingual insights (each item should have both English and Arabic versio
 3. Potential pilot applications in Saudi municipalities
 4. Collaboration opportunities with other entities
 5. Risk factors and mitigation suggestions`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strategic_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            trl_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            pilot_applications: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            collaboration_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          strategic_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          trl_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          pilot_applications: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          collaboration_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+    if (response.success) {
+      setAiInsights(response.data);
     }
   };
 
@@ -364,6 +361,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
             </Button>
           </CardHeader>
           <CardContent>
+            <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} className="mb-4" />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />

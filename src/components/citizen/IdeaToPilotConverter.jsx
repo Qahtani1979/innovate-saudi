@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { TestTube, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function IdeaToPilotConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [enhancing, setEnhancing] = useState(false);
+  const { invokeAI, status, isLoading: enhancing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-brief'],
@@ -35,10 +37,8 @@ export default function IdeaToPilotConverter({ idea, onClose }) {
   });
 
   const enhanceWithAI = async () => {
-    setEnhancing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Convert this citizen idea into a pilot proposal:
+    const response = await invokeAI({
+      prompt: `Convert this citizen idea into a pilot proposal:
 
 Idea: ${idea.title}
 Description: ${idea.description}
@@ -51,27 +51,24 @@ Generate:
 5. Success criteria
 6. Estimated duration (weeks)
 7. Estimated budget (SAR)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            hypothesis: { type: 'string' },
-            methodology: { type: 'string' },
-            duration_weeks: { type: 'number' },
-            budget: { type: 'number' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          hypothesis: { type: 'string' },
+          methodology: { type: 'string' },
+          duration_weeks: { type: 'number' },
+          budget: { type: 'number' }
         }
-      });
+      }
+    });
 
-      setPilotData({ ...pilotData, ...result });
+    if (response.success) {
+      setPilotData({ ...pilotData, ...response.data });
       toast.success(t({ en: 'AI enhancement complete', ar: 'تم التحسين' }));
-    } catch (error) {
-      toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setEnhancing(false);
     }
   };
 
@@ -113,7 +110,9 @@ Generate:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={enhanceWithAI} disabled={enhancing} variant="outline" className="w-full">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
+        <Button onClick={enhanceWithAI} disabled={enhancing || !isAvailable} variant="outline" className="w-full">
           {enhancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'AI Enhance Pilot Proposal', ar: 'تحسين مقترح التجربة' })}
         </Button>
