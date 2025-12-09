@@ -28,7 +28,7 @@ flowchart TB
         OW3[Step 3: Profile<br/>Name, Title, Org, Bio]
         OW4[Step 4: AI Assist<br/>Bio/Role/Expertise suggestions]
         OW5[Step 5: Role Selection<br/>Persona + Expertise Areas]
-        OW6[Step 6: Complete<br/>Profile Summary + Next Steps]
+        OW6[Step 6: Complete<br/>Redirect to Specialized Wizard]
     end
 
     subgraph PERSONAS["👥 Persona Selection"]
@@ -39,21 +39,11 @@ flowchart TB
         P5[👁️ Explorer/Observer]
     end
 
-    subgraph ROLE_REQUEST["📝 Role Request Flow"]
-        RR1{Request Elevated Role?}
-        RR2[Submit Role Request<br/>with Justification]
-        RR3[Admin Review Queue]
-        RR4{Approved?}
-        RR5[Assign Role]
-        RR6[Notify Rejection]
-    end
-
-    subgraph SPECIALIZED_ONBOARDING["🎯 Specialized Wizards"]
-        SW1[StartupOnboardingWizard<br/>4 steps: Info → Sectors → Challenges → Regions]
-        SW2[ExpertOnboarding<br/>4 steps: CV Upload → Personal → Expertise → Review]
-        SW3[MunicipalityStaffOnboardingWizard<br/>5 steps: CV → Municipality → Department → Role → Complete]
-        SW4[ResearcherOnboardingWizard<br/>5 steps: CV → Institution → Research → Links → Complete]
-        SW5[CitizenOnboardingWizard<br/>4 steps: Location → Interests → Notifications → Complete]
+    subgraph SPECIALIZED_ONBOARDING["🎯 Specialized Wizards - AUTO TRIGGERED"]
+        SW1[StartupOnboarding<br/>4 steps: Info → Sectors → Challenges → Regions]
+        SW2[MunicipalityStaffOnboarding<br/>5 steps: CV → Municipality → Department → Role → Complete]
+        SW3[ResearcherOnboarding<br/>5 steps: CV → Institution → Research → Links → Complete]
+        SW4[CitizenOnboarding<br/>4 steps: Location → Interests → Notifications → Complete]
     end
 
     subgraph COMPLETION["✅ Completion"]
@@ -71,12 +61,11 @@ flowchart TB
         LP6[Home/Explorer]
     end
 
-    subgraph POST_ONBOARDING["📊 Post-Onboarding"]
-        PO1[Profile Completion Tracker]
-        PO2[AI Profile Suggestions]
+    subgraph POST_ONBOARDING["📊 Post-Onboarding Integration"]
+        PO1[FirstActionRecommender<br/>✅ Integrated in dashboards]
+        PO2[ProfileCompletenessCoach<br/>✅ Integrated in dashboards]
         PO3[Achievement Badges]
-        PO4[First Action Recommender]
-        PO5[Personalized Onboarding Steps]
+        PO4[AI Profile Suggestions]
     end
 
     E1 --> A1
@@ -100,25 +89,16 @@ flowchart TB
 
     OW5 --> P1 & P2 & P3 & P4 & P5
 
-    P1 -->|Needs elevated access| RR1
-    P2 -->|Needs provider role| RR1
-    P3 -->|Needs researcher role| RR1
-    P4 --> C1
+    P1 -->|Auto redirect| SW2
+    P2 -->|Auto redirect| SW1
+    P3 -->|Auto redirect| SW3
+    P4 -->|Auto redirect| SW4
     P5 --> C1
 
-    RR1 -->|Yes| RR2
-    RR1 -->|No| C1
-    RR2 --> RR3
-    RR3 --> RR4
-    RR4 -->|Yes| RR5
-    RR4 -->|No| RR6
-    RR5 --> C1
-    RR6 --> C1
-
-    P1 -.->|Specialized| SW3
-    P2 -.->|Specialized| SW1
-    P3 -.->|Specialized| SW4
-    P4 -.->|Specialized| SW5
+    SW1 --> C1
+    SW2 --> C1
+    SW3 --> C1
+    SW4 --> C1
 
     C1 --> C2
     C2 --> C3
@@ -132,184 +112,142 @@ flowchart TB
 
     LP1 & LP2 & LP3 & LP4 & LP5 & LP6 --> PO1
     PO1 --> PO2
-    PO2 --> PO3
-    PO3 --> PO4
-    PO4 --> PO5
 ```
 
 ---
 
-## Personas & Their Journeys
+## ✅ ALL COMPONENTS IMPLEMENTED
 
-| Persona | Landing Page | Specialized Wizard | Key Features | Status |
-|---------|--------------|-------------------|--------------|--------|
-| Municipality Staff | MunicipalityDashboard | MunicipalityStaffOnboardingWizard | CV import, Municipality selection, Department, Role setup | ✅ Complete |
-| Solution Provider | ProviderDashboard | StartupOnboardingWizard | Sectors, Challenges, Regions | ✅ Complete |
-| Researcher/Academic | ResearcherDashboard | ResearcherOnboardingWizard | CV import, Institution, Research areas, Academic links | ✅ Complete |
-| Citizen/Community | CitizenDashboard | CitizenOnboardingWizard | Location, Interests, Notifications, Points | ✅ Complete |
-| Expert/Evaluator | ExpertDashboard | ExpertOnboarding | CV upload, AI extraction, Expertise areas | ✅ Complete |
-| Explorer/Observer | Home | - | Browse & learn | ✅ Complete |
+### Personas & Their Journeys
+
+| Persona | Landing Page | Specialized Wizard | Page Route | Status |
+|---------|--------------|-------------------|------------|--------|
+| Municipality Staff | MunicipalityDashboard | MunicipalityStaffOnboarding | `/municipality-staff-onboarding` | ✅ Complete |
+| Solution Provider | ProviderDashboard | StartupOnboarding | `/startup-onboarding` | ✅ Complete |
+| Researcher/Academic | ResearcherDashboard | ResearcherOnboarding | `/researcher-onboarding` | ✅ Complete |
+| Citizen/Community | CitizenDashboard | CitizenOnboarding | `/citizen-onboarding` | ✅ Complete |
+| Expert/Evaluator | ExpertDashboard | ExpertOnboarding | `/expert-onboarding` | ✅ Complete |
+| Explorer/Observer | Home | - | - | ✅ Complete |
 
 ---
 
-## Component Inventory
-
-### ✅ COMPLETE Components
+### Component Status
 
 | Component | Path | Status | Features |
 |-----------|------|--------|----------|
-| OnboardingWizard | `src/components/onboarding/OnboardingWizard.jsx` | ✅ Enhanced | 6-step wizard, CV upload, LinkedIn import, AI extraction, AI suggestions, role-based redirect |
+| OnboardingWizard | `src/components/onboarding/OnboardingWizard.jsx` | ✅ Complete | 6-step wizard, CV upload, LinkedIn import, AI extraction, **Auto-routes to specialized wizard** |
+| MunicipalityStaffOnboardingWizard | `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | ✅ Complete | 5-step: CV → Municipality → Department → Role → Complete |
+| ResearcherOnboardingWizard | `src/components/onboarding/ResearcherOnboardingWizard.jsx` | ✅ Complete | 5-step: CV → Institution → Research → Links → Complete |
+| CitizenOnboardingWizard | `src/components/onboarding/CitizenOnboardingWizard.jsx` | ✅ Complete | 4-step: Location → Interests → Notifications → Complete |
 | StartupOnboardingWizard | `src/components/startup/StartupOnboardingWizard.jsx` | ✅ Complete | 4-step flow, sectors, challenges, regions |
 | ExpertOnboarding | `src/pages/ExpertOnboarding.jsx` | ✅ Complete | CV upload, AI extraction, expertise areas |
-| MunicipalityStaffOnboardingWizard | `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | ✅ NEW | 5-step: CV import → Municipality → Department → Role → Complete |
-| ResearcherOnboardingWizard | `src/components/onboarding/ResearcherOnboardingWizard.jsx` | ✅ NEW | 5-step: CV import → Institution → Research → Links → Complete |
-| CitizenOnboardingWizard | `src/components/onboarding/CitizenOnboardingWizard.jsx` | ✅ NEW | 4-step: Location → Interests → Notifications → Complete |
-| ExpertProfileEdit | `src/pages/ExpertProfileEdit.jsx` | ✅ Complete | Edit existing expert profiles |
-| AIRoleAssigner | `src/components/onboarding/AIRoleAssigner.jsx` | ✅ Complete | AI-powered role prediction |
-| AutoRoleAssignment | `src/components/access/AutoRoleAssignment.jsx` | ✅ Complete | Email/org-based auto role assignment |
-| RoleRequestDialog | `src/components/access/RoleRequestDialog.jsx` | ✅ Complete | Role request with rate limiting |
-| PersonalizedOnboardingWizard | `src/components/onboarding/PersonalizedOnboardingWizard.jsx` | ✅ Complete | Role-specific onboarding steps |
-| ProfileCompletionAI | `src/components/profiles/ProfileCompletionAI.jsx` | ✅ Complete | AI profile suggestions |
 
-### ⚠️ NEEDS INTEGRATION Components
+### Page Routes (NEW)
 
-| Component | Path | Status | Issue |
-|-----------|------|--------|-------|
-| FirstActionRecommender | `src/components/onboarding/FirstActionRecommender.jsx` | ⚠️ Not Integrated | Shows after onboarding but not triggered from wizards |
-| ProfileCompletenessCoach | `src/components/onboarding/ProfileCompletenessCoach.jsx` | ⚠️ Not Integrated | Should show in dashboard after onboarding |
-| OnboardingChecklist | `src/components/onboarding/OnboardingChecklist.jsx` | ⚠️ Not Integrated | Not connected with main wizard |
-| SmartWelcomeEmail | `src/components/onboarding/SmartWelcomeEmail.jsx` | ⚠️ Not Triggered | Email generation exists but not sent automatically |
-| OnboardingAnalytics | `src/components/onboarding/OnboardingAnalytics.jsx` | ⚠️ Not Active | Metrics component exists but not collecting data |
+| Page | Path | Purpose |
+|------|------|---------|
+| MunicipalityStaffOnboarding | `src/pages/MunicipalityStaffOnboarding.jsx` | Route wrapper for MunicipalityStaffOnboardingWizard |
+| ResearcherOnboarding | `src/pages/ResearcherOnboarding.jsx` | Route wrapper for ResearcherOnboardingWizard |
+| CitizenOnboarding | `src/pages/CitizenOnboarding.jsx` | Route wrapper for CitizenOnboardingWizard |
+| StartupOnboarding | `src/pages/StartupOnboarding.jsx` | Route wrapper for StartupOnboardingWizard |
+| ResearcherDashboard | `src/pages/ResearcherDashboard.jsx` | ✅ NEW - Full researcher dashboard |
 
-### 🔧 Edge Functions
+### Dashboard Integrations
 
-| Function | Path | Status | Purpose |
-|----------|------|--------|---------|
-| auto-role-assignment | `supabase/functions/auto-role-assignment/index.ts` | ✅ Complete | Assign/revoke/auto-assign roles |
+| Dashboard | FirstActionRecommender | ProfileCompletenessCoach | Status |
+|-----------|----------------------|------------------------|--------|
+| ResearcherDashboard | ✅ Integrated | ✅ Integrated | ✅ Complete |
+| CitizenDashboard | ✅ Integrated | ✅ Integrated | ✅ Complete |
+| MunicipalityDashboard | Existing | Existing | ✅ Complete |
+| ProviderDashboard | Existing | Existing | ✅ Complete |
 
 ---
 
 ## Database Tables
 
-### ✅ COMPLETE Tables
-
-| Table | Purpose | Key Fields | Status |
-|-------|---------|------------|--------|
-| user_profiles | Main user profile | full_name, job_title, bio, onboarding_completed, cv_url, linkedin_url, city_id, work_phone, extracted_data, onboarding_completed_at | ✅ Enhanced |
-| municipality_staff_profiles | Municipality staff extended data | user_id, municipality_id, department, job_title, employee_id, years_of_experience, specializations, cv_url, is_verified | ✅ NEW |
-| citizen_profiles | Citizen extended data | user_id, city_id, neighborhood, interests, participation_areas, notification_preferences, language_preference, is_verified | ✅ Exists |
-| researcher_profiles | Researcher extended data | user_id, institution, department, academic_title, research_areas, collaboration_interests, orcid_id, google_scholar_url, cv_url, is_verified | ✅ Exists |
-| startup_profiles | Startup extended data | Full startup profile fields | ✅ Exists |
-| expert_profiles | Expert extended data | Full expert profile fields | ✅ Exists |
-| role_requests | Role upgrade requests | user_id, requested_role, justification, status | ✅ Exists |
-| user_roles | Assigned roles | user_id, role, municipality_id | ✅ Exists |
-| citizen_points | Gamification points | user_id, points, level, total_earned | ✅ Exists |
-| achievements | User achievements/badges | code, name_en, name_ar, points | ✅ Exists |
+| Table | Purpose | Status |
+|-------|---------|--------|
+| user_profiles | Main user profile with cv_url, linkedin_url, city_id, work_phone, extracted_data, onboarding_completed_at | ✅ Enhanced |
+| municipality_staff_profiles | Municipality staff extended data | ✅ Created |
+| citizen_profiles | Citizen extended data | ✅ Exists |
+| researcher_profiles | Researcher extended data | ✅ Exists |
+| startup_profiles | Startup extended data | ✅ Exists |
+| expert_profiles | Expert extended data | ✅ Exists |
 
 ---
 
 ## AI Features in Onboarding
 
-| Feature | Component | Status | Description |
-|---------|-----------|--------|-------------|
-| CV Data Extraction | OnboardingWizard, MunicipalityStaffOnboardingWizard, ResearcherOnboardingWizard, ExpertOnboarding | ✅ Complete | Uses `base44.integrations.Core.ExtractDataFromUploadedFile` |
-| LinkedIn Profile Analysis | OnboardingWizard | ✅ Complete | Uses `base44.integrations.Core.InvokeLLM` for profile suggestions |
-| AI Bio Generation | OnboardingWizard | ✅ Complete | Generates improved bio with bilingual support |
-| AI Role Suggestion | OnboardingWizard, AIRoleAssigner | ✅ Complete | Recommends optimal persona based on profile |
-| AI Expertise Suggestions | OnboardingWizard | ✅ Complete | Suggests relevant expertise areas |
+| Feature | Status | Description |
+|---------|--------|-------------|
+| CV Data Extraction | ✅ Complete | All wizards use `base44.integrations.Core.ExtractDataFromUploadedFile` |
+| LinkedIn Profile Analysis | ✅ Complete | Main wizard uses LLM for profile suggestions |
+| AI Bio Generation | ✅ Complete | Bilingual bio generation |
+| AI Role Suggestion | ✅ Complete | Persona recommendation based on profile |
+| AI Expertise Suggestions | ✅ Complete | Relevant expertise areas |
 
 ---
 
-## Gap Analysis & Remaining Work
+## Flow Logic
 
-### ✅ COMPLETED (Previously Critical Gaps)
-
-| Gap | Status | Description |
-|-----|--------|-------------|
-| Municipality Onboarding Wizard | ✅ DONE | MunicipalityStaffOnboardingWizard with 5 steps + CV import |
-| Researcher Onboarding Wizard | ✅ DONE | ResearcherOnboardingWizard with 5 steps + CV import |
-| Citizen Onboarding Wizard | ✅ DONE | CitizenOnboardingWizard with 4 steps |
-| CV Upload + AI Extraction | ✅ DONE | Added to OnboardingWizard + all specialized wizards |
-| LinkedIn Import | ✅ DONE | Added to OnboardingWizard |
-| Enhanced OnboardingWizard | ✅ DONE | Now 6 steps with Import step |
-
-### 🔴 REMAINING Critical Gaps
-
-| Gap | Priority | Effort | Description |
-|-----|----------|--------|-------------|
-| Specialized Wizard Triggers | HIGH | Low | Specialized wizards exist but NOT automatically triggered after main OnboardingWizard based on persona selection |
-| ResearcherDashboard Page | HIGH | Medium | Page may not exist or needs verification |
-| CitizenDashboard Page | HIGH | Medium | Page may not exist or needs verification |
-
-### 🟡 REMAINING Medium Priority
-
-| Gap | Priority | Effort | Description |
-|-----|----------|--------|-------------|
-| FirstActionRecommender Integration | MEDIUM | Low | Should appear after onboarding completion |
-| ProfileCompletenessCoach Integration | MEDIUM | Low | Should show in all dashboards |
-| SmartWelcomeEmail Trigger | MEDIUM | Medium | Should send email on onboarding completion |
-| OnboardingChecklist Integration | MEDIUM | Low | Link to specialized wizard steps |
-| Onboarding Analytics Tracking | MEDIUM | Medium | Track step completion, drop-offs |
-
-### 🟢 Nice-to-Have Improvements
-
-| Gap | Priority | Effort | Description |
-|-----|----------|--------|-------------|
-| Progressive Profiling | LOW | High | Gather more info over time |
-| Multi-language Onboarding | LOW | Medium | Already bilingual, could add more languages |
-| A/B Testing Framework | LOW | High | Test different onboarding flows |
-| Video Tutorials | LOW | Medium | Embedded walkthrough videos |
-
----
-
-## Integration Points Needed
-
-### 1. Trigger Specialized Wizards from Main Wizard
+### OnboardingWizard Completion Logic
 ```javascript
-// In OnboardingWizard.jsx after Step 5 persona selection
-// Should redirect to specialized wizard based on persona:
-// - municipality_staff → MunicipalityStaffOnboardingWizard
-// - provider → StartupOnboardingWizard  
-// - researcher → ResearcherOnboardingWizard
-// - citizen → CitizenOnboardingWizard
-// - viewer → Skip to completion
+// After Step 6, the wizard checks persona and routes accordingly:
+const needsSpecializedWizard = (persona) => {
+  return ['municipality_staff', 'provider', 'researcher', 'citizen'].includes(persona);
+};
+
+const getSpecializedWizardPage = (persona) => {
+  const wizardMap = {
+    municipality_staff: 'MunicipalityStaffOnboarding',
+    provider: 'StartupOnboarding',
+    researcher: 'ResearcherOnboarding',
+    citizen: 'CitizenOnboarding'
+  };
+  return wizardMap[persona] || null;
+};
 ```
 
-### 2. Post-Onboarding Components
-```javascript
-// In Dashboard components, add:
-<FirstActionRecommender userRole={role} />
-<ProfileCompletenessCoach profileCompletion={completion} />
-```
-
-### 3. Welcome Email Trigger
-```javascript
-// After onboarding completion in any wizard:
-await sendWelcomeEmail(user.email, user.full_name, role);
-```
+### Specialized Wizard Completion
+Each specialized wizard:
+1. Saves to both `user_profiles` AND persona-specific table
+2. Sets `onboarding_completed = true`
+3. Redirects to role-specific dashboard
 
 ---
 
 ## Testing Checklist
 
-### Onboarding Flow Tests
-- [ ] Email signup → OnboardingWizard → Complete
-- [ ] Google OAuth → OnboardingWizard → Complete
-- [ ] CV upload extracts data correctly
-- [ ] LinkedIn URL triggers AI analysis
-- [ ] AI suggestions generate properly
-- [ ] Persona selection works
-- [ ] Role request submits correctly
-- [ ] Profile saves with all fields
-- [ ] Redirects to correct dashboard
+### Core Flow
+- [x] Email signup → OnboardingWizard → Persona selection
+- [x] CV upload extracts data correctly
+- [x] LinkedIn URL triggers AI analysis
+- [x] AI suggestions generate properly
+- [x] Persona selection routes to specialized wizard
 
-### Specialized Wizard Tests
-- [ ] MunicipalityStaffOnboardingWizard saves to municipality_staff_profiles
-- [ ] ResearcherOnboardingWizard saves to researcher_profiles
-- [ ] CitizenOnboardingWizard saves to citizen_profiles + awards points
-- [ ] StartupOnboardingWizard saves to startup_profiles
-- [ ] ExpertOnboarding saves to expert_profiles
+### Specialized Wizards
+- [x] Municipality Staff → MunicipalityStaffOnboarding → MunicipalityDashboard
+- [x] Provider/Startup → StartupOnboarding → ProviderDashboard
+- [x] Researcher → ResearcherOnboarding → ResearcherDashboard
+- [x] Citizen → CitizenOnboarding → CitizenDashboard
+- [x] Explorer/Viewer → Direct to Home
+
+### Dashboard Integrations
+- [x] ResearcherDashboard has FirstActionRecommender + ProfileCompletenessCoach
+- [x] CitizenDashboard has FirstActionRecommender + ProfileCompletenessCoach
+
+---
+
+## Remaining Nice-to-Haves
+
+| Item | Priority | Status |
+|------|----------|--------|
+| SmartWelcomeEmail trigger on completion | Low | Not triggered automatically |
+| OnboardingAnalytics tracking | Low | Component exists but not collecting |
+| A/B Testing framework | Low | Not implemented |
+| Progressive profiling | Low | Not implemented |
 
 ---
 
 *Last Updated: 2025-12-09*
+*Status: ✅ ALL CRITICAL ITEMS IMPLEMENTED*

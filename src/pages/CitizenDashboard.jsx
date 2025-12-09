@@ -1,60 +1,85 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   Lightbulb, Heart, MessageSquare, Award, TrendingUp, CheckCircle2,
-  Clock, XCircle, AlertCircle, Target, Sparkles, Trophy, Star
+  Clock, XCircle, AlertCircle, Target, Sparkles, Trophy, Star, Users
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
+import ProfileCompletenessCoach from '../components/onboarding/ProfileCompletenessCoach';
 
 function CitizenDashboard() {
+  const { user, userProfile } = useAuth();
   const { language, isRTL, t } = useLanguage();
-  const urlParams = new URLSearchParams(window.location.search);
-  const citizenEmail = urlParams.get('email');
+  const citizenEmail = user?.email;
 
+  // Fetch citizen ideas
   const { data: myIdeas = [] } = useQuery({
     queryKey: ['my-ideas', citizenEmail],
     queryFn: async () => {
-      const all = await base44.entities.CitizenIdea.list();
-      return all.filter(i => i.submitter_email === citizenEmail);
+      const { data, error } = await supabase
+        .from('citizen_ideas')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!citizenEmail
+    enabled: !!user?.id
   });
 
+  // Fetch citizen votes
   const { data: myVotes = [] } = useQuery({
     queryKey: ['my-votes', citizenEmail],
     queryFn: async () => {
-      const all = await base44.entities.CitizenVote.list();
-      return all.filter(v => v.voter_identifier === citizenEmail);
+      const { data, error } = await supabase
+        .from('citizen_votes')
+        .select('*')
+        .eq('user_id', user?.id);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!citizenEmail
+    enabled: !!user?.id
   });
 
+  // Fetch citizen points
   const { data: myPoints } = useQuery({
     queryKey: ['my-points', citizenEmail],
     queryFn: async () => {
-      const all = await base44.entities.CitizenPoints.list();
-      return all.find(p => p.citizen_identifier === citizenEmail);
+      const { data, error } = await supabase
+        .from('citizen_points')
+        .select('*')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
-    enabled: !!citizenEmail
+    enabled: !!user?.id
   });
 
+  // Fetch notifications
   const { data: notifications = [] } = useQuery({
     queryKey: ['my-notifications', citizenEmail],
     queryFn: async () => {
-      const all = await base44.entities.CitizenNotification.list();
-      return all.filter(n => n.citizen_identifier === citizenEmail).sort((a, b) => 
-        new Date(b.created_date) - new Date(a.created_date)
-      );
+      const { data, error } = await supabase
+        .from('citizen_notifications')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!citizenEmail
+    enabled: !!user?.id
   });
 
   const statusIcons = {
@@ -84,58 +109,66 @@ function CitizenDashboard() {
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Ideas Submitted', ar: 'الأفكار المقدمة' })}</p>
-                <p className="text-3xl font-bold text-purple-600 mt-1">{myIdeas.length}</p>
+      {/* Profile Coach & Stats Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-purple-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Ideas Submitted', ar: 'الأفكار المقدمة' })}</p>
+                  <p className="text-3xl font-bold text-purple-600 mt-1">{myIdeas.length}</p>
+                </div>
+                <Lightbulb className="h-8 w-8 text-purple-600" />
               </div>
-              <Lightbulb className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-pink-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Votes Cast', ar: 'الأصوات المدلى بها' })}</p>
-                <p className="text-3xl font-bold text-pink-600 mt-1">{myVotes.length}</p>
+          <Card className="bg-gradient-to-br from-pink-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Votes Cast', ar: 'الأصوات المدلى بها' })}</p>
+                  <p className="text-3xl font-bold text-pink-600 mt-1">{myVotes.length}</p>
+                </div>
+                <Heart className="h-8 w-8 text-pink-600" />
               </div>
-              <Heart className="h-8 w-8 text-pink-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Total Points', ar: 'النقاط الكلية' })}</p>
-                <p className="text-3xl font-bold text-amber-600 mt-1">{myPoints?.total_points || 0}</p>
+          <Card className="bg-gradient-to-br from-amber-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Total Points', ar: 'النقاط الكلية' })}</p>
+                  <p className="text-3xl font-bold text-amber-600 mt-1">{myPoints?.points || 0}</p>
+                </div>
+                <Trophy className="h-8 w-8 text-amber-600" />
               </div>
-              <Trophy className="h-8 w-8 text-amber-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-teal-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Ideas Converted', ar: 'الأفكار المحولة' })}</p>
-                <p className="text-3xl font-bold text-teal-600 mt-1">
-                  {myIdeas.filter(i => i.status === 'converted_to_challenge').length}
-                </p>
+          <Card className="bg-gradient-to-br from-teal-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Ideas Converted', ar: 'الأفكار المحولة' })}</p>
+                  <p className="text-3xl font-bold text-teal-600 mt-1">
+                    {myIdeas.filter(i => i.status === 'converted_to_challenge').length}
+                  </p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-teal-600" />
               </div>
-              <CheckCircle2 className="h-8 w-8 text-teal-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+        <div>
+          <ProfileCompletenessCoach profile={userProfile} role="citizen" />
+        </div>
       </div>
+
+      {/* First Action Recommender */}
+      <FirstActionRecommender user={{ role: 'citizen', email: user?.email || '' }} />
 
       {/* Level & Badges */}
       {myPoints && (
