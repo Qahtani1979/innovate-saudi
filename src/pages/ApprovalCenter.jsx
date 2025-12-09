@@ -17,12 +17,15 @@ import {
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import InlineApprovalWizard from '../components/approval/InlineApprovalWizard';
 import { getGateConfig } from '../components/approval/ApprovalGateConfig';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ApprovalCenter() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [analyzingId, setAnalyzingId] = useState(null);
   const { language, isRTL, t } = useLanguage();
   const [user, setUser] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: analyzingLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const [analyzingId, setAnalyzingId] = useState(null);
 
   React.useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -294,7 +297,7 @@ Status: ${item.milestone.status}
 Provide approval recommendation with reasoning.`;
       }
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -307,7 +310,11 @@ Provide approval recommendation with reasoning.`;
         }
       });
 
-      setAiAnalysis({ id: item.id || item.pilotId, analysis: result });
+      if (result.success) {
+        setAiAnalysis({ id: item.id || item.pilotId, analysis: result.data });
+      } else {
+        toast.error(t({ en: 'Failed to analyze', ar: 'فشل التحليل' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to analyze', ar: 'فشل التحليل' }));
     } finally {

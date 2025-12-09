@@ -48,6 +48,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import CloneEntity from '../components/CloneEntity';
 import PDFExport from '../components/PDFExport';
 import EntityPermissions from '../components/EntityPermissions';

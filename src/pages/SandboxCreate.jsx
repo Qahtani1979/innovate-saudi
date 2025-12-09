@@ -11,15 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../components/LanguageContext';
 import { createPageUrl } from '../utils';
-import { Shield, ChevronLeft, ChevronRight, FileText, Building2, Wifi, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { Shield, ChevronLeft, ChevronRight, FileText, Building2, Wifi, DollarSign, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SandboxCreate() {
   const navigate = useNavigate();
   const { language, isRTL, t } = useLanguage();
   const [step, setStep] = useState(1);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   
   const [formData, setFormData] = useState({
     code: '',
@@ -79,9 +82,8 @@ function SandboxCreate() {
       toast.error(t({ en: 'Please enter sandbox name and domain first', ar: 'الرجاء إدخال اسم المنطقة والمجال أولاً' }));
       return;
     }
-    setAiLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Enhance this regulatory sandbox proposal:
 
 Sandbox Name: ${formData.name_en}
@@ -108,20 +110,23 @@ Provide bilingual enhancements:
         }
       });
 
-      setFormData({
-        ...formData,
-        tagline_en: result.tagline_en,
-        tagline_ar: result.tagline_ar,
-        description_en: result.description_en,
-        description_ar: result.description_ar,
-        objectives_en: result.objectives_en,
-        objectives_ar: result.objectives_ar
-      });
-      toast.success(t({ en: 'AI enhanced your sandbox', ar: 'حسّن الذكاء منطقتك' }));
+      if (result.success) {
+        setFormData({
+          ...formData,
+          tagline_en: result.data.tagline_en,
+          tagline_ar: result.data.tagline_ar,
+          description_en: result.data.description_en,
+          description_ar: result.data.description_ar,
+          objectives_en: result.data.objectives_en,
+          objectives_ar: result.data.objectives_ar
+        });
+        toast.success(t({ en: 'AI enhanced your sandbox', ar: 'حسّن الذكاء منطقتك' }));
+      } else {
+        toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
     }
-    setAiLoading(false);
   };
 
   const createMutation = useMutation({

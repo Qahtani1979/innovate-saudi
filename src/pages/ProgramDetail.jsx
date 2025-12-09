@@ -46,6 +46,8 @@ import PeerCollaborationHub from '../components/programs/PeerCollaborationHub';
 import ResourceLibrary from '../components/programs/ResourceLibrary';
 import AlumniSuccessStoryGenerator from '../components/programs/AlumniSuccessStoryGenerator';
 import MunicipalImpactCalculator from '../components/programs/MunicipalImpactCalculator';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProgramDetail() {
   const { hasPermission, user } = usePermissions();

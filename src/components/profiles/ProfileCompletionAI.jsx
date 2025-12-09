@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -7,11 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProfileCompletionAI({ profile, onSuggestion }) {
   const { language, isRTL, t } = useLanguage();
-  const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const completionScore = () => {
     let score = 0;
@@ -25,9 +26,8 @@ export default function ProfileCompletionAI({ profile, onSuggestion }) {
   };
 
   const handleAISuggestions = async () => {
-    setLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze this user profile and suggest improvements:
 Bio (EN): ${profile?.bio_en || 'Missing'}
 Bio (AR): ${profile?.bio_ar || 'Missing'}
@@ -49,12 +49,14 @@ Provide bilingual suggestions for:
           }
         }
       });
-      setSuggestions(result);
-      toast.success(t({ en: 'AI analysis complete', ar: 'اكتمل التحليل' }));
+      if (result.success) {
+        setSuggestions(result.data);
+        toast.success(t({ en: 'AI analysis complete', ar: 'اكتمل التحليل' }));
+      } else {
+        toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setLoading(false);
     }
   };
 

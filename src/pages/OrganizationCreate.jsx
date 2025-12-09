@@ -15,12 +15,14 @@ import { useLanguage } from '../components/LanguageContext';
 import { Building2, Save, Loader2, Sparkles, Plus, X, ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function OrganizationCreate() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [currentStep, setCurrentStep] = useState(1);
 
   const { data: cities = [] } = useQuery({
@@ -136,7 +138,7 @@ Generate:
 7. Maturity level (early_stage/growth/established/mature)
 ${['startup', 'company', 'sme'].includes(formData.org_type) ? '8. Funding stage (bootstrapped/seed/series_a/series_b/public)' : ''}`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -173,25 +175,30 @@ ${['startup', 'company', 'sme'].includes(formData.org_type) ? '8. Funding stage 
         }
       });
 
+      if (!result.success) {
+        toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
+        return;
+      }
+
+      const data = result.data;
+
       setFormData(prev => ({
         ...prev,
-        name_en: result.name_en || prev.name_en,
-        name_ar: result.name_ar || prev.name_ar,
-        description_en: result.description_en || prev.description_en,
-        description_ar: result.description_ar || prev.description_ar,
-        specializations: result.specializations || prev.specializations,
-        capabilities: result.capabilities || prev.capabilities,
-        sectors: result.sectors || prev.sectors,
-        team_size: result.team_size || prev.team_size,
-        maturity_level: result.maturity_level || prev.maturity_level,
-        funding_stage: result.funding_stage || prev.funding_stage
+        name_en: data.name_en || prev.name_en,
+        name_ar: data.name_ar || prev.name_ar,
+        description_en: data.description_en || prev.description_en,
+        description_ar: data.description_ar || prev.description_ar,
+        specializations: data.specializations || prev.specializations,
+        capabilities: data.capabilities || prev.capabilities,
+        sectors: data.sectors || prev.sectors,
+        team_size: data.team_size || prev.team_size,
+        maturity_level: data.maturity_level || prev.maturity_level,
+        funding_stage: data.funding_stage || prev.funding_stage
       }));
       
       toast.success(t({ en: '✨ AI generated organization profile!', ar: '✨ تم إنشاء ملف الجهة!' }));
     } catch (error) {
       toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -206,7 +213,7 @@ ${['startup', 'company', 'sme'].includes(formData.org_type) ? '8. Funding stage 
 
     try {
       const targetLang = field.includes('_en') ? 'English' : 'Arabic';
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Translate this organizational text to ${targetLang} professionally:\n\n${sourceText}`,
         response_json_schema: {
           type: 'object',
@@ -216,9 +223,13 @@ ${['startup', 'company', 'sme'].includes(formData.org_type) ? '8. Funding stage 
         }
       });
       
-      setFormData(prev => ({ ...prev, [field]: result.translation }));
-      setHasUserEdited(prev => ({ ...prev, [field]: false }));
-      toast.success(t({ en: 'Re-translated', ar: 'تمت إعادة الترجمة' }));
+      if (result.success) {
+        setFormData(prev => ({ ...prev, [field]: result.data.translation }));
+        setHasUserEdited(prev => ({ ...prev, [field]: false }));
+        toast.success(t({ en: 'Re-translated', ar: 'تمت إعادة الترجمة' }));
+      } else {
+        toast.error(t({ en: 'Translation failed', ar: 'فشلت الترجمة' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Translation failed', ar: 'فشلت الترجمة' }));
     }
