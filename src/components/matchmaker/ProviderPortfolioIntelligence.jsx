@@ -8,11 +8,13 @@ import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProviderPortfolioIntelligence({ providerId }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [insights, setInsights] = useState(null);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: matches = [] } = useQuery({
     queryKey: ['provider-matches', providerId],
@@ -21,18 +23,16 @@ export default function ProviderPortfolioIntelligence({ providerId }) {
   });
 
   const analyzePortfolio = async () => {
-    setAnalyzing(true);
-    try {
-      const successBySector = matches.reduce((acc, m) => {
-        const sector = m.sector || 'other';
-        if (!acc[sector]) acc[sector] = { total: 0, success: 0 };
-        acc[sector].total += 1;
-        if (m.status === 'converted_to_pilot') acc[sector].success += 1;
-        return acc;
-      }, {});
+    const successBySector = matches.reduce((acc, m) => {
+      const sector = m.sector || 'other';
+      if (!acc[sector]) acc[sector] = { total: 0, success: 0 };
+      acc[sector].total += 1;
+      if (m.status === 'converted_to_pilot') acc[sector].success += 1;
+      return acc;
+    }, {});
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze provider portfolio and recommend expansion:
+    const result = await invokeAI({
+      prompt: `Analyze provider portfolio and recommend expansion:
 
 Success by Sector:
 ${Object.entries(successBySector).map(([s, d]) => `${s}: ${d.success}/${d.total} success`).join('\n')}
@@ -42,23 +42,20 @@ Provide:
 2. Weak sectors (win rate <40%)
 3. Untapped opportunities (sectors not explored)
 4. Growth recommendations (which capabilities to develop)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            strong_sectors: { type: "array", items: { type: "string" } },
-            weak_sectors: { type: "array", items: { type: "string" } },
-            opportunities: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          strong_sectors: { type: "array", items: { type: "string" } },
+          weak_sectors: { type: "array", items: { type: "string" } },
+          opportunities: { type: "array", items: { type: "string" } },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setInsights(response);
+    if (result.success) {
+      setInsights(result.data);
       toast.success(t({ en: 'Analysis complete', ar: 'التحليل مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -78,13 +75,14 @@ Provide:
             <Target className="h-5 w-5 text-blue-600" />
             {t({ en: 'Portfolio Intelligence', ar: 'ذكاء المحفظة' })}
           </CardTitle>
-          <Button onClick={analyzePortfolio} disabled={analyzing} size="sm" className="bg-blue-600">
+          <Button onClick={analyzePortfolio} disabled={analyzing || !isAvailable} size="sm" className="bg-blue-600">
             {analyzing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Analyze', ar: 'تحليل' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         <div>
           <h4 className="font-semibold text-sm mb-3">{t({ en: 'Sector Distribution', ar: 'توزيع القطاعات' })}</h4>
           <ResponsiveContainer width="100%" height={150}>

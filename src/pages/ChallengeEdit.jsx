@@ -17,6 +17,8 @@ import { createNotification } from '../components/AutoNotification';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { FileText } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ChallengeEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -24,7 +26,7 @@ function ChallengeEdit() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const { invokeAI, status, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenge, isLoading } = useQuery({
     queryKey: ['challenge', challengeId],
@@ -193,7 +195,6 @@ function ChallengeEdit() {
       return;
     }
 
-    setIsAIProcessing(true);
     try {
       const prompt = `
         Analyze this Saudi municipal challenge and provide COMPLETE BILINGUAL (Arabic + English) structured output covering ALL fields.
@@ -259,7 +260,7 @@ function ChallengeEdit() {
         Use Saudi municipal context, real data intelligence, and best practices.
       `;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const aiResult = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -354,59 +355,59 @@ function ChallengeEdit() {
         }
       });
 
-      setFormData(prev => ({
-        ...prev,
-        title_en: result.refined_title_en || prev.title_en,
-        title_ar: result.refined_title_ar || prev.title_ar,
-        tagline_en: result.refined_tagline_en || prev.tagline_en,
-        tagline_ar: result.refined_tagline_ar || prev.tagline_ar,
-        description_en: result.improved_description_en || prev.description_en,
-        description_ar: result.improved_description_ar || prev.description_ar,
-        problem_statement_en: result.problem_statement_en || prev.problem_statement_en,
-        problem_statement_ar: result.problem_statement_ar || prev.problem_statement_ar,
-        current_situation_en: result.current_situation_en || prev.current_situation_en,
-        current_situation_ar: result.current_situation_ar || prev.current_situation_ar,
-        desired_outcome_en: result.desired_outcome_en || prev.desired_outcome_en,
-        desired_outcome_ar: result.desired_outcome_ar || prev.desired_outcome_ar,
-        root_cause_en: result.root_cause_en || prev.root_cause_en,
-        root_cause_ar: result.root_cause_ar || prev.root_cause_ar,
-        root_causes: result.root_causes || prev.root_causes || [],
-        sector_id: result.sector_id || prev.sector_id,
-        subsector_id: result.subsector_id || prev.subsector_id,
-        service_id: result.service_id || prev.service_id,
-        sector: result.sector_id ? sectors.find(s => s.id === result.sector_id)?.code : prev.sector,
-        sub_sector: result.subsector_id ? subsectors.find(ss => ss.id === result.subsector_id)?.name_en : prev.sub_sector,
-        affected_services: result.affected_services || prev.affected_services || [],
-        keywords: result.keywords || prev.keywords || [],
-        severity_score: result.severity_score || prev.severity_score,
-        impact_score: result.impact_score || prev.impact_score,
-        overall_score: Math.round(((result.severity_score || prev.severity_score) + (result.impact_score || prev.impact_score)) / 2),
-        affected_population: result.affected_population || prev.affected_population,
-        affected_population_size: result.affected_population_size || result.affected_population?.size || prev.affected_population_size,
-        kpis: result.kpis || prev.kpis || [],
-        stakeholders: result.stakeholders || prev.stakeholders || [],
-        data_evidence: result.data_evidence || prev.data_evidence || [],
-        constraints: result.constraints || prev.constraints || [],
-        theme: result.theme || prev.theme,
-        category: result.category || prev.category,
-        challenge_type: result.challenge_type || prev.challenge_type,
-        priority: `tier_${result.priority_tier || 3}`,
-        tracks: result.tracks || prev.tracks || [],
-        budget_estimate: result.budget_estimate || prev.budget_estimate,
-        timeline_estimate: result.timeline_estimate || prev.timeline_estimate,
-        ministry_service: result.ministry_service || prev.ministry_service,
-        responsible_agency: result.responsible_agency || prev.responsible_agency,
-        department: result.department || prev.department,
-        strategic_goal: result.strategic_goal || prev.strategic_goal,
-        ai_summary: result.improved_description_en?.substring(0, 200) + '...',
-        ai_suggestions: result
-      }));
-
-      toast.success(language === 'ar' ? '✨ تم التحسين بنجاح!' : '✨ AI enhancement complete!');
+      if (aiResult.success) {
+        const result = aiResult.data;
+        setFormData(prev => ({
+          ...prev,
+          title_en: result.refined_title_en || prev.title_en,
+          title_ar: result.refined_title_ar || prev.title_ar,
+          tagline_en: result.refined_tagline_en || prev.tagline_en,
+          tagline_ar: result.refined_tagline_ar || prev.tagline_ar,
+          description_en: result.improved_description_en || prev.description_en,
+          description_ar: result.improved_description_ar || prev.description_ar,
+          problem_statement_en: result.problem_statement_en || prev.problem_statement_en,
+          problem_statement_ar: result.problem_statement_ar || prev.problem_statement_ar,
+          current_situation_en: result.current_situation_en || prev.current_situation_en,
+          current_situation_ar: result.current_situation_ar || prev.current_situation_ar,
+          desired_outcome_en: result.desired_outcome_en || prev.desired_outcome_en,
+          desired_outcome_ar: result.desired_outcome_ar || prev.desired_outcome_ar,
+          root_cause_en: result.root_cause_en || prev.root_cause_en,
+          root_cause_ar: result.root_cause_ar || prev.root_cause_ar,
+          root_causes: result.root_causes || prev.root_causes || [],
+          sector_id: result.sector_id || prev.sector_id,
+          subsector_id: result.subsector_id || prev.subsector_id,
+          service_id: result.service_id || prev.service_id,
+          sector: result.sector_id ? sectors.find(s => s.id === result.sector_id)?.code : prev.sector,
+          sub_sector: result.subsector_id ? subsectors.find(ss => ss.id === result.subsector_id)?.name_en : prev.sub_sector,
+          affected_services: result.affected_services || prev.affected_services || [],
+          keywords: result.keywords || prev.keywords || [],
+          severity_score: result.severity_score || prev.severity_score,
+          impact_score: result.impact_score || prev.impact_score,
+          overall_score: Math.round(((result.severity_score || prev.severity_score) + (result.impact_score || prev.impact_score)) / 2),
+          affected_population: result.affected_population || prev.affected_population,
+          affected_population_size: result.affected_population_size || result.affected_population?.size || prev.affected_population_size,
+          kpis: result.kpis || prev.kpis || [],
+          stakeholders: result.stakeholders || prev.stakeholders || [],
+          data_evidence: result.data_evidence || prev.data_evidence || [],
+          constraints: result.constraints || prev.constraints || [],
+          theme: result.theme || prev.theme,
+          category: result.category || prev.category,
+          challenge_type: result.challenge_type || prev.challenge_type,
+          priority: `tier_${result.priority_tier || 3}`,
+          tracks: result.tracks || prev.tracks || [],
+          budget_estimate: result.budget_estimate || prev.budget_estimate,
+          timeline_estimate: result.timeline_estimate || prev.timeline_estimate,
+          ministry_service: result.ministry_service || prev.ministry_service,
+          responsible_agency: result.responsible_agency || prev.responsible_agency,
+          department: result.department || prev.department,
+          strategic_goal: result.strategic_goal || prev.strategic_goal,
+          ai_summary: result.improved_description_en?.substring(0, 200) + '...',
+          ai_suggestions: result
+        }));
+        toast.success(language === 'ar' ? '✨ تم التحسين بنجاح!' : '✨ AI enhancement complete!');
+      }
     } catch (error) {
       toast.error(language === 'ar' ? '❌ فشل التحسين الذكي' : '❌ AI enhancement failed');
-    } finally {
-      setIsAIProcessing(false);
     }
   };
 
