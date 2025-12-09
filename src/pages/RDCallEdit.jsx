@@ -14,6 +14,8 @@ import { Save, Loader2, Sparkles } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function RDCallEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -21,7 +23,7 @@ function RDCallEdit() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [aiEnhancing, setAiEnhancing] = useState(false);
+  const { invokeAI, isLoading: aiEnhancing, status, error, rateLimitInfo } = useAIWithFallback();
 
   const { data: call, isLoading } = useQuery({
     queryKey: ['rd-call', callId],
@@ -50,9 +52,7 @@ function RDCallEdit() {
   });
 
   const handleAIEnhance = async () => {
-    setAiEnhancing(true);
-    try {
-      const prompt = `Enhance this R&D call with professional content for Saudi municipal innovation:
+    const prompt = `Enhance this R&D call with professional content for Saudi municipal innovation:
 
 Title: ${formData.title_en}
 Current Description: ${formData.description_en || 'N/A'}
@@ -70,80 +70,77 @@ Generate comprehensive enhanced bilingual content:
 8. Submission requirements (3-5 items)
 9. Focus areas/keywords (5-8 items)`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' },
-            expected_outcomes: { type: 'array', items: { type: 'string' } },
-            eligibility_criteria: { type: 'array', items: { type: 'string' } },
-            research_themes: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  theme: { type: 'string' },
-                  description: { type: 'string' }
-                }
-              } 
-            },
-            evaluation_criteria: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  criterion: { type: 'string' },
-                  description: { type: 'string' },
-                  weight: { type: 'number' }
-                }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          objectives_en: { type: 'string' },
+          objectives_ar: { type: 'string' },
+          expected_outcomes: { type: 'array', items: { type: 'string' } },
+          eligibility_criteria: { type: 'array', items: { type: 'string' } },
+          research_themes: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                theme: { type: 'string' },
+                description: { type: 'string' }
               }
-            },
-            submission_requirements: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  requirement: { type: 'string' },
-                  description: { type: 'string' },
-                  mandatory: { type: 'boolean' }
-                }
+            } 
+          },
+          evaluation_criteria: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                criterion: { type: 'string' },
+                description: { type: 'string' },
+                weight: { type: 'number' }
               }
-            },
-            focus_areas: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          submission_requirements: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                requirement: { type: 'string' },
+                description: { type: 'string' },
+                mandatory: { type: 'boolean' }
+              }
+            }
+          },
+          focus_areas: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (result.success && result.data) {
       setFormData(prev => ({
         ...prev,
-        title_en: result.title_en || prev.title_en,
-        title_ar: result.title_ar || prev.title_ar,
-        tagline_en: result.tagline_en || prev.tagline_en,
-        tagline_ar: result.tagline_ar || prev.tagline_ar,
-        description_en: result.description_en || prev.description_en,
-        description_ar: result.description_ar || prev.description_ar,
-        objectives_en: result.objectives_en || prev.objectives_en,
-        objectives_ar: result.objectives_ar || prev.objectives_ar,
-        expected_outcomes: result.expected_outcomes || prev.expected_outcomes,
-        eligibility_criteria: result.eligibility_criteria || prev.eligibility_criteria,
-        research_themes: result.research_themes || prev.research_themes,
-        evaluation_criteria: result.evaluation_criteria || prev.evaluation_criteria,
-        submission_requirements: result.submission_requirements || prev.submission_requirements,
-        focus_areas: result.focus_areas || prev.focus_areas
+        title_en: result.data.title_en || prev.title_en,
+        title_ar: result.data.title_ar || prev.title_ar,
+        tagline_en: result.data.tagline_en || prev.tagline_en,
+        tagline_ar: result.data.tagline_ar || prev.tagline_ar,
+        description_en: result.data.description_en || prev.description_en,
+        description_ar: result.data.description_ar || prev.description_ar,
+        objectives_en: result.data.objectives_en || prev.objectives_en,
+        objectives_ar: result.data.objectives_ar || prev.objectives_ar,
+        expected_outcomes: result.data.expected_outcomes || prev.expected_outcomes,
+        eligibility_criteria: result.data.eligibility_criteria || prev.eligibility_criteria,
+        research_themes: result.data.research_themes || prev.research_themes,
+        evaluation_criteria: result.data.evaluation_criteria || prev.evaluation_criteria,
+        submission_requirements: result.data.submission_requirements || prev.submission_requirements,
+        focus_areas: result.data.focus_areas || prev.focus_areas
       }));
       toast.success(t({ en: '✨ AI enhancement complete! All fields updated.', ar: '✨ تم التحسين! تم تحديث جميع الحقول.' }));
-    } catch (error) {
-      toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setAiEnhancing(false);
     }
   };
 
@@ -178,6 +175,8 @@ Generate comprehensive enhanced bilingual content:
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+          
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t({ en: 'Title (English)', ar: 'العنوان (إنجليزي)' })}</Label>

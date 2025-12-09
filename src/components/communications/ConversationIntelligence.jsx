@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { MessageSquare, Sparkles, Loader2, CheckCircle, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ConversationIntelligence({ messages }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [summary, setSummary] = useState(null);
+  const { invokeAI, isLoading: analyzing, status, error, rateLimitInfo } = useAIWithFallback();
 
   const analyzeThread = async () => {
-    setAnalyzing(true);
-    try {
-      const threadText = messages.map(m => `${m.sender}: ${m.content}`).join('\n');
-      
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this conversation thread and extract:
+    const threadText = messages.map(m => `${m.sender}: ${m.content}`).join('\n');
+    
+    const result = await invokeAI({
+      prompt: `Analyze this conversation thread and extract:
 
 ${threadText}
 
@@ -27,33 +26,30 @@ Provide:
 2. Action items with owners and deadlines
 3. Key decisions made
 4. Follow-up recommendations`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            summary: { type: "string" },
-            action_items: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  action: { type: "string" },
-                  owner: { type: "string" },
-                  deadline: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+          action_items: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                action: { type: "string" },
+                owner: { type: "string" },
+                deadline: { type: "string" }
               }
-            },
-            decisions: { type: "array", items: { type: "string" } },
-            follow_ups: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          decisions: { type: "array", items: { type: "string" } },
+          follow_ups: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setSummary(response);
+    if (result.success && result.data) {
+      setSummary(result.data);
       toast.success(t({ en: 'Thread analyzed', ar: 'السلسلة محللة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -76,6 +72,8 @@ Provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        
         {!summary && !analyzing && (
           <div className="text-center py-8">
             <MessageSquare className="h-12 w-12 text-teal-300 mx-auto mb-3" />

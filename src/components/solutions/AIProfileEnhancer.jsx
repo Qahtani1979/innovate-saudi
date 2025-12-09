@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIProfileEnhancer({ solution, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
+  const { invokeAI, isLoading: analyzing, status, error, rateLimitInfo } = useAIWithFallback();
 
   const calculateCompleteness = () => {
     const fields = [
@@ -28,10 +29,8 @@ export default function AIProfileEnhancer({ solution, onUpdate }) {
   };
 
   const analyzeProfile = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this solution profile and suggest improvements:
+    const result = await invokeAI({
+      prompt: `Analyze this solution profile and suggest improvements:
 
 SOLUTION: ${solution.name_en}
 PROVIDER: ${solution.provider_name}
@@ -47,53 +46,50 @@ Provide:
 3. Competitive gaps (compared to top solutions)
 4. Specific content suggestions
 5. Impact of improvements on visibility/matching`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            completeness_score: { type: "number" },
-            missing_fields: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  field: { type: "string" },
-                  importance: { type: "string" },
-                  impact: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          completeness_score: { type: "number" },
+          missing_fields: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                field: { type: "string" },
+                importance: { type: "string" },
+                impact: { type: "string" }
               }
-            },
-            weak_areas: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  area: { type: "string" },
-                  issue: { type: "string" },
-                  suggestion: { type: "string" }
-                }
+            }
+          },
+          weak_areas: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                area: { type: "string" },
+                issue: { type: "string" },
+                suggestion: { type: "string" }
               }
-            },
-            competitive_gaps: { type: "array", items: { type: "string" } },
-            quick_wins: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  action: { type: "string" },
-                  estimated_impact: { type: "string" }
-                }
+            }
+          },
+          competitive_gaps: { type: "array", items: { type: "string" } },
+          quick_wins: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                action: { type: "string" },
+                estimated_impact: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setSuggestions(response);
+    if (result.success && result.data) {
+      setSuggestions(result.data);
       toast.success(t({ en: 'Profile analysis complete', ar: 'اكتمل تحليل الملف' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -118,6 +114,8 @@ Provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         <div className="p-4 bg-slate-50 rounded-lg border">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-slate-700">

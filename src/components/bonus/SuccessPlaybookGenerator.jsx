@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { BookOpen, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SuccessPlaybookGenerator({ pilot }) {
   const { language, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [playbook, setPlaybook] = useState(null);
+  const { invokeAI, isLoading: generating, status, error, rateLimitInfo } = useAIWithFallback();
 
   const { data: similarPilots = [] } = useQuery({
     queryKey: ['similar-pilots', pilot.sector],
@@ -27,10 +29,8 @@ export default function SuccessPlaybookGenerator({ pilot }) {
   });
 
   const generatePlaybook = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate success playbook for scaling pilot:
+    const result = await invokeAI({
+      prompt: `Generate success playbook for scaling pilot:
 
 PILOT: ${pilot.title_en}
 SECTOR: ${pilot.sector}
@@ -49,56 +49,57 @@ Create replication playbook:
 5. Resource Requirements (team, budget, timeline)
 6. KPIs for Monitoring
 7. Adaptation Guidelines for Different Contexts`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            summary: { type: "string" },
-            success_factors: { type: "array", items: { type: "string" } },
-            prerequisites: { type: "array", items: { type: "string" } },
-            implementation_steps: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  step: { type: "string" },
-                  duration: { type: "string" },
-                  deliverables: { type: "array", items: { type: "string" } }
-                }
-              }
-            },
-            pitfalls: { type: "array", items: { type: "string" } },
-            resource_requirements: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          summary: { type: "string" },
+          success_factors: { type: "array", items: { type: "string" } },
+          prerequisites: { type: "array", items: { type: "string" } },
+          implementation_steps: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                team_size: { type: "string" },
-                budget_range: { type: "string" },
-                timeline: { type: "string" }
+                step: { type: "string" },
+                duration: { type: "string" },
+                deliverables: { type: "array", items: { type: "string" } }
               }
-            },
-            monitoring_kpis: { type: "array", items: { type: "string" } },
-            adaptation_tips: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          pitfalls: { type: "array", items: { type: "string" } },
+          resource_requirements: {
+            type: "object",
+            properties: {
+              team_size: { type: "string" },
+              budget_range: { type: "string" },
+              timeline: { type: "string" }
+            }
+          },
+          monitoring_kpis: { type: "array", items: { type: "string" } },
+          adaptation_tips: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setPlaybook(response);
+    if (result.success && result.data) {
+      setPlaybook(result.data);
       
       // Save to knowledge base
-      await base44.entities.KnowledgeDocument.create({
-        title: `Success Playbook: ${pilot.title_en}`,
-        type: 'playbook',
-        content: JSON.stringify(response),
-        tags: ['playbook', 'replication', pilot.sector],
-        source_entity_type: 'pilot',
-        source_entity_id: pilot.id
-      });
+      try {
+        await base44.entities.KnowledgeDocument.create({
+          title: `Success Playbook: ${pilot.title_en}`,
+          type: 'playbook',
+          content: JSON.stringify(result.data),
+          tags: ['playbook', 'replication', pilot.sector],
+          source_entity_type: 'pilot',
+          source_entity_id: pilot.id
+        });
+      } catch (e) {
+        console.error('Failed to save playbook to knowledge base:', e);
+      }
 
       toast.success(t({ en: 'Playbook generated', ar: 'الدليل أُنشئ' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -121,6 +122,8 @@ Create replication playbook:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        
         {!playbook && !generating && (
           <div className="text-center py-8">
             <BookOpen className="h-12 w-12 text-green-300 mx-auto mb-3" />
