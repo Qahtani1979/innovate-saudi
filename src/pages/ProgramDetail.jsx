@@ -57,7 +57,7 @@ export default function ProgramDetail() {
   const [comment, setComment] = useState('');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [showLaunch, setShowLaunch] = useState(false);
   const [showScreening, setShowScreening] = useState(false);
   const [showSelection, setShowSelection] = useState(false);
@@ -114,9 +114,8 @@ export default function ProgramDetail() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze this program for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Program: ${program.name_en}
@@ -145,11 +144,13 @@ Provide bilingual insights (each item should have both English and Arabic versio
           }
         }
       });
-      setAiInsights(result);
+      if (result.success) {
+        setAiInsights(result.data);
+      } else {
+        toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 

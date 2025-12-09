@@ -12,15 +12,17 @@ import { useLanguage } from '../components/LanguageContext';
 import { Lightbulb, Loader2, Sparkles, ArrowRight, CheckCircle2, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ProgramIdeaSubmission() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const programId = urlParams.get('program_id');
   const [step, setStep] = useState(1);
-  const [enhancing, setEnhancing] = useState(false);
   const [userEdits, setUserEdits] = useState({});
   const [lastSaved, setLastSaved] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: enhancing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     program_id: programId || '',
@@ -53,10 +55,9 @@ function ProgramIdeaSubmission() {
   });
 
   const enhanceWithAI = async () => {
-    setEnhancing(true);
     try {
       const program = programs.find(p => p.id === formData.program_id);
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Enhance this innovation proposal for program "${program?.name_en}":
 
 Title: ${formData.title_en}
@@ -91,13 +92,16 @@ Generate:
         }
       });
 
-      setFormData({ ...formData, ...result });
-      toast.success(t({ en: 'AI enhancement complete', ar: 'تم التحسين' }));
+      if (result.success) {
+        setFormData({ ...formData, ...result.data });
+        toast.success(t({ en: 'AI enhancement complete', ar: 'تم التحسين' }));
+      } else {
+        toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setEnhancing(false);
     }
+  };
   };
 
   const submitMutation = useMutation({

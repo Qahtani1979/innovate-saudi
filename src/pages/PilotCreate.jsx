@@ -23,14 +23,16 @@ import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import SolutionReadinessGate from '../components/solutions/SolutionReadinessGate';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PilotCreatePage() {
   const { hasPermission } = usePermissions();
   const [step, setStep] = useState(1);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
+  const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
@@ -209,7 +211,7 @@ function PilotCreatePage() {
         10. Target TRL (current + expected improvement)
       `;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -255,6 +257,13 @@ function PilotCreatePage() {
           }
         }
       });
+
+      if (!result.success) {
+        toast.error('AI generation failed');
+        return;
+      }
+
+      const data = result.data;
 
       setFormData(prev => ({
         ...prev,

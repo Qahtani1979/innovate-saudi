@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeImport() {
   const { language, isRTL, t } = useLanguage();
@@ -22,6 +24,7 @@ export default function ChallengeImport() {
   const [results, setResults] = useState(null);
   const [translating, setTranslating] = useState(false);
   const [enriching, setEnriching] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const parseCSV = (text) => {
     const lines = text.split('\n').filter(line => line.trim());
@@ -141,7 +144,7 @@ Return:
   "root_cause_en": "..."
 }`;
 
-        const result = await base44.integrations.Core.InvokeLLM({
+        const result = await invokeAI({
           prompt: prompt,
           response_json_schema: {
             type: "object",
@@ -153,9 +156,11 @@ Return:
           }
         });
 
-        record.title_en = result.title_en || record.title_ar;
-        record.description_en = result.description_en || record.description_ar;
-        record.root_cause_en = result.root_cause_en || record.root_cause_ar;
+        if (result.success) {
+          record.title_en = result.data.title_en || record.title_ar;
+          record.description_en = result.data.description_en || record.description_ar;
+          record.root_cause_en = result.data.root_cause_en || record.root_cause_ar;
+        }
       } catch (error) {
         console.error('Translation failed for record', i, error);
       }
@@ -193,7 +198,7 @@ Generate:
 6. Priority tier (1-4, where 1=critical)
 7. Theme category`;
 
-        const result = await base44.integrations.Core.InvokeLLM({
+        const result = await invokeAI({
           prompt,
           response_json_schema: {
             type: 'object',
@@ -209,14 +214,16 @@ Generate:
           }
         });
 
-        record.severity_score = result.severity_score || 50;
-        record.impact_score = result.impact_score || 50;
-        record.overall_score = Math.round((record.severity_score + record.impact_score) / 2);
-        record.keywords = result.keywords || [];
-        record.root_causes = result.root_causes || [];
-        record.affected_services = result.affected_services || [];
-        record.priority = `tier_${result.priority_tier || 3}`;
-        record.theme = result.theme || '';
+        if (result.success) {
+          record.severity_score = result.data.severity_score || 50;
+          record.impact_score = result.data.impact_score || 50;
+          record.overall_score = Math.round((record.severity_score + record.impact_score) / 2);
+          record.keywords = result.data.keywords || [];
+          record.root_causes = result.data.root_causes || [];
+          record.affected_services = result.data.affected_services || [];
+          record.priority = `tier_${result.data.priority_tier || 3}`;
+          record.theme = result.data.theme || '';
+        }
       } catch (error) {
         console.error('Enrichment failed for record', i, error);
       }

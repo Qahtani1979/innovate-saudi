@@ -13,6 +13,8 @@ import { CheckCircle2, Rocket, AlertTriangle, Users, Shield, Database, Calendar,
 import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
 import PreFlightRiskSimulator from '../components/pilots/PreFlightRiskSimulator';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotLaunchWizard() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -20,6 +22,7 @@ export default function PilotLaunchWizard() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { invokeAI, status: aiStatus, isLoading: generatingChecklist, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [checklist, setChecklist] = useState({
     team_onboarded: false,
@@ -32,7 +35,6 @@ export default function PilotLaunchWizard() {
     budget_allocated: false
   });
   const [launchDate, setLaunchDate] = useState('');
-  const [generatingChecklist, setGeneratingChecklist] = useState(false);
 
   const { data: pilot, isLoading, error } = useQuery({
     queryKey: ['pilot-launch', pilotId],
@@ -93,9 +95,8 @@ export default function PilotLaunchWizard() {
   });
 
   const generateAIChecklist = async () => {
-    setGeneratingChecklist(true);
     try {
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Generate pre-launch readiness checklist for this pilot:
 Title: ${pilot.title_en}
 Sector: ${pilot.sector}
@@ -131,11 +132,13 @@ Return as JSON object with boolean flags for each item.`,
         }
       });
       
-      toast.success('AI generated readiness checklist');
+      if (response.success) {
+        toast.success('AI generated readiness checklist');
+      } else {
+        toast.error('Failed to generate checklist');
+      }
     } catch (error) {
       toast.error('Failed to generate checklist');
-    } finally {
-      setGeneratingChecklist(false);
     }
   };
 

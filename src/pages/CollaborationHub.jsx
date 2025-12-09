@@ -6,16 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
-import { Users, Sparkles, Network, MessageSquare, Calendar, Target, Zap, ArrowRight } from 'lucide-react';
+import { Users, Sparkles, Network, MessageSquare, Calendar, Target, Zap, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function CollaborationHub() {
   const { language, isRTL, t } = useLanguage();
   const [suggestions, setSuggestions] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: user } = useQuery({
     queryKey: ['me'],
@@ -43,12 +45,11 @@ function CollaborationHub() {
   });
 
   const generateCollaborationSuggestions = async () => {
-    setLoading(true);
     try {
       const myChallenges = challenges.filter(c => c.created_by === user?.email);
       const myPilots = pilots.filter(p => p.created_by === user?.email);
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Based on this user's activities, suggest strategic collaboration opportunities:
 
 My Challenges (${myChallenges.length}):
@@ -105,12 +106,14 @@ Suggest:
         }
       });
 
-      setSuggestions(response);
-      toast.success(t({ en: 'Collaboration opportunities generated', ar: 'تم إنشاء فرص التعاون' }));
+      if (response.success) {
+        setSuggestions(response.data);
+        toast.success(t({ en: 'Collaboration opportunities generated', ar: 'تم إنشاء فرص التعاون' }));
+      } else {
+        toast.error(t({ en: 'Failed to generate suggestions', ar: 'فشل إنشاء الاقتراحات' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate suggestions', ar: 'فشل إنشاء الاقتراحات' }));
-    } finally {
-      setLoading(false);
     }
   };
 

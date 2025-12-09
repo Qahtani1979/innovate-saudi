@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIProposalWriter({ rdCallId, onGenerated }) {
   const { language, isRTL, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [userThoughts, setUserThoughts] = useState('');
   const [generatedProposal, setGeneratedProposal] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateProposal = async () => {
     if (!userThoughts.trim()) {
@@ -19,9 +20,8 @@ export default function AIProposalWriter({ rdCallId, onGenerated }) {
       return;
     }
 
-    setGenerating(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `You are an academic research proposal writer. Generate a comprehensive R&D proposal:
 
 Researcher's Initial Thoughts:
@@ -111,13 +111,15 @@ Make it publication-quality and fundable.`,
         }
       });
 
-      setGeneratedProposal(result);
-      onGenerated?.(result);
-      toast.success(t({ en: 'AI generated proposal!', ar: 'تم إنشاء المقترح!' }));
+      if (result.success) {
+        setGeneratedProposal(result.data);
+        onGenerated?.(result.data);
+        toast.success(t({ en: 'AI generated proposal!', ar: 'تم إنشاء المقترح!' }));
+      } else {
+        toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
