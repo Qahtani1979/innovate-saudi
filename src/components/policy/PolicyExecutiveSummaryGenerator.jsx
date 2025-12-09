@@ -6,17 +6,21 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Download, Loader2, Sparkles, Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PolicyExecutiveSummaryGenerator({ policy }) {
   const { language, isRTL, t } = useLanguage();
   const [summary, setSummary] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const generateSummary = async () => {
-    setIsGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate an EXECUTIVE POLICY BRIEF in Arabic for senior Saudi leadership (English translation will be auto-generated):
+    const response = await invokeAI({
+      prompt: `Generate an EXECUTIVE POLICY BRIEF in Arabic for senior Saudi leadership (English translation will be auto-generated):
 
 Policy (Arabic): ${policy.title_ar}
 Code: ${policy.code || 'N/A'}
@@ -37,51 +41,53 @@ Generate a concise executive brief in ARABIC (max 300 words) covering:
 7. **Decision**: Recommended action for leadership
 
 Format as professional executive brief suitable for ministerial review.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            summary_ar: { type: 'string' },
-            key_stats: {
-              type: 'object',
-              properties: {
-                timeline: { type: 'string' },
-                affected_population: { type: 'string' },
-                estimated_impact: { type: 'string' },
-                risk_level: { type: 'string' }
-              }
-            },
-            recommendation: { 
-              type: 'string',
-              enum: ['approve', 'approve_with_conditions', 'defer', 'reject']
-            },
-            conditions: {
-              type: 'array',
-              items: { type: 'string' }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          summary_ar: { type: 'string' },
+          key_stats: {
+            type: 'object',
+            properties: {
+              timeline: { type: 'string' },
+              affected_population: { type: 'string' },
+              estimated_impact: { type: 'string' },
+              risk_level: { type: 'string' }
             }
+          },
+          recommendation: { 
+            type: 'string',
+            enum: ['approve', 'approve_with_conditions', 'defer', 'reject']
+          },
+          conditions: {
+            type: 'array',
+            items: { type: 'string' }
           }
         }
-      });
+      }
+    });
 
-      // Auto-translate to English
-      const translationResponse = await base44.functions.invoke('translatePolicy', {
-        arabic_fields: {
-          title_ar: 'Executive Summary',
-          recommendation_text_ar: result.summary_ar,
-          implementation_steps: [],
-          success_metrics: [],
-          stakeholder_involvement_ar: ''
-        }
-      });
+    if (response.success) {
+      try {
+        const translationResponse = await base44.functions.invoke('translatePolicy', {
+          arabic_fields: {
+            title_ar: 'Executive Summary',
+            recommendation_text_ar: response.data.summary_ar,
+            implementation_steps: [],
+            success_metrics: [],
+            stakeholder_involvement_ar: ''
+          }
+        });
 
-      setSummary({
-        ...result,
-        summary_en: translationResponse.data.recommendation_text_en
-      });
-      toast.success(t({ en: 'Summary generated', ar: 'تم إنشاء الملخص' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setIsGenerating(false);
+        setSummary({
+          ...response.data,
+          summary_en: translationResponse.data.recommendation_text_en
+        });
+      } catch {
+        setSummary({
+          ...response.data,
+          summary_en: response.data.summary_ar
+        });
+      }
     }
   };
 
@@ -155,11 +161,11 @@ ${summary.conditions.map((c, i) => `${i + 1}. ${c}`).join('\n')}
           {!summary && (
             <Button
               onClick={generateSummary}
-              disabled={isGenerating}
+              disabled={isLoading || !isAvailable}
               size="sm"
               className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600"
             >
-              {isGenerating ? (
+              {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4" />
@@ -170,6 +176,8 @@ ${summary.conditions.map((c, i) => `${i + 1}. ${c}`).join('\n')}
         </div>
       </CardHeader>
       <CardContent>
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {summary ? (
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">

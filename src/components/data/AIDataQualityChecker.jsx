@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Shield, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIDataQualityChecker({ entityType, data }) {
   const { language, t } = useLanguage();
-  const [checking, setChecking] = useState(false);
   const [results, setResults] = useState(null);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const checkQuality = async () => {
-    setChecking(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Assess data quality for ${entityType}:
+    const response = await invokeAI({
+      prompt: `Assess data quality for ${entityType}:
 
 DATA: ${JSON.stringify(data).substring(0, 1000)}
 
@@ -28,34 +30,30 @@ Check:
 4. Missing critical fields
 5. Data quality score (0-100)
 6. Specific issues with recommendations`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            quality_score: { type: "number" },
-            completeness: { type: "number" },
-            issues: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  field: { type: "string" },
-                  issue: { type: "string" },
-                  severity: { type: "string" },
-                  recommendation: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          quality_score: { type: "number" },
+          completeness: { type: "number" },
+          issues: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                field: { type: "string" },
+                issue: { type: "string" },
+                severity: { type: "string" },
+                recommendation: { type: "string" }
               }
-            },
-            strengths: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          strengths: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setResults(response);
-      toast.success(t({ en: 'Quality check complete', ar: 'فحص الجودة مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Check failed', ar: 'فشل الفحص' }));
-    } finally {
-      setChecking(false);
+    if (response.success) {
+      setResults(response.data);
     }
   };
 
@@ -67,8 +65,8 @@ Check:
             <Shield className="h-5 w-5 text-green-600" />
             {t({ en: 'Data Quality Check', ar: 'فحص جودة البيانات' })}
           </CardTitle>
-          <Button onClick={checkQuality} disabled={checking} size="sm" className="bg-green-600">
-            {checking ? (
+          <Button onClick={checkQuality} disabled={isLoading || !isAvailable} size="sm" className="bg-green-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -78,7 +76,9 @@ Check:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!results && !checking && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!results && !isLoading && (
           <div className="text-center py-8">
             <Shield className="h-12 w-12 text-green-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

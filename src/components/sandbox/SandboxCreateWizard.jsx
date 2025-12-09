@@ -12,13 +12,14 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Shield, Sparkles, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SandboxCreateWizard({ onClose }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
-  const [aiGenerating, setAiGenerating] = useState(false);
   const [formData, setFormData] = useState({
     name_en: '',
     name_ar: '',
@@ -39,11 +40,14 @@ export default function SandboxCreateWizard({ onClose }) {
     queryFn: () => base44.entities.Sector.list()
   });
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const handleAIGenerate = async () => {
-    setAiGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Design a regulatory sandbox for this context:
+    const response = await invokeAI({
+      prompt: `Design a regulatory sandbox for this context:
         
 Type: ${formData.sandbox_type}
 Sector: ${formData.sector || 'General Municipal Innovation'}
@@ -56,27 +60,23 @@ Generate comprehensive bilingual sandbox design:
 4. 6-10 safety protocols (bilingual objects)
 5. 5-7 entry criteria (bilingual)
 6. 5-7 exit criteria (bilingual)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            regulatory_framework: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            safety_protocols: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            entry_criteria: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            exit_criteria: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          regulatory_framework: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          safety_protocols: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          entry_criteria: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          exit_criteria: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
+      }
+    });
 
-      setFormData(prev => ({ ...prev, ...result }));
-      toast.success(t({ en: '✨ AI design complete!', ar: '✨ تم التصميم الذكي!' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setAiGenerating(false);
+    if (response.success) {
+      setFormData(prev => ({ ...prev, ...response.data }));
     }
   };
 
@@ -105,6 +105,8 @@ Generate comprehensive bilingual sandbox design:
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+          
           {step === 1 && (
             <>
               <div className="p-4 bg-purple-50 rounded-lg">
@@ -154,11 +156,11 @@ Generate comprehensive bilingual sandbox design:
 
               <Button
                 onClick={handleAIGenerate}
-                disabled={aiGenerating || !formData.sandbox_type}
+                disabled={isLoading || !isAvailable || !formData.sandbox_type}
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
                 size="lg"
               >
-                {aiGenerating ? (
+                {isLoading ? (
                   <><Loader2 className="h-5 w-5 mr-2 animate-spin" />{t({ en: 'Generating...', ar: 'جاري التوليد...' })}</>
                 ) : (
                   <><Sparkles className="h-5 w-5 mr-2" />{t({ en: 'AI Generate Full Design', ar: 'توليد التصميم الكامل' })}</>

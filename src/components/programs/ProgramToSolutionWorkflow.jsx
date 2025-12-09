@@ -10,13 +10,14 @@ import { Lightbulb, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProgramToSolutionWorkflow({ program, graduateApplication }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
   const [formData, setFormData] = useState({
     name_en: '',
     name_ar: '',
@@ -27,37 +28,37 @@ export default function ProgramToSolutionWorkflow({ program, graduateApplication
     maturity_level: 'pilot_ready'
   });
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const handleAIGenerate = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `A graduate from program "${program.name_en}" wants to launch their solution:
+    const response = await invokeAI({
+      prompt: `A graduate from program "${program.name_en}" wants to launch their solution:
 
 Program Focus: ${program.focus_areas?.join(', ') || 'Innovation'}
 Graduate: ${graduateApplication?.applicant_name}
 Project: ${graduateApplication?.project_description || 'Innovation project'}
 
 Generate marketplace-ready solution profile:`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            value_proposition: { type: 'string' },
-            features: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          value_proposition: { type: 'string' },
+          features: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setFormData(prev => ({ ...prev, ...result }));
-      toast.success(t({ en: 'AI generated solution profile', ar: 'تم توليد ملف الحل' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+
+    if (response.success) {
+      setFormData(prev => ({ ...prev, ...response.data }));
     }
   };
 
@@ -110,8 +111,10 @@ Generate marketplace-ready solution profile:`,
           <DialogTitle>{t({ en: 'Convert to Solution', ar: 'تحويل لحل' })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Button onClick={handleAIGenerate} disabled={aiLoading} variant="outline" className="w-full">
-            {aiLoading ? (
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+          
+          <Button onClick={handleAIGenerate} disabled={isLoading || !isAvailable} variant="outline" className="w-full">
+            {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Generating...', ar: 'جاري التوليد...' })}
