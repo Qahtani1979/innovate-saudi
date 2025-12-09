@@ -8,11 +8,17 @@ import { useLanguage } from './LanguageContext';
 import { Sparkles, Clock, AlertTriangle, Target, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function MyWorkPrioritizer() {
   const { language, isRTL, t } = useLanguage();
   const [aiPriorities, setAiPriorities] = useState(null);
-  const [loading, setLoading] = useState(false);
+  
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const { data: user } = useQuery({
     queryKey: ['me'],
@@ -47,33 +53,31 @@ export default function MyWorkPrioritizer() {
   });
 
   const generatePriorities = async () => {
-    setLoading(true);
-    try {
-      const context = {
-        challenges: myChallenges.slice(0, 5).map(c => ({
-          id: c.id,
-          title: c.title_en,
-          status: c.status,
-          priority: c.priority,
-          sector: c.sector
-        })),
-        pilots: myPilots.slice(0, 5).map(p => ({
-          id: p.id,
-          title: p.title_en,
-          stage: p.stage,
-          success_probability: p.success_probability,
-          milestones: p.milestones?.filter(m => m.status === 'pending').length || 0
-        })),
-        tasks: myTasks.slice(0, 5).map(t => ({
-          id: t.id,
-          title: t.title,
-          due_date: t.due_date,
-          priority: t.priority
-        }))
-      };
+    const context = {
+      challenges: myChallenges.slice(0, 5).map(c => ({
+        id: c.id,
+        title: c.title_en,
+        status: c.status,
+        priority: c.priority,
+        sector: c.sector
+      })),
+      pilots: myPilots.slice(0, 5).map(p => ({
+        id: p.id,
+        title: p.title_en,
+        stage: p.stage,
+        success_probability: p.success_probability,
+        milestones: p.milestones?.filter(m => m.status === 'pending').length || 0
+      })),
+      tasks: myTasks.slice(0, 5).map(t => ({
+        id: t.id,
+        title: t.title,
+        due_date: t.due_date,
+        priority: t.priority
+      }))
+    };
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are an AI work prioritization assistant for a municipal innovation platform. Analyze the user's current work context and provide actionable priorities for today.
+    const { success, data } = await invokeAI({
+      prompt: `You are an AI work prioritization assistant for a municipal innovation platform. Analyze the user's current work context and provide actionable priorities for today.
 
 Context:
 - Challenges: ${JSON.stringify(context.challenges)}
@@ -86,33 +90,30 @@ Based on urgency, impact, and dependencies, suggest the TOP 3 PRIORITIES for tod
 3. Quick action they can take (one sentence)
 
 Format as a practical to-do list. Be concise and actionable.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            priorities: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  reason: { type: "string" },
-                  action: { type: "string" },
-                  urgency: { type: "string", enum: ["high", "medium", "low"] },
-                  entity_type: { type: "string" },
-                  entity_id: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          priorities: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                reason: { type: "string" },
+                action: { type: "string" },
+                urgency: { type: "string", enum: ["high", "medium", "low"] },
+                entity_type: { type: "string" },
+                entity_id: { type: "string" }
               }
-            },
-            summary: { type: "string" }
-          }
+            }
+          },
+          summary: { type: "string" }
         }
-      });
+      }
+    });
 
-      setAiPriorities(response);
-    } catch (error) {
-      console.error('Failed to generate priorities:', error);
-    } finally {
-      setLoading(false);
+    if (success && data) {
+      setAiPriorities(data);
     }
   };
 
@@ -150,10 +151,10 @@ Format as a practical to-do list. Be concise and actionable.`,
           </div>
           <Button 
             onClick={generatePriorities}
-            disabled={loading}
+            disabled={isLoading || !isAvailable}
             className="bg-gradient-to-r from-purple-600 to-pink-600"
           >
-            {loading ? (
+            {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
@@ -169,7 +170,9 @@ Format as a practical to-do list. Be concise and actionable.`,
       </CardHeader>
 
       <CardContent>
-        {!aiPriorities && !loading && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
+        {!aiPriorities && !isLoading && (
           <div className="text-center py-8">
             <Target className="h-12 w-12 text-purple-300 mx-auto mb-3" />
             <p className="text-slate-600">

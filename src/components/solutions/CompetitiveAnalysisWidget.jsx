@@ -6,15 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Loader2, Target, TrendingUp, Award, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete }) {
   const { language, isRTL, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [competitors, setCompetitors] = useState([]);
   const [analysis, setAnalysis] = useState(null);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const handleAnalyze = async () => {
-    setAnalyzing(true);
     try {
       // Find similar solutions by semantic search
       const embeddingResult = await base44.functions.invoke('generateEmbeddings', {
@@ -22,8 +27,9 @@ export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete
         return_embedding: true
       });
 
+      let matches = { data: { results: [] } };
       if (embeddingResult.data?.embedding) {
-        const matches = await base44.functions.invoke('semanticSearch', {
+        matches = await base44.functions.invoke('semanticSearch', {
           entity_name: 'Solution',
           query_embedding: embeddingResult.data.embedding,
           top_k: 5,
@@ -31,10 +37,11 @@ export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete
         });
 
         setCompetitors(matches.data?.results || []);
+      }
 
-        // AI competitive analysis
-        const aiAnalysis = await base44.integrations.Core.InvokeLLM({
-          prompt: `Analyze competitive landscape for this solution in Saudi municipal innovation market:
+      // AI competitive analysis
+      const { success, data } = await invokeAI({
+        prompt: `Analyze competitive landscape for this solution in Saudi municipal innovation market:
 
 Solution: ${solution?.name_en}
 Provider: ${solution?.provider_name}
@@ -53,30 +60,29 @@ Provide BILINGUAL analysis (AR+EN):
 3. Market gaps this solution fills
 4. Pricing strategy recommendations
 5. Target municipality recommendations`,
-          response_json_schema: {
-            type: 'object',
-            properties: {
-              differentiators: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-              positioning: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-              market_gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-              pricing_strategy: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-              target_municipalities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-            }
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            differentiators: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+            positioning: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
+            market_gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+            pricing_strategy: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
+            target_municipalities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
           }
-        });
+        }
+      });
 
-        setAnalysis(aiAnalysis);
+      if (success && data) {
+        setAnalysis(data);
         
         if (onAnalysisComplete) {
-          onAnalysisComplete({ competitors: matches.data?.results, analysis: aiAnalysis });
+          onAnalysisComplete({ competitors: matches.data?.results, analysis: data });
         }
+        
+        toast.success(t({ en: '✅ Competitive analysis complete', ar: '✅ اكتمل التحليل التنافسي' }));
       }
-
-      toast.success(t({ en: '✅ Competitive analysis complete', ar: '✅ اكتمل التحليل التنافسي' }));
     } catch (error) {
       toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -89,9 +95,11 @@ Provide BILINGUAL analysis (AR+EN):
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         {!competitors.length && !analysis ? (
-          <Button onClick={handleAnalyze} disabled={analyzing} className="w-full">
-            {analyzing ? (
+          <Button onClick={handleAnalyze} disabled={isLoading || !isAvailable} className="w-full">
+            {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
@@ -169,7 +177,7 @@ Provide BILINGUAL analysis (AR+EN):
               </>
             )}
 
-            <Button onClick={handleAnalyze} variant="outline" size="sm" className="w-full">
+            <Button onClick={handleAnalyze} variant="outline" size="sm" className="w-full" disabled={isLoading || !isAvailable}>
               {t({ en: 'Refresh Analysis', ar: 'تحديث التحليل' })}
             </Button>
           </>

@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeToProgramWorkflow({ challenge, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [generating, setGenerating] = useState(false);
   const [programType, setProgramType] = useState('');
   const [programData, setProgramData] = useState({
     name_en: '',
@@ -22,6 +23,11 @@ export default function ChallengeToProgramWorkflow({ challenge, onClose, onSucce
     objectives_ar: '',
     curriculum: [],
     timeline: {}
+  });
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
   });
 
   const createProgramMutation = useMutation({
@@ -64,10 +70,8 @@ export default function ChallengeToProgramWorkflow({ challenge, onClose, onSucce
       return;
     }
 
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Design a ${programType} program to address this challenge.
+    const { success, data } = await invokeAI({
+      prompt: `Design a ${programType} program to address this challenge.
 
 CHALLENGE:
 Title: ${challenge.title_en}
@@ -87,56 +91,53 @@ Generate program design:
 - Success metrics aligned with challenge KPIs
 
 Make it actionable for ${programType} format.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            name_en: { type: "string" },
-            name_ar: { type: "string" },
-            tagline_en: { type: "string" },
-            tagline_ar: { type: "string" },
-            objectives_en: { type: "string" },
-            objectives_ar: { type: "string" },
-            curriculum: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  week: { type: "number" },
-                  topic_en: { type: "string" },
-                  topic_ar: { type: "string" },
-                  activities: { type: "array", items: { type: "string" } }
-                }
-              }
-            },
-            target_participants: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          name_en: { type: "string" },
+          name_ar: { type: "string" },
+          tagline_en: { type: "string" },
+          tagline_ar: { type: "string" },
+          objectives_en: { type: "string" },
+          objectives_ar: { type: "string" },
+          curriculum: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                type: { type: "array", items: { type: "string" } },
-                min_participants: { type: "number" },
-                max_participants: { type: "number" }
+                week: { type: "number" },
+                topic_en: { type: "string" },
+                topic_ar: { type: "string" },
+                activities: { type: "array", items: { type: "string" } }
               }
-            },
-            duration_weeks: { type: "number" },
-            success_metrics: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  metric_en: { type: "string" },
-                  metric_ar: { type: "string" }
-                }
+            }
+          },
+          target_participants: {
+            type: "object",
+            properties: {
+              type: { type: "array", items: { type: "string" } },
+              min_participants: { type: "number" },
+              max_participants: { type: "number" }
+            }
+          },
+          duration_weeks: { type: "number" },
+          success_metrics: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                metric_en: { type: "string" },
+                metric_ar: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setProgramData(response);
+    if (success && data) {
+      setProgramData(data);
       toast.success(t({ en: 'AI generated program', ar: 'تم توليد البرنامج' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -165,6 +166,8 @@ Make it actionable for ${programType} format.`,
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+          
           <div className="p-4 bg-pink-50 rounded-lg border border-pink-200">
             <p className="text-sm font-semibold text-pink-900 mb-1">
               {t({ en: 'Challenge:', ar: 'التحدي:' })}
@@ -192,11 +195,11 @@ Make it actionable for ${programType} format.`,
 
           <Button
             onClick={generateWithAI}
-            disabled={generating || !programType}
+            disabled={isLoading || !programType || !isAvailable}
             className="w-full bg-gradient-to-r from-pink-600 to-purple-600"
             size="lg"
           >
-            {generating ? (
+            {isLoading ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                 {t({ en: 'AI Designing Program...', ar: 'تصميم البرنامج...' })}
