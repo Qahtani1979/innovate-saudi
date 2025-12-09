@@ -887,12 +887,16 @@ Return comprehensive suggestions for all fields.`,
       }
 
       await queryClient.invalidateQueries(['user-profile']);
-      if (checkAuth) {
-        await checkAuth();
-      }
       
+      // Call the onSkip callback first
       onSkip?.();
-      navigate(createPageUrl('Home'));
+      
+      // Only navigate if we're on the dedicated onboarding page
+      // When shown as overlay in Layout, we don't need to navigate
+      const isOnOnboardingPage = window.location.pathname.toLowerCase().includes('/onboarding');
+      if (isOnOnboardingPage) {
+        navigate(createPageUrl('Home'));
+      }
     } catch (error) {
       console.error('Skip error:', error);
       toast.error(t({ en: 'Could not skip onboarding', ar: 'تعذر تخطي الإعداد' }));

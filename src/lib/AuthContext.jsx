@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [appPublicSettings, setAppPublicSettings] = useState({ public_settings: { requiresAuth: false } });
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-  // Check if user needs onboarding and redirect
+  // Check if user needs onboarding - no automatic redirect, just sets state
   const checkOnboardingStatus = (profile) => {
     if (!profile) return false;
     
@@ -23,7 +23,12 @@ export const AuthProvider = ({ children }) => {
     const needsIt = profile.onboarding_completed !== true;
     setNeedsOnboarding(needsIt);
     
-    // Only redirect to onboarding if:
+    return needsIt;
+  };
+  
+  // Separate function to redirect to onboarding if needed (called by components)
+  const redirectToOnboardingIfNeeded = () => {
+    // Only redirect if:
     // 1. User needs onboarding
     // 2. Not already on auth page or onboarding-related pages
     const currentPath = window.location.pathname.toLowerCase();
@@ -31,12 +36,11 @@ export const AuthProvider = ({ children }) => {
       '/researcher-onboarding', '/citizen-onboarding', '/expert-onboarding'];
     const isOnOnboardingPage = onboardingPaths.some(p => currentPath.includes(p.toLowerCase()));
     
-    if (needsIt && !isOnOnboardingPage) {
-      // Redirect to main onboarding wizard
+    if (needsOnboarding && !isOnOnboardingPage) {
       window.location.href = '/onboarding';
+      return true;
     }
-    
-    return needsIt;
+    return false;
   };
 
   useEffect(() => {
@@ -374,6 +378,7 @@ export const AuthProvider = ({ children }) => {
       isAdmin,
       checkAuth,
       checkAppState: checkAuth,
+      redirectToOnboardingIfNeeded,
     }}>
       {children}
     </AuthContext.Provider>
