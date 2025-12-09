@@ -17,6 +17,8 @@ import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { Badge } from "@/components/ui/badge";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PilotEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -24,6 +26,7 @@ function PilotEditPage() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
   
   const [previewMode, setPreviewMode] = useState(false);
   const [originalData, setOriginalData] = useState(null);
@@ -440,28 +443,31 @@ function PilotEditPage() {
         };
       }
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: schema
       });
 
+      if (!result.success) {
+        toast.error('AI enhancement failed');
+        return;
+      }
+
       if (section === 'technology') {
-        setFormData(prev => ({ ...prev, technology_stack: result.technology_stack }));
+        setFormData(prev => ({ ...prev, technology_stack: result.data.technology_stack }));
       } else if (section === 'engagement') {
         setFormData(prev => ({ 
           ...prev, 
-          public_engagement: result.public_engagement,
-          media_coverage: result.media_coverage 
+          public_engagement: result.data.public_engagement,
+          media_coverage: result.data.media_coverage 
         }));
       } else {
-        setFormData(prev => ({ ...prev, ...result }));
+        setFormData(prev => ({ ...prev, ...result.data }));
       }
 
       toast.success(`✨ ${section} enhanced successfully!`);
     } catch (error) {
       toast.error('AI enhancement failed: ' + error.message);
-    } finally {
-      setIsAIProcessing(false);
     }
   };
 

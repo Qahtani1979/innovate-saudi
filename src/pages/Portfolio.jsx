@@ -12,13 +12,15 @@ import BulkActionsToolbar from '../components/portfolio/BulkActionsToolbar';
 import PortfolioExportDialog from '../components/portfolio/PortfolioExportDialog';
 import TimelineGanttView from '../components/portfolio/TimelineGanttView';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PortfolioPage() {
   const { language, isRTL, t } = useLanguage();
   const [viewMode, setViewMode] = useState('kanban');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [filterSector, setFilterSector] = useState('all');
   const [filterYear, setFilterYear] = useState('all');
   const [selectedItems, setSelectedItems] = useState([]);
@@ -78,14 +80,13 @@ function PortfolioPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
     try {
       const stageCounts = stages.map(s => ({
         stage: s.id,
         count: items[s.id]?.length || 0
       }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze this innovation portfolio pipeline for Saudi municipalities and provide strategic insights in BOTH English AND Arabic:
 
 Pipeline Distribution: ${JSON.stringify(stageCounts)}
@@ -111,11 +112,13 @@ Provide bilingual insights (each item should have both English and Arabic versio
           }
         }
       });
-      setAiInsights(result);
+      if (result.success) {
+        setAiInsights(result.data);
+      } else {
+        toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 

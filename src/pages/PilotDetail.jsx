@@ -82,6 +82,7 @@ function PilotDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const pilotId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
+  const { invokeAI, status: aiStatus, isLoading: aiLoadingHook, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilot, isLoading } = useQuery({
     queryKey: ['pilot', pilotId],
@@ -243,7 +244,7 @@ function PilotDetailPage() {
     setShowAIInsights(true);
     setAiLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze this pilot project for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Pilot: ${pilot.title_en}
@@ -275,7 +276,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
           }
         }
       });
-      setAiInsights(result);
+      if (result.success) {
+        setAiInsights(result.data);
+      } else {
+        toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
     } finally {
