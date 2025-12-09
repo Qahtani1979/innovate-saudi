@@ -87,7 +87,7 @@ function LayoutContent({ children, currentPageName }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { language, isRTL, toggleLanguage } = useLanguage();
   const { user, hasPermission, hasAnyPermission, isAdmin } = usePermissions();
-  const { isAuthenticated, userProfile, checkAuth } = useAuth();
+  const { isAuthenticated, userProfile, checkAuth, logout } = useAuth();
 
   // Show onboarding wizard for new users who haven't completed it
   useEffect(() => {
@@ -829,7 +829,7 @@ function LayoutContent({ children, currentPageName }) {
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => base44.auth.logout()}>
+                <DropdownMenuItem onClick={() => logout()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   {language === 'en' ? 'Logout' : 'تسجيل الخروج'}
                 </DropdownMenuItem>
