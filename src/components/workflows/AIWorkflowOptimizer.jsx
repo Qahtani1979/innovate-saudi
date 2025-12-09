@@ -1,22 +1,31 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Loader2, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { Sparkles, Loader2, TrendingUp, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 
 export default function AIWorkflowOptimizer({ workflowData }) {
-  const { language, isRTL, t } = useLanguage();
-  const [loading, setLoading] = useState(false);
-  const [optimization, setOptimization] = useState(null);
+  const { t } = useLanguage();
+  const [optimization, setOptimization] = React.useState(null);
+  
+  const { 
+    invokeAI, 
+    status, 
+    error, 
+    rateLimitInfo, 
+    isLoading, 
+    isAvailable 
+  } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const handleOptimize = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this workflow and suggest optimizations:
+    const { success, data } = await invokeAI({
+      prompt: `Analyze this workflow and suggest optimizations:
 Workflow: ${JSON.stringify(workflowData)}
 
 Provide:
@@ -25,38 +34,70 @@ Provide:
 3. Suggested stage reductions or merges
 4. SLA optimization
 5. Automation opportunities`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            bottlenecks: { type: 'array', items: { type: 'object', properties: { stage: { type: 'string' }, issue: { type: 'string' }, impact: { type: 'string' } } } },
-            improvements: { type: 'array', items: { type: 'object', properties: { suggestion: { type: 'string' }, benefit: { type: 'string' } } } },
-            efficiency_score: { type: 'number' },
-            automation_opportunities: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          bottlenecks: { type: 'array', items: { type: 'object', properties: { stage: { type: 'string' }, issue: { type: 'string' }, impact: { type: 'string' } } } },
+          improvements: { type: 'array', items: { type: 'object', properties: { suggestion: { type: 'string' }, benefit: { type: 'string' } } } },
+          efficiency_score: { type: 'number' },
+          automation_opportunities: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setOptimization(result);
-      toast.success(t({ en: 'AI analysis complete', ar: 'اكتمل التحليل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Optimization failed', ar: 'فشل التحسين' }));
-    } finally {
-      setLoading(false);
+      }
+    });
+    
+    if (success && data) {
+      setOptimization(data);
     }
   };
 
   return (
     <Card className="border-2 border-green-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-green-600" />
-          {t({ en: 'AI Workflow Optimizer', ar: 'محسن سير العمل الذكي' })}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-green-600" />
+            {t({ en: 'AI Workflow Optimizer', ar: 'محسن سير العمل الذكي' })}
+          </CardTitle>
+          <AIOptionalBadge />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={handleOptimize} disabled={loading} className="w-full bg-green-600">
-          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+        {/* AI Status Indicator */}
+        <AIStatusIndicator 
+          status={status} 
+          error={error} 
+          rateLimitInfo={rateLimitInfo}
+          showDetails={true}
+        />
+        
+        {/* Main action button - always available */}
+        <Button 
+          onClick={handleOptimize} 
+          disabled={isLoading || !isAvailable} 
+          className="w-full bg-green-600"
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4 mr-2" />
+          )}
           {t({ en: 'Analyze & Optimize Workflow', ar: 'تحليل وتحسين سير العمل' })}
         </Button>
+
+        {/* Fallback message when AI unavailable */}
+        {status === AI_STATUS.RATE_LIMITED && (
+          <div className="p-3 bg-muted rounded-lg border">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <p className="text-sm text-muted-foreground">
+                {t({ 
+                  en: 'You can still review your workflow manually or try again later when AI is available.', 
+                  ar: 'لا يزال بإمكانك مراجعة سير العمل يدويًا أو المحاولة مرة أخرى لاحقًا عندما يتوفر AI.' 
+                })}
+              </p>
+            </div>
+          </div>
+        )}
 
         {optimization && (
           <div className="space-y-3">
