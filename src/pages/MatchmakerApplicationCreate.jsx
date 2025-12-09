@@ -14,12 +14,14 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MatchmakerApplicationCreate() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [aiGenerating, setAiGenerating] = useState(false);
+  const { invokeAI, status, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     organization_name_en: '',
@@ -61,10 +63,8 @@ function MatchmakerApplicationCreate() {
   });
 
   const handleAIEnhance = async () => {
-    setAiGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Based on this organization info, generate bilingual profile. CRITICAL: Provide BOTH English AND Arabic.
+    const result = await invokeAI({
+      prompt: `Based on this organization info, generate bilingual profile. CRITICAL: Provide BOTH English AND Arabic.
 
 Organization: ${formData.organization_name_en}
 Website: ${formData.website}
@@ -74,27 +74,23 @@ Collaboration: ${formData.collaboration_approach}
 Generate:
 - organization_name_ar (Arabic translation if missing)
 - collaboration_approach enhanced version (2-3 sentences each language)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            organization_name_ar: { type: 'string' },
-            collaboration_approach_en: { type: 'string' },
-            collaboration_approach_ar: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          organization_name_ar: { type: 'string' },
+          collaboration_approach_en: { type: 'string' },
+          collaboration_approach_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setFormData(prev => ({
         ...prev,
-        organization_name_ar: result.organization_name_ar || prev.organization_name_ar,
-        collaboration_approach: result.collaboration_approach_en || prev.collaboration_approach
+        organization_name_ar: result.data.organization_name_ar || prev.organization_name_ar,
+        collaboration_approach: result.data.collaboration_approach_en || prev.collaboration_approach
       }));
-
       toast.success(t({ en: 'AI enhanced your profile', ar: 'تم تحسين الملف بالذكاء' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setAiGenerating(false);
     }
   };
 
@@ -130,11 +126,12 @@ Generate:
     <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">{t({ en: 'New Matchmaker Application', ar: 'طلب توفيق جديد' })}</h1>
-        <Button onClick={handleAIEnhance} disabled={aiGenerating} variant="outline">
+        <Button onClick={handleAIEnhance} disabled={aiGenerating || !isAvailable} variant="outline">
           {aiGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'AI Enhance', ar: 'تحسين ذكي' })}
         </Button>
       </div>
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       <Card>
         <CardHeader>

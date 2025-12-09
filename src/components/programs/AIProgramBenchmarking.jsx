@@ -8,10 +8,12 @@ import { useLanguage } from '../LanguageContext';
 import { BarChart3, TrendingUp, Award, Sparkles, Loader2, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIProgramBenchmarking({ program }) {
   const { language, isRTL, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [benchmarkData, setBenchmarkData] = useState(null);
 
   // Fetch similar programs
@@ -27,21 +29,19 @@ export default function AIProgramBenchmarking({ program }) {
   );
 
   const handleAnalyze = async () => {
-    setAnalyzing(true);
-    try {
-      const peerData = similarPrograms.slice(0, 15).map(p => ({
-        name: p.name_en,
-        type: p.program_type,
-        graduation_rate: p.graduation_rate || 0,
-        employment_rate: p.post_program_employment_rate || 0,
-        application_count: p.application_count || 0,
-        accepted_count: p.accepted_count || 0,
-        outcomes: p.outcomes,
-        duration_weeks: p.duration_weeks
-      }));
+    const peerData = similarPrograms.slice(0, 15).map(p => ({
+      name: p.name_en,
+      type: p.program_type,
+      graduation_rate: p.graduation_rate || 0,
+      employment_rate: p.post_program_employment_rate || 0,
+      application_count: p.application_count || 0,
+      accepted_count: p.accepted_count || 0,
+      outcomes: p.outcomes,
+      duration_weeks: p.duration_weeks
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Benchmark this program against peers in BOTH English and Arabic:
+    const result = await invokeAI({
+      prompt: `Benchmark this program against peers in BOTH English and Arabic:
 
 Current Program: ${program.name_en}
 Type: ${program.program_type}
@@ -60,57 +60,55 @@ Provide bilingual analysis:
 3. Improvement opportunities
 4. Cost-efficiency comparison
 5. Outcome quality comparison`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            percentile_rankings: {
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          percentile_rankings: {
+            type: 'object',
+            properties: {
+              graduation_rate: { type: 'number' },
+              employment_rate: { type: 'number' },
+              application_volume: { type: 'number' },
+              outcome_quality: { type: 'number' }
+            }
+          },
+          best_practices: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                graduation_rate: { type: 'number' },
-                employment_rate: { type: 'number' },
-                application_volume: { type: 'number' },
-                outcome_quality: { type: 'number' }
+                practice_en: { type: 'string' },
+                practice_ar: { type: 'string' },
+                source_program: { type: 'string' }
               }
-            },
-            best_practices: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  practice_en: { type: 'string' },
-                  practice_ar: { type: 'string' },
-                  source_program: { type: 'string' }
-                }
-              }
-            },
-            improvement_opportunities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  area_en: { type: 'string' },
-                  area_ar: { type: 'string' },
-                  recommendation_en: { type: 'string' },
-                  recommendation_ar: { type: 'string' }
-                }
-              }
-            },
-            cost_analysis: {
+            }
+          },
+          improvement_opportunities: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                percentile: { type: 'number' },
-                insight_en: { type: 'string' },
-                insight_ar: { type: 'string' }
+                area_en: { type: 'string' },
+                area_ar: { type: 'string' },
+                recommendation_en: { type: 'string' },
+                recommendation_ar: { type: 'string' }
               }
+            }
+          },
+          cost_analysis: {
+            type: 'object',
+            properties: {
+              percentile: { type: 'number' },
+              insight_en: { type: 'string' },
+              insight_ar: { type: 'string' }
             }
           }
         }
-      });
-      setBenchmarkData(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate benchmark', ar: 'فشل توليد المقارنة' }));
-    } finally {
-      setAnalyzing(false);
+      }
+    });
+
+    if (result.success) {
+      setBenchmarkData(result.data);
     }
   };
 
@@ -167,7 +165,7 @@ Provide bilingual analysis:
           </CardTitle>
           <Button 
             onClick={handleAnalyze}
-            disabled={analyzing || similarPrograms.length === 0}
+            disabled={analyzing || similarPrograms.length === 0 || !isAvailable}
             className="bg-blue-600"
           >
             {analyzing ? (
@@ -178,6 +176,7 @@ Provide bilingual analysis:
             {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
           </Button>
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Peer Count */}
