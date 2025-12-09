@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { Microscope, FileText, Award, Users, Globe, Sparkles, Loader2 } from 'lucide-react';
+import { Microscope, FileText, Award, Users, Globe, Sparkles, Loader2, Linkedin, Mail, GraduationCap, Building2, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { ContactSection, BioSection, SkillsBadges, ProfessionalSection } from '../components/profile/BilingualProfileDisplay';
 
 function ResearcherProfile() {
   const { language, isRTL, t } = useLanguage();
@@ -61,20 +62,58 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
     }
   };
 
+  const r = researcher;
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Header */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-start gap-6">
-            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
-              <Microscope className="h-12 w-12 text-white" />
+          <div className={`flex items-start gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
+              {r?.avatar_url ? (
+                <img src={r.avatar_url} className="h-full w-full rounded-2xl object-cover" alt={r?.full_name_en} />
+              ) : (
+                <Microscope className="h-12 w-12 text-white" />
+              )}
             </div>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-slate-900">{researcher?.[`full_name_${language}`]}</h1>
-              <p className="text-lg text-slate-600">{researcher?.[`title_${language}`]}</p>
-              <div className="flex gap-2 mt-3">
-                {researcher?.is_verified && <Badge className="bg-blue-600">✓ Verified</Badge>}
-                <Badge variant="outline">h-index: {researcher?.h_index || 0}</Badge>
+              {/* Bilingual Name */}
+              <h1 className="text-3xl font-bold text-foreground">
+                {language === 'ar' ? (r?.full_name_ar || r?.full_name_en) : r?.full_name_en}
+              </h1>
+              {r?.full_name_ar && r?.full_name_en && (
+                <p className="text-lg text-muted-foreground" dir={language === 'ar' ? 'ltr' : 'rtl'}>
+                  {language === 'ar' ? r?.full_name_en : r?.full_name_ar}
+                </p>
+              )}
+              
+              {/* Bilingual Title */}
+              <p className="text-lg text-muted-foreground mt-1">
+                {language === 'ar' ? (r?.title_ar || r?.title_en) : (r?.title_en || r?.title_ar)}
+              </p>
+              
+              {/* Institution & Location */}
+              <div className={`flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                {r?.institution_name && (
+                  <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <Building2 className="h-4 w-4" />
+                    <span>{r.institution_name}</span>
+                  </div>
+                )}
+                {r?.department && (
+                  <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <GraduationCap className="h-4 w-4" />
+                    <span>{r.department}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Badges */}
+              <div className={`flex gap-2 mt-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                {r?.is_verified && <Badge className="bg-primary">✓ {t({ en: 'Verified', ar: 'موثق' })}</Badge>}
+                <Badge variant="outline">h-index: {r?.h_index || 0}</Badge>
+                {r?.orcid_id && <Badge variant="outline">ORCID</Badge>}
               </div>
             </div>
           </div>
@@ -82,72 +121,137 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Stats */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
+            <CardTitle className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <FileText className="h-5 w-5 text-primary" />
               {t({ en: 'Publications', ar: 'المنشورات' })}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-4xl font-bold text-blue-600">{researcher?.publications?.length || 0}</p>
-            <p className="text-xs text-slate-600 mt-1">{t({ en: 'Published papers', ar: 'أوراق منشورة' })}</p>
+            <p className="text-4xl font-bold text-primary">{r?.publications?.length || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Published papers', ar: 'أوراق منشورة' })}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <Award className="h-5 w-5 text-amber-600" />
               {t({ en: 'Citations', ar: 'الاستشهادات' })}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-4xl font-bold text-amber-600">{researcher?.total_citations || 0}</p>
-            <p className="text-xs text-slate-600 mt-1">{t({ en: 'Total citations', ar: 'إجمالي الاستشهادات' })}</p>
+            <p className="text-4xl font-bold text-amber-600">{r?.total_citations || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Total citations', ar: 'إجمالي الاستشهادات' })}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Microscope className="h-5 w-5 text-purple-600" />
+            <CardTitle className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <Microscope className="h-5 w-5 text-secondary-foreground" />
               {t({ en: 'Projects', ar: 'المشاريع' })}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-4xl font-bold text-purple-600">{researcher?.rd_project_ids?.length || 0}</p>
-            <p className="text-xs text-slate-600 mt-1">{t({ en: 'Active R&D', ar: 'بحث نشط' })}</p>
+            <p className="text-4xl font-bold text-secondary-foreground">{r?.rd_project_ids?.length || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Active R&D', ar: 'بحث نشط' })}</p>
           </CardContent>
         </Card>
 
+        {/* Bio & Contact */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>{t({ en: 'About', ar: 'نبذة' })}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <BioSection 
+              bioEn={r?.bio_en} 
+              bioAr={r?.bio_ar}
+              showBoth={!!(r?.bio_en && r?.bio_ar)}
+            />
+            
+            {/* Expertise Keywords */}
+            {r?.expertise_keywords?.length > 0 && (
+              <div className="pt-4 border-t">
+                <SkillsBadges 
+                  skills={r.expertise_keywords} 
+                  label={{ en: 'Expertise', ar: 'الخبرات' }}
+                  colorClass="bg-primary/10 text-primary"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Contact */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t({ en: 'Contact', ar: 'التواصل' })}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ContactSection
+              email={r?.user_email || r?.email}
+              linkedinUrl={r?.linkedin_url}
+              website={r?.google_scholar_url || r?.website}
+            />
+            
+            {r?.orcid_id && (
+              <div className="mt-3 pt-3 border-t">
+                <a 
+                  href={`https://orcid.org/${r.orcid_id}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
+                  ORCID: {r.orcid_id}
+                </a>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Research Areas */}
         <Card className="md:col-span-3">
           <CardHeader>
             <CardTitle>{t({ en: 'Research Areas', ar: 'مجالات البحث' })}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {researcher?.research_areas?.map((area, i) => (
-                <Badge key={i} variant="outline" className="text-sm">{area}</Badge>
-              ))}
-            </div>
+            <SkillsBadges 
+              skills={r?.research_areas} 
+              colorClass="bg-secondary text-secondary-foreground"
+            />
+            {!r?.research_areas?.length && (
+              <p className="text-sm text-muted-foreground">{t({ en: 'No research areas specified', ar: 'لا توجد مجالات بحث محددة' })}</p>
+            )}
           </CardContent>
         </Card>
 
+        {/* Publications */}
         <Card className="md:col-span-3">
           <CardHeader>
             <CardTitle>{t({ en: 'Recent Publications', ar: 'المنشورات الحديثة' })}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {researcher?.publications?.slice(0, 5).map((pub, i) => (
-                <div key={i} className="p-4 bg-slate-50 rounded-lg">
-                  <p className="font-medium text-slate-900">{pub.title}</p>
-                  <p className="text-sm text-slate-600 mt-1">
-                    {pub.journal} • {pub.year} • {pub.citations} citations
+              {r?.publications?.slice(0, 5).map((pub, i) => (
+                <div key={i} className="p-4 bg-muted/50 rounded-lg">
+                  <p className="font-medium text-foreground">{pub.title}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {pub.journal} • {pub.year} • {pub.citations} {t({ en: 'citations', ar: 'استشهاد' })}
                   </p>
+                  {pub.url && (
+                    <a href={pub.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-2 inline-block">
+                      {t({ en: 'View Publication', ar: 'عرض المنشور' })}
+                    </a>
+                  )}
                 </div>
               ))}
+              {!r?.publications?.length && (
+                <p className="text-sm text-muted-foreground text-center py-4">{t({ en: 'No publications listed', ar: 'لا توجد منشورات' })}</p>
+              )}
             </div>
           </CardContent>
         </Card>
