@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { base44 } from '@/api/base44Client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,17 +15,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
+import FileUploader from '../FileUploader';
 import { 
   Building2, ArrowRight, ArrowLeft, CheckCircle2, 
-  MapPin, Users, Shield, BookOpen, Loader2
+  MapPin, Users, Shield, BookOpen, Loader2, Upload, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const STEPS = [
-  { id: 1, title: { en: 'Municipality', ar: 'البلدية' }, icon: Building2 },
-  { id: 2, title: { en: 'Department', ar: 'القسم' }, icon: Users },
-  { id: 3, title: { en: 'Role Setup', ar: 'إعداد الدور' }, icon: Shield },
-  { id: 4, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
+  { id: 1, title: { en: 'CV Import', ar: 'استيراد السيرة' }, icon: Upload },
+  { id: 2, title: { en: 'Municipality', ar: 'البلدية' }, icon: Building2 },
+  { id: 3, title: { en: 'Department', ar: 'القسم' }, icon: Users },
+  { id: 4, title: { en: 'Role Setup', ar: 'إعداد الدور' }, icon: Shield },
+  { id: 5, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
 ];
 
 const DEPARTMENTS = [
@@ -46,6 +49,17 @@ const ROLE_LEVELS = [
   { id: 'manager', label: { en: 'Department Manager', ar: 'مدير القسم' }, description: { en: 'Approve and oversee projects', ar: 'الموافقة والإشراف على المشاريع' } }
 ];
 
+const SPECIALIZATIONS = [
+  { en: 'Project Management', ar: 'إدارة المشاريع' },
+  { en: 'Policy Development', ar: 'تطوير السياسات' },
+  { en: 'Community Engagement', ar: 'التفاعل المجتمعي' },
+  { en: 'Technical Solutions', ar: 'الحلول التقنية' },
+  { en: 'Data Analysis', ar: 'تحليل البيانات' },
+  { en: 'Budget Management', ar: 'إدارة الميزانية' },
+  { en: 'Procurement', ar: 'المشتريات' },
+  { en: 'Quality Assurance', ar: 'ضمان الجودة' }
+];
+
 export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
@@ -54,15 +68,18 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExtractingCV, setIsExtractingCV] = useState(false);
   
   const [formData, setFormData] = useState({
+    cv_url: '',
     municipality_id: '',
     department: '',
     role_level: 'staff',
     job_title: '',
     employee_id: '',
     work_phone: '',
-    focus_areas: [],
+    years_of_experience: 0,
+    specializations: [],
     justification: ''
   });
 
@@ -82,6 +99,64 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
 
   const progress = (currentStep / STEPS.length) * 100;
 
+  // Handle CV upload and extraction
+  const handleCVUpload = async (fileUrl) => {
+    if (!fileUrl) {
+      setFormData(prev => ({ ...prev, cv_url: '' }));
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, cv_url: fileUrl }));
+    setIsExtractingCV(true);
+
+    try {
+      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url: fileUrl,
+        json_schema: {
+          type: 'object',
+          properties: {
+            full_name: { type: 'string' },
+            job_title: { type: 'string' },
+            department: { type: 'string' },
+            organization: { type: 'string' },
+            years_of_experience: { type: 'number' },
+            specializations: { type: 'array', items: { type: 'string' } },
+            phone: { type: 'string' },
+            employee_id: { type: 'string' }
+          }
+        }
+      });
+
+      if (extracted.status === 'success' && extracted.output) {
+        const output = extracted.output;
+        setFormData(prev => ({
+          ...prev,
+          job_title: output.job_title || prev.job_title,
+          department: output.department || prev.department,
+          years_of_experience: output.years_of_experience || prev.years_of_experience,
+          specializations: output.specializations?.length > 0 ? output.specializations : prev.specializations,
+          work_phone: output.phone || prev.work_phone,
+          employee_id: output.employee_id || prev.employee_id
+        }));
+        toast.success(t({ en: 'CV data extracted successfully!', ar: 'تم استخراج بيانات السيرة الذاتية بنجاح!' }));
+      }
+    } catch (error) {
+      console.error('CV extraction error:', error);
+      toast.info(t({ en: 'CV uploaded. Please fill in details manually.', ar: 'تم رفع السيرة الذاتية. يرجى ملء التفاصيل يدوياً.' }));
+    } finally {
+      setIsExtractingCV(false);
+    }
+  };
+
+  const toggleSpecialization = (spec) => {
+    const current = formData.specializations;
+    if (current.includes(spec)) {
+      setFormData({ ...formData, specializations: current.filter(s => s !== spec) });
+    } else if (current.length < 5) {
+      setFormData({ ...formData, specializations: [...current, spec] });
+    }
+  };
+
   const handleComplete = async () => {
     if (!user?.id) {
       toast.error(t({ en: 'User not found', ar: 'المستخدم غير موجود' }));
@@ -99,12 +174,27 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
           department: formData.department || null,
           job_title: formData.job_title || null,
           work_phone: formData.work_phone || null,
+          cv_url: formData.cv_url || null,
           onboarding_completed: true,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
 
       if (profileError) throw profileError;
+
+      // Create municipality staff profile
+      await supabase.from('municipality_staff_profiles').upsert({
+        user_id: user.id,
+        user_email: user.email,
+        municipality_id: formData.municipality_id,
+        department: formData.department,
+        job_title: formData.job_title,
+        employee_id: formData.employee_id,
+        years_of_experience: formData.years_of_experience,
+        specializations: formData.specializations,
+        cv_url: formData.cv_url,
+        is_verified: false
+      }, { onConflict: 'user_id' });
 
       // Submit role request if not staff level
       if (formData.role_level !== 'staff' && formData.justification) {
@@ -139,9 +229,10 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return formData.municipality_id !== '';
-      case 2: return formData.department !== '';
-      case 3: return formData.role_level !== '';
+      case 1: return true; // CV is optional
+      case 2: return formData.municipality_id !== '';
+      case 3: return formData.department !== '';
+      case 4: return formData.role_level !== '';
       default: return true;
     }
   };
@@ -193,8 +284,60 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
             </CardContent>
           </Card>
 
-          {/* Step 1: Municipality Selection */}
+          {/* Step 1: CV Import */}
           {currentStep === 1 && (
+            <Card className="border-2 border-purple-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5 text-purple-600" />
+                  {t({ en: 'Import Your CV (Optional)', ar: 'استيراد سيرتك الذاتية (اختياري)' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 border-2 border-dashed border-purple-200 rounded-lg bg-purple-50/50">
+                  <div className="flex items-start gap-4">
+                    <FileText className="h-10 w-10 text-purple-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-purple-900 mb-1">
+                        {t({ en: 'Upload CV/Resume', ar: 'رفع السيرة الذاتية' })}
+                      </h3>
+                      <p className="text-sm text-purple-700 mb-3">
+                        {t({ en: 'AI will extract your job title, experience, and specializations', ar: 'سيستخرج الذكاء الاصطناعي مسماك الوظيفي وخبرتك وتخصصاتك' })}
+                      </p>
+                      <FileUploader
+                        onUploadComplete={handleCVUpload}
+                        type="document"
+                        label={t({ en: 'Upload CV (PDF, DOCX)', ar: 'رفع السيرة الذاتية (PDF, DOCX)' })}
+                        maxSize={10}
+                      />
+                      {isExtractingCV && (
+                        <div className="flex items-center gap-2 mt-3 text-purple-600">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">{t({ en: 'AI is extracting your information...', ar: 'الذكاء الاصطناعي يستخرج معلوماتك...' })}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {formData.cv_url && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="font-medium">{t({ en: 'CV uploaded and processed!', ar: 'تم رفع ومعالجة السيرة الذاتية!' })}</span>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-center text-muted-foreground">
+                  {t({ en: 'You can skip this and fill in details manually', ar: 'يمكنك تخطي هذا وملء التفاصيل يدوياً' })}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 2: Municipality Selection */}
+          {currentStep === 2 && (
             <Card className="border-2 border-purple-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -204,7 +347,7 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>{t({ en: 'Municipality', ar: 'البلدية' })}</Label>
+                  <Label>{t({ en: 'Municipality', ar: 'البلدية' })} *</Label>
                   <Select
                     value={formData.municipality_id}
                     onValueChange={(value) => setFormData({ ...formData, municipality_id: value })}
@@ -234,18 +377,18 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
             </Card>
           )}
 
-          {/* Step 2: Department */}
-          {currentStep === 2 && (
+          {/* Step 3: Department */}
+          {currentStep === 3 && (
             <Card className="border-2 border-purple-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-purple-600" />
-                  {t({ en: 'Your Department', ar: 'قسمك' })}
+                  {t({ en: 'Your Department & Details', ar: 'قسمك وتفاصيلك' })}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>{t({ en: 'Department', ar: 'القسم' })}</Label>
+                  <Label>{t({ en: 'Department', ar: 'القسم' })} *</Label>
                   <Select
                     value={formData.department}
                     onValueChange={(value) => setFormData({ ...formData, department: value })}
@@ -263,13 +406,24 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
                   </Select>
                 </div>
 
-                <div>
-                  <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}</Label>
-                  <Input
-                    value={formData.job_title}
-                    onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-                    placeholder={t({ en: 'Your position title', ar: 'مسمى منصبك' })}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}</Label>
+                    <Input
+                      value={formData.job_title}
+                      onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                      placeholder={t({ en: 'Your position title', ar: 'مسمى منصبك' })}
+                    />
+                  </div>
+                  <div>
+                    <Label>{t({ en: 'Years of Experience', ar: 'سنوات الخبرة' })}</Label>
+                    <Input
+                      type="number"
+                      value={formData.years_of_experience}
+                      onChange={(e) => setFormData({ ...formData, years_of_experience: parseInt(e.target.value) || 0 })}
+                      min={0}
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -280,12 +434,32 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
                     placeholder="+966..."
                   />
                 </div>
+
+                <div>
+                  <Label className="mb-2 block">{t({ en: 'Specializations (max 5)', ar: 'التخصصات (حد أقصى 5)' })}</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {SPECIALIZATIONS.map((spec) => {
+                      const isSelected = formData.specializations.includes(spec.en);
+                      return (
+                        <Badge
+                          key={spec.en}
+                          variant={isSelected ? 'default' : 'outline'}
+                          className={`cursor-pointer transition-all ${isSelected ? 'bg-purple-600' : 'hover:bg-purple-50'}`}
+                          onClick={() => toggleSpecialization(spec.en)}
+                        >
+                          {isSelected && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                          {spec[language]}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Step 3: Role Setup */}
-          {currentStep === 3 && (
+          {/* Step 4: Role Setup */}
+          {currentStep === 4 && (
             <Card className="border-2 border-purple-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -342,8 +516,8 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
             </Card>
           )}
 
-          {/* Step 4: Complete */}
-          {currentStep === 4 && (
+          {/* Step 5: Complete */}
+          {currentStep === 5 && (
             <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-white">
               <CardContent className="pt-8 pb-8 text-center space-y-4">
                 <CheckCircle2 className="h-16 w-16 text-green-600 mx-auto" />
@@ -362,7 +536,14 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
                   <div className="space-y-1 text-sm">
                     <p><strong>{t({ en: 'Municipality:', ar: 'البلدية:' })}</strong> {municipalities.find(m => m.id === formData.municipality_id)?.[language === 'ar' ? 'name_ar' : 'name_en']}</p>
                     <p><strong>{t({ en: 'Department:', ar: 'القسم:' })}</strong> {formData.department}</p>
+                    {formData.job_title && <p><strong>{t({ en: 'Title:', ar: 'المسمى:' })}</strong> {formData.job_title}</p>}
                     <p><strong>{t({ en: 'Role:', ar: 'الدور:' })}</strong> {ROLE_LEVELS.find(r => r.id === formData.role_level)?.label[language]}</p>
+                    {formData.cv_url && (
+                      <p className="text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {t({ en: 'CV uploaded', ar: 'تم رفع السيرة الذاتية' })}
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -380,7 +561,7 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
               {currentStep === 1 ? t({ en: 'Skip', ar: 'تخطي' }) : t({ en: 'Back', ar: 'رجوع' })}
             </Button>
 
-            {currentStep < 4 ? (
+            {currentStep < 5 ? (
               <Button
                 onClick={() => setCurrentStep(currentStep + 1)}
                 disabled={!canProceed()}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,17 +14,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
+import FileUploader from '../FileUploader';
 import { 
   FlaskConical, ArrowRight, ArrowLeft, CheckCircle2, 
-  GraduationCap, BookOpen, Link2, Loader2, Sparkles
+  GraduationCap, BookOpen, Link2, Loader2, Sparkles, Upload, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const STEPS = [
-  { id: 1, title: { en: 'Institution', ar: 'المؤسسة' }, icon: GraduationCap },
-  { id: 2, title: { en: 'Research', ar: 'البحث' }, icon: FlaskConical },
-  { id: 3, title: { en: 'Links', ar: 'الروابط' }, icon: Link2 },
-  { id: 4, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
+  { id: 1, title: { en: 'CV Import', ar: 'استيراد السيرة' }, icon: Upload },
+  { id: 2, title: { en: 'Institution', ar: 'المؤسسة' }, icon: GraduationCap },
+  { id: 3, title: { en: 'Research', ar: 'البحث' }, icon: FlaskConical },
+  { id: 4, title: { en: 'Links', ar: 'الروابط' }, icon: Link2 },
+  { id: 5, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
 ];
 
 const RESEARCH_AREAS = [
@@ -55,8 +58,10 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExtractingCV, setIsExtractingCV] = useState(false);
   
   const [formData, setFormData] = useState({
+    cv_url: '',
     institution: '',
     department: '',
     academic_title: '',
@@ -70,6 +75,60 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
   });
 
   const progress = (currentStep / STEPS.length) * 100;
+
+  // Handle CV upload and extraction
+  const handleCVUpload = async (fileUrl) => {
+    if (!fileUrl) {
+      setFormData(prev => ({ ...prev, cv_url: '' }));
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, cv_url: fileUrl }));
+    setIsExtractingCV(true);
+
+    try {
+      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url: fileUrl,
+        json_schema: {
+          type: 'object',
+          properties: {
+            full_name: { type: 'string' },
+            academic_title: { type: 'string' },
+            institution: { type: 'string' },
+            department: { type: 'string' },
+            research_areas: { type: 'array', items: { type: 'string' } },
+            bio: { type: 'string' },
+            publications_count: { type: 'number' },
+            orcid_id: { type: 'string' },
+            google_scholar_url: { type: 'string' },
+            researchgate_url: { type: 'string' }
+          }
+        }
+      });
+
+      if (extracted.status === 'success' && extracted.output) {
+        const output = extracted.output;
+        setFormData(prev => ({
+          ...prev,
+          academic_title: output.academic_title || prev.academic_title,
+          institution: output.institution || prev.institution,
+          department: output.department || prev.department,
+          research_areas: output.research_areas?.length > 0 ? output.research_areas : prev.research_areas,
+          bio: output.bio || prev.bio,
+          publications_count: output.publications_count || prev.publications_count,
+          orcid_id: output.orcid_id || prev.orcid_id,
+          google_scholar_url: output.google_scholar_url || prev.google_scholar_url,
+          researchgate_url: output.researchgate_url || prev.researchgate_url
+        }));
+        toast.success(t({ en: 'CV data extracted successfully!', ar: 'تم استخراج بيانات السيرة الذاتية بنجاح!' }));
+      }
+    } catch (error) {
+      console.error('CV extraction error:', error);
+      toast.info(t({ en: 'CV uploaded. Please fill in details manually.', ar: 'تم رفع السيرة الذاتية. يرجى ملء التفاصيل يدوياً.' }));
+    } finally {
+      setIsExtractingCV(false);
+    }
+  };
 
   const toggleResearchArea = (area) => {
     const current = formData.research_areas;
@@ -107,6 +166,7 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
           job_title: formData.academic_title || null,
           expertise_areas: formData.research_areas,
           bio: formData.bio || null,
+          cv_url: formData.cv_url || null,
           onboarding_completed: true,
           metadata: {
             orcid_id: formData.orcid_id,
@@ -121,7 +181,7 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
 
       if (profileError) throw profileError;
 
-      // Create researcher profile entry if needed
+      // Create researcher profile entry
       await supabase.from('researcher_profiles').upsert({
         user_id: user.id,
         user_email: user.email,
@@ -132,6 +192,7 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
         collaboration_interests: formData.collaboration_types,
         orcid_id: formData.orcid_id,
         google_scholar_url: formData.google_scholar_url,
+        cv_url: formData.cv_url,
         is_verified: false
       }, { onConflict: 'user_id' });
 
@@ -151,8 +212,9 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return formData.institution.trim() !== '';
-      case 2: return formData.research_areas.length > 0;
+      case 1: return true; // CV is optional
+      case 2: return formData.institution.trim() !== '';
+      case 3: return formData.research_areas.length > 0;
       default: return true;
     }
   };
@@ -204,8 +266,56 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
             </CardContent>
           </Card>
 
-          {/* Step 1: Institution */}
+          {/* Step 1: CV Import */}
           {currentStep === 1 && (
+            <Card className="border-2 border-green-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5 text-green-600" />
+                  {t({ en: 'Import Academic CV (Optional)', ar: 'استيراد السيرة الأكاديمية (اختياري)' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 border-2 border-dashed border-green-200 rounded-lg bg-green-50/50">
+                  <div className="flex items-start gap-4">
+                    <FileText className="h-10 w-10 text-green-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-green-900 mb-1">
+                        {t({ en: 'Upload Academic CV', ar: 'رفع السيرة الأكاديمية' })}
+                      </h3>
+                      <p className="text-sm text-green-700 mb-3">
+                        {t({ en: 'AI will extract your research areas, publications, and academic links', ar: 'سيستخرج الذكاء الاصطناعي مجالات بحثك ومنشوراتك وروابطك الأكاديمية' })}
+                      </p>
+                      <FileUploader
+                        onUploadComplete={handleCVUpload}
+                        type="document"
+                        label={t({ en: 'Upload CV (PDF, DOCX)', ar: 'رفع السيرة الذاتية (PDF, DOCX)' })}
+                        maxSize={10}
+                      />
+                      {isExtractingCV && (
+                        <div className="flex items-center gap-2 mt-3 text-green-600">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">{t({ en: 'AI is extracting your academic information...', ar: 'الذكاء الاصطناعي يستخرج معلوماتك الأكاديمية...' })}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {formData.cv_url && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="font-medium">{t({ en: 'CV uploaded and processed!', ar: 'تم رفع ومعالجة السيرة الذاتية!' })}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 2: Institution */}
+          {currentStep === 2 && (
             <Card className="border-2 border-green-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -254,8 +364,8 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
             </Card>
           )}
 
-          {/* Step 2: Research Areas */}
-          {currentStep === 2 && (
+          {/* Step 3: Research Areas */}
+          {currentStep === 3 && (
             <Card className="border-2 border-green-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -315,8 +425,8 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
             </Card>
           )}
 
-          {/* Step 3: Academic Links */}
-          {currentStep === 3 && (
+          {/* Step 4: Academic Links */}
+          {currentStep === 4 && (
             <Card className="border-2 border-green-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -368,8 +478,8 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
             </Card>
           )}
 
-          {/* Step 4: Complete */}
-          {currentStep === 4 && (
+          {/* Step 5: Complete */}
+          {currentStep === 5 && (
             <Card className="border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-white">
               <CardContent className="pt-8 pb-8 text-center space-y-4">
                 <CheckCircle2 className="h-16 w-16 text-emerald-600 mx-auto" />
@@ -387,6 +497,7 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
                   <p className="text-sm text-muted-foreground mb-2">{t({ en: 'Your Profile', ar: 'ملفك' })}</p>
                   <div className="space-y-2">
                     <p><strong>{t({ en: 'Institution:', ar: 'المؤسسة:' })}</strong> {formData.institution}</p>
+                    {formData.academic_title && <p><strong>{t({ en: 'Title:', ar: 'اللقب:' })}</strong> {formData.academic_title}</p>}
                     <div>
                       <strong>{t({ en: 'Research Areas:', ar: 'مجالات البحث:' })}</strong>
                       <div className="flex flex-wrap gap-1 mt-1">
@@ -395,14 +506,13 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
                         ))}
                       </div>
                     </div>
+                    {formData.cv_url && (
+                      <p className="text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {t({ en: 'CV uploaded', ar: 'تم رفع السيرة الذاتية' })}
+                      </p>
+                    )}
                   </div>
-                </div>
-
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    {t({ en: 'AI will match you with relevant R&D opportunities', ar: 'سيقوم الذكاء الاصطناعي بمطابقتك مع فرص البحث والتطوير المناسبة' })}
-                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -419,7 +529,7 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
               {currentStep === 1 ? t({ en: 'Skip', ar: 'تخطي' }) : t({ en: 'Back', ar: 'رجوع' })}
             </Button>
 
-            {currentStep < 4 ? (
+            {currentStep < 5 ? (
               <Button
                 onClick={() => setCurrentStep(currentStep + 1)}
                 disabled={!canProceed()}
@@ -432,7 +542,7 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
               <Button
                 onClick={handleComplete}
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-green-600 to-emerald-600"
+                className="bg-gradient-to-r from-emerald-600 to-teal-600"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                 {t({ en: 'Complete Setup', ar: 'إكمال الإعداد' })}

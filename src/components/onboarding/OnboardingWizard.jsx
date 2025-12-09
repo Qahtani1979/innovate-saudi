@@ -14,11 +14,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
+import FileUploader from '../FileUploader';
 import { 
   CheckCircle2, ArrowRight, ArrowLeft, Sparkles, 
   Building2, Lightbulb, FlaskConical, Users, Eye,
   Rocket, Target, BookOpen, Network, X, Loader2,
-  User, Briefcase, GraduationCap, Wand2, RefreshCw
+  User, Briefcase, GraduationCap, Wand2, RefreshCw,
+  Upload, FileText, Linkedin, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -90,10 +92,11 @@ const EXPERTISE_OPTIONS = [
 
 const STEPS = [
   { id: 1, title: { en: 'Welcome', ar: 'مرحباً' }, icon: Sparkles },
-  { id: 2, title: { en: 'Profile', ar: 'الملف' }, icon: User },
-  { id: 3, title: { en: 'AI Assist', ar: 'مساعد ذكي' }, icon: Wand2 },
-  { id: 4, title: { en: 'Role', ar: 'الدور' }, icon: Briefcase },
-  { id: 5, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
+  { id: 2, title: { en: 'Import', ar: 'استيراد' }, icon: Upload },
+  { id: 3, title: { en: 'Profile', ar: 'الملف' }, icon: User },
+  { id: 4, title: { en: 'AI Assist', ar: 'مساعد ذكي' }, icon: Wand2 },
+  { id: 5, title: { en: 'Role', ar: 'الدور' }, icon: Briefcase },
+  { id: 6, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
 ];
 
 export default function OnboardingWizard({ onComplete, onSkip }) {
@@ -105,6 +108,8 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isExtractingCV, setIsExtractingCV] = useState(false);
+  const [isExtractingLinkedIn, setIsExtractingLinkedIn] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   
   const [formData, setFormData] = useState({
@@ -117,7 +122,11 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     expertise_areas: [],
     interests: [],
     requestRole: false,
-    roleJustification: ''
+    roleJustification: '',
+    cv_url: '',
+    linkedin_url: '',
+    years_of_experience: 0,
+    work_phone: ''
   });
 
   // Initialize form data from existing profile
@@ -129,8 +138,11 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
         job_title: userProfile?.job_title || '',
         department: userProfile?.department || '',
         bio: userProfile?.bio || userProfile?.bio_en || '',
+        organization: userProfile?.organization || '',
         expertise_areas: userProfile?.expertise_areas || [],
         interests: userProfile?.interests || [],
+        linkedin_url: userProfile?.linkedin_url || '',
+        cv_url: userProfile?.cv_url || '',
       }));
     }
   }, [userProfile, user]);
@@ -140,17 +152,17 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
 
   const calculateProfileCompletion = (data) => {
     let score = 0;
-    if (data.full_name) score += 25;
-    if (data.job_title) score += 20;
+    if (data.full_name) score += 20;
+    if (data.job_title) score += 15;
     if (data.bio) score += 15;
     if (data.selectedPersona) score += 20;
-    if (data.expertise_areas?.length > 0) score += 20;
+    if (data.expertise_areas?.length > 0) score += 15;
+    if (data.cv_url || data.linkedin_url) score += 15;
     return Math.min(score, 100);
   };
 
   // Get role-based landing page
   const getLandingPage = () => {
-    // Check user roles first
     if (userRoles?.length > 0) {
       const role = userRoles[0]?.role;
       if (role === 'admin') return 'AdminDashboard';
@@ -159,11 +171,114 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
       if (role === 'researcher') return 'ResearcherDashboard';
       if (role === 'citizen') return 'CitizenDashboard';
     }
-    // Fall back to selected persona
     if (selectedPersona) {
       return selectedPersona.landingPage;
     }
     return 'Home';
+  };
+
+  // Handle CV upload and extraction
+  const handleCVUpload = async (fileUrl) => {
+    if (!fileUrl) {
+      setFormData(prev => ({ ...prev, cv_url: '' }));
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, cv_url: fileUrl }));
+    setIsExtractingCV(true);
+
+    try {
+      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url: fileUrl,
+        json_schema: {
+          type: 'object',
+          properties: {
+            full_name: { type: 'string' },
+            job_title: { type: 'string' },
+            organization: { type: 'string' },
+            department: { type: 'string' },
+            years_of_experience: { type: 'number' },
+            expertise_areas: { type: 'array', items: { type: 'string' } },
+            bio: { type: 'string' },
+            linkedin_url: { type: 'string' },
+            email: { type: 'string' },
+            phone: { type: 'string' }
+          }
+        }
+      });
+
+      if (extracted.status === 'success' && extracted.output) {
+        const output = extracted.output;
+        setFormData(prev => ({
+          ...prev,
+          full_name: output.full_name || prev.full_name,
+          job_title: output.job_title || prev.job_title,
+          organization: output.organization || prev.organization,
+          department: output.department || prev.department,
+          years_of_experience: output.years_of_experience || prev.years_of_experience,
+          expertise_areas: output.expertise_areas?.length > 0 ? output.expertise_areas : prev.expertise_areas,
+          bio: output.bio || prev.bio,
+          linkedin_url: output.linkedin_url || prev.linkedin_url,
+          work_phone: output.phone || prev.work_phone
+        }));
+        toast.success(t({ en: 'CV data extracted successfully!', ar: 'تم استخراج بيانات السيرة الذاتية بنجاح!' }));
+      }
+    } catch (error) {
+      console.error('CV extraction error:', error);
+      toast.error(t({ en: 'Could not extract CV data automatically', ar: 'تعذر استخراج بيانات السيرة الذاتية تلقائياً' }));
+    } finally {
+      setIsExtractingCV(false);
+    }
+  };
+
+  // Handle LinkedIn URL import
+  const handleLinkedInImport = async () => {
+    if (!formData.linkedin_url) {
+      toast.error(t({ en: 'Please enter your LinkedIn profile URL', ar: 'يرجى إدخال رابط ملفك الشخصي على LinkedIn' }));
+      return;
+    }
+
+    setIsExtractingLinkedIn(true);
+
+    try {
+      // Use AI to suggest profile based on LinkedIn URL pattern
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on this LinkedIn profile URL: ${formData.linkedin_url}
+        
+Extract or infer the following information. If the URL contains a username or name pattern, try to suggest professional details:
+
+1. Likely professional title/role
+2. Likely industry or expertise areas
+3. Suggested bio for a municipal innovation platform
+
+Return a JSON with these fields.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            likely_title: { type: 'string' },
+            expertise_areas: { type: 'array', items: { type: 'string' } },
+            suggested_bio: { type: 'string' }
+          }
+        }
+      });
+
+      if (result) {
+        setFormData(prev => ({
+          ...prev,
+          job_title: result.likely_title || prev.job_title,
+          expertise_areas: result.expertise_areas?.length > 0 
+            ? [...new Set([...prev.expertise_areas, ...result.expertise_areas])].slice(0, 5)
+            : prev.expertise_areas,
+          bio: result.suggested_bio || prev.bio
+        }));
+        toast.success(t({ en: 'LinkedIn profile analyzed!', ar: 'تم تحليل ملف LinkedIn!' }));
+      }
+    } catch (error) {
+      console.error('LinkedIn import error:', error);
+      toast.info(t({ en: 'LinkedIn URL saved. Please fill in details manually.', ar: 'تم حفظ رابط LinkedIn. يرجى إدخال التفاصيل يدوياً.' }));
+    } finally {
+      setIsExtractingLinkedIn(false);
+    }
   };
 
   // AI-powered profile suggestions
@@ -184,6 +299,10 @@ User Profile:
 - Organization: ${formData.organization || 'Not provided'}
 - Department: ${formData.department || 'Not provided'}
 - Bio: ${formData.bio || 'Not provided'}
+- Years of Experience: ${formData.years_of_experience || 'Not provided'}
+- LinkedIn: ${formData.linkedin_url || 'Not provided'}
+- Has CV: ${formData.cv_url ? 'Yes' : 'No'}
+- Current Expertise: ${formData.expertise_areas?.join(', ') || 'Not provided'}
 
 Based on this information:
 1. Suggest an improved bio that highlights their expertise (keep it concise, 2-3 sentences)
@@ -241,10 +360,20 @@ Based on this information:
         department: formData.department || null,
         bio: formData.bio || null,
         bio_en: formData.bio || null,
+        organization: formData.organization || null,
         expertise_areas: formData.expertise_areas?.length > 0 ? formData.expertise_areas : null,
         interests: formData.interests?.length > 0 ? formData.interests : null,
+        cv_url: formData.cv_url || null,
+        linkedin_url: formData.linkedin_url || null,
+        work_phone: formData.work_phone || null,
         onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
         profile_completion_percentage: calculateProfileCompletion(formData),
+        extracted_data: {
+          years_of_experience: formData.years_of_experience,
+          imported_from_cv: !!formData.cv_url,
+          imported_from_linkedin: !!formData.linkedin_url
+        },
         updated_at: new Date().toISOString()
       };
 
@@ -286,21 +415,17 @@ Based on this information:
       // Invalidate queries and refresh auth
       await queryClient.invalidateQueries(['user-profile']);
       
-      // Force refresh auth state
       if (checkAuth) {
         await checkAuth();
       }
       
       toast.success(t({ en: 'Welcome aboard! Your profile is set up.', ar: 'مرحباً بك! تم إعداد ملفك الشخصي.' }));
       
-      // Navigate to role-based landing page
       const landingPage = getLandingPage();
       console.log('Navigating to:', landingPage);
       
-      // Call onComplete callback
       onComplete?.(formData);
       
-      // Navigate after a short delay to ensure state updates
       setTimeout(() => {
         navigate(createPageUrl(landingPage));
       }, 300);
@@ -361,10 +486,11 @@ Based on this information:
   const canProceed = () => {
     switch (currentStep) {
       case 1: return true;
-      case 2: return formData.full_name?.trim().length > 0;
-      case 3: return true;
-      case 4: return formData.selectedPersona !== null;
-      case 5: return true;
+      case 2: return true; // Import step is optional
+      case 3: return formData.full_name?.trim().length > 0;
+      case 4: return true;
+      case 5: return formData.selectedPersona !== null;
+      case 6: return true;
       default: return true;
     }
   };
@@ -457,22 +583,22 @@ Based on this information:
                   </h2>
                   <p className="text-muted-foreground max-w-xl mx-auto text-lg">
                     {t({ 
-                      en: "Let's personalize your experience with AI-powered suggestions. This takes just a minute.",
-                      ar: 'دعنا نخصص تجربتك باستخدام الاقتراحات الذكية. سيستغرق هذا دقيقة واحدة فقط.'
+                      en: "Let's personalize your experience with AI-powered suggestions. Upload your CV or LinkedIn for smart profile building.",
+                      ar: 'دعنا نخصص تجربتك باستخدام الاقتراحات الذكية. ارفع سيرتك الذاتية أو LinkedIn لبناء ملف ذكي.'
                     })}
                   </p>
                   <div className="flex flex-wrap justify-center gap-4 pt-4">
                     <div className="flex items-center gap-2 px-4 py-3 bg-purple-100 rounded-lg">
-                      <Wand2 className="h-5 w-5 text-purple-600" />
-                      <span className="text-sm font-medium">{t({ en: 'AI Profile Builder', ar: 'منشئ الملف الذكي' })}</span>
+                      <Upload className="h-5 w-5 text-purple-600" />
+                      <span className="text-sm font-medium">{t({ en: 'CV/Resume Import', ar: 'استيراد السيرة الذاتية' })}</span>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-3 bg-blue-100 rounded-lg">
-                      <Target className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm font-medium">{t({ en: 'Personalized Experience', ar: 'تجربة مخصصة' })}</span>
+                      <Linkedin className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-medium">{t({ en: 'LinkedIn Import', ar: 'استيراد LinkedIn' })}</span>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-3 bg-green-100 rounded-lg">
-                      <Network className="h-5 w-5 text-green-600" />
-                      <span className="text-sm font-medium">{t({ en: 'Smart Matching', ar: 'مطابقة ذكية' })}</span>
+                      <Wand2 className="h-5 w-5 text-green-600" />
+                      <span className="text-sm font-medium">{t({ en: 'AI Profile Builder', ar: 'منشئ الملف الذكي' })}</span>
                     </div>
                   </div>
                 </div>
@@ -480,16 +606,122 @@ Based on this information:
             </Card>
           )}
 
-          {/* Step 2: Profile */}
+          {/* Step 2: Import CV/LinkedIn */}
           {currentStep === 2 && (
             <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white shadow-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
-                  <User className="h-5 w-5 text-blue-600" />
-                  {t({ en: 'Tell us about yourself', ar: 'أخبرنا عن نفسك' })}
+                  <Upload className="h-5 w-5 text-blue-600" />
+                  {t({ en: 'Smart Import (Optional)', ar: 'استيراد ذكي (اختياري)' })}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {t({ en: 'This helps AI personalize your experience', ar: 'هذا يساعد الذكاء الاصطناعي على تخصيص تجربتك' })}
+                  {t({ en: 'Upload your CV or enter LinkedIn URL to auto-fill your profile', ar: 'ارفع سيرتك الذاتية أو أدخل رابط LinkedIn لملء ملفك تلقائياً' })}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* CV Upload */}
+                <div className="p-4 border-2 border-dashed border-blue-200 rounded-lg bg-blue-50/50">
+                  <div className="flex items-start gap-4">
+                    <FileText className="h-10 w-10 text-blue-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-blue-900 mb-1">
+                        {t({ en: 'Upload CV/Resume', ar: 'رفع السيرة الذاتية' })}
+                      </h3>
+                      <p className="text-sm text-blue-700 mb-3">
+                        {t({ en: 'AI will extract your name, experience, skills automatically', ar: 'سيستخرج الذكاء الاصطناعي اسمك وخبرتك ومهاراتك تلقائياً' })}
+                      </p>
+                      <FileUploader
+                        onUploadComplete={handleCVUpload}
+                        type="document"
+                        label={t({ en: 'Upload CV (PDF, DOCX)', ar: 'رفع السيرة الذاتية (PDF, DOCX)' })}
+                        maxSize={10}
+                      />
+                      {isExtractingCV && (
+                        <div className="flex items-center gap-2 mt-3 text-blue-600">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">{t({ en: 'AI is extracting your information...', ar: 'الذكاء الاصطناعي يستخرج معلوماتك...' })}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-slate-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-muted-foreground">{t({ en: 'OR', ar: 'أو' })}</span>
+                  </div>
+                </div>
+
+                {/* LinkedIn Import */}
+                <div className="p-4 border-2 border-dashed border-blue-200 rounded-lg bg-blue-50/50">
+                  <div className="flex items-start gap-4">
+                    <Linkedin className="h-10 w-10 text-blue-700 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-blue-900 mb-1">
+                        {t({ en: 'LinkedIn Profile', ar: 'ملف LinkedIn' })}
+                      </h3>
+                      <p className="text-sm text-blue-700 mb-3">
+                        {t({ en: 'Enter your LinkedIn URL for profile suggestions', ar: 'أدخل رابط LinkedIn الخاص بك للحصول على اقتراحات الملف الشخصي' })}
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          value={formData.linkedin_url}
+                          onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+                          placeholder="https://linkedin.com/in/yourprofile"
+                          className="flex-1"
+                        />
+                        <Button
+                          onClick={handleLinkedInImport}
+                          disabled={isExtractingLinkedIn || !formData.linkedin_url}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          {isExtractingLinkedIn ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Globe className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Import Status */}
+                {(formData.cv_url || formData.linkedin_url) && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="font-medium">{t({ en: 'Profile data imported!', ar: 'تم استيراد بيانات الملف!' })}</span>
+                    </div>
+                    <p className="text-sm text-green-700 mt-1">
+                      {t({ en: 'Review and edit in the next step', ar: 'راجع وحرر في الخطوة التالية' })}
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-xs text-center text-muted-foreground">
+                  {t({ en: 'You can skip this step and fill in details manually', ar: 'يمكنك تخطي هذه الخطوة وملء التفاصيل يدوياً' })}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 3: Profile */}
+          {currentStep === 3 && (
+            <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white shadow-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <User className="h-5 w-5 text-blue-600" />
+                  {t({ en: 'Your Profile', ar: 'ملفك الشخصي' })}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {formData.cv_url || formData.linkedin_url 
+                    ? t({ en: 'Review and edit the imported data', ar: 'راجع وحرر البيانات المستوردة' })
+                    : t({ en: 'Tell us about yourself', ar: 'أخبرنا عن نفسك' })
+                  }
                 </p>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -523,6 +755,26 @@ Based on this information:
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t({ en: 'Department', ar: 'القسم' })}</Label>
+                    <Input
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      placeholder={t({ en: 'Your department', ar: 'قسمك' })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t({ en: 'Years of Experience', ar: 'سنوات الخبرة' })}</Label>
+                    <Input
+                      type="number"
+                      value={formData.years_of_experience}
+                      onChange={(e) => setFormData({ ...formData, years_of_experience: parseInt(e.target.value) || 0 })}
+                      min={0}
+                    />
+                  </div>
+                </div>
                 
                 <div className="space-y-2">
                   <Label>{t({ en: 'Short Bio', ar: 'نبذة قصيرة' })}</Label>
@@ -530,15 +782,15 @@ Based on this information:
                     value={formData.bio}
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     rows={3}
-                    placeholder={t({ en: 'Tell us a bit about yourself and your interests...', ar: 'أخبرنا قليلاً عن نفسك واهتماماتك...' })}
+                    placeholder={t({ en: 'Tell us about yourself and your interests...', ar: 'أخبرنا قليلاً عن نفسك واهتماماتك...' })}
                   />
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Step 3: AI Suggestions */}
-          {currentStep === 3 && (
+          {/* Step 4: AI Suggestions */}
+          {currentStep === 4 && (
             <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-white shadow-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
@@ -665,8 +917,8 @@ Based on this information:
             </Card>
           )}
 
-          {/* Step 4: Persona Selection */}
-          {currentStep === 4 && (
+          {/* Step 5: Persona Selection */}
+          {currentStep === 5 && (
             <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-white shadow-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
@@ -766,8 +1018,8 @@ Based on this information:
             </Card>
           )}
 
-          {/* Step 5: Complete */}
-          {currentStep === 5 && (
+          {/* Step 6: Complete */}
+          {currentStep === 6 && (
             <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-white shadow-2xl">
               <CardContent className="pt-8 pb-8">
                 <div className="text-center space-y-6">
@@ -777,56 +1029,72 @@ Based on this information:
                   </h2>
                   <p className="text-muted-foreground max-w-md mx-auto">
                     {t({ 
-                      en: "Your profile is ready. Click below to start exploring Saudi Innovates.",
-                      ar: 'ملفك الشخصي جاهز. انقر أدناه لبدء استكشاف الابتكار السعودي.'
+                      en: "Your profile is ready. Let's explore innovation opportunities!",
+                      ar: 'ملفك الشخصي جاهز. دعنا نستكشف فرص الابتكار!'
                     })}
                   </p>
                   
                   {/* Profile Summary */}
-                  <div className="max-w-md mx-auto text-left bg-white p-4 rounded-lg border shadow-sm">
-                    <h4 className="font-semibold mb-3">{t({ en: 'Profile Summary', ar: 'ملخص الملف' })}</h4>
+                  <div className="p-4 bg-white rounded-lg border text-left max-w-md mx-auto">
+                    <h3 className="font-semibold mb-3">{t({ en: 'Your Profile Summary', ar: 'ملخص ملفك' })}</h3>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t({ en: 'Name', ar: 'الاسم' })}</span>
-                        <span className="font-medium">{formData.full_name || '-'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t({ en: 'Role', ar: 'الدور' })}</span>
-                        <span className="font-medium">{selectedPersona?.title[language] || '-'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t({ en: 'Expertise', ar: 'الخبرات' })}</span>
-                        <span className="font-medium">{formData.expertise_areas?.length || 0} {t({ en: 'areas', ar: 'مجالات' })}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t({ en: 'Completion', ar: 'الاكتمال' })}</span>
-                        <span className="font-medium text-green-600">{calculateProfileCompletion(formData)}%</span>
+                      <p><strong>{t({ en: 'Name:', ar: 'الاسم:' })}</strong> {formData.full_name}</p>
+                      {formData.job_title && <p><strong>{t({ en: 'Title:', ar: 'المسمى:' })}</strong> {formData.job_title}</p>}
+                      {formData.organization && <p><strong>{t({ en: 'Organization:', ar: 'المنظمة:' })}</strong> {formData.organization}</p>}
+                      <p><strong>{t({ en: 'Role:', ar: 'الدور:' })}</strong> {selectedPersona?.title[language]}</p>
+                      {formData.expertise_areas?.length > 0 && (
+                        <div>
+                          <strong>{t({ en: 'Expertise:', ar: 'الخبرات:' })}</strong>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {formData.expertise_areas.map((exp, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">{exp}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {(formData.cv_url || formData.linkedin_url) && (
+                        <p className="text-green-600 flex items-center gap-1 mt-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          {t({ en: 'Profile imported from', ar: 'تم استيراد الملف من' })} 
+                          {formData.cv_url && ' CV'}
+                          {formData.cv_url && formData.linkedin_url && ' & '}
+                          {formData.linkedin_url && ' LinkedIn'}
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{t({ en: 'Profile Completion:', ar: 'اكتمال الملف:' })}</span>
+                        <Progress value={calculateProfileCompletion(formData)} className="flex-1 h-2" />
+                        <span className="text-sm font-medium">{calculateProfileCompletion(formData)}%</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-4">
-                    <Badge className="bg-blue-100 text-blue-800 text-sm px-4 py-2">
-                      {t({ en: `You'll be redirected to: ${selectedPersona?.title[language] || 'Home'}`, ar: `سيتم توجيهك إلى: ${selectedPersona?.title[language] || 'الرئيسية'}` })}
-                    </Badge>
-                  </div>
+                  {formData.requestRole && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg max-w-md mx-auto">
+                      <p className="text-sm text-amber-800">
+                        {t({ en: '⏳ Your role request is pending admin approval', ar: '⏳ طلب الدور الخاص بك في انتظار موافقة المسؤول' })}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between">
             <Button
               variant="outline"
               onClick={prevStep}
               disabled={currentStep === 1 || isSubmitting}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {t({ en: 'Previous', ar: 'السابق' })}
+              {t({ en: 'Back', ar: 'رجوع' })}
             </Button>
-            
+
             {currentStep < STEPS.length ? (
               <Button
                 onClick={nextStep}
@@ -840,14 +1108,14 @@ Based on this information:
               <Button
                 onClick={handleComplete}
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <Rocket className="h-4 w-4 mr-2" />
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
                 )}
-                {t({ en: 'Start Exploring', ar: 'ابدأ الاستكشاف' })}
+                {t({ en: 'Complete & Start Exploring', ar: 'إكمال وبدء الاستكشاف' })}
               </Button>
             )}
           </div>
