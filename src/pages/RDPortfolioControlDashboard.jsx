@@ -10,11 +10,14 @@ import { createPageUrl } from '../utils';
 import { Microscope, BookOpen, Award, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function RDPortfolioControlDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const [user, setUser] = React.useState(null);
   const [user, setUser] = React.useState(null);
 
   React.useEffect(() => {
@@ -64,9 +67,7 @@ function RDPortfolioControlDashboard() {
   const chartData = Object.values(researchAreaData);
 
   const generatePortfolioAnalysis = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeAI({
         prompt: `Analyze R&D portfolio:
 
 Total projects: ${rdProjects.length}
@@ -91,12 +92,11 @@ Provide:
             call_recommendations: { type: 'array', items: { type: 'string' } }
           }
         }
-      });
-      setAiAnalysis(result);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      }
+    });
+
+    if (result.success) {
+      setAiAnalysis(result.data);
     }
   };
 
@@ -111,10 +111,13 @@ Provide:
             {t({ en: 'Research portfolio overview and impact', ar: 'نظرة عامة على محفظة البحث والتأثير' })}
           </p>
         </div>
-        <Button onClick={generatePortfolioAnalysis} disabled={loading} className="bg-purple-600">
-          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {t({ en: 'Analyze Portfolio', ar: 'تحليل المحفظة' })}
-        </Button>
+        <div className="flex flex-col items-end gap-2">
+          <Button onClick={generatePortfolioAnalysis} disabled={loading || !isAvailable} className="bg-purple-600">
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {t({ en: 'Analyze Portfolio', ar: 'تحليل المحفظة' })}
+          </Button>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        </div>
       </div>
 
       {/* Key Metrics */}

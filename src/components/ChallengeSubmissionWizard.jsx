@@ -10,13 +10,15 @@ import { CheckCircle2, Circle, Send, Sparkles, Loader2, X } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeSubmissionWizard({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [submissionNotes, setSubmissionNotes] = useState('');
-  const [generatingBrief, setGeneratingBrief] = useState(false);
+  const { invokeAI, status, isLoading: generatingBrief, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [aiBrief, setAiBrief] = useState(null);
 
   const [checklist, setChecklist] = useState([
@@ -53,9 +55,7 @@ export default function ChallengeSubmissionWizard({ challenge, onClose }) {
   });
 
   const generateAIBrief = async () => {
-    setGeneratingBrief(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeAI({
         prompt: `Generate a bilingual submission brief for this challenge. CRITICAL: Provide ALL text in BOTH English AND Arabic.
 
 Title: ${challenge.title_en}
@@ -101,13 +101,12 @@ Provide (BILINGUAL - each field in both EN and AR):
             estimated_review_days: { type: 'number' }
           }
         }
-      });
-      setAiBrief(result);
+      }
+    });
+
+    if (result.success) {
+      setAiBrief(result.data);
       toast.success(t({ en: 'AI brief generated', ar: 'تم إنشاء الملخص الذكي' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate brief', ar: 'فشل إنشاء الملخص' }));
-    } finally {
-      setGeneratingBrief(false);
     }
   };
 

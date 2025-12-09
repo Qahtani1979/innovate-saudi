@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Target, Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotPortfolioOptimizer() {
   const { language, t } = useLanguage();
-  const [optimizing, setOptimizing] = useState(false);
+  const { invokeAI, status, isLoading: optimizing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [recommendations, setRecommendations] = useState(null);
 
   const { data: pilots = [] } = useQuery({
@@ -20,11 +22,9 @@ export default function PilotPortfolioOptimizer() {
   });
 
   const optimize = async () => {
-    setOptimizing(true);
-    try {
-      const activePilots = pilots.filter(p => ['active', 'preparation', 'approved'].includes(p.stage));
-      
-      const response = await base44.integrations.Core.InvokeLLM({
+    const activePilots = pilots.filter(p => ['active', 'preparation', 'approved'].includes(p.stage));
+    
+    const result = await invokeAI({
         prompt: `Portfolio optimization analysis for ${activePilots.length} active pilots:
 
 ${activePilots.slice(0, 10).map(p => `
@@ -88,14 +88,12 @@ Recommend:
             portfolio_health_score: { type: "number" }
           }
         }
-      });
+      }
+    });
 
-      setRecommendations(response);
+    if (result.success) {
+      setRecommendations(result.data);
       toast.success(t({ en: 'Optimization complete', ar: 'التحسين مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Optimization failed', ar: 'فشل التحسين' }));
-    } finally {
-      setOptimizing(false);
     }
   };
 
@@ -107,7 +105,7 @@ Recommend:
             <Target className="h-5 w-5 text-indigo-600" />
             {t({ en: 'Portfolio Optimizer', ar: 'محسّن المحفظة' })}
           </CardTitle>
-          <Button onClick={optimize} disabled={optimizing} size="sm" className="bg-indigo-600">
+          <Button onClick={optimize} disabled={optimizing || !isAvailable} size="sm" className="bg-indigo-600">
             {optimizing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -116,6 +114,7 @@ Recommend:
             {t({ en: 'Optimize', ar: 'حسّن' })}
           </Button>
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
       </CardHeader>
       <CardContent className="pt-6">
         {!recommendations && !optimizing && (
