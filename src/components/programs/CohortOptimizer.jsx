@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,17 +6,17 @@ import { useLanguage } from '../LanguageContext';
 import { Users, Sparkles, Loader2, Award } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CohortOptimizer({ programId, applications }) {
   const { language, isRTL, t } = useLanguage();
-  const [optimizing, setOptimizing] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
+  const { invokeAI, status, isLoading: optimizing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const optimizeCohort = async () => {
-    setOptimizing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Optimize cohort composition for diversity and synergy:
+    const result = await invokeAI({
+      prompt: `Optimize cohort composition for diversity and synergy:
 
 PROGRAM: Accelerator Cohort
 APPLICANTS: ${applications.length}
@@ -31,48 +30,45 @@ Recommend optimal cohort (20-25 participants):
 3. Diversity in municipality sizes
 4. Identify synergy opportunities (who should partner)
 5. Predict cohort diversity score and collaboration potential`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            recommended_participants: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  startup: { type: "string" },
-                  reason: { type: "string" }
-                }
-              }
-            },
-            diversity_score: { type: "number" },
-            synergy_potential: { type: "string" },
-            sector_distribution: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommended_participants: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                transport: { type: "number" },
-                environment: { type: "number" },
-                digital: { type: "number" },
-                other: { type: "number" }
+                startup: { type: "string" },
+                reason: { type: "string" }
               }
-            },
-            stage_distribution: {
-              type: "object",
-              properties: {
-                early: { type: "number" },
-                growth: { type: "number" },
-                scale: { type: "number" }
-              }
+            }
+          },
+          diversity_score: { type: "number" },
+          synergy_potential: { type: "string" },
+          sector_distribution: {
+            type: "object",
+            properties: {
+              transport: { type: "number" },
+              environment: { type: "number" },
+              digital: { type: "number" },
+              other: { type: "number" }
+            }
+          },
+          stage_distribution: {
+            type: "object",
+            properties: {
+              early: { type: "number" },
+              growth: { type: "number" },
+              scale: { type: "number" }
             }
           }
         }
-      });
+      }
+    });
 
-      setRecommendations(response);
+    if (result.success) {
+      setRecommendations(result.data);
       toast.success(t({ en: 'Cohort optimization complete', ar: 'اكتمل تحسين الفوج' }));
-    } catch (error) {
-      toast.error(t({ en: 'Optimization failed', ar: 'فشل التحسين' }));
-    } finally {
-      setOptimizing(false);
     }
   };
 
@@ -97,7 +93,7 @@ Recommend optimal cohort (20-25 participants):
             <Users className="h-5 w-5 text-purple-600" />
             {t({ en: 'AI Cohort Optimizer', ar: 'محسن الفوج الذكي' })}
           </CardTitle>
-          <Button onClick={optimizeCohort} disabled={optimizing} size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600">
+          <Button onClick={optimizeCohort} disabled={optimizing || !isAvailable} size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600">
             {optimizing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -108,6 +104,7 @@ Recommend optimal cohort (20-25 participants):
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {!recommendations && !optimizing && (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-purple-300 mx-auto mb-3" />

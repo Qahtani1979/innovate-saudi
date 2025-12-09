@@ -13,10 +13,13 @@ import {
 } from 'lucide-react';
 import { format, addDays, isWithinInterval } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MyRDProjects() {
   const { language, isRTL, t } = useLanguage();
   const [filter, setFilter] = useState('all');
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: user } = useQuery({
     queryKey: ['me'],
@@ -47,7 +50,7 @@ function MyRDProjects() {
 
   const generateInsights = useMutation({
     mutationFn: async (project) => {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze this R&D project and provide actionable recommendations:
 
 Project: ${project.title_en}
@@ -72,7 +75,7 @@ Be concise and actionable.`,
           }
         }
       });
-      return result;
+      return result.success ? result.data : null;
     }
   });
 
@@ -99,8 +102,8 @@ Be concise and actionable.`,
 
   return (
     <div className="space-y-6">
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
       {/* Header */}
-      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
             <Microscope className="h-8 w-8 text-indigo-600" />
