@@ -1867,6 +1867,75 @@ export type Database = {
           },
         ]
       }
+      custom_expertise_areas: {
+        Row: {
+          ai_validation_notes: string | null
+          ai_validation_score: number | null
+          created_at: string | null
+          id: string
+          merged_into_sector_id: string | null
+          name_ar: string | null
+          name_en: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          similar_to_sector_id: string | null
+          status: string | null
+          submitted_by_email: string
+          submitted_by_user_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_validation_notes?: string | null
+          ai_validation_score?: number | null
+          created_at?: string | null
+          id?: string
+          merged_into_sector_id?: string | null
+          name_ar?: string | null
+          name_en: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          similar_to_sector_id?: string | null
+          status?: string | null
+          submitted_by_email: string
+          submitted_by_user_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_validation_notes?: string | null
+          ai_validation_score?: number | null
+          created_at?: string | null
+          id?: string
+          merged_into_sector_id?: string | null
+          name_ar?: string | null
+          name_en?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          similar_to_sector_id?: string | null
+          status?: string | null
+          submitted_by_email?: string
+          submitted_by_user_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_expertise_areas_merged_into_sector_id_fkey"
+            columns: ["merged_into_sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_expertise_areas_similar_to_sector_id_fkey"
+            columns: ["similar_to_sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delegation_rules: {
         Row: {
           approval_date: string | null

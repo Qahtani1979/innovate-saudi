@@ -30,6 +30,9 @@ verify_jwt = false
 [functions.citizen-notifications]
 verify_jwt = false
 
+[functions.role-request-notification]
+verify_jwt = false
+
 [functions.approve-delegation]
 verify_jwt = true
 
