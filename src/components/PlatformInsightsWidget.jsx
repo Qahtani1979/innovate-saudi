@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from './LanguageContext';
 import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, Target, Loader2, RefreshCw } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PlatformInsightsWidget() {
   const { language, isRTL, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: insights = [], refetch } = useQuery({
     queryKey: ['platform-insights'],
@@ -25,15 +27,15 @@ export default function PlatformInsightsWidget() {
   });
 
   const generateFreshInsights = async () => {
-    setGenerating(true);
-    try {
-      const sectorCounts = challenges.reduce((acc, c) => {
-        acc[c.sector] = (acc[c.sector] || 0) + 1;
-        return acc;
-      }, {});
+    if (!isAvailable) return;
+    
+    const sectorCounts = challenges.reduce((acc, c) => {
+      acc[c.sector] = (acc[c.sector] || 0) + 1;
+      return acc;
+    }, {});
 
-      await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze platform trends and generate 3 strategic insights:
+    const result = await invokeAI({
+      prompt: `Analyze platform trends and generate 3 strategic insights:
 
 Sector distribution: ${JSON.stringify(sectorCounts)}
 Total challenges: ${challenges.length}
@@ -42,29 +44,26 @@ Generate insights about:
 1. Emerging trends (which sectors are growing)
 2. Strategic opportunities (gaps or patterns)
 3. Risk alerts (areas needing attention)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            insights: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  type: { type: 'string' },
-                  title: { type: 'string' },
-                  description: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          insights: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                type: { type: 'string' },
+                title: { type: 'string' },
+                description: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       refetch();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -96,13 +95,14 @@ Generate insights about:
             variant="outline" 
             size="sm"
             onClick={generateFreshInsights}
-            disabled={generating}
+            disabled={generating || !isAvailable}
           >
             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {insights.length > 0 ? (
           insights.map((insight) => {
             const Icon = insightIcons[insight.insight_type] || Sparkles;

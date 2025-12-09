@@ -7,15 +7,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Target, TestTube, Microscope, Calendar, Shield, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Target, TestTube, Microscope, Calendar, Shield, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeTrackAssignmentDecision({ challenge, onClose }) {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedTracks, setSelectedTracks] = useState(challenge.tracks || []);
   const [rationale, setRationale] = useState('');
-  const [aiProcessing, setAiProcessing] = useState(false);
+  const { invokeAI, status, isLoading: aiProcessing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const tracks = [
     { 
@@ -51,10 +53,10 @@ export default function ChallengeTrackAssignmentDecision({ challenge, onClose })
   ];
 
   const handleAISuggestion = async () => {
-    setAiProcessing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this municipal challenge and recommend treatment tracks:
+    if (!isAvailable) return;
+    
+    const result = await invokeAI({
+      prompt: `Analyze this municipal challenge and recommend treatment tracks:
 
 Challenge: ${challenge.title_en}
 Description: ${challenge.description_en || 'N/A'}
@@ -67,32 +69,29 @@ Timeline: ${challenge.timeline_estimate || 'N/A'}
 Available tracks: pilot, r_and_d, program, procurement, policy
 
 Recommend which track(s) are most appropriate and provide brief rationale for each.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommended_tracks: { type: 'array', items: { type: 'string' } },
-            rationale: { type: 'string' },
-            track_justifications: {
-              type: 'object',
-              properties: {
-                pilot: { type: 'string' },
-                r_and_d: { type: 'string' },
-                program: { type: 'string' },
-                procurement: { type: 'string' },
-                policy: { type: 'string' }
-              }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommended_tracks: { type: 'array', items: { type: 'string' } },
+          rationale: { type: 'string' },
+          track_justifications: {
+            type: 'object',
+            properties: {
+              pilot: { type: 'string' },
+              r_and_d: { type: 'string' },
+              program: { type: 'string' },
+              procurement: { type: 'string' },
+              policy: { type: 'string' }
             }
           }
         }
-      });
+      }
+    });
 
-      setSelectedTracks(result.recommended_tracks || []);
-      setRationale(result.rationale || '');
+    if (result.success && result.data) {
+      setSelectedTracks(result.data.recommended_tracks || []);
+      setRationale(result.data.rationale || '');
       toast.success(t({ en: 'AI recommendations loaded', ar: 'تم تحميل التوصيات الذكية' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI suggestion failed', ar: 'فشلت التوصية الذكية' }));
-    } finally {
-      setAiProcessing(false);
     }
   };
 
@@ -135,16 +134,17 @@ Recommend which track(s) are most appropriate and provide brief rationale for ea
           </CardTitle>
           <Button
             onClick={handleAISuggestion}
-            disabled={aiProcessing}
+            disabled={aiProcessing || !isAvailable}
             variant="outline"
             size="sm"
           >
-            <Sparkles className="h-4 w-4 mr-2" />
+            {aiProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'AI Suggest', ar: 'اقتراح ذكي' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         <p className="text-sm text-slate-600">
           {t({ 
             en: 'Select one or more treatment tracks for this challenge. Multiple tracks can be pursued simultaneously.',

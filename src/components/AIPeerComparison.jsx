@@ -8,14 +8,17 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useLanguage } from './LanguageContext';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIPeerComparison({ pilot }) {
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [comparison, setComparison] = useState(null);
   const { t } = useLanguage();
 
   const analyzePeers = async () => {
-    setAnalyzing(true);
+    if (!isAvailable) return;
+    
     try {
       const allPilots = await base44.entities.Pilot.list();
       
@@ -26,7 +29,7 @@ export default function AIPeerComparison({ pilot }) {
         (p.stage === 'completed' || p.stage === 'evaluation' || p.stage === 'scaled')
       ).slice(0, 5);
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Analyze this pilot against peer pilots and provide comparative insights:
 
 **Current Pilot:**
@@ -101,12 +104,12 @@ Return JSON with structured insights.`,
         }
       });
 
-      setComparison({ ...response, peers: similarPilots });
-      toast.success('Peer analysis complete');
+      if (response.success && response.data) {
+        setComparison({ ...response.data, peers: similarPilots });
+        toast.success('Peer analysis complete');
+      }
     } catch (error) {
       toast.error('Analysis failed: ' + error.message);
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -126,7 +129,7 @@ Return JSON with structured insights.`,
           </span>
           <Button
             onClick={analyzePeers}
-            disabled={analyzing}
+            disabled={analyzing || !isAvailable}
             size="sm"
             className="bg-gradient-to-r from-purple-600 to-pink-600"
           >
@@ -145,6 +148,7 @@ Return JSON with structured insights.`,
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
         {!comparison ? (
           <div className="text-center py-12">
             <Network className="h-16 w-16 text-slate-300 mx-auto mb-4" />
@@ -154,7 +158,7 @@ Return JSON with structured insights.`,
                 ar: 'قارن هذه التجربة مع تجارب مماثلة في المنصة' 
               })}
             </p>
-            <Button onClick={analyzePeers} disabled={analyzing}>
+            <Button onClick={analyzePeers} disabled={analyzing || !isAvailable}>
               <Sparkles className="h-4 w-4 mr-2" />
               {t({ en: 'Run Analysis', ar: 'تشغيل التحليل' })}
             </Button>
