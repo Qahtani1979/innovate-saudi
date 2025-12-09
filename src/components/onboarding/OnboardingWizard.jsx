@@ -234,9 +234,16 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     return value.replace(/[^\d\s-]/g, '');
   };
 
-  // Initialize form data from existing profile
+  // Initialize form data from existing profile and sync preferred language
   useEffect(() => {
     if (userProfile || user) {
+      const profileLang = userProfile?.preferred_language;
+      
+      // Sync language context with stored profile preference
+      if (profileLang && profileLang !== language) {
+        toggleLanguage();
+      }
+      
       setFormData(prev => ({
         ...prev,
         full_name_en: userProfile?.full_name_en || userProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '',
@@ -262,12 +269,14 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
         languages: userProfile?.languages || [],
         location_city: userProfile?.location_city || '',
         location_region: userProfile?.location_region || '',
-        preferred_language: userProfile?.preferred_language || language,
+        preferred_language: profileLang || language,
         mobile_number: userProfile?.mobile_number || '',
         mobile_country_code: userProfile?.mobile_country_code || '+966',
+        years_of_experience: userProfile?.years_experience || 0,
+        work_phone: userProfile?.work_phone || '',
       }));
     }
-  }, [userProfile, user, language]);
+  }, [userProfile, user]);
 
   // Auto-translate function
   const autoTranslate = async (field, sourceText, sourceLang) => {
@@ -340,7 +349,7 @@ Text to translate: ${sourceText}`,
     return 'Home';
   };
 
-  // Handle CV upload and extraction
+  // Handle CV upload and extraction with bilingual support
   const handleCVUpload = async (fileUrl) => {
     if (!fileUrl) {
       setFormData(prev => ({ ...prev, cv_url: '' }));
@@ -356,36 +365,76 @@ Text to translate: ${sourceText}`,
         json_schema: {
           type: 'object',
           properties: {
-            full_name: { type: 'string' },
-            job_title: { type: 'string' },
-            organization: { type: 'string' },
-            department: { type: 'string' },
+            // Bilingual fields
+            full_name_en: { type: 'string', description: 'Full name in English' },
+            full_name_ar: { type: 'string', description: 'Full name in Arabic if present' },
+            job_title_en: { type: 'string', description: 'Job title in English' },
+            job_title_ar: { type: 'string', description: 'Job title in Arabic if present' },
+            organization_en: { type: 'string', description: 'Organization name in English' },
+            organization_ar: { type: 'string', description: 'Organization name in Arabic if present' },
+            department_en: { type: 'string', description: 'Department in English' },
+            department_ar: { type: 'string', description: 'Department in Arabic if present' },
+            bio_en: { type: 'string', description: 'Professional summary/bio in English' },
+            bio_ar: { type: 'string', description: 'Professional summary/bio in Arabic if present' },
+            // Other fields
             years_of_experience: { type: 'number' },
             expertise_areas: { type: 'array', items: { type: 'string' } },
-            bio: { type: 'string' },
             linkedin_url: { type: 'string' },
             email: { type: 'string' },
-            phone: { type: 'string' }
+            mobile_number: { type: 'string', description: 'Mobile/phone number' },
+            education_level: { type: 'string', enum: ['high_school', 'diploma', 'bachelors', 'masters', 'phd', 'other'] },
+            degree: { type: 'string', description: 'Field of study or degree name' },
+            certifications: { type: 'array', items: { type: 'string' } },
+            languages: { type: 'array', items: { type: 'string' } },
+            location_city: { type: 'string' },
+            location_region: { type: 'string' },
+            detected_language: { type: 'string', enum: ['en', 'ar', 'mixed'], description: 'Primary language of the CV' }
           }
         }
       });
 
       if (extracted.status === 'success' && extracted.output) {
         const output = extracted.output;
-        // Determine language of extracted text (assume English for CV)
+        const isArabicCV = output.detected_language === 'ar';
+        
         setFormData(prev => ({
           ...prev,
-          full_name_en: output.full_name || prev.full_name_en,
-          job_title_en: output.job_title || prev.job_title_en,
-          organization_en: output.organization || prev.organization_en,
-          department_en: output.department || prev.department_en,
+          // Bilingual fields - use detected language appropriately
+          full_name_en: output.full_name_en || (isArabicCV ? prev.full_name_en : output.full_name_ar) || prev.full_name_en,
+          full_name_ar: output.full_name_ar || (isArabicCV ? output.full_name_en : prev.full_name_ar) || prev.full_name_ar,
+          job_title_en: output.job_title_en || prev.job_title_en,
+          job_title_ar: output.job_title_ar || prev.job_title_ar,
+          organization_en: output.organization_en || prev.organization_en,
+          organization_ar: output.organization_ar || prev.organization_ar,
+          department_en: output.department_en || prev.department_en,
+          department_ar: output.department_ar || prev.department_ar,
+          bio_en: output.bio_en || prev.bio_en,
+          bio_ar: output.bio_ar || prev.bio_ar,
+          // Other fields
           years_of_experience: output.years_of_experience || prev.years_of_experience,
           expertise_areas: output.expertise_areas?.length > 0 ? output.expertise_areas : prev.expertise_areas,
-          bio_en: output.bio || prev.bio_en,
           linkedin_url: output.linkedin_url || prev.linkedin_url,
-          work_phone: output.phone || prev.work_phone
+          mobile_number: output.mobile_number || prev.mobile_number,
+          education_level: output.education_level || prev.education_level,
+          degree: output.degree || prev.degree,
+          certifications: output.certifications?.length > 0 ? output.certifications : prev.certifications,
+          languages: output.languages?.length > 0 ? output.languages : prev.languages,
+          location_city: output.location_city || prev.location_city,
+          location_region: output.location_region || prev.location_region,
         }));
-        toast.success(t({ en: 'CV data extracted! Click translate buttons to add Arabic.', ar: 'تم استخراج بيانات السيرة! انقر على أزرار الترجمة لإضافة العربية.' }));
+        
+        const missingTranslations = [];
+        if (output.full_name_en && !output.full_name_ar) missingTranslations.push('name');
+        if (output.job_title_en && !output.job_title_ar) missingTranslations.push('job title');
+        
+        if (missingTranslations.length > 0) {
+          toast.success(t({ 
+            en: `CV data extracted! Use translate buttons to add ${isArabicCV ? 'English' : 'Arabic'} versions.`, 
+            ar: `تم استخراج البيانات! استخدم أزرار الترجمة لإضافة النسخة ${isArabicCV ? 'الإنجليزية' : 'العربية'}.` 
+          }));
+        } else {
+          toast.success(t({ en: 'CV data extracted successfully!', ar: 'تم استخراج بيانات السيرة بنجاح!' }));
+        }
       }
     } catch (error) {
       console.error('CV extraction error:', error);
@@ -395,7 +444,7 @@ Text to translate: ${sourceText}`,
     }
   };
 
-  // Handle LinkedIn URL import
+  // Handle LinkedIn URL import with bilingual support
   const handleLinkedInImport = async () => {
     if (!formData.linkedin_url) {
       toast.error(t({ en: 'Please enter your LinkedIn profile URL', ar: 'يرجى إدخال رابط ملفك الشخصي على LinkedIn' }));
@@ -405,23 +454,28 @@ Text to translate: ${sourceText}`,
     setIsExtractingLinkedIn(true);
 
     try {
-      // Use AI to suggest profile based on LinkedIn URL pattern
+      // Use AI to suggest profile based on LinkedIn URL pattern with bilingual output
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Based on this LinkedIn profile URL: ${formData.linkedin_url}
-        
-Extract or infer the following information. If the URL contains a username or name pattern, try to suggest professional details:
 
-1. Likely professional title/role
-2. Likely industry or expertise areas
-3. Suggested bio for a municipal innovation platform
+Extract or infer the following information. If the URL contains a username or name pattern, try to suggest professional details.
+IMPORTANT: Provide all text fields in BOTH English AND Arabic.
 
-Return a JSON with these fields.`,
+Return a JSON with:
+1. Likely name (if inferable from URL) in both languages
+2. Likely professional title/role in both English and Arabic
+3. Likely industry or expertise areas
+4. Suggested bio for a Saudi municipal innovation platform in both English and Arabic`,
         response_json_schema: {
           type: 'object',
           properties: {
-            likely_title: { type: 'string' },
+            full_name_en: { type: 'string', description: 'Inferred name in English if visible in URL' },
+            full_name_ar: { type: 'string', description: 'Inferred name in Arabic if visible in URL' },
+            job_title_en: { type: 'string', description: 'Likely job title in English' },
+            job_title_ar: { type: 'string', description: 'Likely job title in Arabic' },
             expertise_areas: { type: 'array', items: { type: 'string' } },
-            suggested_bio: { type: 'string' }
+            bio_en: { type: 'string', description: 'Suggested professional bio in English' },
+            bio_ar: { type: 'string', description: 'Suggested professional bio in Arabic' }
           }
         }
       });
@@ -429,13 +483,17 @@ Return a JSON with these fields.`,
       if (result) {
         setFormData(prev => ({
           ...prev,
-          job_title_en: result.likely_title || prev.job_title_en,
+          full_name_en: result.full_name_en || prev.full_name_en,
+          full_name_ar: result.full_name_ar || prev.full_name_ar,
+          job_title_en: result.job_title_en || prev.job_title_en,
+          job_title_ar: result.job_title_ar || prev.job_title_ar,
           expertise_areas: result.expertise_areas?.length > 0 
             ? [...new Set([...prev.expertise_areas, ...result.expertise_areas])].slice(0, 5)
             : prev.expertise_areas,
-          bio_en: result.suggested_bio || prev.bio_en
+          bio_en: result.bio_en || prev.bio_en,
+          bio_ar: result.bio_ar || prev.bio_ar
         }));
-        toast.success(t({ en: 'LinkedIn profile analyzed!', ar: 'تم تحليل ملف LinkedIn!' }));
+        toast.success(t({ en: 'LinkedIn profile analyzed! Review and adjust the suggestions.', ar: 'تم تحليل ملف LinkedIn! راجع وعدّل الاقتراحات.' }));
       }
     } catch (error) {
       console.error('LinkedIn import error:', error);
@@ -445,9 +503,13 @@ Return a JSON with these fields.`,
     }
   };
 
-  // AI-powered profile suggestions
+  // AI-powered profile suggestions with bilingual input
   const generateAISuggestions = async () => {
-    if (!formData.full_name && !formData.job_title && !formData.bio) {
+    const hasNameInput = formData.full_name_en || formData.full_name_ar;
+    const hasTitleInput = formData.job_title_en || formData.job_title_ar;
+    const hasBioInput = formData.bio_en || formData.bio_ar;
+    
+    if (!hasNameInput && !hasTitleInput && !hasBioInput) {
       toast.error(t({ en: 'Please fill in some profile information first', ar: 'يرجى ملء بعض معلومات الملف الشخصي أولاً' }));
       return;
     }
@@ -458,21 +520,30 @@ Return a JSON with these fields.`,
         prompt: `Analyze this user profile and provide personalized suggestions to improve their Saudi Innovates platform experience. PROVIDE ALL TEXT IN BOTH ENGLISH AND ARABIC.
 
 User Profile:
-- Name: ${formData.full_name || 'Not provided'}
-- Job Title: ${formData.job_title || 'Not provided'}
-- Organization: ${formData.organization || 'Not provided'}
-- Department: ${formData.department || 'Not provided'}
-- Bio: ${formData.bio || 'Not provided'}
+- Name (EN): ${formData.full_name_en || 'Not provided'}
+- Name (AR): ${formData.full_name_ar || 'Not provided'}
+- Job Title (EN): ${formData.job_title_en || 'Not provided'}
+- Job Title (AR): ${formData.job_title_ar || 'Not provided'}
+- Organization (EN): ${formData.organization_en || 'Not provided'}
+- Organization (AR): ${formData.organization_ar || 'Not provided'}
+- Department (EN): ${formData.department_en || 'Not provided'}
+- Department (AR): ${formData.department_ar || 'Not provided'}
+- Bio (EN): ${formData.bio_en || 'Not provided'}
+- Bio (AR): ${formData.bio_ar || 'Not provided'}
 - Years of Experience: ${formData.years_of_experience || 'Not provided'}
+- Education: ${formData.education_level || 'Not provided'} - ${formData.degree || 'Not provided'}
+- Location: ${formData.location_city || ''} ${formData.location_region || ''}
 - LinkedIn: ${formData.linkedin_url || 'Not provided'}
 - Has CV: ${formData.cv_url ? 'Yes' : 'No'}
 - Current Expertise: ${formData.expertise_areas?.join(', ') || 'Not provided'}
+- Languages: ${formData.languages?.join(', ') || 'Not provided'}
+- Preferred Language: ${formData.preferred_language}
 
 Based on this information:
-1. Suggest an improved bio that highlights their expertise (keep it concise, 2-3 sentences)
+1. Suggest an improved bio that highlights their expertise (keep it concise, 2-3 sentences) in BOTH English and Arabic
 2. Recommend the most suitable persona/role for this user
 3. Suggest relevant expertise areas from: Urban Planning, Smart City, Sustainability, Transportation, Public Services, AI & Technology, Energy, Healthcare, Education, Environment
-4. Provide personalized tips for getting started on the platform`,
+4. Provide personalized tips for getting started on the platform in BOTH languages`,
         response_json_schema: {
           type: 'object',
           properties: {
