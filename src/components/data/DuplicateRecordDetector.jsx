@@ -5,20 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Copy, Sparkles, Loader2, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function DuplicateRecordDetector({ entityType }) {
   const { language, t } = useLanguage();
-  const [scanning, setScanning] = useState(false);
   const [duplicates, setDuplicates] = useState([]);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const scanForDuplicates = async () => {
-    setScanning(true);
-    try {
-      const entities = await base44.entities[entityType].list();
-      
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Detect duplicate or highly similar records:
+    const entities = await base44.entities[entityType].list();
+    
+    const response = await invokeAI({
+      prompt: `Detect duplicate or highly similar records:
 
 RECORDS: ${entities.slice(0, 50).map(e => 
   `ID: ${e.id}, Title: ${e.title_en || e.name_en || e.title}, Code: ${e.code || 'N/A'}`
@@ -29,36 +32,31 @@ Identify:
 2. Near duplicates (>85% similar)
 3. Reason for similarity
 4. Recommendation (merge, keep both, delete)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            duplicate_groups: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  record_ids: { type: "array", items: { type: "string" } },
-                  similarity: { type: "number" },
-                  reason: { type: "string" },
-                  recommendation: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          duplicate_groups: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                record_ids: { type: "array", items: { type: "string" } },
+                similarity: { type: "number" },
+                reason: { type: "string" },
+                recommendation: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      const enrichedDuplicates = response.duplicate_groups.map(group => ({
+    if (response.success && response.data?.duplicate_groups) {
+      const enrichedDuplicates = response.data.duplicate_groups.map(group => ({
         ...group,
         records: group.record_ids.map(id => entities.find(e => e.id === id)).filter(Boolean)
       }));
-
       setDuplicates(enrichedDuplicates);
-      toast.success(t({ en: `${enrichedDuplicates.length} duplicate groups found`, ar: `${enrichedDuplicates.length} مجموعة تكرار وُجدت` }));
-    } catch (error) {
-      toast.error(t({ en: 'Scan failed', ar: 'فشل المسح' }));
-    } finally {
-      setScanning(false);
     }
   };
 
@@ -70,8 +68,8 @@ Identify:
             <Copy className="h-5 w-5 text-orange-600" />
             {t({ en: 'Duplicate Detector', ar: 'كاشف التكرار' })}
           </CardTitle>
-          <Button onClick={scanForDuplicates} disabled={scanning} size="sm" className="bg-orange-600">
-            {scanning ? (
+          <Button onClick={scanForDuplicates} disabled={isLoading || !isAvailable} size="sm" className="bg-orange-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -81,7 +79,9 @@ Identify:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!duplicates.length && !scanning && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!duplicates.length && !isLoading && (
           <div className="text-center py-8">
             <Copy className="h-12 w-12 text-orange-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

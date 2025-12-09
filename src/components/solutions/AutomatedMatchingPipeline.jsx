@@ -2,25 +2,29 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Zap, Sparkles, Loader2, Send } from 'lucide-react';
+import { Zap, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AutomatedMatchingPipeline() {
   const { language, isRTL, t } = useLanguage();
-  const [running, setRunning] = useState(false);
   const [results, setResults] = useState(null);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const runWeeklyMatching = async () => {
-    setRunning(true);
     try {
       const [challenges, solutions] = await Promise.all([
         base44.entities.Challenge.filter({ status: 'approved' }),
         base44.entities.Solution.filter({ is_published: true })
       ]);
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Match ${challenges.length} approved challenges with ${solutions.length} solutions:
 
 CHALLENGES (sample):
@@ -44,25 +48,24 @@ For each challenge, identify top 3 solution matches with:
         }
       });
 
-      // Create sample matches
-      const matchesToCreate = challenges.slice(0, 5).flatMap(c => 
-        solutions.slice(0, 2).map(s => ({
-          challenge_id: c.id,
-          solution_id: s.id,
-          match_score: Math.floor(Math.random() * 30) + 70,
-          match_rationale: `AI matched based on sector alignment and solution maturity`,
-          status: 'pending'
-        }))
-      );
+      if (response.success) {
+        // Create sample matches
+        const matchesToCreate = challenges.slice(0, 5).flatMap(c => 
+          solutions.slice(0, 2).map(s => ({
+            challenge_id: c.id,
+            solution_id: s.id,
+            match_score: Math.floor(Math.random() * 30) + 70,
+            match_rationale: `AI matched based on sector alignment and solution maturity`,
+            status: 'pending'
+          }))
+        );
 
-      await base44.entities.ChallengeSolutionMatch.bulkCreate(matchesToCreate);
-
-      setResults(response);
-      toast.success(t({ en: 'Weekly matching complete', ar: 'اكتملت المطابقة الأسبوعية' }));
+        await base44.entities.ChallengeSolutionMatch.bulkCreate(matchesToCreate);
+        setResults(response.data);
+        toast.success(t({ en: 'Weekly matching complete', ar: 'اكتملت المطابقة الأسبوعية' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
-    } finally {
-      setRunning(false);
     }
   };
 
@@ -74,8 +77,8 @@ For each challenge, identify top 3 solution matches with:
             <Zap className="h-5 w-5 text-blue-600" />
             {t({ en: 'Automated Weekly Matching', ar: 'المطابقة الأسبوعية التلقائية' })}
           </CardTitle>
-          <Button onClick={runWeeklyMatching} disabled={running} size="sm" className="bg-blue-600">
-            {running ? (
+          <Button onClick={runWeeklyMatching} disabled={isLoading || !isAvailable} size="sm" className="bg-blue-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -85,7 +88,9 @@ For each challenge, identify top 3 solution matches with:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!results && !running && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!results && !isLoading && (
           <div className="text-center py-8">
             <Zap className="h-12 w-12 text-blue-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

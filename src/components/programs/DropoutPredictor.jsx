@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Sparkles, Loader2, Send } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function DropoutPredictor({ programId, participants }) {
   const { language, isRTL, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [predictions, setPredictions] = useState([]);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const analyzeDropoutRisk = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Predict dropout risk for program participants:
+    const response = await invokeAI({
+      prompt: `Predict dropout risk for program participants:
 
 PROGRAM: Accelerator
 PARTICIPANTS: ${participants.length}
@@ -28,32 +30,28 @@ For each at-risk participant, provide:
 1. Dropout probability (0-100%)
 2. Risk factors
 3. Intervention recommendations`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            at_risk_count: { type: "number" },
-            predictions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  participant: { type: "string" },
-                  dropout_probability: { type: "number" },
-                  risk_factors: { type: "array", items: { type: "string" } },
-                  interventions: { type: "array", items: { type: "string" } }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          at_risk_count: { type: "number" },
+          predictions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                participant: { type: "string" },
+                dropout_probability: { type: "number" },
+                risk_factors: { type: "array", items: { type: "string" } },
+                interventions: { type: "array", items: { type: "string" } }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setPredictions(response.predictions || []);
-      toast.success(t({ en: `${response.at_risk_count} at-risk participants identified`, ar: `تم تحديد ${response.at_risk_count} مشاركين في خطر` }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
+    if (response.success && response.data?.predictions) {
+      setPredictions(response.data.predictions);
     }
   };
 
@@ -65,8 +63,8 @@ For each at-risk participant, provide:
             <AlertTriangle className="h-5 w-5 text-red-600" />
             {t({ en: 'Dropout Risk Predictor', ar: 'متنبئ مخاطر الانسحاب' })}
           </CardTitle>
-          <Button onClick={analyzeDropoutRisk} disabled={analyzing} size="sm" className="bg-red-600">
-            {analyzing ? (
+          <Button onClick={analyzeDropoutRisk} disabled={isLoading || !isAvailable} size="sm" className="bg-red-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -76,7 +74,9 @@ For each at-risk participant, provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!predictions.length && !analyzing && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!predictions.length && !isLoading && (
           <div className="text-center py-8">
             <AlertTriangle className="h-12 w-12 text-red-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

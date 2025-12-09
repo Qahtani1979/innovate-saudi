@@ -4,25 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Network, Users, Target, TrendingUp } from 'lucide-react';
+import { Sparkles, Network, Users, Target, TrendingUp, Loader2 } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AINetworkAnalysis({ organization }) {
   const { t, isRTL } = useLanguage();
   const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const generateAnalysis = async () => {
-    setLoading(true);
-    try {
-      const [orgs, solutions, pilots, rdProjects] = await Promise.all([
-        base44.entities.Organization.list(),
-        base44.entities.Solution.list().then(all => all.filter(s => s.provider_id === organization.id)),
-        base44.entities.Pilot.list(),
-        base44.entities.RDProject.list()
-      ]);
+    const [orgs, solutions, pilots, rdProjects] = await Promise.all([
+      base44.entities.Organization.list(),
+      base44.entities.Solution.list().then(all => all.filter(s => s.provider_id === organization.id)),
+      base44.entities.Pilot.list(),
+      base44.entities.RDProject.list()
+    ]);
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the network position and collaboration opportunities for this organization:
+    const result = await invokeAI({
+      prompt: `Analyze the network position and collaboration opportunities for this organization:
 
 Organization: ${organization.name_en}
 Type: ${organization.org_type}
@@ -40,34 +44,32 @@ Provide:
 3. Collaboration gaps
 4. Strategic positioning assessment
 5. Growth recommendations`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            centrality_score: { type: 'number' },
-            network_tier: { type: 'string' },
-            recommended_partners: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  organization_type: { type: 'string' },
-                  rationale: { type: 'string' },
-                  synergy_score: { type: 'number' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          centrality_score: { type: 'number' },
+          network_tier: { type: 'string' },
+          recommended_partners: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                organization_type: { type: 'string' },
+                rationale: { type: 'string' },
+                synergy_score: { type: 'number' }
               }
-            },
-            collaboration_gaps: { type: 'array', items: { type: 'string' } },
-            strategic_position: { type: 'string' },
-            growth_recommendations: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          collaboration_gaps: { type: 'array', items: { type: 'string' } },
+          strategic_position: { type: 'string' },
+          growth_recommendations: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setAnalysis(result);
-    } catch (error) {
-      console.error('AI analysis failed:', error);
+    if (result.success) {
+      setAnalysis(result.data);
     }
-    setLoading(false);
   };
 
   return (
@@ -79,12 +81,14 @@ Provide:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {!analysis && (
           <div className="text-center py-8">
-            <Button onClick={generateAnalysis} disabled={loading} className="gap-2">
-              {loading ? (
+            <Button onClick={generateAnalysis} disabled={isLoading || !isAvailable} className="gap-2">
+              {isLoading ? (
                 <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   {t({ en: 'AI Analyzing Network...', ar: 'الذكاء يحلل الشبكة...' })}
                 </>
               ) : (

@@ -6,12 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Sparkles, TrendingDown, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function StartupChurnPredictor({ startupId }) {
   const { t } = useLanguage();
-  const [predicting, setPredicting] = useState(false);
   const [prediction, setPrediction] = useState(null);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const { data: startup } = useQuery({
     queryKey: ['startup-churn', startupId],
@@ -43,10 +48,8 @@ export default function StartupChurnPredictor({ startupId }) {
   });
 
   const runPrediction = async () => {
-    setPredicting(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Predict churn risk for this startup on municipal innovation platform:
+    const result = await invokeAI({
+      prompt: `Predict churn risk for this startup on municipal innovation platform:
 
 STARTUP: ${startup?.name_en}
 DAYS ACTIVE: ${startup?.created_date ? Math.floor((new Date() - new Date(startup.created_date)) / (1000*60*60*24)) : 'N/A'}
@@ -64,22 +67,19 @@ Analyze churn risk factors:
 5. Unverified status
 
 Return: churn_risk (low/medium/high), churn_probability (0-100), risk_factors, retention_recommendations`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            churn_risk: { type: "string" },
-            churn_probability: { type: "number" },
-            risk_factors: { type: "array", items: { type: "string" } },
-            retention_recommendations: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          churn_risk: { type: "string" },
+          churn_probability: { type: "number" },
+          risk_factors: { type: "array", items: { type: "string" } },
+          retention_recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setPrediction(result);
-    } catch (error) {
-      toast.error(t({ en: 'Prediction failed', ar: 'فشل التنبؤ' }));
-    } finally {
-      setPredicting(false);
+    if (result.success) {
+      setPrediction(result.data);
     }
   };
 
@@ -92,9 +92,11 @@ Return: churn_risk (low/medium/high), churn_probability (0-100), risk_factors, r
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {!prediction && (
-          <Button onClick={runPrediction} disabled={predicting} className="w-full">
-            {predicting ? (
+          <Button onClick={runPrediction} disabled={isLoading || !isAvailable} className="w-full">
+            {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
@@ -158,7 +160,7 @@ Return: churn_risk (low/medium/high), churn_probability (0-100), risk_factors, r
               </div>
             )}
 
-            <Button onClick={runPrediction} variant="outline" className="w-full">
+            <Button onClick={runPrediction} variant="outline" className="w-full" disabled={isLoading || !isAvailable}>
               {t({ en: 'Re-analyze', ar: 'إعادة التحليل' })}
             </Button>
           </div>

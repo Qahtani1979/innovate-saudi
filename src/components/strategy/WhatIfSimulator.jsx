@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Zap, Play, Save, RefreshCw } from 'lucide-react';
+import { Zap, Play, RefreshCw, Loader2 } from 'lucide-react';
 import { Slider } from "@/components/ui/slider";
-import { base44 } from '@/api/base44Client';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function WhatIfSimulator({ currentState }) {
   const { language, isRTL, t } = useLanguage();
@@ -17,13 +17,15 @@ export default function WhatIfSimulator({ currentState }) {
     urban: 25
   });
   const [predictions, setPredictions] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const runSimulation = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Predict KPI impacts of this budget reallocation:
+    const result = await invokeAI({
+      prompt: `Predict KPI impacts of this budget reallocation:
 
 Current: Transport 30%, Environment 20%, Digital 25%, Urban 25%
 Proposed: ${JSON.stringify(budgetAllocation)}
@@ -35,31 +37,28 @@ Predict changes to:
 - R&D to pilot conversion
 
 Provide specific percentage changes`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            kpi_changes: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  kpi_en: { type: 'string' },
-                  kpi_ar: { type: 'string' },
-                  current: { type: 'number' },
-                  predicted: { type: 'number' },
-                  change_percent: { type: 'number' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          kpi_changes: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                kpi_en: { type: 'string' },
+                kpi_ar: { type: 'string' },
+                current: { type: 'number' },
+                predicted: { type: 'number' },
+                change_percent: { type: 'number' }
               }
             }
           }
         }
-      });
-      setPredictions(result.kpi_changes);
-      toast.success(t({ en: 'Simulation complete', ar: 'اكتملت المحاكاة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Simulation failed', ar: 'فشلت المحاكاة' }));
-    } finally {
-      setLoading(false);
+      }
+    });
+
+    if (result.success && result.data?.kpi_changes) {
+      setPredictions(result.data.kpi_changes);
     }
   };
 
@@ -77,6 +76,8 @@ Provide specific percentage changes`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="space-y-4">
           {Object.keys(budgetAllocation).map(sector => (
             <div key={sector}>
@@ -95,8 +96,8 @@ Provide specific percentage changes`,
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={runSimulation} disabled={loading} className="flex-1 bg-purple-600">
-            <Play className="h-4 w-4 mr-2" />
+          <Button onClick={runSimulation} disabled={isLoading || !isAvailable} className="flex-1 bg-purple-600">
+            {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
             {t({ en: 'Run Simulation', ar: 'تشغيل المحاكاة' })}
           </Button>
           <Button onClick={reset} variant="outline">
