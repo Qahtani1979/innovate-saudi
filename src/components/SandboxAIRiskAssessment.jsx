@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Sparkles, AlertTriangle, CheckCircle2, TrendingUp, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SandboxAIRiskAssessment({ application, sandbox }) {
   const { language, isRTL, t } = useLanguage();
   const [assessment, setAssessment] = useState(null);
+  const { invokeAI, status, isLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const assessMutation = useMutation({
-    mutationFn: async () => {
-      const prompt = `Perform comprehensive risk assessment for this sandbox application:
+  const runAssessment = async () => {
+    if (!isAvailable) return;
+    
+    const prompt = `Perform comprehensive risk assessment for this sandbox application:
 
 Sandbox: ${sandbox.name_en} (${sandbox.domain})
 Project: ${application.project_title}
@@ -33,56 +36,54 @@ Analyze:
 
 Provide JSON with risk scores, mitigation strategies, and approval recommendation.`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            overall_risk_score: { type: "number", description: "0-100" },
-            risk_level: { type: "string", enum: ["low", "medium", "high", "critical"] },
-            confidence: { type: "string", enum: ["low", "medium", "high"] },
-            risk_breakdown: {
-              type: "object",
-              properties: {
-                safety_risk: { type: "number" },
-                compliance_risk: { type: "number" },
-                technical_risk: { type: "number" },
-                reputational_risk: { type: "number" },
-                financial_risk: { type: "number" }
-              }
-            },
-            key_risks: {
-              type: "array",
-              items: { type: "string" }
-            },
-            mitigation_strategies: {
-              type: "array",
-              items: { type: "string" }
-            },
-            recommendation: {
-              type: "string",
-              enum: ["approve", "conditional_approve", "reject", "request_more_info"]
-            },
-            recommendation_rationale: { type: "string" },
-            required_conditions: {
-              type: "array",
-              items: { type: "string" }
-            },
-            monitoring_requirements: {
-              type: "array",
-              items: { type: "string" }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          overall_risk_score: { type: "number", description: "0-100" },
+          risk_level: { type: "string", enum: ["low", "medium", "high", "critical"] },
+          confidence: { type: "string", enum: ["low", "medium", "high"] },
+          risk_breakdown: {
+            type: "object",
+            properties: {
+              safety_risk: { type: "number" },
+              compliance_risk: { type: "number" },
+              technical_risk: { type: "number" },
+              reputational_risk: { type: "number" },
+              financial_risk: { type: "number" }
             }
+          },
+          key_risks: {
+            type: "array",
+            items: { type: "string" }
+          },
+          mitigation_strategies: {
+            type: "array",
+            items: { type: "string" }
+          },
+          recommendation: {
+            type: "string",
+            enum: ["approve", "conditional_approve", "reject", "request_more_info"]
+          },
+          recommendation_rationale: { type: "string" },
+          required_conditions: {
+            type: "array",
+            items: { type: "string" }
+          },
+          monitoring_requirements: {
+            type: "array",
+            items: { type: "string" }
           }
         }
-      });
+      }
+    });
 
-      return response;
-    },
-    onSuccess: (data) => {
-      setAssessment(data);
+    if (response.success && response.data) {
+      setAssessment(response.data);
       toast.success(t({ en: 'Risk assessment completed', ar: 'اكتمل تقييم المخاطر' }));
     }
-  });
+  };
 
   const riskLevelColors = {
     low: 'bg-green-100 text-green-700 border-green-300',
@@ -107,14 +108,16 @@ Provide JSON with risk scores, mitigation strategies, and approval recommendatio
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         {!assessment ? (
           <div className="text-center py-6">
             <Button
-              onClick={() => assessMutation.mutate()}
-              disabled={assessMutation.isPending}
+              onClick={runAssessment}
+              disabled={isLoading || !isAvailable}
               className="bg-gradient-to-r from-purple-600 to-blue-600"
             >
-              {assessMutation.isPending ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}

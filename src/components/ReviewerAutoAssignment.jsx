@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Sparkles, Users, Loader2, CheckCircle2, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ReviewerAutoAssignment({ rdCall, onClose }) {
   const { t, isRTL } = useLanguage();
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [assignments, setAssignments] = useState(null);
   const queryClient = useQueryClient();
 
@@ -46,9 +48,9 @@ export default function ReviewerAutoAssignment({ rdCall, onClose }) {
   });
 
   const handleAutoAssign = async () => {
-    setLoading(true);
-    try {
-      const prompt = `You are an expert R&D proposal reviewer assignment system for Saudi municipal innovation.
+    if (!isAvailable) return;
+    
+    const prompt = `You are an expert R&D proposal reviewer assignment system for Saudi municipal innovation.
 
 R&D Call: ${rdCall.title_en}
 Focus Areas: ${rdCall.focus_areas?.join(', ') || 'N/A'}
@@ -76,33 +78,34 @@ ASSIGNMENT RULES:
 
 Return assignments with reasoning.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            assignments: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  proposal_code: { type: 'string' },
-                  proposal_title: { type: 'string' },
-                  assigned_reviewers: {
-                    type: 'array',
-                    items: { type: 'string' }
-                  },
-                  reasoning: { type: 'string' }
-                }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          assignments: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                proposal_code: { type: 'string' },
+                proposal_title: { type: 'string' },
+                assigned_reviewers: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                reasoning: { type: 'string' }
               }
-            },
-            workload_balance: { type: 'object' }
-          }
+            }
+          },
+          workload_balance: { type: 'object' }
         }
-      });
+      }
+    });
 
+    if (result.success && result.data) {
       // Map codes back to IDs
-      const mappedAssignments = result.assignments.map(a => {
+      const mappedAssignments = result.data.assignments.map(a => {
         const proposal = proposals.find(p => p.code === a.proposal_code || p.title_en === a.proposal_title);
         return {
           proposalId: proposal?.id,
@@ -112,12 +115,8 @@ Return assignments with reasoning.`;
         };
       }).filter(a => a.proposalId);
 
-      setAssignments({ assignments: mappedAssignments, workload: result.workload_balance });
+      setAssignments({ assignments: mappedAssignments, workload: result.data.workload_balance });
       toast.success(t({ en: 'AI assignments generated', ar: 'تم إنشاء التعيينات الذكية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate assignments', ar: 'فشل إنشاء التعيينات' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -133,6 +132,8 @@ Return assignments with reasoning.`;
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-slate-700">
             {t({
@@ -145,7 +146,7 @@ Return assignments with reasoning.`;
         {!assignments ? (
           <Button
             onClick={handleAutoAssign}
-            disabled={loading || proposals.length === 0}
+            disabled={loading || proposals.length === 0 || !isAvailable}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
             {loading ? (

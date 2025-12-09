@@ -8,11 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Mic, ChevronRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIChallengeIntakeWizard({ onSubmit, onCancel }) {
   const { language, isRTL, t } = useLanguage();
   const [step, setStep] = useState(1);
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [challengeData, setChallengeData] = useState({
     description: '',
     sector: '',
@@ -22,12 +24,10 @@ export default function AIChallengeIntakeWizard({ onSubmit, onCancel }) {
   });
 
   const analyzeDescription = async () => {
-    if (!challengeData.description) return;
+    if (!challengeData.description || !isAvailable) return;
     
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this municipal challenge description and extract structured information:
+    const response = await invokeAI({
+      prompt: `Analyze this municipal challenge description and extract structured information:
 
 "${challengeData.description}"
 
@@ -37,42 +37,39 @@ Extract:
 3. 2-4 potential root causes
 4. 3-5 suggested KPIs for measuring success
 5. 2-3 intelligent follow-up questions to gather more context`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            sector: { type: "string" },
-            keywords: { type: "array", items: { type: "string" } },
-            root_causes: { type: "array", items: { type: "string" } },
-            suggested_kpis: { 
-              type: "array", 
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  baseline: { type: "string" },
-                  target: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          sector: { type: "string" },
+          keywords: { type: "array", items: { type: "string" } },
+          root_causes: { type: "array", items: { type: "string" } },
+          suggested_kpis: { 
+            type: "array", 
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                baseline: { type: "string" },
+                target: { type: "string" }
               }
-            },
-            follow_up_questions: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          follow_up_questions: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
+    if (response.success && response.data) {
       setChallengeData({
         ...challengeData,
-        sector: response.sector,
-        keywords: response.keywords,
-        root_causes: response.root_causes,
-        suggested_kpis: response.suggested_kpis,
-        follow_up_questions: response.follow_up_questions
+        sector: response.data.sector,
+        keywords: response.data.keywords,
+        root_causes: response.data.root_causes,
+        suggested_kpis: response.data.suggested_kpis,
+        follow_up_questions: response.data.follow_up_questions
       });
       setStep(2);
       toast.success(t({ en: 'AI analysis complete', ar: 'اكتمل تحليل الذكاء الاصطناعي' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -116,6 +113,8 @@ Extract:
       </CardHeader>
 
       <CardContent className="pt-6 space-y-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         {step === 1 && (
           <div className="space-y-4">
             <div>
@@ -160,7 +159,7 @@ Extract:
 
             <Button 
               onClick={analyzeDescription} 
-              disabled={!challengeData.description || analyzing}
+              disabled={!challengeData.description || analyzing || !isAvailable}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600"
             >
               {analyzing ? (

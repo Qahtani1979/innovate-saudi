@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, CheckCircle2, AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 /**
  * RequesterAI - AI Assistant for Requesters
@@ -18,13 +20,13 @@ export default function RequesterAI({
   onSelfCheckUpdate 
 }) {
   const { t, isRTL } = useLanguage();
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [assessment, setAssessment] = useState(null);
 
   const runAIAssessment = async () => {
-    setLoading(true);
-    try {
-      const prompt = `
+    if (!isAvailable) return;
+    
+    const prompt = `
 🚨🚨🚨 CRITICAL BILINGUAL REQUIREMENT 🚨🚨🚨
 
 You MUST return ALL text in BILINGUAL format: {"en": "English text", "ar": "النص العربي"}
@@ -98,78 +100,75 @@ NEVER return plain strings. ALWAYS use {"en": "...", "ar": "..."} objects.
 Write professional Arabic for Saudi government context.
       `;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            readiness_score: { type: 'number' },
-            checklist_status: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  item: { type: 'string' },
-                  status: { type: 'string', enum: ['complete', 'incomplete', 'partial'] },
-                  ai_verified: { type: 'boolean' },
-                  notes: { 
-                    type: 'object',
-                    properties: {
-                      en: { type: 'string' },
-                      ar: { type: 'string' }
-                    }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          readiness_score: { type: 'number' },
+          checklist_status: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                item: { type: 'string' },
+                status: { type: 'string', enum: ['complete', 'incomplete', 'partial'] },
+                ai_verified: { type: 'boolean' },
+                notes: { 
+                  type: 'object',
+                  properties: {
+                    en: { type: 'string' },
+                    ar: { type: 'string' }
                   }
                 }
               }
-            },
-            issues: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            recommendations: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            overall_assessment: { 
+            }
+          },
+          issues: { 
+            type: 'array', 
+            items: { 
               type: 'object',
               properties: {
                 en: { type: 'string' },
                 ar: { type: 'string' }
               }
             }
+          },
+          recommendations: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' }
+              }
+            }
+          },
+          overall_assessment: { 
+            type: 'object',
+            properties: {
+              en: { type: 'string' },
+              ar: { type: 'string' }
+            }
           }
         }
-      });
+      }
+    });
 
-      setAssessment(response);
+    if (response.success && response.data) {
+      setAssessment(response.data);
       
       // Update parent with AI assessment
       if (onSelfCheckUpdate) {
         onSelfCheckUpdate({
           ai_assessment: {
-            readiness_score: response.readiness_score,
-            issues: response.issues,
-            recommendations: response.recommendations
+            readiness_score: response.data.readiness_score,
+            issues: response.data.issues,
+            recommendations: response.data.recommendations
           },
-          checklist_items: response.checklist_status
+          checklist_items: response.data.checklist_status
         });
       }
-    } catch (error) {
-      console.error('AI assessment error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -186,7 +185,7 @@ Write professional Arabic for Saudi government context.
           <Button
             size="sm"
             onClick={runAIAssessment}
-            disabled={loading}
+            disabled={loading || !isAvailable}
             className="bg-purple-600 hover:bg-purple-700"
           >
             {loading ? (
@@ -204,6 +203,8 @@ Write professional Arabic for Saudi government context.
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         {!assessment && !loading && (
           <p className="text-sm text-slate-600 text-center py-4">
             {t({ 
