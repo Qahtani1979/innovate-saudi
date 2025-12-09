@@ -33,6 +33,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function DataManagementHub() {
   const { language, isRTL, t } = useLanguage();
@@ -41,7 +43,7 @@ function DataManagementHub() {
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({});
-  const [enriching, setEnriching] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: enriching, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   // Fetch all data
   const { data: regions = [] } = useQuery({
@@ -94,10 +96,8 @@ function DataManagementHub() {
       return;
     }
 
-    setEnriching(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Provide comprehensive data for Saudi Arabian region: ${formData.name_en}
+    const result = await invokeAI({
+      prompt: `Provide comprehensive data for Saudi Arabian region: ${formData.name_en}
 
 Using web search, provide:
 1. Official Arabic name (proper transliteration)
@@ -108,35 +108,31 @@ Using web search, provide:
 6. Area in square kilometers
 7. Geographic center coordinates (latitude, longitude)
 8. Governor name (if publicly available)`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_ar: { type: 'string' },
-            code: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            region_type: { type: 'string' },
-            population: { type: 'number' },
-            area_sqkm: { type: 'number' },
-            coordinates: {
-              type: 'object',
-              properties: {
-                latitude: { type: 'number' },
-                longitude: { type: 'number' }
-              }
-            },
-            governor_name: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_ar: { type: 'string' },
+          code: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          region_type: { type: 'string' },
+          population: { type: 'number' },
+          area_sqkm: { type: 'number' },
+          coordinates: {
+            type: 'object',
+            properties: {
+              latitude: { type: 'number' },
+              longitude: { type: 'number' }
+            }
+          },
+          governor_name: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setFormData({ ...formData, ...result });
+    if (result.success) {
+      setFormData({ ...formData, ...result.data });
       toast.success(t({ en: '✅ Data enriched', ar: '✅ تم الإثراء' }));
-    } catch (error) {
-      toast.error(t({ en: 'Enrichment failed', ar: 'فشل الإثراء' }));
-    } finally {
-      setEnriching(false);
     }
   };
 
@@ -148,10 +144,8 @@ Using web search, provide:
 
     const regionName = regions.find(r => r.id === formData.region_id)?.name_en || '';
 
-    setEnriching(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Provide data for Saudi city: ${formData.name_en} in ${regionName}
+    const result = await invokeAI({
+      prompt: `Provide data for Saudi city: ${formData.name_en} in ${regionName}
 
 Using web search:
 1. Arabic name
@@ -161,40 +155,36 @@ Using web search:
 5. Mayor name
 6. Website URL
 7. Economic indicators (GDP per capita, unemployment rate, key industries)`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_ar: { type: 'string' },
-            population: { type: 'number' },
-            area_sqkm: { type: 'number' },
-            coordinates: {
-              type: 'object',
-              properties: {
-                latitude: { type: 'number' },
-                longitude: { type: 'number' }
-              }
-            },
-            mayor_name: { type: 'string' },
-            city_website: { type: 'string' },
-            economic_indicators: {
-              type: 'object',
-              properties: {
-                gdp_per_capita: { type: 'number' },
-                unemployment_rate: { type: 'number' },
-                key_industries: { type: 'array', items: { type: 'string' } }
-              }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_ar: { type: 'string' },
+          population: { type: 'number' },
+          area_sqkm: { type: 'number' },
+          coordinates: {
+            type: 'object',
+            properties: {
+              latitude: { type: 'number' },
+              longitude: { type: 'number' }
+            }
+          },
+          mayor_name: { type: 'string' },
+          city_website: { type: 'string' },
+          economic_indicators: {
+            type: 'object',
+            properties: {
+              gdp_per_capita: { type: 'number' },
+              unemployment_rate: { type: 'number' },
+              key_industries: { type: 'array', items: { type: 'string' } }
             }
           }
         }
-      });
+      }
+    });
 
-      setFormData({ ...formData, ...result });
+    if (result.success) {
+      setFormData({ ...formData, ...result.data });
       toast.success(t({ en: '✅ Data enriched', ar: '✅ تم الإثراء' }));
-    } catch (error) {
-      toast.error(t({ en: 'Enrichment failed', ar: 'فشل الإثراء' }));
-    } finally {
-      setEnriching(false);
     }
   };
 
