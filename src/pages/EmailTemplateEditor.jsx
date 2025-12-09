@@ -8,15 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../components/LanguageContext';
 import { Mail, Eye, Save, Sparkles, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function EmailTemplateEditor() {
   const { language, isRTL, t } = useLanguage();
   const [selectedTemplate, setSelectedTemplate] = useState('welcome');
   const [showPreview, setShowPreview] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [template, setTemplate] = useState({
     subject_en: 'Welcome to Saudi Innovates',
     subject_ar: 'مرحباً في الابتكار السعودي',
@@ -33,32 +34,27 @@ function EmailTemplateEditor() {
   ];
 
   const handleAIGenerate = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a professional bilingual email template for: ${selectedTemplate}
+    const result = await invokeAI({
+      prompt: `Generate a professional bilingual email template for: ${selectedTemplate}
         
 For a Saudi municipal innovation platform. Include:
 - Professional yet warm tone
 - Clear call-to-action
 - Both English and Arabic versions
 - Use variables like {{name}}, {{email}}, {{challenge_title}}, etc.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            subject_en: { type: 'string' },
-            subject_ar: { type: 'string' },
-            body_en: { type: 'string' },
-            body_ar: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          subject_en: { type: 'string' },
+          subject_ar: { type: 'string' },
+          body_en: { type: 'string' },
+          body_ar: { type: 'string' }
         }
-      });
-      setTemplate(result);
+      }
+    });
+    if (result.success) {
+      setTemplate(result.data);
       toast.success(t({ en: 'AI template generated', ar: 'تم توليد القالب الذكي' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -84,11 +80,13 @@ For a Saudi municipal innovation platform. Include:
             ))}
           </SelectContent>
         </Select>
-        <Button onClick={handleAIGenerate} disabled={aiLoading} className="bg-gradient-to-r from-purple-600 to-pink-600">
+        <Button onClick={handleAIGenerate} disabled={aiLoading || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
           {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'AI Generate', ar: 'توليد ذكي' })}
         </Button>
       </div>
+
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
 
       <div className="grid grid-cols-2 gap-6">
         <Card>

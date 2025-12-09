@@ -12,11 +12,13 @@ import {
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function CommandCenterPage() {
   const { language, isRTL, t } = useLanguage();
-  const [aiLoading, setAiLoading] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-command'],
@@ -63,10 +65,8 @@ function CommandCenterPage() {
   const expertCapacityRate = activeExperts > 0 ? Math.round((availableExperts / activeExperts) * 100) : 0;
 
   const generateAIRecommendations = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this innovation platform status and provide strategic recommendations:
+    const result = await invokeAI({
+      prompt: `Analyze this innovation platform status and provide strategic recommendations:
 
 Critical challenges: ${challenges.filter(c => c.priority === 'tier_1').length}
 High-risk pilots: ${pilots.filter(p => p.risk_level === 'high').length}
@@ -78,21 +78,18 @@ Provide:
 2. Resource allocation recommendations
 3. Risk mitigation priorities
 4. Opportunities to accelerate`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            priority_actions: { type: 'array', items: { type: 'string' } },
-            resource_recommendations: { type: 'array', items: { type: 'string' } },
-            risk_priorities: { type: 'array', items: { type: 'string' } },
-            opportunities: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          priority_actions: { type: 'array', items: { type: 'string' } },
+          resource_recommendations: { type: 'array', items: { type: 'string' } },
+          risk_priorities: { type: 'array', items: { type: 'string' } },
+          opportunities: { type: 'array', items: { type: 'string' } }
         }
-      });
-      setAiRecommendations(result);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setAiLoading(false);
+      }
+    });
+    if (result.success) {
+      setAiRecommendations(result.data);
     }
   };
 
@@ -107,11 +104,13 @@ Provide:
             {t({ en: 'Mission control for national innovation pipeline', ar: 'مركز التحكم لخط الابتكار الوطني' })}
           </p>
         </div>
-        <Button onClick={generateAIRecommendations} disabled={aiLoading} className="bg-purple-600">
+        <Button onClick={generateAIRecommendations} disabled={aiLoading || !isAvailable} className="bg-purple-600">
           {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'AI Strategy', ar: 'استراتيجية ذكية' })}
         </Button>
       </div>
+
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
 
       {/* Status Overview */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

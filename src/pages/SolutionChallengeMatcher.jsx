@@ -7,19 +7,21 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
-import { Sparkles, Loader2, Target, FileText, Send, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Loader2, Target, FileText, Send, CheckCircle2, Lightbulb } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SolutionChallengeMatcher() {
   const { language, isRTL, t } = useLanguage();
   const [selectedSolution, setSelectedSolution] = useState(null);
   const [matching, setMatching] = useState(false);
   const [matches, setMatches] = useState([]);
-  const [generatingProposal, setGeneratingProposal] = useState(null);
   const [proposalDraft, setProposalDraft] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: generatingProposal, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions-for-reverse-matching'],
@@ -87,10 +89,8 @@ function SolutionChallengeMatcher() {
   };
 
   const generateProposal = async (challenge) => {
-    setGeneratingProposal(challenge.id);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a comprehensive proposal for this solution to address this challenge.
+    const result = await invokeAI({
+      prompt: `Generate a comprehensive proposal for this solution to address this challenge.
 
 SOLUTION:
 Name: ${selectedSolution.name_en}
@@ -119,29 +119,26 @@ Generate bilingual (English + Arabic) proposal:
 7. Provider Qualifications
 
 Be persuasive and detailed.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            proposal_title_en: { type: 'string' },
-            proposal_title_ar: { type: 'string' },
-            executive_summary_en: { type: 'string' },
-            executive_summary_ar: { type: 'string' },
-            technical_approach_en: { type: 'string' },
-            implementation_plan_en: { type: 'string' },
-            expected_outcomes: { type: 'array', items: { type: 'string' } },
-            budget_breakdown: { type: 'array', items: { type: 'object' } },
-            risk_mitigation: { type: 'array', items: { type: 'string' } },
-            qualifications_summary: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          proposal_title_en: { type: 'string' },
+          proposal_title_ar: { type: 'string' },
+          executive_summary_en: { type: 'string' },
+          executive_summary_ar: { type: 'string' },
+          technical_approach_en: { type: 'string' },
+          implementation_plan_en: { type: 'string' },
+          expected_outcomes: { type: 'array', items: { type: 'string' } },
+          budget_breakdown: { type: 'array', items: { type: 'object' } },
+          risk_mitigation: { type: 'array', items: { type: 'string' } },
+          qualifications_summary: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setProposalDraft({ ...result, challenge_id: challenge.id, challenge });
+    if (result.success) {
+      setProposalDraft({ ...result.data, challenge_id: challenge.id, challenge });
       toast.success(t({ en: 'Proposal generated', ar: 'تم توليد المقترح' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGeneratingProposal(null);
     }
   };
 
@@ -170,6 +167,8 @@ Be persuasive and detailed.`,
           {t({ en: 'Find challenges your solution can address + generate proposals', ar: 'اكتشف التحديات التي يمكن لحلك معالجتها + توليد المقترحات' })}
         </p>
       </div>
+
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
 
       {/* Proposal Draft Modal */}
       {proposalDraft && (
@@ -352,10 +351,10 @@ Be persuasive and detailed.`,
                         <Button
                           size="sm"
                           onClick={() => generateProposal(challenge)}
-                          disabled={generatingProposal === challenge.id}
+                          disabled={generatingProposal || !isAvailable}
                           className="bg-purple-600"
                         >
-                          {generatingProposal === challenge.id ? (
+                          {generatingProposal ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <>
