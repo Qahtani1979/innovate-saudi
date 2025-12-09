@@ -39,10 +39,15 @@ import PolicyConflictDetector from '../components/policy/PolicyConflictDetector'
 import PolicyAdoptionMap from '../components/policy/PolicyAdoptionMap';
 import PolicyImpactMetrics from '../components/policy/PolicyImpactMetrics';
 import PolicyExecutiveSummaryGenerator from '../components/policy/PolicyExecutiveSummaryGenerator';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PolicyDetail() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showAmendmentWizard, setShowAmendmentWizard] = useState(false);
+  const [user, setUser] = useState(null);
+  
+  const { invokeAI, status: aiStatus, isLoading: isAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [showAmendmentWizard, setShowAmendmentWizard] = useState(false);
   const [user, setUser] = useState(null);
   const urlParams = new URLSearchParams(window.location.search);
@@ -95,9 +100,7 @@ export default function PolicyDetail() {
   const generateAIAnalysis = async () => {
     if (!policy) return;
     
-    setIsAnalyzing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeAI({
         prompt: `🚨 MANDATORY: ALL text must be bilingual {"en": "...", "ar": "..."}
 
 Policy: ${policy.title_en}
@@ -253,15 +256,11 @@ YOU MUST return this EXACT structure with bilingual text:
               }
             }
           }
-        }
-      });
-
-      setAiAnalysis(result);
+    });
+    
+    if (result.success && result.data) {
+      setAiAnalysis(result.data);
       toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
