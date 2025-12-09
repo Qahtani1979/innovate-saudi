@@ -5,17 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { AlertTriangle, Sparkles, TrendingDown, Loader2, Shield } from 'lucide-react';
+import { AlertTriangle, Sparkles, Loader2, Shield } from 'lucide-react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, BarChart, Bar, LineChart, Line, Legend } from 'recharts';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function RiskPortfolio() {
   const { language, isRTL, t } = useLanguage();
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, isLoading: analyzing, status, error, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -33,10 +33,8 @@ function RiskPortfolio() {
   });
 
   const analyzeRisks = async () => {
-    setAnalyzing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Perform comprehensive risk portfolio analysis for municipal innovation:
+    const result = await invokeAI({
+      prompt: `Perform comprehensive risk portfolio analysis for municipal innovation:
 
 Pilots at Risk:
 ${pilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical').map(p => 
@@ -52,61 +50,58 @@ Generate bilingual risk analysis:
 3. Mitigation recommendations (prioritized actions)
 4. Early warning indicators (signals to watch)
 5. Portfolio-level risk score and interpretation`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            risk_heatmap: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  risk_category_en: { type: 'string' },
-                  risk_category_ar: { type: 'string' },
-                  severity: { type: 'string' },
-                  affected_count: { type: 'number' },
-                  description_en: { type: 'string' },
-                  description_ar: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          risk_heatmap: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                risk_category_en: { type: 'string' },
+                risk_category_ar: { type: 'string' },
+                severity: { type: 'string' },
+                affected_count: { type: 'number' },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' }
               }
-            },
-            risk_trends: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  period: { type: 'string' },
-                  high_risk: { type: 'number' },
-                  medium_risk: { type: 'number' },
-                  low_risk: { type: 'number' }
-                }
+            }
+          },
+          risk_trends: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                period: { type: 'string' },
+                high_risk: { type: 'number' },
+                medium_risk: { type: 'number' },
+                low_risk: { type: 'number' }
               }
-            },
-            mitigation_priorities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  action_en: { type: 'string' },
-                  action_ar: { type: 'string' },
-                  urgency: { type: 'string' },
-                  impact_en: { type: 'string' },
-                  impact_ar: { type: 'string' }
-                }
+            }
+          },
+          mitigation_priorities: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                action_en: { type: 'string' },
+                action_ar: { type: 'string' },
+                urgency: { type: 'string' },
+                impact_en: { type: 'string' },
+                impact_ar: { type: 'string' }
               }
-            },
-            portfolio_risk_score: { type: 'number' },
-            risk_interpretation_en: { type: 'string' },
-            risk_interpretation_ar: { type: 'string' }
-          }
+            }
+          },
+          portfolio_risk_score: { type: 'number' },
+          risk_interpretation_en: { type: 'string' },
+          risk_interpretation_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setAiAnalysis(result);
+    if (result.success && result.data) {
+      setAiAnalysis(result.data);
       toast.success(t({ en: 'Risk analysis complete', ar: 'اكتمل تحليل المخاطر' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -160,6 +155,7 @@ Generate bilingual risk analysis:
 
       <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
         <CardContent className="pt-6">
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} className="mb-4" />
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-blue-900 mb-1 text-lg">
@@ -249,7 +245,7 @@ Generate bilingual risk analysis:
                         <p className="font-semibold text-slate-900 mb-1">
                           {language === 'ar' ? risk.risk_category_ar : risk.risk_category_en}
                         </p>
-                        <p className="text-2xl font-bold text-${color}-700 mb-2">{risk.affected_count}</p>
+                        <p className="text-2xl font-bold text-slate-700 mb-2">{risk.affected_count}</p>
                         <p className="text-xs text-slate-600" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                           {language === 'ar' ? risk.description_ar : risk.description_en}
                         </p>

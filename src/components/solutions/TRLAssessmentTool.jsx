@@ -9,13 +9,15 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Beaker, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
   const { t } = useLanguage();
-  const [assessing, setAssessing] = useState(false);
   const [assessment, setAssessment] = useState(null);
   const [evidence, setEvidence] = useState('');
   const queryClient = useQueryClient();
+  const { invokeAI, isLoading: assessing, status, error, rateLimitInfo } = useAIWithFallback();
 
   const updateSolution = useMutation({
     mutationFn: (data) => base44.entities.Solution.update(solution.id, data),
@@ -27,10 +29,8 @@ export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
   });
 
   const assessTRL = async () => {
-    setAssessing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Assess Technology Readiness Level (TRL) for this solution following NASA TRL scale (1-9).
+    const result = await invokeAI({
+      prompt: `Assess Technology Readiness Level (TRL) for this solution following NASA TRL scale (1-9).
 
 SOLUTION:
 Name: ${solution.name_en}
@@ -65,27 +65,24 @@ Provide:
 7. Detailed reasoning for assessment
 
 Be rigorous and evidence-based.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            assessed_trl: { type: 'number' },
-            confidence_score: { type: 'number' },
-            supporting_evidence: { type: 'array', items: { type: 'string' } },
-            next_steps: { type: 'array', items: { type: 'string' } },
-            trl_gaps: { type: 'array', items: { type: 'string' } },
-            timeline_to_next_level_months: { type: 'number' },
-            assessment_reasoning: { type: 'string' },
-            readiness_for_pilot: { type: 'string', enum: ['ready', 'nearly_ready', 'not_ready'] }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          assessed_trl: { type: 'number' },
+          confidence_score: { type: 'number' },
+          supporting_evidence: { type: 'array', items: { type: 'string' } },
+          next_steps: { type: 'array', items: { type: 'string' } },
+          trl_gaps: { type: 'array', items: { type: 'string' } },
+          timeline_to_next_level_months: { type: 'number' },
+          assessment_reasoning: { type: 'string' },
+          readiness_for_pilot: { type: 'string', enum: ['ready', 'nearly_ready', 'not_ready'] }
         }
-      });
+      }
+    });
 
-      setAssessment(result);
+    if (result.success && result.data) {
+      setAssessment(result.data);
       toast.success(t({ en: 'Assessment complete', ar: 'اكتمل التقييم' }));
-    } catch (error) {
-      toast.error(t({ en: 'Assessment failed', ar: 'فشل التقييم' }));
-    } finally {
-      setAssessing(false);
     }
   };
 
@@ -119,6 +116,8 @@ Be rigorous and evidence-based.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         <div>
           <label className="text-sm font-medium text-slate-700 mb-2 block">
             {t({ en: 'Additional Evidence (optional)', ar: 'أدلة إضافية' })}
