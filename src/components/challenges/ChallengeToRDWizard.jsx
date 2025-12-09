@@ -6,15 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Megaphone, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { Megaphone, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [aiGenerating, setAiGenerating] = useState(false);
   const [rdCallData, setRdCallData] = useState({
     title_en: '',
     title_ar: '',
@@ -35,11 +35,14 @@ export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
     call_type: 'applied_research'
   });
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const generateRDCall = async () => {
-    setAiGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a research program manager. Generate an R&D call from this municipal challenge:
+    const response = await invokeAI({
+      prompt: `You are a research program manager. Generate an R&D call from this municipal challenge:
 
 Challenge Title: ${challenge.title_en}
 Problem Statement: ${challenge.problem_statement_en}
@@ -57,36 +60,32 @@ Generate:
 6. Budget range estimate
 
 Make it compelling for academic researchers while addressing the municipal challenge.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            research_area_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' },
-            scope_en: { type: 'string' },
-            scope_ar: { type: 'string' },
-            expected_deliverables_en: { type: 'string' },
-            expected_deliverables_ar: { type: 'string' },
-            research_themes: { type: 'array', items: { type: 'string' } },
-            budget_range_min: { type: 'number' },
-            budget_range_max: { type: 'number' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          research_area_ar: { type: 'string' },
+          objectives_en: { type: 'string' },
+          objectives_ar: { type: 'string' },
+          scope_en: { type: 'string' },
+          scope_ar: { type: 'string' },
+          expected_deliverables_en: { type: 'string' },
+          expected_deliverables_ar: { type: 'string' },
+          research_themes: { type: 'array', items: { type: 'string' } },
+          budget_range_min: { type: 'number' },
+          budget_range_max: { type: 'number' }
         }
-      });
+      }
+    });
 
+    if (response.success) {
       setRdCallData(prev => ({
         ...prev,
-        ...result,
-        keywords: [...prev.keywords, ...result.research_themes]
+        ...response.data,
+        keywords: [...prev.keywords, ...(response.data.research_themes || [])]
       }));
-
       toast.success(t({ en: 'AI generated R&D call', ar: 'تم إنشاء دعوة البحث' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setAiGenerating(false);
     }
   };
 
@@ -94,7 +93,6 @@ Make it compelling for academic researchers while addressing the municipal chall
     mutationFn: async (data) => {
       const rdCall = await base44.entities.RDCall.create(data);
       
-      // Create relation
       await base44.entities.ChallengeRelation.create({
         challenge_id: challenge.id,
         related_entity_type: 'rd_call',
@@ -102,7 +100,6 @@ Make it compelling for academic researchers while addressing the municipal chall
         relation_role: 'informed_by'
       });
 
-      // Log activity
       await base44.entities.SystemActivity.create({
         activity_type: 'challenge_to_rd_call',
         entity_type: 'challenge',
@@ -134,6 +131,8 @@ Make it compelling for academic researchers while addressing the municipal chall
         </p>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+
         {/* Challenge Context */}
         <div className="p-4 bg-blue-50 rounded-lg">
           <p className="text-xs font-medium text-blue-900 mb-2">
@@ -149,11 +148,11 @@ Make it compelling for academic researchers while addressing the municipal chall
         {/* AI Generation */}
         <Button
           onClick={generateRDCall}
-          disabled={aiGenerating}
+          disabled={isLoading || !isAvailable}
           className="w-full bg-gradient-to-r from-purple-600 to-indigo-600"
           size="lg"
         >
-          {aiGenerating ? (
+          {isLoading ? (
             <>
               <Loader2 className="h-5 w-5 mr-2 animate-spin" />
               {t({ en: 'AI Generating R&D Call...', ar: 'جاري إنشاء دعوة البحث...' })}

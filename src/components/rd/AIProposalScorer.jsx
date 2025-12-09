@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Award, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIProposalScorer({ proposal }) {
   const { language, isRTL, t } = useLanguage();
-  const [scoring, setScoring] = useState(false);
   const [score, setScore] = useState(null);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const scoreProposal = async () => {
-    setScoring(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Score this R&D proposal:
+    const response = await invokeAI({
+      prompt: `Score this R&D proposal:
 
 TITLE: ${proposal.title_en}
 ABSTRACT: ${proposal.abstract_en}
@@ -33,43 +35,39 @@ Score (0-100) on:
 5. Budget Justification: appropriate allocation
 
 Identify weak sections and suggest improvements.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            overall_score: { type: "number" },
-            scores: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          overall_score: { type: "number" },
+          scores: {
+            type: "object",
+            properties: {
+              technical_merit: { type: "number" },
+              innovation: { type: "number" },
+              team_capability: { type: "number" },
+              feasibility: { type: "number" },
+              budget_justification: { type: "number" }
+            }
+          },
+          weak_sections: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                technical_merit: { type: "number" },
-                innovation: { type: "number" },
-                team_capability: { type: "number" },
-                feasibility: { type: "number" },
-                budget_justification: { type: "number" }
+                section: { type: "string" },
+                score: { type: "number" },
+                issue: { type: "string" },
+                suggestion: { type: "string" }
               }
-            },
-            weak_sections: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  section: { type: "string" },
-                  score: { type: "number" },
-                  issue: { type: "string" },
-                  suggestion: { type: "string" }
-                }
-              }
-            },
-            recommendation: { type: "string" }
-          }
+            }
+          },
+          recommendation: { type: "string" }
         }
-      });
+      }
+    });
 
-      setScore(response);
-      toast.success(t({ en: 'Scoring complete', ar: 'اكتمل التسجيل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Scoring failed', ar: 'فشل التسجيل' }));
-    } finally {
-      setScoring(false);
+    if (response.success) {
+      setScore(response.data);
     }
   };
 
@@ -89,8 +87,8 @@ Identify weak sections and suggest improvements.`,
             <Award className="h-5 w-5 text-indigo-600" />
             {t({ en: 'AI Quality Scorer', ar: 'مقيم الجودة الذكي' })}
           </CardTitle>
-          <Button onClick={scoreProposal} disabled={scoring} size="sm" className="bg-indigo-600">
-            {scoring ? (
+          <Button onClick={scoreProposal} disabled={isLoading || !isAvailable} size="sm" className="bg-indigo-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -100,7 +98,9 @@ Identify weak sections and suggest improvements.`,
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!score && !scoring && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!score && !isLoading && (
           <div className="text-center py-8">
             <Award className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

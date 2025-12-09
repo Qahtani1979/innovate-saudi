@@ -5,14 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { BookOpen, Sparkles, Loader2, CheckCircle, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
-import { toast } from 'sonner';
+import { BookOpen, Sparkles, Loader2, ArrowRight } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AILearningPathGenerator({ userRole, goal }) {
   const { language, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [path, setPath] = useState(null);
 
   const { data: docs = [] } = useQuery({
@@ -21,11 +19,14 @@ export default function AILearningPathGenerator({ userRole, goal }) {
     initialData: []
   });
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const generatePath = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create a learning path for:
+    const response = await invokeAI({
+      prompt: `Create a learning path for:
 User Role: ${userRole}
 Goal: ${goal}
 
@@ -38,34 +39,30 @@ Create a 5-7 step learning sequence:
 4. Key takeaways
 
 Order by dependency (basics → advanced)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            path_name: { type: "string" },
-            steps: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  step_number: { type: "number" },
-                  name: { type: "string" },
-                  description: { type: "string" },
-                  resource: { type: "string" },
-                  time_minutes: { type: "number" },
-                  key_takeaways: { type: "array", items: { type: "string" } }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          path_name: { type: "string" },
+          steps: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                step_number: { type: "number" },
+                name: { type: "string" },
+                description: { type: "string" },
+                resource: { type: "string" },
+                time_minutes: { type: "number" },
+                key_takeaways: { type: "array", items: { type: "string" } }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setPath(response);
-      toast.success(t({ en: 'Learning path created', ar: 'مسار التعلم أُنشئ' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
+    if (response.success) {
+      setPath(response.data);
     }
   };
 
@@ -78,15 +75,17 @@ Order by dependency (basics → advanced)`,
             {t({ en: 'AI Learning Path', ar: 'مسار التعلم الذكي' })}
           </CardTitle>
           {!path && (
-            <Button onClick={generatePath} disabled={generating} size="sm" className="bg-purple-600">
-              {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            <Button onClick={generatePath} disabled={isLoading || !isAvailable} size="sm" className="bg-purple-600">
+              {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'Generate Path', ar: 'توليد المسار' })}
             </Button>
           )}
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!path && !generating && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!path && !isLoading && (
           <div className="text-center py-8">
             <BookOpen className="h-12 w-12 text-purple-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

@@ -2,25 +2,29 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function StrategicNarrativeGenerator({ planId }) {
   const { language, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [narrative, setNarrative] = useState(null);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const generateNarrative = async () => {
-    setGenerating(true);
     try {
       const plan = await base44.entities.StrategicPlan.filter({ id: planId });
       const pilots = await base44.entities.Pilot.list();
       const challenges = await base44.entities.Challenge.list();
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await invokeAI({
         prompt: `Write a compelling strategic narrative for this municipal innovation plan:
 
 Plan: ${plan[0]?.name_en}
@@ -51,12 +55,11 @@ Make it compelling, data-driven, and bilingual (English then Arabic).`,
         }
       });
 
-      setNarrative(response);
-      toast.success(t({ en: 'Narrative generated', ar: 'السرد مُولد' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
+      if (response.success) {
+        setNarrative(response.data);
+      }
+    } catch (err) {
+      toast.error(t({ en: 'Failed to load data', ar: 'فشل تحميل البيانات' }));
     }
   };
 
@@ -87,8 +90,8 @@ Make it compelling, data-driven, and bilingual (English then Arabic).`,
             {t({ en: 'Strategic Narrative', ar: 'السرد الاستراتيجي' })}
           </CardTitle>
           {!narrative && (
-            <Button onClick={generateNarrative} disabled={generating} size="sm" className="bg-indigo-600">
-              {generating ? (
+            <Button onClick={generateNarrative} disabled={isLoading || !isAvailable} size="sm" className="bg-indigo-600">
+              {isLoading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4 mr-2" />
@@ -99,7 +102,9 @@ Make it compelling, data-driven, and bilingual (English then Arabic).`,
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!narrative && !generating && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!narrative && !isLoading && (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

@@ -1,28 +1,29 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { TrendingUp, Sparkles, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeImpactSimulator({ challenge }) {
-  const [isSimulating, setIsSimulating] = useState(false);
   const [scenario, setScenario] = useState({
     budget_allocated: challenge.budget_estimate || 500000,
     timeline_months: 12,
-    resource_level: 50, // 0-100 scale
-    stakeholder_buy_in: 70 // 0-100 scale
+    resource_level: 50,
+    stakeholder_buy_in: 70
   });
   const [results, setResults] = useState(null);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const runSimulation = async () => {
-    setIsSimulating(true);
-    try {
-      const aiResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: `Simulate the impact of resolving this municipal challenge:
+    const response = await invokeAI({
+      prompt: `Simulate the impact of resolving this municipal challenge:
 
 Challenge: ${challenge.title_en}
 Sector: ${challenge.sector}
@@ -45,26 +46,23 @@ Predict:
 6. Key Success Factors (array)
 7. Potential Obstacles (array)
 8. Recommendations (array)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            success_probability: { type: "number" },
-            expected_impact_score: { type: "number" },
-            population_benefited: { type: "number" },
-            roi_multiplier: { type: "number" },
-            risk_level: { type: "string" },
-            success_factors: { type: "array", items: { type: "string" } },
-            obstacles: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          success_probability: { type: "number" },
+          expected_impact_score: { type: "number" },
+          population_benefited: { type: "number" },
+          roi_multiplier: { type: "number" },
+          risk_level: { type: "string" },
+          success_factors: { type: "array", items: { type: "string" } },
+          obstacles: { type: "array", items: { type: "string" } },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setResults(aiResponse);
-    } catch (error) {
-      toast.error('Simulation failed: ' + error.message);
-    } finally {
-      setIsSimulating(false);
+    if (response.success) {
+      setResults(response.data);
     }
   };
 
@@ -77,6 +75,8 @@ Predict:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-slate-700 block mb-2">
@@ -131,8 +131,12 @@ Predict:
           </div>
         </div>
 
-        <Button onClick={runSimulation} disabled={isSimulating} className="w-full bg-purple-600">
-          {isSimulating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+        <Button 
+          onClick={runSimulation} 
+          disabled={isLoading || !isAvailable} 
+          className="w-full bg-purple-600"
+        >
+          {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           <Sparkles className="h-4 w-4 mr-2" />
           Run AI Impact Simulation
         </Button>
