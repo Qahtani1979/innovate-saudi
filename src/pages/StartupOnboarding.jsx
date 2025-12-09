@@ -7,11 +7,11 @@ export default function StartupOnboarding() {
   const navigate = useNavigate();
 
   const handleComplete = () => {
-    navigate(createPageUrl('ProviderDashboard'));
+    navigate(createPageUrl('StartupDashboard'));
   };
 
   const handleSkip = () => {
-    navigate(createPageUrl('ProviderDashboard'));
+    navigate(createPageUrl('StartupDashboard'));
   };
 
   return (

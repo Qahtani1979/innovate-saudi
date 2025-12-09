@@ -36,7 +36,8 @@ flowchart TB
         P2[🚀 Solution Provider/Startup]
         P3[🔬 Researcher/Academic]
         P4[👥 Citizen/Community]
-        P5[👁️ Explorer/Observer]
+        P5[🎓 Expert/Evaluator]
+        P6[👁️ Explorer/Observer]
     end
 
     subgraph SPECIALIZED_ONBOARDING["🎯 Specialized Wizards - AUTO TRIGGERED"]
@@ -44,6 +45,7 @@ flowchart TB
         SW2[MunicipalityStaffOnboarding<br/>5 steps: CV → Municipality → Department → Role → Complete]
         SW3[ResearcherOnboarding<br/>5 steps: CV → Institution → Research → Links → Complete]
         SW4[CitizenOnboarding<br/>4 steps: Location → Interests → Notifications → Complete]
+        SW5[ExpertOnboarding<br/>CV Upload + AI Extraction + Expertise Areas]
     end
 
     subgraph COMPLETION["✅ Completion"]
@@ -55,7 +57,7 @@ flowchart TB
     subgraph LANDING_PAGES["🏠 Role-Based Landing Pages"]
         LP1[AdminDashboard]
         LP2[MunicipalityDashboard]
-        LP3[ProviderDashboard<br/>StartupDashboard]
+        LP3[StartupDashboard]
         LP4[ResearcherDashboard]
         LP5[CitizenDashboard]
         LP6[Home/Explorer]
@@ -87,18 +89,20 @@ flowchart TB
     OW4 --> OW5
     OW5 --> OW6
 
-    OW5 --> P1 & P2 & P3 & P4 & P5
+    OW5 --> P1 & P2 & P3 & P4 & P5 & P6
 
     P1 -->|Auto redirect| SW2
     P2 -->|Auto redirect| SW1
     P3 -->|Auto redirect| SW3
     P4 -->|Auto redirect| SW4
-    P5 --> C1
+    P5 -->|Auto redirect| SW5
+    P6 --> C1
 
     SW1 --> C1
     SW2 --> C1
     SW3 --> C1
     SW4 --> C1
+    SW5 --> C1
 
     C1 --> C2
     C2 --> C3
@@ -123,7 +127,7 @@ flowchart TB
 | Persona | Landing Page | Specialized Wizard | Page Route | Status |
 |---------|--------------|-------------------|------------|--------|
 | Municipality Staff | MunicipalityDashboard | MunicipalityStaffOnboarding | `/municipality-staff-onboarding` | ✅ Complete |
-| Solution Provider | ProviderDashboard | StartupOnboarding | `/startup-onboarding` | ✅ Complete |
+| Solution Provider | StartupDashboard | StartupOnboarding | `/startup-onboarding` | ✅ Complete |
 | Researcher/Academic | ResearcherDashboard | ResearcherOnboarding | `/researcher-onboarding` | ✅ Complete |
 | Citizen/Community | CitizenDashboard | CitizenOnboarding | `/citizen-onboarding` | ✅ Complete |
 | Expert/Evaluator | ExpertDashboard | ExpertOnboarding | `/expert-onboarding` | ✅ Complete |
@@ -135,22 +139,23 @@ flowchart TB
 
 | Component | Path | Status | Features |
 |-----------|------|--------|----------|
-| OnboardingWizard | `src/components/onboarding/OnboardingWizard.jsx` | ✅ Complete | 6-step wizard, CV upload, LinkedIn import, AI extraction, **Auto-routes to specialized wizard** |
+| OnboardingWizard | `src/components/onboarding/OnboardingWizard.jsx` | ✅ Complete | 6-step wizard, CV upload, LinkedIn import, AI extraction, **Auto-routes to specialized wizard for all 5 personas** |
 | MunicipalityStaffOnboardingWizard | `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | ✅ Complete | 5-step: CV → Municipality → Department → Role → Complete |
 | ResearcherOnboardingWizard | `src/components/onboarding/ResearcherOnboardingWizard.jsx` | ✅ Complete | 5-step: CV → Institution → Research → Links → Complete |
 | CitizenOnboardingWizard | `src/components/onboarding/CitizenOnboardingWizard.jsx` | ✅ Complete | 4-step: Location → Interests → Notifications → Complete |
 | StartupOnboardingWizard | `src/components/startup/StartupOnboardingWizard.jsx` | ✅ Complete | 4-step flow, sectors, challenges, regions |
 | ExpertOnboarding | `src/pages/ExpertOnboarding.jsx` | ✅ Complete | CV upload, AI extraction, expertise areas |
 
-### Page Routes (NEW)
+### Page Routes
 
-| Page | Path | Purpose |
-|------|------|---------|
-| MunicipalityStaffOnboarding | `src/pages/MunicipalityStaffOnboarding.jsx` | Route wrapper for MunicipalityStaffOnboardingWizard |
-| ResearcherOnboarding | `src/pages/ResearcherOnboarding.jsx` | Route wrapper for ResearcherOnboardingWizard |
-| CitizenOnboarding | `src/pages/CitizenOnboarding.jsx` | Route wrapper for CitizenOnboardingWizard |
-| StartupOnboarding | `src/pages/StartupOnboarding.jsx` | Route wrapper for StartupOnboardingWizard |
-| ResearcherDashboard | `src/pages/ResearcherDashboard.jsx` | ✅ NEW - Full researcher dashboard |
+| Page | Path | Redirects To | Status |
+|------|------|--------------|--------|
+| MunicipalityStaffOnboarding | `src/pages/MunicipalityStaffOnboarding.jsx` | MunicipalityDashboard | ✅ Complete |
+| ResearcherOnboarding | `src/pages/ResearcherOnboarding.jsx` | ResearcherDashboard | ✅ Complete |
+| CitizenOnboarding | `src/pages/CitizenOnboarding.jsx` | CitizenDashboard | ✅ Complete |
+| StartupOnboarding | `src/pages/StartupOnboarding.jsx` | StartupDashboard | ✅ Complete |
+| ExpertOnboarding | `src/pages/ExpertOnboarding.jsx` | ExpertDashboard | ✅ Complete |
+| ResearcherDashboard | `src/pages/ResearcherDashboard.jsx` | - | ✅ Complete |
 
 ### Dashboard Integrations
 
@@ -159,7 +164,7 @@ flowchart TB
 | ResearcherDashboard | ✅ Integrated | ✅ Integrated | ✅ Complete |
 | CitizenDashboard | ✅ Integrated | ✅ Integrated | ✅ Complete |
 | MunicipalityDashboard | Existing | Existing | ✅ Complete |
-| ProviderDashboard | Existing | Existing | ✅ Complete |
+| StartupDashboard | Existing | Existing | ✅ Complete |
 
 ---
 
@@ -194,7 +199,7 @@ flowchart TB
 ```javascript
 // After Step 6, the wizard checks persona and routes accordingly:
 const needsSpecializedWizard = (persona) => {
-  return ['municipality_staff', 'provider', 'researcher', 'citizen'].includes(persona);
+  return ['municipality_staff', 'provider', 'researcher', 'citizen', 'expert'].includes(persona);
 };
 
 const getSpecializedWizardPage = (persona) => {
@@ -202,7 +207,8 @@ const getSpecializedWizardPage = (persona) => {
     municipality_staff: 'MunicipalityStaffOnboarding',
     provider: 'StartupOnboarding',
     researcher: 'ResearcherOnboarding',
-    citizen: 'CitizenOnboarding'
+    citizen: 'CitizenOnboarding',
+    expert: 'ExpertOnboarding'
   };
   return wizardMap[persona] || null;
 };
@@ -227,9 +233,10 @@ Each specialized wizard:
 
 ### Specialized Wizards
 - [x] Municipality Staff → MunicipalityStaffOnboarding → MunicipalityDashboard
-- [x] Provider/Startup → StartupOnboarding → ProviderDashboard
+- [x] Provider/Startup → StartupOnboarding → StartupDashboard
 - [x] Researcher → ResearcherOnboarding → ResearcherDashboard
 - [x] Citizen → CitizenOnboarding → CitizenDashboard
+- [x] Expert → ExpertOnboarding → ExpertDashboard
 - [x] Explorer/Viewer → Direct to Home
 
 ### Dashboard Integrations
