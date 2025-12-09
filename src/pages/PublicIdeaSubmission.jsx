@@ -585,6 +585,65 @@ export default function PublicIdeaSubmission() {
                   </div>
                 )}
 
+                {/* Contact Information Section */}
+                <div className="border-t pt-6 mt-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                    {t({ en: 'Your Information (Optional)', ar: 'معلوماتك (اختياري)' })}
+                  </h3>
+                  
+                  {/* Anonymous Toggle */}
+                  <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="anonymous"
+                      checked={contactInfo.is_anonymous}
+                      onChange={(e) => setContactInfo(prev => ({ 
+                        ...prev, 
+                        is_anonymous: e.target.checked,
+                        name: e.target.checked ? '' : prev.name,
+                        email: e.target.checked ? '' : prev.email
+                      }))}
+                      className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="anonymous" className="text-slate-700 cursor-pointer">
+                      {t({ en: 'Submit anonymously', ar: 'إرسال بشكل مجهول' })}
+                    </label>
+                  </div>
+
+                  {!contactInfo.is_anonymous && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          {t({ en: 'Your Name', ar: 'اسمك' })}
+                        </label>
+                        <Input
+                          value={contactInfo.name}
+                          onChange={(e) => setContactInfo(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder={t({ en: 'Enter your name...', ar: 'أدخل اسمك...' })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          {t({ en: 'Email Address', ar: 'البريد الإلكتروني' })}
+                        </label>
+                        <Input
+                          type="email"
+                          value={contactInfo.email}
+                          onChange={(e) => setContactInfo(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder={t({ en: 'your@email.com', ar: 'your@email.com' })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <p className="text-sm text-slate-500 mt-3">
+                    {contactInfo.is_anonymous 
+                      ? t({ en: 'Your idea will be submitted without any personal information.', ar: 'سيتم إرسال فكرتك دون أي معلومات شخصية.' })
+                      : t({ en: 'Providing your contact info helps us follow up on your idea.', ar: 'تقديم معلومات الاتصال يساعدنا في متابعة فكرتك.' })
+                    }
+                  </p>
+                </div>
+
                 {/* Navigation Buttons */}
                 <div className="flex gap-4 pt-4">
                   <Button
