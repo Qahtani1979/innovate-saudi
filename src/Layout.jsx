@@ -75,6 +75,8 @@ import AIAssistant from './components/AIAssistant';
 import PortalSwitcher from './components/layout/PortalSwitcher';
 import { Badge } from "@/components/ui/badge";
 import { usePermissions } from './components/permissions/usePermissions';
+import { useAuth } from '@/lib/AuthContext';
+import OnboardingWizard from './components/onboarding/OnboardingWizard';
 
 function LayoutContent({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -82,8 +84,17 @@ function LayoutContent({ children, currentPageName }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { language, isRTL, toggleLanguage } = useLanguage();
   const { user, hasPermission, hasAnyPermission, isAdmin } = usePermissions();
+  const { isAuthenticated, userProfile, checkAuth } = useAuth();
+
+  // Show onboarding wizard for new users who haven't completed it
+  useEffect(() => {
+    if (isAuthenticated && userProfile && userProfile.onboarding_completed !== true) {
+      setShowOnboarding(true);
+    }
+  }, [isAuthenticated, userProfile]);
 
   const toggleSection = (idx) => {
     setCollapsedSections(prev => ({ ...prev, [idx]: !prev[idx] }));
@@ -956,6 +967,17 @@ function LayoutContent({ children, currentPageName }) {
 
         {/* Global AI Assistant */}
         <AIAssistant context={{ page: currentPageName }} />
+
+        {/* Onboarding Wizard for new users */}
+        {showOnboarding && (
+          <OnboardingWizard 
+            onComplete={() => {
+              setShowOnboarding(false);
+              checkAuth?.();
+            }}
+            onSkip={() => setShowOnboarding(false)}
+          />
+        )}
         </div>
         );
         }

@@ -266,7 +266,12 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async (shouldRedirect = true) => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Signout error:', error);
+      }
+      
+      // Clear local state immediately
       setUser(null);
       setSession(null);
       setUserProfile(null);
@@ -274,10 +279,20 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       
       if (shouldRedirect) {
-        window.location.href = '/Auth';
+        // Use navigate for better SPA routing
+        window.location.replace('/Auth');
       }
     } catch (error) {
       console.error('Logout error:', error);
+      // Still clear state and redirect even on error
+      setUser(null);
+      setSession(null);
+      setUserProfile(null);
+      setUserRoles([]);
+      setIsAuthenticated(false);
+      if (shouldRedirect) {
+        window.location.replace('/Auth');
+      }
     }
   };
 
