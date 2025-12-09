@@ -12,13 +12,15 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useQuery } from '@tanstack/react-query';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProgramToPilotWorkflow({ program, graduateApplication }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
@@ -41,36 +43,32 @@ export default function ProgramToPilotWorkflow({ program, graduateApplication })
   });
 
   const handleAIGenerate = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Graduate from "${program.name_en}" wants to pilot their innovation:
+    const result = await invokeAI({
+      prompt: `Graduate from "${program.name_en}" wants to pilot their innovation:
 
 Graduate: ${graduateApplication?.applicant_name}
 Project: ${graduateApplication?.project_description || 'Innovation project'}
 Program Focus: ${program.focus_areas?.join(', ')}
 
 Generate pilot proposal:`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objective_en: { type: 'string' },
-            objective_ar: { type: 'string' },
-            hypothesis: { type: 'string' },
-            methodology: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          objective_en: { type: 'string' },
+          objective_ar: { type: 'string' },
+          hypothesis: { type: 'string' },
+          methodology: { type: 'string' }
         }
-      });
-      setFormData(prev => ({ ...prev, ...result }));
+      }
+    });
+    
+    if (result.success) {
+      setFormData(prev => ({ ...prev, ...result.data }));
       toast.success(t({ en: 'Pilot proposal generated', ar: 'تم توليد مقترح التجربة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -123,7 +121,8 @@ Generate pilot proposal:`,
           <DialogTitle>{t({ en: 'Convert to Pilot', ar: 'تحويل لتجربة' })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Button onClick={handleAIGenerate} disabled={aiLoading} variant="outline" className="w-full">
+          <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+          <Button onClick={handleAIGenerate} disabled={aiLoading || !isAvailable} variant="outline" className="w-full">
             {aiLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

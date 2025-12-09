@@ -5,17 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Calendar, Sparkles, TrendingUp, Users, Loader2, Award, Target } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { Calendar, Sparkles, Users, Loader2, Award, Target } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ProgramPortfolioPlanner() {
   const { language, isRTL, t } = useLanguage();
   const [aiRoadmap, setAiRoadmap] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs'],
@@ -28,10 +29,8 @@ function ProgramPortfolioPlanner() {
   });
 
   const generateRoadmap = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create a strategic program portfolio roadmap for Saudi municipal innovation:
+    const result = await invokeAI({
+      prompt: `Create a strategic program portfolio roadmap for Saudi municipal innovation:
 
 Current Programs: ${programs.length}
 - Accelerators: ${programs.filter(p => p.program_type === 'accelerator').length}
@@ -46,45 +45,42 @@ Generate bilingual program roadmap for next 12 months:
 3. Theme-based planning aligned to strategic goals
 4. Expected participant numbers and outcomes
 5. Budget allocation per program type`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommended_programs: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name_en: { type: 'string' },
-                  name_ar: { type: 'string' },
-                  type: { type: 'string' },
-                  theme_en: { type: 'string' },
-                  theme_ar: { type: 'string' },
-                  quarter: { type: 'string' },
-                  expected_participants: { type: 'number' },
-                  budget: { type: 'number' },
-                  priority: { type: 'string' }
-                }
-              }
-            },
-            cohort_strategy: {
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommended_programs: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                strategy_en: { type: 'string' },
-                strategy_ar: { type: 'string' },
-                cadence_en: { type: 'string' },
-                cadence_ar: { type: 'string' }
+                name_en: { type: 'string' },
+                name_ar: { type: 'string' },
+                type: { type: 'string' },
+                theme_en: { type: 'string' },
+                theme_ar: { type: 'string' },
+                quarter: { type: 'string' },
+                expected_participants: { type: 'number' },
+                budget: { type: 'number' },
+                priority: { type: 'string' }
               }
+            }
+          },
+          cohort_strategy: {
+            type: 'object',
+            properties: {
+              strategy_en: { type: 'string' },
+              strategy_ar: { type: 'string' },
+              cadence_en: { type: 'string' },
+              cadence_ar: { type: 'string' }
             }
           }
         }
-      });
+      }
+    });
 
-      setAiRoadmap(result);
+    if (result.success) {
+      setAiRoadmap(result.data);
       toast.success(t({ en: 'Program roadmap generated', ar: 'تم إنشاء خارطة طريق البرامج' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل الإنشاء' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -164,7 +160,8 @@ Generate bilingual program roadmap for next 12 months:
       {/* AI Generate */}
       <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          <div className="flex items-center justify-between mt-2">
             <div>
               <p className="font-semibold text-purple-900 mb-1 text-lg">
                 {t({ en: 'AI Program Portfolio Optimizer', ar: 'محسن محفظة البرامج الذكي' })}
@@ -173,7 +170,7 @@ Generate bilingual program roadmap for next 12 months:
                 {t({ en: 'Generate optimized program roadmap with cohort scheduling and theme alignment', ar: 'إنشاء خارطة طريق برامج محسنة مع جدولة المجموعات ومواءمة المحاور' })}
               </p>
             </div>
-            <Button onClick={generateRoadmap} disabled={loading} className="bg-gradient-to-r from-purple-600 to-pink-600">
+            <Button onClick={generateRoadmap} disabled={loading || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
               {loading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
