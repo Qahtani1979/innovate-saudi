@@ -5,15 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
-import { Target, Sparkles, Loader2, Award, AlertCircle, TestTube } from 'lucide-react';
+import { Target, Sparkles, Loader2, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PriorityRecommendations() {
   const { language, isRTL, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-priority'],
@@ -31,14 +31,12 @@ export default function PriorityRecommendations() {
   });
 
   const generateRecommendations = async () => {
-    setGenerating(true);
-    try {
-      const tier1Challenges = challenges.filter(c => c.priority === 'tier_1');
-      const approvedChallenges = challenges.filter(c => c.status === 'approved');
-      const lowMIIMunicipalities = municipalities.filter(m => (m.mii_score || 0) < 50);
+    const tier1Challenges = challenges.filter(c => c.priority === 'tier_1');
+    const approvedChallenges = challenges.filter(c => c.status === 'approved');
+    const lowMIIMunicipalities = municipalities.filter(m => (m.mii_score || 0) < 50);
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `As Saudi Arabia's national innovation strategist, recommend strategic priorities for the next quarter:
+    const result = await invokeAI({
+      prompt: `As Saudi Arabia's national innovation strategist, recommend strategic priorities for the next quarter:
 
 Current State:
 - Tier 1 Challenges: ${tier1Challenges.length}
@@ -54,35 +52,32 @@ Provide 5 strategic priorities with:
 4. Resource estimate (low/medium/high)
 5. Expected impact (quantified if possible)
 6. Timeline (weeks)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            priorities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  rank: { type: 'number' },
-                  rationale: { type: 'string' },
-                  quick_wins: { type: 'array', items: { type: 'string' } },
-                  resources_needed: { type: 'string' },
-                  expected_impact: { type: 'string' },
-                  timeline_weeks: { type: 'number' },
-                  related_entities: { type: 'array', items: { type: 'string' } }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          priorities: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                rank: { type: 'number' },
+                rationale: { type: 'string' },
+                quick_wins: { type: 'array', items: { type: 'string' } },
+                resources_needed: { type: 'string' },
+                expected_impact: { type: 'string' },
+                timeline_weeks: { type: 'number' },
+                related_entities: { type: 'array', items: { type: 'string' } }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setRecommendations(result.priorities);
+    if (result.success) {
+      setRecommendations(result.data.priorities);
       toast.success(t({ en: 'Strategic priorities generated', ar: 'تم توليد الأولويات الاستراتيجية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -96,10 +91,10 @@ Provide 5 strategic priorities with:
           </CardTitle>
           <Button
             onClick={generateRecommendations}
-            disabled={generating}
+            disabled={isLoading || !isAvailable}
             size="sm"
           >
-            {generating ? (
+            {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -109,7 +104,9 @@ Provide 5 strategic priorities with:
         </div>
       </CardHeader>
       <CardContent>
-        {generating ? (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mb-4" />
+        
+        {isLoading ? (
           <div className="text-center py-12">
             <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
             <p className="text-slate-600">{t({ en: 'Analyzing national priorities...', ar: 'تحليل الأولويات الوطنية...' })}</p>

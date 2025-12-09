@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from './LanguageContext';
-import { Sparkles, CheckCircle2, X, Loader2, Filter, Award } from 'lucide-react';
+import { Sparkles, CheckCircle2, X, Loader2, Filter } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProgramApplicationScreening({ program, onClose }) {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
-  const [aiScoring, setAiScoring] = useState(false);
   const [scoredApplications, setScoredApplications] = useState(null);
   const [selectedForAcceptance, setSelectedForAcceptance] = useState([]);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: applications = [] } = useQuery({
     queryKey: ['program-applications', program?.id],
@@ -26,9 +28,7 @@ export default function ProgramApplicationScreening({ program, onClose }) {
   });
 
   const handleAIScreening = async () => {
-    setAiScoring(true);
-    try {
-      const prompt = `You are an expert application screener for Saudi municipal innovation programs.
+    const prompt = `You are an expert application screener for Saudi municipal innovation programs.
 
 Program: ${program.name_en}
 Type: ${program.program_type}
@@ -54,49 +54,46 @@ SCORING CRITERIA (0-100 each):
 
 Return scored applications with total scores, reasoning, and recommendation (accept/waitlist/reject).`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            scored_applications: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  applicant_name: { type: 'string' },
-                  scores: {
-                    type: 'object',
-                    properties: {
-                      eligibility: { type: 'number' },
-                      alignment: { type: 'number' },
-                      readiness: { type: 'number' },
-                      innovation: { type: 'number' },
-                      commitment: { type: 'number' }
-                    }
-                  },
-                  total_score: { type: 'number' },
-                  reasoning: { type: 'string' },
-                  recommendation: { type: 'string' }
-                }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          scored_applications: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                applicant_name: { type: 'string' },
+                scores: {
+                  type: 'object',
+                  properties: {
+                    eligibility: { type: 'number' },
+                    alignment: { type: 'number' },
+                    readiness: { type: 'number' },
+                    innovation: { type: 'number' },
+                    commitment: { type: 'number' }
+                  }
+                },
+                total_score: { type: 'number' },
+                reasoning: { type: 'string' },
+                recommendation: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       // Map back to application IDs
-      const mapped = result.scored_applications.map(scored => {
+      const mapped = result.data.scored_applications.map(scored => {
         const app = applications.find(a => a.applicant_name === scored.applicant_name);
         return { ...scored, applicationId: app?.id };
       }).filter(s => s.applicationId);
 
       setScoredApplications(mapped);
       toast.success(t({ en: 'AI screening completed', ar: 'الفرز الذكي مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI screening failed', ar: 'فشل الفرز الذكي' }));
-    } finally {
-      setAiScoring(false);
     }
   };
 
@@ -133,6 +130,8 @@ Return scored applications with total scores, reasoning, and recommendation (acc
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
           <p className="text-sm font-medium text-purple-900">{program?.name_en}</p>
           <p className="text-xs text-slate-600 mt-1">
@@ -143,10 +142,10 @@ Return scored applications with total scores, reasoning, and recommendation (acc
         {!scoredApplications ? (
           <Button
             onClick={handleAIScreening}
-            disabled={aiScoring || applications.length === 0}
+            disabled={isLoading || !isAvailable || applications.length === 0}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
-            {aiScoring ? (
+            {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'AI analyzing applications...', ar: 'الذكاء يحلل الطلبات...' })}

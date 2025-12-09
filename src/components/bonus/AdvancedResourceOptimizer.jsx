@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AdvancedResourceOptimizer() {
   const { language, t } = useLanguage();
-  const [optimizing, setOptimizing] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const optimize = async () => {
-    setOptimizing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Optimize resource allocation across platform:
+    const result = await invokeAI({
+      prompt: `Optimize resource allocation across platform:
 
 Resources:
 - Budget: 50M SAR
@@ -30,22 +28,19 @@ Current allocation:
 - Programs: 5M, 2 mentors, 0 lab slots
 
 Recommend reallocation for maximum ROI and suggest conflicts to resolve.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            reallocations: { type: "array", items: { type: "string" } },
-            expected_roi_gain: { type: "string" },
-            conflicts: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          reallocations: { type: "array", items: { type: "string" } },
+          expected_roi_gain: { type: "string" },
+          conflicts: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setRecommendations(response);
+    if (result.success) {
+      setRecommendations(result.data);
       toast.success(t({ en: 'Optimization complete', ar: 'التحسين مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed', ar: 'فشل' }));
-    } finally {
-      setOptimizing(false);
     }
   };
 
@@ -57,13 +52,15 @@ Recommend reallocation for maximum ROI and suggest conflicts to resolve.`,
             <TrendingUp className="h-5 w-5 text-indigo-600" />
             {t({ en: 'Resource Optimizer', ar: 'محسن الموارد' })}
           </CardTitle>
-          <Button onClick={optimize} disabled={optimizing} size="sm" className="bg-indigo-600">
-            {optimizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          <Button onClick={optimize} disabled={isLoading || !isAvailable} size="sm" className="bg-indigo-600">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Optimize', ar: 'تحسين' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mb-4" />
+        
         {recommendations && (
           <div className="space-y-3">
             <div className="p-3 bg-green-50 rounded border-2 border-green-200">

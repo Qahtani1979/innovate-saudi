@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { DollarSign, TrendingUp, Calendar, Sparkles, AlertCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, Calendar, Sparkles, AlertCircle, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ROICalculator({ initiativeType, onCalculated }) {
   const { language, isRTL, t } = useLanguage();
@@ -20,7 +21,7 @@ export default function ROICalculator({ initiativeType, onCalculated }) {
     expected_outcome: ''
   });
   const [results, setResults] = useState(null);
-  const [calculating, setCalculating] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const calculateROI = async () => {
     if (!inputs.budget || !inputs.sector) {
@@ -28,10 +29,8 @@ export default function ROICalculator({ initiativeType, onCalculated }) {
       return;
     }
 
-    setCalculating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Calculate expected ROI and impact for this initiative:
+    const result = await invokeAI({
+      prompt: `Calculate expected ROI and impact for this initiative:
 
 Type: ${inputs.type}
 Budget: ${inputs.budget} SAR
@@ -48,26 +47,23 @@ Based on similar initiatives in municipal innovation, provide:
 6. Risk factors (3 key risks)
 
 Be realistic and data-driven.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            roi_percentage: { type: "number" },
-            payback_months: { type: "number" },
-            impact_score: { type: "number" },
-            cost_per_citizen: { type: "number" },
-            benchmark: { type: "string" },
-            risks: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          roi_percentage: { type: "number" },
+          payback_months: { type: "number" },
+          impact_score: { type: "number" },
+          cost_per_citizen: { type: "number" },
+          benchmark: { type: "string" },
+          risks: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setResults(response);
-      if (onCalculated) onCalculated(response);
+    if (result.success) {
+      setResults(result.data);
+      if (onCalculated) onCalculated(result.data);
       toast.success(t({ en: 'ROI calculated', ar: 'تم حساب العائد' }));
-    } catch (error) {
-      toast.error(t({ en: 'Calculation failed', ar: 'فشل الحساب' }));
-    } finally {
-      setCalculating(false);
     }
   };
 
@@ -80,6 +76,8 @@ Be realistic and data-driven.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label className="text-sm">{t({ en: 'Initiative Type', ar: 'نوع المبادرة' })}</Label>
@@ -144,9 +142,9 @@ Be realistic and data-driven.`,
           />
         </div>
 
-        <Button onClick={calculateROI} disabled={calculating} className="w-full bg-gradient-to-r from-green-600 to-teal-600">
+        <Button onClick={calculateROI} disabled={isLoading || !isAvailable} className="w-full bg-gradient-to-r from-green-600 to-teal-600">
           <Sparkles className="h-4 w-4 mr-2" />
-          {calculating ? t({ en: 'Calculating...', ar: 'جاري الحساب...' }) : t({ en: 'Calculate ROI', ar: 'حساب العائد' })}
+          {isLoading ? t({ en: 'Calculating...', ar: 'جاري الحساب...' }) : t({ en: 'Calculate ROI', ar: 'حساب العائد' })}
         </Button>
 
         {results && (
