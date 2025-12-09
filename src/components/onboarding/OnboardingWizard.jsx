@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { base44 } from '@/api/base44Client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,8 @@ import {
   Building2, Lightbulb, FlaskConical, Users, Eye,
   Rocket, Target, BookOpen, Network, X, Loader2,
   User, Briefcase, GraduationCap, Wand2, RefreshCw,
-  Upload, FileText, Linkedin, Globe
+  Upload, FileText, Linkedin, Globe, Award, AlertTriangle, 
+  Info, Plus, Bot
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,6 +39,23 @@ const sendWelcomeEmail = async (userId, userEmail, userName, persona, language) 
   }
 };
 
+// Send role request notification via edge function
+const sendRoleRequestNotification = async (type, requestData) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('role-request-notification', {
+      body: { type, ...requestData }
+    });
+    if (error) console.warn('Role notification failed:', error);
+    else console.log('Role notification sent:', data);
+  } catch (err) {
+    console.warn('Failed to send role notification:', err);
+  }
+};
+
+// Roles that require approval vs auto-approved
+const AUTO_APPROVED_ROLES = ['citizen', 'viewer'];
+const REQUIRES_APPROVAL_ROLES = ['municipality_staff', 'provider', 'researcher', 'expert'];
+
 const PERSONAS = [
   {
     id: 'municipality_staff',
@@ -47,7 +65,8 @@ const PERSONAS = [
     borderColor: 'border-purple-200',
     title: { en: 'Municipality Staff', ar: 'موظف بلدية' },
     description: { en: 'I work at a municipality and want to solve urban challenges', ar: 'أعمل في بلدية وأريد حل التحديات الحضرية' },
-    landingPage: 'MunicipalityDashboard'
+    landingPage: 'MunicipalityDashboard',
+    requiresApproval: true
   },
   {
     id: 'provider',
@@ -57,7 +76,8 @@ const PERSONAS = [
     borderColor: 'border-blue-200',
     title: { en: 'Solution Provider / Startup', ar: 'مزود حلول / شركة ناشئة' },
     description: { en: 'I have solutions to offer and want to find opportunities', ar: 'لدي حلول أريد تقديمها وأبحث عن فرص' },
-    landingPage: 'ProviderDashboard'
+    landingPage: 'ProviderDashboard',
+    requiresApproval: true
   },
   {
     id: 'researcher',
@@ -67,7 +87,19 @@ const PERSONAS = [
     borderColor: 'border-green-200',
     title: { en: 'Researcher / Academic', ar: 'باحث / أكاديمي' },
     description: { en: 'I conduct R&D and want to collaborate with municipalities', ar: 'أقوم بالبحث والتطوير وأريد التعاون مع البلديات' },
-    landingPage: 'ResearcherDashboard'
+    landingPage: 'ResearcherDashboard',
+    requiresApproval: true
+  },
+  {
+    id: 'expert',
+    icon: Award,
+    color: 'from-amber-500 to-amber-700',
+    bgColor: 'bg-amber-50',
+    borderColor: 'border-amber-200',
+    title: { en: 'Expert / Evaluator', ar: 'خبير / مُقيّم' },
+    description: { en: 'I provide expert evaluation and advisory services', ar: 'أقدم خدمات التقييم والاستشارات المتخصصة' },
+    landingPage: 'ExpertDashboard',
+    requiresApproval: true
   },
   {
     id: 'citizen',
@@ -77,7 +109,8 @@ const PERSONAS = [
     borderColor: 'border-orange-200',
     title: { en: 'Citizen / Community Member', ar: 'مواطن / عضو مجتمع' },
     description: { en: 'I want to contribute ideas and participate in pilots', ar: 'أريد المساهمة بأفكار والمشاركة في التجارب' },
-    landingPage: 'CitizenDashboard'
+    landingPage: 'CitizenDashboard',
+    requiresApproval: false
   },
   {
     id: 'viewer',
@@ -87,21 +120,9 @@ const PERSONAS = [
     borderColor: 'border-slate-200',
     title: { en: 'Explorer / Observer', ar: 'مستكشف / مراقب' },
     description: { en: 'I want to explore and learn about innovation initiatives', ar: 'أريد استكشاف ومعرفة المزيد عن مبادرات الابتكار' },
-    landingPage: 'Home'
+    landingPage: 'Home',
+    requiresApproval: false
   }
-];
-
-const EXPERTISE_OPTIONS = [
-  { en: 'Urban Planning', ar: 'التخطيط الحضري' },
-  { en: 'Smart City', ar: 'المدن الذكية' },
-  { en: 'Sustainability', ar: 'الاستدامة' },
-  { en: 'Transportation', ar: 'النقل' },
-  { en: 'Public Services', ar: 'الخدمات العامة' },
-  { en: 'AI & Technology', ar: 'الذكاء الاصطناعي والتقنية' },
-  { en: 'Energy', ar: 'الطاقة' },
-  { en: 'Healthcare', ar: 'الرعاية الصحية' },
-  { en: 'Education', ar: 'التعليم' },
-  { en: 'Environment', ar: 'البيئة' },
 ];
 
 const STEPS = [
@@ -113,18 +134,59 @@ const STEPS = [
   { id: 6, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
 ];
 
+// AI Disclaimer component
+const AIDisclaimer = ({ language }) => (
+  <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+    <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
+    <span>
+      {language === 'ar' 
+        ? 'يتم إنشاء هذا المحتوى بواسطة الذكاء الاصطناعي ويجب مراجعته للتأكد من دقته.'
+        : 'This content is AI-generated and should be reviewed for accuracy.'}
+    </span>
+  </div>
+);
+
+// Approval Notice component
+const ApprovalNotice = ({ language, roleName }) => (
+  <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+    <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+    <span>
+      {language === 'ar' 
+        ? `سيتطلب دور "${roleName}" موافقة المسؤول. ستتلقى إشعاراً بالبريد الإلكتروني عند المراجعة.`
+        : `The "${roleName}" role requires admin approval. You'll receive an email notification once reviewed.`}
+    </span>
+  </div>
+);
+
 export default function OnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth, userRoles } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   
+  // Fetch sectors from database for dynamic expertise areas
+  const { data: sectors = [] } = useQuery({
+    queryKey: ['sectors-active'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sectors')
+        .select('id, name_en, name_ar, code, icon')
+        .eq('is_active', true)
+        .order('name_en');
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isExtractingCV, setIsExtractingCV] = useState(false);
   const [isExtractingLinkedIn, setIsExtractingLinkedIn] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [customExpertise, setCustomExpertise] = useState('');
+  const [isValidatingCustomExpertise, setIsValidatingCustomExpertise] = useState(false);
   
   const [formData, setFormData] = useState({
     // Bilingual fields
