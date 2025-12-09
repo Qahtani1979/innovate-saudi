@@ -7,17 +7,45 @@ import { entities } from './supabaseEntities';
 import { auth } from './supabaseAuth';
 import { supabase } from '@/integrations/supabase/client';
 
+// Get or create session ID for anonymous rate limiting
+const getSessionId = () => {
+  if (typeof window === 'undefined') return null;
+  let sessionId = sessionStorage.getItem('ai_session_id');
+  if (!sessionId) {
+    sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    sessionStorage.setItem('ai_session_id', sessionId);
+  }
+  return sessionId;
+};
+
 // Integration functions that call Supabase edge functions
 const integrations = {
   Core: {
     InvokeLLM: async ({ prompt, response_json_schema, system_prompt }) => {
+      const sessionId = getSessionId();
+      
       const { data, error } = await supabase.functions.invoke('invoke-llm', {
-        body: { prompt, response_json_schema, system_prompt }
+        body: { prompt, response_json_schema, system_prompt, session_id: sessionId }
       });
       
       if (error) {
         console.error('InvokeLLM error:', error);
+        // Add rate limit info to error for handling
+        if (error.message?.includes('Rate limit') || error.status === 429) {
+          const rateLimitError = new Error('Rate limit exceeded');
+          rateLimitError.status = 429;
+          rateLimitError.rateLimitInfo = data?.rate_limit_info;
+          throw rateLimitError;
+        }
         throw error;
+      }
+      
+      // Check for error in response body (edge function returns 429 with error in body)
+      if (data?.error && data?.rate_limit_info) {
+        const rateLimitError = new Error(data.error);
+        rateLimitError.status = 429;
+        rateLimitError.rateLimitInfo = data.rate_limit_info;
+        throw rateLimitError;
       }
       
       return data;
