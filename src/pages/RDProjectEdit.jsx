@@ -88,69 +88,70 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
 
     const result = await invokeAI({
       prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            abstract_en: { type: 'string' },
-            abstract_ar: { type: 'string' },
-            institution_en: { type: 'string' },
-            institution_ar: { type: 'string' },
-            research_area_en: { type: 'string' },
-            research_area_ar: { type: 'string' },
-            methodology_en: { type: 'string' },
-            methodology_ar: { type: 'string' },
-            funding_source_en: { type: 'string' },
-            funding_source_ar: { type: 'string' },
-            principal_investigator: {
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          abstract_en: { type: 'string' },
+          abstract_ar: { type: 'string' },
+          institution_en: { type: 'string' },
+          institution_ar: { type: 'string' },
+          research_area_en: { type: 'string' },
+          research_area_ar: { type: 'string' },
+          methodology_en: { type: 'string' },
+          methodology_ar: { type: 'string' },
+          funding_source_en: { type: 'string' },
+          funding_source_ar: { type: 'string' },
+          principal_investigator: {
+            type: 'object',
+            properties: {
+              name_en: { type: 'string' },
+              name_ar: { type: 'string' },
+              title_en: { type: 'string' },
+              title_ar: { type: 'string' }
+            }
+          },
+          keywords: { type: 'array', items: { type: 'string' } },
+          research_themes: { type: 'array', items: { type: 'string' } },
+          expected_outputs: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                name_en: { type: 'string' },
-                name_ar: { type: 'string' },
-                title_en: { type: 'string' },
-                title_ar: { type: 'string' }
-              }
-            },
-            keywords: { type: 'array', items: { type: 'string' } },
-            research_themes: { type: 'array', items: { type: 'string' } },
-            expected_outputs: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  output_en: { type: 'string' },
-                  output_ar: { type: 'string' },
-                  type: { type: 'string' },
-                  target_date: { type: 'string' }
-                }
-              }
-            },
-            impact_assessment: {
-              type: 'object',
-              properties: {
-                academic_impact_en: { type: 'string' },
-                academic_impact_ar: { type: 'string' },
-                practical_impact_en: { type: 'string' },
-                practical_impact_ar: { type: 'string' },
-                policy_impact_en: { type: 'string' },
-                policy_impact_ar: { type: 'string' }
-              }
-            },
-            pilot_opportunities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  description_en: { type: 'string' },
-                  description_ar: { type: 'string' },
-                  municipality: { type: 'string' },
-                  status: { type: 'string' }
-                }
+                output_en: { type: 'string' },
+                output_ar: { type: 'string' },
+                type: { type: 'string' },
+                target_date: { type: 'string' }
               }
             }
+          },
+          impact_assessment: {
+            type: 'object',
+            properties: {
+              academic_impact_en: { type: 'string' },
+              academic_impact_ar: { type: 'string' },
+              practical_impact_en: { type: 'string' },
+              practical_impact_ar: { type: 'string' },
+              policy_impact_en: { type: 'string' },
+              policy_impact_ar: { type: 'string' }
+            }
+          },
+          pilot_opportunities: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' },
+                municipality: { type: 'string' },
+                status: { type: 'string' }
+              }
+            }
+          }
+        }
       }
     });
     
