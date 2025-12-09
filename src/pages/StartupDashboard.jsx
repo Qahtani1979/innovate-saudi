@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import OpportunityPipelineDashboard from '../components/provider/OpportunityPipelineDashboard';
 import MarketIntelligenceFeed from '../components/solutions/MarketIntelligenceFeed';
 import ProviderPerformanceDashboard from '../components/solutions/ProviderPerformanceDashboard';
@@ -16,6 +17,9 @@ import StartupCollaborationHub from '../components/startup/StartupCollaborationH
 import StartupReferralProgram from '../components/startup/StartupReferralProgram';
 import StartupMentorshipMatcher from '../components/startup/StartupMentorshipMatcher';
 import StartupChurnPredictor from '../components/startup/StartupChurnPredictor';
+import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
+import ProfileCompletenessCoach from '../components/onboarding/ProfileCompletenessCoach';
+import ProgressiveProfilingPrompt from '../components/onboarding/ProgressiveProfilingPrompt';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
@@ -27,6 +31,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function StartupDashboard() {
   const { language, isRTL, t } = useLanguage();
+  const { user: authUser, userProfile } = useAuth();
   const [user, setUser] = useState(null);
 
   React.useEffect(() => {
@@ -230,6 +235,15 @@ function StartupDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Profile Completeness & First Action */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ProfileCompletenessCoach profile={userProfile} role="startup_user" />
+        <FirstActionRecommender user={{ role: 'startup_user', email: authUser?.email || user?.email || '' }} />
+      </div>
+
+      {/* Progressive Profiling Prompt */}
+      <ProgressiveProfilingPrompt />
 
       {/* Opportunity Pipeline */}
       {myOrganization && (
