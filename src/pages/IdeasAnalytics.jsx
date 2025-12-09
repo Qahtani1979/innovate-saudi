@@ -10,15 +10,14 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer
 } from 'recharts';
-import {
-  Lightbulb, TrendingUp, Users, Target, Sparkles, Loader2,
-  Calendar, CheckCircle2, XCircle, AlertTriangle
-} from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function IdeasAnalytics() {
   const { language, isRTL, t } = useLanguage();
-  const [generatingInsights, setGeneratingInsights] = useState(false);
+  const { invokeAI, status, isLoading: generatingInsights, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [aiInsights, setAiInsights] = useState(null);
 
   const { data: ideas = [], isLoading } = useQuery({
@@ -60,10 +59,8 @@ function IdeasAnalytics() {
   };
 
   const generateInsights = async () => {
-    setGeneratingInsights(true);
-    try {
-      const topIdeas = ideas.slice(0, 10);
-      const prompt = `Analyze these citizen ideas and provide strategic insights:
+    const topIdeas = ideas.slice(0, 10);
+    const prompt = `Analyze these citizen ideas and provide strategic insights:
 
 ${topIdeas.map(i => `- ${i.title} (Category: ${i.category}, Votes: ${i.vote_count || 0})`).join('\n')}
 
@@ -73,25 +70,22 @@ Provide:
 3. Ideas with highest potential impact (list 3)
 4. Suggested improvements to the ideas submission process`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            themes: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'array', items: { type: 'string' } },
-            high_impact_ideas: { type: 'array', items: { type: 'string' } },
-            process_improvements: { type: 'array', items: { type: 'string' } }
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          themes: { type: 'array', items: { type: 'string' } },
+          recommendations: { type: 'array', items: { type: 'string' } },
+          high_impact_ideas: { type: 'array', items: { type: 'string' } },
+          process_improvements: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setAiInsights(result);
+    if (result.success) {
+      setAiInsights(result.data);
       toast.success(t({ en: 'AI insights generated', ar: 'تم إنشاء الرؤى الذكية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate insights', ar: 'فشل إنشاء الرؤى' }));
-    } finally {
-      setGeneratingInsights(false);
     }
   };
 
@@ -108,7 +102,7 @@ Provide:
         </div>
         <Button
           onClick={generateInsights}
-          disabled={generatingInsights}
+          disabled={generatingInsights || !isAvailable}
           className="bg-gradient-to-r from-purple-600 to-pink-600"
         >
           {generatingInsights ? (
@@ -119,6 +113,8 @@ Provide:
           {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
         </Button>
       </div>
+
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       {/* Key Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">

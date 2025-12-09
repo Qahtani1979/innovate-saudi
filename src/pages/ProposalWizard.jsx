@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProposalWizard() {
   const { language, isRTL, t } = useLanguage();
@@ -47,7 +49,7 @@ export default function ProposalWizard() {
     impact_statement: '',
     innovation_claim: ''
   });
-  const [aiEnhancing, setAiEnhancing] = useState(false);
+  const { invokeAI, status, isLoading: aiEnhancing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['open-rd-calls'],
@@ -71,10 +73,9 @@ export default function ProposalWizard() {
       toast.error(t({ en: 'Please enter a title first', ar: 'يرجى إدخال العنوان أولاً' }));
       return;
     }
-    setAiEnhancing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Enhance this research proposal for Saudi municipal innovation R&D funding:
+
+    const result = await invokeAI({
+      prompt: `Enhance this research proposal for Saudi municipal innovation R&D funding:
 
 Title: ${formData.title_en}
 Lead Institution: ${formData.lead_institution || 'N/A'}
@@ -94,53 +95,52 @@ Generate comprehensive bilingual content:
 8. Research keywords (8-12 terms)
 
 Align with Saudi Vision 2030 and municipal innovation goals.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            abstract_en: { type: 'string' },
-            abstract_ar: { type: 'string' },
-            methodology_en: { type: 'string' },
-            methodology_ar: { type: 'string' },
-            impact_statement: { type: 'string' },
-            innovation_claim: { type: 'string' },
-            expected_outputs: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  output: { type: 'string' },
-                  type: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          abstract_en: { type: 'string' },
+          abstract_ar: { type: 'string' },
+          methodology_en: { type: 'string' },
+          methodology_ar: { type: 'string' },
+          impact_statement: { type: 'string' },
+          innovation_claim: { type: 'string' },
+          expected_outputs: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                output: { type: 'string' },
+                type: { type: 'string' }
               }
-            },
-            keywords: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          keywords: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
+
+    if (result.success) {
       setFormData(prev => ({
         ...prev,
-        title_en: result.title_en || prev.title_en,
-        title_ar: result.title_ar || prev.title_ar,
-        tagline_en: result.tagline_en || prev.tagline_en,
-        tagline_ar: result.tagline_ar || prev.tagline_ar,
-        abstract_en: result.abstract_en || prev.abstract_en,
-        abstract_ar: result.abstract_ar || prev.abstract_ar,
-        methodology_en: result.methodology_en || prev.methodology_en,
-        methodology_ar: result.methodology_ar || prev.methodology_ar,
-        impact_statement: result.impact_statement || prev.impact_statement,
-        innovation_claim: result.innovation_claim || prev.innovation_claim,
-        expected_outputs: result.expected_outputs || prev.expected_outputs,
-        keywords: result.keywords || prev.keywords
+        title_en: result.data.title_en || prev.title_en,
+        title_ar: result.data.title_ar || prev.title_ar,
+        tagline_en: result.data.tagline_en || prev.tagline_en,
+        tagline_ar: result.data.tagline_ar || prev.tagline_ar,
+        abstract_en: result.data.abstract_en || prev.abstract_en,
+        abstract_ar: result.data.abstract_ar || prev.abstract_ar,
+        methodology_en: result.data.methodology_en || prev.methodology_en,
+        methodology_ar: result.data.methodology_ar || prev.methodology_ar,
+        impact_statement: result.data.impact_statement || prev.impact_statement,
+        innovation_claim: result.data.innovation_claim || prev.innovation_claim,
+        expected_outputs: result.data.expected_outputs || prev.expected_outputs,
+        keywords: result.data.keywords || prev.keywords
       }));
       toast.success(t({ en: '✨ AI enhancement complete! All fields updated.', ar: '✨ تم التحسين! تم تحديث جميع الحقول.' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
     }
-    setAiEnhancing(false);
   };
 
   const handleSubmit = () => {
@@ -217,7 +217,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">{t({ en: 'Proposal Details', ar: 'تفاصيل المقترح' })}</h2>
-                <Button variant="outline" onClick={handleAIEnhance} disabled={aiEnhancing} className="gap-2">
+                <Button variant="outline" onClick={handleAIEnhance} disabled={aiEnhancing || !isAvailable} className="gap-2">
                   {aiEnhancing ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -231,6 +231,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   )}
                 </Button>
               </div>
+              <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
               
               {/* Titles */}
               <div className="grid grid-cols-2 gap-4">

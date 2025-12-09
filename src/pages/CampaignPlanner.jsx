@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Megaphone, Plus, Calendar, Target, Sparkles, Users, DollarSign, Loader2, CheckCircle2, Edit2, Trash2, MapPin, Tags } from 'lucide-react';
+import { Megaphone, Plus, Calendar, Target, Sparkles, Users, Loader2, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function CampaignPlanner() {
   const { language, isRTL, t } = useLanguage();
@@ -33,7 +35,7 @@ function CampaignPlanner() {
     objectives_en: '',
     objectives_ar: ''
   });
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const queryClient = useQueryClient();
 
   const { data: programs = [] } = useQuery({
@@ -79,10 +81,8 @@ function CampaignPlanner() {
   });
 
   const generateAICampaign = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Design a municipal innovation campaign for Saudi Arabia based on current gaps and strategic priorities.
+    const result = await invokeAI({
+      prompt: `Design a municipal innovation campaign for Saudi Arabia based on current gaps and strategic priorities.
 
 Active Challenges: ${challenges.slice(0, 10).map(c => c.title_en).join(', ')}
 Sectors: ${sectors.map(s => s.name_en).join(', ')}
@@ -96,49 +96,46 @@ Generate a comprehensive innovation campaign in BOTH English and Arabic:
 5. Recommended events (3-5 events with dates)
 6. Success metrics
 7. Budget estimate`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' },
-            focus_areas: { type: 'array', items: { type: 'string' } },
-            events: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  type: { type: 'string' },
-                  date: { type: 'string' },
-                  location: { type: 'string' }
-                }
-              }
-            },
-            target_participants: {
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          objectives_en: { type: 'string' },
+          objectives_ar: { type: 'string' },
+          focus_areas: { type: 'array', items: { type: 'string' } },
+          events: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                type: { type: 'array', items: { type: 'string' } },
-                min_participants: { type: 'number' },
-                max_participants: { type: 'number' }
+                name: { type: 'string' },
+                type: { type: 'string' },
+                date: { type: 'string' },
+                location: { type: 'string' }
               }
-            },
-            budget_estimate: { type: 'number' }
-          }
+            }
+          },
+          target_participants: {
+            type: 'object',
+            properties: {
+              type: { type: 'array', items: { type: 'string' } },
+              min_participants: { type: 'number' },
+              max_participants: { type: 'number' }
+            }
+          },
+          budget_estimate: { type: 'number' }
         }
-      });
+      }
+    });
 
-      setCampaignData({ ...campaignData, ...result });
+    if (result.success) {
+      setCampaignData({ ...campaignData, ...result.data });
       toast.success(t({ en: 'AI campaign generated', ar: 'تم إنشاء الحملة بالذكاء' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل الإنشاء' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -213,7 +210,7 @@ Generate a comprehensive innovation campaign in BOTH English and Arabic:
                 {t({ en: 'Generate complete campaign with events, themes, and targeting based on current gaps', ar: 'إنشاء حملة كاملة مع الفعاليات والمحاور والاستهداف بناءً على الفجوات الحالية' })}
               </p>
             </div>
-            <Button onClick={generateAICampaign} disabled={aiLoading} className="bg-gradient-to-r from-purple-600 to-pink-600">
+            <Button onClick={generateAICampaign} disabled={aiLoading || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
               {aiLoading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -222,6 +219,7 @@ Generate a comprehensive innovation campaign in BOTH English and Arabic:
               {t({ en: 'Generate Campaign', ar: 'إنشاء حملة' })}
             </Button>
           </div>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         </CardContent>
       </Card>
 
