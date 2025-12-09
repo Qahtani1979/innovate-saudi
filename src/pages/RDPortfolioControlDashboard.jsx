@@ -18,7 +18,6 @@ function RDPortfolioControlDashboard() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [user, setUser] = React.useState(null);
-  const [user, setUser] = React.useState(null);
 
   React.useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -68,7 +67,7 @@ function RDPortfolioControlDashboard() {
 
   const generatePortfolioAnalysis = async () => {
     const result = await invokeAI({
-        prompt: `Analyze R&D portfolio:
+      prompt: `Analyze R&D portfolio:
 
 Total projects: ${rdProjects.length}
 Active: ${activeProjects.length}
@@ -83,14 +82,13 @@ Provide:
 2. Research gaps to address
 3. Commercialization potential (TRL advancement)
 4. Recommendations for next R&D calls`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            diversity_score: { type: 'number' },
-            gaps: { type: 'array', items: { type: 'string' } },
-            commercialization_opportunities: { type: 'array', items: { type: 'string' } },
-            call_recommendations: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          diversity_score: { type: 'number' },
+          gaps: { type: 'array', items: { type: 'string' } },
+          commercialization_opportunities: { type: 'array', items: { type: 'string' } },
+          call_recommendations: { type: 'array', items: { type: 'string' } }
         }
       }
     });
