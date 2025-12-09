@@ -8,11 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Microscope, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [rdData, setRdData] = useState({
     title_en: '',
     title_ar: '',
@@ -52,10 +54,10 @@ export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) 
   });
 
   const generateWithAI = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Convert this innovation proposal into an R&D research project.
+    if (!isAvailable) return;
+    
+    const response = await invokeAI({
+      prompt: `Convert this innovation proposal into an R&D research project.
 
 PROPOSAL:
 ${proposal.title_en}
@@ -68,37 +70,34 @@ Generate R&D project structure:
 - Methodology (detailed research approach in both AR and EN)
 - Expected outputs (publications, data, tools - bilingual)
 - Research themes/keywords`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title_en: { type: "string" },
-            title_ar: { type: "string" },
-            abstract_en: { type: "string" },
-            abstract_ar: { type: "string" },
-            methodology_en: { type: "string" },
-            methodology_ar: { type: "string" },
-            expected_outputs: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  output_en: { type: "string" },
-                  output_ar: { type: "string" },
-                  type: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title_en: { type: "string" },
+          title_ar: { type: "string" },
+          abstract_en: { type: "string" },
+          abstract_ar: { type: "string" },
+          methodology_en: { type: "string" },
+          methodology_ar: { type: "string" },
+          expected_outputs: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                output_en: { type: "string" },
+                output_ar: { type: "string" },
+                type: { type: "string" }
               }
-            },
-            research_themes: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          research_themes: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setRdData(response);
+    if (response.success && response.data) {
+      setRdData(response.data);
       toast.success(t({ en: 'AI generated R&D structure', ar: 'تم توليد هيكل البحث' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -134,9 +133,11 @@ Generate R&D project structure:
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          
           <Button
             onClick={generateWithAI}
-            disabled={generating}
+            disabled={generating || !isAvailable}
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
             size="lg"
           >

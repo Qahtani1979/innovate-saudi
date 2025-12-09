@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { FileText, Download, Loader2, Sparkles, Calendar } from 'lucide-react';
+import { FileText, Download, Loader2, Sparkles, Calendar, Award, AlertCircle, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ExecutiveBriefingGenerator() {
   const { language, isRTL, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [briefing, setBriefing] = useState(null);
   const [period, setPeriod] = useState('monthly');
 
@@ -30,10 +32,10 @@ export default function ExecutiveBriefingGenerator() {
   });
 
   const generateBriefing = async () => {
-    setGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate an executive briefing for Saudi municipal innovation (${period}):
+    if (!isAvailable) return;
+    
+    const result = await invokeAI({
+      prompt: `Generate an executive briefing for Saudi municipal innovation (${period}):
 
 Ecosystem Snapshot:
 - Total Challenges: ${challenges.length}
@@ -49,33 +51,30 @@ Generate:
 4. Areas of Concern (2-3 challenges requiring attention)
 5. Strategic Recommendations (3 action items)
 6. Outlook for next period`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            executive_summary_en: { type: 'string' },
-            executive_summary_ar: { type: 'string' },
-            key_metrics: { type: 'array', items: { 
-              type: 'object',
-              properties: {
-                metric: { type: 'string' },
-                value: { type: 'string' },
-                context: { type: 'string' }
-              }
-            }},
-            achievements: { type: 'array', items: { type: 'string' } },
-            concerns: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'array', items: { type: 'string' } },
-            outlook: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          executive_summary_en: { type: 'string' },
+          executive_summary_ar: { type: 'string' },
+          key_metrics: { type: 'array', items: { 
+            type: 'object',
+            properties: {
+              metric: { type: 'string' },
+              value: { type: 'string' },
+              context: { type: 'string' }
+            }
+          }},
+          achievements: { type: 'array', items: { type: 'string' } },
+          concerns: { type: 'array', items: { type: 'string' } },
+          recommendations: { type: 'array', items: { type: 'string' } },
+          outlook: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setBriefing(result);
+    if (result.success && result.data) {
+      setBriefing(result.data);
       toast.success(t({ en: 'Briefing generated', ar: 'تم توليد الموجز' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -102,9 +101,11 @@ Generate:
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         <Button
           onClick={generateBriefing}
-          disabled={generating}
+          disabled={generating || !isAvailable}
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600"
         >
           {generating ? (

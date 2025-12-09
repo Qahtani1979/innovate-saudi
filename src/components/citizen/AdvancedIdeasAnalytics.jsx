@@ -7,24 +7,26 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2, Brain, Target } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AdvancedIdeasAnalytics({ ideas }) {
   const { language, isRTL, t } = useLanguage();
   const [insights, setInsights] = useState(null);
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const generateInsights = async () => {
-    setGenerating(true);
-    try {
-      const categoryCounts = ideas.reduce((acc, i) => {
-        acc[i.category] = (acc[i.category] || 0) + 1;
-        return acc;
-      }, {});
+    if (!isAvailable) return;
+    
+    const categoryCounts = ideas.reduce((acc, i) => {
+      acc[i.category] = (acc[i.category] || 0) + 1;
+      return acc;
+    }, {});
 
-      const topIdeas = ideas.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0)).slice(0, 10);
+    const topIdeas = ideas.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0)).slice(0, 10);
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze citizen ideas data:
+    const result = await invokeAI({
+      prompt: `Analyze citizen ideas data:
 
 Total Ideas: ${ideas.length}
 Categories: ${JSON.stringify(categoryCounts)}
@@ -35,22 +37,19 @@ Generate:
 2. 3 strategic recommendations
 3. Risk areas to monitor
 4. Predicted trends for next quarter`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            emerging_themes: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'array', items: { type: 'string' } },
-            risk_areas: { type: 'array', items: { type: 'string' } },
-            predictions: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          emerging_themes: { type: 'array', items: { type: 'string' } },
+          recommendations: { type: 'array', items: { type: 'string' } },
+          risk_areas: { type: 'array', items: { type: 'string' } },
+          predictions: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setInsights(result);
-    } catch (error) {
-      console.error('AI insights failed:', error);
-    } finally {
-      setGenerating(false);
+    if (result.success && result.data) {
+      setInsights(result.data);
     }
   };
 
@@ -84,11 +83,12 @@ Generate:
               <Brain className="h-5 w-5 text-purple-600" />
               {t({ en: 'AI Strategic Insights', ar: 'الرؤى الاستراتيجية الذكية' })}
             </CardTitle>
-            <Button onClick={generateInsights} disabled={generating} className="bg-purple-600">
+            <Button onClick={generateInsights} disabled={generating || !isAvailable} className="bg-purple-600">
               {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'Generate', ar: 'إنشاء' })}
             </Button>
           </div>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         </CardHeader>
         {insights && (
           <CardContent className="space-y-4">

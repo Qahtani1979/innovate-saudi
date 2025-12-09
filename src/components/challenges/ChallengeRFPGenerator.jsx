@@ -7,17 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ChallengeRFPGenerator({ challenge, onComplete }) {
-  const [isGenerating, setIsGenerating] = useState(false);
+  const { invokeAI, status, isLoading: isGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [rfpData, setRfpData] = useState(null);
   const [customRequirements, setCustomRequirements] = useState('');
 
   const generateRFP = async () => {
-    setIsGenerating(true);
-    try {
-      const aiResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a professional RFP (Request for Proposal) for this municipal challenge:
+    if (!isAvailable) return;
+    
+    const aiResponse = await invokeAI({
+      prompt: `Generate a professional RFP (Request for Proposal) for this municipal challenge:
 
 Challenge: ${challenge.title_en}
 Description: ${challenge.description_en}
@@ -40,39 +42,36 @@ Generate a structured RFP including:
 9. Terms & Conditions
 
 Provide bilingual content (English and Arabic) where appropriate.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            rfp_code: { type: "string" },
-            executive_summary_en: { type: "string" },
-            executive_summary_ar: { type: "string" },
-            scope_of_work: { type: "string" },
-            technical_requirements: { type: "array", items: { type: "string" } },
-            evaluation_criteria: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  criterion: { type: "string" },
-                  weight: { type: "number" },
-                  description: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          rfp_code: { type: "string" },
+          executive_summary_en: { type: "string" },
+          executive_summary_ar: { type: "string" },
+          scope_of_work: { type: "string" },
+          technical_requirements: { type: "array", items: { type: "string" } },
+          evaluation_criteria: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                criterion: { type: "string" },
+                weight: { type: "number" },
+                description: { type: "string" }
               }
-            },
-            submission_requirements: { type: "array", items: { type: "string" } },
-            timeline_weeks: { type: "number" },
-            budget_range_min: { type: "number" },
-            budget_range_max: { type: "number" }
-          }
+            }
+          },
+          submission_requirements: { type: "array", items: { type: "string" } },
+          timeline_weeks: { type: "number" },
+          budget_range_min: { type: "number" },
+          budget_range_max: { type: "number" }
         }
-      });
+      }
+    });
 
-      setRfpData(aiResponse);
+    if (aiResponse.success && aiResponse.data) {
+      setRfpData(aiResponse.data);
       toast.success('RFP generated successfully');
-    } catch (error) {
-      toast.error('RFP generation failed: ' + error.message);
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -102,6 +101,8 @@ Provide bilingual content (English and Arabic) where appropriate.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         {!rfpData ? (
           <>
             <p className="text-sm text-slate-600">
@@ -123,7 +124,7 @@ Provide bilingual content (English and Arabic) where appropriate.`,
 
             <Button 
               onClick={generateRFP} 
-              disabled={isGenerating}
+              disabled={isGenerating || !isAvailable}
               className="w-full bg-blue-600"
             >
               {isGenerating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
