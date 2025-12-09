@@ -18,6 +18,8 @@ import InnovationFramingGenerator from '../components/challenges/InnovationFrami
 import StrategicAlignmentSelector from '../components/challenges/StrategicAlignmentSelector';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function ChallengeCreatePage() {
   const { hasPermission } = usePermissions();
@@ -25,13 +27,14 @@ function ChallengeCreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
+  const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
+  
   // URL params for context
   const urlParams = new URLSearchParams(window.location.search);
   const ideaId = urlParams.get('idea_id');
   const strategicPlanId = urlParams.get('strategic_plan_id');
   
   const [currentStep, setCurrentStep] = useState(1);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [initialThoughts, setInitialThoughts] = useState('');
   const [linkedIdea, setLinkedIdea] = useState(ideaId || '');
   const [hasUserEdited, setHasUserEdited] = useState({
@@ -305,7 +308,7 @@ CRITICAL CONTENT RULES:
 
 Return actual IDs from the lists provided.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
@@ -467,7 +470,7 @@ Return actual IDs from the lists provided.`;
 
     try {
       const targetLang = field.includes('_en') ? 'English' : 'Arabic';
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Translate this municipal challenge text to ${targetLang} maintaining professional tone and accuracy:\n\n${sourceText}`,
         response_json_schema: {
           type: 'object',
@@ -477,9 +480,11 @@ Return actual IDs from the lists provided.`;
         }
       });
       
-      setFormData(prev => ({ ...prev, [field]: result.translation }));
-      setHasUserEdited(prev => ({ ...prev, [field]: false }));
-      toast.success(t({ en: 'Re-translated', ar: 'تمت إعادة الترجمة' }));
+      if (result.success && result.data?.translation) {
+        setFormData(prev => ({ ...prev, [field]: result.data.translation }));
+        setHasUserEdited(prev => ({ ...prev, [field]: false }));
+        toast.success(t({ en: 'Re-translated', ar: 'تمت إعادة الترجمة' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'Translation failed', ar: 'فشلت الترجمة' }));
     }

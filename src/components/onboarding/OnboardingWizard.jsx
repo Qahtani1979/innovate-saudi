@@ -25,6 +25,8 @@ import {
   Info, Plus, Bot
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 // Send welcome email via edge function
 const sendWelcomeEmail = async (userId, userEmail, userName, persona, language) => {
@@ -164,6 +166,8 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   
+  const { invokeAI, status: aiStatus, isLoading: isGeneratingAI, isAvailable, rateLimitInfo } = useAIWithFallback();
+  
   // Fetch sectors from database for dynamic expertise areas
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors-active'],
@@ -181,7 +185,6 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isExtractingCV, setIsExtractingCV] = useState(false);
   const [isExtractingLinkedIn, setIsExtractingLinkedIn] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
@@ -350,7 +353,7 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     setIsTranslating(prev => ({ ...prev, [targetField]: true }));
     
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Translate the following text from ${sourceLang === 'en' ? 'English' : 'Arabic'} to ${targetLang === 'en' ? 'English' : 'Arabic'}. 
 Keep it professional and formal. Only return the translated text, nothing else.
 
@@ -363,8 +366,8 @@ Text to translate: ${sourceText}`,
         }
       });
       
-      if (result?.translation) {
-        setFormData(prev => ({ ...prev, [targetField]: result.translation }));
+      if (result.success && result.data?.translation) {
+        setFormData(prev => ({ ...prev, [targetField]: result.data.translation }));
         toast.success(t({ en: 'Translation complete', ar: 'اكتملت الترجمة' }));
       }
     } catch (error) {
@@ -517,7 +520,7 @@ Text to translate: ${sourceText}`,
 
     try {
       // Use AI to suggest profile based on LinkedIn URL pattern with bilingual output
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Based on this LinkedIn profile URL: ${formData.linkedin_url}
 
 Extract or infer the following information. If the URL contains a username or name pattern, try to suggest professional details.
@@ -542,18 +545,18 @@ Return a JSON with:
         }
       });
 
-      if (result) {
+      if (result.success && result.data) {
         setFormData(prev => ({
           ...prev,
-          full_name_en: result.full_name_en || prev.full_name_en,
-          full_name_ar: result.full_name_ar || prev.full_name_ar,
-          job_title_en: result.job_title_en || prev.job_title_en,
-          job_title_ar: result.job_title_ar || prev.job_title_ar,
-          expertise_areas: result.expertise_areas?.length > 0 
-            ? [...new Set([...prev.expertise_areas, ...result.expertise_areas])].slice(0, 5)
+          full_name_en: result.data.full_name_en || prev.full_name_en,
+          full_name_ar: result.data.full_name_ar || prev.full_name_ar,
+          job_title_en: result.data.job_title_en || prev.job_title_en,
+          job_title_ar: result.data.job_title_ar || prev.job_title_ar,
+          expertise_areas: result.data.expertise_areas?.length > 0 
+            ? [...new Set([...prev.expertise_areas, ...result.data.expertise_areas])].slice(0, 5)
             : prev.expertise_areas,
-          bio_en: result.bio_en || prev.bio_en,
-          bio_ar: result.bio_ar || prev.bio_ar
+          bio_en: result.data.bio_en || prev.bio_en,
+          bio_ar: result.data.bio_ar || prev.bio_ar
         }));
         toast.success(t({ en: 'LinkedIn profile analyzed! Review and adjust the suggestions.', ar: 'تم تحليل ملف LinkedIn! راجع وعدّل الاقتراحات.' }));
       }
@@ -582,9 +585,8 @@ Return a JSON with:
     // Get available sector names for AI to use
     const availableSectors = sectors.map(s => s.name_en).join(', ') || 'Urban Planning, Smart City, Sustainability, Transportation, Public Services, AI & Technology, Energy, Healthcare, Education, Environment';
 
-    setIsGeneratingAI(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `You are an AI assistant helping users complete their profile on Saudi Innovates, a municipal innovation platform in Saudi Arabia. 
         
 Analyze the provided user information and FILL IN ALL MISSING FIELDS with intelligent suggestions based on context clues. PROVIDE ALL TEXT IN BOTH ENGLISH AND ARABIC.
@@ -663,13 +665,13 @@ Return comprehensive suggestions for all fields.`,
         }
       });
       
-      setAiSuggestions(result);
-      toast.success(t({ en: 'AI suggestions generated! Review and apply them.', ar: 'تم إنشاء الاقتراحات الذكية! راجعها وطبقها.' }));
+      if (result.success && result.data) {
+        setAiSuggestions(result.data);
+        toast.success(t({ en: 'AI suggestions generated! Review and apply them.', ar: 'تم إنشاء الاقتراحات الذكية! راجعها وطبقها.' }));
+      }
     } catch (error) {
       console.error('AI generation error:', error);
       toast.error(t({ en: 'Failed to generate suggestions', ar: 'فشل في إنشاء الاقتراحات' }));
-    } finally {
-      setIsGeneratingAI(false);
     }
   };
 
