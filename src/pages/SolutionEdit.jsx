@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import AIProfileEnhancer from '../components/solutions/AIProfileEnhancer';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SolutionEditPage() {
   const { user } = usePermissions();
@@ -43,10 +45,10 @@ function SolutionEditPage() {
   const [formData, setFormData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [changedFields, setChangedFields] = useState(new Set());
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSaved, setLastSaved] = useState(null);
+  const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   React.useEffect(() => {
     if (solution && !formData) {
@@ -154,9 +156,7 @@ function SolutionEditPage() {
       return;
     }
 
-    setIsAIProcessing(true);
-    try {
-      const challengeContext = challenges.length > 0 ? `
+    const challengeContext = challenges.length > 0 ? `
       Available Challenges (analyze and match to this solution):
       ${challenges.slice(0, 20).map(c => `
       - Code: ${c.code}
@@ -169,7 +169,7 @@ function SolutionEditPage() {
       Return an array of challenge codes that match.
       ` : '';
 
-      const prompt = `
+    const prompt = `
         Analyze this innovation solution and provide BILINGUAL (Arabic + English) structured output.
         
         Current data:
@@ -194,62 +194,59 @@ function SolutionEditPage() {
         10. Matched challenge codes (if applicable)
       `;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            refined_name_en: { type: 'string' },
-            refined_name_ar: { type: 'string' },
-            improved_description_en: { type: 'string' },
-            improved_description_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            value_proposition: { type: 'string' },
-            features: { type: 'array', items: { type: 'string' } },
-            use_cases: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  description: { type: 'string' },
-                  sector: { type: 'string' }
-                }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          refined_name_en: { type: 'string' },
+          refined_name_ar: { type: 'string' },
+          improved_description_en: { type: 'string' },
+          improved_description_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          value_proposition: { type: 'string' },
+          features: { type: 'array', items: { type: 'string' } },
+          use_cases: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                description: { type: 'string' },
+                sector: { type: 'string' }
               }
-            },
-            technology_stack: { type: 'array', items: { type: 'string' } },
-            sectors: { type: 'array', items: { type: 'string' } },
-            trl: { type: 'number' },
-            matched_challenge_codes: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          technology_stack: { type: 'array', items: { type: 'string' } },
+          sectors: { type: 'array', items: { type: 'string' } },
+          trl: { type: 'number' },
+          matched_challenge_codes: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setFormData(prev => ({
         ...prev,
-        name_en: result.refined_name_en || prev.name_en,
-        name_ar: result.refined_name_ar || prev.name_ar,
-        description_en: result.improved_description_en || prev.description_en,
-        description_ar: result.improved_description_ar || prev.description_ar,
-        tagline_en: result.tagline_en || prev.tagline_en,
-        tagline_ar: result.tagline_ar || prev.tagline_ar,
-        value_proposition: result.value_proposition || prev.value_proposition,
-        features: result.features || prev.features || [],
-        use_cases: result.use_cases || prev.use_cases || [],
+        name_en: result.data.refined_name_en || prev.name_en,
+        name_ar: result.data.refined_name_ar || prev.name_ar,
+        description_en: result.data.improved_description_en || prev.description_en,
+        description_ar: result.data.improved_description_ar || prev.description_ar,
+        tagline_en: result.data.tagline_en || prev.tagline_en,
+        tagline_ar: result.data.tagline_ar || prev.tagline_ar,
+        value_proposition: result.data.value_proposition || prev.value_proposition,
+        features: result.data.features || prev.features || [],
+        use_cases: result.data.use_cases || prev.use_cases || [],
         technical_specifications: {
           ...(prev.technical_specifications || {}),
-          technology_stack: result.technology_stack || prev.technical_specifications?.technology_stack || []
+          technology_stack: result.data.technology_stack || prev.technical_specifications?.technology_stack || []
         },
-        sectors: result.sectors || prev.sectors || [],
-        trl: result.trl || prev.trl
+        sectors: result.data.sectors || prev.sectors || [],
+        trl: result.data.trl || prev.trl
       }));
 
       toast.success(language === 'ar' ? '✨ تم التحسين بنجاح!' : '✨ AI enhancement complete!');
-    } catch (error) {
-      toast.error(language === 'ar' ? '❌ فشل التحسين الذكي' : '❌ AI enhancement failed');
-    } finally {
-      setIsAIProcessing(false);
     }
   };
 
@@ -304,11 +301,12 @@ function SolutionEditPage() {
 
       <Card>
         <CardHeader>
+          <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} className="mb-4" />
           <CardTitle className="flex items-center justify-between">
             <span>{t({ en: 'Solution Information', ar: 'معلومات الحل' })}</span>
             <Button
               onClick={handleAIEnhancement}
-              disabled={isAIProcessing || previewMode}
+              disabled={isAIProcessing || previewMode || !isAvailable}
               variant="outline"
               className="gap-2"
             >

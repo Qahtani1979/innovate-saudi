@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Network, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function CrossProgramSynergy() {
   const { language, t } = useLanguage();
-  const [finding, setFinding] = useState(false);
   const [synergies, setSynergies] = useState(null);
+  const { invokeAI, status, isLoading: finding, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const findSynergies = async () => {
-    setFinding(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Identify synergies across programs:
+    const result = await invokeAI({
+      prompt: `Identify synergies across programs:
 
 Programs:
 - AI Accelerator (15 startups, focus: smart city AI)
@@ -27,22 +26,19 @@ Find:
 1. Potential cross-program collaborations
 2. Shared resource opportunities
 3. Joint events or showcases`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            collaborations: { type: "array", items: { type: "string" } },
-            shared_resources: { type: "array", items: { type: "string" } },
-            joint_events: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          collaborations: { type: "array", items: { type: "string" } },
+          shared_resources: { type: "array", items: { type: "string" } },
+          joint_events: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setSynergies(response);
+    if (result.success) {
+      setSynergies(result.data);
       toast.success(t({ en: 'Synergies found', ar: 'التآزر مُحدد' }));
-    } catch (error) {
-      toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
-    } finally {
-      setFinding(false);
     }
   };
 
@@ -54,13 +50,14 @@ Find:
             <Network className="h-5 w-5 text-pink-600" />
             {t({ en: 'Cross-Program Synergy', ar: 'التآزر عبر البرامج' })}
           </CardTitle>
-          <Button onClick={findSynergies} disabled={finding} size="sm" className="bg-pink-600">
+          <Button onClick={findSynergies} disabled={finding || !isAvailable} size="sm" className="bg-pink-600">
             {finding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Find', ar: 'إيجاد' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
         {synergies && (
           <div className="space-y-3">
             <div className="p-3 bg-blue-50 rounded border">

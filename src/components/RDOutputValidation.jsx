@@ -9,13 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, X, FileText, Award, Database, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDOutputValidation({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [validating, setValidating] = useState(false);
   const [validationResults, setValidationResults] = useState(null);
   const [validatorNotes, setValidatorNotes] = useState('');
+  const { invokeAI, status, isLoading: validating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const validateMutation = useMutation({
     mutationFn: async (data) => {
@@ -37,9 +39,7 @@ export default function RDOutputValidation({ project, onClose }) {
   });
 
   const runAIValidation = async () => {
-    setValidating(true);
-    try {
-      const prompt = `Validate R&D project outputs:
+    const prompt = `Validate R&D project outputs:
 
 Project: ${project.title_en}
 Duration: ${project.duration_months} months
@@ -68,29 +68,26 @@ Validate:
 
 Return structured validation.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            publication_quality: { type: 'string' },
-            patent_relevance: { type: 'string' },
-            dataset_quality: { type: 'string' },
-            achievement_percentage: { type: 'number' },
-            trl_evidence: { type: 'string' },
-            quality_score: { type: 'number' },
-            strengths: { type: 'array', items: { type: 'string' } },
-            gaps: { type: 'array', items: { type: 'string' } },
-            recommendation: { type: 'string' }
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          publication_quality: { type: 'string' },
+          patent_relevance: { type: 'string' },
+          dataset_quality: { type: 'string' },
+          achievement_percentage: { type: 'number' },
+          trl_evidence: { type: 'string' },
+          quality_score: { type: 'number' },
+          strengths: { type: 'array', items: { type: 'string' } },
+          gaps: { type: 'array', items: { type: 'string' } },
+          recommendation: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setValidationResults(result);
-    } catch (error) {
-      toast.error(t({ en: 'Validation failed', ar: 'فشل التحقق' }));
-    } finally {
-      setValidating(false);
+    if (result.success) {
+      setValidationResults(result.data);
     }
   };
 
@@ -120,13 +117,15 @@ Return structured validation.`;
           </div>
         </div>
 
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
         {!validationResults && !validating && (
           <div className="text-center py-8">
             <Sparkles className="h-12 w-12 text-purple-600 mx-auto mb-4" />
             <p className="text-sm text-slate-600 mb-4">
               {t({ en: 'AI will validate research outputs quality and completeness', ar: 'سيتحقق الذكاء الاصطناعي من جودة واكتمال مخرجات البحث' })}
             </p>
-            <Button onClick={runAIValidation} className="bg-purple-600 hover:bg-purple-700">
+            <Button onClick={runAIValidation} disabled={!isAvailable} className="bg-purple-600 hover:bg-purple-700">
               <Sparkles className="h-4 w-4 mr-2" />
               {t({ en: 'Run AI Validation', ar: 'تشغيل التحقق الذكي' })}
             </Button>
