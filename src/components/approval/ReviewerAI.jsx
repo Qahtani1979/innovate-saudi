@@ -110,84 +110,83 @@ Write professional formal Arabic for Saudi government officials.
     const response = await invokeAI({
       prompt,
       response_json_schema: {
-          type: 'object',
-          properties: {
-            risk_score: { type: 'number' },
-            risk_level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
-            compliance_check: { type: 'boolean' },
-            compliance_details: { 
+        type: 'object',
+        properties: {
+          risk_score: { type: 'number' },
+          risk_level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+          compliance_check: { type: 'boolean' },
+          compliance_details: { 
+            type: 'object',
+            properties: {
+              en: { type: 'string' },
+              ar: { type: 'string' }
+            }
+          },
+          concerns: { 
+            type: 'array', 
+            items: { 
               type: 'object',
               properties: {
                 en: { type: 'string' },
                 ar: { type: 'string' }
               }
-            },
-            concerns: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
+            }
+          },
+          recommendations: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' }
               }
-            },
-            recommendations: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            similar_cases: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  case: { 
-                    type: 'object',
-                    properties: {
-                      en: { type: 'string' },
-                      ar: { type: 'string' }
-                    }
-                  },
-                  outcome: { 
-                    type: 'object',
-                    properties: {
-                      en: { type: 'string' },
-                      ar: { type: 'string' }
-                    }
-                  },
-                  relevance: { 
-                    type: 'object',
-                    properties: {
-                      en: { type: 'string' },
-                      ar: { type: 'string' }
-                    }
+            }
+          },
+          similar_cases: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                case: { 
+                  type: 'object',
+                  properties: {
+                    en: { type: 'string' },
+                    ar: { type: 'string' }
+                  }
+                },
+                outcome: { 
+                  type: 'object',
+                  properties: {
+                    en: { type: 'string' },
+                    ar: { type: 'string' }
+                  }
+                },
+                relevance: { 
+                  type: 'object',
+                  properties: {
+                    en: { type: 'string' },
+                    ar: { type: 'string' }
                   }
                 }
               }
-            },
-            suggested_decision: { 
-              type: 'string',
-              enum: ['approve', 'reject', 'conditional', 'request_info']
-            },
-            decision_rationale: { 
-              type: 'object',
-              properties: {
-                en: { type: 'string' },
-                ar: { type: 'string' }
-              }
-            },
-            review_summary: { 
-              type: 'object',
-              properties: {
-                en: { type: 'string' },
-                ar: { type: 'string' }
-              }
+            }
+          },
+          suggested_decision: { 
+            type: 'string',
+            enum: ['approve', 'reject', 'conditional', 'request_info']
+          },
+          decision_rationale: { 
+            type: 'object',
+            properties: {
+              en: { type: 'string' },
+              ar: { type: 'string' }
+            }
+          },
+          review_summary: { 
+            type: 'object',
+            properties: {
+              en: { type: 'string' },
+              ar: { type: 'string' }
             }
           }
         }
