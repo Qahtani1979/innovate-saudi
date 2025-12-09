@@ -8,14 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { XCircle, Loader2, AlertTriangle, FileText, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PilotTerminationWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [reason, setReason] = useState('');
   const [lessonsLearned, setLessonsLearned] = useState('');
-  const [generatingAnalysis, setGeneratingAnalysis] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const queryClient = useQueryClient();
+  const { invokeAI, status, isLoading: generatingAnalysis, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const terminationReasons = [
     { value: 'budget_constraints', label: { en: 'Budget Constraints', ar: 'قيود الميزانية' } },
@@ -55,10 +57,8 @@ function PilotTerminationWorkflow({ pilot, onClose }) {
   });
 
   const generatePostMortem = async () => {
-    setGeneratingAnalysis(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this terminated pilot and generate a post-mortem report:
+    const result = await invokeAI({
+      prompt: `Analyze this terminated pilot and generate a post-mortem report:
 
 Title: ${pilot.title_en}
 Duration: ${pilot.duration_weeks || 'N/A'} weeks
@@ -75,22 +75,20 @@ Provide:
 3. Recommendations for future similar pilots
 4. Salvageable insights (what was learned that can be reused)
 5. Stakeholder communication summary`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            root_cause: { type: 'string' },
-            lessons: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'string' },
-            salvageable_insights: { type: 'array', items: { type: 'string' } },
-            communication_summary: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          root_cause: { type: 'string' },
+          lessons: { type: 'array', items: { type: 'string' } },
+          recommendations: { type: 'string' },
+          salvageable_insights: { type: 'array', items: { type: 'string' } },
+          communication_summary: { type: 'string' }
         }
-      });
-      setAiAnalysis(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate analysis', ar: 'فشل إنشاء التحليل' }));
-    } finally {
-      setGeneratingAnalysis(false);
+      }
+    });
+
+    if (result.success) {
+      setAiAnalysis(result.data);
     }
   };
 
@@ -101,6 +99,7 @@ Provide:
           <XCircle className="h-5 w-5" />
           {t({ en: 'Terminate Pilot', ar: 'إنهاء التجربة' })}
         </CardTitle>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="p-4 bg-white rounded-lg border border-red-200">
@@ -150,7 +149,7 @@ Provide:
 
         <Button
           onClick={generatePostMortem}
-          disabled={!selectedReason || !reason || generatingAnalysis}
+          disabled={!selectedReason || !reason || generatingAnalysis || !isAvailable}
           variant="outline"
           className="w-full"
         >

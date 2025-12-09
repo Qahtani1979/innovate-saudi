@@ -10,10 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from './LanguageContext';
 import { AlertTriangle, Send, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function IncidentReportForm({ sandbox, applicationId }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { invokeAI, status, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [formData, setFormData] = useState({
     incident_type: 'safety',
     severity: 'medium',
@@ -23,9 +26,8 @@ export default function IncidentReportForm({ sandbox, applicationId }) {
     incident_date: new Date().toISOString()
   });
 
-  const aiDraftMutation = useMutation({
-    mutationFn: async () => {
-      const prompt = `Generate a detailed incident report for a sandbox project:
+  const generateAIDraft = async () => {
+    const prompt = `Generate a detailed incident report for a sandbox project:
 
 Incident Type: ${formData.incident_type}
 Severity: ${formData.severity}
@@ -40,16 +42,13 @@ Create professional incident report with:
 4. Impact assessment
 5. Follow-up requirements`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt
-      });
+    const result = await invokeAI({ prompt });
 
-      return response;
-    },
-    onSuccess: (data) => {
-      const lines = data.split('\n');
-      const title = lines[0].replace(/^(Title:|Incident Title:)/i, '').trim();
-      const description = lines.slice(1).join('\n').trim();
+    if (result.success) {
+      const response = result.data;
+      const lines = typeof response === 'string' ? response.split('\n') : [];
+      const title = lines[0]?.replace(/^(Title:|Incident Title:)/i, '').trim() || '';
+      const description = lines.slice(1).join('\n').trim() || (typeof response === 'string' ? response : '');
       
       setFormData({
         ...formData,
@@ -58,7 +57,7 @@ Create professional incident report with:
       });
       toast.success(t({ en: 'AI draft generated', ar: 'تم إنشاء المسودة الذكية' }));
     }
-  });
+  };
 
   const reportMutation = useMutation({
     mutationFn: async (data) => {
@@ -69,7 +68,6 @@ Create professional incident report with:
         status: 'reported'
       });
 
-      // Create notification for sandbox admin
       await base44.entities.Notification.create({
         title: `${data.severity.toUpperCase()} Incident Reported - ${sandbox.name_en}`,
         body: `${data.title}: ${data.description.substring(0, 100)}`,
@@ -101,17 +99,18 @@ Create professional incident report with:
           <AlertTriangle className="h-5 w-5 text-orange-600" />
           {t({ en: 'Report Incident', ar: 'الإبلاغ عن حادث' })}
         </CardTitle>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-end">
           <Button
             type="button"
             variant="outline"
-            onClick={() => aiDraftMutation.mutate()}
-            disabled={aiDraftMutation.isPending}
+            onClick={generateAIDraft}
+            disabled={aiGenerating || !isAvailable}
             className="gap-2"
           >
-            {aiDraftMutation.isPending ? (
+            {aiGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {t({ en: 'Generating...', ar: 'جاري الإنشاء...' })}

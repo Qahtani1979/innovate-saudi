@@ -7,15 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle2, Circle, ArrowRight, ArrowLeft, Sparkles, MapPin, Calendar, DollarSign, Users } from 'lucide-react';
+import { CheckCircle2, Circle, ArrowRight, ArrowLeft, Sparkles, MapPin, Calendar, DollarSign, Users, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ScalingPlanningWizard({ pilot, onComplete, onCancel }) {
   const { t, isRTL } = useLanguage();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [aiEstimating, setAiEstimating] = useState(false);
   const [municipalities, setMunicipalities] = useState([]);
+  const { invokeAI, status, isLoading: aiEstimating, isAvailable, rateLimitInfo } = useAIWithFallback();
   
   const [planData, setPlanData] = useState({
     pilot_id: pilot?.id,
@@ -37,10 +39,8 @@ export default function ScalingPlanningWizard({ pilot, onComplete, onCancel }) {
   }, []);
 
   const generateAIEstimates = async () => {
-    setAiEstimating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a scaling expert. Based on this pilot information, provide estimates:
+    const result = await invokeAI({
+      prompt: `You are a scaling expert. Based on this pilot information, provide estimates:
         
 Pilot: ${pilot?.title_en}
 Sector: ${pilot?.sector}
@@ -55,35 +55,36 @@ Estimate:
 3. Budget per municipality
 4. Phased rollout plan (3 phases)
 5. Key risk factors`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            total_budget: { type: 'number' },
-            timeline_months: { type: 'number' },
-            budget_per_municipality: { type: 'number' },
-            phases: { 
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  duration_months: { type: 'number' },
-                  municipalities_count: { type: 'number' },
-                  activities: { type: 'array', items: { type: 'string' } }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          total_budget: { type: 'number' },
+          timeline_months: { type: 'number' },
+          budget_per_municipality: { type: 'number' },
+          phases: { 
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                duration_months: { type: 'number' },
+                municipalities_count: { type: 'number' },
+                activities: { type: 'array', items: { type: 'string' } }
               }
-            },
-            risk_factors: { type: 'array', items: { type: 'string' } }
-          }
+            }
+          },
+          risk_factors: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setPlanData(prev => ({
         ...prev,
-        estimated_budget: result.total_budget,
-        estimated_timeline_months: result.timeline_months,
-        ai_budget_estimate: result,
-        phases: result.phases.map((p, i) => ({
+        estimated_budget: result.data.total_budget,
+        estimated_timeline_months: result.data.timeline_months,
+        ai_budget_estimate: result.data,
+        phases: result.data.phases.map((p, i) => ({
           phase_number: i + 1,
           name_en: p.name,
           name_ar: p.name,
@@ -92,22 +93,18 @@ Estimate:
           status: 'planned'
         }))
       }));
-    } catch (error) {
-      console.error('AI estimation failed:', error);
     }
-    setAiEstimating(false);
   };
 
   const scoreMunicipalReadiness = async () => {
-    setAiEstimating(true);
-    try {
-      const selectedMunis = municipalities.filter(m => 
-        planData.target_municipalities.includes(m.id)
-      );
+    const selectedMunis = municipalities.filter(m => 
+      planData.target_municipalities.includes(m.id)
+    );
 
-      const scores = await Promise.all(selectedMunis.map(async (muni) => {
-        const result = await base44.integrations.Core.InvokeLLM({
-          prompt: `Score the readiness of this municipality for scaling this pilot (0-100):
+    const scores = [];
+    for (const muni of selectedMunis) {
+      const result = await invokeAI({
+        prompt: `Score the readiness of this municipality for scaling this pilot (0-100):
           
 Municipality: ${muni.name_en}
 Population: ${muni.population}
@@ -120,31 +117,29 @@ Requirements: ${JSON.stringify(pilot?.target_population || {})}
 
 Consider: infrastructure, capacity, prior experience, population fit.
 Return score 0-100 and brief rationale.`,
-          response_json_schema: {
-            type: 'object',
-            properties: {
-              readiness_score: { type: 'number' },
-              rationale: { type: 'string' },
-              concerns: { type: 'array', items: { type: 'string' } }
-            }
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            readiness_score: { type: 'number' },
+            rationale: { type: 'string' },
+            concerns: { type: 'array', items: { type: 'string' } }
           }
-        });
+        }
+      });
 
-        return {
+      if (result.success) {
+        scores.push({
           municipality_id: muni.id,
           municipality_name: muni.name_en,
-          ...result
-        };
-      }));
-
-      setPlanData(prev => ({
-        ...prev,
-        ai_readiness_scores: scores
-      }));
-    } catch (error) {
-      console.error('Readiness scoring failed:', error);
+          ...result.data
+        });
+      }
     }
-    setAiEstimating(false);
+
+    setPlanData(prev => ({
+      ...prev,
+      ai_readiness_scores: scores
+    }));
   };
 
   const handleSubmit = async () => {
@@ -160,7 +155,6 @@ Return score 0-100 and brief rationale.`,
 
   return (
     <div className="space-y-6">
-      {/* Progress Indicator */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
@@ -184,7 +178,6 @@ Return score 0-100 and brief rationale.`,
         </CardContent>
       </Card>
 
-      {/* Step 1: Municipality Selection */}
       {step === 1 && (
         <Card>
           <CardHeader>
@@ -228,7 +221,6 @@ Return score 0-100 and brief rationale.`,
         </Card>
       )}
 
-      {/* Step 2: AI Estimates */}
       {step === 2 && (
         <Card>
           <CardHeader>
@@ -236,14 +228,15 @@ Return score 0-100 and brief rationale.`,
               <Sparkles className="h-5 w-5 text-purple-600" />
               {t({ en: 'AI Planning Estimates', ar: 'تقديرات التخطيط الذكية' })}
             </CardTitle>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
           </CardHeader>
           <CardContent className="space-y-6">
             {!planData.ai_budget_estimate && (
               <div className="text-center py-8">
-                <Button onClick={generateAIEstimates} disabled={aiEstimating} className="gap-2">
+                <Button onClick={generateAIEstimates} disabled={aiEstimating || !isAvailable} className="gap-2">
                   {aiEstimating ? (
                     <>
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       {t({ en: 'AI Analyzing...', ar: 'الذكاء يحلل...' })}
                     </>
                   ) : (
@@ -281,7 +274,7 @@ Return score 0-100 and brief rationale.`,
                   ))}
                 </div>
 
-                <Button onClick={scoreMunicipalReadiness} disabled={aiEstimating} variant="outline" className="w-full gap-2">
+                <Button onClick={scoreMunicipalReadiness} disabled={aiEstimating || !isAvailable} variant="outline" className="w-full gap-2">
                   <Users className="h-4 w-4" />
                   {t({ en: 'Score Municipal Readiness (AI)', ar: 'تقييم جاهزية البلديات (ذكاء)' })}
                 </Button>
@@ -308,7 +301,6 @@ Return score 0-100 and brief rationale.`,
         </Card>
       )}
 
-      {/* Step 3: Phase Planning */}
       {step === 3 && (
         <Card>
           <CardHeader>
@@ -362,7 +354,6 @@ Return score 0-100 and brief rationale.`,
         </Card>
       )}
 
-      {/* Step 4: Review & Submit */}
       {step === 4 && (
         <Card>
           <CardHeader>
@@ -404,22 +395,20 @@ Return score 0-100 and brief rationale.`,
         </Card>
       )}
 
-      {/* Navigation */}
       <div className="flex justify-between">
         <Button variant="outline" onClick={step === 1 ? onCancel : () => setStep(step - 1)}>
           {isRTL ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
           {step === 1 ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Back', ar: 'رجوع' })}
         </Button>
         {step < 4 ? (
-          <Button onClick={() => setStep(step + 1)} disabled={
-            (step === 1 && planData.target_municipalities.length === 0)
-          }>
+          <Button onClick={() => setStep(step + 1)} disabled={step === 1 && planData.target_municipalities.length === 0}>
             {t({ en: 'Next', ar: 'التالي' })}
-            {isRTL ? <ArrowLeft className="h-4 w-4 ml-2" /> : <ArrowRight className="h-4 w-4 mr-2" />}
+            {isRTL ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
           </Button>
         ) : (
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? t({ en: 'Creating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Create Plan', ar: 'إنشاء الخطة' })}
+            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {t({ en: 'Create Scaling Plan', ar: 'إنشاء خطة التوسع' })}
           </Button>
         )}
       </div>

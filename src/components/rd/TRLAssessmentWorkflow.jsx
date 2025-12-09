@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 const TRL_DEFINITIONS = {
   1: { en: 'Basic principles observed', ar: 'المبادئ الأساسية ملاحظة' },
@@ -24,9 +26,9 @@ const TRL_DEFINITIONS = {
 export default function TRLAssessmentWorkflow({ rdProject, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [aiAssessing, setAiAssessing] = useState(false);
   const [evidence, setEvidence] = useState('');
   const [assessment, setAssessment] = useState(null);
+  const { invokeAI, status, isLoading: aiAssessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const assessTRL = async () => {
     if (!evidence.trim()) {
@@ -34,10 +36,8 @@ export default function TRLAssessmentWorkflow({ rdProject, onUpdate }) {
       return;
     }
 
-    setAiAssessing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a TRL assessment expert. Assess the Technology Readiness Level for this R&D project:
+    const result = await invokeAI({
+      prompt: `You are a TRL assessment expert. Assess the Technology Readiness Level for this R&D project:
 
 Project: ${rdProject.title_en}
 Current TRL: ${rdProject.trl_current || 'unknown'}
@@ -55,27 +55,24 @@ Based on NASA TRL definitions (1-9), assess:
 6. Commercialization readiness (TRL ≥ 7)
 
 Be rigorous and evidence-based.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            assessed_trl: { type: 'number' },
-            justification: { type: 'string' },
-            confidence: { type: 'number' },
-            evidence_quality: { type: 'number' },
-            next_requirements: { type: 'array', items: { type: 'string' } },
-            pilot_ready: { type: 'boolean' },
-            commercialization_ready: { type: 'boolean' },
-            recommendations: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          assessed_trl: { type: 'number' },
+          justification: { type: 'string' },
+          confidence: { type: 'number' },
+          evidence_quality: { type: 'number' },
+          next_requirements: { type: 'array', items: { type: 'string' } },
+          pilot_ready: { type: 'boolean' },
+          commercialization_ready: { type: 'boolean' },
+          recommendations: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setAssessment(result);
+    if (result.success) {
+      setAssessment(result.data);
       toast.success(t({ en: 'TRL assessed!', ar: 'تم تقييم مستوى النضج!' }));
-    } catch (error) {
-      toast.error(t({ en: 'Assessment failed', ar: 'فشل التقييم' }));
-    } finally {
-      setAiAssessing(false);
     }
   };
 
@@ -110,6 +107,7 @@ Be rigorous and evidence-based.`,
         <p className="text-sm text-slate-600 mt-2">
           {t({ en: 'Current TRL:', ar: 'مستوى النضج الحالي:' })} {rdProject.trl_current || 'Not assessed'}
         </p>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
         <div>
@@ -129,7 +127,7 @@ Be rigorous and evidence-based.`,
 
         <Button
           onClick={assessTRL}
-          disabled={aiAssessing || !evidence.trim()}
+          disabled={aiAssessing || !evidence.trim() || !isAvailable}
           className="w-full bg-gradient-to-r from-green-600 to-teal-600"
         >
           {aiAssessing ? (

@@ -8,11 +8,13 @@ import { useLanguage } from '../LanguageContext';
 import { Activity, Sparkles, Loader2, TrendingUp, AlertTriangle, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PortfolioHealthMonitor() {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [healthReport, setHealthReport] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
@@ -35,10 +37,8 @@ export default function PortfolioHealthMonitor() {
   });
 
   const analyzeHealth = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze innovation portfolio health:
+    const result = await invokeAI({
+      prompt: `Analyze innovation portfolio health:
 
 CHALLENGES: ${challenges.length} (${challenges.filter(c => c.status === 'approved').length} approved, ${challenges.filter(c => c.status === 'in_treatment').length} in treatment)
 PILOTS: ${pilots.length} (${pilots.filter(p => p.stage === 'active').length} active, ${pilots.filter(p => p.stage === 'scaled').length} scaled)
@@ -53,26 +53,23 @@ Assess:
 3. Risk areas (stagnant challenges, at-risk pilots)
 4. Resource utilization (capacity vs demand)
 5. Strategic recommendations (3-5 actions)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            overall_health: { type: "string", enum: ["excellent", "good", "fair", "poor"] },
-            health_score: { type: "number" },
-            balance_score: { type: "number" },
-            pipeline_flow: { type: "string" },
-            risk_areas: { type: "array", items: { type: "string" } },
-            strengths: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          overall_health: { type: "string", enum: ["excellent", "good", "fair", "poor"] },
+          health_score: { type: "number" },
+          balance_score: { type: "number" },
+          pipeline_flow: { type: "string" },
+          risk_areas: { type: "array", items: { type: "string" } },
+          strengths: { type: "array", items: { type: "string" } },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setHealthReport(response);
+    if (result.success) {
+      setHealthReport(result.data);
       toast.success(t({ en: 'Health analysis complete', ar: 'التحليل الصحي مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -91,8 +88,8 @@ Assess:
             <Activity className="h-5 w-5 text-purple-600" />
             {t({ en: 'Portfolio Health Monitor', ar: 'مراقب صحة المحفظة' })}
           </CardTitle>
-          <Button onClick={analyzeHealth} disabled={analyzing} size="sm" className="bg-purple-600">
-            {analyzing ? (
+          <Button onClick={analyzeHealth} disabled={isLoading || !isAvailable} size="sm" className="bg-purple-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -100,6 +97,7 @@ Assess:
             {t({ en: 'Analyze', ar: 'تحليل' })}
           </Button>
         </div>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="pt-6">
         <div className="grid grid-cols-4 gap-3 mb-6">
@@ -139,7 +137,7 @@ Assess:
           </div>
         )}
 
-        {!healthReport && !analyzing && (
+        {!healthReport && !isLoading && (
           <div className="text-center py-8">
             <Target className="h-12 w-12 text-purple-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">
