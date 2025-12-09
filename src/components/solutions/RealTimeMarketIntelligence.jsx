@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, AlertCircle, Sparkles, Loader2, Eye, DollarSign, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RealTimeMarketIntelligence({ solution }) {
   const { t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [intelligence, setIntelligence] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: competitors = [] } = useQuery({
     queryKey: ['competitors', solution?.id],
@@ -29,10 +31,8 @@ export default function RealTimeMarketIntelligence({ solution }) {
   });
 
   const fetchIntelligence = async () => {
-    setAnalyzing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Provide real-time market intelligence for this solution in Saudi municipal tech market.
+    const result = await invokeAI({
+      prompt: `Provide real-time market intelligence for this solution in Saudi municipal tech market.
 
 SOLUTION:
 Name: ${solution.name_en}
@@ -54,38 +54,35 @@ Analyze using web search for current market data:
 7. Pricing recommendation (adjust up/down based on market)
 
 Use add_context_from_internet for real-time data.`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            market_size_sar: { type: 'number' },
-            market_growth_rate: { type: 'number' },
-            competitive_position: { type: 'string', enum: ['leader', 'strong', 'moderate', 'weak'] },
-            pricing_analysis: {
-              type: 'object',
-              properties: {
-                market_average_monthly: { type: 'number' },
-                our_position: { type: 'string', enum: ['premium', 'competitive', 'value'] },
-                recommendation: { type: 'string' }
-              }
-            },
-            competitor_movements: { type: 'array', items: { type: 'string' } },
-            emerging_threats: { type: 'array', items: { type: 'string' } },
-            market_opportunities: { type: 'array', items: { type: 'string' } },
-            strategic_recommendations: { type: 'array', items: { type: 'string' } },
-            trend_analysis: { type: 'string' },
-            last_updated: { type: 'string' }
-          }
+      add_context_from_internet: true,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          market_size_sar: { type: 'number' },
+          market_growth_rate: { type: 'number' },
+          competitive_position: { type: 'string', enum: ['leader', 'strong', 'moderate', 'weak'] },
+          pricing_analysis: {
+            type: 'object',
+            properties: {
+              market_average_monthly: { type: 'number' },
+              our_position: { type: 'string', enum: ['premium', 'competitive', 'value'] },
+              recommendation: { type: 'string' }
+            }
+          },
+          competitor_movements: { type: 'array', items: { type: 'string' } },
+          emerging_threats: { type: 'array', items: { type: 'string' } },
+          market_opportunities: { type: 'array', items: { type: 'string' } },
+          strategic_recommendations: { type: 'array', items: { type: 'string' } },
+          trend_analysis: { type: 'string' },
+          last_updated: { type: 'string' }
         }
-      });
+      }
+    });
 
-      result.last_updated = new Date().toISOString();
-      setIntelligence(result);
+    if (result.success) {
+      result.data.last_updated = new Date().toISOString();
+      setIntelligence(result.data);
       toast.success(t({ en: 'Intelligence updated', ar: 'تم تحديث المعلومات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -127,7 +124,7 @@ Use add_context_from_internet for real-time data.`,
             <Button
               size="sm"
               onClick={fetchIntelligence}
-              disabled={analyzing}
+              disabled={analyzing || !isAvailable}
               className="bg-indigo-600"
             >
               {analyzing ? (
@@ -140,6 +137,7 @@ Use add_context_from_internet for real-time data.`,
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {!intelligence ? (
           <div className="text-center py-8">
             <TrendingUp className="h-12 w-12 text-slate-300 mx-auto mb-3" />

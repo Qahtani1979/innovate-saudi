@@ -16,12 +16,14 @@ import { ArrowRight, ArrowLeft, Sparkles, Loader2, CheckCircle2, Calendar, Targe
 import FileUploader from '../FileUploader';
 import { toast } from 'sonner';
 import AICurriculumGenerator from './AICurriculumGenerator';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [aiProcessing, setAiProcessing] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     name_en: '',
@@ -113,9 +115,7 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
   });
 
   const handleAIEnhance = async () => {
-    setAiProcessing(true);
-    try {
-      const prompt = `Generate comprehensive bilingual content for a ${formData.program_type} program:
+    const prompt = `Generate comprehensive bilingual content for a ${formData.program_type} program:
 
 Name: ${formData.name_en || 'Not provided'}
 Type: ${formData.program_type}
@@ -130,32 +130,29 @@ Generate:
 6. 5 eligibility criteria
 7. 5 key benefits for participants`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' },
-            focus_areas: { type: 'array', items: { type: 'string' } },
-            eligibility_criteria: { type: 'array', items: { type: 'string' } },
-            benefits: { type: 'array', items: { type: 'object' } }
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          objectives_en: { type: 'string' },
+          objectives_ar: { type: 'string' },
+          focus_areas: { type: 'array', items: { type: 'string' } },
+          eligibility_criteria: { type: 'array', items: { type: 'string' } },
+          benefits: { type: 'array', items: { type: 'object' } }
         }
-      });
+      }
+    });
 
-      setFormData(prev => ({ ...prev, ...result }));
+    if (result.success) {
+      setFormData(prev => ({ ...prev, ...result.data }));
       toast.success(t({ en: '✨ Content enhanced!', ar: '✨ تم التحسين!' }));
-    } catch {
-      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setAiProcessing(false);
     }
   };
 
@@ -265,7 +262,7 @@ Generate:
               {currentStepData.title[language]}
             </CardTitle>
             {currentStep === 2 && (
-              <Button onClick={handleAIEnhance} disabled={aiProcessing} variant="outline" size="sm">
+              <Button onClick={handleAIEnhance} disabled={aiProcessing || !isAvailable} variant="outline" size="sm">
                 {aiProcessing ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t({ en: 'Generating...', ar: 'جاري التوليد...' })}</>
                 ) : (
@@ -276,6 +273,7 @@ Generate:
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
           {/* Step 1: Basic Info */}
           {currentStep === 1 && (
             <>
