@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Sparkles, Loader2, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDToPolicyConverter({ rdProject, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [aiGenerating, setAiGenerating] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [policyData, setPolicyData] = useState({
     title_en: '',
     title_ar: '',
@@ -30,9 +32,8 @@ export default function RDToPolicyConverter({ rdProject, onClose, onSuccess }) {
   });
 
   const generatePolicy = async () => {
-    setAiGenerating(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `You are a policy analyst. Generate an evidence-based policy recommendation from this R&D project:
 
 Research Title: ${rdProject.title_en}
@@ -78,25 +79,24 @@ Be specific and actionable for municipal implementation.`,
         }
       });
 
-      setPolicyData(prev => ({
-        ...prev,
-        title_en: result.title_en,
-        title_ar: result.title_ar,
-        recommendation_text_en: result.recommendation_text_en,
-        recommendation_text_ar: result.recommendation_text_ar,
-        rationale_en: result.rationale_en,
-        rationale_ar: result.rationale_ar,
-        implementation_steps_en: result.implementation_steps_en,
-        implementation_steps_ar: result.implementation_steps_ar,
-        success_metrics: result.success_metrics,
-        affected_stakeholders: result.affected_stakeholders
-      }));
-
-      toast.success(t({ en: 'AI generated policy', ar: 'تم إنشاء السياسة' }));
+      if (result.success && result.data) {
+        setPolicyData(prev => ({
+          ...prev,
+          title_en: result.data.title_en,
+          title_ar: result.data.title_ar,
+          recommendation_text_en: result.data.recommendation_text_en,
+          recommendation_text_ar: result.data.recommendation_text_ar,
+          rationale_en: result.data.rationale_en,
+          rationale_ar: result.data.rationale_ar,
+          implementation_steps_en: result.data.implementation_steps_en,
+          implementation_steps_ar: result.data.implementation_steps_ar,
+          success_metrics: result.data.success_metrics,
+          affected_stakeholders: result.data.affected_stakeholders
+        }));
+        toast.success(t({ en: 'AI generated policy', ar: 'تم إنشاء السياسة' }));
+      }
     } catch (error) {
       toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setAiGenerating(false);
     }
   };
 

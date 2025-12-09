@@ -50,6 +50,8 @@ import { createNotification } from '../components/AutoNotification';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from '../components/permissions/usePermissions';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function Challenges() {
   const { hasPermission, isAdmin } = usePermissions();
@@ -58,10 +60,11 @@ function Challenges() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
   const [selectedIds, setSelectedIds] = useState([]);
-  const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
+  
+  const { invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ['challenges'],
@@ -90,7 +93,15 @@ function Challenges() {
       return;
     }
     
-    setAiAnalyzing(true);
+    const topChallenges = challenges
+      .filter(c => c.priority === 'tier_1' || c.priority === 'tier_2')
+      .slice(0, 5);
+    
+    if (topChallenges.length === 0) {
+      toast.info(t({ en: 'No high-priority challenges to analyze', ar: 'لا توجد تحديات ذات أولوية عالية للتحليل' }));
+      return;
+    }
+
     try {
       const topChallenges = challenges
         .filter(c => c.priority === 'tier_1' || c.priority === 'tier_2')
@@ -128,7 +139,7 @@ Provide COMPLETE BILINGUAL analysis (Arabic + English for each point):
 
 Use Saudi municipal context and data-driven insights.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: 'object',
