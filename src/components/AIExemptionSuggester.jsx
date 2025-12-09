@@ -1,30 +1,36 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { Sparkles, CheckCircle2, Loader2, Plus } from 'lucide-react';
+import { Sparkles, Loader2, Plus } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIExemptionSuggester({ projectData, sandbox, onSelect }) {
   const { language, isRTL, t } = useLanguage();
   const [suggestions, setSuggestions] = useState(null);
   const [selected, setSelected] = useState([]);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const { data: exemptions = [] } = useQuery({
     queryKey: ['regulatory-exemptions'],
     queryFn: () => base44.entities.RegulatoryExemption.list()
   });
 
-  const suggestMutation = useMutation({
-    mutationFn: async () => {
-      const availableExemptions = exemptions.filter(e => 
-        e.domain === sandbox.domain && e.status === 'active'
-      );
+  const suggestExemptions = async () => {
+    const availableExemptions = exemptions.filter(e => 
+      e.domain === sandbox.domain && e.status === 'active'
+    );
 
-      const prompt = `Analyze this sandbox project and suggest relevant regulatory exemptions:
+    const prompt = `Analyze this sandbox project and suggest relevant regulatory exemptions:
 
 Project: ${projectData.project_title}
 Description: ${projectData.project_description}
@@ -47,39 +53,37 @@ Provide JSON with:
 3. Risk assessment per exemption
 4. Additional requirements`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            recommended_exemptions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  exemption_code: { type: "string" },
-                  priority: { type: "string", enum: ["essential", "recommended", "optional"] },
-                  reasoning: { type: "string" },
-                  risk_notes: { type: "string" },
-                  compliance_requirements: {
-                    type: "array",
-                    items: { type: "string" }
-                  }
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommended_exemptions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                exemption_code: { type: "string" },
+                priority: { type: "string", enum: ["essential", "recommended", "optional"] },
+                reasoning: { type: "string" },
+                risk_notes: { type: "string" },
+                compliance_requirements: {
+                  type: "array",
+                  items: { type: "string" }
                 }
               }
-            },
-            overall_compliance_score: { type: "number", description: "0-100" },
-            additional_notes: { type: "string" }
-          }
+            }
+          },
+          overall_compliance_score: { type: "number", description: "0-100" },
+          additional_notes: { type: "string" }
         }
-      });
+      }
+    });
 
-      return response;
-    },
-    onSuccess: (data) => {
-      setSuggestions(data);
+    if (response.success) {
+      setSuggestions(response.data);
     }
-  });
+  };
 
   const handleToggle = (exemptionCode) => {
     setSelected(prev => 
@@ -111,14 +115,16 @@ Provide JSON with:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
         {!suggestions ? (
           <div className="text-center py-6">
             <Button
-              onClick={() => suggestMutation.mutate()}
-              disabled={suggestMutation.isPending || !projectData.project_title || !projectData.project_description}
+              onClick={suggestExemptions}
+              disabled={isLoading || !isAvailable || !projectData.project_title || !projectData.project_description}
               className="bg-gradient-to-r from-purple-600 to-pink-600"
             >
-              {suggestMutation.isPending ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
@@ -148,7 +154,7 @@ Provide JSON with:
 
             {/* Suggested Exemptions */}
             <div className="space-y-3">
-              {suggestions.recommended_exemptions.map((rec, idx) => {
+              {suggestions.recommended_exemptions?.map((rec, idx) => {
                 const exemption = exemptions.find(e => e.exemption_code === rec.exemption_code);
                 if (!exemption) return null;
 

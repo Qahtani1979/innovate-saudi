@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Activity, Sparkles, Loader2, Send } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function EngagementQualityAnalytics({ matchId, engagementHistory }) {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const meetings = engagementHistory?.filter(e => e.type === 'meeting').length || 0;
   const documents = engagementHistory?.filter(e => e.type === 'document').length || 0;
@@ -19,10 +23,8 @@ export default function EngagementQualityAnalytics({ matchId, engagementHistory 
     : 999;
 
   const analyzeEngagement = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze matchmaker engagement quality and predict conversion:
+    const response = await invokeAI({
+      prompt: `Analyze matchmaker engagement quality and predict conversion:
 
 ENGAGEMENT DATA:
 - Meetings: ${meetings}
@@ -36,25 +38,21 @@ Predict:
 3. Status (healthy/at_risk/stalled)
 4. Next recommended action
 5. Intervention needed (yes/no)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            conversion_probability: { type: "number" },
-            quality_score: { type: "number" },
-            status: { type: "string" },
-            next_action: { type: "string" },
-            intervention_needed: { type: "boolean" },
-            recommendations: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          conversion_probability: { type: "number" },
+          quality_score: { type: "number" },
+          status: { type: "string" },
+          next_action: { type: "string" },
+          intervention_needed: { type: "boolean" },
+          recommendations: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setAnalysis(response);
-      toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
+    if (response.success) {
+      setAnalysis(response.data);
     }
   };
 
@@ -66,8 +64,8 @@ Predict:
             <Activity className="h-5 w-5 text-purple-600" />
             {t({ en: 'Engagement Quality Analytics', ar: 'تحليلات جودة المشاركة' })}
           </CardTitle>
-          <Button onClick={analyzeEngagement} disabled={analyzing} size="sm" className="bg-purple-600">
-            {analyzing ? (
+          <Button onClick={analyzeEngagement} disabled={isLoading || !isAvailable} size="sm" className="bg-purple-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -77,7 +75,9 @@ Predict:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!analysis && !analyzing && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!analysis && !isLoading && (
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 bg-blue-50 rounded-lg border text-center">
               <p className="text-2xl font-bold text-blue-600">{meetings}</p>

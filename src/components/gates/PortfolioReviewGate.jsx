@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { BarChart3, CheckCircle2, AlertTriangle, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
+import { BarChart3, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PortfolioReviewGate({ portfolioData, onApprove, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [comments, setComments] = useState('');
   const [aiInsights, setAiInsights] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const performanceMetrics = [
     { metric: 'On-Track KPIs', value: 73, target: 80, status: 'at_risk' },
@@ -28,10 +34,8 @@ export default function PortfolioReviewGate({ portfolioData, onApprove, onClose 
   }));
 
   const generateAIReview = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Perform quarterly portfolio review for Saudi municipal innovation:
+    const result = await invokeAI({
+      prompt: `Perform quarterly portfolio review for Saudi municipal innovation:
 
 Performance: ${JSON.stringify(performanceMetrics)}
 
@@ -39,18 +43,18 @@ Provide bilingual review:
 1. Key achievements this quarter
 2. Areas of concern
 3. Recommendations for next quarter`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            achievements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            concerns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          achievements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          concerns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } finally {
-      setLoading(false);
+      }
+    });
+
+    if (result.success) {
+      setAiInsights(result.data);
     }
   };
 
@@ -85,10 +89,12 @@ Provide bilingual review:
         {/* AI Review */}
         <Card className="border-2 border-purple-200 bg-purple-50">
           <CardContent className="pt-6">
+            <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+            
             <div className="flex items-center justify-between mb-4">
               <p className="font-semibold text-purple-900">{t({ en: 'AI Quarterly Review', ar: 'المراجعة الربعية الذكية' })}</p>
-              <Button onClick={generateAIReview} disabled={loading} size="sm">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              <Button onClick={generateAIReview} disabled={isLoading || !isAvailable} size="sm">
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               </Button>
             </div>
             {aiInsights && (

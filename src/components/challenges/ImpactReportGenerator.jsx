@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Users, DollarSign, Target, Lightbulb, AlertCircle, Sparkles, Loader2, BarChart3, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ImpactReportGenerator({ challenge, pilots = [], contracts = [] }) {
   const { language, isRTL, t } = useLanguage();
   const [report, setReport] = useState(null);
-  const [generating, setGenerating] = useState(false);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const generateReport = async () => {
-    setGenerating(true);
-    try {
-      const prompt = `Generate comprehensive BILINGUAL impact report for resolved municipal challenge:
+    const prompt = `Generate comprehensive BILINGUAL impact report for resolved municipal challenge:
 
 Challenge: ${challenge.title_en} / ${challenge.title_ar}
 Sector: ${challenge.sector}
@@ -40,90 +42,86 @@ Generate COMPLETE BILINGUAL (EN + AR) impact report with:
 7. Recommendations for replication (3-5 actionable recommendations, EN + AR)
 8. Scaling potential (where else this could work)`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            executive_summary_en: { type: 'string' },
-            executive_summary_ar: { type: 'string' },
-            key_outcomes: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            population_impact: {
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          executive_summary_en: { type: 'string' },
+          executive_summary_ar: { type: 'string' },
+          key_outcomes: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                total_beneficiaries: { type: 'number' },
-                direct_beneficiaries: { type: 'number' },
-                indirect_beneficiaries: { type: 'number' },
-                demographics_reached: { type: 'string' }
+                en: { type: 'string' },
+                ar: { type: 'string' }
               }
-            },
-            financial_roi: {
+            }
+          },
+          population_impact: {
+            type: 'object',
+            properties: {
+              total_beneficiaries: { type: 'number' },
+              direct_beneficiaries: { type: 'number' },
+              indirect_beneficiaries: { type: 'number' },
+              demographics_reached: { type: 'string' }
+            }
+          },
+          financial_roi: {
+            type: 'object',
+            properties: {
+              total_investment_sar: { type: 'number' },
+              cost_per_beneficiary_sar: { type: 'number' },
+              estimated_annual_savings_sar: { type: 'number' },
+              roi_percentage: { type: 'number' }
+            }
+          },
+          success_factors: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                total_investment_sar: { type: 'number' },
-                cost_per_beneficiary_sar: { type: 'number' },
-                estimated_annual_savings_sar: { type: 'number' },
-                roi_percentage: { type: 'number' }
+                en: { type: 'string' },
+                ar: { type: 'string' }
               }
-            },
-            success_factors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            challenges_faced: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            recommendations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' },
-                  priority: { type: 'string' }
-                }
-              }
-            },
-            scaling_potential: {
+            }
+          },
+          challenges_faced: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                readiness_score: { type: 'number' },
-                target_municipalities: { type: 'number' },
-                estimated_national_impact: { type: 'string' }
+                en: { type: 'string' },
+                ar: { type: 'string' }
               }
+            }
+          },
+          recommendations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' },
+                priority: { type: 'string' }
+              }
+            }
+          },
+          scaling_potential: {
+            type: 'object',
+            properties: {
+              readiness_score: { type: 'number' },
+              target_municipalities: { type: 'number' },
+              estimated_national_impact: { type: 'string' }
             }
           }
         }
-      });
+      }
+    });
 
-      setReport(result);
-      toast.success(t({ en: 'Impact report generated', ar: 'تم إنشاء تقرير الأثر' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate report', ar: 'فشل إنشاء التقرير' }));
-    } finally {
-      setGenerating(false);
+    if (result.success) {
+      setReport(result.data);
     }
   };
 
@@ -131,6 +129,7 @@ Generate COMPLETE BILINGUAL (EN + AR) impact report with:
     return (
       <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-white">
         <CardContent className="py-12 text-center">
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
           <TrendingUp className="h-16 w-16 text-green-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-slate-900 mb-2">
             {t({ en: 'Generate Impact Report', ar: 'إنشاء تقرير الأثر' })}
@@ -143,11 +142,11 @@ Generate COMPLETE BILINGUAL (EN + AR) impact report with:
           </p>
           <Button
             onClick={generateReport}
-            disabled={generating}
+            disabled={isLoading || !isAvailable}
             className="bg-gradient-to-r from-green-600 to-teal-600"
             size="lg"
           >
-            {generating ? (
+            {isLoading ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                 {t({ en: 'Generating Report...', ar: 'جاري إنشاء التقرير...' })}
@@ -423,7 +422,7 @@ Generate COMPLETE BILINGUAL (EN + AR) impact report with:
         onClick={generateReport}
         variant="outline"
         className="w-full"
-        size="sm"
+        disabled={isLoading || !isAvailable}
       >
         <Sparkles className="h-4 w-4 mr-2" />
         {t({ en: 'Regenerate Report', ar: 'إعادة إنشاء التقرير' })}

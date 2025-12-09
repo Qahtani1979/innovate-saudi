@@ -6,12 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Sparkles, Loader2, Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function KnowledgeGapDetector() {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [gaps, setGaps] = useState([]);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const { data: documents = [] } = useQuery({
     queryKey: ['knowledge-documents'],
@@ -29,16 +34,14 @@ export default function KnowledgeGapDetector() {
   });
 
   const detectGaps = async () => {
-    setAnalyzing(true);
-    try {
-      const sectorCoverage = {};
-      documents.forEach(doc => {
-        const sector = doc.sector || 'general';
-        sectorCoverage[sector] = (sectorCoverage[sector] || 0) + 1;
-      });
+    const sectorCoverage = {};
+    documents.forEach(doc => {
+      const sector = doc.sector || 'general';
+      sectorCoverage[sector] = (sectorCoverage[sector] || 0) + 1;
+    });
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Identify knowledge documentation gaps:
+    const response = await invokeAI({
+      prompt: `Identify knowledge documentation gaps:
 
 CURRENT DOCUMENTATION:
 ${Object.entries(sectorCoverage).map(([sector, count]) => `- ${sector}: ${count} docs`).join('\n')}
@@ -53,32 +56,28 @@ Identify:
 2. Missing content types (no case studies for sector X, no playbooks for Y)
 3. High-priority gaps (active pilots without lessons learned)
 4. Content creation priorities`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            gaps: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  gap_type: { type: "string" },
-                  description: { type: "string" },
-                  priority: { type: "string" },
-                  suggested_content: { type: "string" },
-                  impact: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          gaps: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                gap_type: { type: "string" },
+                description: { type: "string" },
+                priority: { type: "string" },
+                suggested_content: { type: "string" },
+                impact: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setGaps(response.gaps || []);
-      toast.success(t({ en: `${response.gaps?.length || 0} gaps identified`, ar: `${response.gaps?.length || 0} فجوة محددة` }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
+    if (response.success && response.data?.gaps) {
+      setGaps(response.data.gaps);
     }
   };
 
@@ -90,8 +89,8 @@ Identify:
             <AlertTriangle className="h-5 w-5 text-yellow-600" />
             {t({ en: 'Knowledge Gap Detector', ar: 'كاشف فجوات المعرفة' })}
           </CardTitle>
-          <Button onClick={detectGaps} disabled={analyzing} size="sm" className="bg-yellow-600">
-            {analyzing ? (
+          <Button onClick={detectGaps} disabled={isLoading || !isAvailable} size="sm" className="bg-yellow-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -101,7 +100,9 @@ Identify:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!gaps.length && !analyzing && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!gaps.length && !isLoading && (
           <div className="text-center py-8">
             <AlertTriangle className="h-12 w-12 text-yellow-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">
