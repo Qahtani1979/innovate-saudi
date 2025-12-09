@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Sparkles, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function BottleneckDetector() {
   const { language, isRTL, t } = useLanguage();
   const [bottlenecks, setBottlenecks] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
@@ -24,24 +26,22 @@ export default function BottleneckDetector() {
   });
 
   const detectBottlenecks = async () => {
-    setLoading(true);
-    try {
-      // Calculate dwell times
-      const now = new Date();
-      const challengesInReview = challenges.filter(c => c.status === 'under_review').map(c => {
-        const reviewDate = new Date(c.submission_date || c.created_date);
-        const days = Math.floor((now - reviewDate) / (1000 * 60 * 60 * 24));
-        return { ...c, days_in_review: days };
-      });
+    // Calculate dwell times
+    const now = new Date();
+    const challengesInReview = challenges.filter(c => c.status === 'under_review').map(c => {
+      const reviewDate = new Date(c.submission_date || c.created_date);
+      const days = Math.floor((now - reviewDate) / (1000 * 60 * 60 * 24));
+      return { ...c, days_in_review: days };
+    });
 
-      const pilotsInApproval = pilots.filter(p => p.stage === 'approval_pending').map(p => {
-        const submissionDate = new Date(p.timeline?.submission_date || p.created_date);
-        const days = Math.floor((now - submissionDate) / (1000 * 60 * 60 * 24));
-        return { ...p, days_pending: days };
-      });
+    const pilotsInApproval = pilots.filter(p => p.stage === 'approval_pending').map(p => {
+      const submissionDate = new Date(p.timeline?.submission_date || p.created_date);
+      const days = Math.floor((now - submissionDate) / (1000 * 60 * 60 * 24));
+      return { ...p, days_pending: days };
+    });
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze innovation pipeline bottlenecks:
+    const result = await invokeAI({
+      prompt: `Analyze innovation pipeline bottlenecks:
 
 Challenges stuck in review (>30 days): ${challengesInReview.filter(c => c.days_in_review > 30).length}
 Average review time: ${challengesInReview.reduce((sum, c) => sum + c.days_in_review, 0) / Math.max(1, challengesInReview.length)} days
@@ -50,36 +50,33 @@ Pilots pending approval (>45 days): ${pilotsInApproval.filter(p => p.days_pendin
 Average approval time: ${pilotsInApproval.reduce((sum, p) => sum + p.days_pending, 0) / Math.max(1, pilotsInApproval.length)} days
 
 Identify top 3 bottlenecks with root cause and specific recommendations`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            bottlenecks: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  stage_en: { type: 'string' },
-                  stage_ar: { type: 'string' },
-                  severity: { type: 'string' },
-                  items_affected: { type: 'number' },
-                  avg_delay_days: { type: 'number' },
-                  root_cause_en: { type: 'string' },
-                  root_cause_ar: { type: 'string' },
-                  recommendation_en: { type: 'string' },
-                  recommendation_ar: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          bottlenecks: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                stage_en: { type: 'string' },
+                stage_ar: { type: 'string' },
+                severity: { type: 'string' },
+                items_affected: { type: 'number' },
+                avg_delay_days: { type: 'number' },
+                root_cause_en: { type: 'string' },
+                root_cause_ar: { type: 'string' },
+                recommendation_en: { type: 'string' },
+                recommendation_ar: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setBottlenecks(result.bottlenecks);
+    if (result.success) {
+      setBottlenecks(result.data.bottlenecks);
       toast.success(t({ en: 'Bottlenecks identified', ar: 'تم تحديد الاختناقات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -97,13 +94,15 @@ Identify top 3 bottlenecks with root cause and specific recommendations`,
             <AlertTriangle className="h-5 w-5" />
             {t({ en: 'Bottleneck Detector', ar: 'كاشف الاختناقات' })}
           </CardTitle>
-          <Button onClick={detectBottlenecks} disabled={loading} size="sm" variant="outline">
+          <Button onClick={detectBottlenecks} disabled={loading || !isAvailable} size="sm" variant="outline">
             {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Detect', ar: 'كشف' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
         {bottlenecks ? (
           <div className="space-y-3">
             {bottlenecks.map((bottleneck, idx) => (

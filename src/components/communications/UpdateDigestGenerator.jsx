@@ -7,12 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { Mail, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function UpdateDigestGenerator() {
   const { language, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [period, setPeriod] = useState('weekly');
   const [digest, setDigest] = useState(null);
+  const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: recentActivities = [] } = useQuery({
     queryKey: ['recent-activities', period],
@@ -25,10 +27,8 @@ export default function UpdateDigestGenerator() {
   });
 
   const generateDigest = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create executive update digest:
+    const result = await invokeAI({
+      prompt: `Create executive update digest:
 
 PERIOD: ${period}
 ACTIVITIES: ${recentActivities.length} events
@@ -44,32 +44,29 @@ Generate digest:
 5. Action items requiring attention
 
 Professional tone, suitable for email distribution.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            subject: { type: "string" },
-            executive_summary: { type: "string" },
-            highlights: { type: "array", items: { type: "string" } },
-            metrics: {
-              type: "object",
-              properties: {
-                new_challenges: { type: "number" },
-                active_pilots: { type: "number" },
-                completed_milestones: { type: "number" }
-              }
-            },
-            developments: { type: "array", items: { type: "string" } },
-            action_items: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          subject: { type: "string" },
+          executive_summary: { type: "string" },
+          highlights: { type: "array", items: { type: "string" } },
+          metrics: {
+            type: "object",
+            properties: {
+              new_challenges: { type: "number" },
+              active_pilots: { type: "number" },
+              completed_milestones: { type: "number" }
+            }
+          },
+          developments: { type: "array", items: { type: "string" } },
+          action_items: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setDigest(response);
+    if (result.success) {
+      setDigest(result.data);
       toast.success(t({ en: 'Digest generated', ar: 'الملخص أُنشئ' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -92,7 +89,7 @@ Professional tone, suitable for email distribution.`,
                 <SelectItem value="monthly">{t({ en: 'Monthly', ar: 'شهري' })}</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={generateDigest} disabled={generating} size="sm" className="bg-blue-600">
+            <Button onClick={generateDigest} disabled={generating || !isAvailable} size="sm" className="bg-blue-600">
               {generating ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -104,6 +101,8 @@ Professional tone, suitable for email distribution.`,
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
         {!digest && !generating && (
           <div className="text-center py-8">
             <Mail className="h-12 w-12 text-blue-300 mx-auto mb-3" />
