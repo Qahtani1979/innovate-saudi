@@ -4,30 +4,32 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, TrendingUp, AlertTriangle, Target, Loader2, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotsAIInsights({ pilots, challenges, municipalities }) {
   const { language, isRTL, t } = useLanguage();
   const [insights, setInsights] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const generateInsights = async () => {
-    setLoading(true);
-    try {
-      const activePilots = pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring');
-      const highRisk = pilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical');
-      const highSuccess = pilots.filter(p => (p.success_probability || 0) >= 80);
-      const readyToScale = pilots.filter(p => p.recommendation === 'scale' || p.stage === 'completed');
+    const activePilots = pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring');
+    const highRisk = pilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical');
+    const highSuccess = pilots.filter(p => (p.success_probability || 0) >= 80);
+    const readyToScale = pilots.filter(p => p.recommendation === 'scale' || p.stage === 'completed');
 
-      const sectorBreakdown = pilots.reduce((acc, p) => {
-        acc[p.sector] = (acc[p.sector] || 0) + 1;
-        return acc;
-      }, {});
+    const sectorBreakdown = pilots.reduce((acc, p) => {
+      acc[p.sector] = (acc[p.sector] || 0) + 1;
+      return acc;
+    }, {});
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this municipal pilot portfolio for Saudi Arabia and provide BILINGUAL strategic insights:
+    const { success, data } = await invokeAI({
+      prompt: `Analyze this municipal pilot portfolio for Saudi Arabia and provide BILINGUAL strategic insights:
 
 PORTFOLIO OVERVIEW:
 - Total Pilots: ${pilots.length}
@@ -51,25 +53,22 @@ Provide bilingual analysis covering:
 4. Sector balance recommendations
 5. Resource optimization suggestions
 6. Strategic recommendations for next quarter`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            portfolio_health: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, score: { type: 'number' } } },
-            risk_alerts: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, priority: { type: 'string' } } } },
-            scaling_opportunities: { type: 'array', items: { type: 'object', properties: { pilot_code: { type: 'string' }, reason_en: { type: 'string' }, reason_ar: { type: 'string' } } } },
-            sector_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            resource_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            strategic_priorities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          portfolio_health: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, score: { type: 'number' } } },
+          risk_alerts: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, priority: { type: 'string' } } } },
+          scaling_opportunities: { type: 'array', items: { type: 'object', properties: { pilot_code: { type: 'string' }, reason_en: { type: 'string' }, reason_ar: { type: 'string' } } } },
+          sector_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          resource_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          strategic_priorities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
+      }
+    });
 
-      setInsights(result);
+    if (success && data) {
+      setInsights(data);
       setExpanded(true);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate insights', ar: 'فشل توليد الرؤى' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -89,8 +88,8 @@ Provide bilingual analysis covering:
                 </p>
               </div>
             </div>
-            <Button onClick={generateInsights} disabled={loading} className="bg-purple-600 hover:bg-purple-700">
-              {loading ? (
+            <Button onClick={generateInsights} disabled={isLoading || !isAvailable} className="bg-purple-600 hover:bg-purple-700">
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
@@ -103,6 +102,7 @@ Provide bilingual analysis covering:
               )}
             </Button>
           </div>
+          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} className="mt-3" />
         </CardContent>
       </Card>
     );
@@ -228,7 +228,7 @@ Provide bilingual analysis covering:
           </ul>
         </div>
 
-        <Button onClick={generateInsights} variant="outline" className="w-full">
+        <Button onClick={generateInsights} variant="outline" className="w-full" disabled={isLoading || !isAvailable}>
           <Sparkles className="h-4 w-4 mr-2" />
           {t({ en: 'Refresh Analysis', ar: 'تحديث التحليل' })}
         </Button>

@@ -10,12 +10,13 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotConversionWizard({ application, challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [generatingAgreement, setGeneratingAgreement] = useState(false);
   const [pilotData, setPilotData] = useState({
     title_en: '',
     title_ar: '',
@@ -24,6 +25,11 @@ export default function PilotConversionWizard({ application, challenge, onClose 
     partnership_agreement_url: '',
     duration_weeks: 12,
     budget: 0
+  });
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
   });
 
   const autoPopulateFromMatch = async () => {
@@ -42,10 +48,8 @@ export default function PilotConversionWizard({ application, challenge, onClose 
   };
 
   const generatePartnershipAgreement = async () => {
-    setGeneratingAgreement(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a partnership agreement template for this Matchmaker-to-Pilot conversion:
+    const { success, data } = await invokeAI({
+      prompt: `Generate a partnership agreement template for this Matchmaker-to-Pilot conversion:
 
 PROVIDER: ${application.organization_name_en}
 CHALLENGE: ${challenge?.title_en}
@@ -62,23 +66,20 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
 6. IP and data ownership
 7. Success criteria
 8. Exit clauses`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            agreement_en: { type: 'string' },
-            agreement_ar: { type: 'string' },
-            key_terms: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          agreement_en: { type: 'string' },
+          agreement_ar: { type: 'string' },
+          key_terms: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (success && data) {
       // In real implementation, format as PDF and upload
       setPilotData({...pilotData, partnership_agreement_url: 'generated_agreement_url'});
       toast.success(t({ en: 'Agreement generated', ar: 'تم إنشاء الاتفاقية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGeneratingAgreement(false);
     }
   };
 
@@ -115,6 +116,8 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         <div className="flex items-center gap-2 mb-4">
           {[1, 2, 3].map(s => (
             <div key={s} className={`flex-1 h-2 rounded-full ${step >= s ? 'bg-green-600' : 'bg-slate-200'}`} />
@@ -177,11 +180,11 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
             
             <Button
               onClick={generatePartnershipAgreement}
-              disabled={generatingAgreement}
+              disabled={isLoading || !isAvailable}
               variant="outline"
               className="w-full"
             >
-              {generatingAgreement ? (
+              {isLoading ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Generating...', ar: 'جاري الإنشاء...' })}</>
               ) : (
                 <><Sparkles className="h-4 w-4 mr-2" />{t({ en: 'Generate Agreement (AI)', ar: 'إنشاء اتفاقية (ذكاء)' })}</>
