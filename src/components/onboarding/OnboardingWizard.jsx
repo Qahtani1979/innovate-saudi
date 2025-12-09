@@ -565,25 +565,33 @@ Return a JSON with:
     }
   };
 
-  // AI-powered profile suggestions with bilingual input
+  // AI-powered profile suggestions with bilingual input and comprehensive field filling
   const generateAISuggestions = async () => {
     const hasNameInput = formData.full_name_en || formData.full_name_ar;
     const hasTitleInput = formData.job_title_en || formData.job_title_ar;
     const hasBioInput = formData.bio_en || formData.bio_ar;
+    const hasCV = !!formData.cv_url;
+    const hasLinkedIn = !!formData.linkedin_url;
     
-    if (!hasNameInput && !hasTitleInput && !hasBioInput) {
+    // Allow AI generation if we have ANY input
+    if (!hasNameInput && !hasTitleInput && !hasBioInput && !hasCV && !hasLinkedIn) {
       toast.error(t({ en: 'Please fill in some profile information first', ar: 'يرجى ملء بعض معلومات الملف الشخصي أولاً' }));
       return;
     }
 
+    // Get available sector names for AI to use
+    const availableSectors = sectors.map(s => s.name_en).join(', ') || 'Urban Planning, Smart City, Sustainability, Transportation, Public Services, AI & Technology, Energy, Healthcare, Education, Environment';
+
     setIsGeneratingAI(true);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this user profile and provide personalized suggestions to improve their Saudi Innovates platform experience. PROVIDE ALL TEXT IN BOTH ENGLISH AND ARABIC.
+        prompt: `You are an AI assistant helping users complete their profile on Saudi Innovates, a municipal innovation platform in Saudi Arabia. 
+        
+Analyze the provided user information and FILL IN ALL MISSING FIELDS with intelligent suggestions based on context clues. PROVIDE ALL TEXT IN BOTH ENGLISH AND ARABIC.
 
-User Profile:
-- Name (EN): ${formData.full_name_en || 'Not provided'}
-- Name (AR): ${formData.full_name_ar || 'Not provided'}
+User Profile (current data):
+- Full Name (EN): ${formData.full_name_en || 'Not provided'}
+- Full Name (AR): ${formData.full_name_ar || 'Not provided'}
 - Job Title (EN): ${formData.job_title_en || 'Not provided'}
 - Job Title (AR): ${formData.job_title_ar || 'Not provided'}
 - Organization (EN): ${formData.organization_en || 'Not provided'}
@@ -592,29 +600,63 @@ User Profile:
 - Department (AR): ${formData.department_ar || 'Not provided'}
 - Bio (EN): ${formData.bio_en || 'Not provided'}
 - Bio (AR): ${formData.bio_ar || 'Not provided'}
-- Years of Experience: ${formData.years_of_experience || 'Not provided'}
-- Education: ${formData.education_level || 'Not provided'} - ${formData.degree || 'Not provided'}
-- Location: ${formData.location_city || ''} ${formData.location_region || ''}
+- Years of Experience: ${formData.years_of_experience || 0}
+- Education Level: ${formData.education_level || 'Not provided'}
+- Degree/Field of Study: ${formData.degree || 'Not provided'}
+- Mobile Number: ${formData.mobile_number || 'Not provided'}
+- City: ${formData.location_city || 'Not provided'}
+- Region: ${formData.location_region || 'Not provided'}
+- Gender: ${formData.gender || 'Not provided'}
+- Date of Birth: ${formData.date_of_birth || 'Not provided'}
 - LinkedIn: ${formData.linkedin_url || 'Not provided'}
-- Has CV: ${formData.cv_url ? 'Yes' : 'No'}
-- Current Expertise: ${formData.expertise_areas?.join(', ') || 'Not provided'}
-- Languages: ${formData.languages?.join(', ') || 'Not provided'}
-- Preferred Language: ${formData.preferred_language}
+- Has CV Uploaded: ${formData.cv_url ? 'Yes' : 'No'}
+- Current Expertise Areas: ${formData.expertise_areas?.join(', ') || 'Not provided'}
+- Languages Spoken: ${formData.languages?.join(', ') || 'Not provided'}
+- User's Preferred Language: ${formData.preferred_language}
 
-Based on this information:
-1. Suggest an improved bio that highlights their expertise (keep it concise, 2-3 sentences) in BOTH English and Arabic
-2. Recommend the most suitable persona/role for this user
-3. Suggest relevant expertise areas from: Urban Planning, Smart City, Sustainability, Transportation, Public Services, AI & Technology, Energy, Healthcare, Education, Environment
-4. Provide personalized tips for getting started on the platform in BOTH languages`,
+IMPORTANT: Based on any context clues from name, job title, organization, or LinkedIn URL:
+1. If organization not provided, suggest a likely organization type based on job title
+2. If department not provided, infer from job title
+3. If years of experience not provided, estimate based on seniority in job title
+4. If education not provided, suggest appropriate level based on job title
+5. If city/region not provided, suggest major Saudi cities (Riyadh, Jeddah, Dammam)
+6. Suggest languages (Arabic should always be included for Saudi context, English if professional context suggests it)
+
+Available Expertise Areas to choose from: ${availableSectors}
+
+Return comprehensive suggestions for all fields.`,
         response_json_schema: {
           type: 'object',
           properties: {
-            improved_bio_en: { type: 'string' },
-            improved_bio_ar: { type: 'string' },
-            recommended_persona: { type: 'string', enum: ['municipality_staff', 'provider', 'researcher', 'citizen', 'viewer'] },
+            // Name suggestions (for completion or Arabic translation)
+            full_name_en: { type: 'string', description: 'English version of name if only Arabic provided' },
+            full_name_ar: { type: 'string', description: 'Arabic version of name if only English provided' },
+            // Bio
+            improved_bio_en: { type: 'string', description: 'Professional bio in English (2-3 sentences)' },
+            improved_bio_ar: { type: 'string', description: 'Professional bio in Arabic (2-3 sentences)' },
+            // Job details
+            job_title_en: { type: 'string' },
+            job_title_ar: { type: 'string' },
+            organization_en: { type: 'string' },
+            organization_ar: { type: 'string' },
+            department_en: { type: 'string' },
+            department_ar: { type: 'string' },
+            // Experience & Education
+            years_of_experience: { type: 'number', description: 'Estimated years of experience' },
+            education_level: { type: 'string', enum: ['high_school', 'diploma', 'bachelor', 'master', 'doctorate'] },
+            degree: { type: 'string', description: 'Field of study' },
+            // Location
+            location_city: { type: 'string' },
+            location_region: { type: 'string' },
+            // Languages
+            languages: { type: 'array', items: { type: 'string' }, description: 'Languages spoken' },
+            // Role recommendation
+            recommended_persona: { type: 'string', enum: ['municipality_staff', 'provider', 'researcher', 'expert', 'citizen', 'viewer'] },
             persona_reason_en: { type: 'string' },
             persona_reason_ar: { type: 'string' },
-            suggested_expertise: { type: 'array', items: { type: 'string' } },
+            // Expertise
+            suggested_expertise: { type: 'array', items: { type: 'string' }, description: 'Match exactly from available sectors' },
+            // Tips
             getting_started_tips_en: { type: 'array', items: { type: 'string' } },
             getting_started_tips_ar: { type: 'array', items: { type: 'string' } }
           }
@@ -622,13 +664,43 @@ Based on this information:
       });
       
       setAiSuggestions(result);
-      toast.success(t({ en: 'AI suggestions generated!', ar: 'تم إنشاء الاقتراحات الذكية!' }));
+      toast.success(t({ en: 'AI suggestions generated! Review and apply them.', ar: 'تم إنشاء الاقتراحات الذكية! راجعها وطبقها.' }));
     } catch (error) {
       console.error('AI generation error:', error);
       toast.error(t({ en: 'Failed to generate suggestions', ar: 'فشل في إنشاء الاقتراحات' }));
     } finally {
       setIsGeneratingAI(false);
     }
+  };
+
+  // Apply all AI suggestions at once
+  const applyAllAISuggestions = () => {
+    if (!aiSuggestions) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      // Only apply if current value is empty
+      full_name_ar: prev.full_name_ar || aiSuggestions.full_name_ar || prev.full_name_ar,
+      full_name_en: prev.full_name_en || aiSuggestions.full_name_en || prev.full_name_en,
+      bio_en: aiSuggestions.improved_bio_en || prev.bio_en,
+      bio_ar: aiSuggestions.improved_bio_ar || prev.bio_ar,
+      job_title_en: prev.job_title_en || aiSuggestions.job_title_en || prev.job_title_en,
+      job_title_ar: prev.job_title_ar || aiSuggestions.job_title_ar || prev.job_title_ar,
+      organization_en: prev.organization_en || aiSuggestions.organization_en || prev.organization_en,
+      organization_ar: prev.organization_ar || aiSuggestions.organization_ar || prev.organization_ar,
+      department_en: prev.department_en || aiSuggestions.department_en || prev.department_en,
+      department_ar: prev.department_ar || aiSuggestions.department_ar || prev.department_ar,
+      years_of_experience: prev.years_of_experience || aiSuggestions.years_of_experience || prev.years_of_experience,
+      education_level: prev.education_level || aiSuggestions.education_level || prev.education_level,
+      degree: prev.degree || aiSuggestions.degree || prev.degree,
+      location_city: prev.location_city || aiSuggestions.location_city || prev.location_city,
+      location_region: prev.location_region || aiSuggestions.location_region || prev.location_region,
+      languages: prev.languages?.length > 0 ? prev.languages : aiSuggestions.languages || prev.languages,
+      expertise_areas: aiSuggestions.suggested_expertise || prev.expertise_areas,
+      selectedPersona: aiSuggestions.recommended_persona || prev.selectedPersona,
+    }));
+    
+    toast.success(t({ en: 'All suggestions applied!', ar: 'تم تطبيق جميع الاقتراحات!' }));
   };
 
   const applyAISuggestion = (field, value) => {
@@ -1469,16 +1541,19 @@ Based on this information:
                   {t({ en: 'AI Profile Assistant', ar: 'مساعد الملف الذكي' })}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {t({ en: 'Get personalized suggestions to enhance your profile', ar: 'احصل على اقتراحات مخصصة لتحسين ملفك الشخصي' })}
+                  {t({ en: 'Get personalized suggestions to complete and enhance your profile', ar: 'احصل على اقتراحات مخصصة لإكمال وتحسين ملفك الشخصي' })}
                 </p>
               </CardHeader>
               <CardContent className="space-y-5">
+                {/* AI Disclaimer */}
+                <AIDisclaimer language={language} />
+                
                 {!aiSuggestions && (
                   <div className="text-center py-8">
                     <div className="mb-6">
                       <Sparkles className="h-16 w-16 text-purple-400 mx-auto mb-4" />
                       <p className="text-muted-foreground">
-                        {t({ en: 'Let AI analyze your profile and suggest improvements', ar: 'دع الذكاء الاصطناعي يحلل ملفك ويقترح تحسينات' })}
+                        {t({ en: 'Let AI analyze your profile, fill missing fields, and suggest improvements', ar: 'دع الذكاء الاصطناعي يحلل ملفك ويملأ الحقول الناقصة ويقترح تحسينات' })}
                       </p>
                     </div>
                     <Button
@@ -1498,6 +1573,68 @@ Based on this information:
 
                 {aiSuggestions && (
                   <div className="space-y-4">
+                    {/* Apply All Button */}
+                    <div className="flex justify-end">
+                      <Button 
+                        onClick={applyAllAISuggestions}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600"
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        {t({ en: 'Apply All Suggestions', ar: 'تطبيق جميع الاقتراحات' })}
+                      </Button>
+                    </div>
+
+                    {/* Suggested Profile Fields */}
+                    {(aiSuggestions.organization_en || aiSuggestions.department_en || aiSuggestions.years_of_experience || aiSuggestions.education_level || aiSuggestions.location_city) && (
+                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <p className="text-sm font-semibold text-slate-800 mb-3">{t({ en: 'Suggested Profile Fields', ar: 'حقول الملف المقترحة' })}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                          {aiSuggestions.organization_en && !formData.organization_en && (
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-slate-500" />
+                              <span className="text-slate-600">{t({ en: 'Organization:', ar: 'المنظمة:' })}</span>
+                              <span className="font-medium">{language === 'ar' ? aiSuggestions.organization_ar : aiSuggestions.organization_en}</span>
+                            </div>
+                          )}
+                          {aiSuggestions.department_en && !formData.department_en && (
+                            <div className="flex items-center gap-2">
+                              <Briefcase className="h-4 w-4 text-slate-500" />
+                              <span className="text-slate-600">{t({ en: 'Department:', ar: 'القسم:' })}</span>
+                              <span className="font-medium">{language === 'ar' ? aiSuggestions.department_ar : aiSuggestions.department_en}</span>
+                            </div>
+                          )}
+                          {aiSuggestions.years_of_experience && !formData.years_of_experience && (
+                            <div className="flex items-center gap-2">
+                              <Target className="h-4 w-4 text-slate-500" />
+                              <span className="text-slate-600">{t({ en: 'Experience:', ar: 'الخبرة:' })}</span>
+                              <span className="font-medium">{aiSuggestions.years_of_experience} {t({ en: 'years', ar: 'سنوات' })}</span>
+                            </div>
+                          )}
+                          {aiSuggestions.education_level && !formData.education_level && (
+                            <div className="flex items-center gap-2">
+                              <GraduationCap className="h-4 w-4 text-slate-500" />
+                              <span className="text-slate-600">{t({ en: 'Education:', ar: 'التعليم:' })}</span>
+                              <span className="font-medium">{aiSuggestions.education_level} {aiSuggestions.degree ? `- ${aiSuggestions.degree}` : ''}</span>
+                            </div>
+                          )}
+                          {aiSuggestions.location_city && !formData.location_city && (
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-4 w-4 text-slate-500" />
+                              <span className="text-slate-600">{t({ en: 'Location:', ar: 'الموقع:' })}</span>
+                              <span className="font-medium">{aiSuggestions.location_city}, {aiSuggestions.location_region}</span>
+                            </div>
+                          )}
+                          {aiSuggestions.languages?.length > 0 && (!formData.languages || formData.languages.length === 0) && (
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4 text-slate-500" />
+                              <span className="text-slate-600">{t({ en: 'Languages:', ar: 'اللغات:' })}</span>
+                              <span className="font-medium">{aiSuggestions.languages.join(', ')}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Improved Bio */}
                     <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                       <div className="flex items-center justify-between mb-2">
@@ -1532,7 +1669,7 @@ Based on this information:
                         </Button>
                       </div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-blue-600">{PERSONAS.find(p => p.id === aiSuggestions.recommended_persona)?.title[language]}</Badge>
+                        <Badge className="bg-blue-600">{PERSONAS.find(p => p.id === aiSuggestions.recommended_persona)?.title[language] || aiSuggestions.recommended_persona}</Badge>
                       </div>
                       <p className="text-sm text-slate-600">
                         {language === 'ar' ? aiSuggestions.persona_reason_ar : aiSuggestions.persona_reason_en}
@@ -1573,15 +1710,17 @@ Based on this information:
                       </ul>
                     </div>
 
-                    <Button
-                      variant="outline"
-                      onClick={generateAISuggestions}
-                      disabled={isGeneratingAI}
-                      className="w-full"
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${isGeneratingAI ? 'animate-spin' : ''}`} />
-                      {t({ en: 'Regenerate Suggestions', ar: 'إعادة إنشاء الاقتراحات' })}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={generateAISuggestions}
+                        disabled={isGeneratingAI}
+                        className="flex-1"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+                        {t({ en: 'Regenerate', ar: 'إعادة إنشاء' })}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -1633,27 +1772,29 @@ Based on this information:
                   })}
                 </div>
 
-                {/* Expertise Selection */}
+          {/* Expertise Selection - Dynamic from Database */}
                 <div className="pt-4 border-t">
                   <Label className="text-base font-medium mb-3 block">
                     {t({ en: 'Select Your Expertise Areas', ar: 'اختر مجالات خبرتك' })}
                     <span className="text-sm text-muted-foreground ml-2">({t({ en: 'up to 5', ar: 'حتى 5' })})</span>
                   </Label>
                   <div className="flex flex-wrap gap-2">
-                    {EXPERTISE_OPTIONS.map((exp) => {
-                      const isSelected = formData.expertise_areas?.includes(exp.en);
+                    {sectors.length > 0 ? sectors.map((sector) => {
+                      const isSelected = formData.expertise_areas?.includes(sector.name_en);
                       return (
                         <Badge
-                          key={exp.en}
+                          key={sector.id}
                           variant={isSelected ? 'default' : 'outline'}
                           className={`cursor-pointer transition-all ${isSelected ? 'bg-purple-600' : 'hover:bg-purple-50'}`}
-                          onClick={() => toggleExpertise(exp.en)}
+                          onClick={() => toggleExpertise(sector.name_en)}
                         >
                           {isSelected && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                          {exp[language]}
+                          {language === 'ar' && sector.name_ar ? sector.name_ar : sector.name_en}
                         </Badge>
                       );
-                    })}
+                    }) : (
+                      <p className="text-sm text-muted-foreground">{t({ en: 'Loading expertise areas...', ar: 'جارٍ تحميل مجالات الخبرة...' })}</p>
+                    )}
                   </div>
                 </div>
 
