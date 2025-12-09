@@ -13,6 +13,8 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import PolicyLibraryWidget from '../components/knowledge/PolicyLibraryWidget';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function KnowledgePage() {
   const { language, isRTL, t } = useLanguage();
@@ -25,7 +27,7 @@ function KnowledgePage() {
   const [user, setUser] = useState(null);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
@@ -131,24 +133,22 @@ function KnowledgePage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const contentSummary = {
-        total: knowledgeItems.length,
-        by_type: {
-          documents: knowledgeDocs.length,
-          case_studies: caseStudies.length
-        },
-        by_content_type: {
-          video: knowledgeItems.filter(i => i.contentType === 'video').length,
-          audio: knowledgeItems.filter(i => i.contentType === 'audio').length,
-          document: knowledgeItems.filter(i => i.contentType === 'document').length
-        },
-        trending: trendingItems.slice(0, 5).map(i => i.title.en)
-      };
+    const contentSummary = {
+      total: knowledgeItems.length,
+      by_type: {
+        documents: knowledgeDocs.length,
+        case_studies: caseStudies.length
+      },
+      by_content_type: {
+        video: knowledgeItems.filter(i => i.contentType === 'video').length,
+        audio: knowledgeItems.filter(i => i.contentType === 'audio').length,
+        document: knowledgeItems.filter(i => i.contentType === 'document').length
+      },
+      trending: trendingItems.slice(0, 5).map(i => i.title.en)
+    };
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this knowledge base for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
+    const result = await invokeAI({
+      prompt: `Analyze this knowledge base for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 Knowledge Resources: ${JSON.stringify(contentSummary)}
 
@@ -158,22 +158,20 @@ Provide bilingual insights (each item should have both English and Arabic versio
 3. Recommendations for knowledge organization
 4. High-value content creation priorities
 5. Learning path suggestions for different user types`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            knowledge_gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            engagement_patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            organization_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            content_priorities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            learning_paths: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          knowledge_gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          engagement_patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          organization_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          content_priorities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          learning_paths: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+
+    if (result.success) {
+      setAiInsights(result.data);
     }
   };
 
@@ -189,10 +187,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
-            <Sparkles className="h-4 w-4" />
+          <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
           </Button>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
           {isAdmin && (
             <>
               <Link to={createPageUrl('KnowledgeDocumentCreate')}>
