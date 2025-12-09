@@ -301,32 +301,32 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async (shouldRedirect = true) => {
     try {
+      // Clear local state first
+      setUser(null);
+      setSession(null);
+      setUserProfile(null);
+      setUserRoles([]);
+      setIsAuthenticated(false);
+      setNeedsOnboarding(false);
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Signout error:', error);
       }
       
-      // Clear local state immediately
-      setUser(null);
-      setSession(null);
-      setUserProfile(null);
-      setUserRoles([]);
-      setIsAuthenticated(false);
-      
       if (shouldRedirect) {
-        // Use navigate for better SPA routing
-        window.location.replace('/Auth');
+        // Use a small delay to ensure state is cleared before redirect
+        setTimeout(() => {
+          window.location.href = '/Auth';
+        }, 100);
       }
     } catch (error) {
       console.error('Logout error:', error);
-      // Still clear state and redirect even on error
-      setUser(null);
-      setSession(null);
-      setUserProfile(null);
-      setUserRoles([]);
-      setIsAuthenticated(false);
+      // Still redirect even on error
       if (shouldRedirect) {
-        window.location.replace('/Auth');
+        setTimeout(() => {
+          window.location.href = '/Auth';
+        }, 100);
       }
     }
   };
