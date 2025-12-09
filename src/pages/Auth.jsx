@@ -16,7 +16,7 @@ export default function Auth() {
   const location = useLocation();
   const { language, toggleLanguage, t } = useLanguage();
   const { toast } = useToast();
-  const { isAuthenticated, isLoadingAuth, login, signUp, signInWithGoogle, authError } = useAuth();
+  const { isAuthenticated, isLoadingAuth, login, signUp, signInWithGoogle, signInWithMicrosoft, authError } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
@@ -148,6 +148,20 @@ export default function Auth() {
       toast({
         title: t({ en: 'Google Sign-In failed', ar: 'فشل تسجيل الدخول عبر Google' }),
         description: error.message || t({ en: 'Failed to sign in with Google', ar: 'فشل تسجيل الدخول باستخدام Google' }),
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const handleMicrosoftSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await signInWithMicrosoft();
+    } catch (error) {
+      toast({
+        title: t({ en: 'Microsoft Sign-In failed', ar: 'فشل تسجيل الدخول عبر Microsoft' }),
+        description: error.message || t({ en: 'Failed to sign in with Microsoft', ar: 'فشل تسجيل الدخول باستخدام Microsoft' }),
         variant: 'destructive',
       });
       setIsLoading(false);
@@ -300,20 +314,41 @@ export default function Auth() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Google Sign-In Button */}
-              <Button 
-                variant="outline" 
-                className="w-full mb-4 gap-2 h-11" 
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Chrome className="h-4 w-4" />
-                )}
-                {t({ en: 'Continue with Google', ar: 'المتابعة مع Google' })}
-              </Button>
+              {/* OAuth Sign-In Buttons */}
+              <div className="space-y-3 mb-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2 h-11" 
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Chrome className="h-4 w-4" />
+                  )}
+                  {t({ en: 'Continue with Google', ar: 'المتابعة مع Google' })}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2 h-11" 
+                  onClick={handleMicrosoftSignIn}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <svg className="h-4 w-4" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+                      <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+                      <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+                      <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+                    </svg>
+                  )}
+                  {t({ en: 'Continue with Microsoft', ar: 'المتابعة مع Microsoft' })}
+                </Button>
+              </div>
               
               <div className="relative mb-4">
                 <Separator />
@@ -333,14 +368,14 @@ export default function Auth() {
                     <div className="space-y-2">
                       <Label htmlFor="login-email">{t({ en: 'Email', ar: 'البريد الإلكتروني' })}</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Mail className={`absolute top-3 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
                         <Input
                           id="login-email"
                           type="email"
                           placeholder={t({ en: 'you@example.com', ar: 'you@example.com' })}
                           value={loginEmail}
                           onChange={(e) => setLoginEmail(e.target.value)}
-                          className="pl-10 h-11"
+                          className={`h-11 ${language === 'ar' ? 'pr-10' : 'pl-10'}`}
                           disabled={isLoading}
                         />
                       </div>
@@ -349,14 +384,14 @@ export default function Auth() {
                     <div className="space-y-2">
                       <Label htmlFor="login-password">{t({ en: 'Password', ar: 'كلمة المرور' })}</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Lock className={`absolute top-3 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
                         <Input
                           id="login-password"
                           type="password"
                           placeholder="••••••••"
                           value={loginPassword}
                           onChange={(e) => setLoginPassword(e.target.value)}
-                          className="pl-10 h-11"
+                          className={`h-11 ${language === 'ar' ? 'pr-10' : 'pl-10'}`}
                           disabled={isLoading}
                         />
                       </div>
@@ -380,14 +415,14 @@ export default function Auth() {
                     <div className="space-y-2">
                       <Label htmlFor="signup-name">{t({ en: 'Full Name', ar: 'الاسم الكامل' })}</Label>
                       <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <User className={`absolute top-3 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
                         <Input
                           id="signup-name"
                           type="text"
                           placeholder={t({ en: 'John Doe', ar: 'محمد أحمد' })}
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
-                          className="pl-10 h-11"
+                          className={`h-11 ${language === 'ar' ? 'pr-10' : 'pl-10'}`}
                           disabled={isLoading}
                         />
                       </div>
@@ -396,14 +431,14 @@ export default function Auth() {
                     <div className="space-y-2">
                       <Label htmlFor="signup-email">{t({ en: 'Email', ar: 'البريد الإلكتروني' })}</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Mail className={`absolute top-3 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
                         <Input
                           id="signup-email"
                           type="email"
                           placeholder={t({ en: 'you@example.com', ar: 'you@example.com' })}
                           value={signupEmail}
                           onChange={(e) => setSignupEmail(e.target.value)}
-                          className="pl-10 h-11"
+                          className={`h-11 ${language === 'ar' ? 'pr-10' : 'pl-10'}`}
                           disabled={isLoading}
                         />
                       </div>
@@ -412,14 +447,14 @@ export default function Auth() {
                     <div className="space-y-2">
                       <Label htmlFor="signup-password">{t({ en: 'Password', ar: 'كلمة المرور' })}</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Lock className={`absolute top-3 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
                         <Input
                           id="signup-password"
                           type="password"
                           placeholder="••••••••"
                           value={signupPassword}
                           onChange={(e) => setSignupPassword(e.target.value)}
-                          className="pl-10 h-11"
+                          className={`h-11 ${language === 'ar' ? 'pr-10' : 'pl-10'}`}
                           disabled={isLoading}
                         />
                       </div>
@@ -428,14 +463,14 @@ export default function Auth() {
                     <div className="space-y-2">
                       <Label htmlFor="signup-confirm">{t({ en: 'Confirm Password', ar: 'تأكيد كلمة المرور' })}</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Lock className={`absolute top-3 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
                         <Input
                           id="signup-confirm"
                           type="password"
                           placeholder="••••••••"
                           value={signupConfirmPassword}
                           onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                          className="pl-10 h-11"
+                          className={`h-11 ${language === 'ar' ? 'pr-10' : 'pl-10'}`}
                           disabled={isLoading}
                         />
                       </div>

@@ -299,6 +299,37 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const signInWithMicrosoft = async () => {
+    try {
+      setAuthError(null);
+      
+      const publishedDomain = 'https://saudi-innovate-hub.lovable.app';
+      const redirectUrl = window.location.hostname.includes('lovable.app') 
+        ? `${publishedDomain}/`
+        : `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'azure',
+        options: {
+          redirectTo: redirectUrl,
+          scopes: 'email profile openid',
+        },
+      });
+      
+      if (error) {
+        setAuthError({
+          type: 'oauth_error',
+          message: error.message
+        });
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const logout = async (shouldRedirect = true) => {
     try {
       // Clear local state first
@@ -371,6 +402,7 @@ export const AuthProvider = ({ children }) => {
       login,
       signUp,
       signInWithGoogle,
+      signInWithMicrosoft,
       logout,
       navigateToLogin,
       resetPassword,
