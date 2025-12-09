@@ -13,6 +13,12 @@ const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
+// Helper to convert PascalCase to kebab-case
+const toKebabCase = (str) => str
+  .replace(/([a-z])([A-Z])/g, '$1-$2')
+  .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
+  .toLowerCase();
+
 // Pages that don't need the layout wrapper
 const noLayoutPages = ['Auth'];
 
@@ -54,12 +60,12 @@ const AuthenticatedApp = () => {
           <MainPage />
         </LayoutWrapper>
       } />
-      {Object.entries(Pages).map(([path, Page]) => (
+      {Object.entries(Pages).map(([pageName, Page]) => (
         <Route
-          key={path}
-          path={`/${path}`}
+          key={pageName}
+          path={`/${toKebabCase(pageName)}`}
           element={
-            <LayoutWrapper currentPageName={path}>
+            <LayoutWrapper currentPageName={pageName}>
               <Page />
             </LayoutWrapper>
           }
