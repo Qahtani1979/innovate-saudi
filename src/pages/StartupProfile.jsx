@@ -12,12 +12,14 @@ import { useState } from 'react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import StartupCredentialBadges from '../components/startup/StartupCredentialBadges';
 import { ContactSection, BioSection, SkillsBadges } from '../components/profile/BilingualProfileDisplay';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function StartupProfile() {
   const { language, isRTL, t } = useLanguage();
   const startupId = new URLSearchParams(window.location.search).get('id');
   const [aiMatches, setAiMatches] = useState([]);
-  const [loadingMatches, setLoadingMatches] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: loadingMatches, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: startup, isLoading } = useQuery({
     queryKey: ['startupProfile', startupId],
@@ -46,40 +48,35 @@ function StartupProfile() {
   });
 
   const findMatchingChallenges = async () => {
-    setLoadingMatches(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this startup and suggest matching challenges:
+    const result = await invokeAI({
+      prompt: `Analyze this startup and suggest matching challenges:
 Startup: ${startup[0]?.name_en}
 Sectors: ${startup[0]?.sectors?.join(', ')}
 Solutions: ${solutions.map(s => s.name_en).join(', ')}
 Stage: ${startup[0]?.stage}
 
 Find 5 best-matching challenges from the platform that align with their capabilities.`,
-        add_context_from_internet: false,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            matches: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  challenge_title: { type: 'string' },
-                  sector: { type: 'string' },
-                  match_score: { type: 'number' },
-                  reasoning: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          matches: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                challenge_title: { type: 'string' },
+                sector: { type: 'string' },
+                match_score: { type: 'number' },
+                reasoning: { type: 'string' }
               }
             }
           }
         }
-      });
-      setAiMatches(result.matches || []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoadingMatches(false);
+      }
+    });
+
+    if (result.success) {
+      setAiMatches(result.data.matches || []);
     }
   };
 

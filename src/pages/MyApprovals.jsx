@@ -10,11 +10,14 @@ import { createPageUrl } from '../utils';
 import { CheckCircle2, XCircle, Clock, AlertCircle, Sparkles, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MyApprovals() {
   const { language, isRTL, t } = useLanguage();
   const [aiAnalysis, setAiAnalysis] = useState({});
   const queryClient = useQueryClient();
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: user } = useQuery({
     queryKey: ['me'],
@@ -70,9 +73,8 @@ function MyApprovals() {
   });
 
   const getAIRecommendation = async (item, type) => {
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this ${type} and provide approval recommendation:
+    const result = await invokeAI({
+      prompt: `Analyze this ${type} and provide approval recommendation:
 
 ${type === 'challenge' ? `Title: ${item.title_en}
 Sector: ${item.sector}
@@ -83,18 +85,18 @@ Budget: ${item.budget}
 Success Probability: ${item.success_probability}`}
 
 Provide: 1) Recommendation (APPROVE/DEFER/REJECT), 2) Reasoning, 3) Conditions (if any)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommendation: { type: 'string' },
-            reasoning: { type: 'string' },
-            conditions: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommendation: { type: 'string' },
+          reasoning: { type: 'string' },
+          conditions: { type: 'string' }
         }
-      });
-      setAiAnalysis({ ...aiAnalysis, [item.id]: result });
-    } catch (error) {
-      console.error(error);
+      }
+    });
+
+    if (result.success) {
+      setAiAnalysis({ ...aiAnalysis, [item.id]: result.data });
     }
   };
 

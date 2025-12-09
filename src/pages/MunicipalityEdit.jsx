@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import { useLanguage } from '../components/LanguageContext';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MunicipalityEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -21,6 +23,7 @@ function MunicipalityEdit() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
+  const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: municipality, isLoading } = useQuery({
     queryKey: ['municipality', municipalityId],
@@ -37,7 +40,6 @@ function MunicipalityEdit() {
   });
 
   const [formData, setFormData] = useState(null);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
 
   React.useEffect(() => {
     if (municipality && !formData) {
@@ -56,9 +58,7 @@ function MunicipalityEdit() {
   });
 
   const handleAIEnhance = async () => {
-    setIsAIProcessing(true);
-    try {
-      const prompt = `Generate professional municipality description for Saudi municipality:
+    const prompt = `Generate professional municipality description for Saudi municipality:
 
 Municipality: ${formData.name_en} | ${formData.name_ar}
 Region: ${formData.region}
@@ -66,28 +66,26 @@ Population: ${formData.population || 'N/A'}
 
 Create bilingual content highlighting the municipality's characteristics and innovation potential.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' }
-          }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setFormData(prev => ({
         ...prev,
-        description_en: result.description_en || prev.description_en,
-        description_ar: result.description_ar || prev.description_ar
+        description_en: result.data.description_en || prev.description_en,
+        description_ar: result.data.description_ar || prev.description_ar
       }));
-
       toast.success(t({ en: '✨ AI enhancement complete!', ar: '✨ تم التحسين!' }));
-    } catch (error) {
+    } else {
       toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setIsAIProcessing(false);
     }
   };
 
