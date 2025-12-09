@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AdaptiveRolloutSequencing({ scalingPlan, municipalities }) {
   const { language, t } = useLanguage();
-  const [optimizing, setOptimizing] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const optimizeSequence = async () => {
-    setOptimizing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Optimize rollout sequence based on real-time performance:
+    const response = await invokeAI({
+      prompt: `Optimize rollout sequence based on real-time performance:
 
 Current Plan: ${scalingPlan?.phases?.map(p => p.municipalities?.join(', ')).join(' → ')}
 
@@ -30,23 +29,20 @@ Recommend:
 2. Should we delay/support any municipality?
 3. Optimal next sequence
 4. Specific interventions needed`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            accelerate: { type: "array", items: { type: "string" } },
-            delay_support: { type: "array", items: { type: "string" } },
-            next_sequence: { type: "array", items: { type: "string" } },
-            interventions: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          accelerate: { type: "array", items: { type: "string" } },
+          delay_support: { type: "array", items: { type: "string" } },
+          next_sequence: { type: "array", items: { type: "string" } },
+          interventions: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setRecommendation(response);
+    if (response.success && response.data) {
+      setRecommendation(response.data);
       toast.success(t({ en: 'Optimization complete', ar: 'التحسين مكتمل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Optimization failed', ar: 'فشل التحسين' }));
-    } finally {
-      setOptimizing(false);
     }
   };
 
@@ -58,14 +54,16 @@ Recommend:
             <TrendingUp className="h-5 w-5 text-teal-600" />
             {t({ en: 'Adaptive Sequencing', ar: 'التسلسل التكيفي' })}
           </CardTitle>
-          <Button onClick={optimizeSequence} disabled={optimizing} size="sm" className="bg-teal-600">
-            {optimizing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          <Button onClick={optimizeSequence} disabled={isLoading || !isAvailable} size="sm" className="bg-teal-600">
+            {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'Optimize', ar: 'تحسين' })}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!recommendation && !optimizing && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        
+        {!recommendation && !isLoading && (
           <div className="text-center py-8">
             <TrendingUp className="h-12 w-12 text-teal-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Shield, FileText, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SandboxPolicyFeedbackWorkflow({ sandbox }) {
   const { t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [policyDraft, setPolicyDraft] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const queryClient = useQueryClient();
 
   const createPolicyMutation = useMutation({
@@ -24,11 +26,8 @@ export default function SandboxPolicyFeedbackWorkflow({ sandbox }) {
   });
 
   const generatePolicyRecommendation = async () => {
-    setGenerating(true);
-    try {
-      // Use AI to analyze sandbox regulatory learnings
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this regulatory sandbox's findings and generate a policy reform recommendation.
+    const response = await invokeAI({
+      prompt: `Analyze this regulatory sandbox's findings and generate a policy reform recommendation.
 
 Sandbox: ${sandbox.name_en}
 Description: ${sandbox.description_en}
@@ -49,29 +48,26 @@ Generate a policy recommendation that addresses the regulatory gaps identified. 
 8. Risk considerations
 
 Return as JSON.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title_en: { type: "string" },
-            title_ar: { type: "string" },
-            problem_statement_en: { type: "string" },
-            problem_statement_ar: { type: "string" },
-            current_barriers: { type: "array", items: { type: "string" } },
-            proposed_changes: { type: "array", items: { type: "string" } },
-            expected_impact_en: { type: "string" },
-            expected_impact_ar: { type: "string" },
-            implementation_approach: { type: "string" },
-            stakeholders: { type: "array", items: { type: "string" } },
-            risks: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title_en: { type: "string" },
+          title_ar: { type: "string" },
+          problem_statement_en: { type: "string" },
+          problem_statement_ar: { type: "string" },
+          current_barriers: { type: "array", items: { type: "string" } },
+          proposed_changes: { type: "array", items: { type: "string" } },
+          expected_impact_en: { type: "string" },
+          expected_impact_ar: { type: "string" },
+          implementation_approach: { type: "string" },
+          stakeholders: { type: "array", items: { type: "string" } },
+          risks: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setPolicyDraft(response);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate policy', ar: 'فشل إنشاء السياسة' }));
-    } finally {
-      setGenerating(false);
+    if (response.success && response.data) {
+      setPolicyDraft(response.data);
     }
   };
 
@@ -102,6 +98,8 @@ Return as JSON.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        
         {!policyDraft ? (
           <div className="text-center p-6">
             <p className="text-sm text-slate-600 mb-4">
@@ -112,10 +110,10 @@ Return as JSON.`,
             </p>
             <Button 
               onClick={generatePolicyRecommendation} 
-              disabled={generating}
+              disabled={isLoading || !isAvailable}
               className="bg-purple-600"
             >
-              {generating ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Generating...', ar: 'جاري التوليد...' })}

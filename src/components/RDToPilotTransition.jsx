@@ -12,12 +12,14 @@ import { TestTube, X, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDToPilotTransition({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [pilotData, setPilotData] = useState(null);
 
   const { data: municipalities = [] } = useQuery({
@@ -38,9 +40,7 @@ export default function RDToPilotTransition({ project, onClose }) {
   });
 
   const generatePilotScope = async () => {
-    setGenerating(true);
-    try {
-      const prompt = `Generate pilot project scope from R&D outcomes:
+    const prompt = `Generate pilot project scope from R&D outcomes:
 
 R&D Project: ${project.title_en}
 Institution: ${project.institution}
@@ -69,69 +69,65 @@ Generate pilot scope:
 
 Make it practical and focused on real-world validation.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            objective_en: { type: 'string' },
-            objective_ar: { type: 'string' },
-            hypothesis: { type: 'string' },
-            methodology: { type: 'string' },
-            scope: { type: 'string' },
-            duration_weeks: { type: 'number' },
-            budget: { type: 'number' },
-            kpis: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  baseline: { type: 'string' },
-                  target: { type: 'string' },
-                  unit: { type: 'string' }
-                }
-              }
-            },
-            success_criteria: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  criterion: { type: 'string' },
-                  threshold: { type: 'string' }
-                }
-              }
-            },
-            target_population: {
+    const response = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          tagline_en: { type: 'string' },
+          tagline_ar: { type: 'string' },
+          objective_en: { type: 'string' },
+          objective_ar: { type: 'string' },
+          hypothesis: { type: 'string' },
+          methodology: { type: 'string' },
+          scope: { type: 'string' },
+          duration_weeks: { type: 'number' },
+          budget: { type: 'number' },
+          kpis: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                size: { type: 'number' },
-                demographics: { type: 'string' },
-                location: { type: 'string' }
+                name: { type: 'string' },
+                baseline: { type: 'string' },
+                target: { type: 'string' },
+                unit: { type: 'string' }
               }
+            }
+          },
+          success_criteria: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                criterion: { type: 'string' },
+                threshold: { type: 'string' }
+              }
+            }
+          },
+          target_population: {
+            type: 'object',
+            properties: {
+              size: { type: 'number' },
+              demographics: { type: 'string' },
+              location: { type: 'string' }
             }
           }
         }
-      });
+      }
+    });
 
+    if (response.success && response.data) {
       setPilotData({
-        ...result,
+        ...response.data,
         solution_id: project.solution_id,
         sector: project.research_area || 'digital_services',
         trl_start: project.trl_current || project.trl_start,
         stage: 'design'
       });
-
       toast.success(t({ en: 'Pilot scope generated', ar: 'تم إنشاء نطاق التجربة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate scope', ar: 'فشل إنشاء النطاق' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -174,6 +170,8 @@ Make it practical and focused on real-world validation.`;
           </div>
         </div>
 
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
         {!pilotData ? (
           <div className="text-center py-8">
             <Sparkles className="h-12 w-12 text-blue-600 mx-auto mb-4" />
@@ -183,8 +181,8 @@ Make it practical and focused on real-world validation.`;
                 ar: 'سينشئ الذكاء الاصطناعي نطاق تجربة كامل بناءً على نتائج البحث' 
               })}
             </p>
-            <Button onClick={generatePilotScope} disabled={generating} className="bg-blue-600 hover:bg-blue-700">
-              {generating ? (
+            <Button onClick={generatePilotScope} disabled={isLoading || !isAvailable} className="bg-blue-600 hover:bg-blue-700">
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Generating...', ar: 'جاري الإنشاء...' })}

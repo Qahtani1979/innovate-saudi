@@ -8,11 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { ChevronRight, ChevronLeft, CheckCircle2, Sparkles, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function TaxonomyWizard({ onComplete }) {
   const { language, isRTL, t } = useLanguage();
   const [step, setStep] = useState(1);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  
   const queryClient = useQueryClient();
 
   const [sectors, setSectors] = useState([]);
@@ -28,10 +31,8 @@ export default function TaxonomyWizard({ onComplete }) {
   ];
 
   const generateAITaxonomy = async () => {
-    setAiLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate comprehensive municipal innovation taxonomy for Saudi Arabia in BOTH English and Arabic.
+    const response = await invokeAI({
+      prompt: `Generate comprehensive municipal innovation taxonomy for Saudi Arabia in BOTH English and Arabic.
 
 Include:
 1. 10-12 primary sectors (Urban Design, Transport, Environment, Digital Services, Health, Education, Safety, Economic Development, Social Services, Infrastructure, Governance, Culture)
@@ -41,41 +42,40 @@ Include:
 For each service include realistic: service_type, quality benchmarks, digitalization priority.
 Focus on Saudi municipal context, Vision 2030, QoL program, and smart city initiatives.
 Each item needs: name_ar, name_en, code, description_ar, description_en.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            sectors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name_en: { type: 'string' },
-                  name_ar: { type: 'string' },
-                  code: { type: 'string' },
-                  description_en: { type: 'string' },
-                  description_ar: { type: 'string' },
-                  subsectors: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        name_en: { type: 'string' },
-                        name_ar: { type: 'string' },
-                        code: { type: 'string' },
-                        services: {
-                          type: 'array',
-                          items: {
-                            type: 'object',
-                            properties: {
-                              name_en: { type: 'string' },
-                              name_ar: { type: 'string' },
-                              service_code: { type: 'string' },
-                              description_en: { type: 'string' },
-                              description_ar: { type: 'string' },
-                              service_type: { type: 'string' },
-                              is_digital: { type: 'boolean' },
-                              digitalization_priority: { type: 'string' }
-                            }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          sectors: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name_en: { type: 'string' },
+                name_ar: { type: 'string' },
+                code: { type: 'string' },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' },
+                subsectors: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name_en: { type: 'string' },
+                      name_ar: { type: 'string' },
+                      code: { type: 'string' },
+                      services: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            name_en: { type: 'string' },
+                            name_ar: { type: 'string' },
+                            service_code: { type: 'string' },
+                            description_en: { type: 'string' },
+                            description_ar: { type: 'string' },
+                            service_type: { type: 'string' },
+                            is_digital: { type: 'boolean' },
+                            digitalization_priority: { type: 'string' }
                           }
                         }
                       }
@@ -86,8 +86,11 @@ Each item needs: name_ar, name_en, code, description_ar, description_en.`,
             }
           }
         }
-      });
+      }
+    });
 
+    if (response.success && response.data) {
+      const result = response.data;
       setSectors(result.sectors || []);
       const allSubsectors = [];
       const allServices = [];
@@ -106,10 +109,6 @@ Each item needs: name_ar, name_en, code, description_ar, description_en.`,
       
       toast.success(t({ en: 'AI generated complete taxonomy', ar: 'تم إنشاء التصنيف الكامل بالذكاء' }));
       setStep(2);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل الإنشاء' }));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -200,14 +199,15 @@ Each item needs: name_ar, name_en, code, description_ar, description_en.`,
             <CardTitle>{t({ en: 'AI Taxonomy Generation', ar: 'إنشاء التصنيف الذكي' })}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
             <p className="text-slate-700 leading-relaxed" dir={language === 'ar' ? 'rtl' : 'ltr'}>
               {t({ 
                 en: 'AI will generate a complete 3-level taxonomy (Sectors → Subsectors → Services) based on Saudi municipal best practices, Vision 2030, and smart city frameworks. This will include 10-12 sectors, 40-60 subsectors, and 200+ municipal services.',
                 ar: 'سينشئ الذكاء الاصطناعي تصنيفاً كاملاً من 3 مستويات (قطاعات ← قطاعات فرعية ← خدمات) بناءً على أفضل الممارسات البلدية السعودية ورؤية 2030 وأطر المدن الذكية. سيشمل 10-12 قطاعاً و40-60 قطاعاً فرعياً و200+ خدمة بلدية.'
               })}
             </p>
-            <Button onClick={generateAITaxonomy} disabled={aiLoading} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-lg py-8">
-              {aiLoading ? <Loader2 className="h-6 w-6 mr-2 animate-spin" /> : <Sparkles className="h-6 w-6 mr-2" />}
+            <Button onClick={generateAITaxonomy} disabled={isLoading || !isAvailable} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-lg py-8">
+              {isLoading ? <Loader2 className="h-6 w-6 mr-2 animate-spin" /> : <Sparkles className="h-6 w-6 mr-2" />}
               {t({ en: 'Generate Complete Taxonomy with AI', ar: 'إنشاء التصنيف الكامل بالذكاء الاصطناعي' })}
             </Button>
           </CardContent>
