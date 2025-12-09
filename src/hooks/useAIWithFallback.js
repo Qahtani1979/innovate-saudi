@@ -3,7 +3,7 @@
  * Handles rate limits, failures, and provides fallback behavior
  */
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
