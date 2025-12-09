@@ -10,11 +10,13 @@ import { createPageUrl } from '../utils';
 import { BookOpen, Award, TrendingUp, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MyLearning() {
   const { language, isRTL, t } = useLanguage();
   const [recommendations, setRecommendations] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: user } = useQuery({
     queryKey: ['me'],
@@ -45,10 +47,8 @@ function MyLearning() {
   });
 
   const generateRecommendations = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Based on this user's activity, recommend learning resources:
+    const result = await invokeAI({
+      prompt: `Based on this user's activity, recommend learning resources:
 
 Role: ${user?.role}
 Challenges created: ${myChallenges.length}
@@ -60,29 +60,26 @@ Identify skill gaps and recommend 5 learning topics to improve performance. For 
 2. Why needed (skill gap identified)
 3. Expected improvement
 4. Priority (high/medium/low)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommendations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  topic: { type: 'string' },
-                  skill_gap: { type: 'string' },
-                  expected_improvement: { type: 'string' },
-                  priority: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommendations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                topic: { type: 'string' },
+                skill_gap: { type: 'string' },
+                expected_improvement: { type: 'string' },
+                priority: { type: 'string' }
               }
             }
           }
         }
-      });
-      setRecommendations(result.recommendations || []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      }
+    });
+    if (result.success) {
+      setRecommendations(result.data.recommendations || []);
     }
   };
 
@@ -99,11 +96,13 @@ Identify skill gaps and recommend 5 learning topics to improve performance. For 
             {t({ en: 'Personalized learning path', ar: 'مسار التعلم المخصص' })}
           </p>
         </div>
-        <Button onClick={generateRecommendations} disabled={loading} className="bg-purple-600">
+        <Button onClick={generateRecommendations} disabled={loading || !isAvailable} className="bg-purple-600">
           {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'Get AI Recommendations', ar: 'الحصول على توصيات الذكاء' })}
         </Button>
       </div>
+
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
 
       {/* AI Recommendations */}
       {recommendations && (

@@ -11,6 +11,8 @@ import { Sparkles, Copy, Trash2, TrendingUp, AlertCircle, Target, Zap } from 'lu
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function DecisionSimulator() {
   const { language, isRTL, t } = useLanguage();
@@ -20,7 +22,7 @@ function DecisionSimulator() {
     { id: 3, name: 'Scenario B', budget_pilot: 50, budget_rd: 15, budget_program: 20, budget_scaling: 15 }
   ]);
   const [predictions, setPredictions] = useState({});
-  const [analyzing, setAnalyzing] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -70,18 +72,16 @@ function DecisionSimulator() {
   };
 
   const predictOutcomes = async () => {
-    setAnalyzing(true);
-    try {
-      const historicalData = {
-        pilot_count: pilots.length,
-        pilot_success_rate: pilots.filter(p => p.stage === 'scaled').length / pilots.length,
-        challenge_resolution_rate: challenges.filter(c => c.status === 'resolved').length / challenges.length,
-        current_mii_avg: 58
-      };
+    const historicalData = {
+      pilot_count: pilots.length,
+      pilot_success_rate: pilots.filter(p => p.stage === 'scaled').length / pilots.length,
+      challenge_resolution_rate: challenges.filter(c => c.status === 'resolved').length / challenges.length,
+      current_mii_avg: 58
+    };
 
-      const scenarioPromises = scenarios.map(async (scenario) => {
-        const response = await base44.integrations.Core.InvokeLLM({
-          prompt: `Predict outcomes for this budget allocation scenario:
+    const scenarioPromises = scenarios.map(async (scenario) => {
+      const result = await invokeAI({
+        prompt: `Predict outcomes for this budget allocation scenario:
 
 Scenario: ${scenario.name}
 Budget Allocation:
@@ -103,34 +103,34 @@ Predict realistic outcomes for:
 4. Risk level (low/medium/high)
 5. Success probability (%)
 6. Key trade-offs (brief)`,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              pilots_expected: { type: "number" },
-              challenge_resolution_change: { type: "number" },
-              mii_change: { type: "number" },
-              risk_level: { type: "string" },
-              success_probability: { type: "number" },
-              trade_offs: { type: "string" }
-            }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            pilots_expected: { type: "number" },
+            challenge_resolution_change: { type: "number" },
+            mii_change: { type: "number" },
+            risk_level: { type: "string" },
+            success_probability: { type: "number" },
+            trade_offs: { type: "string" }
           }
-        });
-
-        return { scenarioId: scenario.id, ...response };
+        }
       });
 
-      const results = await Promise.all(scenarioPromises);
-      const predictionsMap = {};
-      results.forEach(r => {
-        predictionsMap[r.scenarioId] = r;
-      });
+      if (result.success) {
+        return { scenarioId: scenario.id, ...result.data };
+      }
+      return { scenarioId: scenario.id };
+    });
 
-      setPredictions(predictionsMap);
+    const results = await Promise.all(scenarioPromises);
+    const predictionsMap = {};
+    results.forEach(r => {
+      predictionsMap[r.scenarioId] = r;
+    });
+
+    setPredictions(predictionsMap);
+    if (Object.values(predictionsMap).some(p => p.pilots_expected !== undefined)) {
       toast.success('AI predictions generated');
-    } catch (error) {
-      toast.error('Failed to generate predictions');
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -168,12 +168,14 @@ Predict realistic outcomes for:
           <Button onClick={addScenario} variant="outline">
             {t({ en: '+ Add Scenario', ar: '+ إضافة سيناريو' })}
           </Button>
-          <Button onClick={predictOutcomes} disabled={analyzing} className="bg-gradient-to-r from-purple-600 to-pink-600">
+          <Button onClick={predictOutcomes} disabled={analyzing || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
             <Sparkles className="h-4 w-4 mr-2" />
             {analyzing ? t({ en: 'Analyzing...', ar: 'جاري التحليل...' }) : t({ en: 'Predict Outcomes', ar: 'التنبؤ بالنتائج' })}
           </Button>
         </div>
       </div>
+
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
 
       {/* Scenario Builder */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -8,12 +8,14 @@ import { useLanguage } from '../components/LanguageContext';
 import { Presentation, Download, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PresentationMode() {
   const { language, isRTL, t } = useLanguage();
   const [slides, setSlides] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [generating, setGenerating] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans'],
@@ -28,10 +30,8 @@ function PresentationMode() {
       return;
     }
 
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Convert this strategic plan to presentation slides:
+    const result = await invokeAI({
+      prompt: `Convert this strategic plan to presentation slides:
 
 Plan: ${activePlan.name_en}
 Vision: ${activePlan.vision_en || 'N/A'}
@@ -48,31 +48,28 @@ Generate 10-15 slides with:
 7. Closing
 
 Each slide: {title, key_points: [3-5 bullets], speaker_notes}`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            slides: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  key_points: { type: "array", items: { type: "string" } },
-                  speaker_notes: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          slides: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                key_points: { type: "array", items: { type: "string" } },
+                speaker_notes: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setSlides(response.slides);
+    if (result.success) {
+      setSlides(result.data.slides);
       setCurrentSlide(0);
       toast.success(t({ en: 'Presentation generated', ar: 'تم إنشاء العرض التقديمي' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -92,7 +89,7 @@ Each slide: {title, key_points: [3-5 bullets], speaker_notes}`,
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={generateSlides} disabled={generating} className="bg-gradient-to-r from-purple-600 to-pink-600">
+          <Button onClick={generateSlides} disabled={generating || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
             <Sparkles className="h-4 w-4 mr-2" />
             {generating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate Slides', ar: 'إنشاء شرائح' })}
           </Button>
@@ -104,6 +101,8 @@ Each slide: {title, key_points: [3-5 bullets], speaker_notes}`,
           )}
         </div>
       </div>
+
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
 
       {slides ? (
         <div className="space-y-4">
