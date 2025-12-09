@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { Lightbulb, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function IdeaToSolutionConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [enhancing, setEnhancing] = useState(false);
+  const { invokeAI, isLoading: enhancing, status, error, rateLimitInfo } = useAIWithFallback();
 
   const [solutionData, setSolutionData] = useState({
     name_en: idea.title || '',
@@ -31,10 +33,8 @@ export default function IdeaToSolutionConverter({ idea, onClose }) {
   });
 
   const enhanceWithAI = async () => {
-    setEnhancing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Convert this citizen idea into a structured solution entry:
+    const result = await invokeAI({
+      prompt: `Convert this citizen idea into a structured solution entry:
 
 Title: ${idea.title}
 Description: ${idea.description}
@@ -50,34 +50,31 @@ Generate:
 7. Target sectors
 
 Format as JSON matching Solution entity schema.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            value_proposition: { type: 'string' },
-            features: { type: 'array', items: { type: 'string' } },
-            maturity_level: { type: 'string' },
-            trl: { type: 'number' },
-            sectors: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          value_proposition: { type: 'string' },
+          features: { type: 'array', items: { type: 'string' } },
+          maturity_level: { type: 'string' },
+          trl: { type: 'number' },
+          sectors: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (result.success && result.data) {
       setSolutionData({
         ...solutionData,
-        ...result,
+        ...result.data,
         provider_name: solutionData.provider_name,
         contact_email: solutionData.contact_email
       });
 
       toast.success(t({ en: 'AI enhancement complete', ar: 'تم التحسين الذكي' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setEnhancing(false);
     }
   };
 
@@ -121,6 +118,8 @@ Format as JSON matching Solution entity schema.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
           <p className="text-sm text-purple-900">
             <strong>{t({ en: 'Original Idea:', ar: 'الفكرة الأصلية:' })}</strong> {idea.title}

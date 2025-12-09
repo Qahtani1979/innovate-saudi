@@ -4,14 +4,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
 import { toast } from 'sonner';
 import { Shield, Sparkles, ArrowRight, Loader2, X } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotToPolicyWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { invokeAI, isLoading: aiGenerating, status, error, rateLimitInfo } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     policy_recommendation_ar: '',
@@ -20,13 +22,10 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
     rationale_en: '',
     impact_assessment: ''
   });
-  const [aiGenerating, setAiGenerating] = useState(false);
 
   const generateAI = async () => {
-    setAiGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Based on this pilot's results, generate policy recommendations:
+    const result = await invokeAI({
+      prompt: `Based on this pilot's results, generate policy recommendations:
 
 Pilot: ${pilot.title_en}
 Sector: ${pilot.sector}
@@ -41,31 +40,28 @@ Generate bilingual policy recommendation:
 3. Expected impact
 
 Must be in both Arabic and English.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommendation_ar: { type: 'string' },
-            recommendation_en: { type: 'string' },
-            rationale_ar: { type: 'string' },
-            rationale_en: { type: 'string' },
-            impact_en: { type: 'string' },
-            impact_ar: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          recommendation_ar: { type: 'string' },
+          recommendation_en: { type: 'string' },
+          rationale_ar: { type: 'string' },
+          rationale_en: { type: 'string' },
+          impact_en: { type: 'string' },
+          impact_ar: { type: 'string' }
         }
-      });
+      }
+    });
 
+    if (result.success && result.data) {
       setFormData({
-        policy_recommendation_ar: result.recommendation_ar || '',
-        policy_recommendation_en: result.recommendation_en || '',
-        rationale_ar: result.rationale_ar || '',
-        rationale_en: result.rationale_en || '',
-        impact_assessment: language === 'ar' ? result.impact_ar : result.impact_en
+        policy_recommendation_ar: result.data.recommendation_ar || '',
+        policy_recommendation_en: result.data.recommendation_en || '',
+        rationale_ar: result.data.rationale_ar || '',
+        rationale_en: result.data.rationale_en || '',
+        impact_assessment: language === 'ar' ? result.data.impact_ar : result.data.impact_en
       });
       toast.success(t({ en: 'AI generated policy recommendation', ar: 'تم إنشاء التوصية' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setAiGenerating(false);
     }
   };
 
@@ -110,6 +106,8 @@ Must be in both Arabic and English.`,
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-sm text-blue-900">
             <strong>{t({ en: 'From Pilot:', ar: 'من التجربة:' })}</strong>{' '}
