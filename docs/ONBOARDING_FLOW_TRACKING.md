@@ -47,11 +47,16 @@ flowchart TB
         - CV Upload → ExtractDataFromUploadedFile
         - LinkedIn URL → InvokeLLM analysis
         - Auto-fills profile fields"]
-        OW3["Step 3: Profile
-        - full_name (required)
-        - job_title, department
-        - organization, bio
-        - expertise_areas (max 5)"]
+        OW3["Step 3: Profile (Bilingual)
+        - full_name_en/ar (required)
+        - job_title_en/ar, department_en/ar
+        - organization_en/ar, bio_en/ar
+        - mobile_number with country code
+        - national_id, date_of_birth, gender
+        - education_level, degree
+        - location_city, location_region
+        - preferred_language
+        - Field validations (mobile, ID, DOB, LinkedIn)"]
         OW4["Step 4: AI Assist
         - InvokeLLM suggestions
         - improved_bio_en/ar
@@ -450,7 +455,7 @@ flowchart LR
 
 | Table | Purpose | Key Fields |
 |-------|---------|------------|
-| `user_profiles` | User profile data | `onboarding_completed`, `onboarding_completed_at`, `profile_completion_percentage`, `extracted_data` |
+| `user_profiles` | User profile data | `onboarding_completed`, `onboarding_completed_at`, `profile_completion_percentage`, `extracted_data`, `mobile_number`, `mobile_country_code`, `national_id`, `date_of_birth`, `gender`, `education_level`, `degree`, `location_city`, `location_region`, `preferred_language`, bilingual fields (`*_en`, `*_ar`) |
 | `user_roles` | Role assignments | `role`, `user_id`, `municipality_id`, `organization_id` |
 | `role_requests` | Pending role requests | `requested_role`, `justification`, `status`, `reviewed_by` |
 | `onboarding_events` | Analytics tracking | `event_type`, `step_number`, `duration_seconds`, `metadata` |
@@ -472,19 +477,32 @@ flowchart LR
 
 ## Key Implementation Details
 
-### Profile Completion Calculation (OnboardingWizard.jsx:167-176)
+### Profile Completion Calculation (OnboardingWizard.jsx)
 ```javascript
 const calculateProfileCompletion = (data) => {
   let score = 0;
-  if (data.full_name) score += 20;
-  if (data.job_title) score += 15;
-  if (data.bio) score += 15;
-  if (data.selectedPersona) score += 20;
-  if (data.expertise_areas?.length > 0) score += 15;
-  if (data.cv_url || data.linkedin_url) score += 15;
+  if (data.full_name_en || data.full_name_ar) score += 15;
+  if (data.full_name_en && data.full_name_ar) score += 5; // Bonus for both languages
+  if (data.job_title_en || data.job_title_ar) score += 10;
+  if (data.bio_en || data.bio_ar) score += 10;
+  if (data.selectedPersona) score += 15;
+  if (data.expertise_areas?.length > 0) score += 10;
+  if (data.cv_url || data.linkedin_url) score += 10;
+  if (data.national_id) score += 5;
+  if (data.education_level) score += 5;
+  if (data.location_city || data.location_region) score += 5;
+  if (data.languages?.length > 0) score += 5;
+  if (data.years_of_experience > 0) score += 5;
+  if (data.mobile_number) score += 5;
   return Math.min(score, 100);
 };
 ```
+
+### Field Validations
+- **Mobile Number**: 7-15 digits, international format with country code selector
+- **National ID/Iqama**: 10 digits starting with 1 or 2 (Saudi format)
+- **Date of Birth**: Age must be between 13-100 years
+- **LinkedIn URL**: Must match LinkedIn profile/company URL pattern
 
 ### Specialized Wizard Detection (OnboardingWizard.jsx:363-377)
 ```javascript
@@ -595,3 +613,25 @@ const getLandingPage = () => {
 
 *Last Updated: 2025-12-09*
 *Status: ✅ ALL FEATURES COMPLETE & INTEGRATED*
+
+---
+
+## Recent Updates (2025-12-09)
+
+### Bilingual Profile Fields
+- All major profile fields now support English and Arabic with auto-translation
+- Added `preferred_language` to store user's display language preference
+
+### New Profile Fields Added
+- `mobile_number` with `mobile_country_code` (international support)
+- `national_id` (Saudi National ID/Iqama format)
+- `date_of_birth`, `gender`
+- `education_level`, `degree`
+- `location_city`, `location_region`
+- `certifications`, `languages` (JSON arrays)
+
+### Field Validations
+- Mobile number: 7-15 digits with country code selector (16 countries)
+- National ID: 10 digits starting with 1 or 2
+- Date of Birth: Age validation (13-100 years)
+- LinkedIn URL: Format validation

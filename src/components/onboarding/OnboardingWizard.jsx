@@ -158,10 +158,81 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     languages: [],
     location_city: '',
     location_region: '',
-    preferred_language: language
+    preferred_language: language,
+    // Mobile number with country code
+    mobile_number: '',
+    mobile_country_code: '+966'
   });
   
   const [isTranslating, setIsTranslating] = useState({});
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Validation functions
+  const validateEmail = (email) => {
+    if (!email) return true;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateMobileNumber = (number) => {
+    if (!number) return true;
+    // Remove all non-digit characters for validation
+    const digitsOnly = number.replace(/\D/g, '');
+    return digitsOnly.length >= 7 && digitsOnly.length <= 15;
+  };
+
+  const validateNationalId = (id) => {
+    if (!id) return true;
+    // Saudi National ID/Iqama: 10 digits, starts with 1 or 2
+    const regex = /^[12]\d{9}$/;
+    return regex.test(id);
+  };
+
+  const validateDateOfBirth = (dob) => {
+    if (!dob) return true;
+    const date = new Date(dob);
+    const now = new Date();
+    const minAge = new Date(now.getFullYear() - 13, now.getMonth(), now.getDate());
+    const maxAge = new Date(now.getFullYear() - 100, now.getMonth(), now.getDate());
+    return date <= minAge && date >= maxAge;
+  };
+
+  const validateLinkedInUrl = (url) => {
+    if (!url) return true;
+    const regex = /^https?:\/\/(www\.)?linkedin\.com\/(in|company)\/[\w-]+\/?$/i;
+    return regex.test(url);
+  };
+
+  const validateField = (field, value) => {
+    switch (field) {
+      case 'national_id':
+        return validateNationalId(value) ? '' : t({ en: 'Invalid National ID format (10 digits starting with 1 or 2)', ar: 'صيغة الهوية غير صحيحة (10 أرقام تبدأ بـ 1 أو 2)' });
+      case 'mobile_number':
+        return validateMobileNumber(value) ? '' : t({ en: 'Invalid mobile number (7-15 digits)', ar: 'رقم الجوال غير صحيح (7-15 رقم)' });
+      case 'date_of_birth':
+        return validateDateOfBirth(value) ? '' : t({ en: 'Invalid date of birth (age must be 13-100)', ar: 'تاريخ الميلاد غير صحيح (العمر يجب أن يكون 13-100)' });
+      case 'linkedin_url':
+        return validateLinkedInUrl(value) ? '' : t({ en: 'Invalid LinkedIn URL format', ar: 'صيغة رابط LinkedIn غير صحيحة' });
+      default:
+        return '';
+    }
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Validate on change for specific fields
+    if (['national_id', 'mobile_number', 'date_of_birth', 'linkedin_url'].includes(field)) {
+      const error = validateField(field, value);
+      setValidationErrors(prev => ({ ...prev, [field]: error }));
+    }
+  };
+
+  // Format mobile number for display
+  const formatMobileNumber = (value) => {
+    // Allow only digits, spaces, and dashes
+    return value.replace(/[^\d\s-]/g, '');
+  };
 
   // Initialize form data from existing profile
   useEffect(() => {
@@ -192,6 +263,8 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
         location_city: userProfile?.location_city || '',
         location_region: userProfile?.location_region || '',
         preferred_language: userProfile?.preferred_language || language,
+        mobile_number: userProfile?.mobile_number || '',
+        mobile_country_code: userProfile?.mobile_country_code || '+966',
       }));
     }
   }, [userProfile, user, language]);
@@ -504,6 +577,8 @@ Based on this information:
         location_region: formData.location_region || null,
         years_experience: formData.years_of_experience || 0,
         preferred_language: formData.preferred_language || language,
+        mobile_number: formData.mobile_number || null,
+        mobile_country_code: formData.mobile_country_code || '+966',
         // Only mark complete if no specialized wizard needed
         onboarding_completed: !redirectToSpecialized,
         onboarding_completed_at: redirectToSpecialized ? null : new Date().toISOString(),
@@ -826,12 +901,17 @@ Based on this information:
                         {t({ en: 'Enter your LinkedIn URL for profile suggestions', ar: 'أدخل رابط LinkedIn الخاص بك للحصول على اقتراحات الملف الشخصي' })}
                       </p>
                       <div className="flex gap-2">
-                        <Input
-                          value={formData.linkedin_url}
-                          onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
-                          placeholder="https://linkedin.com/in/yourprofile"
-                          className="flex-1"
-                        />
+                        <div className="flex-1 space-y-1">
+                          <Input
+                            value={formData.linkedin_url}
+                            onChange={(e) => handleFieldChange('linkedin_url', e.target.value)}
+                            placeholder="https://linkedin.com/in/yourprofile"
+                            className={validationErrors.linkedin_url ? 'border-red-500' : ''}
+                          />
+                          {validationErrors.linkedin_url && (
+                            <p className="text-xs text-red-500">{validationErrors.linkedin_url}</p>
+                          )}
+                        </div>
                         <Button
                           onClick={handleLinkedInImport}
                           disabled={isExtractingLinkedIn || !formData.linkedin_url}
@@ -1087,23 +1167,70 @@ Based on this information:
                     {t({ en: 'Additional Information (Optional)', ar: 'معلومات إضافية (اختياري)' })}
                   </h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {/* Mobile Number with Country Code */}
+                <div className="space-y-2 mb-4">
+                  <Label>{t({ en: 'Mobile Number', ar: 'رقم الجوال' })}</Label>
+                  <div className="flex gap-2">
+                    <select
+                      value={formData.mobile_country_code}
+                      onChange={(e) => handleFieldChange('mobile_country_code', e.target.value)}
+                      className="w-28 h-10 px-2 border border-input rounded-md bg-background text-sm"
+                    >
+                      <option value="+966">🇸🇦 +966</option>
+                      <option value="+971">🇦🇪 +971</option>
+                      <option value="+973">🇧🇭 +973</option>
+                      <option value="+965">🇰🇼 +965</option>
+                      <option value="+968">🇴🇲 +968</option>
+                      <option value="+974">🇶🇦 +974</option>
+                      <option value="+20">🇪🇬 +20</option>
+                      <option value="+962">🇯🇴 +962</option>
+                      <option value="+961">🇱🇧 +961</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+91">🇮🇳 +91</option>
+                      <option value="+92">🇵🇰 +92</option>
+                      <option value="+63">🇵🇭 +63</option>
+                      <option value="+62">🇮🇩 +62</option>
+                      <option value="+60">🇲🇾 +60</option>
+                    </select>
+                    <Input
+                      value={formData.mobile_number}
+                      onChange={(e) => handleFieldChange('mobile_number', formatMobileNumber(e.target.value))}
+                      placeholder="5XXXXXXXX"
+                      className={`flex-1 ${validationErrors.mobile_number ? 'border-red-500' : ''}`}
+                      maxLength={15}
+                    />
+                  </div>
+                  {validationErrors.mobile_number && (
+                    <p className="text-xs text-red-500">{validationErrors.mobile_number}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="space-y-2">
                       <Label>{t({ en: 'National ID / Iqama', ar: 'الهوية الوطنية / الإقامة' })}</Label>
                       <Input
                         value={formData.national_id}
-                        onChange={(e) => setFormData({ ...formData, national_id: e.target.value })}
+                        onChange={(e) => handleFieldChange('national_id', e.target.value)}
                         placeholder="1234567890"
                         maxLength={10}
+                        className={validationErrors.national_id ? 'border-red-500' : ''}
                       />
+                      {validationErrors.national_id && (
+                        <p className="text-xs text-red-500">{validationErrors.national_id}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>{t({ en: 'Date of Birth', ar: 'تاريخ الميلاد' })}</Label>
                       <Input
                         type="date"
                         value={formData.date_of_birth}
-                        onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                        onChange={(e) => handleFieldChange('date_of_birth', e.target.value)}
+                        className={validationErrors.date_of_birth ? 'border-red-500' : ''}
                       />
+                      {validationErrors.date_of_birth && (
+                        <p className="text-xs text-red-500">{validationErrors.date_of_birth}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>{t({ en: 'Gender', ar: 'الجنس' })}</Label>
