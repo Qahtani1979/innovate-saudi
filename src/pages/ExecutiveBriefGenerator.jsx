@@ -136,21 +136,6 @@ Make it concise, data-driven, bilingual-ready.`,
       </div>
 
       <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-            {generating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
-            )}
-            {t({ en: 'Generate Brief', ar: 'إنشاء موجز' })}
-          </Button>
-          {brief && (
-            <Button onClick={exportPDF} variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              {t({ en: 'Export PDF', ar: 'تصدير PDF' })}
-            </Button>
-          )}
-        </div>
-      </div>
 
       {/* Configuration */}
       <Card>
