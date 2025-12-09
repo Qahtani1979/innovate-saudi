@@ -91,8 +91,12 @@ function LayoutContent({ children, currentPageName }) {
 
   // Show onboarding wizard for new users who haven't completed it
   useEffect(() => {
-    if (isAuthenticated && userProfile && userProfile.onboarding_completed !== true) {
-      setShowOnboarding(true);
+    if (isAuthenticated && userProfile) {
+      if (userProfile.onboarding_completed === true) {
+        setShowOnboarding(false);
+      } else {
+        setShowOnboarding(true);
+      }
     }
   }, [isAuthenticated, userProfile]);
 
