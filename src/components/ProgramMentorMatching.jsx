@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Sparkles, Users, Loader2, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProgramMentorMatching({ program, onClose }) {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
-  const [matching, setMatching] = useState(false);
   const [matches, setMatches] = useState(null);
+  
+  const { invokeAI, status, isLoading: matching, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: participants = [] } = useQuery({
     queryKey: ['program-participants', program?.id],
@@ -24,9 +27,7 @@ export default function ProgramMentorMatching({ program, onClose }) {
   });
 
   const handleAIMatching = async () => {
-    setMatching(true);
-    try {
-      const prompt = `Match mentors with participants for this innovation program:
+    const prompt = `Match mentors with participants for this innovation program:
 
 Program: ${program.name_en}
 Type: ${program.program_type}
@@ -52,29 +53,30 @@ MATCHING RULES:
 
 Return matched pairs with reasoning.`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            matches: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  participant_name: { type: 'string' },
-                  mentor_name: { type: 'string' },
-                  match_score: { type: 'number' },
-                  reasoning: { type: 'string' }
-                }
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          matches: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                participant_name: { type: 'string' },
+                mentor_name: { type: 'string' },
+                match_score: { type: 'number' },
+                reasoning: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
+    if (result.success && result.data?.matches) {
       // Map to IDs
-      const mappedMatches = result.matches.map(m => {
+      const mappedMatches = result.data.matches.map(m => {
         const participant = participants.find(p => p.applicant_name === m.participant_name);
         const mentor = program.mentors?.find(men => men.name === m.mentor_name);
         return {
@@ -88,10 +90,6 @@ Return matched pairs with reasoning.`;
 
       setMatches(mappedMatches);
       toast.success(t({ en: 'AI matching completed', ar: 'المطابقة الذكية مكتملة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
-    } finally {
-      setMatching(false);
     }
   };
 
@@ -124,6 +122,8 @@ Return matched pairs with reasoning.`;
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
           <p className="text-sm font-medium text-purple-900">{program?.name_en}</p>
           <p className="text-xs text-slate-600 mt-1">
@@ -134,7 +134,7 @@ Return matched pairs with reasoning.`;
         {!matches ? (
           <Button
             onClick={handleAIMatching}
-            disabled={matching || !program?.mentors?.length || participants.length === 0}
+            disabled={matching || !program?.mentors?.length || participants.length === 0 || !isAvailable}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
             {matching ? (
