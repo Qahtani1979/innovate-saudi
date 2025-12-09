@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { Microscope, Loader2, Sparkles, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionRDCollaborationProposal({ solution, onClose }) {
   const { t } = useLanguage();
@@ -28,7 +30,7 @@ export default function SolutionRDCollaborationProposal({ solution, onClose }) {
     institution_en: '',
     institution_ar: ''
   });
-  const [enhancing, setEnhancing] = useState(false);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
@@ -45,10 +47,8 @@ export default function SolutionRDCollaborationProposal({ solution, onClose }) {
   });
 
   const enhanceWithAI = async () => {
-    setEnhancing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a comprehensive R&D collaboration proposal between a researcher/academic institution and this solution provider.
+    const result = await invokeAI({
+      prompt: `Generate a comprehensive R&D collaboration proposal between a researcher/academic institution and this solution provider.
 
 SOLUTION:
 Name: ${solution.name_en}
@@ -73,32 +73,28 @@ Generate bilingual (English + Arabic) R&D proposal:
 7. Mutual benefits (for provider and institution)
 
 Be academic and detailed.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            abstract_en: { type: 'string' },
-            abstract_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            methodology_en: { type: 'string' },
-            expected_outputs: { type: 'array', items: { type: 'object', properties: { output_en: { type: 'string' }, type: { type: 'string' } } } },
-            timeline_milestones: { type: 'array', items: { type: 'object' } },
-            budget_breakdown: { type: 'array', items: { type: 'object' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          abstract_en: { type: 'string' },
+          abstract_ar: { type: 'string' },
+          objectives_en: { type: 'string' },
+          methodology_en: { type: 'string' },
+          expected_outputs: { type: 'array', items: { type: 'object', properties: { output_en: { type: 'string' }, type: { type: 'string' } } } },
+          timeline_milestones: { type: 'array', items: { type: 'object' } },
+          budget_breakdown: { type: 'array', items: { type: 'object' } }
         }
-      });
+      }
+    });
 
+    if (result.success) {
       setFormData({
         ...formData,
-        abstract_en: result.abstract_en,
-        abstract_ar: result.abstract_ar,
-        methodology_en: result.methodology_en
+        abstract_en: result.data.abstract_en,
+        abstract_ar: result.data.abstract_ar,
+        methodology_en: result.data.methodology_en
       });
-
       toast.success(t({ en: 'Proposal enhanced', ar: 'تم تحسين المقترح' }));
-    } catch (error) {
-      toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
-    } finally {
-      setEnhancing(false);
     }
   };
 
@@ -139,6 +135,8 @@ Be academic and detailed.`,
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <Label>{t({ en: 'Your Institution (EN)', ar: 'مؤسستك' })}</Label>
@@ -191,11 +189,11 @@ Be academic and detailed.`,
 
         <Button
           onClick={enhanceWithAI}
-          disabled={enhancing || !formData.institution_en}
+          disabled={isLoading || !isAvailable || !formData.institution_en}
           variant="outline"
           className="w-full"
         >
-          {enhancing ? (
+          {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               {t({ en: 'AI enhancing proposal...', ar: 'جاري التحسين...' })}

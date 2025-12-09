@@ -5,14 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { AlertCircle, Sparkles, Loader2, TrendingDown } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { AlertCircle, Sparkles, Loader2, TrendingDown, CheckCircle } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function FailedMatchLearningEngine() {
   const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
   const [insights, setInsights] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: failedMatches = [] } = useQuery({
     queryKey: ['failed-matches'],
@@ -23,10 +25,8 @@ export default function FailedMatchLearningEngine() {
   });
 
   const analyzeFailures = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze failed matchmaker matches to extract learnings:
+    const result = await invokeAI({
+      prompt: `Analyze failed matchmaker matches to extract learnings:
 
 FAILED MATCHES DATA:
 Total failures: ${failedMatches.length}
@@ -38,34 +38,31 @@ Identify:
 3. Preventable vs unavoidable failures
 4. Algorithm improvement recommendations
 5. Pre-engagement validation suggestions`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            failure_categories: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  category: { type: "string" },
-                  percentage: { type: "number" },
-                  examples: { type: "array", items: { type: "string" } }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          failure_categories: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                category: { type: "string" },
+                percentage: { type: "number" },
+                examples: { type: "array", items: { type: "string" } }
               }
-            },
-            root_cause: { type: "string" },
-            preventable_rate: { type: "number" },
-            algorithm_improvements: { type: "array", items: { type: "string" } },
-            validation_checks: { type: "array", items: { type: "string" } }
-          }
+            }
+          },
+          root_cause: { type: "string" },
+          preventable_rate: { type: "number" },
+          algorithm_improvements: { type: "array", items: { type: "string" } },
+          validation_checks: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setInsights(response);
+    if (result.success) {
+      setInsights(result.data);
       toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -83,8 +80,8 @@ Identify:
             <AlertCircle className="h-5 w-5 text-red-600" />
             {t({ en: 'Failed Match Learning System', ar: 'نظام التعلم من المطابقات الفاشلة' })}
           </CardTitle>
-          <Button onClick={analyzeFailures} disabled={analyzing} size="sm" className="bg-red-600">
-            {analyzing ? (
+          <Button onClick={analyzeFailures} disabled={isLoading || !isAvailable} size="sm" className="bg-red-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -94,7 +91,9 @@ Identify:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!insights && !analyzing && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
+        {!insights && !isLoading && (
           <div className="text-center py-8">
             <TrendingDown className="h-12 w-12 text-red-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600 mb-4">
