@@ -8640,6 +8640,7 @@ export type Database = {
           id: string
           ip_address: string | null
           metadata: Json | null
+          page_url: string | null
           user_agent: string | null
           user_email: string | null
           user_id: string | null
@@ -8653,6 +8654,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          page_url?: string | null
           user_agent?: string | null
           user_email?: string | null
           user_id?: string | null
@@ -8666,6 +8668,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          page_url?: string | null
           user_agent?: string | null
           user_email?: string | null
           user_id?: string | null
