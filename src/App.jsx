@@ -5,11 +5,12 @@ import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/components/LanguageContext';
 import LanguagePersistence from '@/components/ui/LanguagePersistence';
+import PublicPortal from './pages/PublicPortal';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -23,7 +24,7 @@ const toKebabCase = (str) => str
 
 // Pages that don't need the layout wrapper
 const noLayoutPages = ['Auth', 'Onboarding', 'StartupOnboarding', 'MunicipalityStaffOnboarding', 
-  'ResearcherOnboarding', 'CitizenOnboarding', 'ExpertOnboarding'];
+  'ResearcherOnboarding', 'CitizenOnboarding', 'ExpertOnboarding', 'PublicPortal'];
 
 // Pages that are public (don't require authentication)
 const publicPages = ['Auth', 'PublicPortal', 'PublicSolutionsMarketplace', 'PublicIdeaSubmission', 
@@ -43,7 +44,7 @@ const LayoutWrapper = ({ children, currentPageName }) => {
 };
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, authError } = useAuth();
+  const { isLoadingAuth, isAuthenticated } = useAuth();
 
   // Show loading spinner while checking auth
   if (isLoadingAuth) {
@@ -54,26 +55,41 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Render the main app - allow access even without auth
-  // Individual pages can check authentication status as needed
   return (
     <Routes>
+      {/* Root path: Show PublicPortal for non-auth, Home for authenticated */}
       <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
+        isAuthenticated ? (
+          <LayoutWrapper currentPageName={mainPageKey}>
+            <MainPage />
+          </LayoutWrapper>
+        ) : (
+          <PublicPortal />
+        )
       } />
-      {Object.entries(Pages).map(([pageName, Page]) => (
-        <Route
-          key={pageName}
-          path={`/${toKebabCase(pageName)}`}
-          element={
-            <LayoutWrapper currentPageName={pageName}>
-              <Page />
-            </LayoutWrapper>
-          }
-        />
-      ))}
+      
+      {/* All other pages */}
+      {Object.entries(Pages).map(([pageName, Page]) => {
+        const isPublicPage = publicPages.includes(pageName);
+        
+        return (
+          <Route
+            key={pageName}
+            path={`/${toKebabCase(pageName)}`}
+            element={
+              // If public page or user is authenticated, show the page
+              isPublicPage || isAuthenticated ? (
+                <LayoutWrapper currentPageName={pageName}>
+                  <Page />
+                </LayoutWrapper>
+              ) : (
+                // Non-auth users trying to access protected pages go to Auth
+                <Navigate to="/auth" replace />
+              )
+            }
+          />
+        );
+      })}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
