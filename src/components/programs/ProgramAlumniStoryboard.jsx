@@ -9,11 +9,14 @@ import { Award, Rocket, Sparkles, Users, TrendingUp, Lightbulb, TestTube, Loader
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProgramAlumniStoryboard({ program, showPublicOnly = false }) {
   const { language, isRTL, t } = useLanguage();
-  const [generatingStories, setGeneratingStories] = useState(false);
   const [aiStories, setAiStories] = useState(null);
+  
+  const { invokeAI, status, isLoading: generatingStories, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   // Fetch program participants/alumni
   const { data: applications = [] } = useQuery({
@@ -61,19 +64,17 @@ export default function ProgramAlumniStoryboard({ program, showPublicOnly = fals
   });
 
   const handleGenerateStories = async () => {
-    setGeneratingStories(true);
-    try {
-      const alumniData = applications.slice(0, 10).map(app => ({
-        name: app.applicant_name || app.applicant_email,
-        organization: app.organization_name,
-        achievements: {
-          solutions: alumniSolutions.filter(s => s.created_by === app.applicant_email).length,
-          pilots: alumniPilots.filter(p => p.created_by === app.applicant_email).length
-        }
-      }));
+    const alumniData = applications.slice(0, 10).map(app => ({
+      name: app.applicant_name || app.applicant_email,
+      organization: app.organization_name,
+      achievements: {
+        solutions: alumniSolutions.filter(s => s.created_by === app.applicant_email).length,
+        pilots: alumniPilots.filter(p => p.created_by === app.applicant_email).length
+      }
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate inspiring alumni success stories for this innovation program in BOTH English and Arabic:
+    const result = await invokeAI({
+      prompt: `Generate inspiring alumni success stories for this innovation program in BOTH English and Arabic:
 
 Program: ${program.name_en}
 Type: ${program.program_type}
@@ -86,34 +87,32 @@ For each alumnus (up to 6), create a bilingual success story:
 4. Current status (company stage, research position, etc.)
 
 Return stories with both en and ar for each field.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            stories: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  alumnus_name: { type: 'string' },
-                  impact_summary_en: { type: 'string' },
-                  impact_summary_ar: { type: 'string' },
-                  milestone_en: { type: 'string' },
-                  milestone_ar: { type: 'string' },
-                  quote_en: { type: 'string' },
-                  quote_ar: { type: 'string' },
-                  current_status_en: { type: 'string' },
-                  current_status_ar: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          stories: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                alumnus_name: { type: 'string' },
+                impact_summary_en: { type: 'string' },
+                impact_summary_ar: { type: 'string' },
+                milestone_en: { type: 'string' },
+                milestone_ar: { type: 'string' },
+                quote_en: { type: 'string' },
+                quote_ar: { type: 'string' },
+                current_status_en: { type: 'string' },
+                current_status_ar: { type: 'string' }
               }
             }
           }
         }
-      });
-      setAiStories(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate stories', ar: 'فشل توليد القصص' }));
-    } finally {
-      setGeneratingStories(false);
+      }
+    });
+    
+    if (result.success && result.data) {
+      setAiStories(result.data);
     }
   };
 
@@ -133,7 +132,7 @@ Return stories with both en and ar for each field.`,
           </CardTitle>
           <Button 
             onClick={handleGenerateStories}
-            disabled={generatingStories || graduatedCount === 0}
+            disabled={generatingStories || graduatedCount === 0 || !isAvailable}
             className="bg-amber-600"
           >
             {generatingStories ? (
@@ -146,6 +145,7 @@ Return stories with both en and ar for each field.`,
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {/* Impact Stats */}
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">

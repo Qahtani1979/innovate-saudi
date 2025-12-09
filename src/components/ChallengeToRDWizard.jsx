@@ -10,6 +10,8 @@ import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { createPageUrl } from '../utils';
 
 export default function ChallengeToRDWizard({ challenge, onClose }) {
@@ -20,8 +22,9 @@ export default function ChallengeToRDWizard({ challenge, onClose }) {
   const [rdTitle, setRdTitle] = useState('');
   const [researchQuestions, setResearchQuestions] = useState('');
   const [expectedOutputs, setExpectedOutputs] = useState('');
-  const [generatingScope, setGeneratingScope] = useState(false);
   const [aiScope, setAiScope] = useState(null);
+  
+  const { invokeAI, status, isLoading: generatingScope, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['rd-calls'],
@@ -58,10 +61,8 @@ export default function ChallengeToRDWizard({ challenge, onClose }) {
   });
 
   const generateScope = async () => {
-    setGeneratingScope(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate R&D project scope for this challenge:
+    const result = await invokeAI({
+      prompt: `Generate R&D project scope for this challenge:
 
 Title: ${challenge.title_en}
 Description: ${challenge.description_en}
@@ -73,26 +74,24 @@ Provide:
 3. Expected research outputs
 4. Methodology suggestions
 5. Timeline estimate (months)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            project_title: { type: 'string' },
-            research_questions: { type: 'array', items: { type: 'string' } },
-            expected_outputs: { type: 'array', items: { type: 'string' } },
-            methodology: { type: 'string' },
-            timeline_months: { type: 'number' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          project_title: { type: 'string' },
+          research_questions: { type: 'array', items: { type: 'string' } },
+          expected_outputs: { type: 'array', items: { type: 'string' } },
+          methodology: { type: 'string' },
+          timeline_months: { type: 'number' }
         }
-      });
-      setAiScope(result);
-      setRdTitle(result.project_title);
-      setResearchQuestions(result.research_questions?.join('\n'));
-      setExpectedOutputs(result.expected_outputs?.join('\n'));
+      }
+    });
+    
+    if (result.success && result.data) {
+      setAiScope(result.data);
+      setRdTitle(result.data.project_title);
+      setResearchQuestions(result.data.research_questions?.join('\n'));
+      setExpectedOutputs(result.data.expected_outputs?.join('\n'));
       toast.success(t({ en: 'AI scope generated', ar: 'تم إنشاء النطاق الذكي' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate scope', ar: 'فشل إنشاء النطاق' }));
-    } finally {
-      setGeneratingScope(false);
     }
   };
 
@@ -116,11 +115,14 @@ Provide:
           <p className="font-semibold text-slate-900">{challenge.title_en}</p>
         </div>
 
+        {/* AI Status */}
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         {/* AI Scope Generator */}
         <div className="text-center">
           <Button
             onClick={generateScope}
-            disabled={generatingScope}
+            disabled={generatingScope || !isAvailable}
             className="bg-gradient-to-r from-blue-600 to-purple-600"
           >
             {generatingScope ? (

@@ -8,14 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { toast } from 'sonner';
 import { Lightbulb, TrendingUp, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionFeedbackLoop({ pilot }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
 
   const [improvements, setImprovements] = useState('');
-  const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
+  
+  const { invokeAI, status, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: solution } = useQuery({
     queryKey: ['solution', pilot?.solution_id],
@@ -27,10 +30,8 @@ export default function SolutionFeedbackLoop({ pilot }) {
   });
 
   const analyzeImprovements = async () => {
-    setAiAnalyzing(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze pilot results and generate solution improvement recommendations:
+    const result = await invokeAI({
+      prompt: `Analyze pilot results and generate solution improvement recommendations:
 
 Pilot: ${pilot.title_en}
 Solution: ${solution?.name_en || 'N/A'}
@@ -44,50 +45,47 @@ Generate bilingual improvement recommendations:
 2. Performance optimizations (2-3 items)
 3. Integration improvements (2-3 items)
 4. Priority ranking`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            features: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' },
-                  priority: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          features: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' },
+                priority: { type: 'string' }
               }
-            },
-            performance: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
+            }
+          },
+          performance: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' }
               }
-            },
-            integration: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
+            }
+          },
+          integration: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setSuggestions(result);
+    if (result.success && result.data) {
+      setSuggestions(result.data);
       toast.success(t({ en: 'AI analyzed pilot results', ar: 'تم تحليل نتائج التجربة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    } finally {
-      setAiAnalyzing(false);
     }
   };
 
@@ -155,6 +153,8 @@ Saudi Innovates Platform
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-sm text-blue-900">
             <strong>{t({ en: 'Solution:', ar: 'الحل:' })}</strong>{' '}
@@ -167,7 +167,7 @@ Saudi Innovates Platform
 
         <Button
           onClick={analyzeImprovements}
-          disabled={aiAnalyzing}
+          disabled={aiAnalyzing || !isAvailable}
           variant="outline"
           className="w-full border-purple-300 text-purple-700"
         >
