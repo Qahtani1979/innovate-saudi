@@ -1,26 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, X, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import { Sparkles, X, ArrowRight, Info } from 'lucide-react';
+import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 
 export default function SmartRecommendation({ context }) {
   const [recommendations, setRecommendations] = useState([]);
   const [dismissed, setDismissed] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  
+  const { invokeAI, status, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: false, // Silent for recommendations
+    fallbackData: { recommendations: [] }
+  });
 
   useEffect(() => {
-    generateRecommendations();
+    if (context && !hasLoaded) {
+      generateRecommendations();
+    }
   }, [context]);
 
   const generateRecommendations = async () => {
-    setLoading(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate 2-3 smart recommendations for this context:
+    setHasLoaded(true);
+    
+    const { success, data } = await invokeAI({
+      prompt: `Generate 2-3 smart recommendations for this context:
 
 Page: ${context?.page || 'Home'}
 Entity: ${context?.entityType || 'N/A'}
@@ -32,30 +37,27 @@ Provide actionable suggestions like:
 - "Budget allocation will miss target" if on budget tool
 
 Each recommendation should have: title, description, action_url (page name), priority (high/medium/low)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            recommendations: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  description: { type: "string" },
-                  action: { type: "string" },
-                  priority: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommendations: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                action: { type: "string" },
+                priority: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setRecommendations(response.recommendations || []);
-    } catch (error) {
-      console.error('Failed to generate recommendations:', error);
-    } finally {
-      setLoading(false);
+    if (success && data?.recommendations) {
+      setRecommendations(data.recommendations);
     }
   };
 
@@ -65,7 +67,10 @@ Each recommendation should have: title, description, action_url (page name), pri
 
   const visibleRecommendations = recommendations.filter((_, i) => !dismissed.includes(i));
 
-  if (loading || visibleRecommendations.length === 0) return null;
+  // Don't show anything if loading, rate limited, or no recommendations
+  if (isLoading || status === AI_STATUS.RATE_LIMITED || visibleRecommendations.length === 0) {
+    return null;
+  }
 
   return (
     <div className="space-y-3">

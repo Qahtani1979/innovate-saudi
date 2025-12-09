@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Target, Sparkles, Loader2, TrendingUp } from 'lucide-react';
+import { Target, Sparkles, Loader2, Info } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
-import { toast } from 'sonner';
+import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 
 export default function AIMatchSuccessPredictor({ match, provider, challenge }) {
-  const { language, t } = useLanguage();
-  const [predicting, setPredicting] = useState(false);
+  const { t } = useLanguage();
   const [prediction, setPrediction] = useState(null);
+  
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const predictSuccess = async () => {
-    setPredicting(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Predict match success probability:
+    const { success, data } = await invokeAI({
+      prompt: `Predict match success probability:
 
 PROVIDER: ${provider.name_en}
 - Track record: ${provider.success_rate || 70}% success
@@ -34,41 +36,37 @@ Analyze:
 2. Scores for: capability_fit, sector_expertise, track_record, budget_alignment, team_capacity
 3. Risk factors
 4. Recommendation (proceed/alternative/needs_support)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            success_probability: { type: "number" },
-            dimension_scores: {
-              type: "object",
-              properties: {
-                capability_fit: { type: "number" },
-                sector_expertise: { type: "number" },
-                track_record: { type: "number" },
-                budget_alignment: { type: "number" },
-                team_capacity: { type: "number" }
-              }
-            },
-            risk_factors: { type: "array", items: { type: "string" } },
-            recommendation: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          success_probability: { type: "number" },
+          dimension_scores: {
+            type: "object",
+            properties: {
+              capability_fit: { type: "number" },
+              sector_expertise: { type: "number" },
+              track_record: { type: "number" },
+              budget_alignment: { type: "number" },
+              team_capacity: { type: "number" }
+            }
+          },
+          risk_factors: { type: "array", items: { type: "string" } },
+          recommendation: { type: "string" }
         }
-      });
+      }
+    });
 
-      setPrediction(response);
-      toast.success(t({ en: 'Prediction complete', ar: 'اكتمل التنبؤ' }));
-    } catch (error) {
-      toast.error(t({ en: 'Prediction failed', ar: 'فشل التنبؤ' }));
-    } finally {
-      setPredicting(false);
+    if (success && data) {
+      setPrediction(data);
     }
   };
 
   const radarData = prediction ? [
-    { dimension: 'Capability', score: prediction.dimension_scores.capability_fit },
-    { dimension: 'Sector Exp', score: prediction.dimension_scores.sector_expertise },
-    { dimension: 'Track Record', score: prediction.dimension_scores.track_record },
-    { dimension: 'Budget', score: prediction.dimension_scores.budget_alignment },
-    { dimension: 'Capacity', score: prediction.dimension_scores.team_capacity }
+    { dimension: 'Capability', score: prediction.dimension_scores?.capability_fit || 0 },
+    { dimension: 'Sector Exp', score: prediction.dimension_scores?.sector_expertise || 0 },
+    { dimension: 'Track Record', score: prediction.dimension_scores?.track_record || 0 },
+    { dimension: 'Budget', score: prediction.dimension_scores?.budget_alignment || 0 },
+    { dimension: 'Capacity', score: prediction.dimension_scores?.team_capacity || 0 }
   ] : [];
 
   return (
@@ -79,18 +77,33 @@ Analyze:
             <Target className="h-5 w-5 text-teal-600" />
             {t({ en: 'AI Match Success Predictor', ar: 'متنبئ نجاح المطابقة الذكي' })}
           </CardTitle>
-          <Button onClick={predictSuccess} disabled={predicting} size="sm" className="bg-teal-600">
-            {predicting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
-            )}
-            {t({ en: 'Predict', ar: 'تنبؤ' })}
-          </Button>
+          <AIOptionalBadge />
         </div>
       </CardHeader>
-      <CardContent className="pt-6">
-        {!prediction && !predicting && (
+      <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails={true} />
+        
+        <Button onClick={predictSuccess} disabled={isLoading || !isAvailable} size="sm" className="bg-teal-600 w-full">
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4 mr-2" />
+          )}
+          {t({ en: 'Predict', ar: 'تنبؤ' })}
+        </Button>
+
+        {status === AI_STATUS.RATE_LIMITED && (
+          <div className="p-3 bg-muted rounded-lg border">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <p className="text-sm text-muted-foreground">
+                {t({ en: 'You can still proceed with the match manually based on your assessment.', ar: 'لا يزال بإمكانك المتابعة مع المطابقة يدويًا بناءً على تقييمك.' })}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!prediction && !isLoading && status !== AI_STATUS.RATE_LIMITED && (
           <div className="text-center py-8">
             <Target className="h-12 w-12 text-teal-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

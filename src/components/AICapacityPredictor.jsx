@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { Sparkles, TrendingUp, Calendar, AlertTriangle, Loader2 } from 'lucide-react';
+import { Sparkles, TrendingUp, Calendar, AlertTriangle, Loader2, Info } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 
 export default function AICapacityPredictor({ sandbox }) {
-  const { language, isRTL, t } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const [prediction, setPrediction] = useState(null);
 
   const { data: applications = [] } = useQuery({
@@ -17,11 +19,15 @@ export default function AICapacityPredictor({ sandbox }) {
     queryFn: () => base44.entities.SandboxApplication.list()
   });
 
-  const predictMutation = useMutation({
-    mutationFn: async () => {
-      const historicalData = applications.filter(a => a.sandbox_id === sandbox.id);
-      
-      const prompt = `Analyze sandbox capacity and predict future demand:
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
+  const runPrediction = async () => {
+    const historicalData = applications.filter(a => a.sandbox_id === sandbox.id);
+    
+    const prompt = `Analyze sandbox capacity and predict future demand:
 
 Sandbox: ${sandbox.name_en}
 Domain: ${sandbox.domain}
@@ -47,55 +53,38 @@ Provide JSON analysis with:
 5. Resource allocation suggestions
 6. Bottleneck predictions`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            forecast_6_months: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  month: { type: "string" },
-                  predicted_demand: { type: "number" },
-                  confidence: { type: "string", enum: ["low", "medium", "high"] },
-                  capacity_available: { type: "number" }
-                }
+    const { success, data } = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          forecast_6_months: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                month: { type: "string" },
+                predicted_demand: { type: "number" },
+                confidence: { type: "string", enum: ["low", "medium", "high"] },
+                capacity_available: { type: "number" }
               }
-            },
-            peak_periods: {
-              type: "array",
-              items: { type: "string" }
-            },
-            utilization_forecast: { type: "number", description: "Average % over 6 months" },
-            capacity_recommendation: {
-              type: "string",
-              enum: ["increase", "maintain", "optimize"]
-            },
-            recommended_capacity: { type: "number" },
-            resource_allocation: {
-              type: "array",
-              items: { type: "string" }
-            },
-            potential_bottlenecks: {
-              type: "array",
-              items: { type: "string" }
-            },
-            insights: {
-              type: "array",
-              items: { type: "string" }
             }
-          }
+          },
+          peak_periods: { type: "array", items: { type: "string" } },
+          utilization_forecast: { type: "number" },
+          capacity_recommendation: { type: "string", enum: ["increase", "maintain", "optimize"] },
+          recommended_capacity: { type: "number" },
+          resource_allocation: { type: "array", items: { type: "string" } },
+          potential_bottlenecks: { type: "array", items: { type: "string" } },
+          insights: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      return response;
-    },
-    onSuccess: (data) => {
+    if (success && data) {
       setPrediction(data);
     }
-  });
+  };
 
   const recommendationColors = {
     increase: 'bg-orange-100 text-orange-700 border-orange-300',
@@ -106,20 +95,25 @@ Provide JSON analysis with:
   return (
     <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200" dir={isRTL ? 'rtl' : 'ltr'}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-blue-600" />
-          {t({ en: 'AI Capacity Prediction & Planning', ar: 'التنبؤ الذكي بالسعة والتخطيط' })}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-blue-600" />
+            {t({ en: 'AI Capacity Prediction & Planning', ar: 'التنبؤ الذكي بالسعة والتخطيط' })}
+          </CardTitle>
+          <AIOptionalBadge />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails={true} />
+        
         {!prediction ? (
-          <div className="text-center py-6">
+          <div className="text-center py-6 space-y-4">
             <Button
-              onClick={() => predictMutation.mutate()}
-              disabled={predictMutation.isPending}
+              onClick={runPrediction}
+              disabled={isLoading || !isAvailable}
               className="bg-gradient-to-r from-blue-600 to-purple-600"
             >
-              {predictMutation.isPending ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
@@ -131,17 +125,28 @@ Provide JSON analysis with:
                 </>
               )}
             </Button>
+
+            {status === AI_STATUS.RATE_LIMITED && (
+              <div className="p-3 bg-muted rounded-lg border">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    {t({ en: 'You can still plan capacity manually based on historical data.', ar: 'لا يزال بإمكانك تخطيط السعة يدويًا بناءً على البيانات التاريخية.' })}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
             {/* Capacity Recommendation */}
-            <div className={`p-4 rounded-lg border-2 ${recommendationColors[prediction.capacity_recommendation]}`}>
+            <div className={`p-4 rounded-lg border-2 ${recommendationColors[prediction.capacity_recommendation] || recommendationColors.maintain}`}>
               <div className="flex items-center justify-between mb-2">
                 <p className="font-semibold">
                   {t({ en: 'Capacity Recommendation', ar: 'توصية السعة' })}
                 </p>
-                <Badge className={recommendationColors[prediction.capacity_recommendation]}>
-                  {prediction.capacity_recommendation.toUpperCase()}
+                <Badge className={recommendationColors[prediction.capacity_recommendation] || recommendationColors.maintain}>
+                  {prediction.capacity_recommendation?.toUpperCase() || 'MAINTAIN'}
                 </Badge>
               </div>
               <p className="text-sm">
@@ -208,20 +213,6 @@ Provide JSON analysis with:
                     </Badge>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Resource Allocation */}
-            {prediction.resource_allocation?.length > 0 && (
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <p className="font-semibold text-green-900 mb-2">
-                  {t({ en: 'Resource Allocation Suggestions', ar: 'اقتراحات تخصيص الموارد' })}
-                </p>
-                <ul className="space-y-1">
-                  {prediction.resource_allocation.map((item, idx) => (
-                    <li key={idx} className="text-sm text-green-800">• {item}</li>
-                  ))}
-                </ul>
               </div>
             )}
 

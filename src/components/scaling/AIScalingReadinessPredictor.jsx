@@ -4,21 +4,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Building2, Sparkles, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
+import { Building2, Sparkles, Loader2, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 
 export default function AIScalingReadinessPredictor({ municipalityId, solution }) {
-  const { language, t } = useLanguage();
-  const [analyzing, setAnalyzing] = useState(false);
+  const { t } = useLanguage();
   const [readiness, setReadiness] = useState(null);
+  
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const analyzeMunicipality = async () => {
-    setAnalyzing(true);
     try {
       const municipalities = await base44.entities.Municipality.list();
       const muni = municipalities.find(m => m.id === municipalityId);
 
-      const response = await base44.integrations.Core.InvokeLLM({
+      const { success, data } = await invokeAI({
         prompt: `Assess municipality readiness for scaling solution:
 
 MUNICIPALITY: ${muni?.name_en}
@@ -59,12 +63,11 @@ Provide score (0-100) per dimension, overall score, gaps, and enabler recommenda
         }
       });
 
-      setReadiness(response);
-      toast.success(t({ en: 'Assessment complete', ar: 'اكتمل التقييم' }));
-    } catch (error) {
-      toast.error(t({ en: 'Assessment failed', ar: 'فشل التقييم' }));
-    } finally {
-      setAnalyzing(false);
+      if (success && data) {
+        setReadiness(data);
+      }
+    } catch (fetchError) {
+      console.error('Failed to fetch municipalities:', fetchError);
     }
   };
 
@@ -76,18 +79,33 @@ Provide score (0-100) per dimension, overall score, gaps, and enabler recommenda
             <Building2 className="h-5 w-5 text-green-600" />
             {t({ en: 'AI Municipal Readiness Predictor', ar: 'متنبئ جاهزية البلدية الذكي' })}
           </CardTitle>
-          <Button onClick={analyzeMunicipality} disabled={analyzing} size="sm" className="bg-green-600">
-            {analyzing ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
-            )}
-            {t({ en: 'Assess', ar: 'تقييم' })}
-          </Button>
+          <AIOptionalBadge />
         </div>
       </CardHeader>
-      <CardContent className="pt-6">
-        {!readiness && !analyzing && (
+      <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails={true} />
+        
+        <Button onClick={analyzeMunicipality} disabled={isLoading || !isAvailable} size="sm" className="bg-green-600 w-full">
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4 mr-2" />
+          )}
+          {t({ en: 'Assess', ar: 'تقييم' })}
+        </Button>
+
+        {status === AI_STATUS.RATE_LIMITED && (
+          <div className="p-3 bg-muted rounded-lg border">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <p className="text-sm text-muted-foreground">
+                {t({ en: 'You can still assess municipality readiness manually based on available data.', ar: 'لا يزال بإمكانك تقييم جاهزية البلدية يدويًا بناءً على البيانات المتاحة.' })}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!readiness && !isLoading && status !== AI_STATUS.RATE_LIMITED && (
           <div className="text-center py-8">
             <Building2 className="h-12 w-12 text-green-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">
