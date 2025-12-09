@@ -988,9 +988,5 @@ function LayoutContent({ children, currentPageName }) {
         }
 
 export default function Layout(props) {
-  return (
-    <LanguageProvider>
-      <LayoutContent {...props} />
-    </LanguageProvider>
-  );
+  return <LayoutContent {...props} />;
 }
