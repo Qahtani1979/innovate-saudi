@@ -9,11 +9,17 @@ import { Sparkles, ArrowRight, Loader2, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function FirstActionRecommender({ user }) {
   const { language, t } = useLanguage();
-  const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-open'],
@@ -28,10 +34,8 @@ export default function FirstActionRecommender({ user }) {
   });
 
   const getRecommendations = async () => {
-    setLoading(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Recommend the most impactful first action for this user:
+    const { success, data } = await invokeAI({
+      prompt: `Recommend the most impactful first action for this user:
 
 User Role: ${user.role}
 User Email Domain: ${user.email.split('@')[1]}
@@ -47,42 +51,39 @@ For municipality users: focus on submitting challenges
 For startup users: focus on browsing challenges and submitting proposals
 For researchers: focus on exploring R&D calls
 For admins: focus on reviewing submissions`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            primary: {
-              type: "object",
-              properties: {
-                action: { type: "string" },
-                reason: { type: "string" },
-                page: { type: "string" }
-              }
-            },
-            secondary: {
-              type: "object",
-              properties: {
-                action: { type: "string" },
-                reason: { type: "string" },
-                page: { type: "string" }
-              }
-            },
-            quick_win: {
-              type: "object",
-              properties: {
-                action: { type: "string" },
-                reason: { type: "string" },
-                page: { type: "string" }
-              }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          primary: {
+            type: "object",
+            properties: {
+              action: { type: "string" },
+              reason: { type: "string" },
+              page: { type: "string" }
+            }
+          },
+          secondary: {
+            type: "object",
+            properties: {
+              action: { type: "string" },
+              reason: { type: "string" },
+              page: { type: "string" }
+            }
+          },
+          quick_win: {
+            type: "object",
+            properties: {
+              action: { type: "string" },
+              reason: { type: "string" },
+              page: { type: "string" }
             }
           }
         }
-      });
+      }
+    });
 
-      setRecommendations(response);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to get recommendations', ar: 'فشل الحصول على التوصيات' }));
-    } finally {
-      setLoading(false);
+    if (success && data) {
+      setRecommendations(data);
     }
   };
 
@@ -120,6 +121,8 @@ For admins: focus on reviewing submissions`,
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         {!recommendations ? (
           <div>
             <div className="text-center py-6 mb-4">
@@ -127,8 +130,8 @@ For admins: focus on reviewing submissions`,
               <p className="text-sm text-slate-600 mb-4">
                 {t({ en: 'Get AI-powered recommendations for your first action', ar: 'احصل على توصيات ذكية لإجراءك الأول' })}
               </p>
-              <Button onClick={getRecommendations} disabled={loading} className="bg-purple-600">
-                {loading ? (
+              <Button onClick={getRecommendations} disabled={isLoading || !isAvailable} className="bg-purple-600">
+                {isLoading ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <Sparkles className="h-4 w-4 mr-2" />

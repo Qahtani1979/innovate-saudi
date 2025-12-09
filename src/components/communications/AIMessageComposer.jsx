@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,60 +6,56 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Loader2, Languages, Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIMessageComposer({ context, onUseMessage }) {
   const { language, t } = useLanguage();
-  const [composing, setComposing] = useState(false);
   const [draft, setDraft] = useState('');
   const [tone, setTone] = useState('professional');
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const composeDraft = async (intent) => {
-    setComposing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Compose ${tone} ${language === 'ar' ? 'Arabic' : 'English'} message:
+    const { success, data } = await invokeAI({
+      prompt: `Compose ${tone} ${language === 'ar' ? 'Arabic' : 'English'} message:
 
 INTENT: ${intent}
 CONTEXT: ${JSON.stringify(context || {}).substring(0, 300)}
 TONE: ${tone}
 
 Write a clear, concise, ${tone} message. Keep it under 200 words.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            message: { type: "string" },
-            subject: { type: "string" }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          message: { type: "string" },
+          subject: { type: "string" }
         }
-      });
+      }
+    });
 
-      setDraft(response.message);
+    if (success && data) {
+      setDraft(data.message);
       toast.success(t({ en: 'Draft generated', ar: 'المسودة أُنشئت' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل الإنشاء' }));
-    } finally {
-      setComposing(false);
     }
   };
 
   const translateDraft = async () => {
-    setComposing(true);
-    try {
-      const targetLang = language === 'ar' ? 'English' : 'Arabic';
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Translate this message to ${targetLang}:
+    const targetLang = language === 'ar' ? 'English' : 'Arabic';
+    const { success, data } = await invokeAI({
+      prompt: `Translate this message to ${targetLang}:
 
 ${draft}
 
 Maintain tone and professionalism.`
-      });
+    });
 
-      setDraft(response);
+    if (success && data) {
+      setDraft(typeof data === 'string' ? data : data.message || draft);
       toast.success(t({ en: 'Translated', ar: 'مُترجم' }));
-    } catch (error) {
-      toast.error(t({ en: 'Translation failed', ar: 'فشلت الترجمة' }));
-    } finally {
-      setComposing(false);
     }
   };
 
@@ -73,6 +68,8 @@ Maintain tone and professionalism.`
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -98,16 +95,16 @@ Maintain tone and professionalism.`
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <Button onClick={() => composeDraft('Request status update')} disabled={composing} size="sm" variant="outline">
+          <Button onClick={() => composeDraft('Request status update')} disabled={isLoading || !isAvailable} size="sm" variant="outline">
             {t({ en: 'Status Update', ar: 'طلب تحديث' })}
           </Button>
-          <Button onClick={() => composeDraft('Schedule meeting')} disabled={composing} size="sm" variant="outline">
+          <Button onClick={() => composeDraft('Schedule meeting')} disabled={isLoading || !isAvailable} size="sm" variant="outline">
             {t({ en: 'Meeting', ar: 'اجتماع' })}
           </Button>
-          <Button onClick={() => composeDraft('Request approval')} disabled={composing} size="sm" variant="outline">
+          <Button onClick={() => composeDraft('Request approval')} disabled={isLoading || !isAvailable} size="sm" variant="outline">
             {t({ en: 'Approval', ar: 'موافقة' })}
           </Button>
-          <Button onClick={() => composeDraft('Thank you and next steps')} disabled={composing} size="sm" variant="outline">
+          <Button onClick={() => composeDraft('Thank you and next steps')} disabled={isLoading || !isAvailable} size="sm" variant="outline">
             {t({ en: 'Thank You', ar: 'شكر' })}
           </Button>
         </div>
@@ -121,7 +118,7 @@ Maintain tone and professionalism.`
               className="bg-white"
             />
             <div className="flex gap-2">
-              <Button onClick={translateDraft} disabled={composing} size="sm" variant="outline">
+              <Button onClick={translateDraft} disabled={isLoading || !isAvailable} size="sm" variant="outline">
                 <Languages className="h-3 w-3 mr-1" />
                 {t({ en: 'Translate', ar: 'ترجم' })}
               </Button>

@@ -8,11 +8,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { Bell, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AutomatedStakeholderNotifier({ entity, entityType }) {
   const { language, t } = useLanguage();
-  const [notifying, setNotifying] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState([]);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const stakeholderGroups = {
     challenge: ['municipality_admins', 'program_operators', 'startups'],
@@ -22,10 +28,8 @@ export default function AutomatedStakeholderNotifier({ entity, entityType }) {
   };
 
   const sendNotifications = async () => {
-    setNotifying(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate stakeholder notification for:
+    const { success, data } = await invokeAI({
+      prompt: `Generate stakeholder notification for:
 
 ENTITY TYPE: ${entityType}
 ENTITY NAME: ${entity.title_en || entity.name_en}
@@ -37,27 +41,28 @@ Create:
 2. Email body (personalized per recipient group)
 3. Key action items
 4. Links to relevant pages`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            notifications: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  recipient_group: { type: "string" },
-                  subject: { type: "string" },
-                  body: { type: "string" },
-                  action_items: { type: "array", items: { type: "string" } }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          notifications: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                recipient_group: { type: "string" },
+                subject: { type: "string" },
+                body: { type: "string" },
+                action_items: { type: "array", items: { type: "string" } }
               }
             }
           }
         }
-      });
+      }
+    });
 
+    if (success && data) {
       // Simulate sending notifications
-      for (const notif of response.notifications || []) {
+      for (const notif of data.notifications || []) {
         await base44.entities.Notification.create({
           notification_type: 'stakeholder_update',
           title: notif.subject,
@@ -68,10 +73,6 @@ Create:
       }
 
       toast.success(t({ en: `Notifications sent to ${selectedRecipients.length} groups`, ar: `الإشعارات أُرسلت لـ ${selectedRecipients.length} مجموعات` }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to send', ar: 'فشل الإرسال' }));
-    } finally {
-      setNotifying(false);
     }
   };
 
@@ -86,6 +87,8 @@ Create:
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         <div className="space-y-4">
           <div>
             <p className="text-sm font-medium text-slate-700 mb-3">
@@ -112,10 +115,10 @@ Create:
 
           <Button
             onClick={sendNotifications}
-            disabled={notifying || selectedRecipients.length === 0}
+            disabled={isLoading || selectedRecipients.length === 0 || !isAvailable}
             className="w-full bg-gradient-to-r from-blue-600 to-cyan-600"
           >
-            {notifying ? (
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Send className="h-4 w-4 mr-2" />

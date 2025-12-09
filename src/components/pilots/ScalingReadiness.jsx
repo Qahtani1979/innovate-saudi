@@ -7,17 +7,21 @@ import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ScalingReadiness({ pilot }) {
   const { language, isRTL, t } = useLanguage();
   const [assessment, setAssessment] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
+
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   const assessReadiness = async () => {
-    setAnalyzing(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Assess scaling readiness for this pilot:
+    const { success, data } = await invokeAI({
+      prompt: `Assess scaling readiness for this pilot:
 
 PILOT: ${pilot.title_en}
 SUCCESS CRITERIA MET: ${pilot.success_criteria?.filter(c => c.met).length || 0}/${pilot.success_criteria?.length || 0}
@@ -33,66 +37,63 @@ Assess readiness across 5 dimensions (score 0-100 each):
 5. Technical: solution stable, scalable architecture, integration ready
 
 Identify gaps and generate action plan to close them.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            dimension_scores: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          dimension_scores: {
+            type: "object",
+            properties: {
+              operational: { type: "number" },
+              financial: { type: "number" },
+              stakeholder: { type: "number" },
+              regulatory: { type: "number" },
+              technical: { type: "number" }
+            }
+          },
+          overall_score: { type: "number" },
+          readiness_level: { type: "string" },
+          gaps: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                operational: { type: "number" },
-                financial: { type: "number" },
-                stakeholder: { type: "number" },
-                regulatory: { type: "number" },
-                technical: { type: "number" }
+                dimension: { type: "string" },
+                gap: { type: "string" },
+                severity: { type: "string" }
               }
-            },
-            overall_score: { type: "number" },
-            readiness_level: { type: "string" },
-            gaps: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  dimension: { type: "string" },
-                  gap: { type: "string" },
-                  severity: { type: "string" }
-                }
-              }
-            },
-            action_plan: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  action: { type: "string" },
-                  priority: { type: "string" },
-                  timeline: { type: "string" },
-                  estimated_impact: { type: "string" }
-                }
+            }
+          },
+          action_plan: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                action: { type: "string" },
+                priority: { type: "string" },
+                timeline: { type: "string" },
+                estimated_impact: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setAssessment(response);
+    if (success && data) {
+      setAssessment(data);
       
       await base44.entities.ScalingReadiness.create({
         pilot_id: pilot.id,
         assessment_date: new Date().toISOString().split('T')[0],
-        overall_score: response.overall_score,
-        dimension_scores: response.dimension_scores,
-        gaps: response.gaps,
-        action_plan: response.action_plan,
-        ready_to_scale: response.overall_score >= 75,
-        readiness_level: response.readiness_level
+        overall_score: data.overall_score,
+        dimension_scores: data.dimension_scores,
+        gaps: data.gaps,
+        action_plan: data.action_plan,
+        ready_to_scale: data.overall_score >= 75,
+        readiness_level: data.readiness_level
       });
 
       toast.success(t({ en: 'Readiness assessment complete', ar: 'اكتمل تقييم الجاهزية' }));
-    } catch (error) {
-      toast.error(t({ en: 'Assessment failed', ar: 'فشل التقييم' }));
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -112,8 +113,8 @@ Identify gaps and generate action plan to close them.`,
             <TrendingUp className="h-5 w-5 text-green-600" />
             {t({ en: 'Scaling Readiness Assessment', ar: 'تقييم الجاهزية للتوسع' })}
           </CardTitle>
-          <Button onClick={assessReadiness} disabled={analyzing} size="sm" className="bg-gradient-to-r from-green-600 to-teal-600">
-            {analyzing ? (
+          <Button onClick={assessReadiness} disabled={isLoading || !isAvailable} size="sm" className="bg-gradient-to-r from-green-600 to-teal-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -123,7 +124,9 @@ Identify gaps and generate action plan to close them.`,
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!assessment && !analyzing && (
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
+        {!assessment && !isLoading && (
           <div className="text-center py-8">
             <TrendingUp className="h-12 w-12 text-green-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">

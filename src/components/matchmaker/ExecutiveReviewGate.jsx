@@ -7,10 +7,11 @@ import { useLanguage } from '../LanguageContext';
 import { Zap, FileText, CheckCircle2, XCircle, Clock, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ExecutiveReviewGate({ application, onComplete }) {
   const { language, isRTL, t } = useLanguage();
-  const [generatingBrief, setGeneratingBrief] = useState(false);
   const [briefUrl, setBriefUrl] = useState(application.executive_review_gate?.executive_briefing_url || null);
   const [decision, setDecision] = useState({
     decision: '',
@@ -18,11 +19,14 @@ export default function ExecutiveReviewGate({ application, onComplete }) {
     conditions: []
   });
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const generateExecutiveBrief = async () => {
-    setGeneratingBrief(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a concise executive briefing for this Matchmaker application in BOTH Arabic and English.
+    const { success, data } = await invokeAI({
+      prompt: `Generate a concise executive briefing for this Matchmaker application in BOTH Arabic and English.
 
 APPLICATION:
 - Organization: ${application.organization_name_en}
@@ -43,27 +47,24 @@ Create executive summary with:
 6. Next steps (3 actions)
 
 Format as professional brief suitable for leadership review.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            snapshot_en: { type: 'string' },
-            snapshot_ar: { type: 'string' },
-            strategic_alignment: { type: 'array', items: { type: 'string' } },
-            risks: { type: 'array', items: { type: 'string' } },
-            resource_estimate: { type: 'string' },
-            recommendation: { type: 'string' },
-            next_steps: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          snapshot_en: { type: 'string' },
+          snapshot_ar: { type: 'string' },
+          strategic_alignment: { type: 'array', items: { type: 'string' } },
+          risks: { type: 'array', items: { type: 'string' } },
+          resource_estimate: { type: 'string' },
+          recommendation: { type: 'string' },
+          next_steps: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
+    if (success && data) {
       // In real implementation, you'd format this as PDF and upload
       setBriefUrl('generated_brief_url');
       toast.success(t({ en: 'Executive brief generated', ar: 'تم إنشاء الموجز التنفيذي' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate brief', ar: 'فشل إنشاء الموجز' }));
-    } finally {
-      setGeneratingBrief(false);
     }
   };
 
@@ -78,6 +79,8 @@ Format as professional brief suitable for leadership review.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        
         {/* Fast Pass Banner */}
         {isFastPass && (
           <div className="p-4 bg-purple-600 text-white rounded-lg">
@@ -111,11 +114,11 @@ Format as professional brief suitable for leadership review.`,
         <div>
           <Button
             onClick={generateExecutiveBrief}
-            disabled={generatingBrief}
+            disabled={isLoading || !isAvailable}
             variant="outline"
             className="w-full"
           >
-            {generatingBrief ? (
+            {isLoading ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Generating...', ar: 'جاري الإنشاء...' })}</>
             ) : (
               <><Sparkles className="h-4 w-4 mr-2" />{t({ en: 'Generate Executive Brief (AI)', ar: 'إنشاء الموجز التنفيذي (ذكاء)' })}</>

@@ -1,23 +1,26 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Award, Loader2, Copy, Check } from 'lucide-react';
+import { Sparkles, Award, Loader2, Copy, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AlumniSuccessStoryGenerator({ alumnus, program }) {
   const { t, language } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [story, setStory] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
+
   const generateStory = async () => {
-    setGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a compelling alumni success story for a Saudi municipal innovation program graduate.
+    const { success, data } = await invokeAI({
+      prompt: `Generate a compelling alumni success story for a Saudi municipal innovation program graduate.
 
 Program: ${program.name_en}
 Graduate: ${alumnus.applicant_name}
@@ -37,36 +40,33 @@ Generate a professional success story in BOTH English and Arabic with:
 6. Future aspirations
 
 Make it inspiring and suitable for social media, website, and reports.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            headline_en: { type: 'string' },
-            headline_ar: { type: 'string' },
-            story_en: { type: 'string' },
-            story_ar: { type: 'string' },
-            quote_en: { type: 'string' },
-            quote_ar: { type: 'string' },
-            key_metrics: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  metric_en: { type: 'string' },
-                  metric_ar: { type: 'string' },
-                  value: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          headline_en: { type: 'string' },
+          headline_ar: { type: 'string' },
+          story_en: { type: 'string' },
+          story_ar: { type: 'string' },
+          quote_en: { type: 'string' },
+          quote_ar: { type: 'string' },
+          key_metrics: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                metric_en: { type: 'string' },
+                metric_ar: { type: 'string' },
+                value: { type: 'string' }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setStory(result);
+    if (success && data) {
+      setStory(data);
       toast.success(t({ en: 'Success story generated!', ar: 'تم توليد قصة النجاح!' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -87,8 +87,8 @@ Make it inspiring and suitable for social media, website, and reports.`,
             {t({ en: 'AI Success Story Generator', ar: 'مولد قصص النجاح الذكي' })}
           </CardTitle>
           {!story && (
-            <Button onClick={generateStory} disabled={generating} size="sm">
-              {generating ? (
+            <Button onClick={generateStory} disabled={isLoading || !isAvailable} size="sm">
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Generating...', ar: 'جاري التوليد...' })}
@@ -102,6 +102,7 @@ Make it inspiring and suitable for social media, website, and reports.`,
             </Button>
           )}
         </div>
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
       </CardHeader>
       {story && (
         <CardContent className="space-y-4">
