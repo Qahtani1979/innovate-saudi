@@ -5,15 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, TrendingUp, Target, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Sparkles, TrendingUp, Target, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function MIIImprovementAI({ municipality }) {
   const { t, isRTL } = useLanguage();
   const [recommendations, setRecommendations] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const generateRecommendations = async () => {
-    setLoading(true);
+    if (!isAvailable) return;
+    
     try {
       const [challenges, pilots, allMunicipalities] = await Promise.all([
         base44.entities.Challenge.filter({ municipality_id: municipality.id }).catch(() => []),
@@ -21,7 +24,7 @@ export default function MIIImprovementAI({ municipality }) {
         base44.entities.Municipality.list()
       ]);
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeAI({
         prompt: `Analyze this municipality's innovation performance and provide improvement recommendations:
 
 Municipality: ${municipality.name_en}
@@ -74,11 +77,12 @@ Provide:
         }
       });
 
-      setRecommendations(result);
+      if (result.success && result.data) {
+        setRecommendations(result.data);
+      }
     } catch (error) {
       console.error('AI recommendations failed:', error);
     }
-    setLoading(false);
   };
 
   return (
@@ -90,6 +94,8 @@ Provide:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         {!recommendations && (
           <div className="text-center py-8">
             <div className="mb-4">
@@ -106,10 +112,10 @@ Provide:
                 })}
               </p>
             </div>
-            <Button onClick={generateRecommendations} disabled={loading} className="gap-2">
+            <Button onClick={generateRecommendations} disabled={loading || !isAvailable} className="gap-2">
               {loading ? (
                 <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   {t({ en: 'AI Analyzing...', ar: 'الذكاء يحلل...' })}
                 </>
               ) : (

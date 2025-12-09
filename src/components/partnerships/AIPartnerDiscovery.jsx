@@ -10,10 +10,12 @@ import { Users, Sparkles, Loader2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIPartnerDiscovery({ challengeId, sector, keywords }) {
   const { language, t } = useLanguage();
-  const [searching, setSearching] = useState(false);
+  const { invokeAI, status, isLoading: searching, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [partners, setPartners] = useState(null);
   const [requirements, setRequirements] = useState('');
 
@@ -24,10 +26,10 @@ export default function AIPartnerDiscovery({ challengeId, sector, keywords }) {
   });
 
   const discoverPartners = async () => {
-    setSearching(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Find ideal partners for this initiative:
+    if (!isAvailable) return;
+    
+    const response = await invokeAI({
+      prompt: `Find ideal partners for this initiative:
 
 Sector: ${sector}
 Keywords: ${keywords?.join(', ')}
@@ -48,32 +50,29 @@ Recommend top 5 partner organizations:
 3. Sector expertise alignment
 4. Capacity availability
 5. Compatibility score (0-100)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            recommendations: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  organization_name: { type: "string" },
-                  match_score: { type: "number" },
-                  rationale: { type: "string" },
-                  strengths: { type: "array", items: { type: "string" } },
-                  track_record_summary: { type: "string" }
-                }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommendations: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                organization_name: { type: "string" },
+                match_score: { type: "number" },
+                rationale: { type: "string" },
+                strengths: { type: "array", items: { type: "string" } },
+                track_record_summary: { type: "string" }
               }
             }
           }
         }
-      });
+      }
+    });
 
-      setPartners(response.recommendations || []);
+    if (response.success && response.data) {
+      setPartners(response.data.recommendations || []);
       toast.success(t({ en: 'Partners found', ar: 'الشركاء وُجدوا' }));
-    } catch (error) {
-      toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
-    } finally {
-      setSearching(false);
     }
   };
 
@@ -85,7 +84,7 @@ Recommend top 5 partner organizations:
             <Users className="h-5 w-5 text-indigo-600" />
             {t({ en: 'AI Partner Discovery', ar: 'اكتشاف الشركاء الذكي' })}
           </CardTitle>
-          <Button onClick={discoverPartners} disabled={searching} size="sm" className="bg-indigo-600">
+          <Button onClick={discoverPartners} disabled={searching || !isAvailable} size="sm" className="bg-indigo-600">
             {searching ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -96,6 +95,7 @@ Recommend top 5 partner organizations:
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-2">
             {t({ en: 'Partner Requirements (optional)', ar: 'متطلبات الشريك (اختياري)' })}

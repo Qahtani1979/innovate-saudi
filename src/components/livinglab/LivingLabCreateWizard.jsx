@@ -12,13 +12,15 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Beaker, Sparkles, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function LivingLabCreateWizard({ onClose }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
-  const [aiGenerating, setAiGenerating] = useState(false);
+  const { invokeAI, status, isLoading: aiGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [formData, setFormData] = useState({
     name_en: '',
     name_ar: '',
@@ -33,10 +35,10 @@ export default function LivingLabCreateWizard({ onClose }) {
   });
 
   const handleAIGenerate = async () => {
-    setAiGenerating(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Design a municipal innovation living lab:
+    if (!isAvailable) return;
+    
+    const result = await invokeAI({
+      prompt: `Design a municipal innovation living lab:
         
 Type: ${formData.lab_type}
 Basic Description: ${formData.description_en || 'Urban innovation testing facility'}
@@ -48,27 +50,24 @@ Generate comprehensive bilingual lab design:
 4. 8-12 equipment items recommended for this lab type
 5. 4-6 facility components
 6. 5-7 booking/usage rules`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            research_areas: { type: 'array', items: { type: 'string' } },
-            equipment: { type: 'array', items: { type: 'string' } },
-            facilities: { type: 'array', items: { type: 'string' } },
-            booking_rules: { type: 'array', items: { type: 'string' } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          research_areas: { type: 'array', items: { type: 'string' } },
+          equipment: { type: 'array', items: { type: 'string' } },
+          facilities: { type: 'array', items: { type: 'string' } },
+          booking_rules: { type: 'array', items: { type: 'string' } }
         }
-      });
+      }
+    });
 
-      setFormData(prev => ({ ...prev, ...result }));
+    if (result.success && result.data) {
+      setFormData(prev => ({ ...prev, ...result.data }));
       toast.success(t({ en: '✨ AI design complete!', ar: '✨ تم التصميم!' }));
-    } catch (error) {
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setAiGenerating(false);
     }
   };
 
@@ -99,6 +98,7 @@ Generate comprehensive bilingual lab design:
         <CardContent className="space-y-6">
           {step === 1 && (
             <>
+              <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
               <div className="p-4 bg-teal-50 rounded-lg">
                 <p className="text-sm text-teal-900 font-medium">
                   {t({ en: 'Step 1: Basic Info & AI Infrastructure Recommendations', ar: 'الخطوة 1: المعلومات والبنية التحتية' })}
@@ -132,7 +132,7 @@ Generate comprehensive bilingual lab design:
 
               <Button
                 onClick={handleAIGenerate}
-                disabled={aiGenerating}
+                disabled={aiGenerating || !isAvailable}
                 className="w-full bg-gradient-to-r from-teal-600 to-cyan-600"
                 size="lg"
               >

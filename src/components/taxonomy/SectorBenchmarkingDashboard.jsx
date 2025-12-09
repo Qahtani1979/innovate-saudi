@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Target, Globe, Sparkles } from 'lucide-react';
+import { TrendingUp, Target, Globe, Sparkles, Loader2 } from 'lucide-react';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SectorBenchmarkingDashboard({ sectorId }) {
   const { t } = useLanguage();
-  const [benchmarking, setBenchmarking] = useState(false);
+  const { invokeAI, status, isLoading: benchmarking, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [benchmarkData, setBenchmarkData] = useState(null);
 
   const { data: challenges = [] } = useQuery({
@@ -31,10 +33,10 @@ export default function SectorBenchmarkingDashboard({ sectorId }) {
   });
 
   const generateBenchmark = async () => {
-    setBenchmarking(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Benchmark this sector against national/international standards:
+    if (!isAvailable) return;
+    
+    const result = await invokeAI({
+      prompt: `Benchmark this sector against national/international standards:
 
 Sector Performance:
 - Total Challenges: ${challenges.length}
@@ -48,43 +50,40 @@ Provide benchmarking against:
 3. Top performing municipalities in this sector
 4. Areas for improvement
 5. Recommendations`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            national_average: {
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          national_average: {
+            type: 'object',
+            properties: {
+              challenges_per_municipality: { type: 'number' },
+              pilot_success_rate: { type: 'number' },
+              innovation_score: { type: 'number' }
+            }
+          },
+          international_benchmarks: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                challenges_per_municipality: { type: 'number' },
-                pilot_success_rate: { type: 'number' },
-                innovation_score: { type: 'number' }
+                country: { type: 'string' },
+                metric: { type: 'string' },
+                value: { type: 'number' },
+                source: { type: 'string' }
               }
-            },
-            international_benchmarks: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  country: { type: 'string' },
-                  metric: { type: 'string' },
-                  value: { type: 'number' },
-                  source: { type: 'string' }
-                }
-              }
-            },
-            performance_gap: { type: 'number' },
-            strengths: { type: 'array', items: { type: 'string' } },
-            areas_for_improvement: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'array', items: { type: 'string' } }
-          }
-        },
-        add_context_from_internet: true
-      });
+            }
+          },
+          performance_gap: { type: 'number' },
+          strengths: { type: 'array', items: { type: 'string' } },
+          areas_for_improvement: { type: 'array', items: { type: 'string' } },
+          recommendations: { type: 'array', items: { type: 'string' } }
+        }
+      }
+    });
 
-      setBenchmarkData(result);
-    } catch (error) {
-      console.error(error);
+    if (result.success && result.data) {
+      setBenchmarkData(result.data);
     }
-    setBenchmarking(false);
   };
 
   return (
@@ -96,16 +95,17 @@ Provide benchmarking against:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         {!benchmarkData && (
           <div className="text-center py-6">
             <Globe className="h-12 w-12 text-indigo-600 mx-auto mb-3" />
             <p className="text-sm text-slate-600 mb-4">
               {t({ en: 'Compare to national and international standards', ar: 'قارن مع المعايير الوطنية والدولية' })}
             </p>
-            <Button onClick={generateBenchmark} disabled={benchmarking}>
+            <Button onClick={generateBenchmark} disabled={benchmarking || !isAvailable}>
               {benchmarking ? (
                 <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Analyzing...', ar: 'يحلل...' })}
                 </>
               ) : (

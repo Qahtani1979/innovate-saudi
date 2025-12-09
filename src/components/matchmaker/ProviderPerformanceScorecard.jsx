@@ -7,17 +7,19 @@ import { useLanguage } from '../LanguageContext';
 import { Award, TrendingUp, Target, Users, Loader2, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProviderPerformanceScorecard({ application, pilots = [] }) {
   const { language, isRTL, t } = useLanguage();
   const [scorecard, setScorecard] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const generateScorecard = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a performance scorecard for this Matchmaker provider:
+    if (!isAvailable) return;
+    
+    const result = await invokeAI({
+      prompt: `Generate a performance scorecard for this Matchmaker provider:
 
 Organization: ${application.organization_name_en}
 Evaluation Score: ${application.evaluation_score?.total_score}
@@ -38,27 +40,24 @@ Also provide:
 - strengths (3 bullets)
 - improvement_areas (3 bullets)
 - recommendation (tier_1_partner / tier_2_partner / conditional / review)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            delivery_excellence: { type: 'number' },
-            innovation_impact: { type: 'number' },
-            partnership_effectiveness: { type: 'number' },
-            scalability_potential: { type: 'number' },
-            overall_score: { type: 'number' },
-            strengths: { type: 'array', items: { type: 'string' } },
-            improvement_areas: { type: 'array', items: { type: 'string' } },
-            recommendation: { type: 'string' }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          delivery_excellence: { type: 'number' },
+          innovation_impact: { type: 'number' },
+          partnership_effectiveness: { type: 'number' },
+          scalability_potential: { type: 'number' },
+          overall_score: { type: 'number' },
+          strengths: { type: 'array', items: { type: 'string' } },
+          improvement_areas: { type: 'array', items: { type: 'string' } },
+          recommendation: { type: 'string' }
         }
-      });
+      }
+    });
 
-      setScorecard(result);
+    if (result.success && result.data) {
+      setScorecard(result.data);
       toast.success(t({ en: 'Scorecard generated', ar: 'تم إنشاء بطاقة الأداء' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate', ar: 'فشل الإنشاء' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -82,9 +81,11 @@ Also provide:
           </div>
         </div>
 
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         <Button
           onClick={generateScorecard}
-          disabled={loading}
+          disabled={loading || !isAvailable}
           className="w-full bg-amber-600 hover:bg-amber-700"
         >
           {loading ? (
