@@ -1,579 +1,562 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
   Sparkles, TrendingUp, Award, MapPin, Target, TestTube, Lightbulb, 
   CheckCircle2, Users, Building2, Rocket, BarChart3, Globe, BookOpen,
-  MessageSquare, Calendar, Microscope, Beaker
+  MessageSquare, Calendar, Microscope, Beaker, LogIn, UserPlus, ArrowRight,
+  ChevronRight, Play, Star, Zap
 } from 'lucide-react';
-import ProtectedPage from '../components/permissions/ProtectedPage';
+import { motion } from 'framer-motion';
 
 function PublicPortal() {
   const { language, isRTL, t } = useLanguage();
+  const navigate = useNavigate();
 
-  // RLS: Public sees only PUBLISHED and COMPLETED items
+  // Fetch public data using Supabase
   const { data: successfulPilots = [] } = useQuery({
     queryKey: ['public-successful-pilots'],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => 
-        (p.stage === 'completed' || p.stage === 'scaled') && 
-        p.is_published &&
-        p.recommendation === 'scale'
-      );
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .in('stage', ['completed', 'scaled'])
+        .eq('is_published', true)
+        .eq('recommendation', 'scale')
+        .limit(6);
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: publishedChallenges = [] } = useQuery({
     queryKey: ['public-challenges'],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.is_published);
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: verifiedSolutions = [] } = useQuery({
     queryKey: ['public-solutions'],
     queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => 
-        s.is_published && 
-        s.is_verified &&
-        (s.maturity_level === 'market_ready' || s.maturity_level === 'proven')
-      );
+      const { data, error } = await supabase
+        .from('solutions')
+        .select('*')
+        .eq('is_published', true)
+        .eq('is_verified', true)
+        .in('maturity_level', ['market_ready', 'proven'])
+        .limit(8);
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: topMunicipalities = [] } = useQuery({
     queryKey: ['top-municipalities-public'],
     queryFn: async () => {
-      const all = await base44.entities.Municipality.list();
-      return all
-        .filter(m => m.is_active)
-        .sort((a, b) => (b.mii_score || 0) - (a.mii_score || 0))
-        .slice(0, 5);
+      const { data, error } = await supabase
+        .from('municipalities')
+        .select('*')
+        .eq('is_active', true)
+        .order('mii_score', { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: openPrograms = [] } = useQuery({
     queryKey: ['public-programs'],
     queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => 
-        p.is_published && 
-        p.status === 'applications_open'
-      );
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_published', true)
+        .eq('status', 'applications_open')
+        .limit(3);
+      if (error) throw error;
+      return data || [];
     }
   });
 
-  const { data: caseStudies = [] } = useQuery({
-    queryKey: ['public-case-studies'],
+  const { data: platformStats } = useQuery({
+    queryKey: ['public-platform-stats'],
     queryFn: async () => {
-      const all = await base44.entities.CaseStudy.list('-created_date');
-      return all.filter(c => c.is_published).slice(0, 6);
+      const [
+        { count: challengeCount },
+        { count: pilotCount },
+        { count: solutionCount },
+        { count: municipalityCount }
+      ] = await Promise.all([
+        supabase.from('challenges').select('*', { count: 'exact', head: true }),
+        supabase.from('pilots').select('*', { count: 'exact', head: true }),
+        supabase.from('solutions').select('*', { count: 'exact', head: true }),
+        supabase.from('municipalities').select('*', { count: 'exact', head: true })
+      ]);
+      return {
+        challenges: challengeCount || 0,
+        pilots: pilotCount || 0,
+        solutions: solutionCount || 0,
+        municipalities: municipalityCount || 0
+      };
     }
   });
 
-  const { data: publishedRDProjects = [] } = useQuery({
-    queryKey: ['public-rd-projects'],
-    queryFn: async () => {
-      const all = await base44.entities.RDProject.list();
-      return all.filter(r => r.is_published && r.status === 'completed');
-    }
-  });
-
-  const { data: openRDCalls = [] } = useQuery({
-    queryKey: ['public-rd-calls'],
-    queryFn: async () => {
-      const all = await base44.entities.RDCall.list();
-      return all.filter(c => c.status === 'open' && c.is_published);
-    }
-  });
-
-  const successRate = successfulPilots.length > 0 
-    ? Math.round((successfulPilots.filter(p => p.recommendation === 'scale').length / successfulPilots.length) * 100) 
-    : 0;
+  const stats = platformStats || { challenges: 0, pilots: 0, solutions: 0, municipalities: 0 };
 
   return (
-    <div className="space-y-12" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Navigation Bar */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-bold text-xl text-slate-900">
+                {t({ en: 'Saudi Innovates', ar: 'الابتكار السعودي' })}
+              </span>
+            </div>
+            
+            <div className="hidden md:flex items-center gap-6">
+              <Link to={createPageUrl('About')} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'About', ar: 'عن المنصة' })}
+              </Link>
+              <Link to={createPageUrl('PublicSolutionsMarketplace')} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'Solutions', ar: 'الحلول' })}
+              </Link>
+              <Link to={createPageUrl('News')} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'News', ar: 'الأخبار' })}
+              </Link>
+              <Link to={createPageUrl('Contact')} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                {t({ en: 'Contact', ar: 'تواصل' })}
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="text-slate-600">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  {t({ en: 'Sign In', ar: 'تسجيل الدخول' })}
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  {t({ en: 'Get Started', ar: 'ابدأ الآن' })}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-purple-600 to-teal-600 p-12 text-white">
-        <div className="relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-6">
-            <Sparkles className="h-5 w-5" />
-            <span className="text-sm font-medium">
-              {t({ en: 'National Municipal Innovation Platform', ar: 'المنصة الوطنية للابتكار البلدي' })}
-            </span>
-          </div>
-          <h1 className="text-6xl font-bold mb-4">
-            {t({ en: 'Saudi Innovates', ar: 'الابتكار السعودي' })}
-          </h1>
-          <p className="text-xl opacity-90 max-w-3xl mx-auto mb-8">
-            {t({ 
-              en: 'Transforming municipal services through innovation, collaboration, and evidence-based solutions',
-              ar: 'تحويل الخدمات البلدية من خلال الابتكار والتعاون والحلول القائمة على الأدلة'
-            })}
-          </p>
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link to={createPageUrl('PublicIdeasBoard')}>
-              <Button className="bg-white text-blue-600 hover:bg-white/90" size="lg">
-                <Lightbulb className="h-5 w-5 mr-2" />
-                {t({ en: 'Explore Challenges', ar: 'استكشف التحديات' })}
-              </Button>
-            </Link>
-            <Link to={createPageUrl('PublicIdeaSubmission')}>
-              <Button variant="outline" className="border-white text-white hover:bg-white/20" size="lg">
-                {t({ en: 'Share Your Idea', ar: 'شارك فكرتك' })}
-              </Button>
-            </Link>
-            <Link to={createPageUrl('MII')}>
-              <Button variant="outline" className="border-white text-white hover:bg-white/20" size="lg">
-                <Award className="h-5 w-5 mr-2" />
-                {t({ en: 'Innovation Index', ar: 'مؤشر الابتكار' })}
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Platform Impact Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <Card className="text-center bg-gradient-to-br from-blue-50 to-white border-2 border-blue-200">
-          <CardContent className="pt-8 pb-8">
-            <Building2 className="h-12 w-12 text-blue-600 mx-auto mb-3" />
-            <div className="text-5xl font-bold text-blue-600 mb-2">{topMunicipalities.length}</div>
-            <p className="text-sm text-slate-600 font-medium">
-              {t({ en: 'Participating Municipalities', ar: 'البلديات المشاركة' })}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-teal-500" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djZoLTZ2LTZoNnptMC0zNHY2aC02VjBoNnptLTYgMzR2Nmg2djZoLTZ2LTZoLTZ2LTZoNnptLTYgMHYtNmg2djZoLTZ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-8">
+              <Zap className="h-4 w-4 text-yellow-300" />
+              <span className="text-sm font-medium text-white">
+                {t({ en: 'National Municipal Innovation Platform', ar: 'المنصة الوطنية للابتكار البلدي' })}
+              </span>
+            </div>
+            
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 tracking-tight">
+              {t({ en: 'Transforming Cities', ar: 'تحويل المدن' })}
+              <br />
+              <span className="bg-gradient-to-r from-yellow-200 to-yellow-400 bg-clip-text text-transparent">
+                {t({ en: 'Through Innovation', ar: 'من خلال الابتكار' })}
+              </span>
+            </h1>
+            
+            <p className="text-lg sm:text-xl text-white/90 max-w-3xl mx-auto mb-10">
+              {t({ 
+                en: 'Connect municipalities with innovative solutions, conduct evidence-based pilots, and scale what works across the Kingdom.',
+                ar: 'ربط البلديات بالحلول المبتكرة، وإجراء تجارب قائمة على الأدلة، وتوسيع نطاق ما ينجح في جميع أنحاء المملكة.'
+              })}
             </p>
-          </CardContent>
-        </Card>
-
-        <Card className="text-center bg-gradient-to-br from-green-50 to-white border-2 border-green-200">
-          <CardContent className="pt-8 pb-8">
-            <TestTube className="h-12 w-12 text-green-600 mx-auto mb-3" />
-            <div className="text-5xl font-bold text-green-600 mb-2">{successfulPilots.length}</div>
-            <p className="text-sm text-slate-600 font-medium">
-              {t({ en: 'Successful Pilots', ar: 'التجارب الناجحة' })}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="text-center bg-gradient-to-br from-purple-50 to-white border-2 border-purple-200">
-          <CardContent className="pt-8 pb-8">
-            <Lightbulb className="h-12 w-12 text-purple-600 mx-auto mb-3" />
-            <div className="text-5xl font-bold text-purple-600 mb-2">{verifiedSolutions.length}</div>
-            <p className="text-sm text-slate-600 font-medium">
-              {t({ en: 'Validated Solutions', ar: 'الحلول المعتمدة' })}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="text-center bg-gradient-to-br from-amber-50 to-white border-2 border-amber-200">
-          <CardContent className="pt-8 pb-8">
-            <TrendingUp className="h-12 w-12 text-amber-600 mx-auto mb-3" />
-            <div className="text-5xl font-bold text-amber-600 mb-2">{successRate}%</div>
-            <p className="text-sm text-slate-600 font-medium">
-              {t({ en: 'Success Rate', ar: 'معدل النجاح' })}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Innovation Leaders */}
-      <div>
-        <h2 className="text-4xl font-bold text-slate-900 mb-6">
-          {t({ en: 'Innovation Leaders', ar: 'رواد الابتكار' })}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {topMunicipalities.map((muni, idx) => (
-            <Link key={muni.id} to={createPageUrl(`MunicipalityProfile?id=${muni.id}`)}>
-              <Card className="hover:shadow-2xl transition-all border-2 hover:border-blue-400">
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                      idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
-                      idx === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-500' :
-                      idx === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-800' :
-                      'bg-gradient-to-br from-blue-500 to-teal-500'
-                    }`}>
-                      <span className="text-2xl font-bold text-white">#{idx + 1}</span>
-                    </div>
-                    <h3 className="font-bold text-slate-900 mb-2">
-                      {language === 'ar' && muni.name_ar ? muni.name_ar : muni.name_en}
-                    </h3>
-                    <div className="text-3xl font-bold text-blue-600 mb-1">{muni.mii_score || 0}</div>
-                    <p className="text-xs text-slate-500">{t({ en: 'MII Score', ar: 'مؤشر الابتكار' })}</p>
-                    <div className="mt-3 text-xs text-slate-600">
-                      {muni.active_pilots || 0} {t({ en: 'active pilots', ar: 'تجارب نشطة' })}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Open Programs */}
-      {openPrograms.length > 0 && (
-        <div>
-          <h2 className="text-4xl font-bold text-slate-900 mb-6">
-            {t({ en: 'Open Innovation Programs', ar: 'برامج الابتكار المفتوحة' })}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {openPrograms.map((program) => (
-              <Card key={program.id} className="hover:shadow-xl transition-all border-2 hover:border-purple-400">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Badge className="bg-purple-100 text-purple-700">{program.program_type?.replace(/_/g, ' ')}</Badge>
-                    {program.funding_available && (
-                      <Badge className="bg-green-600 text-white">
-                        {t({ en: 'Funded', ar: 'ممول' })}
-                      </Badge>
-                    )}
-                  </div>
-                  {program.image_url && (
-                    <img src={program.image_url} alt={program.name_en} className="w-full h-40 object-cover rounded-lg mb-3" />
-                  )}
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">
-                    {language === 'ar' && program.name_ar ? program.name_ar : program.name_en}
-                  </h3>
-                  <p className="text-sm text-slate-600 mb-4 line-clamp-3">
-                    {language === 'ar' && program.tagline_ar ? program.tagline_ar : program.tagline_en}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-slate-500 mb-4">
-                    {program.duration_weeks && <span>{program.duration_weeks} {t({ en: 'weeks', ar: 'أسابيع' })}</span>}
-                    {program.timeline?.application_close && (
-                      <>
-                        <span>•</span>
-                        <span className="text-red-600">{t({ en: 'Closes:', ar: 'يغلق:' })} {new Date(program.timeline.application_close).toLocaleDateString()}</span>
-                      </>
-                    )}
-                  </div>
-                  <Link to={createPageUrl(`ProgramDetail?id=${program.id}`)}>
-                    <Button size="sm" variant="outline" className="w-full">
-                      {t({ en: 'Learn More & Apply', ar: 'معرفة المزيد والتقديم' })}
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Verified Solutions Marketplace */}
-      {verifiedSolutions.length > 0 && (
-        <div>
-          <h2 className="text-4xl font-bold text-slate-900 mb-6">
-            {t({ en: 'Verified Solutions Marketplace', ar: 'سوق الحلول المعتمدة' })}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {verifiedSolutions.slice(0, 8).map((solution) => (
-              <Link key={solution.id} to={createPageUrl(`SolutionDetail?id=${solution.id}`)}>
-                <Card className="hover:shadow-lg transition-all">
-                  <CardContent className="pt-6">
-                    {solution.image_url && (
-                      <img src={solution.image_url} alt={solution.name_en} className="w-full h-32 object-cover rounded-lg mb-3" />
-                    )}
-                    <Badge className="mb-2 text-xs bg-blue-100 text-blue-700">{solution.maturity_level?.replace(/_/g, ' ')}</Badge>
-                    <h3 className="font-bold text-sm text-slate-900 mb-2 line-clamp-2">
-                      {language === 'ar' && solution.name_ar ? solution.name_ar : solution.name_en}
-                    </h3>
-                    <p className="text-xs text-slate-600 mb-2">{solution.provider_name}</p>
-                    {solution.average_rating && (
-                      <div className="flex items-center gap-1">
-                        <Award className="h-3 w-3 text-amber-500" />
-                        <span className="text-xs font-medium">{solution.average_rating.toFixed(1)}/5</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to="/auth">
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 shadow-xl px-8">
+                  <Rocket className="h-5 w-5 mr-2" />
+                  {t({ en: 'Join the Platform', ar: 'انضم للمنصة' })}
+                </Button>
               </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Published Challenges */}
-      {publishedChallenges.length > 0 && (
-        <div>
-          <h2 className="text-4xl font-bold text-slate-900 mb-6">
-            {t({ en: 'Innovation Challenges', ar: 'تحديات الابتكار' })}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {publishedChallenges.slice(0, 6).map((challenge) => (
-              <Link key={challenge.id} to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)}>
-                <Card className="hover:shadow-lg transition-all border hover:border-blue-400">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="outline" className="text-xs font-mono">{challenge.code}</Badge>
-                      <Badge className="bg-blue-100 text-blue-700 text-xs">{challenge.sector?.replace(/_/g, ' ')}</Badge>
-                    </div>
-                    <h3 className="font-bold text-slate-900 mb-2">
-                      {language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}
-                    </h3>
-                    <p className="text-sm text-slate-600 line-clamp-2 mb-3">
-                      {language === 'ar' && challenge.description_ar ? challenge.description_ar : challenge.description_en}
-                    </p>
-                    <div className="text-xs text-slate-500">
-                      {challenge.municipality_id?.substring(0, 30)}
-                    </div>
-                  </CardContent>
-                </Card>
+              <Link to={createPageUrl('PublicSolutionsMarketplace')}>
+                <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/20 px-8">
+                  <Play className="h-5 w-5 mr-2" />
+                  {t({ en: 'Explore Solutions', ar: 'استكشف الحلول' })}
+                </Button>
               </Link>
-            ))}
-          </div>
+            </div>
+          </motion.div>
         </div>
-      )}
+      </section>
 
-      {/* Success Stories */}
-      <div>
-        <h2 className="text-4xl font-bold text-slate-900 mb-6">
-          {t({ en: 'Innovation Success Stories', ar: 'قصص نجاح الابتكار' })}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {successfulPilots.slice(0, 6).map((pilot) => (
-            <Card key={pilot.id} className="hover:shadow-xl transition-all border-2 hover:border-green-400">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge className="bg-green-100 text-green-700">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    {t({ en: 'Success', ar: 'نجاح' })}
-                  </Badge>
-                  {pilot.is_flagship && (
-                    <Badge className="bg-purple-600 text-white">
-                      <Award className="h-3 w-3 mr-1" />
-                      {t({ en: 'Flagship', ar: 'رائد' })}
-                    </Badge>
-                  )}
-                </div>
-                {pilot.image_url && (
-                  <img src={pilot.image_url} alt={pilot.title_en} className="w-full h-40 object-cover rounded-lg mb-3" />
-                )}
-                <h3 className="text-lg font-bold text-slate-900 mb-2">
-                  {language === 'ar' && pilot.title_ar ? pilot.title_ar : pilot.title_en}
-                </h3>
-                <p className="text-sm text-slate-600 mb-4 line-clamp-3">
-                  {language === 'ar' && pilot.description_ar ? pilot.description_ar : pilot.description_en}
-                </p>
-                <div className="flex items-center gap-3 text-xs text-slate-500 mb-4">
-                  <span>{pilot.sector?.replace(/_/g, ' ')}</span>
-                  <span>•</span>
-                  <span>{pilot.municipality_id?.substring(0, 20)}</span>
-                </div>
-                <Link to={createPageUrl(`PilotDetail?id=${pilot.id}`)}>
-                  <Button size="sm" variant="outline" className="w-full">
-                    {t({ en: 'Read Success Story', ar: 'اقرأ قصة النجاح' })}
-                  </Button>
-                </Link>
+      {/* Stats Section */}
+      <section className="relative -mt-12 z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          {[
+            { icon: Building2, value: stats.municipalities, label: { en: 'Municipalities', ar: 'البلديات' }, color: 'blue' },
+            { icon: Target, value: stats.challenges, label: { en: 'Challenges', ar: 'التحديات' }, color: 'red' },
+            { icon: Lightbulb, value: stats.solutions, label: { en: 'Solutions', ar: 'الحلول' }, color: 'amber' },
+            { icon: TestTube, value: stats.pilots, label: { en: 'Pilots', ar: 'التجارب' }, color: 'green' },
+          ].map((stat, idx) => (
+            <Card key={idx} className="bg-white shadow-xl border-0">
+              <CardContent className="pt-6 pb-6 text-center">
+                <stat.icon className={`h-8 w-8 mx-auto mb-3 text-${stat.color}-600`} />
+                <div className="text-3xl lg:text-4xl font-bold text-slate-900 mb-1">{stat.value}</div>
+                <p className="text-sm text-slate-500">{t(stat.label)}</p>
               </CardContent>
             </Card>
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </section>
 
-      {/* Call to Action Sections */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-gradient-to-br from-purple-50 to-white border-2 border-purple-200">
-          <CardContent className="pt-8 pb-8 text-center">
-            <Lightbulb className="h-16 w-16 text-purple-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
-              {t({ en: 'Share Your Ideas', ar: 'شارك أفكارك' })}
-            </h3>
-            <p className="text-sm text-slate-600 mb-6">
-              {t({ en: 'Help improve your city by submitting ideas', ar: 'ساعد في تحسين مدينتك بتقديم الأفكار' })}
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-20">
+        
+        {/* How It Works */}
+        <section>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+              {t({ en: 'How It Works', ar: 'كيف تعمل المنصة' })}
+            </h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              {t({ en: 'A systematic approach to municipal innovation', ar: 'نهج منظم للابتكار البلدي' })}
             </p>
-            <Link to={createPageUrl('PublicIdeaSubmission')}>
-              <Button className="bg-purple-600 hover:bg-purple-700">
-                {t({ en: 'Submit Idea', ar: 'تقديم فكرة' })}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-50 to-white border-2 border-blue-200">
-          <CardContent className="pt-8 pb-8 text-center">
-            <Target className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
-              {t({ en: 'Explore Challenges', ar: 'استكشف التحديات' })}
-            </h3>
-            <p className="text-sm text-slate-600 mb-6">
-              {t({ en: 'See what municipalities are working on', ar: 'شاهد ما تعمل عليه البلديات' })}
-            </p>
-            <Link to={createPageUrl('PublicIdeasBoard')}>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                {t({ en: 'Browse', ar: 'تصفح' })}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-white border-2 border-green-200">
-          <CardContent className="pt-8 pb-8 text-center">
-            <BarChart3 className="h-16 w-16 text-green-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
-              {t({ en: 'Innovation Index', ar: 'مؤشر الابتكار' })}
-            </h3>
-            <p className="text-sm text-slate-600 mb-6">
-              {t({ en: 'See how cities compare on innovation', ar: 'شاهد كيف تتنافس المدن في الابتكار' })}
-            </p>
-            <Link to={createPageUrl('MII')}>
-              <Button className="bg-green-600 hover:bg-green-700">
-                {t({ en: 'View Rankings', ar: 'عرض الترتيب' })}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Featured Content */}
-      {caseStudies.length > 0 && (
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900 mb-6">
-            {t({ en: 'Featured Case Studies', ar: 'دراسات الحالة المميزة' })}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {caseStudies.map((study) => (
-              <Card key={study.id} className="hover:shadow-lg transition-all">
-                <CardContent className="pt-6">
-                  {study.image_url && (
-                    <img src={study.image_url} alt={study.title_en} className="w-full h-40 object-cover rounded-lg mb-3" />
-                  )}
-                  <Badge className="mb-2 text-xs">{study.category}</Badge>
-                  <h3 className="font-bold text-slate-900 mb-2">
-                    {language === 'ar' && study.title_ar ? study.title_ar : study.title_en}
-                  </h3>
-                  <p className="text-sm text-slate-600 line-clamp-3 mb-4">
-                    {language === 'ar' && study.summary_ar ? study.summary_ar : study.summary_en}
-                  </p>
-                  <Button size="sm" variant="outline" className="w-full">
-                    {t({ en: 'Read More', ar: 'اقرأ المزيد' })}
-                  </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[
+              { step: 1, icon: Target, title: { en: 'Identify Challenges', ar: 'تحديد التحديات' }, desc: { en: 'Municipalities document real operational challenges', ar: 'توثق البلديات التحديات التشغيلية الحقيقية' } },
+              { step: 2, icon: Lightbulb, title: { en: 'Match Solutions', ar: 'مطابقة الحلول' }, desc: { en: 'AI-powered matching with verified providers', ar: 'مطابقة بالذكاء الاصطناعي مع مزودين معتمدين' } },
+              { step: 3, icon: TestTube, title: { en: 'Run Pilots', ar: 'تشغيل التجارب' }, desc: { en: 'Evidence-based testing with clear KPIs', ar: 'اختبار قائم على الأدلة بمؤشرات واضحة' } },
+              { step: 4, icon: Rocket, title: { en: 'Scale Success', ar: 'توسيع النجاح' }, desc: { en: 'Roll out proven solutions nationwide', ar: 'نشر الحلول المثبتة على مستوى المملكة' } },
+            ].map((item, idx) => (
+              <Card key={idx} className="relative group hover:shadow-lg transition-all">
+                <CardContent className="pt-8 pb-6">
+                  <div className="absolute -top-4 left-6 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm font-bold flex items-center justify-center shadow-lg">
+                    {item.step}
+                  </div>
+                  <item.icon className="h-10 w-10 text-blue-600 mb-4" />
+                  <h3 className="font-bold text-lg text-slate-900 mb-2">{t(item.title)}</h3>
+                  <p className="text-sm text-slate-600">{t(item.desc)}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
-        </div>
-      )}
+        </section>
 
-      {/* R&D Opportunities */}
-      {(openRDCalls.length > 0 || publishedRDProjects.length > 0) && (
-        <div>
-          <h2 className="text-4xl font-bold text-slate-900 mb-6">
-            {t({ en: 'Research & Development', ar: 'البحث والتطوير' })}
-          </h2>
-          
-          {openRDCalls.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-2xl font-bold text-slate-800 mb-4">
-                {t({ en: 'Open Research Calls', ar: 'دعوات البحث المفتوحة' })}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {openRDCalls.slice(0, 3).map(call => (
-                  <Card key={call.id} className="hover:shadow-lg transition-all border-2 hover:border-indigo-400">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Microscope className="h-5 w-5 text-indigo-600" />
-                        <Badge className="bg-indigo-100 text-indigo-700 text-xs">{call.call_type?.replace(/_/g, ' ')}</Badge>
+        {/* Top Municipalities */}
+        {topMunicipalities.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                  {t({ en: 'Innovation Leaders', ar: 'رواد الابتكار' })}
+                </h2>
+                <p className="text-slate-600">{t({ en: 'Top performing municipalities by MII score', ar: 'البلديات الأعلى أداءً حسب مؤشر الابتكار' })}</p>
+              </div>
+              <Link to={createPageUrl('MII')}>
+                <Button variant="outline">
+                  {t({ en: 'View All Rankings', ar: 'عرض جميع الترتيبات' })}
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {topMunicipalities.map((muni, idx) => (
+                <Card key={muni.id} className="text-center hover:shadow-lg transition-all group cursor-pointer">
+                  <CardContent className="pt-6 pb-6">
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                      idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500' :
+                      idx === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400' :
+                      idx === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700' :
+                      'bg-gradient-to-br from-blue-500 to-blue-600'
+                    }`}>
+                      <span className="text-xl font-bold text-white">#{idx + 1}</span>
+                    </div>
+                    <h3 className="font-bold text-slate-900 mb-2 text-sm">
+                      {language === 'ar' && muni.name_ar ? muni.name_ar : muni.name_en}
+                    </h3>
+                    <div className="text-2xl font-bold text-blue-600 mb-1">{muni.mii_score || 0}</div>
+                    <p className="text-xs text-slate-500">{t({ en: 'MII Score', ar: 'مؤشر الابتكار' })}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Open Programs */}
+        {openPrograms.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                  {t({ en: 'Open Programs', ar: 'البرامج المفتوحة' })}
+                </h2>
+                <p className="text-slate-600">{t({ en: 'Apply now for funding and support', ar: 'قدم الآن للتمويل والدعم' })}</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {openPrograms.map((program) => (
+                <Card key={program.id} className="hover:shadow-xl transition-all border-2 hover:border-purple-400 group">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Badge className="bg-purple-100 text-purple-700">{program.program_type?.replace(/_/g, ' ')}</Badge>
+                      {program.funding_available && (
+                        <Badge className="bg-green-100 text-green-700">
+                          {t({ en: 'Funded', ar: 'ممول' })}
+                        </Badge>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-purple-600 transition-colors">
+                      {language === 'ar' && program.name_ar ? program.name_ar : program.name_en}
+                    </h3>
+                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+                      {language === 'ar' && program.tagline_ar ? program.tagline_ar : program.tagline_en}
+                    </p>
+                    <Link to="/auth">
+                      <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                        {t({ en: 'Sign Up to Apply', ar: 'سجل للتقديم' })}
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Featured Solutions */}
+        {verifiedSolutions.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                  {t({ en: 'Verified Solutions', ar: 'الحلول المعتمدة' })}
+                </h2>
+                <p className="text-slate-600">{t({ en: 'Market-ready solutions from verified providers', ar: 'حلول جاهزة للسوق من مزودين معتمدين' })}</p>
+              </div>
+              <Link to={createPageUrl('PublicSolutionsMarketplace')}>
+                <Button variant="outline">
+                  {t({ en: 'Browse Marketplace', ar: 'تصفح السوق' })}
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {verifiedSolutions.slice(0, 4).map((solution) => (
+                <Card key={solution.id} className="hover:shadow-lg transition-all group">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <Badge variant="outline" className="text-xs">
+                        {solution.maturity_level?.replace(/_/g, ' ')}
+                      </Badge>
+                    </div>
+                    <h3 className="font-bold text-sm text-slate-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                      {language === 'ar' && solution.name_ar ? solution.name_ar : solution.name_en}
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-3">{solution.provider_name}</p>
+                    {solution.average_rating && (
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                        <span className="text-xs font-medium">{solution.average_rating.toFixed(1)}</span>
                       </div>
-                      <h3 className="text-lg font-bold text-slate-900 mb-2">
-                        {language === 'ar' && call.title_ar ? call.title_ar : call.title_en}
-                      </h3>
-                      <p className="text-sm text-slate-600 line-clamp-3 mb-4">
-                        {language === 'ar' && call.tagline_ar ? call.tagline_ar : call.tagline_en}
-                      </p>
-                      {call.total_funding && (
-                        <p className="text-sm font-medium text-green-600 mb-3">
-                          {t({ en: 'Funding:', ar: 'التمويل:' })} {(call.total_funding / 1000000).toFixed(1)}M SAR
-                        </p>
-                      )}
-                      {call.timeline?.submission_close && (
-                        <p className="text-xs text-red-600 mb-4">
-                          {t({ en: 'Deadline:', ar: 'الموعد النهائي:' })} {new Date(call.timeline.submission_close).toLocaleDateString()}
-                        </p>
-                      )}
-                      <Link to={createPageUrl(`RDCallDetail?id=${call.id}`)}>
-                        <Button size="sm" variant="outline" className="w-full">
-                          {t({ en: 'View Call & Apply', ar: 'عرض والتقديم' })}
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          )}
+          </section>
+        )}
 
-          {publishedRDProjects.length > 0 && (
-            <div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-4">
-                {t({ en: 'Research Outputs & Impact', ar: 'مخرجات البحث والتأثير' })}
+        {/* CTA Cards */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 hover:shadow-lg transition-all">
+            <CardContent className="pt-8 pb-8 text-center">
+              <Building2 className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                {t({ en: 'For Municipalities', ar: 'للبلديات' })}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {publishedRDProjects.slice(0, 4).map(project => (
-                  <Link key={project.id} to={createPageUrl(`RDProjectDetail?id=${project.id}`)}>
-                    <Card className="hover:shadow-lg transition-all">
-                      <CardContent className="pt-6">
-                        <div className="flex items-center justify-between mb-3">
-                          <Beaker className="h-6 w-6 text-purple-600" />
-                          <Badge variant="outline">TRL {project.trl_current}</Badge>
-                        </div>
-                        <h4 className="font-bold text-sm line-clamp-2 mb-2">
-                          {language === 'ar' && project.title_ar ? project.title_ar : project.title_en}
-                        </h4>
-                        <p className="text-xs text-slate-600 mb-2">{project.institution_en || project.institution}</p>
-                        {project.publications?.length > 0 && (
-                          <div className="flex items-center gap-1 text-xs text-blue-600">
-                            <BookOpen className="h-3 w-3" />
-                            <span>{project.publications.length} {t({ en: 'publications', ar: 'منشورات' })}</span>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+              <p className="text-sm text-slate-600 mb-6">
+                {t({ en: 'Document challenges, find solutions, run pilots', ar: 'وثق التحديات، اعثر على الحلول، شغل التجارب' })}
+              </p>
+              <Link to="/auth">
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  {t({ en: 'Register Municipality', ar: 'سجل البلدية' })}
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
 
-      {/* Get Involved CTA */}
-      <Card className="bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 text-white border-0">
-        <CardContent className="py-16 text-center">
-          <h2 className="text-4xl font-bold mb-4">
-            {t({ en: 'Join the Innovation Ecosystem', ar: 'انضم لمنظومة الابتكار' })}
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 hover:shadow-lg transition-all">
+            <CardContent className="pt-8 pb-8 text-center">
+              <Rocket className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                {t({ en: 'For Startups', ar: 'للشركات الناشئة' })}
+              </h3>
+              <p className="text-sm text-slate-600 mb-6">
+                {t({ en: 'List solutions, access opportunities, grow business', ar: 'اعرض حلولك، احصل على الفرص، نمي أعمالك' })}
+              </p>
+              <Link to="/auth">
+                <Button className="bg-purple-600 hover:bg-purple-700">
+                  {t({ en: 'Join as Provider', ar: 'انضم كمزود' })}
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 hover:shadow-lg transition-all">
+            <CardContent className="pt-8 pb-8 text-center">
+              <Microscope className="h-12 w-12 text-green-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                {t({ en: 'For Researchers', ar: 'للباحثين' })}
+              </h3>
+              <p className="text-sm text-slate-600 mb-6">
+                {t({ en: 'Access data, apply for R&D calls, collaborate', ar: 'احصل على البيانات، قدم لدعوات البحث، تعاون' })}
+              </p>
+              <Link to="/auth">
+                <Button className="bg-green-600 hover:bg-green-700">
+                  {t({ en: 'Join as Researcher', ar: 'انضم كباحث' })}
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Citizen Participation */}
+        <section>
+          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200">
+            <CardContent className="py-12">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="flex-1 text-center md:text-left">
+                  <Badge className="bg-amber-100 text-amber-700 mb-4">
+                    {t({ en: 'Citizen Participation', ar: 'مشاركة المواطنين' })}
+                  </Badge>
+                  <h2 className="text-3xl font-bold text-slate-900 mb-4">
+                    {t({ en: 'Your Ideas Matter', ar: 'أفكارك مهمة' })}
+                  </h2>
+                  <p className="text-slate-600 mb-6 max-w-xl">
+                    {t({ 
+                      en: 'Share ideas to improve your city. Vote on community proposals. Help shape the future of municipal services.',
+                      ar: 'شارك أفكارك لتحسين مدينتك. صوت على مقترحات المجتمع. ساعد في تشكيل مستقبل الخدمات البلدية.'
+                    })}
+                  </p>
+                  <Link to={createPageUrl('PublicIdeaSubmission')}>
+                    <Button size="lg" className="bg-amber-600 hover:bg-amber-700">
+                      <Lightbulb className="h-5 w-5 mr-2" />
+                      {t({ en: 'Submit Your Idea', ar: 'قدم فكرتك' })}
+                    </Button>
+                  </Link>
+                </div>
+                <div className="flex-shrink-0">
+                  <div className="w-48 h-48 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                    <Users className="h-24 w-24 text-white" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      </div>
+
+      {/* Final CTA */}
+      <section className="bg-gradient-to-r from-blue-600 via-purple-600 to-teal-500 py-20">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
+            {t({ en: 'Ready to Transform Your City?', ar: 'مستعد لتحويل مدينتك؟' })}
           </h2>
-          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 mb-10">
             {t({ 
-              en: 'Whether you\'re a municipality, solution provider, researcher, or citizen - there\'s a place for you',
-              ar: 'سواء كنت بلدية، مزود حلول، باحث، أو مواطن - هناك مكان لك'
+              en: 'Join hundreds of municipalities, startups, and researchers building the future of Saudi cities.',
+              ar: 'انضم لمئات البلديات والشركات الناشئة والباحثين الذين يبنون مستقبل المدن السعودية.'
             })}
           </p>
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link to={createPageUrl('About')}>
-              <Button size="lg" variant="secondary" className="bg-white text-blue-600 hover:bg-white/90">
-                {t({ en: 'Learn More', ar: 'اعرف المزيد' })}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/auth">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 shadow-xl px-10">
+                {t({ en: 'Create Free Account', ar: 'أنشئ حساب مجاني' })}
               </Button>
             </Link>
             <Link to={createPageUrl('Contact')}>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20">
+              <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/20 px-10">
                 <MessageSquare className="h-5 w-5 mr-2" />
-                {t({ en: 'Contact Us', ar: 'تواصل معنا' })}
+                {t({ en: 'Talk to Our Team', ar: 'تحدث مع فريقنا' })}
               </Button>
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-bold text-lg">
+                {t({ en: 'Saudi Innovates', ar: 'الابتكار السعودي' })}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-6 text-sm text-slate-400">
+              <Link to={createPageUrl('About')} className="hover:text-white transition-colors">
+                {t({ en: 'About', ar: 'عن المنصة' })}
+              </Link>
+              <Link to={createPageUrl('Contact')} className="hover:text-white transition-colors">
+                {t({ en: 'Contact', ar: 'تواصل' })}
+              </Link>
+              <Link to={createPageUrl('News')} className="hover:text-white transition-colors">
+                {t({ en: 'News', ar: 'الأخبار' })}
+              </Link>
+            </div>
+            
+            <p className="text-sm text-slate-500">
+              © 2024 {t({ en: 'Ministry of Municipal and Rural Affairs', ar: 'وزارة الشؤون البلدية والقروية' })}
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
-export default ProtectedPage(PublicPortal, { requiredPermissions: [] });
+export default PublicPortal;
