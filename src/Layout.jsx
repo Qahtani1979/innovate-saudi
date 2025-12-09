@@ -785,12 +785,13 @@ function LayoutContent({ children, currentPageName }) {
             </DropdownMenu>
 
             <Button
-              variant="ghost"
-              size="icon"
+              variant="outline"
+              size="sm"
               onClick={toggleLanguage}
-              className="hover:bg-slate-100 flex-shrink-0"
+              className="hover:bg-slate-100 flex-shrink-0 gap-2 px-3"
             >
-              <Globe className="h-4 md:h-5 w-4 md:w-5" />
+              <Globe className="h-4 w-4" />
+              <span className="text-xs font-medium">{language === 'en' ? 'عربي' : 'EN'}</span>
             </Button>
 
             <Link to={createPageUrl('NotificationCenter')}>
