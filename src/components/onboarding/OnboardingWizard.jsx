@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { 
   CheckCircle2, ArrowRight, ArrowLeft, Sparkles, 
   Building2, Lightbulb, FlaskConical, Users, Eye,
-  Rocket, Target, BookOpen, Network, Send, X
+  Rocket, Target, BookOpen, Network, X, Loader2,
+  User, Briefcase, GraduationCap
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,6 +22,7 @@ const PERSONAS = [
   {
     id: 'municipality_staff',
     icon: Building2,
+    color: 'purple',
     title: { en: 'Municipality Staff', ar: 'موظف بلدية' },
     description: { en: 'I work at a municipality and want to solve urban challenges', ar: 'أعمل في بلدية وأريد حل التحديات الحضرية' },
     features: ['Challenges', 'Pilots', 'Programs', 'MunicipalityDashboard']
@@ -27,6 +30,7 @@ const PERSONAS = [
   {
     id: 'provider',
     icon: Rocket,
+    color: 'blue',
     title: { en: 'Solution Provider / Startup', ar: 'مزود حلول / شركة ناشئة' },
     description: { en: 'I have solutions to offer and want to find opportunities', ar: 'لدي حلول أريد تقديمها وأبحث عن فرص' },
     features: ['Solutions', 'Challenges', 'OpportunityFeed', 'MatchmakerJourney']
@@ -34,6 +38,7 @@ const PERSONAS = [
   {
     id: 'researcher',
     icon: FlaskConical,
+    color: 'green',
     title: { en: 'Researcher / Academic', ar: 'باحث / أكاديمي' },
     description: { en: 'I conduct R&D and want to collaborate with municipalities', ar: 'أقوم بالبحث والتطوير وأريد التعاون مع البلديات' },
     features: ['RDProjects', 'RDCalls', 'Knowledge', 'ResearcherNetwork']
@@ -41,6 +46,7 @@ const PERSONAS = [
   {
     id: 'citizen',
     icon: Users,
+    color: 'orange',
     title: { en: 'Citizen / Community Member', ar: 'مواطن / عضو مجتمع' },
     description: { en: 'I want to contribute ideas and participate in pilots', ar: 'أريد المساهمة بأفكار والمشاركة في التجارب' },
     features: ['PublicIdeaSubmission', 'CitizenDashboard', 'PublicPortal']
@@ -48,29 +54,12 @@ const PERSONAS = [
   {
     id: 'viewer',
     icon: Eye,
+    color: 'slate',
     title: { en: 'Explorer / Observer', ar: 'مستكشف / مراقب' },
     description: { en: 'I want to explore and learn about innovation initiatives', ar: 'أريد استكشاف ومعرفة المزيد عن مبادرات الابتكار' },
     features: ['PublicPortal', 'Knowledge', 'Network']
   }
 ];
-
-const FEATURE_INFO = {
-  Challenges: { icon: Target, title: { en: 'Challenges', ar: 'التحديات' }, desc: { en: 'Browse and submit urban challenges', ar: 'تصفح وأضف التحديات الحضرية' } },
-  Pilots: { icon: Rocket, title: { en: 'Pilots', ar: 'التجارب' }, desc: { en: 'Test innovative solutions', ar: 'اختبر الحلول المبتكرة' } },
-  Programs: { icon: BookOpen, title: { en: 'Programs', ar: 'البرامج' }, desc: { en: 'Innovation programs and accelerators', ar: 'برامج الابتكار والمسرعات' } },
-  Solutions: { icon: Lightbulb, title: { en: 'Solutions', ar: 'الحلول' }, desc: { en: 'Showcase your solutions', ar: 'اعرض حلولك' } },
-  RDProjects: { icon: FlaskConical, title: { en: 'R&D Projects', ar: 'مشاريع البحث' }, desc: { en: 'Research collaborations', ar: 'التعاون البحثي' } },
-  RDCalls: { icon: FlaskConical, title: { en: 'R&D Calls', ar: 'طلبات البحث' }, desc: { en: 'Apply to research calls', ar: 'تقدم لطلبات البحث' } },
-  Knowledge: { icon: BookOpen, title: { en: 'Knowledge Hub', ar: 'مركز المعرفة' }, desc: { en: 'Best practices and case studies', ar: 'أفضل الممارسات ودراسات الحالة' } },
-  Network: { icon: Network, title: { en: 'Network', ar: 'الشبكة' }, desc: { en: 'Connect with innovators', ar: 'تواصل مع المبتكرين' } },
-  OpportunityFeed: { icon: Sparkles, title: { en: 'Opportunity Feed', ar: 'الفرص' }, desc: { en: 'Discover new opportunities', ar: 'اكتشف فرص جديدة' } },
-  MatchmakerJourney: { icon: Target, title: { en: 'Matchmaker', ar: 'التوفيق' }, desc: { en: 'Match with challenges', ar: 'التوفيق مع التحديات' } },
-  MunicipalityDashboard: { icon: Building2, title: { en: 'Municipality Dashboard', ar: 'لوحة البلدية' }, desc: { en: 'Manage your municipality', ar: 'إدارة بلديتك' } },
-  ResearcherNetwork: { icon: Network, title: { en: 'Researcher Network', ar: 'شبكة الباحثين' }, desc: { en: 'Connect with researchers', ar: 'تواصل مع الباحثين' } },
-  PublicIdeaSubmission: { icon: Lightbulb, title: { en: 'Submit Ideas', ar: 'إرسال أفكار' }, desc: { en: 'Share your innovative ideas', ar: 'شارك أفكارك المبتكرة' } },
-  CitizenDashboard: { icon: Users, title: { en: 'Citizen Dashboard', ar: 'لوحة المواطن' }, desc: { en: 'Track your contributions', ar: 'تتبع مساهماتك' } },
-  PublicPortal: { icon: Eye, title: { en: 'Public Portal', ar: 'البوابة العامة' }, desc: { en: 'Explore public initiatives', ar: 'استكشف المبادرات العامة' } },
-};
 
 const EXPERTISE_OPTIONS = [
   { en: 'Urban Planning', ar: 'التخطيط الحضري' },
@@ -85,18 +74,27 @@ const EXPERTISE_OPTIONS = [
   { en: 'Environment', ar: 'البيئة' },
 ];
 
+const STEPS = [
+  { id: 1, title: { en: 'Welcome', ar: 'مرحباً' }, icon: Sparkles },
+  { id: 2, title: { en: 'Profile', ar: 'الملف الشخصي' }, icon: User },
+  { id: 3, title: { en: 'Role', ar: 'الدور' }, icon: Briefcase },
+  { id: 4, title: { en: 'Expertise', ar: 'الخبرات' }, icon: GraduationCap },
+  { id: 5, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
+];
+
 export default function OnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   
-  const [step, setStep] = useState(1);
-  const [data, setData] = useState({
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
     full_name: userProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '',
     job_title: userProfile?.job_title || '',
     department: userProfile?.department || '',
     bio: userProfile?.bio || '',
-    organization: '',
+    organization: userProfile?.organization || '',
     selectedPersona: null,
     expertise_areas: userProfile?.expertise_areas || [],
     interests: userProfile?.interests || [],
@@ -104,498 +102,524 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     roleJustification: ''
   });
 
-  const steps = [
-    { title: { en: 'Welcome', ar: 'مرحباً' }, icon: '👋' },
-    { title: { en: 'Profile', ar: 'الملف الشخصي' }, icon: '👤' },
-    { title: { en: 'Who Are You?', ar: 'من أنت؟' }, icon: '🎭' },
-    { title: { en: 'Expertise', ar: 'الخبرات' }, icon: '🎯' },
-    { title: { en: 'Features', ar: 'المميزات' }, icon: '✨' },
-    { title: { en: 'Complete', ar: 'اكتمال' }, icon: '🎉' }
-  ];
+  const progress = (currentStep / STEPS.length) * 100;
+  const selectedPersona = PERSONAS.find(p => p.id === formData.selectedPersona);
 
-  const progress = (step / steps.length) * 100;
-  const selectedPersona = PERSONAS.find(p => p.id === data.selectedPersona);
-
-  const updateProfileMutation = useMutation({
-    mutationFn: async (profileData) => {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          full_name: profileData.full_name,
-          job_title: profileData.job_title,
-          department: profileData.department,
-          bio: profileData.bio,
-          expertise_areas: profileData.expertise_areas,
-          interests: profileData.interests,
-          onboarding_completed: true,
-          profile_completion_percentage: calculateProfileCompletion(profileData)
-        })
-        .eq('user_id', user?.id);
-      
-      if (error) throw error;
-      return profileData;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-profile']);
-      checkAuth?.();
-      toast.success(t({ en: 'Profile saved successfully!', ar: 'تم حفظ الملف الشخصي بنجاح!' }));
-    },
-    onError: (error) => {
-      console.error('Profile update error:', error);
-      toast.error(t({ en: 'Failed to save profile', ar: 'فشل في حفظ الملف الشخصي' }));
-    }
-  });
-
-  const requestRoleMutation = useMutation({
-    mutationFn: async ({ role, justification }) => {
-      const { error } = await supabase
-        .from('role_requests')
-        .insert({
-          user_id: user?.id,
-          user_email: user?.email,
-          requested_role: role,
-          justification: justification,
-          status: 'pending'
-        });
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success(t({ en: 'Role request submitted!', ar: 'تم إرسال طلب الدور!' }));
-    }
-  });
-
-  const skipOnboardingMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ onboarding_completed: true })
-        .eq('user_id', user?.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-profile']);
-      checkAuth?.();
-      onSkip?.();
-    }
-  });
-
-  const calculateProfileCompletion = (profileData) => {
+  const calculateProfileCompletion = (data) => {
     let score = 0;
-    if (profileData.full_name) score += 20;
-    if (profileData.job_title) score += 20;
-    if (profileData.department) score += 15;
-    if (profileData.bio) score += 15;
-    if (profileData.expertise_areas?.length > 0) score += 15;
-    if (profileData.interests?.length > 0) score += 15;
-    return score;
+    if (data.full_name) score += 25;
+    if (data.job_title) score += 20;
+    if (data.bio) score += 15;
+    if (data.selectedPersona) score += 20;
+    if (data.expertise_areas?.length > 0) score += 20;
+    return Math.min(score, 100);
   };
 
   const handleComplete = async () => {
+    if (!user?.id) {
+      toast.error(t({ en: 'User not found. Please try logging in again.', ar: 'المستخدم غير موجود. يرجى تسجيل الدخول مرة أخرى.' }));
+      return;
+    }
+
+    setIsSubmitting(true);
+    
     try {
-      await updateProfileMutation.mutateAsync(data);
+      // Update user profile with onboarding data
+      const { data: updateData, error: updateError } = await supabase
+        .from('user_profiles')
+        .update({
+          full_name: formData.full_name,
+          job_title: formData.job_title,
+          department: formData.department,
+          bio: formData.bio,
+          expertise_areas: formData.expertise_areas,
+          interests: formData.interests,
+          onboarding_completed: true,
+          profile_completion_percentage: calculateProfileCompletion(formData)
+        })
+        .eq('user_id', user.id)
+        .select();
       
-      if (data.requestRole && data.selectedPersona && data.roleJustification) {
-        await requestRoleMutation.mutateAsync({
-          role: data.selectedPersona,
-          justification: data.roleJustification
-        });
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        throw updateError;
+      }
+
+      console.log('Profile updated successfully:', updateData);
+
+      // Submit role request if needed
+      if (formData.requestRole && formData.selectedPersona && formData.roleJustification) {
+        const { error: roleError } = await supabase
+          .from('role_requests')
+          .insert({
+            user_id: user.id,
+            user_email: user.email,
+            requested_role: formData.selectedPersona,
+            justification: formData.roleJustification,
+            status: 'pending'
+          });
+        
+        if (roleError) {
+          console.error('Role request error:', roleError);
+          // Don't throw - role request is optional
+          toast.error(t({ en: 'Could not submit role request', ar: 'تعذر إرسال طلب الدور' }));
+        } else {
+          toast.success(t({ en: 'Role request submitted!', ar: 'تم إرسال طلب الدور!' }));
+        }
       }
       
-      onComplete?.(data);
+      // Invalidate queries and refresh auth
+      await queryClient.invalidateQueries(['user-profile']);
+      await checkAuth?.();
+      
+      toast.success(t({ en: 'Welcome aboard! Your profile is set up.', ar: 'مرحباً بك! تم إعداد ملفك الشخصي.' }));
+      onComplete?.(formData);
+      
     } catch (error) {
-      console.error('Onboarding completion error:', error);
+      console.error('Onboarding error:', error);
+      toast.error(t({ en: 'Failed to save profile. Please try again.', ar: 'فشل في حفظ الملف الشخصي. يرجى المحاولة مرة أخرى.' }));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    if (!user?.id) {
+      onSkip?.();
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ onboarding_completed: true })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      await queryClient.invalidateQueries(['user-profile']);
+      await checkAuth?.();
+      onSkip?.();
+    } catch (error) {
+      console.error('Skip error:', error);
+      toast.error(t({ en: 'Could not skip onboarding', ar: 'تعذر تخطي الإعداد' }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const toggleExpertise = (item) => {
-    const current = data.expertise_areas || [];
+    const current = formData.expertise_areas || [];
     if (current.includes(item)) {
-      setData({ ...data, expertise_areas: current.filter(i => i !== item) });
+      setFormData({ ...formData, expertise_areas: current.filter(i => i !== item) });
     } else if (current.length < 5) {
-      setData({ ...data, expertise_areas: [...current, item] });
+      setFormData({ ...formData, expertise_areas: [...current, item] });
     }
   };
 
-  const toggleInterest = (item) => {
-    const current = data.interests || [];
-    if (current.includes(item)) {
-      setData({ ...data, interests: current.filter(i => i !== item) });
-    } else if (current.length < 5) {
-      setData({ ...data, interests: [...current, item] });
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1: return true;
+      case 2: return formData.full_name?.trim().length > 0;
+      case 3: return formData.selectedPersona !== null;
+      case 4: return true;
+      case 5: return true;
+      default: return true;
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < STEPS.length && canProceed()) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900/95 via-slate-900/95 to-blue-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-3xl mx-auto space-y-6">
-          {/* Header with Skip */}
+          
+          {/* Header */}
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">
-                {t({ en: 'Step', ar: 'الخطوة' })} {step}/{steps.length}
+            <div className="text-white">
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Sparkles className="h-6 w-6 text-purple-400" />
+                {t({ en: 'Saudi Innovates', ar: 'الابتكار السعودي' })}
+              </h1>
+              <p className="text-white/60 text-sm mt-1">
+                {t({ en: 'Personalize your experience', ar: 'خصص تجربتك' })}
               </p>
-              <Progress value={progress} className="h-2 w-48" />
             </div>
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => skipOnboardingMutation.mutate()}
-              disabled={skipOnboardingMutation.isPending}
+              onClick={handleSkip}
+              disabled={isSubmitting}
+              className="text-white/70 hover:text-white hover:bg-white/10"
             >
               <X className="h-4 w-4 mr-1" />
               {t({ en: 'Skip', ar: 'تخطي' })}
             </Button>
           </div>
 
-          {/* Step Indicators */}
-          <div className="flex items-center justify-between overflow-x-auto pb-2 gap-2">
-            {steps.map((s, i) => (
-              <div key={i} className="flex flex-col items-center min-w-[50px]">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-lg transition-all ${
-                  i + 1 === step ? 'bg-primary text-primary-foreground scale-110 shadow-lg' :
-                  i + 1 < step ? 'bg-green-600 text-white' :
-                  'bg-muted text-muted-foreground'
-                }`}>
-                  {i + 1 < step ? <CheckCircle2 className="h-5 w-5" /> : s.icon}
-                </div>
-                <p className="text-xs mt-1 font-medium text-center hidden sm:block">{s.title[language]}</p>
+          {/* Step Progress Card */}
+          <Card className="border-0 bg-white/10 backdrop-blur-sm">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-wrap items-center gap-2 justify-center">
+                {STEPS.map((step, index) => {
+                  const StepIcon = step.icon;
+                  const isActive = currentStep === step.id;
+                  const isComplete = currentStep > step.id;
+                  
+                  return (
+                    <React.Fragment key={step.id}>
+                      <Badge 
+                        variant={isComplete ? 'default' : isActive ? 'default' : 'outline'}
+                        className={`
+                          px-3 py-2 text-sm transition-all cursor-default
+                          ${isActive ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105' : ''}
+                          ${isComplete ? 'bg-green-600 text-white' : ''}
+                          ${!isActive && !isComplete ? 'bg-white/10 text-white/60 border-white/20' : ''}
+                        `}
+                      >
+                        {isComplete ? (
+                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                        ) : (
+                          <StepIcon className="h-4 w-4 mr-1" />
+                        )}
+                        {step.id}. {step.title[language]}
+                      </Badge>
+                      {index < STEPS.length - 1 && (
+                        <ArrowRight className="h-4 w-4 text-white/30 hidden sm:block" />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+              <Progress value={progress} className="h-2 mt-4 bg-white/10" />
+            </CardContent>
+          </Card>
 
           {/* Step Content */}
-          <Card className="shadow-xl border-0 bg-card">
-            <CardContent className="pt-6 pb-8">
-              {/* Step 1: Welcome */}
-              {step === 1 && (
-                <div className="text-center space-y-4 py-8">
-                  <div className="text-7xl mb-4">👋</div>
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+          {/* Step 1: Welcome */}
+          {currentStep === 1 && (
+            <Card className="border-2 border-purple-400/30 bg-gradient-to-br from-purple-50 to-white shadow-2xl">
+              <CardContent className="pt-8 pb-8">
+                <div className="text-center space-y-6">
+                  <div className="text-8xl mb-4">🚀</div>
+                  <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                     {t({ en: 'Welcome to Saudi Innovates!', ar: 'مرحباً في الابتكار السعودي!' })}
                   </h2>
                   <p className="text-muted-foreground max-w-xl mx-auto text-lg">
                     {t({ 
-                      en: "Let's personalize your experience. This will only take a few minutes.",
-                      ar: 'دعنا نخصص تجربتك. سيستغرق هذا بضع دقائق فقط.'
+                      en: "Let's set up your profile to personalize your experience. This will only take a minute.",
+                      ar: 'دعنا نُعد ملفك الشخصي لتخصيص تجربتك. سيستغرق هذا دقيقة واحدة فقط.'
                     })}
                   </p>
-                  <div className="flex flex-wrap justify-center gap-3 pt-4">
-                    <Badge variant="outline" className="px-4 py-2">
-                      <Target className="h-4 w-4 mr-2" />
-                      {t({ en: 'Find Challenges', ar: 'اكتشف التحديات' })}
-                    </Badge>
-                    <Badge variant="outline" className="px-4 py-2">
-                      <Lightbulb className="h-4 w-4 mr-2" />
-                      {t({ en: 'Share Solutions', ar: 'شارك الحلول' })}
-                    </Badge>
-                    <Badge variant="outline" className="px-4 py-2">
-                      <Network className="h-4 w-4 mr-2" />
-                      {t({ en: 'Connect', ar: 'تواصل' })}
-                    </Badge>
+                  <div className="flex flex-wrap justify-center gap-4 pt-4">
+                    <div className="flex items-center gap-2 px-4 py-3 bg-purple-100 rounded-lg">
+                      <Target className="h-5 w-5 text-purple-600" />
+                      <span className="text-sm font-medium">{t({ en: 'Discover Challenges', ar: 'اكتشف التحديات' })}</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-3 bg-blue-100 rounded-lg">
+                      <Lightbulb className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-medium">{t({ en: 'Share Solutions', ar: 'شارك الحلول' })}</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-3 bg-green-100 rounded-lg">
+                      <Network className="h-5 w-5 text-green-600" />
+                      <span className="text-sm font-medium">{t({ en: 'Connect & Collaborate', ar: 'تواصل وتعاون' })}</span>
+                    </div>
                   </div>
                 </div>
-              )}
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Step 2: Profile Basics */}
-              {step === 2 && (
-                <div className="space-y-5">
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold">{t({ en: 'Tell us about yourself', ar: 'أخبرنا عن نفسك' })}</h2>
-                    <p className="text-muted-foreground">{t({ en: 'Basic information to get started', ar: 'معلومات أساسية للبدء' })}</p>
+          {/* Step 2: Profile */}
+          {currentStep === 2 && (
+            <Card className="border-2 border-blue-400/30 bg-gradient-to-br from-blue-50 to-white shadow-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <User className="h-5 w-5 text-blue-600" />
+                  {t({ en: 'Step 2: Tell us about yourself', ar: 'الخطوة 2: أخبرنا عن نفسك' })}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Basic information to get started', ar: 'معلومات أساسية للبدء' })}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                  <Label className="text-base font-semibold text-blue-900 mb-3 block">
+                    {t({ en: 'Full Name *', ar: 'الاسم الكامل *' })}
+                  </Label>
+                  <Input
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    placeholder={t({ en: 'Your full name', ar: 'اسمك الكامل' })}
+                    className="h-12 text-base border-2"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}</Label>
+                    <Input
+                      value={formData.job_title}
+                      onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                      placeholder={t({ en: 'e.g., Innovation Manager', ar: 'مثال: مدير الابتكار' })}
+                    />
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">{t({ en: 'Full Name', ar: 'الاسم الكامل' })} *</label>
-                      <Input
-                        value={data.full_name}
-                        onChange={(e) => setData({ ...data, full_name: e.target.value })}
-                        placeholder={t({ en: 'Your full name', ar: 'اسمك الكامل' })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}</label>
-                      <Input
-                        value={data.job_title}
-                        onChange={(e) => setData({ ...data, job_title: e.target.value })}
-                        placeholder={t({ en: 'e.g., Innovation Manager', ar: 'مثال: مدير الابتكار' })}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">{t({ en: 'Department', ar: 'القسم' })}</label>
-                      <Input
-                        value={data.department}
-                        onChange={(e) => setData({ ...data, department: e.target.value })}
-                        placeholder={t({ en: 'e.g., Urban Development', ar: 'مثال: التطوير الحضري' })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">{t({ en: 'Organization', ar: 'المنظمة' })}</label>
-                      <Input
-                        value={data.organization}
-                        onChange={(e) => setData({ ...data, organization: e.target.value })}
-                        placeholder={t({ en: 'Your organization name', ar: 'اسم منظمتك' })}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">{t({ en: 'Short Bio', ar: 'نبذة قصيرة' })}</label>
-                    <Textarea
-                      value={data.bio}
-                      onChange={(e) => setData({ ...data, bio: e.target.value })}
-                      rows={3}
-                      placeholder={t({ en: 'Tell us a bit about yourself...', ar: 'أخبرنا قليلاً عن نفسك...' })}
+                  <div className="space-y-2">
+                    <Label>{t({ en: 'Organization', ar: 'المنظمة' })}</Label>
+                    <Input
+                      value={formData.organization}
+                      onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                      placeholder={t({ en: 'Your organization name', ar: 'اسم منظمتك' })}
                     />
                   </div>
                 </div>
-              )}
+                
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Short Bio', ar: 'نبذة قصيرة' })}</Label>
+                  <Textarea
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    rows={3}
+                    placeholder={t({ en: 'Tell us a bit about yourself and your interests...', ar: 'أخبرنا قليلاً عن نفسك واهتماماتك...' })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Step 3: Persona Selection */}
-              {step === 3 && (
-                <div className="space-y-5">
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold">{t({ en: 'What best describes you?', ar: 'ما الذي يصفك أفضل؟' })}</h2>
-                    <p className="text-muted-foreground">{t({ en: "This helps us personalize your experience", ar: 'هذا يساعدنا على تخصيص تجربتك' })}</p>
-                  </div>
-                  
-                  <div className="grid gap-3">
-                    {PERSONAS.map((persona) => {
-                      const Icon = persona.icon;
-                      const isSelected = data.selectedPersona === persona.id;
-                      
-                      return (
-                        <button
-                          key={persona.id}
-                          onClick={() => setData({ ...data, selectedPersona: persona.id })}
-                          className={`w-full p-4 rounded-xl border-2 text-start transition-all ${
-                            isSelected 
-                              ? 'border-primary bg-primary/5 shadow-md' 
-                              : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
-                              isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                            }`}>
-                              <Icon className="h-6 w-6" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-semibold">{persona.title[language]}</p>
-                              <p className="text-sm text-muted-foreground">{persona.description[language]}</p>
-                            </div>
-                            {isSelected && <CheckCircle2 className="h-6 w-6 text-primary" />}
+          {/* Step 3: Persona Selection */}
+          {currentStep === 3 && (
+            <Card className="border-2 border-green-400/30 bg-gradient-to-br from-green-50 to-white shadow-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Briefcase className="h-5 w-5 text-green-600" />
+                  {t({ en: 'Step 3: What best describes you?', ar: 'الخطوة 3: ما الذي يصفك أفضل؟' })}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'This helps us personalize your experience', ar: 'هذا يساعدنا على تخصيص تجربتك' })}
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {PERSONAS.map((persona) => {
+                    const Icon = persona.icon;
+                    const isSelected = formData.selectedPersona === persona.id;
+                    
+                    return (
+                      <div
+                        key={persona.id}
+                        onClick={() => setFormData({ ...formData, selectedPersona: persona.id })}
+                        className={`
+                          p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg
+                          ${isSelected 
+                            ? 'border-green-500 bg-green-50 shadow-lg ring-2 ring-green-500/20' 
+                            : 'border-slate-200 hover:border-green-300 bg-white'
+                          }
+                        `}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`
+                            p-3 rounded-lg
+                            ${isSelected ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600'}
+                          `}>
+                            <Icon className="h-6 w-6" />
                           </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Role Request Option */}
-                  {data.selectedPersona && !['viewer', 'citizen'].includes(data.selectedPersona) && (
-                    <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200 dark:bg-blue-950/30 dark:border-blue-800">
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={data.requestRole}
-                          onChange={(e) => setData({ ...data, requestRole: e.target.checked })}
-                          className="mt-1 h-4 w-4 rounded border-gray-300"
-                        />
-                        <div>
-                          <p className="font-medium text-blue-900 dark:text-blue-100">
-                            {t({ en: 'Request official role access', ar: 'طلب صلاحية دور رسمي' })}
-                          </p>
-                          <p className="text-sm text-blue-700 dark:text-blue-300">
-                            {t({ 
-                              en: 'Get additional permissions to submit content and manage projects',
-                              ar: 'احصل على صلاحيات إضافية لإضافة المحتوى وإدارة المشاريع'
-                            })}
-                          </p>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-base">{persona.title[language]}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">{persona.description[language]}</p>
+                          </div>
+                          {isSelected && (
+                            <CheckCircle2 className="h-6 w-6 text-green-600 flex-shrink-0" />
+                          )}
                         </div>
-                      </label>
-                      
-                      {data.requestRole && (
-                        <div className="mt-4">
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Role Request Option */}
+                {formData.selectedPersona && formData.selectedPersona !== 'viewer' && formData.selectedPersona !== 'citizen' && (
+                  <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="requestRole"
+                        checked={formData.requestRole}
+                        onChange={(e) => setFormData({ ...formData, requestRole: e.target.checked })}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <label htmlFor="requestRole" className="font-medium cursor-pointer">
+                          {t({ en: 'Request elevated access for this role', ar: 'طلب صلاحيات مرتفعة لهذا الدور' })}
+                        </label>
+                        <p className="text-sm text-muted-foreground">
+                          {t({ en: 'An admin will review your request', ar: 'سيراجع المسؤول طلبك' })}
+                        </p>
+                        
+                        {formData.requestRole && (
                           <Textarea
-                            value={data.roleJustification}
-                            onChange={(e) => setData({ ...data, roleJustification: e.target.value })}
+                            value={formData.roleJustification}
+                            onChange={(e) => setFormData({ ...formData, roleJustification: e.target.value })}
+                            placeholder={t({ en: 'Please explain why you need this role...', ar: 'يرجى شرح سبب حاجتك لهذا الدور...' })}
+                            className="mt-3"
                             rows={3}
-                            placeholder={t({ 
-                              en: 'Tell us why you need this role...',
-                              ar: 'أخبرنا لماذا تحتاج هذا الدور...'
-                            })}
-                            className="bg-white dark:bg-background"
                           />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Step 4: Expertise & Interests */}
-              {step === 4 && (
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold">{t({ en: 'Your Expertise & Interests', ar: 'خبراتك واهتماماتك' })}</h2>
-                    <p className="text-muted-foreground">{t({ en: 'Select up to 5 in each category', ar: 'اختر حتى 5 في كل فئة' })}</p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-3 block flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      {t({ en: 'Areas of Expertise', ar: 'مجالات الخبرة' })}
-                      <Badge variant="outline" className="ml-auto">{data.expertise_areas?.length || 0}/5</Badge>
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {EXPERTISE_OPTIONS.map((item) => (
-                        <Button
-                          key={item.en}
-                          type="button"
-                          variant={data.expertise_areas?.includes(item.en) ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => toggleExpertise(item.en)}
-                          className="rounded-full"
-                        >
-                          {item[language]}
-                        </Button>
-                      ))}
+                        )}
+                      </div>
                     </div>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-                  <div>
-                    <label className="text-sm font-medium mb-3 block flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      {t({ en: 'Topics You Want to Follow', ar: 'المواضيع التي تريد متابعتها' })}
-                      <Badge variant="outline" className="ml-auto">{data.interests?.length || 0}/5</Badge>
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {EXPERTISE_OPTIONS.map((item) => (
-                        <Button
-                          key={item.en}
-                          type="button"
-                          variant={data.interests?.includes(item.en) ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => toggleInterest(item.en)}
-                          className="rounded-full"
-                        >
-                          {item[language]}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+          {/* Step 4: Expertise */}
+          {currentStep === 4 && (
+            <Card className="border-2 border-orange-400/30 bg-gradient-to-br from-orange-50 to-white shadow-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <GraduationCap className="h-5 w-5 text-orange-600" />
+                  {t({ en: 'Step 4: Your Areas of Expertise', ar: 'الخطوة 4: مجالات خبرتك' })}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Select up to 5 areas (optional)', ar: 'اختر حتى 5 مجالات (اختياري)' })}
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3">
+                  {EXPERTISE_OPTIONS.map((item) => {
+                    const isSelected = formData.expertise_areas?.includes(item.en);
+                    return (
+                      <Badge
+                        key={item.en}
+                        variant={isSelected ? 'default' : 'outline'}
+                        className={`
+                          px-4 py-2 text-sm cursor-pointer transition-all
+                          ${isSelected 
+                            ? 'bg-orange-600 hover:bg-orange-700' 
+                            : 'hover:bg-orange-100 border-orange-200'
+                          }
+                        `}
+                        onClick={() => toggleExpertise(item.en)}
+                      >
+                        {isSelected && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                        {item[language]}
+                      </Badge>
+                    );
+                  })}
                 </div>
-              )}
+                {formData.expertise_areas?.length > 0 && (
+                  <p className="text-sm text-muted-foreground mt-4">
+                    {t({ en: 'Selected', ar: 'المحدد' })}: {formData.expertise_areas.length}/5
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Step 5: Feature Tour */}
-              {step === 5 && selectedPersona && (
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold">{t({ en: 'Features for You', ar: 'مميزات لك' })}</h2>
-                    <p className="text-muted-foreground">
-                      {t({ en: 'Based on your profile, here are the key features', ar: 'بناءً على ملفك، إليك المميزات الرئيسية' })}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4">
-                    {selectedPersona.features.map((featureKey) => {
-                      const feature = FEATURE_INFO[featureKey];
-                      if (!feature) return null;
-                      const Icon = feature.icon;
-                      
-                      return (
-                        <div key={featureKey} className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
-                          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Icon className="h-6 w-6 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-semibold">{feature.title[language]}</p>
-                            <p className="text-sm text-muted-foreground">{feature.desc[language]}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="p-4 bg-green-50 rounded-xl border border-green-200 dark:bg-green-950/30 dark:border-green-800">
-                    <p className="text-sm text-green-800 dark:text-green-200">
-                      💡 {t({ 
-                        en: 'Tip: You can always explore more features from the main navigation menu.',
-                        ar: 'نصيحة: يمكنك دائمًا استكشاف المزيد من المميزات من القائمة الرئيسية.'
-                      })}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 6: Complete */}
-              {step === 6 && (
-                <div className="text-center space-y-4 py-8">
-                  <div className="text-7xl mb-4">🎉</div>
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                    {t({ en: "You're All Set!", ar: 'أنت جاهز!' })}
+          {/* Step 5: Complete */}
+          {currentStep === 5 && (
+            <Card className="border-2 border-purple-400/30 bg-gradient-to-br from-purple-50 via-pink-50 to-white shadow-2xl">
+              <CardContent className="pt-8 pb-8">
+                <div className="text-center space-y-6">
+                  <div className="text-8xl mb-4">🎉</div>
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    {t({ en: "You're all set!", ar: 'أنت جاهز!' })}
                   </h2>
-                  <p className="text-muted-foreground max-w-xl mx-auto text-lg">
+                  <p className="text-muted-foreground max-w-xl mx-auto">
                     {t({ 
-                      en: 'Your profile is ready. Start exploring opportunities!',
-                      ar: 'ملفك جاهز. ابدأ باستكشاف الفرص!'
+                      en: "Click 'Complete Setup' to start exploring the platform.",
+                      ar: 'انقر على "إكمال الإعداد" لبدء استكشاف المنصة.'
                     })}
                   </p>
                   
-                  {data.requestRole && (
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 max-w-md mx-auto mt-6 dark:bg-blue-950/30 dark:border-blue-800">
-                      <Send className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        {t({ 
-                          en: 'Your role request has been submitted and will be reviewed.',
-                          ar: 'تم إرسال طلب الدور وسيتم مراجعته.'
-                        })}
-                      </p>
+                  {/* Summary */}
+                  <div className="bg-white/80 rounded-xl p-6 max-w-md mx-auto text-left space-y-3 border">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t({ en: 'Name', ar: 'الاسم' })}</span>
+                      <span className="font-medium">{formData.full_name || '-'}</span>
                     </div>
-                  )}
+                    {formData.job_title && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{t({ en: 'Title', ar: 'المسمى' })}</span>
+                        <span className="font-medium">{formData.job_title}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t({ en: 'Role', ar: 'الدور' })}</span>
+                      <span className="font-medium">{selectedPersona?.title[language] || '-'}</span>
+                    </div>
+                    {formData.expertise_areas?.length > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{t({ en: 'Expertise', ar: 'الخبرات' })}</span>
+                        <span className="font-medium">{formData.expertise_areas.length} {t({ en: 'areas', ar: 'مجالات' })}</span>
+                      </div>
+                    )}
+                    {formData.requestRole && (
+                      <div className="pt-2 border-t">
+                        <Badge variant="outline" className="text-amber-600 border-amber-300">
+                          {t({ en: 'Role request pending', ar: 'طلب الدور قيد الانتظار' })}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Navigation */}
-          <div className="flex items-center justify-between pb-8">
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-4">
             <Button
               variant="outline"
-              onClick={() => setStep(step - 1)}
-              disabled={step === 1}
-              className="gap-2"
+              onClick={prevStep}
+              disabled={currentStep === 1 || isSubmitting}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
             >
-              <ArrowLeft className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
+              <ArrowLeft className="h-4 w-4 mr-2" />
               {t({ en: 'Back', ar: 'رجوع' })}
             </Button>
             
-            <Button
-              onClick={() => {
-                if (step === steps.length) {
-                  handleComplete();
-                } else {
-                  setStep(step + 1);
-                }
-              }}
-              disabled={
-                (step === 3 && !data.selectedPersona) ||
-                updateProfileMutation.isPending
-              }
-              className="gap-2 min-w-[120px]"
-            >
-              {step === steps.length 
-                ? (updateProfileMutation.isPending 
-                    ? t({ en: 'Saving...', ar: 'جاري الحفظ...' })
-                    : t({ en: 'Get Started', ar: 'ابدأ' }))
-                : t({ en: 'Next', ar: 'التالي' })}
-              {step !== steps.length && <ArrowRight className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />}
-            </Button>
+            {currentStep < STEPS.length ? (
+              <Button
+                onClick={nextStep}
+                disabled={!canProceed() || isSubmitting}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8"
+              >
+                {t({ en: 'Continue', ar: 'متابعة' })}
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleComplete}
+                disabled={isSubmitting}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {t({ en: 'Complete Setup', ar: 'إكمال الإعداد' })}
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>
