@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +15,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function PersonalizedDashboard() {
   const { t, isRTL } = useLanguage();
   const [aiSummary, setAiSummary] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: currentUser } = useQuery({
     queryKey: ['current-user'],
@@ -63,14 +65,12 @@ function PersonalizedDashboard() {
   });
 
   const generateAIDailySummary = async () => {
-    setLoading(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a personalized daily briefing for this user on the Saudi Municipal Innovation Platform:
+    const { success, data } = await invokeAI({
+      prompt: `Generate a personalized daily briefing for this user on the Saudi Municipal Innovation Platform:
 
-User: ${currentUser.full_name}
-Role: ${currentUser.role}
-Department: ${currentUser.department || 'N/A'}
+User: ${currentUser?.full_name}
+Role: ${currentUser?.role}
+Department: ${currentUser?.department || 'N/A'}
 
 Today's Workload:
 - ${myTasks.length} pending tasks
@@ -86,47 +86,46 @@ Provide:
 3. Quick wins (easy tasks to complete)
 4. Important deadlines this week
 5. Opportunities to explore`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            greeting: { type: 'string' },
-            top_priorities: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  description: { type: 'string' },
-                  urgency: { type: 'string' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          greeting: { type: 'string' },
+          top_priorities: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                description: { type: 'string' },
+                urgency: { type: 'string' }
               }
-            },
-            quick_wins: {
-              type: 'array',
-              items: { type: 'string' }
-            },
-            deadlines: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  item: { type: 'string' },
-                  date: { type: 'string' }
-                }
-              }
-            },
-            opportunities: {
-              type: 'array',
-              items: { type: 'string' }
             }
+          },
+          quick_wins: {
+            type: 'array',
+            items: { type: 'string' }
+          },
+          deadlines: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                item: { type: 'string' },
+                date: { type: 'string' }
+              }
+            }
+          },
+          opportunities: {
+            type: 'array',
+            items: { type: 'string' }
           }
         }
-      });
-      setAiSummary(result);
-    } catch (error) {
-      console.error('AI summary failed:', error);
+      }
+    });
+
+    if (success) {
+      setAiSummary(data);
     }
-    setLoading(false);
   };
 
   return (
@@ -149,10 +148,11 @@ Provide:
               <Sparkles className="h-5 w-5 text-purple-600" />
               {t({ en: 'Your Day Ahead', ar: 'يومك القادم' })}
             </CardTitle>
-            <Button onClick={generateAIDailySummary} disabled={loading} size="sm" className="bg-purple-600">
+            <Button onClick={generateAIDailySummary} disabled={loading || !isAvailable} size="sm" className="bg-purple-600">
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t({ en: 'Generate Summary', ar: 'توليد ملخص' })}
             </Button>
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
           </div>
         </CardHeader>
         <CardContent>

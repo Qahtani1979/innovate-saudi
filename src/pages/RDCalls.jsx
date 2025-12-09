@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +45,7 @@ function RDCallsPage() {
   const [viewMode, setViewMode] = useState('grid');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: calls = [], isLoading: callsLoading } = useQuery({
     queryKey: ['rd-calls'],
@@ -88,19 +90,17 @@ function RDCallsPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    setAiLoading(true);
-    try {
-      const callSummary = calls.slice(0, 10).map(c => ({
-        title: c.title_en,
-        type: c.call_type,
-        status: c.status,
-        budget: c.budget_total,
-        proposals: c.proposals_count,
-        themes: c.research_themes
-      }));
+    const callSummary = calls.slice(0, 10).map(c => ({
+      title: c.title_en,
+      type: c.call_type,
+      status: c.status,
+      budget: c.budget_total,
+      proposals: c.proposals_count,
+      themes: c.research_themes
+    }));
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze these R&D calls for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
+    const { success, data } = await invokeAI({
+      prompt: `Analyze these R&D calls for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
 R&D Calls: ${JSON.stringify(callSummary)}
 
@@ -116,22 +116,20 @@ Provide bilingual insights (each item should have both English and Arabic versio
 3. Funding allocation optimization
 4. Emerging research themes to prioritize
 5. Success factors for future calls`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            research_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            proposal_trends: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            funding_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            emerging_themes: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            success_factors: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          research_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          proposal_trends: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          funding_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          emerging_themes: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
+          success_factors: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      });
-      setAiInsights(result);
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
-    } finally {
-      setAiLoading(false);
+      }
+    });
+
+    if (success) {
+      setAiInsights(data);
     }
   };
 
@@ -156,10 +154,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
+          <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={!isAvailable || aiLoading}>
             <Sparkles className="h-4 w-4" />
             {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
           </Button>
+          <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
           <div className="flex items-center gap-1 border rounded-lg p-1">
             <Button
               variant={viewMode === 'grid' ? 'default' : 'ghost'}

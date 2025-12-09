@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +16,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 export default function StrategicExecutionDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiInsights, setAiInsights] = useState(null);
+  const { invokeAI, status, isLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans'],
@@ -81,7 +84,7 @@ export default function StrategicExecutionDashboard() {
       ...calculateThemeProgress(theme)
     })) || [];
 
-    const response = await base44.integrations.Core.InvokeLLM({
+    const { success, data } = await invokeAI({
       prompt: `Analyze strategic plan execution progress and provide actionable insights.
 
 Plan: ${activePlan.name_en}
@@ -115,7 +118,9 @@ Be specific and actionable.`,
       }
     });
 
-    setAiInsights(response);
+    if (success) {
+      setAiInsights(data);
+    }
   };
 
   if (!activePlan) {
@@ -142,10 +147,13 @@ Be specific and actionable.`,
             {language === 'ar' && activePlan.name_ar ? activePlan.name_ar : activePlan.name_en} ({activePlan.start_year}-{activePlan.end_year})
           </p>
         </div>
-        <Button onClick={generateAIInsights} className="bg-gradient-to-r from-purple-600 to-pink-600">
-          <Sparkles className="h-4 w-4 mr-2" />
-          {t({ en: 'AI Insights', ar: 'رؤى الذكاء الاصطناعي' })}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={generateAIInsights} disabled={isLoading || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">
+            <Sparkles className="h-4 w-4 mr-2" />
+            {t({ en: 'AI Insights', ar: 'رؤى الذكاء الاصطناعي' })}
+          </Button>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        </div>
       </div>
 
       {/* Overall Progress */}
