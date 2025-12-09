@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIAgreementGenerator({ partnership }) {
   const { language, t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [agreement, setAgreement] = useState(null);
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateAgreement = async () => {
-    setGenerating(true);
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate bilingual MOU (Memorandum of Understanding) for partnership:
+    const result = await invokeAI({
+      prompt: `Generate bilingual MOU (Memorandum of Understanding) for partnership:
 
 Partnership Type: ${partnership.partnership_type}
 Parties: ${partnership.parties?.map(p => p.organization_name).join(', ')}
@@ -34,22 +32,19 @@ Generate professional MOU including:
 6. IP rights and confidentiality
 7. Term and termination clauses
 8. Signatures section`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            mou_en: { type: "string" },
-            mou_ar: { type: "string" },
-            key_terms: { type: "array", items: { type: "string" } }
-          }
+      response_json_schema: {
+        type: "object",
+        properties: {
+          mou_en: { type: "string" },
+          mou_ar: { type: "string" },
+          key_terms: { type: "array", items: { type: "string" } }
         }
-      });
+      }
+    });
 
-      setAgreement(response);
+    if (result.success) {
+      setAgreement(result.data);
       toast.success(t({ en: 'Agreement generated', ar: 'الاتفاقية مولدة' }));
-    } catch (error) {
-      toast.error(t({ en: 'Generation failed', ar: 'فشل التوليد' }));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -61,8 +56,8 @@ Generate professional MOU including:
             <FileText className="h-5 w-5 text-purple-600" />
             {t({ en: 'AI Agreement Generator', ar: 'مولد الاتفاقيات الذكي' })}
           </CardTitle>
-          <Button onClick={generateAgreement} disabled={generating || agreement} size="sm" className="bg-purple-600">
-            {generating ? (
+          <Button onClick={generateAgreement} disabled={isLoading || !isAvailable || agreement} size="sm" className="bg-purple-600">
+            {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -72,7 +67,9 @@ Generate professional MOU including:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {!agreement && !generating && (
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        
+        {!agreement && !isLoading && (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-purple-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">
