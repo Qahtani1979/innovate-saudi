@@ -20,7 +20,8 @@ const toKebabCase = (str) => str
   .toLowerCase();
 
 // Pages that don't need the layout wrapper
-const noLayoutPages = ['Auth'];
+const noLayoutPages = ['Auth', 'Onboarding', 'StartupOnboarding', 'MunicipalityStaffOnboarding', 
+  'ResearcherOnboarding', 'CitizenOnboarding', 'ExpertOnboarding'];
 
 // Pages that are public (don't require authentication)
 const publicPages = ['Auth', 'PublicPortal', 'PublicSolutionsMarketplace', 'PublicIdeaSubmission', 

@@ -99,10 +99,11 @@ flowchart TB
         - Location
         - Interests
         - Participation preferences"]
-        SW5["ExpertOnboardingWizard
+        SW5["ExpertOnboardingWizard ✅
         - Expertise areas
         - Certifications
-        - Availability"]
+        - Availability & rates
+        - Engagement preferences"]
     end
 
     subgraph DASHBOARDS["📊 Role-Based Landing Pages"]
@@ -414,6 +415,17 @@ flowchart LR
 | ResearcherOnboardingWizard | `src/components/onboarding/ResearcherOnboardingWizard.jsx` | ✅ Complete | Researcher-specific onboarding |
 | CitizenOnboardingWizard | `src/components/onboarding/CitizenOnboardingWizard.jsx` | ✅ Complete | Citizen-specific onboarding |
 | StartupOnboardingWizard | `src/components/startup/StartupOnboardingWizard.jsx` | ✅ Complete | Startup-specific onboarding |
+| ExpertOnboardingWizard | `src/components/onboarding/ExpertOnboardingWizard.jsx` | ✅ Complete | Expert-specific onboarding with CV extraction |
+
+### Pages
+| Page | Path | Status | Description |
+|------|------|--------|-------------|
+| Onboarding | `src/pages/Onboarding.jsx` | ✅ Complete | Main onboarding entry point wrapper |
+| ExpertOnboarding | `src/pages/ExpertOnboarding.jsx` | ✅ Complete | Expert onboarding page |
+| StartupOnboarding | `src/pages/StartupOnboarding.jsx` | ✅ Complete | Startup onboarding page |
+| ResearcherOnboarding | `src/pages/ResearcherOnboarding.jsx` | ✅ Complete | Researcher onboarding page |
+| CitizenOnboarding | `src/pages/CitizenOnboarding.jsx` | ✅ Complete | Citizen onboarding page |
+| MunicipalityStaffOnboarding | `src/pages/MunicipalityStaffOnboarding.jsx` | ✅ Complete | Municipality staff onboarding page |
 
 ### Enhancement Components
 | Component | Path | Status | Description |
