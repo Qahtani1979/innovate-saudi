@@ -74,6 +74,9 @@ function UserProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries(['user-profile']);
       setEditMode(false);
+      setAvatarPreview(null);
+      setCoverPreview(null);
+      setProfileData({});
       toast.success(t({ en: 'Profile updated', ar: 'تم تحديث الملف' }));
     },
     onError: (error) => {
@@ -167,75 +170,149 @@ function UserProfile() {
     updateProfileMutation.mutate({ visibility_settings: { profile_visibility: val } });
   };
 
-  // Reset previews when exiting edit mode
-  useEffect(() => {
-    if (!editMode) {
+  // Initialize edit mode with current profile data
+  const handleEditMode = (entering) => {
+    if (entering) {
+      // Entering edit mode - copy current profile data
+      setProfileData({
+        avatar_url: profile?.avatar_url || null,
+        cover_image_url: profile?.cover_image_url || null,
+        bio_en: profile?.bio_en || profile?.bio || '',
+        bio_ar: profile?.bio_ar || '',
+        linkedin_url: profile?.linkedin_url || '',
+        title_en: profile?.title_en || '',
+        title_ar: profile?.title_ar || '',
+        skills: profile?.skills || [],
+        areas_of_expertise: profile?.expertise_areas || [],
+      });
+      setAvatarPreview(null);
+      setCoverPreview(null);
+    } else {
+      // Exiting edit mode (cancel) - clear everything
+      setProfileData({});
       setAvatarPreview(null);
       setCoverPreview(null);
     }
-  }, [editMode]);
+    setEditMode(entering);
+  };
+
+  // Handle successful save
+  const handleSaveSuccess = () => {
+    setAvatarPreview(null);
+    setCoverPreview(null);
+    setProfileData({});
+  };
+
+  // Delete avatar
+  const handleDeleteAvatar = () => {
+    setAvatarPreview(null);
+    setProfileData({...profileData, avatar_url: null});
+  };
+
+  // Delete cover
+  const handleDeleteCover = () => {
+    setCoverPreview(null);
+    setProfileData({...profileData, cover_image_url: null});
+  };
 
   // Gamification data
   const userLevel = Math.floor((profile?.contribution_count || 0) / 10) + 1;
   const pointsToNextLevel = ((userLevel) * 10) - (profile?.contribution_count || 0);
   const levelProgress = ((profile?.contribution_count || 0) % 10) * 10;
+  const totalBadgesEarned = (profile?.achievement_badges?.length || 0);
 
+  // Badge definitions - earned based on various profile actions
   const badges = [
-    { id: 'first_contribution', name: { en: 'First Steps', ar: 'الخطوات الأولى' }, icon: Star, earned: (profile?.contribution_count || 0) >= 1, color: 'bg-yellow-500' },
-    { id: 'profile_complete', name: { en: 'Complete Profile', ar: 'ملف كامل' }, icon: User, earned: (profile?.profile_completion_percentage || 0) >= 80, color: 'bg-blue-500' },
-    { id: 'skill_master', name: { en: 'Skill Master', ar: 'خبير المهارات' }, icon: Zap, earned: (profile?.skills?.length || 0) >= 5, color: 'bg-purple-500' },
-    { id: 'contributor', name: { en: 'Active Contributor', ar: 'مساهم نشط' }, icon: Trophy, earned: (profile?.contribution_count || 0) >= 10, color: 'bg-green-500' },
+    { id: 'first_contribution', name: { en: 'First Steps', ar: 'الخطوات الأولى' }, icon: Star, earned: (profile?.contribution_count || 0) >= 1, color: 'bg-yellow-500', description: { en: 'Made first contribution', ar: 'قدم أول مساهمة' } },
+    { id: 'profile_complete', name: { en: 'Complete Profile', ar: 'ملف كامل' }, icon: User, earned: (profile?.profile_completion_percentage || 0) >= 80, color: 'bg-blue-500', description: { en: '80%+ profile completion', ar: 'اكتمال الملف 80%+' } },
+    { id: 'skill_master', name: { en: 'Skill Master', ar: 'خبير المهارات' }, icon: Zap, earned: (profile?.skills?.length || 0) >= 5, color: 'bg-purple-500', description: { en: '5+ skills added', ar: '5+ مهارات مضافة' } },
+    { id: 'contributor', name: { en: 'Active Contributor', ar: 'مساهم نشط' }, icon: Trophy, earned: (profile?.contribution_count || 0) >= 10, color: 'bg-green-500', description: { en: '10+ contributions', ar: '10+ مساهمات' } },
+    { id: 'networker', name: { en: 'Networker', ar: 'متصل' }, icon: Globe, earned: !!profile?.linkedin_url, color: 'bg-cyan-500', description: { en: 'LinkedIn connected', ar: 'لينكد إن متصل' } },
+    { id: 'certified', name: { en: 'Certified Pro', ar: 'معتمد' }, icon: Award, earned: (profile?.certifications?.length || 0) >= 1, color: 'bg-orange-500', description: { en: 'Has certifications', ar: 'لديه شهادات' } },
   ];
+
+  const earnedBadgesCount = badges.filter(b => b.earned).length;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Cover & Avatar */}
       <Card className="overflow-hidden">
         <div className="h-48 bg-gradient-to-br from-primary/80 to-primary relative overflow-hidden">
-          {(coverPreview || profile?.cover_image_url) && (
-            <img src={coverPreview || profile?.cover_image_url} alt="Cover" className="w-full h-full object-cover absolute inset-0" />
+          {/* Show preview if uploading, otherwise show current or profileData value */}
+          {(coverPreview !== null ? coverPreview : (editMode ? profileData.cover_image_url : profile?.cover_image_url)) && (
+            <img 
+              src={coverPreview !== null ? coverPreview : (editMode ? profileData.cover_image_url : profile?.cover_image_url)} 
+              alt="Cover" 
+              className="w-full h-full object-cover absolute inset-0" 
+            />
           )}
           {editMode && (
-            <SupabaseFileUploader
-              bucket="avatars"
-              onUpload={(url) => {
-                setCoverPreview(url);
-                setProfileData({...profileData, cover_image_url: url});
-              }}
-              accept="image/*"
-              trigger={
-                <Button size="sm" variant="secondary" className="absolute top-4 right-4">
-                  <Upload className="h-3 w-3 mr-1" />
-                  {t({ en: 'Change Cover', ar: 'تغيير الغلاف' })}
+            <div className="absolute top-4 right-4 flex gap-2">
+              <SupabaseFileUploader
+                bucket="avatars"
+                onUpload={(url) => {
+                  setCoverPreview(url);
+                  setProfileData({...profileData, cover_image_url: url});
+                }}
+                accept="image/*"
+                trigger={
+                  <Button size="sm" variant="secondary">
+                    <Upload className="h-3 w-3 mr-1" />
+                    {t({ en: 'Change Cover', ar: 'تغيير الغلاف' })}
+                  </Button>
+                }
+              />
+              {(coverPreview || profileData.cover_image_url) && (
+                <Button size="sm" variant="destructive" onClick={handleDeleteCover}>
+                  <X className="h-3 w-3 mr-1" />
+                  {t({ en: 'Remove', ar: 'إزالة' })}
                 </Button>
-              }
-            />
+              )}
+            </div>
           )}
         </div>
         <CardContent className="pt-0">
           <div className="flex items-start gap-6 -mt-16 relative z-10">
             <div className="relative">
               <div className="h-32 w-32 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden">
-                {(avatarPreview || profile?.avatar_url) ? (
-                  <img src={avatarPreview || profile?.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                {/* Show preview if uploading, otherwise show current or profileData value */}
+                {(avatarPreview !== null ? avatarPreview : (editMode ? profileData.avatar_url : profile?.avatar_url)) ? (
+                  <img 
+                    src={avatarPreview !== null ? avatarPreview : (editMode ? profileData.avatar_url : profile?.avatar_url)} 
+                    alt="Avatar" 
+                    className="h-full w-full object-cover" 
+                  />
                 ) : (
                   <User className="h-16 w-16 text-muted-foreground" />
                 )}
               </div>
+              {/* Level Badge on Avatar */}
+              {!editMode && userLevel > 1 && (
+                <div className="absolute -top-1 -right-1 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shadow-lg border-2 border-background">
+                  {userLevel}
+                </div>
+              )}
               {editMode && (
-                <SupabaseFileUploader
-                  bucket="avatars"
-                  onUpload={(url) => {
-                    setAvatarPreview(url);
-                    setProfileData({...profileData, avatar_url: url});
-                  }}
-                  accept="image/*"
-                  trigger={
-                    <Button size="sm" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-0">
-                      <Upload className="h-4 w-4" />
+                <div className="absolute -bottom-2 -right-2 flex gap-1">
+                  <SupabaseFileUploader
+                    bucket="avatars"
+                    onUpload={(url) => {
+                      setAvatarPreview(url);
+                      setProfileData({...profileData, avatar_url: url});
+                    }}
+                    accept="image/*"
+                    trigger={
+                      <Button size="sm" className="rounded-full h-8 w-8 p-0">
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
+                  {(avatarPreview || profileData.avatar_url) && (
+                    <Button size="sm" variant="destructive" className="rounded-full h-8 w-8 p-0" onClick={handleDeleteAvatar}>
+                      <X className="h-4 w-4" />
                     </Button>
-                  }
-                />
+                  )}
+                </div>
               )}
             </div>
             <div className="flex-1 mt-4">
@@ -246,12 +323,12 @@ function UserProfile() {
                 </div>
                 <div className="flex gap-2">
                   {editMode && (
-                    <Button onClick={handleSave} className="bg-primary">
+                    <Button onClick={handleSave} className="bg-primary" disabled={updateProfileMutation.isPending}>
                       <Save className="h-4 w-4 mr-2" />
                       {t({ en: 'Save', ar: 'حفظ' })}
                     </Button>
                   )}
-                  <Button onClick={() => setEditMode(!editMode)} variant={editMode ? "outline" : "default"}>
+                  <Button onClick={() => handleEditMode(!editMode)} variant={editMode ? "outline" : "default"}>
                     <Edit className="h-4 w-4 mr-2" />
                     {editMode ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Edit Profile', ar: 'تحرير الملف' })}
                   </Button>
@@ -454,11 +531,17 @@ function UserProfile() {
                     <Trophy className="h-5 w-5 text-primary" />
                     {t({ en: 'Innovation Journey', ar: 'رحلة الابتكار' })}
                   </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {t({ 
+                      en: 'Earn points by completing your profile, adding skills, getting certifications, and contributing to challenges. Points are tracked in your profile.', 
+                      ar: 'اكسب النقاط من خلال إكمال ملفك، إضافة المهارات، الحصول على الشهادات، والمساهمة في التحديات. يتم تتبع النقاط في ملفك الشخصي.' 
+                    })}
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Level Progress */}
                   <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary">
                       <span className="text-2xl font-bold text-primary">{userLevel}</span>
                     </div>
                     <div className="flex-1">
@@ -472,14 +555,15 @@ function UserProfile() {
                   
                   {/* Badges */}
                   <div>
-                    <h4 className="font-medium mb-3">{t({ en: 'Badges Earned', ar: 'الشارات المكتسبة' })}</h4>
+                    <h4 className="font-medium mb-3">{t({ en: 'Badges Earned', ar: 'الشارات المكتسبة' })} ({earnedBadgesCount}/{badges.length})</h4>
                     <div className="flex flex-wrap gap-3">
                       {badges.map((badge) => {
                         const Icon = badge.icon;
                         return (
                           <div 
                             key={badge.id} 
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${badge.earned ? badge.color + ' text-white' : 'bg-muted/50 text-muted-foreground opacity-50'}`}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${badge.earned ? badge.color + ' text-white shadow-md' : 'bg-muted/50 text-muted-foreground opacity-50'}`}
+                            title={badge.description[language]}
                           >
                             <Icon className="h-4 w-4" />
                             <span className="text-sm font-medium">{badge.name[language]}</span>
@@ -542,7 +626,7 @@ function UserProfile() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 {t({ en: 'Skills & Expertise', ar: 'المهارات والخبرة' })}
-                {!editMode && <Button onClick={() => setEditMode(true)} size="sm"><Edit className="h-4 w-4 mr-1" />{t({ en: 'Edit', ar: 'تعديل' })}</Button>}
+                {!editMode && <Button onClick={() => handleEditMode(true)} size="sm"><Edit className="h-4 w-4 mr-1" />{t({ en: 'Edit', ar: 'تعديل' })}</Button>}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -633,7 +717,7 @@ function UserProfile() {
                     {t({ en: 'Add Project', ar: 'إضافة مشروع' })}
                   </Button>
                 )}
-                {!editMode && <Button onClick={() => setEditMode(true)} size="sm"><Edit className="h-4 w-4 mr-1" />{t({ en: 'Edit', ar: 'تعديل' })}</Button>}
+                {!editMode && <Button onClick={() => handleEditMode(true)} size="sm"><Edit className="h-4 w-4 mr-1" />{t({ en: 'Edit', ar: 'تعديل' })}</Button>}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -676,7 +760,7 @@ function UserProfile() {
                     {t({ en: 'Add Training', ar: 'إضافة تدريب' })}
                   </Button>
                 )}
-                {!editMode && <Button onClick={() => setEditMode(true)} size="sm"><Edit className="h-4 w-4 mr-1" />{t({ en: 'Edit', ar: 'تعديل' })}</Button>}
+                {!editMode && <Button onClick={() => handleEditMode(true)} size="sm"><Edit className="h-4 w-4 mr-1" />{t({ en: 'Edit', ar: 'تعديل' })}</Button>}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
