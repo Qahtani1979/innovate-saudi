@@ -2,7 +2,23 @@
 
 ## Overview
 
-The Saudi Innovates platform implements a comprehensive multi-stage onboarding system that guides users through profile setup, role selection, and persona-specific configuration.
+The Saudi Innovates platform implements a comprehensive **2-Phase Onboarding System** that guides users through:
+1. **Phase 1: General Onboarding** - Profile setup, persona selection (all users)
+2. **Phase 2: Specialized Onboarding** - Persona-specific information collection + role request submission
+
+This ensures proper user verification, role-based access control, and a personalized experience for each user type.
+
+---
+
+## Key Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Phase 1** | 6-step OnboardingWizard: welcome, data import, profile, AI assist, persona selection, complete |
+| **Phase 2** | Persona-specific wizard collecting role-relevant information |
+| **Role Request** | Submission to `role_requests` table for admin approval (most personas) |
+| **Auto-Grant** | Citizen role is automatically granted without admin approval |
+| **Manual Assignment** | Admin/Executive roles assigned internally, not self-requested |
 
 ---
 

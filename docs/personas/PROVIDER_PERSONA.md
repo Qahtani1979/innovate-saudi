@@ -14,21 +14,42 @@ Solution Providers are technology companies, startups, and service providers who
 | **Primary Dashboard** | `StartupDashboard` (Note: Code references `ProviderDashboard` which routes to `StartupDashboard`) |
 | **Onboarding Flow** | `StartupOnboarding.jsx` + `StartupOnboardingWizard.jsx` |
 
-## User Journey
+## User Journey (2-Phase Onboarding)
 
 ```mermaid
 graph TD
-    A[Registration] --> B[Email Verification]
-    B --> C[StartupOnboardingWizard]
-    C --> D[Company Profile Creation]
-    D --> E[Solution Registration]
-    E --> F[Matchmaker Application]
-    F --> G[StartupDashboard]
-    G --> H[Opportunity Discovery]
-    H --> I[Proposal Submission]
-    I --> J[Pilot Participation]
-    J --> K[Scaling]
+    subgraph PHASE1["Phase 1: General Onboarding"]
+        A[Registration] --> B[Email Verification]
+        B --> C[OnboardingWizard - 6 Steps]
+        C --> D["Persona Selection:<br/>Choose 'Provider/Startup'"]
+    end
+
+    subgraph PHASE2["Phase 2: Provider Onboarding"]
+        D --> E[StartupOnboardingWizard]
+        E --> F[Step 1: Company Profile<br/>Name, website, founding date]
+        F --> G[Step 2: Solution Categories<br/>Tech capabilities, sectors]
+        G --> H[Step 3: Team & Stage<br/>Size, funding stage]
+        H --> I[Step 4: Experience<br/>Previous deployments]
+        I --> J[Submit Role Request]
+    end
+
+    subgraph APPROVAL["Role Approval"]
+        J --> K[role_requests table]
+        K --> L{Admin Review}
+        L -->|Approved| M[provider role granted]
+        L -->|Rejected| N[Viewer access only]
+    end
+
+    subgraph DASHBOARD["Dashboard Access"]
+        M --> O[StartupDashboard]
+        O --> P[Opportunity Discovery]
+        P --> Q[Proposal Submission]
+        Q --> R[Pilot Participation]
+        R --> S[Scaling]
+    end
 ```
+
+> **Note:** Provider role requires admin approval. Users can browse public content while pending but cannot submit proposals until approved.
 
 ## Permissions
 

@@ -14,21 +14,35 @@ Citizens are public users who submit innovation ideas, vote on proposals, partic
 | **Primary Dashboard** | `CitizenDashboard` |
 | **Onboarding Flow** | `CitizenOnboarding` |
 
-## User Journey
+## User Journey (2-Phase Onboarding)
 
 ```mermaid
 graph TD
-    A[Registration] --> B[Email Verification]
-    B --> C[CitizenOnboarding]
-    C --> D[Location Selection]
-    D --> E[Interest Areas]
-    E --> F[CitizenDashboard]
-    F --> G[Submit Ideas]
-    G --> H[Vote on Ideas]
-    H --> I[Earn Points]
-    I --> J[Track Idea Status]
-    J --> K[Provide Feedback]
+    subgraph PHASE1["Phase 1: General Onboarding"]
+        A[Registration] --> B[Email Verification]
+        B --> C[OnboardingWizard - 6 Steps]
+        C --> D["Persona Selection:<br/>Choose 'Citizen'"]
+    end
+
+    subgraph PHASE2["Phase 2: Citizen Onboarding"]
+        D --> E[CitizenOnboardingWizard]
+        E --> F[Step 1: Location Selection<br/>Region/Municipality/City]
+        F --> G[Step 2: Interest Areas<br/>Categories & Topics]
+        G --> H[Step 3: Notification Preferences]
+        H --> I[Complete - citizen role auto-granted]
+    end
+
+    subgraph DASHBOARD["Dashboard Access"]
+        I --> J[CitizenDashboard]
+        J --> K[Submit Ideas]
+        K --> L[Vote on Ideas]
+        L --> M[Earn Points]
+        M --> N[Track Idea Status]
+        N --> O[Provide Feedback]
+    end
 ```
+
+> **Note:** Citizens do NOT require admin approval. The `citizen` role is automatically granted upon completing Phase 2 onboarding.
 
 ## Permissions
 
