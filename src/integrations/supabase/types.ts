@@ -3797,6 +3797,7 @@ export type Database = {
         Row: {
           active_challenges: number | null
           active_pilots: number | null
+          approved_email_domains: string[] | null
           banner_url: string | null
           city_type: string | null
           completed_pilots: number | null
@@ -3831,6 +3832,7 @@ export type Database = {
         Insert: {
           active_challenges?: number | null
           active_pilots?: number | null
+          approved_email_domains?: string[] | null
           banner_url?: string | null
           city_type?: string | null
           completed_pilots?: number | null
@@ -3865,6 +3867,7 @@ export type Database = {
         Update: {
           active_challenges?: number | null
           active_pilots?: number | null
+          approved_email_domains?: string[] | null
           banner_url?: string | null
           city_type?: string | null
           completed_pilots?: number | null
@@ -9513,6 +9516,8 @@ export type Database = {
         | "ministry"
         | "moderator"
         | "user"
+        | "municipality_coordinator"
+        | "municipality_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -9652,6 +9657,8 @@ export const Constants = {
         "ministry",
         "moderator",
         "user",
+        "municipality_coordinator",
+        "municipality_admin",
       ],
     },
   },
