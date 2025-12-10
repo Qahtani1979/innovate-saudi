@@ -1,6 +1,5 @@
 import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,8 +38,11 @@ function MunicipalityDashboard() {
   const myMunicipalityId = userProfile?.municipality_id;
 
   React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+    // Get user from auth context instead of base44
+    if (authUser) {
+      setUser({ id: authUser.id, email: authUser.email });
+    }
+  }, [authUser]);
 
   // Direct Supabase query for municipality - server-side RLS
   const { data: myMunicipality } = useQuery({

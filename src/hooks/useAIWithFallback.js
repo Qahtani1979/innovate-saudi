@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const AI_STATUS = {
@@ -14,6 +14,17 @@ export const AI_STATUS = {
   RATE_LIMITED: 'rate_limited',
   ERROR: 'error',
   UNAVAILABLE: 'unavailable'
+};
+
+// Get or create session ID for anonymous rate limiting
+const getSessionId = () => {
+  if (typeof window === 'undefined') return null;
+  let sessionId = sessionStorage.getItem('ai_session_id');
+  if (!sessionId) {
+    sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    sessionStorage.setItem('ai_session_id', sessionId);
+  }
+  return sessionId;
 };
 
 export function useAIWithFallback(options = {}) {
@@ -33,11 +44,23 @@ export function useAIWithFallback(options = {}) {
     setError(null);
 
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema,
-        system_prompt
+      const sessionId = getSessionId();
+      
+      const { data: result, error: invokeError } = await supabase.functions.invoke('invoke-llm', {
+        body: { prompt, response_json_schema, system_prompt, session_id: sessionId }
       });
+
+      if (invokeError) {
+        throw invokeError;
+      }
+
+      // Check for error in response body (edge function returns 429 with error in body)
+      if (result?.error && result?.rate_limit_info) {
+        const rateLimitError = new Error(result.error);
+        rateLimitError.status = 429;
+        rateLimitError.rateLimitInfo = result.rate_limit_info;
+        throw rateLimitError;
+      }
 
       // Check if result contains rate limit info
       if (result?.rate_limit_info) {
