@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
+import { toast } from 'sonner';
 import {
   Calendar, Clock, CheckCircle2, Settings, Bell
 } from 'lucide-react';
@@ -21,15 +20,19 @@ export default function AutomatedAuditScheduler() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
 
-  // Fetch audit configuration
+  // Fetch audit configuration from platform_config
   const { data: config } = useQuery({
     queryKey: ['audit-config'],
     queryFn: async () => {
-      const configs = await base44.entities.PlatformConfig.filter({
-        key: 'rbac_audit_schedule'
-      });
+      const { data, error } = await supabase
+        .from('platform_config')
+        .select('*')
+        .eq('key', 'rbac_audit_schedule')
+        .single();
       
-      return configs.length > 0 ? configs[0].value : {
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      return data?.value || {
         enabled: false,
         frequency: 'weekly',
         notify_admins: true,
@@ -40,23 +43,34 @@ export default function AutomatedAuditScheduler() {
 
   const updateConfigMutation = useMutation({
     mutationFn: async (newConfig) => {
-      const existing = await base44.entities.PlatformConfig.filter({
-        key: 'rbac_audit_schedule'
-      });
+      const key = 'rbac_audit_schedule';
+      
+      // Check if exists
+      const { data: existing } = await supabase
+        .from('platform_config')
+        .select('id')
+        .eq('key', key)
+        .single();
 
-      if (existing.length > 0) {
-        return base44.entities.PlatformConfig.update(existing[0].id, {
-          value: newConfig
-        });
+      if (existing) {
+        const { error } = await supabase
+          .from('platform_config')
+          .update({ value: newConfig })
+          .eq('id', existing.id);
+        if (error) throw error;
       } else {
-        return base44.entities.PlatformConfig.create({
-          key: 'rbac_audit_schedule',
-          value: newConfig
-        });
+        const { error } = await supabase
+          .from('platform_config')
+          .insert({ key, value: newConfig });
+        if (error) throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['audit-config']);
+      toast.success(t({ en: 'Settings updated', ar: 'تم تحديث الإعدادات' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
@@ -71,9 +85,9 @@ export default function AutomatedAuditScheduler() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-slate-600" />
+            <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">
               {t({ en: 'Enable Automated Audits', ar: 'تفعيل التدقيقات الآلية' })}
             </span>
@@ -118,9 +132,9 @@ export default function AutomatedAuditScheduler() {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
-                <Bell className="h-4 w-4 text-slate-600" />
+                <Bell className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">
                   {t({ en: 'Notify Admins', ar: 'إشعار المسؤولين' })}
                 </span>
@@ -133,9 +147,9 @@ export default function AutomatedAuditScheduler() {
               />
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
-                <Settings className="h-4 w-4 text-slate-600" />
+                <Settings className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">
                   {t({ en: 'Auto-cleanup Stale Roles', ar: 'تنظيف الأدوار القديمة تلقائياً' })}
                 </span>

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
+import { toast } from 'sonner';
 import {
-  Copy, Save, Trash2, Plus, Shield, FileText, Users
+  Copy, Save, Trash2, Plus, Shield, FileText
 } from 'lucide-react';
 import {
   Dialog,
@@ -24,47 +25,75 @@ export default function PermissionTemplateManager() {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
 
-  // Fetch permission templates (stored in PlatformConfig)
+  // Fetch permission templates from platform_config
   const { data: templates = [] } = useQuery({
     queryKey: ['permission-templates'],
     queryFn: async () => {
-      const configs = await base44.entities.PlatformConfig.filter({
-        key: { $regex: '^permission_template_' }
-      });
-      return configs.map(c => ({ id: c.id, ...c.value }));
+      const { data, error } = await supabase
+        .from('platform_config')
+        .select('*')
+        .like('key', 'permission_template_%');
+      
+      if (error) throw error;
+      return (data || []).map(c => ({ id: c.id, ...c.value }));
     }
   });
 
   const createTemplateMutation = useMutation({
     mutationFn: async (template) => {
-      return base44.entities.PlatformConfig.create({
-        key: `permission_template_${Date.now()}`,
-        value: template
-      });
+      const { error } = await supabase
+        .from('platform_config')
+        .insert({
+          key: `permission_template_${Date.now()}`,
+          value: template
+        });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['permission-templates']);
       setShowDialog(false);
       setEditingTemplate(null);
+      toast.success(t({ en: 'Template created', ar: 'تم إنشاء القالب' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
   const updateTemplateMutation = useMutation({
     mutationFn: async ({ id, template }) => {
-      return base44.entities.PlatformConfig.update(id, {
-        value: template
-      });
+      const { error } = await supabase
+        .from('platform_config')
+        .update({ value: template })
+        .eq('id', id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['permission-templates']);
       setShowDialog(false);
       setEditingTemplate(null);
+      toast.success(t({ en: 'Template updated', ar: 'تم تحديث القالب' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
   const deleteTemplateMutation = useMutation({
-    mutationFn: (id) => base44.entities.PlatformConfig.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(['permission-templates'])
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('platform_config')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['permission-templates']);
+      toast.success(t({ en: 'Template deleted', ar: 'تم حذف القالب' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    }
   });
 
   const handleSave = () => {
@@ -164,7 +193,7 @@ export default function PermissionTemplateManager() {
                   <Button variant="outline" onClick={() => setShowDialog(false)}>
                     {t({ en: 'Cancel', ar: 'إلغاء' })}
                   </Button>
-                  <Button onClick={handleSave}>
+                  <Button onClick={handleSave} disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}>
                     <Save className="h-4 w-4 mr-2" />
                     {t({ en: 'Save', ar: 'حفظ' })}
                   </Button>
@@ -188,7 +217,7 @@ export default function PermissionTemplateManager() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-slate-600">{template.description}</p>
+              <p className="text-sm text-muted-foreground">{template.description}</p>
               
               <div className="flex flex-wrap gap-1">
                 {template.permissions?.slice(0, 5).map((perm, i) => (
@@ -239,8 +268,8 @@ export default function PermissionTemplateManager() {
       {templates.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <Shield className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600">
+            <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">
               {t({ en: 'No permission templates yet. Create one to get started.', ar: 'لا توجد قوالب صلاحيات بعد. قم بإنشاء واحد للبدء.' })}
             </p>
           </CardContent>
