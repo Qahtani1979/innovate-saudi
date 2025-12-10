@@ -387,10 +387,11 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = () => hasRole('admin');
 
   // Create a combined user object that includes profile data
+  // IMPORTANT: Preserve auth user's id (don't let profile.id override it)
   const currentUser = user ? {
-    ...user,
     ...userProfile,
-    email: user.email,
+    ...user,
+    profile_id: userProfile?.id, // Keep profile ID separately if needed
     roles: userRoles,
   } : null;
 
