@@ -78,7 +78,7 @@ const PERSONAS = [
     borderColor: 'border-blue-200',
     title: { en: 'Solution Provider / Startup', ar: 'مزود حلول / شركة ناشئة' },
     description: { en: 'I have solutions to offer and want to find opportunities', ar: 'لدي حلول أريد تقديمها وأبحث عن فرص' },
-    landingPage: 'ProviderDashboard',
+    landingPage: 'StartupDashboard',
     requiresApproval: true
   },
   {
@@ -100,7 +100,7 @@ const PERSONAS = [
     borderColor: 'border-amber-200',
     title: { en: 'Expert / Evaluator', ar: 'خبير / مُقيّم' },
     description: { en: 'I provide expert evaluation and advisory services', ar: 'أقدم خدمات التقييم والاستشارات المتخصصة' },
-    landingPage: 'ExpertDashboard',
+    landingPage: 'ExpertAssignmentQueue',
     requiresApproval: true
   },
   {
@@ -402,9 +402,9 @@ Text to translate: ${sourceText}`,
   const getLandingPage = () => {
     if (userRoles?.length > 0) {
       const role = userRoles[0]?.role;
-      if (role === 'admin') return 'AdminDashboard';
+      if (role === 'admin') return 'AdminPortal';
       if (role === 'municipality_admin' || role === 'municipality_staff') return 'MunicipalityDashboard';
-      if (role === 'provider') return 'ProviderDashboard';
+      if (role === 'provider') return 'StartupDashboard';
       if (role === 'researcher') return 'ResearcherDashboard';
       if (role === 'citizen') return 'CitizenDashboard';
     }

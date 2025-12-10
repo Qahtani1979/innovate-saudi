@@ -47,7 +47,7 @@ export default function Onboarding() {
       
       // Admin takes priority
       if (role === 'admin') {
-        navigate(createPageUrl('AdminDashboard'));
+        navigate(createPageUrl('AdminPortal'));
       } 
       // Municipality staff - check both role and persona
       else if (role === 'municipality_admin' || role === 'municipality_staff' || persona === 'municipality_staff') {
@@ -55,8 +55,8 @@ export default function Onboarding() {
       } 
       // Solution provider / startup
       else if (role === 'provider' || persona === 'provider') {
-        navigate(createPageUrl('ProviderDashboard'));
-      } 
+        navigate(createPageUrl('StartupDashboard'));
+      }
       // Researcher / academic
       else if (role === 'researcher' || persona === 'researcher') {
         navigate(createPageUrl('ResearcherDashboard'));

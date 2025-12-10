@@ -485,13 +485,12 @@ const calculateProfileCompletion = (data) => {
 | Persona | Specialized Wizard | Landing Dashboard | Notes |
 |---------|-------------------|-------------------|-------|
 | `municipality_staff` | MunicipalityStaffOnboardingWizard | MunicipalityDashboard | |
-| `provider` | StartupOnboardingWizard | StartupDashboard | Code references `ProviderDashboard` which is an alias |
+| `provider` | StartupOnboardingWizard | StartupDashboard | |
 | `researcher` | ResearcherOnboardingWizard | ResearcherDashboard | Also see `AcademiaDashboard` for R&D-focused view |
 | `citizen` | CitizenOnboardingWizard | CitizenDashboard | |
-| `expert` | ExpertOnboardingWizard | ExpertAssignmentQueue | Code references `ExpertDashboard` (needs fix) → routes to ExpertRegistry |
+| `expert` | ExpertOnboardingWizard | ExpertAssignmentQueue | |
 | `viewer` | None (skip) | Home | |
-
-> **Note:** The OnboardingWizard.jsx has `landingPage: 'ExpertDashboard'` which doesn't exist as a page. The actual expert landing should be `ExpertAssignmentQueue` or `ExpertRegistry`.
+| `admin` | None | AdminPortal | Manual assignment only |
 
 ---
 
