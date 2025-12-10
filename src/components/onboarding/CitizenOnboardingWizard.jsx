@@ -16,7 +16,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import { 
   Users, ArrowRight, ArrowLeft, CheckCircle2, 
-  MapPin, Heart, Bell, Loader2, Sparkles, Award
+  MapPin, Heart, Bell, Loader2, Sparkles, Award, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -49,7 +49,7 @@ const PARTICIPATION_TYPES = [
 ];
 
 export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
-  const { language, isRTL, t } = useLanguage();
+  const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -205,13 +205,25 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
           
-          {/* Header */}
+          {/* Header with Language Toggle */}
           <div className="text-center text-white">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Users className="h-8 w-8 text-orange-400" />
-              <h1 className="text-2xl font-bold">
-                {t({ en: 'Join the Community', ar: 'انضم إلى المجتمع' })}
-              </h1>
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-24" />
+              <div className="flex items-center gap-2">
+                <Users className="h-8 w-8 text-orange-400" />
+                <h1 className="text-2xl font-bold">
+                  {t({ en: 'Join the Community', ar: 'انضم إلى المجتمع' })}
+                </h1>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleLanguage}
+                className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
+              >
+                <Globe className="h-4 w-4 mr-1" />
+                {language === 'en' ? 'عربي' : 'English'}
+              </Button>
             </div>
             <p className="text-white/60">
               {t({ en: 'Shape the future of your city', ar: 'شارك في تشكيل مستقبل مدينتك' })}

@@ -17,7 +17,7 @@ import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
 import { 
   FlaskConical, ArrowRight, ArrowLeft, CheckCircle2, 
-  GraduationCap, BookOpen, Link2, Loader2, Sparkles, Upload, FileText
+  GraduationCap, BookOpen, Link2, Loader2, Sparkles, Upload, FileText, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -51,7 +51,7 @@ const COLLABORATION_TYPES = [
 ];
 
 export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
-  const { language, isRTL, t } = useLanguage();
+  const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -241,13 +241,25 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
           
-          {/* Header */}
+          {/* Header with Language Toggle */}
           <div className="text-center text-white">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <FlaskConical className="h-8 w-8 text-green-400" />
-              <h1 className="text-2xl font-bold">
-                {t({ en: 'Researcher Profile Setup', ar: 'إعداد ملف الباحث' })}
-              </h1>
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-24" />
+              <div className="flex items-center gap-2">
+                <FlaskConical className="h-8 w-8 text-green-400" />
+                <h1 className="text-2xl font-bold">
+                  {t({ en: 'Researcher Profile Setup', ar: 'إعداد ملف الباحث' })}
+                </h1>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleLanguage}
+                className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
+              >
+                <Globe className="h-4 w-4 mr-1" />
+                {language === 'en' ? 'عربي' : 'English'}
+              </Button>
             </div>
             <p className="text-white/60">
               {t({ en: 'Connect with municipalities for impactful research', ar: 'تواصل مع البلديات للبحوث المؤثرة' })}

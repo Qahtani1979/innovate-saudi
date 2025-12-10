@@ -18,7 +18,7 @@ import FileUploader from '../FileUploader';
 import { 
   CheckCircle2, ArrowRight, ArrowLeft, Sparkles, 
   GraduationCap, Award, Briefcase, FileText, 
-  Loader2, Upload, Star, Clock, Building2
+  Loader2, Upload, Star, Clock, Building2, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,7 +46,7 @@ const STEPS = [
 ];
 
 export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
-  const { language, isRTL, t } = useLanguage();
+  const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
   const navigate = useNavigate();
   
@@ -623,15 +623,34 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-background p-4 md:p-8" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-2xl mx-auto">
+        {/* Header with Language Toggle */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Award className="h-6 w-6 text-amber-600" />
+            {t({ en: 'Expert Profile Setup', ar: 'إعداد ملف الخبير' })}
+          </h1>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={toggleLanguage}
+              className="font-medium"
+            >
+              <Globe className="h-4 w-4 mr-1" />
+              {language === 'en' ? 'عربي' : 'English'}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSkip}>
+              {t({ en: 'Skip', ar: 'تخطي' })}
+            </Button>
+          </div>
+        </div>
+
         {/* Progress */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium">
               {t({ en: `Step ${currentStep} of ${STEPS.length}`, ar: `الخطوة ${currentStep} من ${STEPS.length}` })}
             </span>
-            <Button variant="ghost" size="sm" onClick={handleSkip}>
-              {t({ en: 'Skip for now', ar: 'تخطي الآن' })}
-            </Button>
           </div>
           <Progress value={progress} className="h-2" />
           
