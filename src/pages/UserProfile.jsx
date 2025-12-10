@@ -256,6 +256,7 @@ function UserProfile() {
                   </div>
                 </CardContent>
               </Card>
+              <Card>
                 <CardHeader>
                   <CardTitle>{t({ en: 'Profile Fields (UserProfile)', ar: 'حقول الملف' })}</CardTitle>
                 </CardHeader>
