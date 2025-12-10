@@ -51,17 +51,6 @@ function MyApprovals() {
     enabled: !!user
   });
 
-  const { data: pendingExpertEvaluations = [] } = useQuery({
-    queryKey: ['pending-expert-evaluations', user?.email],
-    queryFn: async () => {
-      const evaluations = await base44.entities.ExpertEvaluation.list();
-      return evaluations.filter(e => 
-        e.recommendation === 'approve_with_conditions' && 
-        !e.conditions_reviewed
-      );
-    },
-    enabled: !!user
-  });
 
   const approveMutation = useMutation({
     mutationFn: async ({ type, id, data }) => {

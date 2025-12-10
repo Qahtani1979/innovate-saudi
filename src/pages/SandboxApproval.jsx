@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,18 @@ export default function SandboxApproval() {
 
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes'],
-    queryFn: () => base44.entities.Sandbox.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('sandboxes').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: applications = [] } = useQuery({
     queryKey: ['sandbox-applications'],
-    queryFn: () => base44.entities.SandboxApplication.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('sandbox_applications').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const pendingSandboxes = sandboxes.filter(s => s.status === 'inactive');
@@ -34,7 +40,10 @@ export default function SandboxApproval() {
   const pendingApplications = applications.filter(a => a.status === 'submitted' || a.status === 'under_review');
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.Sandbox.update(id, { status }),
+    mutationFn: async ({ id, status }) => {
+      const { error } = await supabase.from('sandboxes').update({ status }).eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['sandboxes']);
       toast.success(t({ en: 'Sandbox status updated', ar: 'تم تحديث حالة منطقة الاختبار' }));
@@ -44,14 +53,14 @@ export default function SandboxApproval() {
   const applicationMutation = useMutation({
     mutationFn: async ({ id, approved }) => {
       const app = applications.find(a => a.id === id);
-      await base44.entities.SandboxApplication.update(id, {
+      const { error } = await supabase.from('sandbox_applications').update({
         status: approved ? 'approved' : 'rejected',
         approved_by: 'admin@gdisb.sa',
         approval_date: new Date().toISOString()
-      });
+      }).eq('id', id);
+      if (error) throw error;
 
-      // Notify applicant
-      await base44.entities.Notification.create({
+      await supabase.from('notifications').insert({
         title: approved ? 'Sandbox Application Approved' : 'Sandbox Application Rejected',
         body: `Your application for ${app.project_title} has been ${approved ? 'approved' : 'rejected'}.`,
         notification_type: 'alert',
@@ -221,7 +230,6 @@ export default function SandboxApproval() {
           </div>
         )}
 
-        {/* Pending Applications */}
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">
             {t({ en: 'Pending Project Applications', ar: 'طلبات المشاريع المعلقة' })}

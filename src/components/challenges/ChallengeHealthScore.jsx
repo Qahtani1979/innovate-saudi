@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -56,8 +55,8 @@ export default function ChallengeHealthScore({ challenge }) {
 
   const calculateStakeholderEngagement = () => {
     const hasStakeholders = challenge.stakeholders?.length > 0;
-    const recentActivity = challenge.updated_date && 
-      (new Date() - new Date(challenge.updated_date)) < 14 * 24 * 60 * 60 * 1000;
+    const recentActivity = challenge.updated_at && 
+      (new Date() - new Date(challenge.updated_at)) < 14 * 24 * 60 * 60 * 1000;
     
     let score = 50;
     if (hasStakeholders) score += 30;
@@ -78,8 +77,8 @@ export default function ChallengeHealthScore({ challenge }) {
     
     const baseScore = statuses[challenge.status] || 20;
     
-    const daysSinceUpdate = challenge.updated_date ? 
-      Math.floor((new Date() - new Date(challenge.updated_date)) / (1000 * 60 * 60 * 24)) : 999;
+    const daysSinceUpdate = challenge.updated_at ? 
+      Math.floor((new Date() - new Date(challenge.updated_at)) / (1000 * 60 * 60 * 24)) : 999;
     
     const recencyPenalty = daysSinceUpdate > 30 ? -20 : daysSinceUpdate > 14 ? -10 : 0;
     

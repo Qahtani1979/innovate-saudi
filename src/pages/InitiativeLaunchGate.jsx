@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,22 +17,37 @@ export default function InitiativeLaunchGate() {
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('programs').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['rd-calls'],
-    queryFn: () => base44.entities.RDCall.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('rd_calls').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const launchMutation = useMutation({
-    mutationFn: ({ entity_type, entity_id, action, comments }) => 
-      base44.functions.invoke('initiativeLaunch', { action, entity_type, entity_id, comments }),
+    mutationFn: async ({ entity_type, entity_id, action, comments }) => {
+      const table = entity_type === 'pilot' ? 'pilots' : entity_type === 'program' ? 'programs' : 'rd_calls';
+      const { error } = await supabase.from(table).update({ 
+        launch_status: action === 'approve' ? 'approved' : 'rejected',
+        launch_comments: comments
+      }).eq('id', entity_id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilots']);
       queryClient.invalidateQueries(['programs']);

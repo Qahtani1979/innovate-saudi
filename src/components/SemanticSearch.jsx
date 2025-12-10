@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,16 +20,20 @@ export default function SemanticSearch({ placeholder }) {
     
     setSearching(true);
     try {
-      // Fetch all entities
-      const [challenges, pilots, solutions, rdProjects, programs] = await Promise.all([
-        base44.entities.Challenge.list(),
-        base44.entities.Pilot.list(),
-        base44.entities.Solution.list(),
-        base44.entities.RDProject.list(),
-        base44.entities.Program.list()
+      const [challengesRes, pilotsRes, solutionsRes, rdProjectsRes, programsRes] = await Promise.all([
+        supabase.from('challenges').select('*').eq('is_deleted', false),
+        supabase.from('pilots').select('*').eq('is_deleted', false),
+        supabase.from('solutions').select('*').eq('is_deleted', false),
+        supabase.from('rd_projects').select('*').eq('is_deleted', false),
+        supabase.from('programs').select('*').eq('is_deleted', false)
       ]);
 
-      // Simple semantic matching (in production, would use embeddings)
+      const challenges = challengesRes.data || [];
+      const pilots = pilotsRes.data || [];
+      const solutions = solutionsRes.data || [];
+      const rdProjects = rdProjectsRes.data || [];
+      const programs = programsRes.data || [];
+
       const searchResults = [];
       
       challenges.forEach(c => {
@@ -108,10 +112,8 @@ export default function SemanticSearch({ placeholder }) {
     const queryLower = query.toLowerCase();
     const textLower = text.toLowerCase();
     
-    // Exact match
     if (textLower.includes(queryLower)) return 1.0;
     
-    // Word overlap
     const queryWords = queryLower.split(/\s+/);
     const textWords = textLower.split(/\s+/);
     const overlap = queryWords.filter(w => textWords.some(tw => tw.includes(w) || w.includes(tw)));
