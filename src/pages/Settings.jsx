@@ -306,19 +306,34 @@ function Settings() {
                 />
               </div>
               
-              {/* Language Section */}
+              {/* Language Preference Section */}
               <div className="pt-4 border-t">
-                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Globe className="h-4 w-4 text-primary" />
-                    <p className="text-sm font-medium">
-                      {t({ en: 'Current Language: English', ar: 'اللغة الحالية: العربية' })}
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {t({ en: 'Use the globe icon in the top bar to switch languages', ar: 'استخدم أيقونة الكرة الأرضية في الشريط العلوي لتبديل اللغات' })}
-                  </p>
-                </div>
+                <label className="text-sm font-medium mb-2 block">{t({ en: 'Preferred Language', ar: 'اللغة المفضلة' })}</label>
+                <p className="text-xs text-muted-foreground mb-2">{t({ en: 'Used for UI, notifications, emails and SMS', ar: 'تُستخدم للواجهة والإشعارات والرسائل' })}</p>
+                <Select 
+                  value={profile?.preferred_language || 'en'} 
+                  onValueChange={(v) => {
+                    updateProfileMutation.mutate({ preferred_language: v });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">
+                      <div className="flex items-center gap-2">
+                        <span>🇬🇧</span>
+                        <span>English</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="ar">
+                      <div className="flex items-center gap-2">
+                        <span>🇸🇦</span>
+                        <span>العربية</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="pt-4 border-t">
