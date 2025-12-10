@@ -14,6 +14,23 @@ export default function AIConnectionsSuggester({ currentUser }) {
   const [suggestions, setSuggestions] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
+  // Early return if no user data
+  if (!currentUser) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Sparkles className="h-5 w-5 text-purple-600" />
+            {t({ en: 'AI Connection Suggestions', ar: 'اقتراحات الاتصال بالذكاء الاصطناعي' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-slate-500">{t({ en: 'Loading profile...', ar: 'جاري تحميل الملف...' })}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const { data: allUsers = [] } = useQuery({
     queryKey: ['all-users'],
     queryFn: () => base44.entities.User.list()
