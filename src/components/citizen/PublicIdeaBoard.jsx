@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,16 +16,17 @@ export default function PublicIdeaBoard({ municipalityId }) {
   const { data: ideas = [] } = useQuery({
     queryKey: ['citizen-ideas', municipalityId, filter],
     queryFn: async () => {
-      const all = await base44.entities.CitizenIdea.list();
-      let filtered = municipalityId ? all.filter(i => i.municipality_id === municipalityId) : all;
-      
-      if (filter === 'trending') {
-        filtered.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
-      } else if (filter === 'recent') {
-        filtered.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      let query = supabase.from('citizen_ideas').select('*');
+      if (municipalityId) {
+        query = query.eq('municipality_id', municipalityId);
       }
-      
-      return filtered.slice(0, 20);
+      if (filter === 'trending') {
+        query = query.order('votes_count', { ascending: false });
+      } else if (filter === 'recent') {
+        query = query.order('created_at', { ascending: false });
+      }
+      const { data } = await query.limit(20);
+      return data || [];
     },
     initialData: []
   });
@@ -33,9 +34,9 @@ export default function PublicIdeaBoard({ municipalityId }) {
   const voteMutation = useMutation({
     mutationFn: async (ideaId) => {
       const idea = ideas.find(i => i.id === ideaId);
-      return base44.entities.CitizenIdea.update(ideaId, {
-        vote_count: (idea.vote_count || 0) + 1
-      });
+      return supabase.from('citizen_ideas').update({
+        votes_count: (idea.votes_count || 0) + 1
+      }).eq('id', ideaId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['citizen-ideas']);
@@ -88,7 +89,7 @@ export default function PublicIdeaBoard({ municipalityId }) {
                   className="flex flex-col h-auto py-2"
                 >
                   <ThumbsUp className="h-4 w-4 mb-1" />
-                  <span className="text-xs font-bold">{idea.vote_count || 0}</span>
+                  <span className="text-xs font-bold">{idea.votes_count || 0}</span>
                 </Button>
                 {i < 3 && filter === 'trending' && (
                   <Badge className="bg-amber-500">#{i + 1}</Badge>
@@ -119,7 +120,7 @@ export default function PublicIdeaBoard({ municipalityId }) {
                     {idea.comment_count || 0} comments
                   </div>
                   <div>
-                    {new Date(idea.created_date).toLocaleDateString()}
+                    {new Date(idea.created_at).toLocaleDateString()}
                   </div>
                   {idea.status === 'converted_to_challenge' && (
                     <Badge className="bg-green-600 text-xs">

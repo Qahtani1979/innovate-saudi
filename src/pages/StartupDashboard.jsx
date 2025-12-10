@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,19 +31,14 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function StartupDashboard() {
   const { language, isRTL, t } = useLanguage();
-  const { user: authUser, userProfile } = useAuth();
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user, userProfile } = useAuth();
 
   // Find startup's organization profile
   const { data: myOrganization } = useQuery({
     queryKey: ['my-organization', user?.email],
     queryFn: async () => {
-      const orgs = await base44.entities.Organization.list();
-      return orgs.find(o => 
+      const { data } = await supabase.from('organizations').select('*');
+      return data?.find(o => 
         o.contact_email === user?.email || 
         o.primary_contact_name === user?.full_name
       );
@@ -55,9 +50,8 @@ function StartupDashboard() {
   const { data: openChallenges = [] } = useQuery({
     queryKey: ['published-challenges'],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => 
-        c.is_published && 
+      const { data } = await supabase.from('challenges').select('*').eq('is_published', true);
+      return data?.filter(c =>
         ['approved', 'in_treatment'].includes(c.status)
       );
     }

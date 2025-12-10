@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,8 @@ export default function IdeaVotingBoard() {
   const { data: ideas = [] } = useQuery({
     queryKey: ['citizen-ideas'],
     queryFn: async () => {
-      const all = await base44.entities.CitizenFeedback.list();
-      return all
-        .filter(f => f.feedback_type === 'suggestion')
-        .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
+      const { data } = await supabase.from('citizen_feedback').select('*').eq('feedback_type', 'suggestion').order('rating', { ascending: false });
+      return data || [];
     }
   });
 
@@ -36,7 +34,7 @@ export default function IdeaVotingBoard() {
                 <div className="text-center">
                   <Button size="sm" variant="outline" className="w-12 h-12 flex flex-col">
                     <ThumbsUp className="h-4 w-4 text-green-600" />
-                    <span className="text-xs font-bold">{idea.vote_count || 0}</span>
+                    <span className="text-xs font-bold">{idea.rating || 0}</span>
                   </Button>
                 </div>
                 
@@ -44,22 +42,22 @@ export default function IdeaVotingBoard() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h4 className="font-semibold text-slate-900">
-                        {idea.content.split('\n')[0].replace('IDEA: ', '')}
+                        {idea.feedback_text?.split('\n')[0] || 'Untitled'}
                       </h4>
                       <p className="text-sm text-slate-600 mt-1 line-clamp-2">
-                        {idea.content.split('\n')[2]}
+                        {idea.feedback_text}
                       </p>
                     </div>
                     <Badge className="ml-2">#{idx + 1}</Badge>
                   </div>
 
                   <div className="flex items-center gap-3 text-xs text-slate-500">
-                    {!idea.is_anonymous && idea.citizen_name && (
-                      <span>By {idea.citizen_name}</span>
+                    {!idea.is_anonymous && idea.user_email && (
+                      <span>By {idea.user_email}</span>
                     )}
                     <span className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
-                      {idea.location || 'Not specified'}
+                      {idea.category || 'Not specified'}
                     </span>
                   </div>
                 </div>

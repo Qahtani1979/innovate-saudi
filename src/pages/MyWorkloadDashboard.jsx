@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
@@ -21,17 +22,13 @@ function MyWorkloadDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiPriorities, setAiPriorities] = useState(null);
   const { invokeAI, status, isLoading: loadingAI, rateLimitInfo, isAvailable } = useAIWithFallback();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: myChallenges = [] } = useQuery({
     queryKey: ['my-challenges', user?.email],
     queryFn: async () => {
-      const challenges = await base44.entities.Challenge.list();
-      return challenges.filter(c => c.created_by === user?.email || c.reviewer === user?.email);
+      const { data } = await supabase.from('challenges').select('*');
+      return data?.filter(c => c.created_by === user?.email || c.reviewer === user?.email) || [];
     },
     enabled: !!user
   });
@@ -39,8 +36,8 @@ function MyWorkloadDashboard() {
   const { data: myPilots = [] } = useQuery({
     queryKey: ['my-pilots', user?.email],
     queryFn: async () => {
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.filter(p => p.created_by === user?.email || p.team?.some(t => t.email === user?.email));
+      const { data } = await supabase.from('pilots').select('*');
+      return data?.filter(p => p.created_by === user?.email || p.team?.some(t => t.email === user?.email)) || [];
     },
     enabled: !!user
   });
@@ -48,8 +45,8 @@ function MyWorkloadDashboard() {
   const { data: myTasks = [] } = useQuery({
     queryKey: ['my-tasks', user?.email],
     queryFn: async () => {
-      const tasks = await base44.entities.Task.list();
-      return tasks.filter(t => t.assigned_to === user?.email || t.created_by === user?.email);
+      const { data } = await supabase.from('tasks').select('*');
+      return data?.filter(t => t.assigned_to === user?.email || t.created_by === user?.email) || [];
     },
     enabled: !!user
   });
@@ -57,8 +54,8 @@ function MyWorkloadDashboard() {
   const { data: myExpertAssignments = [] } = useQuery({
     queryKey: ['my-expert-assignments', user?.email],
     queryFn: async () => {
-      const assignments = await base44.entities.ExpertAssignment.list();
-      return assignments.filter(a => a.expert_email === user?.email);
+      const { data } = await supabase.from('expert_assignments').select('*');
+      return data?.filter(a => a.expert_email === user?.email) || [];
     },
     enabled: !!user
   });

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import BulkUserImport from '../components/access/BulkUserImport';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,35 +43,46 @@ function UserManagementHub() {
   const [formData, setFormData] = useState({});
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showChecklist, setShowChecklist] = useState(true);
-
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user: currentUser } = useAuth();
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
-    queryFn: () => base44.entities.Role?.list() || []
+    queryFn: async () => {
+      const { data } = await supabase.from('roles').select('*');
+      return data || [];
+    }
   });
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
-    queryFn: () => base44.entities.Team?.list() || []
+    queryFn: async () => {
+      const { data } = await supabase.from('teams').select('*');
+      return data || [];
+    }
   });
 
   const { data: invitations = [] } = useQuery({
     queryKey: ['invitations'],
-    queryFn: () => base44.entities.UserInvitation?.list() || []
+    queryFn: async () => {
+      const { data } = await supabase.from('user_invitations').select('*');
+      return data || [];
+    }
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('user_profiles').select('*');
+      return data || [];
+    }
   });
 
   const { data: activities = [] } = useQuery({
     queryKey: ['user-activities'],
-    queryFn: () => base44.entities.UserActivity.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase.from('user_activities').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
   });
 
   useEffect(() => {
@@ -80,10 +92,9 @@ function UserManagementHub() {
   }, [currentUser]);
 
   const createMutation = useMutation({
-    mutationFn: ({ entity, data }) => {
-      if (entity === 'Role') return base44.entities.Role.create(data);
-      if (entity === 'Team') return base44.entities.Team.create(data);
-      if (entity === 'UserInvitation') return base44.entities.UserInvitation.create(data);
+    mutationFn: async ({ entity, data }) => {
+      const tableName = entity === 'Role' ? 'roles' : entity === 'Team' ? 'teams' : 'user_invitations';
+      return supabase.from(tableName).insert(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries();
@@ -94,10 +105,9 @@ function UserManagementHub() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ entity, id, data }) => {
-      if (entity === 'Role') return base44.entities.Role.update(id, data);
-      if (entity === 'Team') return base44.entities.Team.update(id, data);
-      if (entity === 'User') return base44.entities.User.update(id, data);
+    mutationFn: async ({ entity, id, data }) => {
+      const tableName = entity === 'Role' ? 'roles' : entity === 'Team' ? 'teams' : 'user_profiles';
+      return supabase.from(tableName).update(data).eq('id', id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries();
@@ -110,9 +120,8 @@ function UserManagementHub() {
 
   const deleteMutation = useMutation({
     mutationFn: async ({ entity, id }) => {
-      if (entity === 'Role') return base44.entities.Role.delete(id);
-      if (entity === 'Team') return base44.entities.Team.delete(id);
-      if (entity === 'UserInvitation') return base44.entities.UserInvitation.delete(id);
+      const tableName = entity === 'Role' ? 'roles' : entity === 'Team' ? 'teams' : 'user_invitations';
+      return supabase.from(tableName).delete().eq('id', id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries();

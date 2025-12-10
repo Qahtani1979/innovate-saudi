@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,49 +24,45 @@ export default function ProviderPortfolioDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [selectedSolutions, setSelectedSolutions] = useState([]);
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: myOrg } = useQuery({
-    queryKey: ['my-organization'],
+    queryKey: ['my-organization', user?.email],
     queryFn: async () => {
-      const orgs = await base44.entities.Organization.list();
-      return orgs.find(o => o.created_by === user?.email || o.contact_email === user?.email);
+      const { data } = await supabase.from('organizations').select('*');
+      return data?.find(o => o.created_by === user?.email || o.contact_email === user?.email);
     },
     enabled: !!user
   });
 
   const { data: solutions = [], isLoading } = useQuery({
-    queryKey: ['my-solutions'],
+    queryKey: ['my-solutions', user?.email, myOrg?.id],
     queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => 
+      const { data } = await supabase.from('solutions').select('*');
+      return data?.filter(s => 
         s.created_by === user?.email || 
         (myOrg && s.provider_id === myOrg.id)
-      );
+      ) || [];
     },
     enabled: !!user
   });
 
   const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-solutions'],
+    queryKey: ['pilots-for-solutions', solutions.map(s => s.id)],
     queryFn: async () => {
       const solutionIds = solutions.map(s => s.id);
-      const allPilots = await base44.entities.Pilot.list();
-      return allPilots.filter(p => solutionIds.includes(p.solution_id));
+      const { data } = await supabase.from('pilots').select('*');
+      return data?.filter(p => solutionIds.includes(p.solution_id)) || [];
     },
     enabled: solutions.length > 0
   });
 
   const { data: reviews = [] } = useQuery({
-    queryKey: ['reviews-for-solutions'],
+    queryKey: ['reviews-for-solutions', solutions.map(s => s.id)],
     queryFn: async () => {
       const solutionIds = solutions.map(s => s.id);
-      const allReviews = await base44.entities.SolutionReview.list();
-      return allReviews.filter(r => solutionIds.includes(r.solution_id));
+      const { data } = await supabase.from('solution_reviews').select('*');
+      return data?.filter(r => solutionIds.includes(r.solution_id)) || [];
     },
     enabled: solutions.length > 0
   });
@@ -81,11 +78,11 @@ export default function ProviderPortfolioDashboard() {
   const bulkDeprecateMutation = useMutation({
     mutationFn: async (solutionIds) => {
       for (const id of solutionIds) {
-        await base44.entities.Solution.update(id, {
+        await supabase.from('solutions').update({
           workflow_stage: 'deprecated',
           is_published: false,
           is_archived: true
-        });
+        }).eq('id', id);
       }
     },
     onSuccess: () => {

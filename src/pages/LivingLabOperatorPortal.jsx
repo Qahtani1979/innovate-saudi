@@ -1,5 +1,6 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,44 +17,40 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function LivingLabOperatorPortal() {
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   // RLS: Labs I manage
   const { data: myLabs = [] } = useQuery({
     queryKey: ['my-labs', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.LivingLab.list();
-      return all.filter(l => 
+      const { data } = await supabase.from('living_labs').select('*');
+      return data?.filter(l => 
         l.director_email === user?.email || 
         l.manager_email === user?.email ||
         l.created_by === user?.email
-      );
+      ) || [];
     },
     enabled: !!user
   });
 
   // Projects in my labs
   const { data: labProjects = [] } = useQuery({
-    queryKey: ['my-lab-projects', myLabs.length],
+    queryKey: ['my-lab-projects', myLabs.map(l => l.id)],
     queryFn: async () => {
       const myLabIds = myLabs.map(l => l.id);
-      const all = await base44.entities.RDProject.list();
-      return all.filter(p => myLabIds.includes(p.living_lab_id));
+      const { data } = await supabase.from('rd_projects').select('*');
+      return data?.filter(p => myLabIds.includes(p.living_lab_id)) || [];
     },
     enabled: myLabs.length > 0
   });
 
   // Bookings for my labs
   const { data: bookings = [] } = useQuery({
-    queryKey: ['my-lab-bookings', myLabs.length],
+    queryKey: ['my-lab-bookings', myLabs.map(l => l.id)],
     queryFn: async () => {
       const myLabIds = myLabs.map(l => l.id);
-      const all = await base44.entities.LivingLabBooking.list();
-      return all.filter(b => myLabIds.includes(b.living_lab_id));
+      const { data } = await supabase.from('living_lab_bookings').select('*');
+      return data?.filter(b => myLabIds.includes(b.living_lab_id)) || [];
     },
     enabled: myLabs.length > 0
   });
