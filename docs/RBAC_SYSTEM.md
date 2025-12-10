@@ -750,6 +750,8 @@ function MyComponent() {
 - Permission gates and protected page HOC
 - Bulk role assignment components
 - Role hierarchy visualization
+- **Migrated to Supabase** (RoleRequestCenter, RoleRequestApprovalQueue, RoleRequestDialog)
+- **Removed duplicate page** (RoleRequestApprovalQueue page - functionality in RoleRequestCenter)
 
 📋 **Recommended Next Steps:**
 1. Implement `MenuRBACCoverageReport` page
@@ -758,3 +760,47 @@ function MyComponent() {
 4. Add Redis/edge caching for high-traffic scenarios
 5. Add audit logging for all permission changes
 6. Create role wizard for guided role creation
+
+---
+
+## Page Structure (Updated)
+
+```
+RBAC System Pages
+═════════════════
+
+/rbac-dashboard              ← Main Hub (analytics, charts, quick links)
+     │
+     ├── /rbac-audit-report        ← Automated security audits
+     ├── /role-request-center      ← Request roles + Admin approval queue
+     ├── /role-permission-manager  ← Manage role permissions
+     ├── /delegation-manager       ← Temporary permission delegations
+     ├── /rbac-coverage-report     ← Documentation & coverage
+     └── /team-management          ← Team-based access control
+
+❌ REMOVED: /role-request-approval-queue (merged into RoleRequestCenter)
+⚠️  EMPTY:  /menu-rbac-coverage-report (needs implementation)
+⚠️  EMPTY:  /rbac-comprehensive-audit (needs implementation)
+```
+
+### Data Sources (After Migration)
+
+| Component | Data Source | Status |
+|-----------|-------------|--------|
+| RoleRequestDialog | Supabase | ✅ Native |
+| RoleRequestApprovalQueue | Supabase | ✅ Migrated |
+| RoleRequestCenter | Supabase | ✅ Migrated |
+| RBACDashboard | base44 | ⚠️ Needs migration |
+| RBACAuditReport | base44 | ⚠️ Needs migration |
+
+### Database Tables Used
+
+| Table | Purpose |
+|-------|---------|
+| `role_requests` | Store role request submissions |
+| `roles` | Define functional roles |
+| `permissions` | Define permission codes |
+| `user_functional_roles` | Assign roles to users |
+| `role_permissions` | Link roles to permissions |
+| `delegation_rules` | Time-bound permission delegations |
+| `user_profiles` | User profile data with user_email |
