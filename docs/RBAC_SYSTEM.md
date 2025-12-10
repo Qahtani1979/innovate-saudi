@@ -548,3 +548,213 @@ SELECT refresh_user_permissions_cache();
 1. If using materialized view, refresh it: `SELECT refresh_user_permissions_cache();`
 2. Clear React Query cache: `queryClient.invalidateQueries(['user-permissions'])`
 3. Check for `is_active = false` on assignments
+
+---
+
+## UI Pages & Components
+
+### Admin Pages
+
+| Page | File | Purpose |
+|------|------|---------|
+| **RoleRequestApprovalQueue** | `src/pages/RoleRequestApprovalQueue.jsx` | Admin queue to approve/reject pending role requests |
+| **RoleRequestCenter** | `src/pages/RoleRequestCenter.jsx` | User hub for requesting new roles + admin approval view |
+| **MenuRBACCoverageReport** | `src/pages/MenuRBACCoverageReport.jsx` | RBAC coverage analysis *(empty - needs implementation)* |
+| **RBACComprehensiveAudit** | `src/pages/RBACComprehensiveAudit.jsx` | Full RBAC audit report *(empty - needs implementation)* |
+
+### Management Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **UserRoleManager** | `src/components/UserRoleManager.jsx` | Assign/manage special roles for individual users |
+| **PermissionMatrix** | `src/components/PermissionMatrix.jsx` | Toggle permissions per role/entity/action grid |
+| **RoleHierarchyBuilder** | `src/components/access/RoleHierarchyBuilder.jsx` | Visualize and manage parent-child role hierarchy |
+| **RoleTemplateLibrary** | `src/components/access/RoleTemplateLibrary.jsx` | Apply predefined role templates |
+| **BulkRoleAssignment** | `src/components/access/BulkRoleAssignment.jsx` | Assign one role to multiple users at once |
+| **BulkRoleActions** | `src/components/access/BulkRoleActions.jsx` | Add/remove permissions from multiple roles |
+| **RolePermissionMatrix** | `src/components/access/RolePermissionMatrix.jsx` | View permissions by role or by permission category |
+
+### Permission Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **PermissionGate** | `src/components/permissions/PermissionGate.jsx` | Conditionally render UI based on permissions |
+| **ProtectedPage** | `src/components/permissions/ProtectedPage.jsx` | HOC to protect entire pages |
+| **PermissionSelector** | `src/components/permissions/PermissionSelector.jsx` | Multi-select UI for choosing permissions |
+| **usePermissions** | `src/components/permissions/usePermissions.jsx` | Hook for permission/role checking |
+
+---
+
+## Role Request Workflow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant RoleRequestCenter
+    participant RoleRequest Table
+    participant Admin
+    participant RoleRequestApprovalQueue
+    participant user_roles Table
+
+    User->>RoleRequestCenter: Opens page
+    RoleRequestCenter->>User: Shows available roles (not already assigned)
+    User->>RoleRequestCenter: Clicks "Request Role"
+    RoleRequestCenter->>RoleRequest Table: INSERT (status: pending)
+    
+    Admin->>RoleRequestApprovalQueue: Views pending requests
+    RoleRequestApprovalQueue->>RoleRequest Table: SELECT WHERE status='pending'
+    
+    alt Approve
+        Admin->>RoleRequest Table: UPDATE status='approved'
+        Admin->>user_roles Table: INSERT new role for user
+    else Reject
+        Admin->>RoleRequest Table: UPDATE status='rejected'
+    end
+    
+    User->>RoleRequestCenter: Sees updated request status
+```
+
+### Role Request States
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Awaiting admin review |
+| `approved` | Role granted, user_roles updated |
+| `rejected` | Request denied by admin |
+
+---
+
+## Component Usage Examples
+
+### Protecting a Page (HOC)
+
+```jsx
+import ProtectedPage from '@/components/permissions/ProtectedPage';
+
+function AdminDashboard() {
+  return <div>Admin content</div>;
+}
+
+// Require admin role
+export default ProtectedPage(AdminDashboard, { requireAdmin: true });
+
+// Require specific permissions
+export default ProtectedPage(AdminDashboard, { 
+  requiredPermissions: ['users_manage', 'roles_assign'] 
+});
+
+// Require specific roles
+export default ProtectedPage(AdminDashboard, { 
+  requiredRoles: ['super_admin', 'hr_manager'] 
+});
+```
+
+### Conditional Rendering (Gate)
+
+```jsx
+import PermissionGate from '@/components/permissions/PermissionGate';
+
+function Dashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      
+      {/* Show only to admins */}
+      <PermissionGate requireAdmin>
+        <AdminPanel />
+      </PermissionGate>
+      
+      {/* Show if user has ANY of these permissions */}
+      <PermissionGate permissions={['edit_users', 'view_users']} anyPermission>
+        <UserList />
+      </PermissionGate>
+      
+      {/* Show if user has ALL permissions */}
+      <PermissionGate permissions={['delete_records', 'audit_access']}>
+        <DangerZone />
+      </PermissionGate>
+    </div>
+  );
+}
+```
+
+### Using the Hook Directly
+
+```jsx
+import { usePermissions } from '@/components/permissions/usePermissions';
+
+function MyComponent() {
+  const { 
+    user,
+    isAdmin,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    hasRole,
+    hasFunctionalRole,
+    canAccessEntity
+  } = usePermissions();
+
+  // Check single permission
+  if (hasPermission('users_delete')) { /* ... */ }
+
+  // Check any of multiple permissions
+  if (hasAnyPermission(['users_edit', 'users_view'])) { /* ... */ }
+
+  // Check entity access (generates "challenges_edit")
+  if (canAccessEntity('challenges', 'edit')) { /* ... */ }
+
+  // Check functional role
+  if (hasFunctionalRole('Challenge Manager')) { /* ... */ }
+}
+```
+
+---
+
+## Empty Pages - Implementation Suggestions
+
+### 1. MenuRBACCoverageReport
+
+**Purpose:** Analyze which menu items/routes are protected by RBAC
+
+**Suggested Features:**
+- List all routes/menu items in the app
+- Show which permissions/roles protect each route
+- Highlight unprotected routes (security gaps)
+- Coverage percentage metric
+- Export report as PDF/CSV
+
+### 2. RBACComprehensiveAudit
+
+**Purpose:** Full audit of the RBAC system health
+
+**Suggested Features:**
+- Users without any roles assigned
+- Orphaned permissions (not assigned to any role)
+- Roles without any users
+- Unused roles (defined but never assigned)
+- Permission conflicts or duplicates
+- Recent role/permission changes audit trail
+- Expired assignments cleanup suggestions
+
+---
+
+## Implementation Status Summary
+
+✅ **Completed:**
+- Junction tables (`user_functional_roles`, `role_permissions`)
+- Security definer functions (`has_permission`, `get_user_permissions`, `get_user_functional_roles`)
+- `usePermissions` hook using RPC calls
+- RLS policies on all permission tables
+- Role request workflow (request → approve/reject)
+- Permission gates and protected page HOC
+- Bulk role assignment components
+- Role hierarchy visualization
+
+📋 **Recommended Next Steps:**
+1. Implement `MenuRBACCoverageReport` page
+2. Implement `RBACComprehensiveAudit` page
+3. Add materialized view for performance optimization
+4. Add Redis/edge caching for high-traffic scenarios
+5. Add audit logging for all permission changes
+6. Create role wizard for guided role creation
