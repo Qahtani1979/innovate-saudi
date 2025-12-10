@@ -316,6 +316,94 @@ flowchart LR
 | 17 | Old password no longer works | ⬜ |
 | 18 | New password works for login | ⬜ |
 
+### 5.9 Account Management (Settings Page)
+
+| Component | File Path | Purpose |
+|-----------|-----------|---------|
+| Settings Page | `src/pages/Settings.jsx` | Account settings hub |
+| ChangePasswordDialog | `src/components/auth/ChangePasswordDialog.jsx` | Change password for logged-in users |
+| DeleteAccountDialog | `src/components/auth/DeleteAccountDialog.jsx` | Account deletion with confirmations |
+| SessionsDialog | `src/components/auth/SessionsDialog.jsx` | View sessions & sign out devices |
+| LoginHistoryDialog | `src/components/auth/LoginHistoryDialog.jsx` | View login history |
+
+### 5.10 Change Password (Logged-in User)
+
+| Step | Check | Status |
+|------|-------|--------|
+| 1 | Change password button in Settings | ✅ |
+| 2 | Opens ChangePasswordDialog | ✅ |
+| 3 | Current password field (optional) | ⬜ |
+| 4 | New password field present | ✅ |
+| 5 | Confirm password field present | ✅ |
+| 6 | Password strength indicator | ✅ |
+| 7 | Password validation (8+ chars) | ✅ |
+| 8 | Uppercase requirement indicator | ✅ |
+| 9 | Lowercase requirement indicator | ✅ |
+| 10 | Number requirement indicator | ✅ |
+| 11 | Passwords must match validation | ✅ |
+| 12 | Submit calls updatePassword() | ✅ |
+| 13 | Success toast shown | ✅ |
+| 14 | Dialog closes on success | ✅ |
+| 15 | Error handling for weak password | ✅ |
+| 16 | Bilingual support (EN/AR) | ✅ |
+| 17 | RTL support for Arabic | ✅ |
+
+### 5.11 Delete Account
+
+| Step | Check | Status |
+|------|-------|--------|
+| 1 | Delete account button in Settings | ✅ |
+| 2 | Opens DeleteAccountDialog | ✅ |
+| 3 | Warning message displayed | ✅ |
+| 4 | Consequences explained | ✅ |
+| 5 | Confirmation checkbox required | ✅ |
+| 6 | Email confirmation required | ✅ |
+| 7 | Type "DELETE" confirmation | ✅ |
+| 8 | Delete button disabled until confirmed | ✅ |
+| 9 | Submit deletes account | ✅ |
+| 10 | Success message shown | ✅ |
+| 11 | Redirect to home page | ✅ |
+| 12 | Session cleared | ✅ |
+| 13 | Bilingual support (EN/AR) | ✅ |
+| 14 | RTL support for Arabic | ✅ |
+
+### 5.12 View Active Sessions
+
+| Step | Check | Status |
+|------|-------|--------|
+| 1 | View sessions button in Settings | ✅ |
+| 2 | Opens SessionsDialog | ✅ |
+| 3 | Current session highlighted | ✅ |
+| 4 | Session device info displayed | ✅ |
+| 5 | Session browser info | ✅ |
+| 6 | Session IP address | ✅ |
+| 7 | Session last active time | ✅ |
+| 8 | Sign out individual session | ✅ |
+| 9 | Sign out all other devices | ✅ |
+| 10 | Current session protected | ✅ |
+| 11 | Empty state handling | ✅ |
+| 12 | Loading state | ✅ |
+| 13 | Bilingual support (EN/AR) | ✅ |
+| 14 | RTL support for Arabic | ✅ |
+
+### 5.13 Login History
+
+| Step | Check | Status |
+|------|-------|--------|
+| 1 | Login history button in Settings | ✅ |
+| 2 | Opens LoginHistoryDialog | ✅ |
+| 3 | Recent logins displayed | ✅ |
+| 4 | Login timestamp | ✅ |
+| 5 | Login device/browser | ✅ |
+| 6 | Login IP address | ✅ |
+| 7 | Login location (if available) | ✅ |
+| 8 | Success/failure status | ✅ |
+| 9 | Pagination for history | ⬜ |
+| 10 | Empty state handling | ✅ |
+| 11 | Loading state | ✅ |
+| 12 | Bilingual support (EN/AR) | ✅ |
+| 13 | RTL support for Arabic | ✅ |
+
 ---
 
 ## 6. Access Control & Permissions Validation
@@ -911,6 +999,10 @@ Then:
 | Logout Flow | 20 | 0 | 0 | 20 |
 | Password Reset | 14 | 0 | 0 | 14 |
 | Password Recovery | 18 | 0 | 0 | 18 |
+| **Change Password** | **17** | **16** | **0** | **1** |
+| **Delete Account** | **14** | **14** | **0** | **0** |
+| **View Sessions** | **14** | **14** | **0** | **0** |
+| **Login History** | **13** | **12** | **0** | **1** |
 | Access Control | 15 | 0 | 0 | 15 |
 | Role & Routing | 22 | 0 | 0 | 22 |
 | Theme & Style | 30 | 0 | 0 | 30 |
@@ -919,7 +1011,7 @@ Then:
 | Security | 20 | 0 | 0 | 20 |
 | Accessibility | 22 | 0 | 0 | 22 |
 | Performance | 7 | 0 | 0 | 7 |
-| **TOTAL** | **326** | **0** | **0** | **326** |
+| **TOTAL** | **384** | **56** | **0** | **328** |
 
 ---
 
@@ -929,13 +1021,18 @@ Then:
 # Pages
 src/pages/Auth.jsx
 src/pages/Home.jsx
-src/pages/ResetPassword.jsx (if exists)
+src/pages/ResetPassword.jsx
+src/pages/Settings.jsx
 
 # Auth Components
 src/lib/AuthContext.jsx
 src/api/supabaseAuth.js
 src/components/ProtectedRoute.jsx
 src/components/UserMenu.jsx
+src/components/auth/ChangePasswordDialog.jsx
+src/components/auth/DeleteAccountDialog.jsx
+src/components/auth/SessionsDialog.jsx
+src/components/auth/LoginHistoryDialog.jsx
 
 # i18n
 src/context/LanguageContext.jsx
