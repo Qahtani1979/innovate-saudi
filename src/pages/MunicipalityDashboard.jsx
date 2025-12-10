@@ -1,4 +1,5 @@
 import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,106 +35,162 @@ function MunicipalityDashboard() {
   
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
+  // Use userProfile.municipality_id for direct Supabase queries (server-side RLS)
+  const myMunicipalityId = userProfile?.municipality_id;
+
   React.useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
+  // Direct Supabase query for municipality - server-side RLS
   const { data: myMunicipality } = useQuery({
-    queryKey: ['my-municipality', user?.email],
+    queryKey: ['my-municipality', myMunicipalityId],
     queryFn: async () => {
-      const all = await base44.entities.Municipality.list();
-      return all.find(m => m.contact_email === user?.email);
+      if (!myMunicipalityId) return null;
+      const { data, error } = await supabase
+        .from('municipalities')
+        .select('*')
+        .eq('id', myMunicipalityId)
+        .single();
+      if (error) throw error;
+      return data;
     },
-    enabled: !!user
+    enabled: !!myMunicipalityId
   });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['municipality-challenges', user?.email, myMunicipality?.id],
+  // Direct Supabase query for challenges - server-side RLS
+  const { data: challenges = [], error: challengesError } = useQuery({
+    queryKey: ['municipality-challenges', myMunicipalityId, user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      // RLS: Municipality users see challenges from their municipality OR created/owned by them
-      if (myMunicipality) {
-        return all.filter(c => 
-          c.municipality_id === myMunicipality.id || 
-          c.created_by === user?.email || 
-          c.challenge_owner_email === user?.email
-        );
+      if (!myMunicipalityId && !user?.email) return [];
+      
+      // Build query with OR conditions for municipality OR ownership
+      let query = supabase
+        .from('challenges')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+      
+      if (myMunicipalityId) {
+        // If user has municipality, get challenges from their municipality
+        const { data, error } = await query.eq('municipality_id', myMunicipalityId);
+        if (error) throw error;
+        return data || [];
+      } else if (user?.email) {
+        // Fallback: get only challenges they own/created
+        const { data, error } = await query.or(`created_by.eq.${user.email},challenge_owner_email.eq.${user.email}`);
+        if (error) throw error;
+        return data || [];
       }
-      return all.filter(c => c.created_by === user?.email || c.challenge_owner_email === user?.email);
+      return [];
     },
-    enabled: !!user
+    enabled: !!myMunicipalityId || !!user?.email
   });
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['municipality-pilots', user?.email, myMunicipality?.id],
+  // Direct Supabase query for pilots - server-side RLS
+  const { data: pilots = [], error: pilotsError } = useQuery({
+    queryKey: ['municipality-pilots', myMunicipalityId, user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      // RLS: Municipality users see pilots from their municipality OR involving them
-      if (myMunicipality) {
-        return all.filter(p => 
-          p.municipality_id === myMunicipality.id || 
-          p.created_by === user?.email ||
-          p.team?.some(t => t.email === user?.email)
-        );
+      if (!myMunicipalityId && !user?.email) return [];
+      
+      let query = supabase
+        .from('pilots')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+      
+      if (myMunicipalityId) {
+        const { data, error } = await query.eq('municipality_id', myMunicipalityId);
+        if (error) throw error;
+        return data || [];
+      } else if (user?.email) {
+        const { data, error } = await query.eq('created_by', user.email);
+        if (error) throw error;
+        return data || [];
       }
-      return all.filter(p => p.created_by === user?.email);
+      return [];
     },
-    enabled: !!user
+    enabled: !!myMunicipalityId || !!user?.email
   });
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['my-rd-projects', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.RDProject.list();
-      return all.filter(p => p.created_by === user?.email);
+      if (!user?.email) return [];
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .eq('created_by', user.email)
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const { data: ownedChallenges = [] } = useQuery({
     queryKey: ['owned-challenges', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.challenge_owner_email === user?.email);
+      if (!user?.email) return [];
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('challenge_owner_email', user.email)
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
+  // Escalated challenges - server-side filtering
   const { data: escalatedChallenges = [] } = useQuery({
-    queryKey: ['escalated-challenges', myMunicipality?.id],
+    queryKey: ['escalated-challenges', myMunicipalityId],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => 
-        c.escalation_level > 0 && 
-        (c.municipality_id === myMunicipality?.id || c.created_by === user?.email)
-      );
+      if (!myMunicipalityId) return [];
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('municipality_id', myMunicipalityId)
+        .gt('escalation_level', 0)
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user && !!myMunicipality
+    enabled: !!myMunicipalityId
   });
 
+  // Pending reviews - server-side filtering
   const { data: pendingReviews = [] } = useQuery({
     queryKey: ['pending-reviews', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => 
-        c.status === 'submitted' && 
-        c.review_assigned_to === user?.email
-      );
+      if (!user?.email) return [];
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('status', 'submitted')
+        .eq('review_assigned_to', user.email)
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
+  // Citizen ideas - server-side filtering (approved ideas not yet converted)
   const { data: citizenIdeas = [] } = useQuery({
-    queryKey: ['municipality-citizen-ideas', myMunicipality?.id],
+    queryKey: ['municipality-citizen-ideas', myMunicipalityId],
     queryFn: async () => {
-      const all = await base44.entities.CitizenIdea.list();
-      return all.filter(i => 
-        i.municipality_id === myMunicipality?.id && 
-        i.status === 'approved' &&
-        !i.converted_challenge_id
-      );
+      if (!myMunicipalityId) return [];
+      const { data, error } = await supabase
+        .from('citizen_ideas')
+        .select('*')
+        .eq('municipality_id', myMunicipalityId)
+        .eq('status', 'approved'); // 'approved' status means not yet converted
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!myMunicipality
+    enabled: !!myMunicipalityId
   });
 
   const { data: matchedSolutions = [] } = useQuery({
