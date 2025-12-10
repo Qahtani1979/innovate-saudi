@@ -52,7 +52,7 @@ const COLLABORATION_TYPES = [
 
 export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t } = useLanguage();
-  const { user, checkAuth } = useAuth();
+  const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   
@@ -73,6 +73,21 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
     publications_count: 0,
     bio: ''
   });
+
+  // Pre-populate from Stage 1 onboarding data
+  React.useEffect(() => {
+    if (userProfile) {
+      setFormData(prev => ({
+        ...prev,
+        cv_url: userProfile.cv_url || prev.cv_url,
+        institution: userProfile.organization_en || userProfile.organization || prev.institution,
+        department: userProfile.department_en || userProfile.department || prev.department,
+        academic_title: userProfile.job_title_en || userProfile.job_title || prev.academic_title,
+        research_areas: userProfile.expertise_areas?.length > 0 ? userProfile.expertise_areas : prev.research_areas,
+        bio: userProfile.bio_en || userProfile.bio || prev.bio,
+      }));
+    }
+  }, [userProfile]);
 
   const progress = (currentStep / STEPS.length) * 100;
 
@@ -168,6 +183,8 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
           bio: formData.bio || null,
           cv_url: formData.cv_url || null,
           onboarding_completed: true,
+          persona_onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
           metadata: {
             orcid_id: formData.orcid_id,
             google_scholar_url: formData.google_scholar_url,

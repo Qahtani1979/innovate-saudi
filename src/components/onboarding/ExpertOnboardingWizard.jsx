@@ -197,6 +197,7 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
           cv_url: formData.cv_url,
           linkedin_url: formData.linkedin_url,
           onboarding_completed: true,
+          persona_onboarding_completed: true,
           onboarding_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })

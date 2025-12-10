@@ -50,7 +50,7 @@ const PARTICIPATION_TYPES = [
 
 export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t } = useLanguage();
-  const { user, checkAuth } = useAuth();
+  const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   
@@ -67,6 +67,21 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
     notify_events: true,
     notify_weekly_digest: false
   });
+
+  // Pre-populate from Stage 1 onboarding data
+  React.useEffect(() => {
+    if (userProfile) {
+      setFormData(prev => ({
+        ...prev,
+        city_id: userProfile.city_id || prev.city_id,
+        interests: userProfile.interests?.length > 0 ? userProfile.interests : prev.interests,
+        notify_new_challenges: userProfile.notification_preferences?.new_challenges ?? prev.notify_new_challenges,
+        notify_pilot_opportunities: userProfile.notification_preferences?.pilot_opportunities ?? prev.notify_pilot_opportunities,
+        notify_events: userProfile.notification_preferences?.events ?? prev.notify_events,
+        notify_weekly_digest: userProfile.notification_preferences?.weekly_digest ?? prev.notify_weekly_digest,
+      }));
+    }
+  }, [userProfile]);
 
   // Fetch cities
   const { data: cities = [] } = useQuery({
@@ -118,6 +133,8 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
           city_id: formData.city_id || null,
           interests: formData.interests,
           onboarding_completed: true,
+          persona_onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
           notification_preferences: {
             new_challenges: formData.notify_new_challenges,
             pilot_opportunities: formData.notify_pilot_opportunities,

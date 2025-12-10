@@ -83,6 +83,22 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
     justification: ''
   });
 
+  // Pre-populate from Stage 1 onboarding data
+  useEffect(() => {
+    if (userProfile) {
+      setFormData(prev => ({
+        ...prev,
+        cv_url: userProfile.cv_url || prev.cv_url,
+        municipality_id: userProfile.municipality_id || prev.municipality_id,
+        department: userProfile.department_en || userProfile.department || prev.department,
+        job_title: userProfile.job_title_en || userProfile.job_title || prev.job_title,
+        work_phone: userProfile.work_phone || prev.work_phone,
+        years_of_experience: userProfile.years_experience || prev.years_of_experience,
+        specializations: userProfile.expertise_areas?.length > 0 ? userProfile.expertise_areas : prev.specializations,
+      }));
+    }
+  }, [userProfile]);
+
   // Fetch municipalities
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-list'],
@@ -176,6 +192,8 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
           work_phone: formData.work_phone || null,
           cv_url: formData.cv_url || null,
           onboarding_completed: true,
+          persona_onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
