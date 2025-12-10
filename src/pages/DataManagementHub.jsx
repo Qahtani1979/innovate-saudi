@@ -14,8 +14,9 @@ import { toast } from 'sonner';
 import { Switch } from "@/components/ui/switch";
 import {
   MapPin, Building2, Users, Shield, Mail, Plus, Pencil, Trash2,
-  Search, Database, Check, X, Loader2, UserPlus, Settings, Sparkles, Globe
+  Search, Database, Check, X, Loader2, UserPlus, Settings, Sparkles, Globe, Briefcase
 } from 'lucide-react';
+import LookupDataManager from '../components/admin/LookupDataManager';
 import EmbeddingManager from '../components/embeddings/EmbeddingManager';
 import SemanticSearchPanel from '../components/embeddings/SemanticSearchPanel';
 import {
@@ -869,7 +870,7 @@ Provide specific fixes with actions (DELETE, REASSIGN, FIX_PARTNERSHIP, ENRICH_D
       </div>
 
       <Tabs defaultValue="regions" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="regions">
             <MapPin className="h-4 w-4 mr-2" />
             {t({ en: 'Regions', ar: 'المناطق' })}
@@ -881,6 +882,10 @@ Provide specific fixes with actions (DELETE, REASSIGN, FIX_PARTNERSHIP, ENRICH_D
           <TabsTrigger value="organizations">
             <Building2 className="h-4 w-4 mr-2" />
             {t({ en: 'Organizations', ar: 'المنظمات' })}
+          </TabsTrigger>
+          <TabsTrigger value="lookups">
+            <Briefcase className="h-4 w-4 mr-2" />
+            {t({ en: 'Lookups & Rules', ar: 'القوائم والقواعد' })}
           </TabsTrigger>
           <TabsTrigger value="embeddings">
             <Sparkles className="h-4 w-4 mr-2" />
@@ -1042,6 +1047,10 @@ Provide specific fixes with actions (DELETE, REASSIGN, FIX_PARTNERSHIP, ENRICH_D
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="lookups">
+          <LookupDataManager />
         </TabsContent>
 
         <TabsContent value="embeddings">
