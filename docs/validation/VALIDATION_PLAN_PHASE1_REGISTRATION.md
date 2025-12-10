@@ -13,12 +13,22 @@ flowchart LR
     B --> C{Auth Mode}
     C -->|Sign Up| D[Registration Form]
     C -->|Sign In| E[Login Form]
-    C -->|OAuth| F[Google SSO]
+    C -->|OAuth| F[Google/Microsoft SSO]
+    C -->|Forgot Password| P[Password Reset]
     D --> G[Email Confirmation]
     G --> H[Session Created]
     E --> H
     F --> H
+    P --> Q[Reset Email Sent]
+    Q --> R[New Password Form]
+    R --> H
     H --> I[Redirect to Onboarding]
+    
+    subgraph Logout Flow
+        J[User Menu] --> K[Logout Click]
+        K --> L[Session Cleared]
+        L --> M[Redirect to Home]
+    end
 ```
 
 ---
@@ -29,6 +39,7 @@ flowchart LR
 |------|-----------|---------|
 | Auth | `src/pages/Auth.jsx` | Main authentication page |
 | Landing/Home | `src/pages/Home.jsx` | Entry point with auth CTAs |
+| Password Reset | `src/pages/ResetPassword.jsx` | Password reset form (if exists) |
 
 ---
 
@@ -40,6 +51,7 @@ flowchart LR
 | SupabaseAuth | `src/api/supabaseAuth.js` | Auth API wrapper |
 | ProtectedRoute | `src/components/ProtectedRoute.jsx` | Route protection HOC |
 | LanguageContext | `src/context/LanguageContext.jsx` | i18n/RTL management |
+| UserMenu | `src/components/UserMenu.jsx` | User dropdown with logout |
 
 ---
 
@@ -131,7 +143,12 @@ flowchart LR
 | Full Name label | Full Name | الاسم الكامل | ⬜ |
 | Submit button | Sign In/Up | تسجيل الدخول/إنشاء | ⬜ |
 | Forgot password | Forgot Password? | نسيت كلمة المرور؟ | ⬜ |
+| Reset password | Reset Password | إعادة تعيين كلمة المرور | ⬜ |
+| New password | New Password | كلمة المرور الجديدة | ⬜ |
+| Confirm password | Confirm Password | تأكيد كلمة المرور | ⬜ |
 | Google button | Sign in with Google | تسجيل الدخول بجوجل | ⬜ |
+| Microsoft button | Sign in with Microsoft | تسجيل الدخول بمايكروسوفت | ⬜ |
+| Logout | Logout | تسجيل الخروج | ⬜ |
 | Error messages | All errors | All errors | ⬜ |
 | Success messages | All success | All success | ⬜ |
 | Loading states | Loading... | جاري التحميل... | ⬜ |
@@ -177,18 +194,48 @@ flowchart LR
 | 7 | Session persists on refresh | ⬜ |
 | 8 | Redirect based on role/onboarding | ⬜ |
 
-### 5.3 OAuth (Google SSO)
+### 5.3 OAuth - Google SSO
 
 | Step | Check | Status |
 |------|-------|--------|
 | 1 | Google button visible | ⬜ |
-| 2 | Click opens Google auth | ⬜ |
-| 3 | Success creates session | ⬜ |
-| 4 | Profile created/updated | ⬜ |
-| 5 | Cancel handled gracefully | ⬜ |
-| 6 | Error states handled | ⬜ |
+| 2 | Google button styled correctly | ⬜ |
+| 3 | Click opens Google auth popup/redirect | ⬜ |
+| 4 | Google Cloud Console configured | ⬜ |
+| 5 | Authorized redirect URLs set | ⬜ |
+| 6 | Success creates session | ⬜ |
+| 7 | Profile created/updated from Google data | ⬜ |
+| 8 | Avatar URL populated (if available) | ⬜ |
+| 9 | Cancel handled gracefully | ⬜ |
+| 10 | Error states handled (popup blocked, etc.) | ⬜ |
+| 11 | Works in production domain | ⬜ |
+| 12 | Works in preview domain | ⬜ |
 
-### 5.4 Session Management
+### 5.4 OAuth - Microsoft SSO
+
+| Step | Check | Status |
+|------|-------|--------|
+| 1 | Microsoft button visible | ⬜ |
+| 2 | Microsoft button styled correctly (MS branding) | ⬜ |
+| 3 | Click opens Microsoft auth popup/redirect | ⬜ |
+| 4 | Azure AD App Registration configured | ⬜ |
+| 5 | Client ID configured in Supabase | ⬜ |
+| 6 | Client Secret configured in Supabase | ⬜ |
+| 7 | Redirect URIs set in Azure | ⬜ |
+| 8 | Supabase callback URL added to Azure | ⬜ |
+| 9 | Scopes configured (email, profile, openid) | ⬜ |
+| 10 | Success creates session | ⬜ |
+| 11 | Profile created/updated from Microsoft data | ⬜ |
+| 12 | Email populated from Microsoft account | ⬜ |
+| 13 | Name populated from Microsoft account | ⬜ |
+| 14 | Cancel handled gracefully | ⬜ |
+| 15 | Error states handled | ⬜ |
+| 16 | Personal Microsoft accounts work | ⬜ |
+| 17 | Work/School accounts work (if enabled) | ⬜ |
+| 18 | Works in production domain | ⬜ |
+| 19 | Works in preview domain | ⬜ |
+
+### 5.5 Session Management
 
 | Check | Status | Notes |
 |-------|--------|-------|
@@ -202,15 +249,72 @@ flowchart LR
 | Token refresh works | ⬜ | |
 | Expired session → redirect | ⬜ | |
 
-### 5.5 Logout
+### 5.6 Logout Flow (Comprehensive)
 
-| Check | Status |
-|-------|--------|
-| Logout button accessible | ⬜ |
-| Click clears session | ⬜ |
-| Click clears local state | ⬜ |
-| Redirect to home/auth | ⬜ |
-| Protected routes blocked | ⬜ |
+| Step | Check | Status |
+|------|-------|--------|
+| 1 | Logout button visible in user menu | ⬜ |
+| 2 | Logout button accessible on all pages | ⬜ |
+| 3 | Logout button labeled correctly (EN/AR) | ⬜ |
+| 4 | Click triggers supabase.auth.signOut() | ⬜ |
+| 5 | Session cleared from Supabase | ⬜ |
+| 6 | Session cleared from localStorage | ⬜ |
+| 7 | AuthContext user state set to null | ⬜ |
+| 8 | AuthContext session state set to null | ⬜ |
+| 9 | All cached user data cleared | ⬜ |
+| 10 | React Query cache invalidated (if used) | ⬜ |
+| 11 | Redirect to home page (/) | ⬜ |
+| 12 | Protected routes now redirect to /auth | ⬜ |
+| 13 | Back button doesn't restore session | ⬜ |
+| 14 | No session data visible in DevTools | ⬜ |
+| 15 | Logout works from any page | ⬜ |
+| 16 | Toast/confirmation shown on logout | ⬜ |
+| 17 | No errors in console on logout | ⬜ |
+| 18 | Multiple tabs: other tabs detect logout | ⬜ |
+| 19 | Logout during pending request handled | ⬜ |
+| 20 | OAuth sessions fully cleared | ⬜ |
+
+### 5.7 Password Reset Flow
+
+| Step | Check | Status |
+|------|-------|--------|
+| 1 | "Forgot Password?" link visible on login | ⬜ |
+| 2 | "Forgot Password?" link labeled (EN/AR) | ⬜ |
+| 3 | Click navigates to reset form/modal | ⬜ |
+| 4 | Reset form displays email input | ⬜ |
+| 5 | Email validation on reset form | ⬜ |
+| 6 | Submit calls supabase.auth.resetPasswordForEmail() | ⬜ |
+| 7 | Redirect URL configured correctly | ⬜ |
+| 8 | Success message shown | ⬜ |
+| 9 | Error for non-existent email (or generic message) | ⬜ |
+| 10 | Rate limiting handled | ⬜ |
+| 11 | Reset email actually sent | ⬜ |
+| 12 | Email contains correct reset link | ⬜ |
+| 13 | Link expires after appropriate time | ⬜ |
+| 14 | User can return to login from reset page | ⬜ |
+
+### 5.8 Password Recovery (New Password Entry)
+
+| Step | Check | Status |
+|------|-------|--------|
+| 1 | Reset link from email works | ⬜ |
+| 2 | Link redirects to app with token | ⬜ |
+| 3 | App detects recovery token in URL | ⬜ |
+| 4 | New password form displays | ⬜ |
+| 5 | Password field present | ⬜ |
+| 6 | Confirm password field present | ⬜ |
+| 7 | Password visibility toggle works | ⬜ |
+| 8 | Password validation (min 6 chars) | ⬜ |
+| 9 | Password match validation | ⬜ |
+| 10 | Submit calls supabase.auth.updateUser() | ⬜ |
+| 11 | Success message shown | ⬜ |
+| 12 | Session created after password update | ⬜ |
+| 13 | Redirect to appropriate page | ⬜ |
+| 14 | Expired link handled gracefully | ⬜ |
+| 15 | Already used link handled | ⬜ |
+| 16 | Invalid token handled | ⬜ |
+| 17 | Old password no longer works | ⬜ |
+| 18 | New password works for login | ⬜ |
 
 ---
 
@@ -241,6 +345,7 @@ flowchart LR
 | `/auth` | Accessible | ⬜ |
 | `/browse-challenges` | Accessible | ⬜ |
 | `/browse-solutions` | Accessible | ⬜ |
+| `/reset-password` | Accessible | ⬜ |
 | `/onboarding` | Redirect to /auth | ⬜ |
 | `/citizen-dashboard` | Redirect to /auth | ⬜ |
 | `/admin-portal` | Redirect to /auth | ⬜ |
@@ -273,6 +378,7 @@ flowchart LR
 |-------|---------------|---------------|--------|
 | `/` | No | None | ⬜ |
 | `/auth` | No | None | ⬜ |
+| `/reset-password` | No | None | ⬜ |
 | `/onboarding` | Yes | None | ⬜ |
 | `/citizen-dashboard` | Yes | citizen | ⬜ |
 | `/startup-dashboard` | Yes | provider | ⬜ |
@@ -295,6 +401,7 @@ flowchart LR
 | Onboarding complete + admin | /admin-portal | ⬜ |
 | Onboarding complete + viewer | /home | ⬜ |
 | No role assigned | /onboarding | ⬜ |
+| After password reset | /onboarding or dashboard | ⬜ |
 
 ---
 
@@ -331,6 +438,7 @@ flowchart LR
 | Links | ⬜ | ⬜ | |
 | Errors | ⬜ | ⬜ | |
 | Success | ⬜ | ⬜ | |
+| OAuth buttons | ⬜ | ⬜ | |
 
 ### 8.3 Component Styling
 
@@ -344,6 +452,11 @@ flowchart LR
 | Loading spinner | ⬜ | |
 | Error alerts | ⬜ | |
 | Toast notifications | ⬜ | |
+| Google OAuth button | ⬜ | |
+| Microsoft OAuth button | ⬜ | |
+| Password reset form | ⬜ | |
+| User menu dropdown | ⬜ | |
+| Logout button | ⬜ | |
 
 ### 8.4 Responsive Design
 
@@ -365,6 +478,7 @@ flowchart LR
 | Email | Invalid format | Invalid email format | صيغة البريد غير صحيحة | ⬜ |
 | Password | Empty | Password is required | كلمة المرور مطلوبة | ⬜ |
 | Password | Too short | Min 6 characters | 6 أحرف على الأقل | ⬜ |
+| Password | Mismatch | Passwords don't match | كلمات المرور غير متطابقة | ⬜ |
 | Name | Empty | Name is required | الاسم مطلوب | ⬜ |
 
 ### 9.2 API/Server Errors
@@ -377,6 +491,11 @@ flowchart LR
 | Network offline | - | Check your connection | ⬜ |
 | Rate limited | 429 | Too many attempts | ⬜ |
 | Session expired | 401 | Please sign in again | ⬜ |
+| Invalid reset token | 400 | Reset link expired | ⬜ |
+| OAuth error | varies | Sign in failed | ⬜ |
+| OAuth popup blocked | - | Please allow popups | ⬜ |
+| Microsoft auth error | varies | Microsoft sign in failed | ⬜ |
+| Google auth error | varies | Google sign in failed | ⬜ |
 
 ### 9.3 Error Display
 
@@ -398,6 +517,9 @@ flowchart LR
 | Submit during loading | Prevent double submit | ⬜ |
 | Close browser during submit | Graceful handling | ⬜ |
 | Session expires during submit | Redirect to auth | ⬜ |
+| Reset link clicked twice | Show appropriate message | ⬜ |
+| Logout during loading | Complete logout safely | ⬜ |
+| OAuth cancelled mid-flow | Return to auth cleanly | ⬜ |
 
 ---
 
@@ -411,11 +533,20 @@ flowchart LR
 | "Sign In" tab | Switch to signin form | ⬜ | |
 | "Forgot Password?" | Password reset flow | ⬜ | |
 | "Sign in with Google" | Google OAuth | ⬜ | |
+| "Sign in with Microsoft" | Microsoft OAuth | ⬜ | |
 | Back to Home | `/` | ⬜ | |
 | Terms of Service | Terms page | ⬜ | |
 | Privacy Policy | Privacy page | ⬜ | |
 
-### 10.2 Landing Page Links
+### 10.2 Password Reset Links
+
+| Link | Target | Works | Status |
+|------|--------|-------|--------|
+| Back to Sign In | Return to login form | ⬜ | |
+| Email reset link | Opens new password form | ⬜ | |
+| Resend reset email | Sends another email | ⬜ | |
+
+### 10.3 Landing Page Links
 
 | Link | Target | Works | Status |
 |------|--------|-------|--------|
@@ -424,15 +555,16 @@ flowchart LR
 | Navigation items | Respective pages | ⬜ | |
 | Logo | `/` | ⬜ | |
 
-### 10.3 Navigation State
+### 10.4 Navigation State
 
 | State | Header Shows | Status |
 |-------|--------------|--------|
 | Not authenticated | Sign In / Sign Up | ⬜ |
 | Authenticated | User menu / Avatar | ⬜ |
 | Authenticated | Logout option | ⬜ |
+| Authenticated | Profile link | ⬜ |
 
-### 10.4 Browser Navigation
+### 10.5 Browser Navigation
 
 | Action | Expected | Status |
 |--------|----------|--------|
@@ -440,6 +572,7 @@ flowchart LR
 | Forward after logout | Stay on public or redirect | ⬜ |
 | Refresh on auth page | Stay on auth | ⬜ |
 | Deep link to protected | Redirect to auth | ⬜ |
+| Back button after password reset | Appropriate behavior | ⬜ |
 
 ---
 
@@ -454,6 +587,8 @@ flowchart LR
 | Password field type="password" | ⬜ |
 | Password visibility toggle works | ⬜ |
 | Password not stored in plain text | ⬜ |
+| New password field secure | ⬜ |
+| Confirm password field secure | ⬜ |
 
 ### 11.2 Session Security
 
@@ -463,8 +598,19 @@ flowchart LR
 | httpOnly where applicable | ⬜ |
 | HTTPS enforced | ⬜ |
 | No tokens in URLs | ⬜ |
+| Reset tokens expire properly | ⬜ |
+| Reset tokens single-use | ⬜ |
 
-### 11.3 Input Validation
+### 11.3 Logout Security
+
+| Check | Status |
+|-------|--------|
+| Server-side session invalidated | ⬜ |
+| All tokens revoked | ⬜ |
+| No cached sensitive data remains | ⬜ |
+| OAuth provider session note (not cleared) | ⬜ |
+
+### 11.4 Input Validation
 
 | Check | Status |
 |-------|--------|
@@ -472,6 +618,15 @@ flowchart LR
 | XSS prevention | ⬜ |
 | SQL injection prevention (Supabase) | ⬜ |
 | CSRF protection | ⬜ |
+
+### 11.5 OAuth Security
+
+| Check | Status |
+|-------|--------|
+| State parameter used | ⬜ |
+| PKCE flow used | ⬜ |
+| Redirect URL validated | ⬜ |
+| Token exchange secure | ⬜ |
 
 ---
 
@@ -497,6 +652,7 @@ flowchart LR
 | Errors announced | ⬜ |
 | Success announced | ⬜ |
 | Loading state announced | ⬜ |
+| Logout confirmation announced | ⬜ |
 
 ### 12.3 Keyboard Navigation
 
@@ -507,6 +663,8 @@ flowchart LR
 | Submit form | Enter | ⬜ |
 | Switch tabs | Tab + Enter/Space | ⬜ |
 | Toggle password visibility | Enter/Space | ⬜ |
+| Trigger logout | Enter/Space | ⬜ |
+| Navigate OAuth buttons | Tab | ⬜ |
 
 ### 12.4 Color Contrast
 
@@ -516,6 +674,7 @@ flowchart LR
 | Large text | 3:1 | ⬜ |
 | UI components | 3:1 | ⬜ |
 | Error text | 4.5:1 | ⬜ |
+| Success text | 4.5:1 | ⬜ |
 
 ---
 
@@ -525,6 +684,9 @@ flowchart LR
 |-------|--------|--------|
 | Page load time | < 2s | ⬜ |
 | Auth response time | < 1s | ⬜ |
+| OAuth redirect time | < 3s | ⬜ |
+| Logout response time | < 1s | ⬜ |
+| Password reset email time | < 30s | ⬜ |
 | No layout shift | CLS < 0.1 | ⬜ |
 | First contentful paint | < 1.5s | ⬜ |
 
@@ -599,7 +761,27 @@ Then:
   - Redirect based on onboarding status
 ```
 
-### TC-AUTH-008: Protected Route - Not Authenticated
+### TC-AUTH-008: Microsoft OAuth Success
+```
+Given: User clicks Microsoft sign-in
+When: User completes Microsoft auth flow with personal/work account
+Then:
+  - Session established
+  - Profile created/updated with Microsoft email and name
+  - Redirect based on onboarding status
+```
+
+### TC-AUTH-009: Microsoft OAuth - Cancel
+```
+Given: User clicks Microsoft sign-in
+When: User cancels at Microsoft login screen
+Then:
+  - Return to auth page
+  - No error displayed (or friendly message)
+  - No session created
+```
+
+### TC-AUTH-010: Protected Route - Not Authenticated
 ```
 Given: User not authenticated
 When: User navigates to /onboarding directly
@@ -608,7 +790,7 @@ Then:
   - Return URL preserved (?redirect=/onboarding)
 ```
 
-### TC-AUTH-009: Session Persistence
+### TC-AUTH-011: Session Persistence
 ```
 Given: User logged in
 When: User refreshes page
@@ -618,17 +800,68 @@ Then:
   - No redirect to auth
 ```
 
-### TC-AUTH-010: Logout Flow
+### TC-AUTH-012: Logout Flow - Complete
 ```
-Given: User logged in
-When: User clicks logout
+Given: User logged in on /citizen-dashboard
+When: User clicks logout in user menu
 Then:
-  - Session cleared
+  - Session cleared from Supabase
+  - localStorage cleared
+  - AuthContext reset
   - Redirect to /
-  - Protected routes return to /auth
+  - Back button doesn't restore session
+  - Protected routes redirect to /auth
 ```
 
-### TC-AUTH-011: RTL Layout - Arabic
+### TC-AUTH-013: Logout - Multiple Tabs
+```
+Given: User logged in with app open in 2 tabs
+When: User logs out in Tab 1
+Then:
+  - Tab 2 detects logout via onAuthStateChange
+  - Tab 2 redirects to / or /auth
+```
+
+### TC-AUTH-014: Password Reset - Request
+```
+Given: User on auth page, forgot password
+When: User clicks "Forgot Password?" and enters valid email
+Then:
+  - Password reset email sent
+  - Success message shown
+  - User can return to login
+```
+
+### TC-AUTH-015: Password Reset - Complete
+```
+Given: User received reset email and clicked link
+When: User enters new password (meeting requirements) and confirms
+Then:
+  - Password updated in auth.users
+  - Session created
+  - Redirect to onboarding/dashboard
+  - Old password no longer works
+```
+
+### TC-AUTH-016: Password Reset - Expired Link
+```
+Given: User has expired reset link (>24 hours)
+When: User clicks the link
+Then:
+  - Error message "Reset link expired"
+  - Option to request new reset link
+```
+
+### TC-AUTH-017: Password Reset - Password Mismatch
+```
+Given: User on new password form
+When: User enters different passwords in password and confirm fields
+Then:
+  - Error "Passwords don't match"
+  - Form not submitted
+```
+
+### TC-AUTH-018: RTL Layout - Arabic
 ```
 Given: User selects Arabic language
 When: Auth page loads
@@ -637,9 +870,10 @@ Then:
   - Form aligned right
   - Labels on right
   - Buttons in correct order
+  - OAuth buttons in correct order
 ```
 
-### TC-AUTH-012: Dark Mode
+### TC-AUTH-019: Dark Mode
 ```
 Given: User has dark mode enabled
 When: Auth page loads
@@ -647,6 +881,17 @@ Then:
   - All elements use dark theme tokens
   - Text readable
   - No white backgrounds
+  - OAuth buttons appropriately styled
+```
+
+### TC-AUTH-020: OAuth Error Handling
+```
+Given: User tries Google/Microsoft OAuth
+When: Popup is blocked by browser
+Then:
+  - Appropriate error message shown
+  - User can retry
+  - No session created
 ```
 
 ---
@@ -656,17 +901,25 @@ Then:
 | Category | Items | Passed | Failed | Pending |
 |----------|-------|--------|--------|---------|
 | UI/UX | 15 | 0 | 0 | 15 |
-| RTL/LTR | 20 | 0 | 0 | 20 |
+| RTL/LTR | 25 | 0 | 0 | 25 |
 | Database Fields | 15 | 0 | 0 | 15 |
-| Authentication | 25 | 0 | 0 | 25 |
+| Registration | 10 | 0 | 0 | 10 |
+| Login | 8 | 0 | 0 | 8 |
+| Google OAuth | 12 | 0 | 0 | 12 |
+| Microsoft OAuth | 19 | 0 | 0 | 19 |
+| Session Management | 9 | 0 | 0 | 9 |
+| Logout Flow | 20 | 0 | 0 | 20 |
+| Password Reset | 14 | 0 | 0 | 14 |
+| Password Recovery | 18 | 0 | 0 | 18 |
 | Access Control | 15 | 0 | 0 | 15 |
-| Role & Routing | 20 | 0 | 0 | 20 |
-| Theme & Style | 25 | 0 | 0 | 25 |
-| Error Handling | 20 | 0 | 0 | 20 |
-| Links & Navigation | 15 | 0 | 0 | 15 |
-| Security | 15 | 0 | 0 | 15 |
-| Accessibility | 20 | 0 | 0 | 20 |
-| **TOTAL** | **205** | **0** | **0** | **205** |
+| Role & Routing | 22 | 0 | 0 | 22 |
+| Theme & Style | 30 | 0 | 0 | 30 |
+| Error Handling | 25 | 0 | 0 | 25 |
+| Links & Navigation | 20 | 0 | 0 | 20 |
+| Security | 20 | 0 | 0 | 20 |
+| Accessibility | 22 | 0 | 0 | 22 |
+| Performance | 7 | 0 | 0 | 7 |
+| **TOTAL** | **326** | **0** | **0** | **326** |
 
 ---
 
@@ -676,11 +929,13 @@ Then:
 # Pages
 src/pages/Auth.jsx
 src/pages/Home.jsx
+src/pages/ResetPassword.jsx (if exists)
 
 # Auth Components
 src/lib/AuthContext.jsx
 src/api/supabaseAuth.js
 src/components/ProtectedRoute.jsx
+src/components/UserMenu.jsx
 
 # i18n
 src/context/LanguageContext.jsx
@@ -697,20 +952,45 @@ tailwind.config.ts
 
 # Database
 supabase/migrations/ (profile triggers)
+
+# Backend Config
+supabase/config.toml (OAuth providers)
 ```
 
 ---
 
-## 17. Next Steps
+## 17. OAuth Provider Configuration Checklist
 
-1. ✅ Complete all 205 checklist items
+### Google Cloud Console
+- [ ] Project created
+- [ ] OAuth consent screen configured
+- [ ] OAuth 2.0 Client ID created
+- [ ] Authorized JavaScript origins added
+- [ ] Authorized redirect URIs added (Supabase callback)
+- [ ] Client ID added to Supabase
+
+### Microsoft Azure AD
+- [ ] App registration created
+- [ ] Application (client) ID copied
+- [ ] Client secret created
+- [ ] Redirect URIs configured
+- [ ] Supported account types set (Personal, Work, or Both)
+- [ ] API permissions: openid, email, profile
+- [ ] Client ID added to Supabase
+- [ ] Client secret added to Supabase
+
+---
+
+## 18. Next Steps
+
+1. ✅ Complete all 326 checklist items
 2. ✅ Document any bugs found in `docs/validation/BUGS_PHASE1.md`
 3. ✅ Fix identified issues
 4. ➡️ Proceed to **Phase 2: General Onboarding Validation**
 
 ---
 
-## 18. Related Documents
+## 19. Related Documents
 
 - [Onboarding Flow Tracking](../ONBOARDING_FLOW_TRACKING.md)
 - [Platform Flows](../PLATFORM_FLOWS_AND_PERSONAS.md)
