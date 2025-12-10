@@ -349,8 +349,8 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 │  │  2. Solution categories                 │                               │
 │  │  3. Target sectors                      │                               │
 │  │  4. Portfolio/case studies              │                               │
-│  │  → ProviderDashboard                    │                               │
-│  └─────────────────────────────────────────┘                               │
+│  │  → StartupDashboard                     │  (aliased as ProviderDashboard│
+│  └─────────────────────────────────────────┘   in code)                    │
 │                                                                             │
 │  RESEARCHER                                                                 │
 │  ┌─────────────────────────────────────────┐                               │
@@ -375,8 +375,8 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 │  │  2. Domains of expertise                │                               │
 │  │  3. Availability & rates                │                               │
 │  │  4. Evaluation preferences              │                               │
-│  │  → ExpertRegistry                       │                               │
-│  └─────────────────────────────────────────┘                               │
+│  │  → ExpertAssignmentQueue                │  ⚠️ Code has ExpertDashboard  │
+│  └─────────────────────────────────────────┘     which doesn't exist       │
 │                                                                             │
 │  CITIZEN                                                                    │
 │  ┌─────────────────────────────────────────┐                               │
@@ -705,13 +705,28 @@ All other pages require authentication.
 | Google OAuth | ✅ Complete | Configured |
 | Microsoft OAuth | ✅ Complete | Configured |
 | Main Onboarding Wizard | ✅ Complete | 6 steps with AI |
-| Municipality Onboarding | ✅ Complete | 4 steps |
+| Municipality Onboarding | ✅ Complete | 5 steps (CV, Municipality, Department, Role, Complete) |
 | Startup Onboarding | ✅ Complete | 4 steps |
 | Researcher Onboarding | ✅ Complete | 4 steps |
 | Citizen Onboarding | ✅ Complete | 4 steps |
-| Expert Onboarding | ✅ Complete | CV extraction |
+| Expert Onboarding | ✅ Complete | 5 steps (Basic, Expertise, Credentials, Availability, Complete) |
 | Role Approval Flow | ✅ Complete | Edge function |
 | Challenge Lifecycle | ✅ Complete | Full workflow |
 | Pilot Lifecycle | ✅ Complete | Gate system |
 | Citizen Participation | ✅ Complete | Voting, ideas |
 | Expert Evaluation | ✅ Complete | Rubrics, panels |
+
+---
+
+## Known Issues & Discrepancies
+
+| Issue | Location | Severity | Description |
+|-------|----------|----------|-------------|
+| ExpertDashboard missing | `OnboardingWizard.jsx:103` | Medium | `landingPage: 'ExpertDashboard'` but page doesn't exist. Should route to `ExpertAssignmentQueue` |
+| Dual researcher dashboards | `src/pages/` | Low | Both `ResearcherDashboard.jsx` and `AcademiaDashboard.jsx` exist with overlapping functionality |
+| ProviderDashboard alias | Routes | Info | Code references `ProviderDashboard` which is an alias for `StartupDashboard` |
+
+---
+
+*Last Updated: 2025-12-10*
+*Validation Status: ✅ VALIDATED against codebase*

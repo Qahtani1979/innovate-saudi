@@ -294,20 +294,32 @@ Primary table for user profile data.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `id` | uuid | Primary key, references auth.users |
-| `user_id` | uuid | Auth user ID |
+| `id` | uuid | Primary key |
+| `user_id` | uuid | Auth user ID reference |
+| `user_email` | text | User email |
+| `full_name` | text | Full name (legacy) |
 | `full_name_en` | text | Full name in English |
 | `full_name_ar` | text | Full name in Arabic |
+| `job_title` | text | Job title (legacy) |
 | `job_title_en` | text | Job title in English |
 | `job_title_ar` | text | Job title in Arabic |
+| `bio` | text | Bio (legacy) |
 | `bio_en` | text | Bio in English |
 | `bio_ar` | text | Bio in Arabic |
+| `title_en` | text | Title in English |
+| `title_ar` | text | Title in Arabic |
+| `organization_id` | uuid | Organization reference |
 | `organization_en` | text | Organization in English |
 | `organization_ar` | text | Organization in Arabic |
+| `department` | text | Department (legacy) |
 | `department_en` | text | Department in English |
 | `department_ar` | text | Department in Arabic |
+| `municipality_id` | uuid | Municipality reference |
+| `city_id` | uuid | City reference |
 | `mobile_number` | text | Mobile phone number |
 | `mobile_country_code` | text | Country code (e.g., +966) |
+| `phone_number` | text | Phone number (legacy) |
+| `work_phone` | text | Work phone |
 | `national_id` | text | Saudi National ID/Iqama |
 | `date_of_birth` | date | Date of birth |
 | `gender` | text | Gender |
@@ -316,17 +328,36 @@ Primary table for user profile data.
 | `location_city` | text | City |
 | `location_region` | text | Region |
 | `preferred_language` | text | Display language preference |
-| `expertise_areas` | text[] | Selected expertise areas (max 5) |
+| `timezone` | text | User timezone |
+| `expertise_areas` | text[] | Selected expertise areas |
+| `skills` | text[] | Skills |
+| `interests` | text[] | Interests |
 | `linkedin_url` | text | LinkedIn profile URL |
 | `cv_url` | text | Uploaded CV URL |
+| `avatar_url` | text | Profile avatar URL |
+| `cover_image_url` | text | Cover image URL |
 | `onboarding_completed` | boolean | Whether onboarding is complete |
 | `onboarding_completed_at` | timestamp | When onboarding was completed |
 | `profile_completion_percentage` | integer | Profile completion score |
 | `extracted_data` | jsonb | Data extracted from CV/LinkedIn |
-| `persona` | text | Selected persona |
 | `languages` | jsonb | Languages spoken |
 | `certifications` | jsonb | Professional certifications |
-| `years_of_experience` | integer | Years of experience |
+| `work_experience` | jsonb | Work experience |
+| `years_experience` | integer | Years of experience |
+| `social_links` | jsonb | Social media links |
+| `contact_preferences` | jsonb | Contact preferences |
+| `notification_preferences` | jsonb | Notification settings |
+| `visibility_settings` | jsonb | Profile visibility |
+| `achievement_badges` | jsonb | Earned badges |
+| `contribution_count` | integer | Contribution count |
+| `is_active` | boolean | Active status |
+| `is_public` | boolean | Public profile |
+| `verified` | boolean | Verified status |
+| `last_profile_update` | timestamp | Last update time |
+| `created_at` | timestamp | Creation time |
+| `updated_at` | timestamp | Last modified |
+
+> **Note:** The schema has both legacy fields (e.g., `full_name`, `job_title`) and bilingual fields (e.g., `full_name_en`, `full_name_ar`). Use bilingual fields for new implementations.
 
 ### onboarding_events
 
@@ -450,14 +481,16 @@ const calculateProfileCompletion = (data) => {
 
 ## Persona to Wizard/Dashboard Mapping
 
-| Persona | Specialized Wizard | Landing Dashboard |
-|---------|-------------------|-------------------|
-| `municipality_staff` | MunicipalityStaffOnboardingWizard | MunicipalityDashboard |
-| `provider` | StartupOnboardingWizard | ProviderDashboard |
-| `researcher` | ResearcherOnboardingWizard | ResearcherDashboard |
-| `citizen` | CitizenOnboardingWizard | CitizenDashboard |
-| `expert` | ExpertOnboardingWizard | AdminDashboard |
-| `viewer` | None (skip) | Home |
+| Persona | Specialized Wizard | Landing Dashboard | Notes |
+|---------|-------------------|-------------------|-------|
+| `municipality_staff` | MunicipalityStaffOnboardingWizard | MunicipalityDashboard | |
+| `provider` | StartupOnboardingWizard | StartupDashboard | Code references `ProviderDashboard` which is an alias |
+| `researcher` | ResearcherOnboardingWizard | ResearcherDashboard | Also see `AcademiaDashboard` for R&D-focused view |
+| `citizen` | CitizenOnboardingWizard | CitizenDashboard | |
+| `expert` | ExpertOnboardingWizard | ExpertAssignmentQueue | Code references `ExpertDashboard` (needs fix) → routes to ExpertRegistry |
+| `viewer` | None (skip) | Home | |
+
+> **Note:** The OnboardingWizard.jsx has `landingPage: 'ExpertDashboard'` which doesn't exist as a page. The actual expert landing should be `ExpertAssignmentQueue` or `ExpertRegistry`.
 
 ---
 
@@ -468,11 +501,13 @@ Each dashboard includes post-onboarding enhancement components:
 | Dashboard | ProfileCompletenessCoach | FirstActionRecommender | ProgressiveProfilingPrompt |
 |-----------|--------------------------|------------------------|----------------------------|
 | MunicipalityDashboard | ✅ | ✅ | ✅ |
-| ProviderDashboard | ✅ | ✅ | ✅ |
 | StartupDashboard | ✅ | ✅ | ✅ |
 | ResearcherDashboard | ✅ | ✅ | - |
 | CitizenDashboard | ✅ | ✅ | - |
-| AdminDashboard | - | - | - |
+| AcademiaDashboard | - | - | - |
+| AdminPortal | - | - | - |
+
+> **Note:** `ProviderDashboard` and `StartupDashboard` are the same page (StartupDashboard.jsx).
 
 ---
 
@@ -526,5 +561,15 @@ Each dashboard includes post-onboarding enhancement components:
 
 ---
 
+## Known Issues & Code Discrepancies
+
+| Issue | Location | Description | Fix Needed |
+|-------|----------|-------------|------------|
+| ExpertDashboard doesn't exist | `OnboardingWizard.jsx:103` | Expert persona has `landingPage: 'ExpertDashboard'` but page doesn't exist | Change to `ExpertAssignmentQueue` or `ExpertRegistry` |
+| ProviderDashboard alias | `OnboardingWizard.jsx:81` | References `ProviderDashboard` which routes to `StartupDashboard.jsx` | Working as intended (alias) |
+| Duplicate researcher dashboards | `src/pages/` | Both `ResearcherDashboard.jsx` and `AcademiaDashboard.jsx` exist | Clarify purpose or consolidate |
+
+---
+
 *Last Updated: 2025-12-10*
-*Status: ✅ ALL FEATURES COMPLETE & INTEGRATED*
+*Validation Status: ✅ VALIDATED against codebase with discrepancies noted*
