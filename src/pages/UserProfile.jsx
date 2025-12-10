@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 
-import { User, Edit, Award, Briefcase, Mail, Globe, MapPin, Sparkles, Save, Upload, Plus, X, Calendar, Linkedin, Phone, GraduationCap, Languages } from 'lucide-react';
+import { User, Edit, Award, Briefcase, Mail, Globe, MapPin, Sparkles, Save, Upload, Plus, X, Calendar, Linkedin, Phone, GraduationCap, Languages, Trophy, Star, Target, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import SupabaseFileUploader from '../components/uploads/SupabaseFileUploader';
 import ProfileCompletionAI from '../components/profiles/ProfileCompletionAI';
@@ -38,6 +39,8 @@ function UserProfile() {
   const [newExpertise, setNewExpertise] = useState('');
   const [newProject, setNewProject] = useState(null);
   const [newTraining, setNewTraining] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
 
   // Fetch user profile from Supabase
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -158,18 +161,47 @@ function UserProfile() {
     });
   };
 
+  // Auto-save visibility when changed
+  const handleVisibilityChange = (val) => {
+    setProfileData({...profileData, profile_visibility: val});
+    updateProfileMutation.mutate({ visibility_settings: { profile_visibility: val } });
+  };
+
+  // Reset previews when exiting edit mode
+  useEffect(() => {
+    if (!editMode) {
+      setAvatarPreview(null);
+      setCoverPreview(null);
+    }
+  }, [editMode]);
+
+  // Gamification data
+  const userLevel = Math.floor((profile?.contribution_count || 0) / 10) + 1;
+  const pointsToNextLevel = ((userLevel) * 10) - (profile?.contribution_count || 0);
+  const levelProgress = ((profile?.contribution_count || 0) % 10) * 10;
+
+  const badges = [
+    { id: 'first_contribution', name: { en: 'First Steps', ar: 'الخطوات الأولى' }, icon: Star, earned: (profile?.contribution_count || 0) >= 1, color: 'bg-yellow-500' },
+    { id: 'profile_complete', name: { en: 'Complete Profile', ar: 'ملف كامل' }, icon: User, earned: (profile?.profile_completion_percentage || 0) >= 80, color: 'bg-blue-500' },
+    { id: 'skill_master', name: { en: 'Skill Master', ar: 'خبير المهارات' }, icon: Zap, earned: (profile?.skills?.length || 0) >= 5, color: 'bg-purple-500' },
+    { id: 'contributor', name: { en: 'Active Contributor', ar: 'مساهم نشط' }, icon: Trophy, earned: (profile?.contribution_count || 0) >= 10, color: 'bg-green-500' },
+  ];
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Cover & Avatar */}
       <Card className="overflow-hidden">
-        <div className="h-48 bg-gradient-to-br from-blue-600 to-purple-600 relative overflow-hidden">
-          {profile?.cover_image_url && (
-            <img src={profile.cover_image_url} alt="Cover" className="w-full h-full object-cover absolute inset-0" />
+        <div className="h-48 bg-gradient-to-br from-primary/80 to-primary relative overflow-hidden">
+          {(coverPreview || profile?.cover_image_url) && (
+            <img src={coverPreview || profile?.cover_image_url} alt="Cover" className="w-full h-full object-cover absolute inset-0" />
           )}
           {editMode && (
             <SupabaseFileUploader
               bucket="avatars"
-              onUpload={(url) => setProfileData({...profileData, cover_image_url: url})}
+              onUpload={(url) => {
+                setCoverPreview(url);
+                setProfileData({...profileData, cover_image_url: url});
+              }}
               accept="image/*"
               trigger={
                 <Button size="sm" variant="secondary" className="absolute top-4 right-4">
@@ -183,17 +215,20 @@ function UserProfile() {
         <CardContent className="pt-0">
           <div className="flex items-start gap-6 -mt-16 relative z-10">
             <div className="relative">
-              <div className="h-32 w-32 rounded-2xl bg-white border-4 border-white shadow-xl flex items-center justify-center">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="h-full w-full rounded-2xl object-cover" />
+              <div className="h-32 w-32 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden">
+                {(avatarPreview || profile?.avatar_url) ? (
+                  <img src={avatarPreview || profile?.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
                 ) : (
-                  <User className="h-16 w-16 text-slate-400" />
+                  <User className="h-16 w-16 text-muted-foreground" />
                 )}
               </div>
               {editMode && (
                 <SupabaseFileUploader
                   bucket="avatars"
-                  onUpload={(url) => setProfileData({...profileData, avatar_url: url})}
+                  onUpload={(url) => {
+                    setAvatarPreview(url);
+                    setProfileData({...profileData, avatar_url: url});
+                  }}
                   accept="image/*"
                   trigger={
                     <Button size="sm" className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-0">
@@ -206,26 +241,37 @@ function UserProfile() {
             <div className="flex-1 mt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-slate-900">{profile?.full_name_en || profile?.full_name || authUser?.user_metadata?.full_name}</h1>
-                  <p className="text-slate-600">{profile?.title_en || profile?.job_title_en || profile?.selected_persona}</p>
+                  <h1 className="text-3xl font-bold text-foreground">{profile?.full_name_en || profile?.full_name || authUser?.user_metadata?.full_name}</h1>
+                  <p className="text-muted-foreground">{profile?.title_en || profile?.job_title_en || profile?.selected_persona}</p>
                 </div>
-                <Button onClick={() => setEditMode(!editMode)} variant="outline">
-                  <Edit className="h-4 w-4 mr-2" />
-                  {editMode ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Edit Profile', ar: 'تحرير الملف' })}
-                </Button>
+                <div className="flex gap-2">
+                  {editMode && (
+                    <Button onClick={handleSave} className="bg-primary">
+                      <Save className="h-4 w-4 mr-2" />
+                      {t({ en: 'Save', ar: 'حفظ' })}
+                    </Button>
+                  )}
+                  <Button onClick={() => setEditMode(!editMode)} variant={editMode ? "outline" : "default"}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    {editMode ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Edit Profile', ar: 'تحرير الملف' })}
+                  </Button>
+                </div>
               </div>
               <div className="flex gap-2 mt-3">
                 {profile?.verified && (
-                  <Badge className="bg-blue-600">
+                  <Badge className="bg-primary">
                     {t({ en: '✓ Verified', ar: '✓ موثق' })}
                   </Badge>
                 )}
-                {profile?.achievement_badges?.map((badge, i) => (
-                  <Badge key={i} variant="outline">
-                    <Award className="h-3 w-3 mr-1" />
-                    {badge.badge_type}
-                  </Badge>
-                ))}
+                {badges.filter(b => b.earned).slice(0, 3).map((badge, i) => {
+                  const Icon = badge.icon;
+                  return (
+                    <Badge key={i} variant="outline" className="gap-1">
+                      <Icon className="h-3 w-3" />
+                      {badge.name[language]}
+                    </Badge>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -401,28 +447,66 @@ function UserProfile() {
                 </Card>
               </div>
 
-              {/* Stats */}
+              {/* Innovation Journey / Gamification */}
               <Card className="md:col-span-3">
                 <CardHeader>
-                  <CardTitle>{t({ en: 'Contribution History', ar: 'تاريخ المساهمات' })}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-primary" />
+                    {t({ en: 'Innovation Journey', ar: 'رحلة الابتكار' })}
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-4 gap-4 text-center">
-                    <div className="p-4 bg-primary/5 rounded-lg">
-                      <p className="text-3xl font-bold text-primary">{profile?.past_projects?.length || 0}</p>
-                      <p className="text-xs text-muted-foreground">{t({ en: 'Projects', ar: 'مشاريع' })}</p>
+                <CardContent className="space-y-6">
+                  {/* Level Progress */}
+                  <div className="flex items-center gap-4">
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-primary">{userLevel}</span>
                     </div>
-                    <div className="p-4 bg-secondary/50 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-1">
+                        <span className="font-medium">{t({ en: 'Level', ar: 'المستوى' })} {userLevel}</span>
+                        <span className="text-sm text-muted-foreground">{pointsToNextLevel} {t({ en: 'points to next level', ar: 'نقطة للمستوى التالي' })}</span>
+                      </div>
+                      <Progress value={levelProgress} className="h-3" />
+                    </div>
+                  </div>
+                  
+                  {/* Badges */}
+                  <div>
+                    <h4 className="font-medium mb-3">{t({ en: 'Badges Earned', ar: 'الشارات المكتسبة' })}</h4>
+                    <div className="flex flex-wrap gap-3">
+                      {badges.map((badge) => {
+                        const Icon = badge.icon;
+                        return (
+                          <div 
+                            key={badge.id} 
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${badge.earned ? badge.color + ' text-white' : 'bg-muted/50 text-muted-foreground opacity-50'}`}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span className="text-sm font-medium">{badge.name[language]}</span>
+                            {!badge.earned && <span className="text-xs">🔒</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-4 gap-4 pt-4 border-t">
+                    <div className="p-4 bg-primary/5 rounded-lg text-center">
+                      <p className="text-3xl font-bold text-primary">{profile?.contribution_count || 0}</p>
+                      <p className="text-xs text-muted-foreground">{t({ en: 'Total Points', ar: 'إجمالي النقاط' })}</p>
+                    </div>
+                    <div className="p-4 bg-secondary/50 rounded-lg text-center">
                       <p className="text-3xl font-bold text-secondary-foreground">{profile?.skills?.length || 0}</p>
                       <p className="text-xs text-muted-foreground">{t({ en: 'Skills', ar: 'مهارات' })}</p>
                     </div>
-                    <div className="p-4 bg-accent/50 rounded-lg">
-                      <p className="text-3xl font-bold text-accent-foreground">{profile?.training_completed?.length || 0}</p>
+                    <div className="p-4 bg-accent/50 rounded-lg text-center">
+                      <p className="text-3xl font-bold text-accent-foreground">{profile?.certifications?.length || profile?.training_completed?.length || 0}</p>
                       <p className="text-xs text-muted-foreground">{t({ en: 'Certifications', ar: 'شهادات' })}</p>
                     </div>
-                    <div className="p-4 bg-muted rounded-lg">
-                      <p className="text-3xl font-bold text-foreground">{profile?.contribution_count || 0}</p>
-                      <p className="text-xs text-muted-foreground">{t({ en: 'Contributions', ar: 'مساهمات' })}</p>
+                    <div className="p-4 bg-muted rounded-lg text-center">
+                      <p className="text-3xl font-bold text-foreground">{badges.filter(b => b.earned).length}</p>
+                      <p className="text-xs text-muted-foreground">{t({ en: 'Badges', ar: 'شارات' })}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -632,8 +716,8 @@ function UserProfile() {
             </div>
             <div className="space-y-6">
               <ProfileVisibilityControl 
-                visibility={profileData.profile_visibility || profile?.profile_visibility}
-                onChange={(val) => setProfileData({...profileData, profile_visibility: val})}
+                visibility={profileData.profile_visibility || profile?.visibility_settings?.profile_visibility || 'platform'}
+                onChange={handleVisibilityChange}
               />
               <Card>
                 <CardHeader>
@@ -641,16 +725,20 @@ function UserProfile() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">{t({ en: 'Profile Views', ar: 'مشاهدات الملف' })}</span>
-                    <Badge variant="secondary">0</Badge>
+                    <span className="text-sm text-muted-foreground">{t({ en: 'Level', ar: 'المستوى' })}</span>
+                    <Badge variant="secondary" className="bg-primary/10 text-primary">{userLevel}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">{t({ en: 'Connections', ar: 'الاتصالات' })}</span>
-                    <Badge variant="secondary">0</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">{t({ en: 'Contribution Points', ar: 'نقاط المساهمة' })}</span>
+                    <span className="text-sm text-muted-foreground">{t({ en: 'Points', ar: 'النقاط' })}</span>
                     <Badge variant="secondary">{profile?.contribution_count || 0}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">{t({ en: 'Badges', ar: 'الشارات' })}</span>
+                    <Badge variant="secondary">{badges.filter(b => b.earned).length}/{badges.length}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">{t({ en: 'Profile Complete', ar: 'اكتمال الملف' })}</span>
+                    <Badge variant="secondary">{profile?.profile_completion_percentage || 0}%</Badge>
                   </div>
                 </CardContent>
               </Card>
