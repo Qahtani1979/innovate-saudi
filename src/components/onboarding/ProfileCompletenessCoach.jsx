@@ -15,9 +15,13 @@ export default function ProfileCompletenessCoach({ profile, role }) {
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const requiredFields = {
-    municipality_admin: ['bio_en', 'title_en', 'organization_id', 'expertise_areas'],
+    municipality_staff: ['bio_en', 'job_title_en', 'municipality_id', 'department_en', 'expertise_areas'],
+    municipality_admin: ['bio_en', 'job_title_en', 'municipality_id', 'department_en', 'expertise_areas'],
     startup_user: ['bio_en', 'title_en', 'organization_id', 'social_links'],
+    provider: ['bio_en', 'title_en', 'organization_id', 'expertise_areas'],
     researcher: ['bio_en', 'title_en', 'organization_id', 'expertise_areas'],
+    expert: ['bio_en', 'title_en', 'expertise_areas', 'certifications'],
+    citizen: ['bio_en', 'municipality_id'],
     user: ['bio_en', 'title_en']
   };
 
