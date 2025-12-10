@@ -18,7 +18,7 @@ import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
 import { 
   Building2, ArrowRight, ArrowLeft, CheckCircle2, 
-  MapPin, Users, Shield, BookOpen, Loader2, Upload, FileText
+  MapPin, Users, Shield, BookOpen, Loader2, Upload, FileText, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -61,7 +61,7 @@ const SPECIALIZATIONS = [
 ];
 
 export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }) {
-  const { language, isRTL, t } = useLanguage();
+  const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -309,13 +309,25 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
           
-          {/* Header */}
+          {/* Header with Language Toggle */}
           <div className="text-center text-white">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Building2 className="h-8 w-8 text-purple-400" />
-              <h1 className="text-2xl font-bold">
-                {t({ en: 'Municipality Staff Setup', ar: 'إعداد موظف البلدية' })}
-              </h1>
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-24" /> {/* Spacer for balance */}
+              <div className="flex items-center gap-2">
+                <Building2 className="h-8 w-8 text-purple-400" />
+                <h1 className="text-2xl font-bold">
+                  {t({ en: 'Municipality Staff Setup', ar: 'إعداد موظف البلدية' })}
+                </h1>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleLanguage}
+                className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
+              >
+                <Globe className="h-4 w-4 mr-1" />
+                {language === 'en' ? 'عربي' : 'English'}
+              </Button>
             </div>
             <p className="text-white/60">
               {t({ en: 'Configure your municipal role and permissions', ar: 'قم بتهيئة دورك وصلاحياتك البلدية' })}
