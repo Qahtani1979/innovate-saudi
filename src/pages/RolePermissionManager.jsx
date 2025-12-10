@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../components/LanguageContext';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { toast } from 'sonner';
@@ -19,7 +18,7 @@ import PermissionTestingTool from '../components/access/PermissionTestingTool';
 import BulkRoleActions from '../components/access/BulkRoleActions';
 import RoleAuditDialog from '../components/access/RoleAuditDialog';
 import {
-  Shield, Plus, Pencil, Trash2, Users, Lock, CheckCircle, AlertCircle, Copy, TrendingUp, Key, UserCheck, TestTube, Zap, BarChart3
+  Shield, Plus, Pencil, Trash2, Users, Lock, CheckCircle, Copy, TrendingUp, UserCheck, TestTube, Zap, BarChart3
 } from 'lucide-react';
 import {
   Dialog,
@@ -147,12 +146,6 @@ const PERMISSION_CATEGORIES = {
       { key: 'citizen_dashboard_view', label: { en: 'View Dashboard', ar: 'عرض لوحة التحكم' } },
       { key: 'idea_moderate', label: { en: 'Moderate Ideas', ar: 'مراجعة الأفكار' } },
       { key: 'comment_moderate', label: { en: 'Moderate Comments', ar: 'مراجعة التعليقات' } },
-      { key: 'vote_fraud_manage', label: { en: 'Manage Vote Fraud', ar: 'إدارة التلاعب بالتصويت' } },
-      { key: 'citizen_engagement_analytics', label: { en: 'View Engagement Analytics', ar: 'عرض تحليلات المشاركة' } },
-      { key: 'idea_evaluate', label: { en: 'Evaluate Ideas', ar: 'تقييم الأفكار' } },
-      { key: 'idea_convert', label: { en: 'Convert Ideas', ar: 'تحويل الأفكار' } },
-      { key: 'idea_respond', label: { en: 'Respond to Citizens', ar: 'الرد على المواطنين' } },
-      { key: 'innovation_proposal_manage', label: { en: 'Manage Innovation Proposals', ar: 'إدارة مقترحات الابتكار' } },
     ]
   },
   policy: {
@@ -164,15 +157,8 @@ const PERMISSION_CATEGORIES = {
       { key: 'review_legal', label: { en: 'Legal Review', ar: 'مراجعة قانونية' } },
       { key: 'approve_legal_review', label: { en: 'Approve Legal Review', ar: 'الموافقة القانونية' } },
       { key: 'approve_council', label: { en: 'Council Approval', ar: 'موافقة المجلس' } },
-      { key: 'vote_on_policy', label: { en: 'Vote on Policy', ar: 'التصويت على السياسة' } },
-      { key: 'approve_ministry', label: { en: 'Ministry Approval', ar: 'موافقة الوزارة' } },
       { key: 'publish_policy', label: { en: 'Publish Policy', ar: 'نشر السياسة' } },
-      { key: 'update_implementation', label: { en: 'Update Implementation', ar: 'تحديث التنفيذ' } },
-      { key: 'track_adoption', label: { en: 'Track Adoption', ar: 'تتبع التبني' } },
-      { key: 'edit_implementation_data', label: { en: 'Edit Implementation Data', ar: 'تعديل بيانات التنفيذ' } },
       { key: 'view_all_policies', label: { en: 'View All Policies', ar: 'عرض جميع السياسات' } },
-      { key: 'view_own_policies', label: { en: 'View Own Policies', ar: 'عرض سياساتي' } },
-      { key: 'view_sensitive_data', label: { en: 'View Sensitive Data', ar: 'عرض البيانات الحساسة' } },
     ]
   }
 };
@@ -187,44 +173,186 @@ function RolePermissionManager() {
   const [selectedCategory, setSelectedCategory] = useState('challenges');
   const [auditRoleId, setAuditRoleId] = useState(null);
 
+  // Fetch roles from Supabase
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
-    queryFn: () => base44.entities.Role.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
+  // Fetch user profiles
   const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryKey: ['users-for-roles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch user functional roles for counting
+  const { data: userFunctionalRoles = [] } = useQuery({
+    queryKey: ['user-functional-roles-count'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_functional_roles')
+        .select('*')
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch role permissions
+  const { data: rolePermissionsData = [] } = useQuery({
+    queryKey: ['role-permissions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .select('*, permissions(code)');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch all permissions
+  const { data: allPermissions = [] } = useQuery({
+    queryKey: ['all-permissions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('permissions')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const createRoleMutation = useMutation({
-    mutationFn: (data) => base44.entities.Role.create(data),
+    mutationFn: async (data) => {
+      // Create the role
+      const { data: newRole, error: roleError } = await supabase
+        .from('roles')
+        .insert({ name: data.name, description: data.description })
+        .select()
+        .single();
+      
+      if (roleError) throw roleError;
+
+      // Add permissions if any
+      if (data.permissions.length > 0) {
+        // Get permission IDs for the codes
+        const { data: permRecords } = await supabase
+          .from('permissions')
+          .select('id, code')
+          .in('code', data.permissions);
+
+        if (permRecords && permRecords.length > 0) {
+          const rolePermInserts = permRecords.map(p => ({
+            role_id: newRole.id,
+            permission_id: p.id
+          }));
+
+          await supabase.from('role_permissions').insert(rolePermInserts);
+        }
+      }
+
+      return newRole;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['roles']);
+      queryClient.invalidateQueries(['role-permissions']);
       setDialogOpen(false);
       setFormData({ name: '', description: '', permissions: [] });
       toast.success(t({ en: 'Role created', ar: 'تم إنشاء الدور' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Role.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      // Update the role
+      const { error: roleError } = await supabase
+        .from('roles')
+        .update({ name: data.name, description: data.description })
+        .eq('id', id);
+      
+      if (roleError) throw roleError;
+
+      // Delete existing permissions
+      await supabase.from('role_permissions').delete().eq('role_id', id);
+
+      // Add new permissions
+      if (data.permissions.length > 0) {
+        const { data: permRecords } = await supabase
+          .from('permissions')
+          .select('id, code')
+          .in('code', data.permissions);
+
+        if (permRecords && permRecords.length > 0) {
+          const rolePermInserts = permRecords.map(p => ({
+            role_id: id,
+            permission_id: p.id
+          }));
+
+          await supabase.from('role_permissions').insert(rolePermInserts);
+        }
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['roles']);
+      queryClient.invalidateQueries(['role-permissions']);
       setDialogOpen(false);
       setEditingRole(null);
       setFormData({ name: '', description: '', permissions: [] });
       toast.success(t({ en: 'Role updated', ar: 'تم تحديث الدور' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
   const deleteRoleMutation = useMutation({
-    mutationFn: (id) => base44.entities.Role.delete(id),
+    mutationFn: async (id) => {
+      // Delete role permissions first
+      await supabase.from('role_permissions').delete().eq('role_id', id);
+      // Delete user functional roles
+      await supabase.from('user_functional_roles').delete().eq('role_id', id);
+      // Delete the role
+      const { error } = await supabase.from('roles').delete().eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['roles']);
+      queryClient.invalidateQueries(['role-permissions']);
       toast.success(t({ en: 'Role deleted', ar: 'تم حذف الدور' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
+
+  // Get permissions for a role
+  const getRolePermissions = (roleId) => {
+    return rolePermissionsData
+      .filter(rp => rp.role_id === roleId)
+      .map(rp => rp.permissions?.code)
+      .filter(Boolean);
+  };
+
+  // Get user count for a role
+  const getRoleUserCount = (roleId) => {
+    return userFunctionalRoles.filter(ufr => ufr.role_id === roleId).length;
+  };
 
   const togglePermission = (permission) => {
     if (formData.permissions.includes(permission)) {
@@ -263,7 +391,7 @@ function RolePermissionManager() {
     setFormData({
       name: role.name,
       description: role.description || '',
-      permissions: role.permissions || []
+      permissions: getRolePermissions(role.id)
     });
     setDialogOpen(true);
   };
@@ -273,7 +401,7 @@ function RolePermissionManager() {
     setFormData({
       name: `${role.name} (Copy)`,
       description: role.description || '',
-      permissions: role.permissions || []
+      permissions: getRolePermissions(role.id)
     });
     setDialogOpen(true);
   };
@@ -348,7 +476,7 @@ function RolePermissionManager() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">{t({ en: 'Total Roles', ar: 'إجمالي الأدوار' })}</p>
+                    <p className="text-sm text-muted-foreground">{t({ en: 'Total Roles', ar: 'إجمالي الأدوار' })}</p>
                     <p className="text-3xl font-bold text-indigo-600">{roles.length}</p>
                   </div>
                   <Shield className="h-8 w-8 text-indigo-600" />
@@ -360,7 +488,7 @@ function RolePermissionManager() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">{t({ en: 'Total Users', ar: 'إجمالي المستخدمين' })}</p>
+                    <p className="text-sm text-muted-foreground">{t({ en: 'Total Users', ar: 'إجمالي المستخدمين' })}</p>
                     <p className="text-3xl font-bold text-purple-600">{users.length}</p>
                   </div>
                   <Users className="h-8 w-8 text-purple-600" />
@@ -372,18 +500,14 @@ function RolePermissionManager() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">{t({ en: 'System Roles', ar: 'أدوار النظام' })}</p>
-                    <p className="text-3xl font-bold text-pink-600">
-                      {roles.filter(r => r.is_system_role).length}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t({ en: 'Role Assignments', ar: 'تعيينات الأدوار' })}</p>
+                    <p className="text-3xl font-bold text-pink-600">{userFunctionalRoles.length}</p>
                   </div>
                   <Lock className="h-8 w-8 text-pink-600" />
                 </div>
               </CardContent>
             </Card>
           </div>
-
-
 
           <Card>
             <CardHeader>
@@ -398,7 +522,7 @@ function RolePermissionManager() {
             <CardContent>
               <div className="space-y-3">
                 {roles.map((role) => (
-                  <div key={role.id} className="p-4 border rounded-lg hover:bg-slate-50 transition-all">
+                  <div key={role.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-all">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -411,16 +535,16 @@ function RolePermissionManager() {
                           )}
                         </div>
                         {role.description && (
-                          <p className="text-sm text-slate-600 mb-3">{role.description}</p>
+                          <p className="text-sm text-muted-foreground mb-3">{role.description}</p>
                         )}
-                        <div className="flex items-center gap-4 text-sm text-slate-600">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Shield className="h-4 w-4" />
-                            {role.permissions?.length || 0} {t({ en: 'permissions', ar: 'صلاحية' })}
+                            {getRolePermissions(role.id).length} {t({ en: 'permissions', ar: 'صلاحية' })}
                           </span>
                           <span className="flex items-center gap-1">
                             <Users className="h-4 w-4" />
-                            {users.filter(u => u.assigned_roles?.includes(role.id)).length} {t({ en: 'users', ar: 'مستخدم' })}
+                            {getRoleUserCount(role.id)} {t({ en: 'users', ar: 'مستخدم' })}
                           </span>
                         </div>
                       </div>
@@ -443,7 +567,7 @@ function RolePermissionManager() {
                                 deleteRoleMutation.mutate(role.id);
                               }
                             }}
-                            className="text-red-600"
+                            className="text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -553,7 +677,7 @@ function RolePermissionManager() {
                           className={`p-3 border rounded-lg cursor-pointer transition-all ${
                             formData.permissions.includes(perm.key) ?
                             'bg-indigo-50 border-indigo-300' :
-                            'hover:bg-slate-50'
+                            'hover:bg-muted/50'
                           }`}
                           onClick={() => togglePermission(perm.key)}
                         >
@@ -562,7 +686,7 @@ function RolePermissionManager() {
                               {formData.permissions.includes(perm.key) ? (
                                 <CheckCircle className="h-4 w-4 text-indigo-600" />
                               ) : (
-                                <div className="h-4 w-4 border-2 border-slate-300 rounded" />
+                                <div className="h-4 w-4 border-2 border-muted-foreground rounded" />
                               )}
                               <span className="text-sm font-medium">{perm.label[language]}</span>
                             </div>

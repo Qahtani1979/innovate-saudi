@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -9,43 +9,88 @@ import { createPageUrl } from '../utils';
 import {
   Shield, Users, Eye, Lock, Activity, TrendingUp, Network, BarChart3, AlertTriangle
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import PermissionInheritanceVisualizer from '../components/access/PermissionInheritanceVisualizer';
 import RolePermissionMatrix from '../components/access/RolePermissionMatrix';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function RBACDashboardPage() {
   const { t } = useLanguage();
-  const [selectedUser, setSelectedUser] = useState(null);
 
+  // Fetch user profiles
   const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryKey: ['rbac-users'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
+  // Fetch roles
   const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => base44.entities.Role.list()
+    queryKey: ['rbac-roles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list()
+  // Fetch user functional roles (for user-role assignments)
+  const { data: userFunctionalRoles = [] } = useQuery({
+    queryKey: ['rbac-user-functional-roles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_functional_roles')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
+  // Fetch role permissions
+  const { data: rolePermissions = [] } = useQuery({
+    queryKey: ['rbac-role-permissions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .select('*, permissions(code)');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch delegations
   const { data: delegations = [] } = useQuery({
-    queryKey: ['delegations'],
-    queryFn: () => base44.entities.DelegationRule.list()
+    queryKey: ['rbac-delegations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('delegation_rules')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
+  // Fetch recent access logs
   const { data: accessLogs = [] } = useQuery({
-    queryKey: ['recent-access-logs'],
+    queryKey: ['rbac-access-logs'],
     queryFn: async () => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      return base44.entities.AccessLog.filter({
-        timestamp: { $gte: sevenDaysAgo.toISOString() }
-      });
+      const { data, error } = await supabase
+        .from('access_logs')
+        .select('*')
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data || [];
     }
   });
 
@@ -56,16 +101,22 @@ function RBACDashboardPage() {
     const entityAccess = {};
 
     roles.forEach(role => {
-      const userCount = users.filter(u => u.assigned_roles?.includes(role.id)).length;
+      const userCount = userFunctionalRoles.filter(ufr => ufr.role_id === role.id && ufr.is_active).length;
+      const permCount = rolePermissions.filter(rp => rp.role_id === role.id).length;
+      
       roleUsage[role.name] = {
         users: userCount,
-        permissions: role.permissions?.length || 0,
+        permissions: permCount,
         active: userCount > 0
       };
 
-      role.permissions?.forEach(perm => {
-        permissionUsage[perm] = (permissionUsage[perm] || 0) + userCount;
-      });
+      // Count permission usage
+      rolePermissions
+        .filter(rp => rp.role_id === role.id)
+        .forEach(rp => {
+          const permCode = rp.permissions?.code || rp.permission_id;
+          permissionUsage[permCode] = (permissionUsage[permCode] || 0) + userCount;
+        });
     });
 
     accessLogs.forEach(log => {
@@ -74,14 +125,16 @@ function RBACDashboardPage() {
       }
     });
 
+    const totalPermissions = Object.values(roleUsage).reduce((sum, r) => sum + r.permissions, 0);
+    
     return {
       roleUsage,
       permissionUsage,
       entityAccess,
       activeDelegations: delegations.filter(d => d.is_active).length,
-      avgPermissionsPerRole: roles.reduce((sum, r) => sum + (r.permissions?.length || 0), 0) / roles.length
+      avgPermissionsPerRole: roles.length > 0 ? totalPermissions / roles.length : 0
     };
-  }, [users, roles, teams, delegations, accessLogs]);
+  }, [users, roles, userFunctionalRoles, rolePermissions, delegations, accessLogs]);
 
   const roleUsageData = Object.entries(analytics.roleUsage)
     .map(([name, data]) => ({ name, users: data.users, permissions: data.permissions }))
@@ -96,7 +149,7 @@ function RBACDashboardPage() {
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--destructive))', 'hsl(217, 91%, 60%)', 'hsl(330, 81%, 60%)', 'hsl(190, 90%, 50%)'];
 
   return (
     <div className="space-y-6">
@@ -119,7 +172,7 @@ function RBACDashboardPage() {
           <CardContent className="pt-6">
             <Shield className="h-8 w-8 text-blue-600 mb-2" />
             <p className="text-3xl font-bold">{roles.length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Roles', ar: 'الأدوار' })}</p>
+            <p className="text-sm text-muted-foreground">{t({ en: 'Roles', ar: 'الأدوار' })}</p>
           </CardContent>
         </Card>
 
@@ -127,15 +180,15 @@ function RBACDashboardPage() {
           <CardContent className="pt-6">
             <Users className="h-8 w-8 text-purple-600 mb-2" />
             <p className="text-3xl font-bold">{users.length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Users', ar: 'المستخدمين' })}</p>
+            <p className="text-sm text-muted-foreground">{t({ en: 'Users', ar: 'المستخدمين' })}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="pt-6">
             <Network className="h-8 w-8 text-green-600 mb-2" />
-            <p className="text-3xl font-bold">{teams.length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Teams', ar: 'الفرق' })}</p>
+            <p className="text-3xl font-bold">{userFunctionalRoles.filter(ufr => ufr.is_active).length}</p>
+            <p className="text-sm text-muted-foreground">{t({ en: 'Role Assignments', ar: 'تعيينات الأدوار' })}</p>
           </CardContent>
         </Card>
 
@@ -143,7 +196,7 @@ function RBACDashboardPage() {
           <CardContent className="pt-6">
             <Activity className="h-8 w-8 text-orange-600 mb-2" />
             <p className="text-3xl font-bold">{analytics.activeDelegations}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Delegations', ar: 'التفويضات' })}</p>
+            <p className="text-sm text-muted-foreground">{t({ en: 'Delegations', ar: 'التفويضات' })}</p>
           </CardContent>
         </Card>
 
@@ -151,13 +204,13 @@ function RBACDashboardPage() {
           <CardContent className="pt-6">
             <Eye className="h-8 w-8 text-teal-600 mb-2" />
             <p className="text-3xl font-bold">{accessLogs.length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Access Events', ar: 'أحداث الوصول' })}</p>
+            <p className="text-sm text-muted-foreground">{t({ en: 'Access Events', ar: 'أحداث الوصول' })}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Permission Inheritance Visualizer */}
-      <PermissionInheritanceVisualizer users={users} roles={roles} teams={teams} delegations={delegations} />
+      <PermissionInheritanceVisualizer users={users} roles={roles} delegations={delegations} />
 
       {/* Role Permission Matrix */}
       <RolePermissionMatrix roles={roles} users={users} />
@@ -177,7 +230,7 @@ function RBACDashboardPage() {
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="users" fill="#3b82f6" name="Users" />
+                <Bar dataKey="users" fill="hsl(var(--primary))" name="Users" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -196,7 +249,7 @@ function RBACDashboardPage() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#8b5cf6" name="Users" />
+                <Bar dataKey="count" fill="hsl(var(--secondary))" name="Users" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -245,9 +298,9 @@ function RBACDashboardPage() {
                 <div key={i} className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">{role.name}</span>
-                    <span className="text-slate-600">{role.permissions} perms</span>
+                    <span className="text-muted-foreground">{role.permissions} perms</span>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
                       style={{ width: `${Math.min(100, (role.permissions / 50) * 100)}%` }}
@@ -270,7 +323,7 @@ function RBACDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-700 mb-3">
+            <p className="text-sm text-foreground/70 mb-3">
               {t({ en: 'The following roles have no users assigned:', ar: 'الأدوار التالية ليس لديها مستخدمين معينين:' })}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -313,11 +366,11 @@ function RBACDashboardPage() {
           </Card>
         </Link>
 
-        <Link to={createPageUrl('TeamManagement')}>
+        <Link to={createPageUrl('RoleRequestCenter')}>
           <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-purple-400">
             <CardContent className="pt-6 text-center">
               <Network className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-              <p className="font-medium">{t({ en: 'Teams', ar: 'الفرق' })}</p>
+              <p className="font-medium">{t({ en: 'Role Requests', ar: 'طلبات الأدوار' })}</p>
             </CardContent>
           </Card>
         </Link>
