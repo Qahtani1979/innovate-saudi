@@ -1,7 +1,7 @@
 # Phase 3: Municipality Staff Specialized Onboarding + Dashboard
 ## Validation Plan
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Last Updated:** 2024-12-10  
 **Reference:** `docs/personas/MUNICIPALITY_STAFF_PERSONA.md`
 
@@ -15,12 +15,15 @@
 | role_requests using metadata instead of municipality_id column | ✅ Fixed | MunicipalityStaffOnboardingWizard.jsx | 2024-12-10 |
 | Missing department_en/job_title_en sync in user_profiles | ✅ Fixed | MunicipalityStaffOnboardingWizard.jsx | 2024-12-10 |
 | ProfileCompletenessCoach missing municipality_staff role | ✅ Fixed | ProfileCompletenessCoach.jsx | 2024-12-10 |
+| IdeasManagement missing municipality_id filter | ✅ Fixed | IdeasManagement.jsx | 2024-12-10 |
+| Challenge missing citizen_origin_idea_id link | ✅ Fixed | IdeasManagement.jsx | 2024-12-10 |
+| Missing notification to idea submitter on conversion | ✅ Fixed | IdeasManagement.jsx | 2024-12-10 |
 | RLS on challenges/pilots client-side only (base44) | ⚠️ Known | Requires Supabase direct queries | - |
-| Citizen Idea Conversion Flow | 📋 Pending | Not yet implemented | - |
 
 ### Files Modified
 - `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` - Fixed DB writes
 - `src/components/onboarding/ProfileCompletenessCoach.jsx` - Added municipality_staff role
+- `src/pages/IdeasManagement.jsx` - Fixed municipality filter, citizen_origin_idea_id, notifications
 
 ---
 
@@ -191,12 +194,12 @@
 ### 3.2 Citizen Idea Conversion (6 checks)
 | ID | Check | Expected | Priority | Status |
 |----|-------|----------|----------|--------|
-| M3-095 | IdeasManagement page accessible | Permission check | High | 📋 Pending |
-| M3-096 | Approved ideas list loads | municipality_id filter | High | 📋 Pending |
-| M3-097 | "Convert to Challenge" action works | New challenge created | High | 📋 Pending |
-| M3-098 | citizen_origin_idea_id linked | FK reference | High | 📋 Pending |
-| M3-099 | Original idea status updated | Converted flag | Medium | 📋 Pending |
-| M3-100 | Idea submitter notified | Notification sent | Medium | 📋 Pending |
+| M3-095 | IdeasManagement page accessible | Permission check | High | ✅ |
+| M3-096 | Approved ideas list loads with municipality_id filter | municipality_id filter from URL or profile | High | ✅ Fixed |
+| M3-097 | "Convert to Challenge" action works | New challenge created | High | ✅ |
+| M3-098 | citizen_origin_idea_id linked | FK reference on challenge | High | ✅ Fixed |
+| M3-099 | Original idea status updated | status = 'converted_to_challenge' | Medium | ✅ |
+| M3-100 | Idea submitter notified | Notification sent via autoNotificationTriggers | Medium | ✅ Fixed |
 
 ---
 
@@ -273,14 +276,14 @@
 | AI Tools | 8 | 8 | 0 | 0 | 0 |
 | Data Queries | 10 | 8 | 0 | 0 | 2 |
 | Challenge Submission | 10 | 10 | 0 | 0 | 0 |
-| Citizen Idea Conversion | 6 | 0 | 0 | 6 | 0 |
+| Citizen Idea Conversion | 6 | 3 | 3 | 0 | 0 |
 | Bilingual & RTL | 12 | 12 | 0 | 0 | 0 |
 | Theme & Style | 8 | 8 | 0 | 0 | 0 |
 | Error Handling | 8 | 7 | 0 | 0 | 1 |
 | Performance | 6 | 6 | 0 | 0 | 0 |
-| **TOTAL** | **134** | **120** | **4** | **6** | **4** |
+| **TOTAL** | **134** | **123** | **7** | **0** | **4** |
 
-**Phase 3 Completion: 90% (120/134 passed, 4 fixed, 6 pending, 4 minor issues)**
+**Phase 3 Completion: 97% (130/134 passed including fixes, 4 minor known issues)**
 
 ---
 

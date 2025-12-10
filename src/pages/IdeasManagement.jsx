@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
 import MergeDuplicatesDialog from '../components/citizen/MergeDuplicatesDialog';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 import {
   Lightbulb, CheckCircle2, XCircle, AlertTriangle, Eye, MessageSquare,
@@ -43,6 +44,10 @@ import IdeaToChallengeConverter from '../components/citizen/IdeaToChallengeConve
 
 function IdeasManagement() {
   const { language, isRTL, t } = useLanguage();
+  const { userProfile } = useAuth();
+  const [searchParams] = useSearchParams();
+  const municipalityFilter = searchParams.get('municipality') || userProfile?.municipality_id;
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -56,9 +61,16 @@ function IdeasManagement() {
   const [selectedIdeaIds, setSelectedIdeaIds] = useState([]);
   const queryClient = useQueryClient();
 
+  // Filter by municipality if provided (from URL or user profile)
   const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ['citizen-ideas'],
-    queryFn: () => base44.entities.CitizenIdea.list('-created_date', 200)
+    queryKey: ['citizen-ideas', municipalityFilter],
+    queryFn: async () => {
+      const allIdeas = await base44.entities.CitizenIdea.list('-created_date', 200);
+      if (municipalityFilter) {
+        return allIdeas.filter(idea => idea.municipality_id === municipalityFilter);
+      }
+      return allIdeas;
+    }
   });
 
   const { data: challenges = [] } = useQuery({
@@ -116,10 +128,11 @@ function IdeasManagement() {
         description_en: selectedIdea.description,
         description_ar: selectedIdea.description,
         sector: selectedIdea.category,
-        municipality_id: selectedIdea.municipality_id || 'Unknown',
+        municipality_id: selectedIdea.municipality_id || municipalityFilter,
         priority: 'tier_3',
         status: 'submitted',
         source: 'citizen_idea',
+        citizen_origin_idea_id: selectedIdea.id, // Link back to original idea
         keywords: selectedIdea.ai_classification?.keywords || [],
         created_by: user.email,
         challenge_owner: selectedIdea.submitter_email || user.email
@@ -131,6 +144,18 @@ function IdeasManagement() {
         reviewed_by: user.email,
         review_date: new Date().toISOString()
       });
+
+      // Notify the idea submitter about conversion
+      if (selectedIdea.submitter_email) {
+        await base44.functions.invoke('autoNotificationTriggers', {
+          entity_name: 'CitizenIdea',
+          entity_id: selectedIdea.id,
+          old_status: selectedIdea.status,
+          new_status: 'converted_to_challenge',
+          citizen_email: selectedIdea.submitter_email,
+          challenge_id: newChallenge.id
+        });
+      }
 
       await base44.functions.invoke('generateEmbeddings', {
         entity_name: 'Challenge',
