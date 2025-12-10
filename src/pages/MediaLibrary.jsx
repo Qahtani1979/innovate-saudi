@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Image, Video, FileText, Upload, Search, Trash2, Download, Grid, List } from 'lucide-react';
+import { Image, Video, FileText, Upload, Search, Trash2, Download, Grid, List, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MediaLibrary() {
@@ -14,17 +14,115 @@ export default function MediaLibrary() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [selectedType, setSelectedType] = useState('all');
+  const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
-  // Mock media data - in real implementation, you'd have a MediaFile entity
-  const mockMedia = [
-    { id: '1', name: 'pilot-riyadh-traffic.jpg', type: 'image', size: '2.4 MB', url: 'https://images.unsplash.com/photo-1590642916589-592bca10dfbf', uploaded_date: '2025-01-15', used_in: ['Pilot PLT-001'] },
-    { id: '2', name: 'challenge-presentation.pdf', type: 'document', size: '1.2 MB', url: '#', uploaded_date: '2025-01-14', used_in: ['Challenge CH-035'] },
-    { id: '3', name: 'demo-video.mp4', type: 'video', size: '15.8 MB', url: '#', uploaded_date: '2025-01-13', used_in: ['Solution SOL-120'] },
-    { id: '4', name: 'municipality-banner.jpg', type: 'image', size: '3.1 MB', url: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000', uploaded_date: '2025-01-12', used_in: [] }
-  ];
+  // Fetch files from Supabase storage
+  const { data: media = [], isLoading } = useQuery({
+    queryKey: ['media-library'],
+    queryFn: async () => {
+      const { data, error } = await supabase.storage
+        .from('uploads')
+        .list('public', {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        });
+      
+      if (error) {
+        console.error('Error fetching media:', error);
+        return [];
+      }
+      
+      // Get public URLs and metadata for each file
+      const filesWithUrls = await Promise.all(
+        (data || []).map(async (file) => {
+          const { data: urlData } = supabase.storage
+            .from('uploads')
+            .getPublicUrl(`public/${file.name}`);
+          
+          const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+          let type = 'document';
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExt)) type = 'image';
+          if (['mp4', 'webm', 'mov', 'avi'].includes(fileExt)) type = 'video';
+          
+          return {
+            id: file.id,
+            name: file.name,
+            type,
+            size: formatFileSize(file.metadata?.size || 0),
+            url: urlData.publicUrl,
+            uploaded_date: file.created_at ? new Date(file.created_at).toLocaleDateString() : 'Unknown',
+            used_in: [] // Would need separate tracking table
+          };
+        })
+      );
+      
+      return filesWithUrls;
+    }
+  });
 
-  const [media] = useState(mockMedia);
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `public/${fileName}`;
+      
+      const { data, error } = await supabase.storage
+        .from('uploads')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['media-library']);
+      toast.success(t({ en: 'File uploaded successfully', ar: 'تم رفع الملف بنجاح' }));
+    },
+    onError: (error) => {
+      toast.error(t({ en: 'Upload failed', ar: 'فشل الرفع' }));
+      console.error('Upload error:', error);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (fileName) => {
+      const { error } = await supabase.storage
+        .from('uploads')
+        .remove([`public/${fileName}`]);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['media-library']);
+      toast.success(t({ en: 'File deleted', ar: 'تم حذف الملف' }));
+    },
+    onError: (error) => {
+      toast.error(t({ en: 'Delete failed', ar: 'فشل الحذف' }));
+      console.error('Delete error:', error);
+    }
+  });
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploading(true);
+    await uploadMutation.mutateAsync(file);
+    setUploading(false);
+    e.target.value = '';
+  };
 
   const fileTypes = [
     { value: 'all', label: { en: 'All Files', ar: 'جميع الملفات' }, icon: FileText },
@@ -39,7 +137,7 @@ export default function MediaLibrary() {
   );
 
   const totalSize = media.reduce((sum, file) => {
-    const size = parseFloat(file.size);
+    const size = parseFloat(file.size) || 0;
     return sum + size;
   }, 0);
 
@@ -54,10 +152,28 @@ export default function MediaLibrary() {
             {t({ en: 'Centralized file and media management', ar: 'إدارة مركزية للملفات والوسائط' })}
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {t({ en: 'Upload Files', ar: 'رفع ملفات' })}
-        </Button>
+        <label>
+          <input
+            type="file"
+            className="hidden"
+            onChange={handleFileUpload}
+            disabled={uploading}
+          />
+          <Button 
+            className="bg-gradient-to-r from-blue-600 to-purple-600 cursor-pointer"
+            disabled={uploading}
+            asChild
+          >
+            <span>
+              {uploading ? (
+                <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
+              ) : (
+                <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              )}
+              {t({ en: 'Upload Files', ar: 'رفع ملفات' })}
+            </span>
+          </Button>
+        </label>
       </div>
 
       {/* Stats */}
@@ -126,8 +242,27 @@ export default function MediaLibrary() {
         </CardContent>
       </Card>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && filteredMedia.length === 0 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <FileText className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-500">
+              {t({ en: 'No files found. Upload your first file!', ar: 'لم يتم العثور على ملفات. ارفع أول ملف!' })}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Media Grid */}
-      {viewMode === 'grid' ? (
+      {!isLoading && filteredMedia.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {filteredMedia.map(file => {
             const Icon = file.type === 'image' ? Image : file.type === 'video' ? Video : FileText;
@@ -144,16 +279,21 @@ export default function MediaLibrary() {
                   )}
                   <p className="text-sm font-medium text-slate-900 truncate">{file.name}</p>
                   <p className="text-xs text-slate-500 mt-1">{file.size}</p>
-                  {file.used_in.length > 0 && (
-                    <Badge variant="outline" className="text-xs mt-2">
-                      {t({ en: 'Used in', ar: 'مستخدم في' })} {file.used_in.length}
-                    </Badge>
-                  )}
                   <div className="flex gap-2 mt-3">
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => window.open(file.url, '_blank')}
+                    >
                       <Download className="h-3 w-3" />
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => deleteMutation.mutate(file.name)}
+                    >
                       <Trash2 className="h-3 w-3 text-red-600" />
                     </Button>
                   </div>
@@ -162,7 +302,10 @@ export default function MediaLibrary() {
             );
           })}
         </div>
-      ) : (
+      )}
+
+      {/* Media List */}
+      {!isLoading && filteredMedia.length > 0 && viewMode === 'list' && (
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-2">
@@ -178,15 +321,18 @@ export default function MediaLibrary() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {file.used_in.length > 0 && (
-                        <Badge variant="outline" className="text-xs">
-                          {file.used_in.length} refs
-                        </Badge>
-                      )}
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.open(file.url, '_blank')}
+                      >
                         <Download className="h-3 w-3" />
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => deleteMutation.mutate(file.name)}
+                      >
                         <Trash2 className="h-3 w-3 text-red-600" />
                       </Button>
                     </div>

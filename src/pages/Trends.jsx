@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,22 +13,97 @@ function TrendsPage() {
 
   const { data: trends = [] } = useQuery({
     queryKey: ['trends'],
-    queryFn: () => base44.entities.TrendEntry.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('trend_entries').select('*').order('created_at', { ascending: false });
+      return data || [];
+    }
   });
 
   const { data: globalTrends = [] } = useQuery({
     queryKey: ['global-trends'],
-    queryFn: () => base44.entities.GlobalTrend.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('global_trends').select('*').order('created_at', { ascending: false });
+      return data || [];
+    }
   });
 
-  const mockTrendData = [
-    { month: 'Jan', complaints: 120, pilots: 8, solutions: 15 },
-    { month: 'Feb', complaints: 135, pilots: 10, solutions: 18 },
-    { month: 'Mar', complaints: 125, pilots: 12, solutions: 22 },
-    { month: 'Apr', complaints: 110, pilots: 15, solutions: 25 },
-    { month: 'May', complaints: 95, pilots: 18, solutions: 28 },
-    { month: 'Jun', complaints: 80, pilots: 20, solutions: 32 }
-  ];
+  const { data: challenges = [] } = useQuery({
+    queryKey: ['challenges-trends'],
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('id, created_at, status').eq('is_deleted', false);
+      return data || [];
+    }
+  });
+
+  const { data: pilots = [] } = useQuery({
+    queryKey: ['pilots-trends'],
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('id, created_at, stage').eq('is_deleted', false);
+      return data || [];
+    }
+  });
+
+  const { data: solutions = [] } = useQuery({
+    queryKey: ['solutions-trends'],
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('id, created_at, status').eq('is_deleted', false);
+      return data || [];
+    }
+  });
+
+  // Calculate real trend data from last 6 months
+  const trendData = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      const monthName = date.toLocaleDateString('en', { month: 'short' });
+      
+      const challengesInMonth = challenges.filter(c => {
+        const created = new Date(c.created_at);
+        return created >= date && created <= monthEnd;
+      }).length;
+      
+      const pilotsInMonth = pilots.filter(p => {
+        const created = new Date(p.created_at);
+        return created >= date && created <= monthEnd;
+      }).length;
+      
+      const solutionsInMonth = solutions.filter(s => {
+        const created = new Date(s.created_at);
+        return created >= date && created <= monthEnd;
+      }).length;
+      
+      months.push({
+        month: monthName,
+        challenges: challengesInMonth,
+        pilots: pilotsInMonth,
+        solutions: solutionsInMonth
+      });
+    }
+    
+    return months;
+  }, [challenges, pilots, solutions]);
+
+  // Calculate growth rates
+  const calculateGrowth = (data, field) => {
+    if (data.length < 2) return 0;
+    const recent = data.slice(-3).reduce((sum, d) => sum + d[field], 0);
+    const previous = data.slice(0, 3).reduce((sum, d) => sum + d[field], 0);
+    if (previous === 0) return recent > 0 ? 100 : 0;
+    return Math.round(((recent - previous) / previous) * 100);
+  };
+
+  const challengeGrowth = calculateGrowth(trendData, 'challenges');
+  const pilotGrowth = calculateGrowth(trendData, 'pilots');
+  const solutionGrowth = calculateGrowth(trendData, 'solutions');
+
+  // Get emerging challenges (recent high-priority ones)
+  const emergingChallenges = challenges
+    .filter(c => c.status === 'submitted' || c.status === 'under_review')
+    .slice(0, 3);
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -42,14 +117,20 @@ function TrendsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-green-50 to-white">
+        <Card className="bg-gradient-to-br from-red-50 to-white">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Complaint Reduction', ar: 'تقليل الشكاوى' })}</p>
-                <p className="text-3xl font-bold text-green-600">-33%</p>
+                <p className="text-sm text-slate-600">{t({ en: 'Challenge Growth', ar: 'نمو التحديات' })}</p>
+                <p className={`text-3xl font-bold ${challengeGrowth >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {challengeGrowth >= 0 ? '+' : ''}{challengeGrowth}%
+                </p>
               </div>
-              <TrendingDown className="h-8 w-8 text-green-600" />
+              {challengeGrowth >= 0 ? (
+                <TrendingUp className="h-8 w-8 text-red-600" />
+              ) : (
+                <TrendingDown className="h-8 w-8 text-green-600" />
+              )}
             </div>
           </CardContent>
         </Card>
@@ -58,7 +139,9 @@ function TrendsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Active Pilots', ar: 'تجارب نشطة' })}</p>
-                <p className="text-3xl font-bold text-blue-600">+150%</p>
+                <p className={`text-3xl font-bold ${pilotGrowth >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                  {pilotGrowth >= 0 ? '+' : ''}{pilotGrowth}%
+                </p>
               </div>
               <TrendingUp className="h-8 w-8 text-blue-600" />
             </div>
@@ -69,7 +152,9 @@ function TrendsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Solution Growth', ar: 'نمو الحلول' })}</p>
-                <p className="text-3xl font-bold text-purple-600">+113%</p>
+                <p className={`text-3xl font-bold ${solutionGrowth >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                  {solutionGrowth >= 0 ? '+' : ''}{solutionGrowth}%
+                </p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-600" />
             </div>
@@ -83,12 +168,12 @@ function TrendsPage() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={mockTrendData}>
+            <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="complaints" stroke="#ef4444" strokeWidth={2} name="Complaints" />
+              <Line type="monotone" dataKey="challenges" stroke="#ef4444" strokeWidth={2} name="Challenges" />
               <Line type="monotone" dataKey="pilots" stroke="#3b82f6" strokeWidth={2} name="Pilots" />
               <Line type="monotone" dataKey="solutions" stroke="#8b5cf6" strokeWidth={2} name="Solutions" />
             </LineChart>
@@ -101,19 +186,27 @@ function TrendsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-red-600" />
-              {t({ en: 'Emerging Challenges', ar: 'تحديات ناشئة' })}
+              {t({ en: 'Pending Challenges', ar: 'التحديات المعلقة' })}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {['Drainage overflow in rainy season', 'Smart parking demand', 'Green space accessibility'].map((trend, i) => (
-                <div key={i} className="p-3 bg-red-50 rounded-lg border border-red-200">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-red-900">{trend}</p>
-                    <Badge className="bg-red-600 text-white">+{15 + i * 5}%</Badge>
+              {emergingChallenges.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">
+                  {t({ en: 'No pending challenges', ar: 'لا توجد تحديات معلقة' })}
+                </p>
+              ) : (
+                emergingChallenges.map((challenge, i) => (
+                  <div key={challenge.id} className="p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-red-900">
+                        {t({ en: `Challenge ${i + 1}`, ar: `تحدي ${i + 1}` })}
+                      </p>
+                      <Badge className="bg-red-600 text-white">{challenge.status}</Badge>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -127,16 +220,22 @@ function TrendsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {globalTrends.slice(0, 3).map((trend) => (
-                <div key={trend.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm font-medium text-blue-900">
-                    {language === 'ar' && trend.title_ar ? trend.title_ar : trend.title_en}
-                  </p>
-                  {trend.source && (
-                    <p className="text-xs text-slate-600 mt-1">{trend.source}</p>
-                  )}
-                </div>
-              ))}
+              {globalTrends.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">
+                  {t({ en: 'No global trends available', ar: 'لا توجد اتجاهات عالمية' })}
+                </p>
+              ) : (
+                globalTrends.slice(0, 3).map((trend) => (
+                  <div key={trend.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-medium text-blue-900">
+                      {language === 'ar' && trend.title_ar ? trend.title_ar : trend.title_en}
+                    </p>
+                    {trend.source && (
+                      <p className="text-xs text-slate-600 mt-1">{trend.source}</p>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
