@@ -790,6 +790,10 @@ Return comprehensive suggestions for all fields.`,
         onboarding_completed: !redirectToSpecialized,
         onboarding_completed_at: redirectToSpecialized ? null : new Date().toISOString(),
         profile_completion_percentage: calculateProfileCompletion(formData),
+        // New tracking columns
+        onboarding_step: 6, // Completed main wizard
+        selected_persona: formData.selectedPersona || null,
+        persona_onboarding_completed: !redirectToSpecialized, // Only true if no specialized wizard needed
         extracted_data: {
           years_of_experience: formData.years_of_experience,
           imported_from_cv: !!formData.cv_url,

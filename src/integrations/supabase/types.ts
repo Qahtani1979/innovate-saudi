@@ -9044,12 +9044,16 @@ export type Database = {
           notification_preferences: Json | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
+          onboarding_step: number | null
           organization_ar: string | null
           organization_en: string | null
           organization_id: string | null
+          persona_onboarding_completed: boolean | null
           phone_number: string | null
           preferred_language: string | null
           profile_completion_percentage: number | null
+          region_id: string | null
+          selected_persona: string | null
           skills: string[] | null
           social_links: Json | null
           timezone: string | null
@@ -9108,12 +9112,16 @@ export type Database = {
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
+          onboarding_step?: number | null
           organization_ar?: string | null
           organization_en?: string | null
           organization_id?: string | null
+          persona_onboarding_completed?: boolean | null
           phone_number?: string | null
           preferred_language?: string | null
           profile_completion_percentage?: number | null
+          region_id?: string | null
+          selected_persona?: string | null
           skills?: string[] | null
           social_links?: Json | null
           timezone?: string | null
@@ -9172,12 +9180,16 @@ export type Database = {
           notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
+          onboarding_step?: number | null
           organization_ar?: string | null
           organization_en?: string | null
           organization_id?: string | null
+          persona_onboarding_completed?: boolean | null
           phone_number?: string | null
           preferred_language?: string | null
           profile_completion_percentage?: number | null
+          region_id?: string | null
+          selected_persona?: string | null
           skills?: string[] | null
           social_links?: Json | null
           timezone?: string | null
@@ -9205,6 +9217,13 @@ export type Database = {
             columns: ["municipality_id"]
             isOneToOne: false
             referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_profiles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
             referencedColumns: ["id"]
           },
         ]

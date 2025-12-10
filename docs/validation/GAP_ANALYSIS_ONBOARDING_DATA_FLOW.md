@@ -1,5 +1,18 @@
 # Gap Analysis: Onboarding Wizard Fields vs Database Tables
 
+## Status: ✅ CRITICAL GAPS FIXED (2024-12-10)
+
+### Fixes Applied:
+1. ✅ Added `onboarding_step`, `selected_persona`, `persona_onboarding_completed`, `region_id` columns to `user_profiles`
+2. ✅ Created `cv-uploads` and `avatars` storage buckets with RLS policies
+3. ✅ Fixed ResearcherOnboardingWizard - now receives Stage 1 data
+4. ✅ Fixed MunicipalityStaffOnboardingWizard - now receives Stage 1 data
+5. ✅ Fixed CitizenOnboardingWizard - now receives Stage 1 data
+6. ✅ Rewrote StartupOnboardingWizard - now uses Supabase + receives Stage 1 data
+7. ✅ All Stage 2 wizards now set `persona_onboarding_completed = true`
+
+---
+
 ## Overview
 This document identifies discrepancies between:
 1. Fields collected in onboarding wizards
