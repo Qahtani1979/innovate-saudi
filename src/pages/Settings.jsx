@@ -257,46 +257,26 @@ function Settings() {
       </div>
 
       <Tabs defaultValue="account">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="account">
             <User className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Account', ar: 'الحساب' })}</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications">
-            <Bell className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Notifications', ar: 'الإشعارات' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Account', ar: 'الحساب' })}</span>
           </TabsTrigger>
           <TabsTrigger value="language">
             <Globe className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Language', ar: 'اللغة' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Language', ar: 'اللغة' })}</span>
           </TabsTrigger>
           <TabsTrigger value="security">
             <Shield className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Security', ar: 'الأمان' })}</span>
-          </TabsTrigger>
-          <TabsTrigger value="appearance">
-            <Palette className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Appearance', ar: 'المظهر' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Security', ar: 'الأمان' })}</span>
           </TabsTrigger>
           <TabsTrigger value="privacy">
             <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Privacy', ar: 'الخصوصية' })}</span>
-          </TabsTrigger>
-          <TabsTrigger value="accessibility">
-            <Keyboard className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Accessibility', ar: 'إمكانية الوصول' })}</span>
-          </TabsTrigger>
-          <TabsTrigger value="integrations">
-            <LinkIcon className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Integrations', ar: 'التكاملات' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Privacy', ar: 'الخصوصية' })}</span>
           </TabsTrigger>
           <TabsTrigger value="work">
             <Activity className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Work', ar: 'العمل' })}</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics">
-            <Activity className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Analytics', ar: 'التحليلات' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Work', ar: 'العمل' })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -330,112 +310,7 @@ function Settings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Notification Preferences', ar: 'تفضيلات الإشعارات' })}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <label className="text-sm font-medium">{t({ en: 'Email Notifications', ar: 'إشعارات البريد' })}</label>
-                  <Switch
-                    checked={notifications.email}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, email: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <label className="text-sm font-medium">{t({ en: 'Push Notifications', ar: 'الإشعارات الفورية' })}</label>
-                  <Switch
-                    checked={notifications.push}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, push: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <label className="text-sm font-medium">{t({ en: 'Challenge Alerts', ar: 'تنبيهات التحديات' })}</label>
-                  <Switch
-                    checked={notifications.challenges}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, challenges: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <label className="text-sm font-medium">{t({ en: 'Pilot Updates', ar: 'تحديثات التجارب' })}</label>
-                  <Switch
-                    checked={notifications.pilots}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, pilots: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <label className="text-sm font-medium">{t({ en: 'Program Invites', ar: 'دعوات البرامج' })}</label>
-                  <Switch
-                    checked={notifications.programs}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, programs: checked })}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">{t({ en: 'Digest Frequency', ar: 'تكرار الملخص' })}</label>
-                  <Select value={notifications.digest_frequency} onValueChange={(v) => setNotifications({...notifications, digest_frequency: v})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="realtime">{t({ en: 'Real-time', ar: 'فوري' })}</SelectItem>
-                      <SelectItem value="daily">{t({ en: 'Daily Digest', ar: 'ملخص يومي' })}</SelectItem>
-                      <SelectItem value="weekly">{t({ en: 'Weekly Digest', ar: 'ملخص أسبوعي' })}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">{t({ en: 'Quiet Hours Start', ar: 'بداية الهدوء' })}</label>
-                    <Input
-                      type="time"
-                      value={notifications.quiet_hours_start}
-                      onChange={(e) => setNotifications({...notifications, quiet_hours_start: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">{t({ en: 'Quiet Hours End', ar: 'نهاية الهدوء' })}</label>
-                    <Input
-                      type="time"
-                      value={notifications.quiet_hours_end}
-                      onChange={(e) => setNotifications({...notifications, quiet_hours_end: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <Button onClick={saveNotifications} disabled={updateSettingsMutation.isPending} className="w-full bg-blue-600">
-                  <Save className="h-4 w-4 mr-2" />
-                  {t({ en: 'Save Preferences', ar: 'حفظ التفضيلات' })}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="language">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Language & Region', ar: 'اللغة والمنطقة' })}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm font-medium text-blue-900">
-                    {t({ en: 'Current Language: English', ar: 'اللغة الحالية: العربية' })}
-                  </p>
-                  <p className="text-xs text-slate-600 mt-1">
-                    {t({ en: 'Use the globe icon in the top bar to switch languages', ar: 'استخدم أيقونة الكرة الأرضية في الشريط العلوي لتبديل اللغات' })}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Notifications tab removed - not needed */}
 
         <TabsContent value="security">
           <div className="space-y-4">
@@ -480,61 +355,7 @@ function Settings() {
               </div>
               </TabsContent>
 
-              <TabsContent value="appearance">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Appearance & Theme', ar: 'المظهر والثيم' })}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Theme', ar: 'الثيم' })}</label>
-                <Select value={appearance.theme} onValueChange={(v) => setAppearance({...appearance, theme: v})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">{t({ en: 'Light', ar: 'فاتح' })}</SelectItem>
-                    <SelectItem value="dark">{t({ en: 'Dark', ar: 'داكن' })}</SelectItem>
-                    <SelectItem value="auto">{t({ en: 'Auto (System)', ar: 'تلقائي (النظام)' })}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Font Size', ar: 'حجم الخط' })}</label>
-                <Select value={appearance.font_size} onValueChange={(v) => setAppearance({...appearance, font_size: v})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="small">{t({ en: 'Small', ar: 'صغير' })}</SelectItem>
-                    <SelectItem value="medium">{t({ en: 'Medium', ar: 'متوسط' })}</SelectItem>
-                    <SelectItem value="large">{t({ en: 'Large', ar: 'كبير' })}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Interface Density', ar: 'كثافة الواجهة' })}</label>
-                <Select value={appearance.density} onValueChange={(v) => setAppearance({...appearance, density: v})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="compact">{t({ en: 'Compact', ar: 'مضغوط' })}</SelectItem>
-                    <SelectItem value="comfortable">{t({ en: 'Comfortable', ar: 'مريح' })}</SelectItem>
-                    <SelectItem value="spacious">{t({ en: 'Spacious', ar: 'واسع' })}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button onClick={saveAppearance} disabled={updateSettingsMutation.isPending} className="w-full bg-purple-600">
-                <Save className="h-4 w-4 mr-2" />
-                {t({ en: 'Save Appearance', ar: 'حفظ المظهر' })}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Appearance tab removed - not needed */}
 
         <TabsContent value="privacy">
           <Card>
@@ -595,84 +416,7 @@ function Settings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="accessibility">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Accessibility Settings', ar: 'إعدادات إمكانية الوصول' })}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">{t({ en: 'High Contrast Mode', ar: 'وضع التباين العالي' })}</p>
-                  <p className="text-xs text-slate-600">{t({ en: 'Increase visual contrast', ar: 'زيادة التباين البصري' })}</p>
-                </div>
-                <Switch
-                  checked={accessibility.high_contrast}
-                  onCheckedChange={(v) => setAccessibility({...accessibility, high_contrast: v})}
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">{t({ en: 'Reduce Motion', ar: 'تقليل الحركة' })}</p>
-                  <p className="text-xs text-slate-600">{t({ en: 'Minimize animations', ar: 'تقليل الرسوم المتحركة' })}</p>
-                </div>
-                <Switch
-                  checked={accessibility.reduce_motion}
-                  onCheckedChange={(v) => setAccessibility({...accessibility, reduce_motion: v})}
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">{t({ en: 'Screen Reader Optimized', ar: 'محسن لقارئ الشاشة' })}</p>
-                  <p className="text-xs text-slate-600">{t({ en: 'Enhanced ARIA labels', ar: 'تسميات ARIA محسنة' })}</p>
-                </div>
-                <Switch
-                  checked={accessibility.screen_reader}
-                  onCheckedChange={(v) => setAccessibility({...accessibility, screen_reader: v})}
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">{t({ en: 'Keyboard Navigation Enhanced', ar: 'تحسين التنقل بلوحة المفاتيح' })}</p>
-                  <p className="text-xs text-slate-600">{t({ en: 'Show focus indicators', ar: 'عرض مؤشرات التركيز' })}</p>
-                </div>
-                <Switch
-                  checked={accessibility.keyboard_nav}
-                  onCheckedChange={(v) => setAccessibility({...accessibility, keyboard_nav: v})}
-                />
-              </div>
-
-              <Button onClick={saveAccessibility} disabled={updateSettingsMutation.isPending} className="w-full bg-indigo-600">
-                <Save className="h-4 w-4 mr-2" />
-                {t({ en: 'Save Accessibility', ar: 'حفظ إمكانية الوصول' })}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="integrations">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Connected Apps & Services', ar: 'التطبيقات والخدمات المتصلة' })}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-slate-50 rounded-lg border text-center">
-                <p className="text-sm text-slate-600 mb-3">{t({ en: 'No integrations connected', ar: 'لا توجد تكاملات متصلة' })}</p>
-                <Button variant="outline">
-                  {t({ en: 'Connect Slack', ar: 'ربط Slack' })}
-                </Button>
-              </div>
-
-              <div className="pt-4 border-t">
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Personal API Key', ar: 'مفتاح API شخصي' })}</label>
-                <div className="flex gap-2">
-                  <Input value="••••••••••••••" disabled className="bg-slate-100" />
-                  <Button variant="outline">{t({ en: 'Generate', ar: 'توليد' })}</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Accessibility and Integrations tabs removed */}
 
         <TabsContent value="work">
           <Card>
@@ -724,29 +468,7 @@ function Settings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="analytics">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Personal Analytics', ar: 'التحليلات الشخصية' })}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 bg-blue-50 rounded-lg text-center">
-                  <p className="text-3xl font-bold text-blue-600">12</p>
-                  <p className="text-xs text-slate-600 mt-1">{t({ en: 'Contributions', ar: 'مساهمات' })}</p>
-                </div>
-                <div className="p-4 bg-purple-50 rounded-lg text-center">
-                  <p className="text-3xl font-bold text-purple-600">5</p>
-                  <p className="text-xs text-slate-600 mt-1">{t({ en: 'Active Projects', ar: 'مشاريع نشطة' })}</p>
-                </div>
-                <div className="p-4 bg-green-50 rounded-lg text-center">
-                  <p className="text-3xl font-bold text-green-600">85%</p>
-                  <p className="text-xs text-slate-600 mt-1">{t({ en: 'Engagement', ar: 'المشاركة' })}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Analytics tab removed - stats are shown in Profile page */}
       </Tabs>
 
       {/* Auth Dialogs */}
