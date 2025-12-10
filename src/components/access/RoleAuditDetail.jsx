@@ -1,62 +1,95 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Shield, Users, Activity, TrendingUp, AlertCircle } from 'lucide-react';
+import { Shield, Users, Activity, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function RoleAuditDetail({ roleId }) {
   const { t } = useLanguage();
 
+  // Fetch role
   const { data: role } = useQuery({
-    queryKey: ['role', roleId],
+    queryKey: ['role-detail', roleId],
     queryFn: async () => {
-      const roles = await base44.entities.Role.filter({ id: roleId });
-      return roles[0];
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*')
+        .eq('id', roleId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!roleId
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['role-users', roleId],
+  // Fetch role permissions
+  const { data: rolePermissions = [] } = useQuery({
+    queryKey: ['role-permissions-detail', roleId],
     queryFn: async () => {
-      return base44.entities.User.filter({
-        assigned_roles: { $in: [roleId] }
-      });
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .select('*, permissions(code, name)')
+        .eq('role_id', roleId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!roleId
   });
 
+  // Fetch users with this role
+  const { data: usersWithRole = [] } = useQuery({
+    queryKey: ['role-users-detail', roleId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_functional_roles')
+        .select('*, user_profiles(full_name, user_email)')
+        .eq('role_id', roleId)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!roleId
+  });
+
+  // Fetch access logs for permissions in this role
   const { data: accessLogs = [] } = useQuery({
-    queryKey: ['role-access-logs', roleId],
+    queryKey: ['role-access-logs-detail', roleId],
     queryFn: async () => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       
-      const allLogs = await base44.entities.AccessLog.filter({
-        timestamp: { $gte: sevenDaysAgo.toISOString() }
-      });
-
-      // Filter logs where permission matches role permissions
-      return allLogs.filter(log => 
-        role.permissions?.includes(log.permission)
-      );
+      const { data, error } = await supabase
+        .from('access_logs')
+        .select('*')
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(500);
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!role
   });
 
   if (!role) return null;
 
-  // Analytics
+  const permissions = rolePermissions.map(rp => rp.permissions?.code).filter(Boolean);
+
+  // Analytics - filter logs by permissions in this role
   const permissionUsage = {};
   accessLogs.forEach(log => {
-    if (!permissionUsage[log.permission]) {
-      permissionUsage[log.permission] = { total: 0, denied: 0 };
+    const action = log.action || '';
+    // Check if this action might relate to role permissions
+    if (permissions.some(p => action.includes(p.split('_')[0]))) {
+      if (!permissionUsage[action]) {
+        permissionUsage[action] = { total: 0, denied: 0 };
+      }
+      permissionUsage[action].total++;
+      if (action.includes('denied')) permissionUsage[action].denied++;
     }
-    permissionUsage[log.permission].total++;
-    if (!log.allowed) permissionUsage[log.permission].denied++;
   });
 
   const usageData = Object.entries(permissionUsage)
@@ -65,9 +98,12 @@ export default function RoleAuditDetail({ roleId }) {
       total: data.total,
       denied: data.denied
     }))
-    .sort((a, b) => b.total - a.total);
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
 
-  const unusedPermissions = role.permissions?.filter(p => !permissionUsage[p]) || [];
+  const unusedPermissions = permissions.filter(p => {
+    return !Object.keys(permissionUsage).some(action => action.includes(p.split('_')[0]));
+  });
 
   return (
     <div className="space-y-4">
@@ -83,18 +119,18 @@ export default function RoleAuditDetail({ roleId }) {
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <Shield className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold">{role.permissions?.length || 0}</p>
-              <p className="text-xs text-slate-600">{t({ en: 'Permissions', ar: 'الصلاحيات' })}</p>
+              <p className="text-2xl font-bold">{permissions.length}</p>
+              <p className="text-xs text-muted-foreground">{t({ en: 'Permissions', ar: 'الصلاحيات' })}</p>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <Users className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold">{users.length}</p>
-              <p className="text-xs text-slate-600">{t({ en: 'Users', ar: 'المستخدمين' })}</p>
+              <p className="text-2xl font-bold">{usersWithRole.length}</p>
+              <p className="text-xs text-muted-foreground">{t({ en: 'Users', ar: 'المستخدمين' })}</p>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <Activity className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold">{accessLogs.length}</p>
-              <p className="text-xs text-slate-600">{t({ en: 'Access Events', ar: 'أحداث الوصول' })}</p>
+              <p className="text-2xl font-bold">{Object.keys(permissionUsage).length}</p>
+              <p className="text-xs text-muted-foreground">{t({ en: 'Access Events', ar: 'أحداث الوصول' })}</p>
             </div>
           </div>
 
@@ -109,8 +145,8 @@ export default function RoleAuditDetail({ roleId }) {
                   <XAxis dataKey="permission" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="total" fill="#3b82f6" name="Used" />
-                  <Bar dataKey="denied" fill="#ef4444" name="Denied" />
+                  <Bar dataKey="total" fill="hsl(var(--primary))" name="Used" />
+                  <Bar dataKey="denied" fill="hsl(var(--destructive))" name="Denied" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -143,14 +179,14 @@ export default function RoleAuditDetail({ roleId }) {
               {t({ en: 'Assigned Users:', ar: 'المستخدمون المعينون:' })}
             </h4>
             <div className="space-y-1">
-              {users.map((user, i) => (
-                <div key={i} className="flex items-center justify-between p-2 bg-slate-50 rounded">
-                  <span className="text-sm">{user.full_name || user.email}</span>
-                  <Badge variant="outline">{user.role}</Badge>
+              {usersWithRole.map((ufr, i) => (
+                <div key={i} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                  <span className="text-sm">{ufr.user_profiles?.full_name || ufr.user_profiles?.user_email}</span>
+                  <Badge variant="outline">Active</Badge>
                 </div>
               ))}
-              {users.length === 0 && (
-                <p className="text-sm text-slate-500 text-center py-4">
+              {usersWithRole.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
                   {t({ en: 'No users assigned to this role', ar: 'لا يوجد مستخدمين معينين لهذا الدور' })}
                 </p>
               )}

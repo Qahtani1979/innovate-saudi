@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -13,16 +13,22 @@ export default function PermissionUsageAnalytics() {
   const { t } = useLanguage();
   const [timeRange, setTimeRange] = useState('7d');
 
-  // Fetch access logs
+  // Fetch access logs from Supabase
   const { data: accessLogs = [] } = useQuery({
-    queryKey: ['access-logs', timeRange],
+    queryKey: ['access-logs-analytics', timeRange],
     queryFn: async () => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - parseInt(timeRange));
       
-      return base44.entities.AccessLog.filter({
-        timestamp: { $gte: startDate.toISOString() }
-      });
+      const { data, error } = await supabase
+        .from('access_logs')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      
+      if (error) throw error;
+      return data || [];
     }
   });
 
@@ -34,22 +40,26 @@ export default function PermissionUsageAnalytics() {
     const entityAccess = {};
 
     accessLogs.forEach(log => {
+      const permission = log.action || 'unknown';
+      const allowed = !log.action?.includes('denied');
+      
       // Count permissions
-      if (!permissionCounts[log.permission]) {
-        permissionCounts[log.permission] = { total: 0, denied: 0 };
+      if (!permissionCounts[permission]) {
+        permissionCounts[permission] = { total: 0, denied: 0 };
       }
-      permissionCounts[log.permission].total++;
-      if (!log.allowed) {
-        permissionCounts[log.permission].denied++;
+      permissionCounts[permission].total++;
+      if (!allowed) {
+        permissionCounts[permission].denied++;
         deniedAttempts.push(log);
       }
 
       // User activity
-      if (!userActivity[log.user_email]) {
-        userActivity[log.user_email] = { total: 0, denied: 0 };
+      const userEmail = log.user_email || 'anonymous';
+      if (!userActivity[userEmail]) {
+        userActivity[userEmail] = { total: 0, denied: 0 };
       }
-      userActivity[log.user_email].total++;
-      if (!log.allowed) userActivity[log.user_email].denied++;
+      userActivity[userEmail].total++;
+      if (!allowed) userActivity[userEmail].denied++;
 
       // Entity access
       if (log.entity_type) {
@@ -60,14 +70,17 @@ export default function PermissionUsageAnalytics() {
       }
     });
 
+    const totalRequests = accessLogs.length;
+    const deniedCount = deniedAttempts.length;
+    
     return {
       permissionCounts,
       userActivity,
       deniedAttempts,
       entityAccess,
-      totalRequests: accessLogs.length,
-      deniedCount: deniedAttempts.length,
-      successRate: ((accessLogs.length - deniedAttempts.length) / accessLogs.length * 100).toFixed(1)
+      totalRequests,
+      deniedCount,
+      successRate: totalRequests > 0 ? ((totalRequests - deniedCount) / totalRequests * 100).toFixed(1) : '100.0'
     };
   }, [accessLogs]);
 
@@ -84,7 +97,7 @@ export default function PermissionUsageAnalytics() {
   const entityData = Object.entries(analytics.entityAccess)
     .map(([name, value]) => ({ name, value }));
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--destructive))', 'hsl(217, 91%, 60%)', 'hsl(330, 81%, 60%)'];
 
   return (
     <div className="space-y-6">
@@ -95,7 +108,7 @@ export default function PermissionUsageAnalytics() {
               <Activity className="h-8 w-8 text-blue-600" />
               <div className="text-right">
                 <p className="text-2xl font-bold">{analytics.totalRequests}</p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-foreground">
                   {t({ en: 'Total Requests', ar: 'إجمالي الطلبات' })}
                 </p>
               </div>
@@ -109,7 +122,7 @@ export default function PermissionUsageAnalytics() {
               <CheckCircle2 className="h-8 w-8 text-green-600" />
               <div className="text-right">
                 <p className="text-2xl font-bold">{analytics.successRate}%</p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-foreground">
                   {t({ en: 'Success Rate', ar: 'معدل النجاح' })}
                 </p>
               </div>
@@ -123,7 +136,7 @@ export default function PermissionUsageAnalytics() {
               <AlertCircle className="h-8 w-8 text-red-600" />
               <div className="text-right">
                 <p className="text-2xl font-bold">{analytics.deniedCount}</p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-foreground">
                   {t({ en: 'Denied Attempts', ar: 'محاولات مرفوضة' })}
                 </p>
               </div>
@@ -139,7 +152,7 @@ export default function PermissionUsageAnalytics() {
                 <p className="text-2xl font-bold">
                   {Object.keys(analytics.permissionCounts).length}
                 </p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-foreground">
                   {t({ en: 'Permissions Used', ar: 'صلاحيات مستخدمة' })}
                 </p>
               </div>
@@ -153,7 +166,7 @@ export default function PermissionUsageAnalytics() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-blue-600" />
-              {t({ en: 'Top 10 Permissions Used', ar: 'أكثر 10 صلاحيات استخداماً' })}
+              {t({ en: 'Top 10 Actions', ar: 'أكثر 10 إجراءات' })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -162,8 +175,8 @@ export default function PermissionUsageAnalytics() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="total" fill="#3b82f6" name="Total" />
-                <Bar dataKey="denied" fill="#ef4444" name="Denied" />
+                <Bar dataKey="total" fill="hsl(var(--primary))" name="Total" />
+                <Bar dataKey="denied" fill="hsl(var(--destructive))" name="Denied" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -212,16 +225,16 @@ export default function PermissionUsageAnalytics() {
             {analytics.deniedAttempts.slice(0, 10).map((log, i) => (
               <div key={i} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
                 <div>
-                  <p className="font-medium text-sm">{log.user_email}</p>
-                  <p className="text-xs text-slate-600">
-                    {log.permission} on {log.entity_type}
+                  <p className="font-medium text-sm">{log.user_email || 'Unknown'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {log.action} on {log.entity_type}
                   </p>
                 </div>
                 <Badge variant="destructive" className="text-xs">Denied</Badge>
               </div>
             ))}
             {analytics.deniedAttempts.length === 0 && (
-              <p className="text-center text-slate-500 py-8">
+              <p className="text-center text-muted-foreground py-8">
                 {t({ en: 'No denied attempts', ar: 'لا توجد محاولات مرفوضة' })}
               </p>
             )}
@@ -242,7 +255,7 @@ export default function PermissionUsageAnalytics() {
               .sort((a, b) => b[1].total - a[1].total)
               .slice(0, 10)
               .map(([email, data], i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <p className="font-medium text-sm">{email}</p>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{data.total} requests</Badge>

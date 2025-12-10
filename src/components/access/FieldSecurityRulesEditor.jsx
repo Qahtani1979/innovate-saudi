@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
+import { toast } from 'sonner';
 import {
   Shield, Lock, Eye, Edit, Plus, Trash2, AlertCircle
 } from 'lucide-react';
@@ -28,38 +29,52 @@ export default function FieldSecurityRulesEditor() {
     'Municipality', 'Organization', 'User'
   ];
 
-  // Fetch field security rules
+  // Fetch field security rules from platform_config
   const { data: securityRules = {} } = useQuery({
     queryKey: ['field-security', selectedEntity],
     queryFn: async () => {
-      const config = await base44.entities.PlatformConfig.filter({
-        key: `field_security_${selectedEntity}`
-      });
+      const { data, error } = await supabase
+        .from('platform_config')
+        .select('*')
+        .eq('key', `field_security_${selectedEntity}`)
+        .single();
       
-      return config.length > 0 ? config[0].value : {};
+      if (error && error.code !== 'PGRST116') throw error;
+      return data?.value || {};
     }
   });
 
   const updateRulesMutation = useMutation({
     mutationFn: async (rules) => {
-      const existing = await base44.entities.PlatformConfig.filter({
-        key: `field_security_${selectedEntity}`
-      });
+      const key = `field_security_${selectedEntity}`;
+      
+      // Check if exists
+      const { data: existing } = await supabase
+        .from('platform_config')
+        .select('id')
+        .eq('key', key)
+        .single();
 
-      if (existing.length > 0) {
-        return base44.entities.PlatformConfig.update(existing[0].id, {
-          value: rules
-        });
+      if (existing) {
+        const { error } = await supabase
+          .from('platform_config')
+          .update({ value: rules })
+          .eq('id', existing.id);
+        if (error) throw error;
       } else {
-        return base44.entities.PlatformConfig.create({
-          key: `field_security_${selectedEntity}`,
-          value: rules
-        });
+        const { error } = await supabase
+          .from('platform_config')
+          .insert({ key, value: rules });
+        if (error) throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['field-security']);
       setEditingField(null);
+      toast.success(t({ en: 'Field rules updated', ar: 'تم تحديث قواعد الحقل' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
@@ -203,7 +218,7 @@ export default function FieldSecurityRulesEditor() {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={saveFieldRule}>
+              <Button onClick={saveFieldRule} disabled={updateRulesMutation.isPending}>
                 {t({ en: 'Save Rule', ar: 'حفظ القاعدة' })}
               </Button>
               <Button variant="outline" onClick={() => setEditingField(null)}>
@@ -218,8 +233,8 @@ export default function FieldSecurityRulesEditor() {
         {Object.keys(securityRules).length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
-              <Lock className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-600">
+              <Lock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
                 {t({ en: 'No field-level rules defined for this entity.', ar: 'لا توجد قواعد مستوى الحقل محددة لهذا الكيان.' })}
               </p>
             </CardContent>
@@ -243,7 +258,7 @@ export default function FieldSecurityRulesEditor() {
 
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-slate-600 mb-1 flex items-center gap-1">
+                        <p className="text-muted-foreground mb-1 flex items-center gap-1">
                           <Eye className="h-3 w-3" />
                           {t({ en: 'Read:', ar: 'قراءة:' })}
                         </p>
@@ -257,7 +272,7 @@ export default function FieldSecurityRulesEditor() {
                       </div>
 
                       <div>
-                        <p className="text-slate-600 mb-1 flex items-center gap-1">
+                        <p className="text-muted-foreground mb-1 flex items-center gap-1">
                           <Edit className="h-3 w-3" />
                           {t({ en: 'Write:', ar: 'كتابة:' })}
                         </p>

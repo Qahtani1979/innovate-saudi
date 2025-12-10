@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
+import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Clock, Users, Calendar, Shield } from 'lucide-react';
 import {
   Dialog,
@@ -22,41 +23,58 @@ export default function DelegationApprovalQueue() {
   const [showDialog, setShowDialog] = useState(false);
 
   const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
+    queryKey: ['current-user-approval'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    }
   });
 
   // Fetch pending delegations
   const { data: pendingDelegations = [] } = useQuery({
-    queryKey: ['pending-delegations'],
+    queryKey: ['pending-delegations', user?.email],
     queryFn: async () => {
-      if (!user) return [];
+      if (!user?.email) return [];
       
-      return base44.entities.DelegationRule.filter({
-        $or: [
-          { delegator_email: user.email },
-          { created_by: user.email }
-        ],
-        approval_status: { $in: ['pending', null] }
-      });
+      const { data, error } = await supabase
+        .from('delegation_rules')
+        .select('*')
+        .or(`delegator_email.eq.${user.email}`)
+        .or('approved_by.is.null');
+      
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const approveMutation = useMutation({
     mutationFn: async ({ delegation_id, action }) => {
-      const response = await base44.functions.invoke('approveDelegation', {
-        delegation_id,
-        action,
-        comments
-      });
-      return response.data;
+      const updateData = {
+        is_active: action === 'approve',
+        approved_by: user?.email,
+        approval_date: new Date().toISOString()
+      };
+      
+      const { error } = await supabase
+        .from('delegation_rules')
+        .update(updateData)
+        .eq('id', delegation_id);
+      
+      if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, { action }) => {
       queryClient.invalidateQueries(['pending-delegations']);
       setShowDialog(false);
       setSelectedDelegation(null);
       setComments('');
+      toast.success(action === 'approve' 
+        ? t({ en: 'Delegation approved', ar: 'تم الموافقة على التفويض' })
+        : t({ en: 'Delegation rejected', ar: 'تم رفض التفويض' })
+      );
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
@@ -87,8 +105,8 @@ export default function DelegationApprovalQueue() {
         <CardContent>
           {pendingDelegations.length === 0 ? (
             <div className="text-center py-12">
-              <Clock className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-600">
+              <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
                 {t({ en: 'No pending delegations', ar: 'لا توجد تفويضات معلقة' })}
               </p>
             </div>
@@ -105,7 +123,7 @@ export default function DelegationApprovalQueue() {
                             <span className="font-medium">
                               {delegation.delegator_email}
                             </span>
-                            <span className="text-slate-500">→</span>
+                            <span className="text-muted-foreground">→</span>
                             <span className="font-medium">
                               {delegation.delegate_email}
                             </span>
@@ -119,7 +137,7 @@ export default function DelegationApprovalQueue() {
                             ))}
                           </div>
 
-                          <div className="flex items-center gap-4 text-sm text-slate-600">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {new Date(delegation.start_date).toLocaleDateString()} - {new Date(delegation.end_date).toLocaleDateString()}
@@ -172,7 +190,7 @@ export default function DelegationApprovalQueue() {
           </DialogHeader>
           
           <div className="space-y-4">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-muted-foreground">
               {selectedDelegation?.action === 'approve' ? 
                 t({ en: 'Are you sure you want to approve this delegation?', ar: 'هل أنت متأكد من الموافقة على هذا التفويض؟' }) :
                 t({ en: 'Are you sure you want to reject this delegation?', ar: 'هل أنت متأكد من رفض هذا التفويض؟' })}
@@ -199,6 +217,7 @@ export default function DelegationApprovalQueue() {
                 className={selectedDelegation?.action === 'approve' ? 
                   'bg-green-600 hover:bg-green-700' : ''}
                 variant={selectedDelegation?.action === 'reject' ? 'destructive' : 'default'}
+                disabled={approveMutation.isPending}
               >
                 {selectedDelegation?.action === 'approve' ? 
                   t({ en: 'Approve', ar: 'موافقة' }) :
