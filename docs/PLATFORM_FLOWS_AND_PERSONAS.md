@@ -44,7 +44,7 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 | Icon | Rocket |
 | Color | Blue |
 | Requires Approval | Yes |
-| Landing Dashboard | `ProviderDashboard` |
+| Landing Dashboard | `StartupDashboard` (aliased as `ProviderDashboard`) |
 | Specialized Onboarding | `StartupOnboardingWizard` |
 | Onboarding Page | `/startup-onboarding` |
 

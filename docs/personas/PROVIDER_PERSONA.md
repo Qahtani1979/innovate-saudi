@@ -11,7 +11,7 @@ Solution Providers are technology companies, startups, and service providers who
 | **Role Name** | Provider / Startup User |
 | **Role Code** | `provider`, `startup_user` |
 | **Organization Type** | `solution_provider`, `startup` |
-| **Primary Dashboard** | `StartupDashboard` |
+| **Primary Dashboard** | `StartupDashboard` (Note: Code references `ProviderDashboard` which routes to `StartupDashboard`) |
 | **Onboarding Flow** | `StartupOnboarding.jsx` + `StartupOnboardingWizard.jsx` |
 
 ## User Journey
