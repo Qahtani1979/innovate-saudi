@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function MyWorkPrioritizer() {
   const { language, isRTL, t } = useLanguage();

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ function ChallengeIdeaResponse() {
   const urlParams = new URLSearchParams(window.location.search);
   const challengeId = urlParams.get('challenge_id');
   const { invokeAI, status, isLoading: enhancing, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     challenge_alignment_id: challengeId || '',
@@ -36,8 +38,8 @@ function ChallengeIdeaResponse() {
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-open'],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.is_published && ['approved', 'in_treatment'].includes(c.status));
+      const { data } = await supabase.from('challenges').select('*').eq('is_published', true).in('status', ['approved', 'in_treatment']);
+      return data || [];
     }
   });
 
@@ -81,13 +83,14 @@ Generate a structured solution proposal with:
 
   const submitMutation = useMutation({
     mutationFn: async (data) => {
-      const user = await base44.auth.me().catch(() => null);
-      return await base44.entities.InnovationProposal.create({
+      const { data: result, error } = await supabase.from('innovation_proposals').insert({
         ...data,
         code: `RESP-${Date.now().toString().slice(-8)}`,
         status: 'submitted',
         created_by: user?.email || data.submitter_email
-      });
+      }).select().single();
+      if (error) throw error;
+      return result;
     },
     onSuccess: () => {
       toast.success(t({ en: 'Response submitted!', ar: 'تم التقديم!' }));

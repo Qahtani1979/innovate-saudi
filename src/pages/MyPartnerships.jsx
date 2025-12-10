@@ -1,5 +1,6 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,17 +15,13 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function MyPartnerships() {
   const { language, isRTL, t } = useLanguage();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: userProfile } = useQuery({
     queryKey: ['user-profile', user?.email],
     queryFn: async () => {
-      const profiles = await base44.entities.UserProfile.filter({ user_email: user?.email });
-      return profiles[0];
+      const { data } = await supabase.from('user_profiles').select('*').eq('user_email', user?.email).single();
+      return data;
     },
     enabled: !!user
   });
@@ -32,8 +29,8 @@ function MyPartnerships() {
   const { data: myPartnerships = [] } = useQuery({
     queryKey: ['my-partnerships', userProfile?.organization_id, user?.email],
     queryFn: async () => {
-      const partnerships = await base44.entities.Partnership.list();
-      return partnerships.filter(p => 
+      const { data } = await supabase.from('partnerships').select('*');
+      return (data || []).filter(p => 
         p.parties?.includes(userProfile?.organization_id) ||
         p.primary_contact_email === user?.email ||
         p.created_by === user?.email

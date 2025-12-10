@@ -11,7 +11,7 @@ import { Loader2, X, Eye, Sparkles, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ExpertEvaluationWorkflow() {
   const urlParams = new URLSearchParams(window.location.search);

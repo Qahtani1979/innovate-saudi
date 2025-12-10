@@ -9,7 +9,7 @@ import { Eye, Bell, BellOff, TrendingUp, AlertCircle, Users } from 'lucide-react
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function MyFollowing() {
   const { t } = useLanguage();

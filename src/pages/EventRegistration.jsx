@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Calendar, Users, MapPin, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function EventRegistration() {
   const { t, language } = useLanguage();

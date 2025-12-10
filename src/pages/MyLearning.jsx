@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function MyLearning() {
   const { language, isRTL, t } = useLanguage();

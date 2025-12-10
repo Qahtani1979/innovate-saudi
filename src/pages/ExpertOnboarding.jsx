@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,11 +32,7 @@ function ExpertOnboarding() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     user_email: '',
@@ -60,7 +57,11 @@ function ExpertOnboarding() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExpertProfile.create(data),
+    mutationFn: async (data) => {
+      const { data: result, error } = await supabase.from('expert_profiles').insert(data).select().single();
+      if (error) throw error;
+      return result;
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries(['expert-profiles']);
       toast.success(t({ en: 'Expert profile created successfully', ar: 'تم إنشاء ملف الخبير بنجاح' }));

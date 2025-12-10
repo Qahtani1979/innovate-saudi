@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { AlertCircle, CheckCircle2, Clock, TrendingUp, Heart, Lightbulb } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function MyChallengeTracker() {
   const { language, isRTL, t } = useLanguage();

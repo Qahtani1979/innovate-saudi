@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,28 +31,23 @@ function InnovationProposalsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => base44.auth.redirectToLogin());
-  }, []);
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
-      </div>
-    );
-  }
 
   const { data: proposals = [], isLoading } = useQuery({
     queryKey: ['innovation-proposals'],
-    queryFn: () => base44.entities.InnovationProposal.list('-created_date', 200)
+    queryFn: async () => {
+      const { data } = await supabase.from('innovation_proposals').select('*').order('created_at', { ascending: false }).limit(200);
+      return data || [];
+    },
+    enabled: !!user
   });
 
   const updateProposalMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.InnovationProposal.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { error } = await supabase.from('innovation_proposals').update(data).eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['innovation-proposals']);
       toast.success(t({ en: 'Proposal updated', ar: 'تم التحديث' }));

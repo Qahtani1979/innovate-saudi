@@ -11,7 +11,7 @@ import { Calendar, Users, CheckCircle2, Clock, Award, Rocket } from 'lucide-reac
 import { Progress } from "@/components/ui/progress";
 import { format } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function MyPrograms() {
   const { language, isRTL, t } = useLanguage();

@@ -1,15 +1,16 @@
-import React, { useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Track search queries for analytics
  */
 export default function SearchAnalytics() {
+  const { user } = useAuth();
+
   const trackSearch = async (query, resultsCount, entityType) => {
     try {
-      const user = await base44.auth.me().catch(() => null);
-      
-      await base44.entities.UserActivity.create({
+      await supabase.from('user_activities').insert({
         user_email: user?.email || 'anonymous',
         activity_type: 'search',
         activity_description: `Searched: ${query}`,
@@ -30,11 +31,11 @@ export default function SearchAnalytics() {
 }
 
 export function useSearchAnalytics() {
+  const { user } = useAuth();
+
   const trackSearch = async (query, resultsCount, entityType) => {
     try {
-      const user = await base44.auth.me().catch(() => null);
-      
-      await base44.entities.UserActivity.create({
+      await supabase.from('user_activities').insert({
         user_email: user?.email || 'anonymous',
         activity_type: 'search',
         activity_description: `Searched: ${query}`,

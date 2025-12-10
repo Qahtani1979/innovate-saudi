@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,18 +15,20 @@ export default function LabRoutingHub({ entity, entityType }) {
   const queryClient = useQueryClient();
   const [selectedLab, setSelectedLab] = useState('');
   const [routing, setRouting] = useState(false);
+  const { user } = useAuth();
 
   const { data: livingLabs = [] } = useQuery({
     queryKey: ['living-labs-routing'],
-    queryFn: () => base44.entities.LivingLab.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('living_labs').select('*');
+      return data || [];
+    }
   });
 
   const routeToLabMutation = useMutation({
     mutationFn: async () => {
-      const user = await base44.auth.me();
-      
       // Create RDProject from source entity
-      const rdProject = await base44.entities.RDProject.create({
+      const { data: rdProject, error } = await supabase.from('rd_projects').insert({
         code: `RD-LAB-${Date.now()}`,
         title_en: `Lab Research: ${entity.title_en || entity.name_en}`,
         title_ar: entity.title_ar || entity.name_ar,
@@ -37,17 +40,18 @@ export default function LabRoutingHub({ entity, entityType }) {
         status: 'proposal',
         trl_start: entityType === 'solution' ? entity.trl : 3,
         trl_target: 6
-      });
+      }).select().single();
+      if (error) throw error;
 
       // Link back to source
       if (entityType === 'challenge') {
-        await base44.entities.Challenge.update(entity.id, {
+        await supabase.from('challenges').update({
           linked_rd_ids: [...(entity.linked_rd_ids || []), rdProject.id]
-        });
+        }).eq('id', entity.id);
       } else if (entityType === 'pilot') {
-        await base44.entities.Pilot.update(entity.id, {
+        await supabase.from('pilots').update({
           linked_rd_ids: [...(entity.linked_rd_ids || []), rdProject.id]
-        });
+        }).eq('id', entity.id);
       }
 
       return rdProject;

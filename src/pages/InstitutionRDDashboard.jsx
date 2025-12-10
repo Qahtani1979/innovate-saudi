@@ -10,7 +10,7 @@ import { createPageUrl } from '../utils';
 import { Microscope, TrendingUp, Award, BookOpen, DollarSign, Users, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function InstitutionRDDashboard() {
   const { language, isRTL, t } = useLanguage();

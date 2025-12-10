@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,17 +14,13 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function MyApplications() {
   const { language, isRTL, t } = useLanguage();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: matchmakerApps = [] } = useQuery({
     queryKey: ['my-matchmaker-apps', user?.email],
     queryFn: async () => {
-      const apps = await base44.entities.MatchmakerApplication.list();
-      return apps.filter(a => a.contact_email === user?.email || a.created_by === user?.email);
+      const { data } = await supabase.from('matchmaker_applications').select('*');
+      return (data || []).filter(a => a.contact_email === user?.email || a.created_by === user?.email);
     },
     enabled: !!user
   });
@@ -31,8 +28,8 @@ function MyApplications() {
   const { data: programApps = [] } = useQuery({
     queryKey: ['my-program-apps', user?.email],
     queryFn: async () => {
-      const apps = await base44.entities.ProgramApplication.list();
-      return apps.filter(a => a.applicant_email === user?.email || a.created_by === user?.email);
+      const { data } = await supabase.from('program_applications').select('*');
+      return (data || []).filter(a => a.applicant_email === user?.email || a.created_by === user?.email);
     },
     enabled: !!user
   });
@@ -40,8 +37,8 @@ function MyApplications() {
   const { data: rdProposals = [] } = useQuery({
     queryKey: ['my-rd-proposals', user?.email],
     queryFn: async () => {
-      const proposals = await base44.entities.RDProposal.list();
-      return proposals.filter(p => p.created_by === user?.email);
+      const { data } = await supabase.from('rd_proposals').select('*');
+      return (data || []).filter(p => p.created_by === user?.email);
     },
     enabled: !!user
   });
