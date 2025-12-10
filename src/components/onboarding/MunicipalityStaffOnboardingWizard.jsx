@@ -239,23 +239,32 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
         is_verified: false
       }, { onConflict: 'user_id' });
 
-      // Handle role assignment based on role level and email domain
+      // Handle role assignment via edge function for security
       const isStaffRole = formData.role_level === 'staff';
       const isEmailDomainApproved = checkEmailDomainApproval(user.email, formData.municipality_id);
 
       if (isStaffRole && isEmailDomainApproved) {
-        // Auto-approve staff role if email domain matches municipality's approved domains
-        await supabase.from('user_roles').upsert({
-          user_id: user.id,
-          role: 'municipality_staff'
-        }, { onConflict: 'user_id,role' });
+        // Auto-approve staff role via edge function
+        const { data: roleResult, error: roleError } = await supabase.functions.invoke('auto-role-assignment', {
+          body: {
+            user_id: user.id,
+            user_email: user.email,
+            role: 'municipality_staff',
+            organization_id: formData.municipality_id,
+            action: 'assign'
+          }
+        });
         
-        // Mark staff profile as verified since domain matched
-        await supabase.from('municipality_staff_profiles')
-          .update({ is_verified: true })
-          .eq('user_id', user.id);
-        
-        toast.success(t({ en: 'Staff role automatically approved!', ar: 'تم الموافقة على دور الموظف تلقائياً!' }));
+        if (roleError) {
+          console.error('Role assignment error:', roleError);
+        } else {
+          // Mark staff profile as verified since domain matched
+          await supabase.from('municipality_staff_profiles')
+            .update({ is_verified: true })
+            .eq('user_id', user.id);
+          
+          toast.success(t({ en: 'Staff role automatically approved!', ar: 'تم الموافقة على دور الموظف تلقائياً!' }));
+        }
       } else if (isStaffRole && !isEmailDomainApproved) {
         // Staff role but email domain not approved - submit for review
         await supabase.from('role_requests').insert({
@@ -266,17 +275,48 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
           justification: formData.justification || t({ en: 'Staff role request', ar: 'طلب دور موظف' }),
           status: 'pending'
         });
+        
+        // Notify via edge function
+        await supabase.functions.invoke('role-request-notification', {
+          body: {
+            type: 'submitted',
+            user_id: user.id,
+            user_email: user.email,
+            user_name: userProfile?.full_name || user.email,
+            requested_role: 'municipality_staff',
+            justification: formData.justification,
+            language
+          }
+        });
+        
         toast.info(t({ en: 'Staff role request submitted for approval', ar: 'تم تقديم طلب دور الموظف للموافقة' }));
       } else if (!isStaffRole && formData.justification) {
         // Higher roles (coordinator, manager) always require admin approval
+        const requestedRole = formData.role_level === 'manager' ? 'municipality_admin' : 'municipality_coordinator';
+        
         await supabase.from('role_requests').insert({
           user_id: user.id,
           user_email: user.email,
-          requested_role: formData.role_level === 'manager' ? 'municipality_admin' : 'municipality_coordinator',
+          requested_role: requestedRole,
           municipality_id: formData.municipality_id || null,
           justification: formData.justification,
           status: 'pending'
         });
+        
+        // Notify via edge function
+        await supabase.functions.invoke('role-request-notification', {
+          body: {
+            type: 'submitted',
+            user_id: user.id,
+            user_email: user.email,
+            user_name: userProfile?.full_name || user.email,
+            requested_role: requestedRole,
+            justification: formData.justification,
+            language,
+            notify_admins: true
+          }
+        });
+        
         toast.info(t({ en: 'Role request submitted for admin approval', ar: 'تم تقديم طلب الدور لموافقة المسؤول' }));
       }
 
