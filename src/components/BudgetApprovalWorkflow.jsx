@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { DollarSign, CheckCircle2, XCircle, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function BudgetApprovalWorkflow({ pilot, phase, onClose }) {
   const { language, isRTL, t } = useLanguage();

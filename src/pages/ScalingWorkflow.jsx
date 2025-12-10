@@ -18,7 +18,7 @@ import ScalingListAIInsights from '../components/scaling/ScalingListAIInsights';
 import NationalIntegrationGate from '../components/scaling/NationalIntegrationGate';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import PolicyTabWidget from '../components/policy/PolicyTabWidget';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function ScalingWorkflow() {
   const { language, isRTL, t } = useLanguage();

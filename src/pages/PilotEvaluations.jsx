@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,18 +21,14 @@ function PilotEvaluations() {
   const [selectedPilot, setSelectedPilot] = useState(null);
   const [showEvaluationForm, setShowEvaluationForm] = useState(false);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-for-evaluation'],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => ['monitoring', 'active', 'completed'].includes(p.stage));
+      const { data } = await supabase.from('pilots').select('*').in('stage', ['monitoring', 'active', 'completed']);
+      return data || [];
     }
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
   });
 
   const handleEvaluate = (pilot) => {
@@ -43,9 +40,8 @@ function PilotEvaluations() {
     setShowEvaluationForm(false);
     
     if (selectedPilot) {
-      await base44.functions.invoke('checkConsensus', {
-        entity_type: 'pilot',
-        entity_id: selectedPilot.id
+      await supabase.functions.invoke('checkConsensus', {
+        body: { entity_type: 'pilot', entity_id: selectedPilot.id }
       });
     }
     

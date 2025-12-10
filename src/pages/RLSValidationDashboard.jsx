@@ -8,8 +8,8 @@ import {
   Shield, CheckCircle2, XCircle, AlertTriangle, Play, Database,
   User, Users, Building2, Zap
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function RLSValidationDashboard() {
@@ -17,11 +17,7 @@ function RLSValidationDashboard() {
   const [testResults, setTestResults] = useState({});
   const [testing, setTesting] = useState(false);
   const [testUserEmail, setTestUserEmail] = useState('');
-
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const validationTests = [
     {

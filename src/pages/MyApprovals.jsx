@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,17 +19,13 @@ function MyApprovals() {
   const [aiAnalysis, setAiAnalysis] = useState({});
   const queryClient = useQueryClient();
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: pendingChallenges = [] } = useQuery({
     queryKey: ['pending-challenge-reviews', user?.email],
     queryFn: async () => {
-      const challenges = await base44.entities.Challenge.list();
-      return challenges.filter(c => c.review_assigned_to === user?.email && c.status === 'under_review');
+      const { data } = await supabase.from('challenges').select('*').eq('review_assigned_to', user?.email).eq('status', 'under_review');
+      return data || [];
     },
     enabled: !!user
   });
@@ -36,11 +33,20 @@ function MyApprovals() {
   const { data: pendingPilots = [] } = useQuery({
     queryKey: ['pending-pilot-approvals', user?.email],
     queryFn: async () => {
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.filter(p => 
+      const { data } = await supabase.from('pilots').select('*');
+      return (data || []).filter(p => 
         p.milestones?.some(m => m.requires_approval && m.approval_status === 'pending') ||
         p.budget_approvals?.some(b => !b.approved && b.approved_by === user?.email)
       );
+    },
+    enabled: !!user
+  });
+
+  const { data: pendingExpertEvaluations = [] } = useQuery({
+    queryKey: ['pending-expert-evaluations', user?.email],
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_evaluations').select('*').eq('recommendation', 'approve_with_conditions');
+      return (data || []).filter(e => !e.conditions_reviewed);
     },
     enabled: !!user
   });
@@ -60,9 +66,11 @@ function MyApprovals() {
   const approveMutation = useMutation({
     mutationFn: async ({ type, id, data }) => {
       if (type === 'challenge') {
-        return await base44.entities.Challenge.update(id, data);
+        const { error } = await supabase.from('challenges').update(data).eq('id', id);
+        if (error) throw error;
       } else if (type === 'pilot') {
-        return await base44.entities.Pilot.update(id, data);
+        const { error } = await supabase.from('pilots').update(data).eq('id', id);
+        if (error) throw error;
       }
     },
     onSuccess: () => {

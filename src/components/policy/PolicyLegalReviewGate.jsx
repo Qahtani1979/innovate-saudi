@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { Scale, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react
 export default function PolicyLegalReviewGate({ policy }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [reviewData, setReviewData] = useState({
     status: 'pending',
     comments: '',
@@ -26,15 +27,11 @@ export default function PolicyLegalReviewGate({ policy }) {
     ]
   });
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const reviewMutation = useMutation({
     mutationFn: async () => {
       const allChecked = reviewData.checklist.every(item => item.checked);
       
-      return await base44.entities.PolicyRecommendation.update(policy.id, {
+      const { error } = await supabase.from('policy_recommendations').update({
         legal_review: {
           reviewer_email: user?.email,
           review_date: new Date().toISOString(),
@@ -54,7 +51,8 @@ export default function PolicyLegalReviewGate({ policy }) {
             comments: reviewData.comments
           }
         ]
-      });
+      }).eq('id', policy.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['policy', policy.id]);

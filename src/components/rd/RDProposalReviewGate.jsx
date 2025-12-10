@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,53 +16,42 @@ export default function RDProposalReviewGate({ proposal, onClose }) {
   const [decision, setDecision] = useState('');
   const [notes, setNotes] = useState('');
   const [showEvalForm, setShowEvalForm] = useState(false);
+  const { user } = useAuth();
 
   const { data: existingEvaluation } = useQuery({
     queryKey: ['proposal-evaluation', proposal.id],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      const evals = await base44.entities.ExpertEvaluation.list();
-      return evals.find(e => 
-        e.entity_type === 'rd_proposal' && 
-        e.entity_id === proposal.id &&
-        e.expert_email === user.email &&
-        e.evaluation_stage === 'review'
-      );
-    }
+      const { data: evals } = await supabase.from('expert_evaluations').select('*')
+        .eq('entity_type', 'rd_proposal')
+        .eq('entity_id', proposal.id)
+        .eq('expert_email', user?.email)
+        .eq('evaluation_stage', 'review');
+      return evals?.[0];
+    },
+    enabled: !!user
   });
 
   const reviewMutation = useMutation({
     mutationFn: async (reviewData) => {
-      const user = await base44.auth.me();
-      
       // Update proposal status
-      await base44.entities.RDProposal.update(proposal.id, {
+      await supabase.from('rd_proposals').update({
         status: reviewData.decision === 'approve' ? 'shortlisted' : 
                 reviewData.decision === 'reject' ? 'rejected' : 'revisions_requested',
         review_notes: reviewData.notes,
-        reviewed_by: user.email,
+        reviewed_by: user?.email,
         review_date: new Date().toISOString()
-      });
+      }).eq('id', proposal.id);
 
       // Log activity
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'RDProposal',
         entity_id: proposal.id,
         activity_type: 'status_changed',
         description: `Review completed: ${reviewData.decision}`,
-        performed_by: user.email,
+        performed_by: user?.email,
         timestamp: new Date().toISOString(),
         metadata: { decision: reviewData.decision, notes: reviewData.notes }
       });
-
-      // Notify PI
-      if (proposal.principal_investigator?.email) {
-        await base44.integrations.Core.SendEmail({
-          to: proposal.principal_investigator.email,
-          subject: `R&D Proposal Review Decision: ${proposal.title_en}`,
-          body: `Your proposal "${proposal.title_en}" has been reviewed.\n\nDecision: ${reviewData.decision}\n\nNotes:\n${reviewData.notes}`
-        });
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-proposal']);
@@ -71,7 +61,7 @@ export default function RDProposalReviewGate({ proposal, onClose }) {
   });
 
   const handleEvaluationSubmit = async (evaluationData) => {
-    await base44.entities.ExpertEvaluation.create(evaluationData);
+    await supabase.from('expert_evaluations').insert(evaluationData);
     queryClient.invalidateQueries(['proposal-evaluation']);
     toast.success(t({ en: 'Evaluation saved', ar: 'تم حفظ التقييم' }));
     setShowEvalForm(false);

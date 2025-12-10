@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import { toast } from 'sonner';
 export default function PartnershipWorkflowIntegration({ organizationId }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [proposalData, setProposalData] = useState({
     partnership_type: 'strategic',
     proposal_text: '',
@@ -21,8 +23,8 @@ export default function PartnershipWorkflowIntegration({ organizationId }) {
   const { data: myPartnerships = [] } = useQuery({
     queryKey: ['my-partnerships', organizationId],
     queryFn: async () => {
-      const all = await base44.entities.Partnership.list();
-      return all.filter(p => 
+      const { data } = await supabase.from('partnerships').select('*');
+      return (data || []).filter(p => 
         p.organization_a_id === organizationId || 
         p.organization_b_id === organizationId
       );
@@ -31,17 +33,17 @@ export default function PartnershipWorkflowIntegration({ organizationId }) {
 
   const proposeMutation = useMutation({
     mutationFn: async (targetOrgId) => {
-      const user = await base44.auth.me();
-      
-      return await base44.entities.Partnership.create({
+      const { data, error } = await supabase.from('partnerships').insert({
         organization_a_id: organizationId,
         organization_b_id: targetOrgId,
         partnership_type: proposalData.partnership_type,
         status: 'proposed',
         proposal_text: proposalData.proposal_text,
-        proposed_by: user.email,
+        proposed_by: user?.email,
         proposed_date: new Date().toISOString()
-      });
+      }).select().single();
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-partnerships'] });

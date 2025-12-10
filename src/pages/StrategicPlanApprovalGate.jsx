@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Shield, CheckCircle2, XCircle, Clock, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function StrategicPlanApprovalGate() {
   const { language, isRTL, t } = useLanguage();

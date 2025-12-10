@@ -14,7 +14,7 @@ import {
   Sparkles, BarChart3, Globe
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function PublicPilotTracker() {
   const { language, isRTL, t } = useLanguage();

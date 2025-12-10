@@ -13,7 +13,7 @@ import {
   CheckCircle2, Activity, Zap, Bell
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function AcademiaDashboard() {
   const { language, isRTL, t } = useLanguage();

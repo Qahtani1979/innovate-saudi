@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,18 +14,13 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function MunicipalityIdeasView() {
   const { language, isRTL, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ['municipality-ideas', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.CitizenIdea.list('-created_date', 500);
-      // Filter by municipality if user has municipality association
-      return all;
+      const { data } = await supabase.from('citizen_ideas').select('*').order('created_at', { ascending: false }).limit(500);
+      return data || [];
     },
     enabled: !!user
   });

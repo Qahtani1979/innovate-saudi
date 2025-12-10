@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -21,15 +22,22 @@ export default function ProgramToPilotWorkflow({ program, graduateApplication })
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { user } = useAuth();
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*');
+      return data || [];
+    }
   });
 
   const [formData, setFormData] = useState({
@@ -75,26 +83,26 @@ Generate pilot proposal:`,
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const user = await base44.auth.me();
-      const pilot = await base44.entities.Pilot.create({
+      const { data: pilot, error } = await supabase.from('pilots').insert({
         ...formData,
         stage: 'design',
         trl_start: 5,
         trl_target: 7
-      });
+      }).select().single();
+      if (error) throw error;
 
-      await base44.entities.ChallengeRelation.create({
+      await supabase.from('challenge_relations').insert({
         challenge_id: program.id,
         related_entity_type: 'pilot',
         related_entity_id: pilot.id,
         relation_role: 'derived_from'
       });
 
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'program',
         entity_id: program.id,
         activity_type: 'pilot_created',
-        performed_by: user.email,
+        performed_by: user?.email,
         timestamp: new Date().toISOString(),
         metadata: { pilot_id: pilot.id }
       });

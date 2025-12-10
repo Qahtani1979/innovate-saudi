@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { toast } from 'sonner';
 export default function LabToSolutionConverter({ rdProject, livingLabId }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [solutionData, setSolutionData] = useState({
     name_en: rdProject.title_en || '',
     description_en: rdProject.abstract_en || '',
@@ -20,10 +22,8 @@ export default function LabToSolutionConverter({ rdProject, livingLabId }) {
 
   const convertMutation = useMutation({
     mutationFn: async () => {
-      const user = await base44.auth.me();
-      
       // Create Solution
-      const solution = await base44.entities.Solution.create({
+      const { data: solution, error } = await supabase.from('solutions').insert({
         code: `SOL-LAB-${Date.now()}`,
         name_en: solutionData.name_en,
         name_ar: rdProject.title_ar,
@@ -37,23 +37,24 @@ export default function LabToSolutionConverter({ rdProject, livingLabId }) {
         pricing_model: solutionData.pricing_model,
         workflow_stage: 'verification_pending',
         is_verified: false
-      });
+      }).select().single();
+      if (error) throw error;
 
       // Create certification
-      await base44.entities.LabSolutionCertification.create({
+      await supabase.from('lab_solution_certifications').insert({
         living_lab_id: livingLabId,
         solution_id: solution.id,
         certification_type: 'citizen_tested',
         certification_date: new Date().toISOString(),
         citizen_participants_count: rdProject.team_members?.length || 0,
         research_findings: rdProject.abstract_en,
-        issued_by: user.email
+        issued_by: user?.email
       });
 
       // Update RDProject
-      await base44.entities.RDProject.update(rdProject.id, {
+      await supabase.from('rd_projects').update({
         commercialization_potential_score: 75
-      });
+      }).eq('id', rdProject.id);
 
       return solution;
     },

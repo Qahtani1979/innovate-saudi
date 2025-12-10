@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,40 +14,20 @@ export default function StartupReferralProgram({ startupId }) {
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: startup } = useQuery({
     queryKey: ['startup-referral', startupId],
     queryFn: async () => {
-      const all = await base44.entities.StartupProfile.list();
-      return all.find(s => s.id === startupId);
+      const { data } = await supabase.from('startup_profiles').select('*').eq('id', startupId).single();
+      return data;
     }
   });
 
   const referralsMutation = useMutation({
     mutationFn: async (referralEmail) => {
-      await base44.integrations.Core.SendEmail({
-        to: referralEmail,
-        subject: `${startup?.name_en} invited you to Saudi Innovates Platform`,
-        body: `You've been referred to Saudi Innovates by ${startup?.name_en}!
-
-This platform connects startups with municipal innovation opportunities:
-• Discover challenges from 100+ municipalities
-• AI-powered opportunity matching
-• Access innovation programs and funding
-• Deploy solutions through pilots
-
-Join the ecosystem: [Registration Link]
-
-Referred by: ${user?.full_name} (${startup?.name_en})`
-      });
-
       // Track referral
-      await base44.entities.UserActivity.create({
+      await supabase.from('user_activities').insert({
         user_email: user?.email,
         activity_type: 'startup_referral',
         entity_type: 'StartupProfile',
@@ -64,11 +45,10 @@ Referred by: ${user?.full_name} (${startup?.name_en})`
   const { data: myReferrals = [] } = useQuery({
     queryKey: ['my-referrals', startupId],
     queryFn: async () => {
-      const all = await base44.entities.UserActivity.list();
-      return all.filter(a => 
-        a.activity_type === 'startup_referral' && 
-        a.entity_id === startupId
-      );
+      const { data } = await supabase.from('user_activities').select('*')
+        .eq('activity_type', 'startup_referral')
+        .eq('entity_id', startupId);
+      return data || [];
     }
   });
 
