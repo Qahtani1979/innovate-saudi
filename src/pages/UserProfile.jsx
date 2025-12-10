@@ -364,10 +364,10 @@ function UserProfile() {
                   </CardHeader>
                   <CardContent>
                     <SkillsBadges 
-                      skills={profile?.expertise_areas || user?.areas_of_expertise} 
+                      skills={profile?.expertise_areas || profile?.areas_of_expertise} 
                       colorClass="bg-primary/10 text-primary"
                     />
-                    {!(profile?.expertise_areas?.length || user?.areas_of_expertise?.length) && (
+                    {!(profile?.expertise_areas?.length || profile?.areas_of_expertise?.length) && (
                       <p className="text-xs text-muted-foreground">{t({ en: 'No expertise listed', ar: 'لا توجد خبرة' })}</p>
                     )}
                   </CardContent>
@@ -379,10 +379,10 @@ function UserProfile() {
                   </CardHeader>
                   <CardContent>
                     <SkillsBadges 
-                      skills={profile?.skills || user?.skills} 
+                      skills={profile?.skills} 
                       colorClass="bg-secondary text-secondary-foreground"
                     />
-                    {!(profile?.skills?.length || user?.skills?.length) && (
+                    {!profile?.skills?.length && (
                       <p className="text-xs text-muted-foreground">{t({ en: 'No skills listed', ar: 'لا توجد مهارات' })}</p>
                     )}
                   </CardContent>
@@ -397,15 +397,15 @@ function UserProfile() {
                 <CardContent>
                   <div className="grid grid-cols-4 gap-4 text-center">
                     <div className="p-4 bg-primary/5 rounded-lg">
-                      <p className="text-3xl font-bold text-primary">{user?.past_projects?.length || 0}</p>
+                      <p className="text-3xl font-bold text-primary">{profile?.past_projects?.length || 0}</p>
                       <p className="text-xs text-muted-foreground">{t({ en: 'Projects', ar: 'مشاريع' })}</p>
                     </div>
                     <div className="p-4 bg-secondary/50 rounded-lg">
-                      <p className="text-3xl font-bold text-secondary-foreground">{(profile?.skills || user?.skills)?.length || 0}</p>
+                      <p className="text-3xl font-bold text-secondary-foreground">{profile?.skills?.length || 0}</p>
                       <p className="text-xs text-muted-foreground">{t({ en: 'Skills', ar: 'مهارات' })}</p>
                     </div>
                     <div className="p-4 bg-accent/50 rounded-lg">
-                      <p className="text-3xl font-bold text-accent-foreground">{user?.training_completed?.length || 0}</p>
+                      <p className="text-3xl font-bold text-accent-foreground">{profile?.training_completed?.length || 0}</p>
                       <p className="text-xs text-muted-foreground">{t({ en: 'Certifications', ar: 'شهادات' })}</p>
                     </div>
                     <div className="p-4 bg-muted rounded-lg">
@@ -467,7 +467,7 @@ function UserProfile() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(profileData.skills || user?.skills || []).map((skill, i) => (
+                  {(profileData.skills || profile?.skills || []).map((skill, i) => (
                     <Badge key={i} className="bg-blue-600">
                       {skill}
                       {editMode && (
@@ -477,7 +477,7 @@ function UserProfile() {
                       )}
                     </Badge>
                   ))}
-                  {!(profileData.skills || user?.skills)?.length && (
+                  {!(profileData.skills || profile?.skills)?.length && (
                     <p className="text-sm text-slate-500">{t({ en: 'No skills added yet', ar: 'لا توجد مهارات' })}</p>
                   )}
                 </div>
@@ -500,7 +500,7 @@ function UserProfile() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(profileData.areas_of_expertise || user?.areas_of_expertise || []).map((area, i) => (
+                  {(profileData.areas_of_expertise || profile?.areas_of_expertise || []).map((area, i) => (
                     <Badge key={i} className="bg-purple-600">
                       {area}
                       {editMode && (
@@ -510,7 +510,7 @@ function UserProfile() {
                       )}
                     </Badge>
                   ))}
-                  {!(profileData.areas_of_expertise || user?.areas_of_expertise)?.length && (
+                  {!(profileData.areas_of_expertise || profile?.areas_of_expertise)?.length && (
                     <p className="text-sm text-slate-500">{t({ en: 'No expertise added yet', ar: 'لا توجد خبرة' })}</p>
                   )}
                 </div>
