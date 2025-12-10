@@ -1,6 +1,7 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,37 +16,114 @@ import {
 
 export default function ParticipantDashboard() {
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = React.useState(null);
+  const { user } = useAuth();
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
+  // Fetch user's program applications
   const { data: myApplications = [] } = useQuery({
     queryKey: ['my-program-applications', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(app => app.applicant_email === user.email);
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('applicant_email', user.email);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
+  // Fetch programs
   const { data: programs = [] } = useQuery({
     queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
+  // Fetch participant progress data
   const activeProgram = myApplications.find(app => app.status === 'accepted');
   const program = activeProgram ? programs.find(p => p.id === activeProgram.program_id) : null;
 
-  const mockData = {
-    sessionsCompleted: 8,
+  // Fetch actual progress data from program_sessions and submissions
+  const { data: progressData } = useQuery({
+    queryKey: ['participant-progress', activeProgram?.id, program?.id],
+    queryFn: async () => {
+      if (!program?.id) return null;
+
+      // Get total sessions count
+      const { count: totalSessions } = await supabase
+        .from('program_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('program_id', program.id);
+
+      // Get completed sessions (sessions with attendance record)
+      const { count: sessionsCompleted } = await supabase
+        .from('session_attendance')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', user.email)
+        .eq('attended', true);
+
+      // Get total assignments
+      const { count: totalAssignments } = await supabase
+        .from('program_assignments')
+        .select('*', { count: 'exact', head: true })
+        .eq('program_id', program.id);
+
+      // Get submitted assignments
+      const { count: assignmentsSubmitted } = await supabase
+        .from('assignment_submissions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', user.email);
+
+      // Get mentor meetings
+      const { count: mentorMeetings } = await supabase
+        .from('mentor_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('participant_email', user.email)
+        .eq('status', 'completed');
+
+      // Get peer collaborations
+      const { count: peerCollaborations } = await supabase
+        .from('peer_collaborations')
+        .select('*', { count: 'exact', head: true })
+        .or(`participant_email.eq.${user.email},partner_email.eq.${user.email}`);
+
+      const sessionsTotal = totalSessions || 12;
+      const sessionsCompletedCount = sessionsCompleted || 0;
+      const assignmentsTotal = totalAssignments || 8;
+      const assignmentsSubmittedCount = assignmentsSubmitted || 0;
+
+      // Calculate overall progress
+      const sessionProgress = sessionsTotal > 0 ? (sessionsCompletedCount / sessionsTotal) * 50 : 0;
+      const assignmentProgress = assignmentsTotal > 0 ? (assignmentsSubmittedCount / assignmentsTotal) * 50 : 0;
+      const overallProgress = Math.round(sessionProgress + assignmentProgress);
+
+      return {
+        sessionsCompleted: sessionsCompletedCount,
+        totalSessions: sessionsTotal,
+        assignmentsSubmitted: assignmentsSubmittedCount,
+        totalAssignments: assignmentsTotal,
+        mentorMeetings: mentorMeetings || 0,
+        peerCollaborations: peerCollaborations || 0,
+        overallProgress
+      };
+    },
+    enabled: !!program?.id && !!user?.email
+  });
+
+  // Fallback data if queries return nothing
+  const displayData = progressData || {
+    sessionsCompleted: 0,
     totalSessions: 12,
-    assignmentsSubmitted: 6,
+    assignmentsSubmitted: 0,
     totalAssignments: 8,
-    mentorMeetings: 3,
-    peerCollaborations: 5,
-    overallProgress: 67
+    mentorMeetings: 0,
+    peerCollaborations: 0,
+    overallProgress: 0
   };
 
   return (
@@ -78,19 +156,19 @@ export default function ParticipantDashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-3 bg-white rounded-lg border">
                   <p className="text-xs text-slate-600">{t({ en: 'Progress', ar: 'التقدم' })}</p>
-                  <p className="text-2xl font-bold text-blue-600">{mockData.overallProgress}%</p>
+                  <p className="text-2xl font-bold text-blue-600">{displayData.overallProgress}%</p>
                 </div>
                 <div className="p-3 bg-white rounded-lg border">
                   <p className="text-xs text-slate-600">{t({ en: 'Sessions', ar: 'الجلسات' })}</p>
-                  <p className="text-2xl font-bold text-purple-600">{mockData.sessionsCompleted}/{mockData.totalSessions}</p>
+                  <p className="text-2xl font-bold text-purple-600">{displayData.sessionsCompleted}/{displayData.totalSessions}</p>
                 </div>
                 <div className="p-3 bg-white rounded-lg border">
                   <p className="text-xs text-slate-600">{t({ en: 'Assignments', ar: 'المهام' })}</p>
-                  <p className="text-2xl font-bold text-green-600">{mockData.assignmentsSubmitted}/{mockData.totalAssignments}</p>
+                  <p className="text-2xl font-bold text-green-600">{displayData.assignmentsSubmitted}/{displayData.totalAssignments}</p>
                 </div>
                 <div className="p-3 bg-white rounded-lg border">
                   <p className="text-xs text-slate-600">{t({ en: 'Collaborations', ar: 'التعاون' })}</p>
-                  <p className="text-2xl font-bold text-amber-600">{mockData.peerCollaborations}</p>
+                  <p className="text-2xl font-bold text-amber-600">{displayData.peerCollaborations}</p>
                 </div>
               </div>
             </CardContent>
@@ -105,9 +183,9 @@ export default function ParticipantDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Progress value={mockData.overallProgress} className="h-3 mb-2" />
+              <Progress value={displayData.overallProgress} className="h-3 mb-2" />
               <p className="text-sm text-slate-600">
-                {t({ en: `You're ${mockData.overallProgress}% through the program`, ar: `أنت في ${mockData.overallProgress}% من البرنامج` })}
+                {t({ en: `You're ${displayData.overallProgress}% through the program`, ar: `أنت في ${displayData.overallProgress}% من البرنامج` })}
               </p>
             </CardContent>
           </Card>
@@ -118,14 +196,19 @@ export default function ParticipantDashboard() {
               <CardContent className="pt-6">
                 <FileText className="h-8 w-8 text-blue-600 mb-3" />
                 <h3 className="font-semibold mb-1">{t({ en: 'Submit Assignment', ar: 'تقديم مهمة' })}</h3>
-                <p className="text-xs text-slate-600">{t({ en: '2 assignments pending', ar: 'مهمتان معلقتان' })}</p>
+                <p className="text-xs text-slate-600">
+                  {t({ 
+                    en: `${displayData.totalAssignments - displayData.assignmentsSubmitted} assignments pending`, 
+                    ar: `${displayData.totalAssignments - displayData.assignmentsSubmitted} مهام معلقة` 
+                  })}
+                </p>
               </CardContent>
             </Card>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="pt-6">
                 <MessageSquare className="h-8 w-8 text-purple-600 mb-3" />
                 <h3 className="font-semibold mb-1">{t({ en: 'Cohort Forum', ar: 'منتدى المجموعة' })}</h3>
-                <p className="text-xs text-slate-600">{t({ en: '12 new messages', ar: '12 رسالة جديدة' })}</p>
+                <p className="text-xs text-slate-600">{t({ en: 'Connect with peers', ar: 'تواصل مع الزملاء' })}</p>
               </CardContent>
             </Card>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -149,24 +232,28 @@ export default function ParticipantDashboard() {
               <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-slate-900">{t({ en: 'Session 9: Innovation Frameworks', ar: 'الجلسة 9: أطر الابتكار' })}</p>
-                    <p className="text-xs text-slate-600">{t({ en: 'Tomorrow, 10:00 AM', ar: 'غداً، 10:00 ص' })}</p>
+                    <p className="font-medium text-slate-900">
+                      {t({ en: `Session ${displayData.sessionsCompleted + 1}: Next Module`, ar: `الجلسة ${displayData.sessionsCompleted + 1}: الوحدة التالية` })}
+                    </p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Check program calendar', ar: 'راجع تقويم البرنامج' })}</p>
                   </div>
                   <Badge className="bg-purple-600 text-white">{t({ en: 'Required', ar: 'مطلوب' })}</Badge>
                 </div>
               </div>
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-slate-900">{t({ en: 'Assignment: Market Analysis', ar: 'مهمة: تحليل السوق' })}</p>
-                    <p className="text-xs text-slate-600">{t({ en: 'Due: 3 days', ar: 'الموعد: 3 أيام' })}</p>
+              {displayData.totalAssignments > displayData.assignmentsSubmitted && (
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">{t({ en: 'Pending Assignment', ar: 'مهمة معلقة' })}</p>
+                      <p className="text-xs text-slate-600">{t({ en: 'Review and submit', ar: 'راجع وقدم' })}</p>
+                    </div>
+                    <Button size="sm" className="bg-blue-600">
+                      <Upload className="h-3 w-3 mr-1" />
+                      {t({ en: 'Submit', ar: 'تقديم' })}
+                    </Button>
                   </div>
-                  <Button size="sm" className="bg-blue-600">
-                    <Upload className="h-3 w-3 mr-1" />
-                    {t({ en: 'Submit', ar: 'تقديم' })}
-                  </Button>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </>
