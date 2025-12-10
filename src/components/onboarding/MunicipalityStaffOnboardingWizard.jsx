@@ -69,6 +69,7 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtractingCV, setIsExtractingCV] = useState(false);
+  const [dataImportSource, setDataImportSource] = useState(null);
   
   const [formData, setFormData] = useState({
     cv_url: '',
@@ -86,6 +87,14 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
   // Pre-populate from Stage 1 onboarding data
   useEffect(() => {
     if (userProfile) {
+      // Check for imported data source
+      const extractedData = userProfile.extracted_data || {};
+      if (extractedData.imported_from_linkedin) {
+        setDataImportSource('linkedin');
+      } else if (extractedData.imported_from_cv || userProfile.cv_url) {
+        setDataImportSource('cv');
+      }
+      
       setFormData(prev => ({
         ...prev,
         cv_url: userProfile.cv_url || prev.cv_url,
@@ -93,7 +102,7 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
         department: userProfile.department_en || userProfile.department || prev.department,
         job_title: userProfile.job_title_en || userProfile.job_title || prev.job_title,
         work_phone: userProfile.work_phone || prev.work_phone,
-        years_of_experience: userProfile.years_experience || prev.years_of_experience,
+        years_of_experience: userProfile.years_experience || extractedData.years_of_experience || prev.years_of_experience,
         specializations: userProfile.expertise_areas?.length > 0 ? userProfile.expertise_areas : prev.specializations,
       }));
     }
@@ -310,12 +319,39 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Show if data already imported */}
+                {dataImportSource && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-800 mb-2">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="font-medium">
+                        {dataImportSource === 'linkedin' 
+                          ? t({ en: 'Data imported from LinkedIn!', ar: 'تم استيراد البيانات من لينكد إن!' })
+                          : t({ en: 'Data imported from CV!', ar: 'تم استيراد البيانات من السيرة الذاتية!' })}
+                      </span>
+                    </div>
+                    <div className="text-sm text-green-700 space-y-1">
+                      {formData.job_title && (
+                        <p><strong>{t({ en: 'Job Title:', ar: 'المسمى الوظيفي:' })}</strong> {formData.job_title}</p>
+                      )}
+                      {formData.specializations.length > 0 && (
+                        <p><strong>{t({ en: 'Expertise:', ar: 'الخبرات:' })}</strong> {formData.specializations.slice(0, 3).join(', ')}{formData.specializations.length > 3 ? '...' : ''}</p>
+                      )}
+                      {formData.years_of_experience > 0 && (
+                        <p><strong>{t({ en: 'Experience:', ar: 'الخبرة:' })}</strong> {formData.years_of_experience} {t({ en: 'years', ar: 'سنوات' })}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-4 border-2 border-dashed border-purple-200 rounded-lg bg-purple-50/50">
                   <div className="flex items-start gap-4">
                     <FileText className="h-10 w-10 text-purple-500 flex-shrink-0" />
                     <div className="flex-1">
                       <h3 className="font-semibold text-purple-900 mb-1">
-                        {t({ en: 'Upload CV/Resume', ar: 'رفع السيرة الذاتية' })}
+                        {dataImportSource 
+                          ? t({ en: 'Upload Additional CV (Optional)', ar: 'رفع سيرة ذاتية إضافية (اختياري)' })
+                          : t({ en: 'Upload CV/Resume', ar: 'رفع السيرة الذاتية' })}
                       </h3>
                       <p className="text-sm text-purple-700 mb-3">
                         {t({ en: 'AI will extract your job title, experience, and specializations', ar: 'سيستخرج الذكاء الاصطناعي مسماك الوظيفي وخبرتك وتخصصاتك' })}
@@ -336,7 +372,7 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
                   </div>
                 </div>
 
-                {formData.cv_url && (
+                {formData.cv_url && !dataImportSource && (
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center gap-2 text-green-800">
                       <CheckCircle2 className="h-5 w-5" />
@@ -346,7 +382,9 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
                 )}
 
                 <p className="text-xs text-center text-muted-foreground">
-                  {t({ en: 'You can skip this and fill in details manually', ar: 'يمكنك تخطي هذا وملء التفاصيل يدوياً' })}
+                  {dataImportSource
+                    ? t({ en: 'Your profile data has been pre-filled. Click Next to continue.', ar: 'تم ملء بيانات ملفك مسبقاً. انقر التالي للمتابعة.' })
+                    : t({ en: 'You can skip this and fill in details manually', ar: 'يمكنك تخطي هذا وملء التفاصيل يدوياً' })}
                 </p>
               </CardContent>
             </Card>
