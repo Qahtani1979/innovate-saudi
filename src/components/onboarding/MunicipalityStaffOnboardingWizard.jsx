@@ -182,13 +182,15 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
     setIsSubmitting(true);
     
     try {
-      // Update user profile
+      // Update user profile with both legacy and _en fields for consistency
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
           municipality_id: formData.municipality_id || null,
           department: formData.department || null,
+          department_en: formData.department || null,
           job_title: formData.job_title || null,
+          job_title_en: formData.job_title || null,
           work_phone: formData.work_phone || null,
           cv_url: formData.cv_url || null,
           onboarding_completed: true,
@@ -214,19 +216,15 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
         is_verified: false
       }, { onConflict: 'user_id' });
 
-      // Submit role request if not staff level
+      // Submit role request if not staff level - use municipality_id column directly
       if (formData.role_level !== 'staff' && formData.justification) {
         await supabase.from('role_requests').insert({
           user_id: user.id,
           user_email: user.email,
           requested_role: formData.role_level === 'manager' ? 'municipality_admin' : 'municipality_staff',
+          municipality_id: formData.municipality_id || null,
           justification: formData.justification,
-          status: 'pending',
-          metadata: {
-            municipality_id: formData.municipality_id,
-            department: formData.department,
-            employee_id: formData.employee_id
-          }
+          status: 'pending'
         });
         toast.info(t({ en: 'Role request submitted for approval', ar: 'تم تقديم طلب الدور للموافقة' }));
       }
