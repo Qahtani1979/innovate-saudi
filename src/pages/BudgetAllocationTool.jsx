@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,17 +31,26 @@ function BudgetAllocationTool() {
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('sectors').select('*');
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const categories = [
@@ -125,7 +134,6 @@ Return percentage allocations and brief justification for each.`,
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 p-8 text-white">
         <h1 className="text-5xl font-bold mb-2">
           {t({ en: '💰 Budget Allocation Tool', ar: '💰 أداة توزيع الميزانية' })}
@@ -140,7 +148,6 @@ Return percentage allocations and brief justification for each.`,
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="pt-6">
@@ -186,7 +193,6 @@ Return percentage allocations and brief justification for each.`,
         </Card>
       </div>
 
-      {/* AI Optimization */}
       <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
@@ -211,7 +217,6 @@ Return percentage allocations and brief justification for each.`,
         </CardContent>
       </Card>
 
-      {/* Budget Input */}
       <Card>
         <CardHeader>
           <CardTitle>{t({ en: 'Total Budget Configuration', ar: 'تكوين الميزانية الإجمالية' })}</CardTitle>
@@ -229,9 +234,7 @@ Return percentage allocations and brief justification for each.`,
         </CardContent>
       </Card>
 
-      {/* Allocation Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Allocation Controls */}
         <Card>
           <CardHeader>
             <CardTitle>{t({ en: 'Allocate by Category', ar: 'التخصيص حسب الفئة' })}</CardTitle>
@@ -294,7 +297,6 @@ Return percentage allocations and brief justification for each.`,
           </CardContent>
         </Card>
 
-        {/* Visualization */}
         <Card>
           <CardHeader>
             <CardTitle>{t({ en: 'Budget Distribution', ar: 'توزيع الميزانية' })}</CardTitle>
@@ -329,7 +331,6 @@ Return percentage allocations and brief justification for each.`,
         </Card>
       </div>
 
-      {/* Sector Breakdown */}
       <Card>
         <CardHeader>
           <CardTitle>{t({ en: 'Allocation by Sector', ar: 'التخصيص حسب القطاع' })}</CardTitle>
@@ -357,7 +358,6 @@ Return percentage allocations and brief justification for each.`,
         </CardContent>
       </Card>
 
-      {/* Year-over-Year Comparison */}
       <Card>
         <CardHeader>
           <CardTitle>{t({ en: 'Year-over-Year Comparison', ar: 'المقارنة سنة بعد سنة' })}</CardTitle>
@@ -386,7 +386,6 @@ Return percentage allocations and brief justification for each.`,
         </CardContent>
       </Card>
 
-      {/* Actions */}
       <div className="flex items-center gap-3">
         <Button 
           variant="outline"
@@ -401,20 +400,26 @@ Return percentage allocations and brief justification for each.`,
             toast.success('Optimized unlocked categories');
           }}
         >
-          <RefreshCw className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {t({ en: 'Optimize Remaining', ar: 'تحسين المتبقي' })}
+          <RefreshCw className="h-4 w-4 mr-2" />
+          {t({ en: 'Auto-Balance', ar: 'توازن تلقائي' })}
         </Button>
-        <Button className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600">
-          <Save className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {t({ en: 'Save Budget Plan', ar: 'حفظ خطة الميزانية' })}
+        <Button className="bg-green-600">
+          <Save className="h-4 w-4 mr-2" />
+          {t({ en: 'Save Allocation', ar: 'حفظ التخصيص' })}
         </Button>
         <Button variant="outline">
-          <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {t({ en: 'Export', ar: 'تصدير' })}
+          <Download className="h-4 w-4 mr-2" />
+          {t({ en: 'Export Report', ar: 'تصدير التقرير' })}
         </Button>
       </div>
     </div>
   );
 }
 
-export default ProtectedPage(BudgetAllocationTool, { requiredPermissions: [], requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead', 'Financial Controller'] });
+export default function BudgetAllocationToolWrapper() {
+  return (
+    <ProtectedPage requiredPermissions={['budget_management']}>
+      <BudgetAllocationTool />
+    </ProtectedPage>
+  );
+}

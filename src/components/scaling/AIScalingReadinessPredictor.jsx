@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +19,8 @@ export default function AIScalingReadinessPredictor({ municipalityId, solution }
 
   const analyzeMunicipality = async () => {
     try {
-      const municipalities = await base44.entities.Municipality.list();
-      const muni = municipalities.find(m => m.id === municipalityId);
+      const { data: municipalities } = await supabase.from('municipalities').select('*');
+      const muni = (municipalities || []).find(m => m.id === municipalityId);
 
       const { success, data } = await invokeAI({
         prompt: `Assess municipality readiness for scaling solution:

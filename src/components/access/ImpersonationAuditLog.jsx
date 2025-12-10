@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +13,12 @@ export default function ImpersonationAuditLog() {
   const { data: impersonationLogs = [] } = useQuery({
     queryKey: ['impersonation-logs'],
     queryFn: async () => {
-      const logs = await base44.entities.AccessLog.list('-created_date', 100);
-      return logs.filter(log => log.action_type === 'impersonate' || log.metadata?.impersonation);
+      const { data } = await supabase
+        .from('access_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      return (data || []).filter(log => log.action === 'impersonate' || log.metadata?.impersonation);
     }
   });
 
@@ -56,7 +60,7 @@ export default function ImpersonationAuditLog() {
                   </TableCell>
                   <TableCell className="text-sm">{log.metadata?.actions_count || 0} actions</TableCell>
                   <TableCell className="text-sm text-slate-600">
-                    {new Date(log.created_date).toLocaleString()}
+                    {new Date(log.created_at).toLocaleString()}
                   </TableCell>
                 </TableRow>
               ))
