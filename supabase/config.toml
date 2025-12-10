@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.send-email]
 verify_jwt = false
 
+[functions.send-welcome-email]
+verify_jwt = false
+
 [functions.extract-file-data]
 verify_jwt = false
 
@@ -103,6 +106,9 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.provider-match-notifications]
+verify_jwt = false
+
+[functions.public-idea-ai]
 verify_jwt = false
 
 [functions.publications-auto-tracker]
