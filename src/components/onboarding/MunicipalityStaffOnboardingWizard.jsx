@@ -108,19 +108,33 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
     }
   }, [userProfile]);
 
-  // Fetch municipalities
+  // Fetch municipalities with approved email domains
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-list'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('municipalities')
-        .select('id, name_en, name_ar, region_id')
+        .select('id, name_en, name_ar, region_id, approved_email_domains')
         .eq('is_active', true)
         .order('name_en');
       if (error) throw error;
       return data || [];
     }
   });
+
+  // Helper to check if user's email domain is approved for auto-approval
+  const checkEmailDomainApproval = (userEmail, municipalityId) => {
+    if (!userEmail || !municipalityId) return false;
+    const municipality = municipalities.find(m => m.id === municipalityId);
+    const approvedDomains = municipality?.approved_email_domains || [];
+    if (approvedDomains.length === 0) return false;
+    
+    const emailDomain = userEmail.split('@')[1]?.toLowerCase();
+    return approvedDomains.some(domain => 
+      emailDomain === domain.toLowerCase() || 
+      emailDomain?.endsWith('.' + domain.toLowerCase())
+    );
+  };
 
   const progress = (currentStep / STEPS.length) * 100;
 
@@ -225,17 +239,45 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
         is_verified: false
       }, { onConflict: 'user_id' });
 
-      // Submit role request if not staff level - use municipality_id column directly
-      if (formData.role_level !== 'staff' && formData.justification) {
+      // Handle role assignment based on role level and email domain
+      const isStaffRole = formData.role_level === 'staff';
+      const isEmailDomainApproved = checkEmailDomainApproval(user.email, formData.municipality_id);
+
+      if (isStaffRole && isEmailDomainApproved) {
+        // Auto-approve staff role if email domain matches municipality's approved domains
+        await supabase.from('user_roles').upsert({
+          user_id: user.id,
+          role: 'municipality_staff'
+        }, { onConflict: 'user_id,role' });
+        
+        // Mark staff profile as verified since domain matched
+        await supabase.from('municipality_staff_profiles')
+          .update({ is_verified: true })
+          .eq('user_id', user.id);
+        
+        toast.success(t({ en: 'Staff role automatically approved!', ar: 'تم الموافقة على دور الموظف تلقائياً!' }));
+      } else if (isStaffRole && !isEmailDomainApproved) {
+        // Staff role but email domain not approved - submit for review
         await supabase.from('role_requests').insert({
           user_id: user.id,
           user_email: user.email,
-          requested_role: formData.role_level === 'manager' ? 'municipality_admin' : 'municipality_staff',
+          requested_role: 'municipality_staff',
+          municipality_id: formData.municipality_id || null,
+          justification: formData.justification || t({ en: 'Staff role request', ar: 'طلب دور موظف' }),
+          status: 'pending'
+        });
+        toast.info(t({ en: 'Staff role request submitted for approval', ar: 'تم تقديم طلب دور الموظف للموافقة' }));
+      } else if (!isStaffRole && formData.justification) {
+        // Higher roles (coordinator, manager) always require admin approval
+        await supabase.from('role_requests').insert({
+          user_id: user.id,
+          user_email: user.email,
+          requested_role: formData.role_level === 'manager' ? 'municipality_admin' : 'municipality_coordinator',
           municipality_id: formData.municipality_id || null,
           justification: formData.justification,
           status: 'pending'
         });
-        toast.info(t({ en: 'Role request submitted for approval', ar: 'تم تقديم طلب الدور للموافقة' }));
+        toast.info(t({ en: 'Role request submitted for admin approval', ar: 'تم تقديم طلب الدور لموافقة المسؤول' }));
       }
 
       await queryClient.invalidateQueries(['user-profile']);
