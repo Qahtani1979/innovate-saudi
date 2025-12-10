@@ -234,10 +234,10 @@ function UserProfile() {
   const earnedBadgesCount = badges.filter(b => b.earned).length;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto px-2 sm:px-4" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Cover & Avatar */}
       <Card className="overflow-hidden">
-        <div className="h-48 bg-gradient-to-br from-primary/80 to-primary relative overflow-hidden">
+        <div className="h-32 sm:h-48 bg-gradient-to-br from-primary/80 to-primary relative overflow-hidden">
           {/* Show preview if uploading, otherwise show current or profileData value */}
           {(coverPreview !== null ? coverPreview : (editMode ? profileData.cover_image_url : profile?.cover_image_url)) && (
             <img 
@@ -272,9 +272,9 @@ function UserProfile() {
           )}
         </div>
         <CardContent className="pt-0">
-          <div className="flex items-start gap-6 -mt-16 relative z-10">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 -mt-12 sm:-mt-16 relative z-10">
             <div className="relative">
-              <div className="h-32 w-32 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden">
+              <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden">
                 {/* Show preview if uploading, otherwise show current or profileData value */}
                 {(avatarPreview !== null ? avatarPreview : (editMode ? profileData.avatar_url : profile?.avatar_url)) ? (
                   <img 
@@ -315,37 +315,39 @@ function UserProfile() {
                 </div>
               )}
             </div>
-            <div className="flex-1 mt-4">
-              <div className="flex items-center justify-between">
+            <div className="flex-1 mt-2 sm:mt-4 text-center sm:text-left w-full">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-3">
                 <div>
-                  <h1 className="text-3xl font-bold text-foreground">{profile?.full_name_en || profile?.full_name || authUser?.user_metadata?.full_name}</h1>
-                  <p className="text-muted-foreground">{profile?.title_en || profile?.job_title_en || profile?.selected_persona}</p>
+                  <h1 className="text-xl sm:text-3xl font-bold text-foreground">{profile?.full_name_en || profile?.full_name || authUser?.user_metadata?.full_name}</h1>
+                  <p className="text-sm sm:text-base text-muted-foreground">{profile?.title_en || profile?.job_title_en || profile?.selected_persona}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap justify-center sm:justify-end">
                   {editMode && (
-                    <Button onClick={handleSave} className="bg-primary" disabled={updateProfileMutation.isPending}>
-                      <Save className="h-4 w-4 mr-2" />
-                      {t({ en: 'Save', ar: 'حفظ' })}
+                    <Button onClick={handleSave} className="bg-primary" size="sm" disabled={updateProfileMutation.isPending}>
+                      <Save className="h-4 w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">{t({ en: 'Save', ar: 'حفظ' })}</span>
+                      <span className="sm:hidden">{t({ en: 'Save', ar: 'حفظ' })}</span>
                     </Button>
                   )}
-                  <Button onClick={() => handleEditMode(!editMode)} variant={editMode ? "outline" : "default"}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    {editMode ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Edit Profile', ar: 'تحرير الملف' })}
+                  <Button onClick={() => handleEditMode(!editMode)} variant={editMode ? "outline" : "default"} size="sm">
+                    <Edit className="h-4 w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">{editMode ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Edit Profile', ar: 'تحرير الملف' })}</span>
+                    <span className="sm:hidden">{editMode ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Edit', ar: 'تحرير' })}</span>
                   </Button>
                 </div>
               </div>
-              <div className="flex gap-2 mt-3">
+              <div className="flex flex-wrap gap-1 sm:gap-2 mt-2 sm:mt-3 justify-center sm:justify-start">
                 {profile?.verified && (
-                  <Badge className="bg-primary">
+                  <Badge className="bg-primary text-xs">
                     {t({ en: '✓ Verified', ar: '✓ موثق' })}
                   </Badge>
                 )}
                 {badges.filter(b => b.earned).slice(0, 3).map((badge, i) => {
                   const Icon = badge.icon;
                   return (
-                    <Badge key={i} variant="outline" className="gap-1">
+                    <Badge key={i} variant="outline" className="gap-1 text-xs">
                       <Icon className="h-3 w-3" />
-                      {badge.name[language]}
+                      <span className="hidden sm:inline">{badge.name[language]}</span>
                     </Badge>
                   );
                 })}
@@ -356,12 +358,12 @@ function UserProfile() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">{t({ en: 'Overview', ar: 'نظرة' })}</TabsTrigger>
-          <TabsTrigger value="skills">{t({ en: 'Skills', ar: 'المهارات' })}</TabsTrigger>
-          <TabsTrigger value="projects">{t({ en: 'Projects', ar: 'المشاريع' })}</TabsTrigger>
-          <TabsTrigger value="training">{t({ en: 'Training', ar: 'التدريب' })}</TabsTrigger>
-          <TabsTrigger value="connections">{t({ en: 'Connections', ar: 'الاتصالات' })}</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto no-scrollbar">
+          <TabsTrigger value="overview" className="flex-1 min-w-fit text-xs sm:text-sm">{t({ en: 'Overview', ar: 'نظرة' })}</TabsTrigger>
+          <TabsTrigger value="skills" className="flex-1 min-w-fit text-xs sm:text-sm">{t({ en: 'Skills', ar: 'المهارات' })}</TabsTrigger>
+          <TabsTrigger value="projects" className="flex-1 min-w-fit text-xs sm:text-sm">{t({ en: 'Projects', ar: 'المشاريع' })}</TabsTrigger>
+          <TabsTrigger value="training" className="flex-1 min-w-fit text-xs sm:text-sm">{t({ en: 'Training', ar: 'التدريب' })}</TabsTrigger>
+          <TabsTrigger value="connections" className="flex-1 min-w-fit text-xs sm:text-sm">{t({ en: 'Connections', ar: 'الاتصالات' })}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -540,16 +542,16 @@ function UserProfile() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Level Progress */}
-                  <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary">
-                      <span className="text-2xl font-bold text-primary">{userLevel}</span>
+                  <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+                    <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary shrink-0">
+                      <span className="text-xl sm:text-2xl font-bold text-primary">{userLevel}</span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between mb-1">
+                    <div className="flex-1 w-full">
+                      <div className="flex justify-between mb-1 text-sm sm:text-base">
                         <span className="font-medium">{t({ en: 'Level', ar: 'المستوى' })} {userLevel}</span>
-                        <span className="text-sm text-muted-foreground">{pointsToNextLevel} {t({ en: 'points to next level', ar: 'نقطة للمستوى التالي' })}</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">{pointsToNextLevel} {t({ en: 'pts to next', ar: 'للتالي' })}</span>
                       </div>
-                      <Progress value={levelProgress} className="h-3" />
+                      <Progress value={levelProgress} className="h-2 sm:h-3" />
                     </div>
                   </div>
                   
@@ -575,22 +577,22 @@ function UserProfile() {
                   </div>
                   
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-4 gap-4 pt-4 border-t">
-                    <div className="p-4 bg-primary/5 rounded-lg text-center">
-                      <p className="text-3xl font-bold text-primary">{profile?.contribution_count || 0}</p>
-                      <p className="text-xs text-muted-foreground">{t({ en: 'Total Points', ar: 'إجمالي النقاط' })}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 pt-4 border-t">
+                    <div className="p-3 sm:p-4 bg-primary/5 rounded-lg text-center">
+                      <p className="text-xl sm:text-3xl font-bold text-primary">{profile?.contribution_count || 0}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">{t({ en: 'Total Points', ar: 'النقاط' })}</p>
                     </div>
-                    <div className="p-4 bg-secondary/50 rounded-lg text-center">
-                      <p className="text-3xl font-bold text-secondary-foreground">{profile?.skills?.length || 0}</p>
-                      <p className="text-xs text-muted-foreground">{t({ en: 'Skills', ar: 'مهارات' })}</p>
+                    <div className="p-3 sm:p-4 bg-secondary/50 rounded-lg text-center">
+                      <p className="text-xl sm:text-3xl font-bold text-secondary-foreground">{profile?.skills?.length || 0}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">{t({ en: 'Skills', ar: 'مهارات' })}</p>
                     </div>
-                    <div className="p-4 bg-accent/50 rounded-lg text-center">
-                      <p className="text-3xl font-bold text-accent-foreground">{profile?.certifications?.length || profile?.training_completed?.length || 0}</p>
-                      <p className="text-xs text-muted-foreground">{t({ en: 'Certifications', ar: 'شهادات' })}</p>
+                    <div className="p-3 sm:p-4 bg-accent/50 rounded-lg text-center">
+                      <p className="text-xl sm:text-3xl font-bold text-accent-foreground">{profile?.certifications?.length || profile?.training_completed?.length || 0}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">{t({ en: 'Certs', ar: 'شهادات' })}</p>
                     </div>
-                    <div className="p-4 bg-muted rounded-lg text-center">
-                      <p className="text-3xl font-bold text-foreground">{badges.filter(b => b.earned).length}</p>
-                      <p className="text-xs text-muted-foreground">{t({ en: 'Badges', ar: 'شارات' })}</p>
+                    <div className="p-3 sm:p-4 bg-muted rounded-lg text-center">
+                      <p className="text-xl sm:text-3xl font-bold text-foreground">{badges.filter(b => b.earned).length}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">{t({ en: 'Badges', ar: 'شارات' })}</p>
                     </div>
                   </div>
                 </CardContent>
