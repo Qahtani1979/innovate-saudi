@@ -213,10 +213,6 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     staleTime: 1000 * 60 * 30,
   });
 
-  // Filter cities based on selected region
-  const filteredCities = formData.region_id 
-    ? cities.filter(city => city.region_id === formData.region_id)
-    : cities;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -269,7 +265,11 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
   const [isTranslating, setIsTranslating] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
 
-  // Validation functions
+  // Filter cities based on selected region
+  const filteredCities = formData.region_id 
+    ? cities.filter(city => city.region_id === formData.region_id)
+    : cities;
+
   const validateEmail = (email) => {
     if (!email) return true;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
