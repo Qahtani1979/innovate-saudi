@@ -183,6 +183,41 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     staleTime: 1000 * 60 * 30,
   });
 
+  // Fetch regions from database
+  const { data: regions = [] } = useQuery({
+    queryKey: ['regions-active'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('regions')
+        .select('id, name_en, name_ar, code')
+        .eq('is_active', true)
+        .order('name_en');
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
+  // Fetch cities from database
+  const { data: cities = [] } = useQuery({
+    queryKey: ['cities-active'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('cities')
+        .select('id, name_en, name_ar, region_id')
+        .eq('is_active', true)
+        .order('name_en');
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
+  // Filter cities based on selected region
+  const filteredCities = formData.region_id 
+    ? cities.filter(city => city.region_id === formData.region_id)
+    : cities;
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtractingCV, setIsExtractingCV] = useState(false);
@@ -223,6 +258,8 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     languages: [],
     location_city: '',
     location_region: '',
+    region_id: '',
+    city_id: '',
     preferred_language: language,
     // Mobile number with country code
     mobile_number: '',
@@ -334,6 +371,8 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
         languages: userProfile?.languages || [],
         location_city: userProfile?.location_city || '',
         location_region: userProfile?.location_region || '',
+        region_id: userProfile?.region_id || '',
+        city_id: userProfile?.city_id || '',
         preferred_language: profileLang || language,
         mobile_number: userProfile?.mobile_number || '',
         mobile_country_code: userProfile?.mobile_country_code || '+966',
@@ -782,6 +821,8 @@ Return comprehensive suggestions for all fields.`,
         languages: formData.languages?.length > 0 ? formData.languages : [],
         location_city: formData.location_city || null,
         location_region: formData.location_region || null,
+        region_id: formData.region_id || null,
+        city_id: formData.city_id || null,
         years_experience: formData.years_of_experience || 0,
         preferred_language: formData.preferred_language || language,
         mobile_number: formData.mobile_number || null,
@@ -1464,20 +1505,58 @@ Return comprehensive suggestions for all fields.`,
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>{t({ en: 'City', ar: 'المدينة' })}</Label>
-                      <Input
-                        value={formData.location_city}
-                        onChange={(e) => setFormData({ ...formData, location_city: e.target.value })}
-                        placeholder={t({ en: 'e.g., Riyadh', ar: 'مثال: الرياض' })}
-                      />
+                      <Label>{t({ en: 'Region', ar: 'المنطقة' })}</Label>
+                      <select
+                        value={formData.region_id || ''}
+                        onChange={(e) => {
+                          const regionId = e.target.value;
+                          const selectedRegion = regions?.find(r => r.id === regionId);
+                          setFormData({ 
+                            ...formData, 
+                            region_id: regionId,
+                            location_region: selectedRegion ? (language === 'ar' ? selectedRegion.name_ar : selectedRegion.name_en) : '',
+                            city_id: '', // Reset city when region changes
+                            location_city: ''
+                          });
+                        }}
+                        className="w-full h-10 px-3 border border-input rounded-md bg-background"
+                        aria-label={t({ en: 'Select Region', ar: 'اختر المنطقة' })}
+                      >
+                        <option value="">{t({ en: 'Select Region...', ar: 'اختر المنطقة...' })}</option>
+                        {regions?.map(region => (
+                          <option key={region.id} value={region.id}>
+                            {language === 'ar' ? region.name_ar : region.name_en}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="space-y-2">
-                      <Label>{t({ en: 'Region', ar: 'المنطقة' })}</Label>
-                      <Input
-                        value={formData.location_region}
-                        onChange={(e) => setFormData({ ...formData, location_region: e.target.value })}
-                        placeholder={t({ en: 'e.g., Central Region', ar: 'مثال: المنطقة الوسطى' })}
-                      />
+                      <Label>{t({ en: 'City', ar: 'المدينة' })}</Label>
+                      <select
+                        value={formData.city_id || ''}
+                        onChange={(e) => {
+                          const cityId = e.target.value;
+                          const selectedCity = cities?.find(c => c.id === cityId);
+                          setFormData({ 
+                            ...formData, 
+                            city_id: cityId,
+                            location_city: selectedCity ? (language === 'ar' ? selectedCity.name_ar : selectedCity.name_en) : ''
+                          });
+                        }}
+                        className="w-full h-10 px-3 border border-input rounded-md bg-background"
+                        disabled={!formData.region_id}
+                        aria-label={t({ en: 'Select City', ar: 'اختر المدينة' })}
+                      >
+                        <option value="">{t({ en: 'Select City...', ar: 'اختر المدينة...' })}</option>
+                        {filteredCities?.map(city => (
+                          <option key={city.id} value={city.id}>
+                            {language === 'ar' ? city.name_ar : city.name_en}
+                          </option>
+                        ))}
+                      </select>
+                      {!formData.region_id && (
+                        <p className="text-xs text-muted-foreground">{t({ en: 'Select a region first', ar: 'اختر المنطقة أولاً' })}</p>
+                      )}
                     </div>
                   </div>
                 </div>

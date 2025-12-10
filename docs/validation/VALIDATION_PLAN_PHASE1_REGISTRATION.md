@@ -332,7 +332,7 @@ flowchart LR
 |------|-------|--------|
 | 1 | Change password button in Settings | ✅ |
 | 2 | Opens ChangePasswordDialog | ✅ |
-| 3 | Current password field (optional) | ⬜ |
+| 3 | Current password field (optional) | ✅ |
 | 4 | New password field present | ✅ |
 | 5 | Confirm password field present | ✅ |
 | 6 | Password strength indicator | ✅ |
@@ -398,7 +398,7 @@ flowchart LR
 | 6 | Login IP address | ✅ |
 | 7 | Login location (if available) | ✅ |
 | 8 | Success/failure status | ✅ |
-| 9 | Pagination for history | ⬜ |
+| 9 | Pagination for history | ✅ |
 | 10 | Empty state handling | ✅ |
 | 11 | Loading state | ✅ |
 | 12 | Bilingual support (EN/AR) | ✅ |

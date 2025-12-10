@@ -107,7 +107,7 @@
 | 63 | user_profiles.full_name | Updated | ✅ |
 | 64 | user_profiles.phone_number | If provided | ✅ |
 | 65 | user_profiles.avatar_url | If uploaded | ✅ |
-| 66 | user_profiles.region_id | If selected | ⚠️ Uses text |
+| 66 | user_profiles.region_id | If selected | ✅ Fixed |
 | 67 | user_profiles.preferred_language | If changed | ✅ |
 | 68 | user_profiles.organization_id | If applicable | ✅ |
 | 69 | user_profiles.municipality_id | If applicable | ✅ |
@@ -149,7 +149,6 @@
 | 2.4 Navigation & Flow | 12 | 12 | 0 | 8 |
 | **Total** | **84** | **79** | **5** | **44** |
 
-### Open Warnings (5):
+### Open Warnings (4):
 - #3, #10: GDISB persona admin-only (by design)
 - #36, #37: Avatar upload enhancement for Stage 1
-- #66: Region uses text instead of region_id FK
