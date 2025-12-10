@@ -1,20 +1,65 @@
-# Onboarding Flow - Implementation Tracking
+# Onboarding Flow - Complete Implementation Guide
 
-## ✅ ALL FEATURES IMPLEMENTED & INTEGRATED
+## Overview
 
-### Summary
-All onboarding features including integrations are now complete:
-- ✅ SmartWelcomeEmail auto-trigger via edge function
-- ✅ OnboardingAnalytics data collection via hook
-- ✅ A/B testing framework with database + UI
-- ✅ Progressive profiling prompts (integrated in all dashboards)
-- ✅ FirstActionRecommender (integrated in all dashboards)
-- ✅ ProfileCompletenessCoach (integrated in all dashboards)
-- ✅ OnboardingChecklist (integrated in UserManagementHub)
+The Saudi Innovates platform implements a comprehensive multi-stage onboarding system that guides users through profile setup, role selection, and persona-specific configuration.
 
 ---
 
-## Comprehensive Flow Diagram
+## Architecture Summary
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ONBOARDING ARCHITECTURE                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
+│  │   Entry      │───▶│   Auth       │───▶│   Profile    │                  │
+│  │   Points     │    │   Layer      │    │   Check      │                  │
+│  └──────────────┘    └──────────────┘    └──────────────┘                  │
+│         │                   │                   │                          │
+│         ▼                   ▼                   ▼                          │
+│  • Email Signup       • Supabase Auth    • user_profiles                   │
+│  • Google OAuth       • Session Mgmt     • onboarding_completed            │
+│  • Admin Invite       • JWT Tokens       • user_roles                      │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │                      MAIN ONBOARDING WIZARD (6 Steps)                │  │
+│  ├──────────────────────────────────────────────────────────────────────┤  │
+│  │  Step 1: Welcome    │  Platform intro, language selection           │  │
+│  │  Step 2: Import     │  CV upload, LinkedIn import (AI extraction)   │  │
+│  │  Step 3: Profile    │  Bilingual form, expertise areas              │  │
+│  │  Step 4: AI Assist  │  Bio suggestions, persona recommendations     │  │
+│  │  Step 5: Role       │  Persona selection, role request              │  │
+│  │  Step 6: Complete   │  Summary, welcome email                       │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                    │                                       │
+│                                    ▼                                       │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │                    SPECIALIZED ONBOARDING WIZARDS                    │  │
+│  ├──────────┬────────────┬────────────┬───────────┬────────────────────┤  │
+│  │ Municipal│ Startup    │ Researcher │ Citizen   │ Expert             │  │
+│  │ Staff    │ Provider   │            │           │                    │  │
+│  ├──────────┴────────────┴────────────┴───────────┴────────────────────┤  │
+│  │  Each collects persona-specific information before dashboard access  │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                    │                                       │
+│                                    ▼                                       │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │                      ROLE-BASED DASHBOARDS                           │  │
+│  ├──────────────────────────────────────────────────────────────────────┤  │
+│  │  + ProfileCompletenessCoach    + FirstActionRecommender              │  │
+│  │  + ProgressiveProfilingPrompt  + OnboardingChecklist                 │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Flow Diagram
 
 ```mermaid
 flowchart TB
@@ -40,598 +85,446 @@ flowchart TB
     end
 
     subgraph ONBOARDING["✨ OnboardingWizard - 6 Steps"]
-        OW1["Step 1: Welcome
-        - Platform intro
-        - Language selection"]
-        OW2["Step 2: Import Data
-        - CV Upload → ExtractDataFromUploadedFile
-        - LinkedIn URL → InvokeLLM analysis
-        - Auto-fills profile fields"]
-        OW3["Step 3: Profile (Bilingual)
-        - full_name_en/ar (required)
-        - job_title_en/ar, department_en/ar
-        - organization_en/ar, bio_en/ar
-        - mobile_number with country code
-        - national_id, date_of_birth, gender
-        - education_level, degree
-        - location_city, location_region
-        - preferred_language
-        - Field validations (mobile, ID, DOB, LinkedIn)"]
-        OW4["Step 4: AI Assist
-        - InvokeLLM suggestions
-        - improved_bio_en/ar
-        - recommended_persona
-        - suggested_expertise
-        - getting_started_tips"]
-        OW5["Step 5: Role Selection
-        - municipality_staff → MunicipalityDashboard
-        - provider → ProviderDashboard
-        - researcher → ResearcherDashboard
-        - citizen → CitizenDashboard
-        - viewer → Home
-        - Optional: Request role with justification"]
-        OW6["Step 6: Complete
-        - Profile summary
-        - Send welcome email
-        - Update user_profiles"]
+        OW1["Step 1: Welcome"]
+        OW2["Step 2: Import Data"]
+        OW3["Step 3: Profile"]
+        OW4["Step 4: AI Assist"]
+        OW5["Step 5: Role Selection"]
+        OW6["Step 6: Complete"]
     end
 
-    subgraph COMPLETION_LOGIC["⚙️ Completion Logic"]
-        CL1{needsSpecializedWizard?}
-        CL2["onboarding_completed = false
-        Redirect to Specialized Wizard"]
-        CL3["onboarding_completed = true
-        Redirect to Landing Page"]
-        CL4{requestRole submitted?}
-        CL5["Insert to role_requests
-        status: pending"]
+    subgraph SPECIALIZED["🎯 Specialized Onboarding"]
+        SW1[MunicipalityStaffOnboardingWizard]
+        SW2[StartupOnboardingWizard]
+        SW3[ResearcherOnboardingWizard]
+        SW4[CitizenOnboardingWizard]
+        SW5[ExpertOnboardingWizard]
     end
 
-    subgraph SPECIALIZED["🎯 Specialized Onboarding Wizards"]
-        SW1["MunicipalityStaffOnboardingWizard
-        - Municipality selection
-        - Department details
-        - Services focus areas"]
-        SW2["StartupOnboardingWizard
-        - Company details
-        - Solution categories
-        - Team size, stage"]
-        SW3["ResearcherOnboardingWizard
-        - Institution
-        - Research areas
-        - Publications"]
-        SW4["CitizenOnboardingWizard
-        - Location
-        - Interests
-        - Participation preferences"]
-        SW5["ExpertOnboardingWizard ✅
-        - Expertise areas
-        - Certifications
-        - Availability & rates
-        - Engagement preferences"]
+    subgraph DASHBOARDS["📊 Role-Based Dashboards"]
+        D1[MunicipalityDashboard]
+        D2[ProviderDashboard]
+        D3[ResearcherDashboard]
+        D4[CitizenDashboard]
+        D5[AdminDashboard]
+        D6[Home]
     end
 
-    subgraph DASHBOARDS["📊 Role-Based Landing Pages"]
-        D1["MunicipalityDashboard
-        + ProfileCompletenessCoach
-        + FirstActionRecommender
-        + ProgressiveProfilingPrompt"]
-        D2["StartupDashboard / ProviderDashboard
-        + ProfileCompletenessCoach
-        + FirstActionRecommender
-        + ProgressiveProfilingPrompt"]
-        D3["ResearcherDashboard
-        + ProfileCompletenessCoach
-        + FirstActionRecommender"]
-        D4["CitizenDashboard
-        + ProfileCompletenessCoach
-        + FirstActionRecommender"]
-        D5["AdminDashboard"]
-        D6["Home (Explorer/Viewer)"]
-    end
-
-    subgraph ROLE_APPROVAL["🔑 Role Approval Flow"]
-        RA1[role_requests table]
-        RA2[Admin reviews in UserManagementHub]
-        RA3{Approved?}
-        RA4["Insert user_roles
-        Update role_requests status"]
-        RA5[Notify user]
-    end
-
-    subgraph SKIP_FLOW["⏭️ Skip Flow"]
-        SK1["handleSkip()
-        onboarding_completed = true"]
-        SK2[Redirect to Home]
-    end
-
-    subgraph POST_ONBOARDING["🔧 Post-Onboarding Components"]
-        PO1["ProfileCompletenessCoach
-        - Shows completion %
-        - Suggests missing fields"]
-        PO2["FirstActionRecommender
-        - AI-powered suggestions
-        - Based on persona"]
-        PO3["ProgressiveProfilingPrompt
-        - Non-intrusive prompts
-        - Fills gaps over time"]
-        PO4["OnboardingChecklist
-        - Track progress
-        - In UserManagementHub"]
-    end
-
-    subgraph EMAIL_FLOW["📧 Welcome Email"]
-        EM1["send-welcome-email edge function"]
-        EM2["Resend API"]
-        EM3["Bilingual content
-        Persona-specific"]
-    end
-
-    subgraph ANALYTICS["📈 Analytics Tracking"]
-        AN1["useOnboardingAnalytics hook"]
-        AN2["Events tracked:
-        - wizard_opened
-        - step_started/completed
-        - cv_uploaded
-        - linkedin_imported
-        - ai_suggestion_applied
-        - persona_selected
-        - onboarding_completed"]
-        AN3["onboarding_events table"]
-    end
-
-    %% Main Flow
-    E1 --> A1
-    E2 --> A1
-    E3 --> A1
-    
+    E1 & E2 & E3 --> A1
     A1 --> A2
     A2 -->|Yes| A4
-    A2 -->|No - Login/Signup| A3
+    A2 -->|No| A3
     A3 --> PC1
-    
-    PC1 --> PC2
-    PC2 --> PC3
+    PC1 --> PC2 --> PC3
     PC3 -->|No - OAuth| PC4
     PC4 --> PC5
     PC3 -->|Yes| PC5
-    
     PC5 -->|false| OW1
     PC5 -->|true| A4
-    
     A4 --> D1 & D2 & D3 & D4 & D5 & D6
 
-    %% Onboarding Steps
-    OW1 --> OW2
-    OW2 --> OW3
-    OW3 --> OW4
-    OW4 --> OW5
-    OW5 --> OW6
-
-    %% Skip Flow
-    OW1 -.->|Skip button| SK1
-    SK1 --> SK2
-
-    %% Completion Logic
-    OW6 --> CL1
-    CL1 -->|Yes: municipality_staff, provider, researcher, citizen, expert| CL2
-    CL1 -->|No: viewer| CL3
-    
-    CL4 -->|Yes| CL5
-    CL5 --> RA1
-    
-    CL2 --> SW1 & SW2 & SW3 & SW4 & SW5
-    
-    SW1 -->|Complete| D1
-    SW2 -->|Complete| D2
-    SW3 -->|Complete| D3
-    SW4 -->|Complete| D4
-    SW5 -->|Complete| D5
-    CL3 --> D6
-
-    %% Email Flow
-    OW6 --> EM1
-    EM1 --> EM2
-    EM2 --> EM3
-
-    %% Role Approval
-    RA1 --> RA2
-    RA2 --> RA3
-    RA3 -->|Yes| RA4
-    RA4 --> RA5
-    RA3 -->|No| RA5
-
-    %% Analytics
-    OW1 & OW2 & OW3 & OW4 & OW5 & OW6 --> AN1
-    AN1 --> AN2
-    AN2 --> AN3
-
-    %% Post-Onboarding in Dashboards
-    D1 & D2 & D3 & D4 --> PO1
-    D1 & D2 & D3 & D4 --> PO2
-    D1 & D2 --> PO3
+    OW1 --> OW2 --> OW3 --> OW4 --> OW5 --> OW6
+    OW6 --> SW1 & SW2 & SW3 & SW4 & SW5
+    SW1 --> D1
+    SW2 --> D2
+    SW3 --> D3
+    SW4 --> D4
+    SW5 --> D5
 ```
 
 ---
 
-## Detailed Step-by-Step Flow
-
-### 1. Entry & Authentication
-```mermaid
-sequenceDiagram
-    participant User
-    participant Auth as Auth Page
-    participant Supabase as Supabase Auth
-    participant Context as AuthContext
-    participant Profile as user_profiles
-
-    User->>Auth: Navigate to /auth
-    alt Email/Password
-        User->>Auth: Enter credentials
-        Auth->>Supabase: signInWithPassword / signUp
-    else Google OAuth
-        User->>Auth: Click "Continue with Google"
-        Auth->>Supabase: signInWithOAuth
-        Supabase-->>Auth: OAuth redirect with tokens
-    end
-    
-    Supabase-->>Context: onAuthStateChange event
-    Context->>Profile: fetchUserProfile(user.id)
-    Context->>Profile: fetchUserRoles(user.id)
-    
-    alt New OAuth User
-        Context->>Profile: createOAuthProfile()
-    end
-    
-    alt onboarding_completed = false
-        Context-->>User: Show OnboardingWizard
-    else onboarding_completed = true
-        Context-->>User: Redirect to dashboard
-    end
-```
-
-### 2. Onboarding Wizard Steps
-```mermaid
-sequenceDiagram
-    participant User
-    participant Wizard as OnboardingWizard
-    participant AI as Base44 LLM
-    participant DB as Supabase DB
-    participant Email as Edge Function
-
-    Note over Wizard: Step 1: Welcome
-    User->>Wizard: View welcome screen
-    User->>Wizard: Next
-
-    Note over Wizard: Step 2: Import
-    alt Upload CV
-        User->>Wizard: Upload PDF/DOC
-        Wizard->>AI: ExtractDataFromUploadedFile
-        AI-->>Wizard: {full_name, job_title, expertise...}
-        Wizard->>Wizard: Auto-fill form fields
-    else LinkedIn URL
-        User->>Wizard: Enter LinkedIn URL
-        Wizard->>AI: InvokeLLM (analyze URL)
-        AI-->>Wizard: {likely_title, expertise_areas, bio}
-    end
-
-    Note over Wizard: Step 3: Profile
-    User->>Wizard: Fill required fields
-    User->>Wizard: Select expertise areas (max 5)
-
-    Note over Wizard: Step 4: AI Assist
-    User->>Wizard: Click "Generate AI Suggestions"
-    Wizard->>AI: InvokeLLM with profile data
-    AI-->>Wizard: {improved_bio, recommended_persona, tips}
-    User->>Wizard: Apply suggestions (optional)
-
-    Note over Wizard: Step 5: Role Selection
-    User->>Wizard: Select persona card
-    alt Request elevated role
-        User->>Wizard: Check "Request role"
-        User->>Wizard: Enter justification
-    end
-
-    Note over Wizard: Step 6: Complete
-    Wizard->>DB: UPDATE user_profiles
-    Wizard->>DB: INSERT role_requests (if requested)
-    Wizard->>Email: invoke send-welcome-email
-    
-    alt Needs specialized wizard
-        Wizard-->>User: Redirect to specialized wizard
-    else Complete
-        Wizard-->>User: Redirect to landing page
-    end
-```
-
-### 3. Persona to Dashboard Mapping
-```mermaid
-flowchart LR
-    subgraph Personas["Selected Persona"]
-        P1[municipality_staff]
-        P2[provider]
-        P3[researcher]
-        P4[citizen]
-        P5[viewer]
-    end
-
-    subgraph SpecializedWizards["Specialized Wizard"]
-        S1[MunicipalityStaffOnboarding]
-        S2[StartupOnboarding]
-        S3[ResearcherOnboarding]
-        S4[CitizenOnboarding]
-        S5[None]
-    end
-
-    subgraph LandingPages["Landing Page"]
-        L1[MunicipalityDashboard]
-        L2[ProviderDashboard]
-        L3[ResearcherDashboard]
-        L4[CitizenDashboard]
-        L5[Home]
-    end
-
-    P1 --> S1 --> L1
-    P2 --> S2 --> L2
-    P3 --> S3 --> L3
-    P4 --> S4 --> L4
-    P5 --> S5 --> L5
-```
-
----
-
-## Implementation Progress Tracker
-
-### Phase 1: Critical Fixes ✅ COMPLETE
-| Item | Status | Evidence |
-|------|--------|----------|
-| Fix onboarding loop (onboarding_completed flag) | ✅ Done | OnboardingWizard.jsx lines 404-405 |
-| Add AI-powered profile suggestions | ✅ Done | OnboardingWizard.jsx lines 299-349 |
-| Implement role-based redirect | ✅ Done | OnboardingWizard.jsx lines 179-192 |
-| Create MunicipalityOnboardingWizard | ✅ Done | MunicipalityStaffOnboardingWizard.jsx |
-| Create ResearcherOnboardingWizard | ✅ Done | ResearcherOnboardingWizard.jsx |
-| Verify role request approval flow | ✅ Done | OnboardingWizard.jsx lines 431+ |
-
-### Phase 2: Integration ✅ COMPLETE
-| Item | Status | Location |
-|------|--------|----------|
-| Integrate FirstActionRecommender | ✅ Done | MunicipalityDashboard, StartupDashboard, ResearcherDashboard, CitizenDashboard |
-| Integrate ProfileCompletenessCoach | ✅ Done | MunicipalityDashboard, StartupDashboard, ResearcherDashboard, CitizenDashboard |
-| Connect OnboardingChecklist | ✅ Done | UserManagementHub |
-| Trigger SmartWelcomeEmail on completion | ✅ Done | Edge function + OnboardingWizard integration |
-
-### Phase 3: Enhancement ✅ COMPLETE
-| Item | Status | Location |
-|------|--------|----------|
-| OnboardingAnalytics tracking | ✅ Done | useOnboardingAnalytics hook + onboarding_events table |
-| Progressive profiling | ✅ Done | ProgressiveProfilingPrompt integrated in all dashboards |
-| Multi-language onboarding content | ✅ Done | All components use t() for bilingual |
-| A/B testing framework | ✅ Done | useABTesting hook + ABTestingManager |
-
----
-
-## Component Reference
+## Components Reference
 
 ### Core Onboarding Components
-| Component | Path | Status | Description |
-|-----------|------|--------|-------------|
-| OnboardingWizard | `src/components/onboarding/OnboardingWizard.jsx` | ✅ Complete | Main 6-step wizard with CV/LinkedIn import |
-| MunicipalityStaffOnboardingWizard | `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | ✅ Complete | Municipality-specific onboarding |
-| ResearcherOnboardingWizard | `src/components/onboarding/ResearcherOnboardingWizard.jsx` | ✅ Complete | Researcher-specific onboarding |
-| CitizenOnboardingWizard | `src/components/onboarding/CitizenOnboardingWizard.jsx` | ✅ Complete | Citizen-specific onboarding |
-| StartupOnboardingWizard | `src/components/startup/StartupOnboardingWizard.jsx` | ✅ Complete | Startup-specific onboarding |
-| ExpertOnboardingWizard | `src/components/onboarding/ExpertOnboardingWizard.jsx` | ✅ Complete | Expert-specific onboarding with CV extraction |
 
-### Pages
-| Page | Path | Status | Description |
-|------|------|--------|-------------|
-| Onboarding | `src/pages/Onboarding.jsx` | ✅ Complete | Main onboarding entry point wrapper |
-| ExpertOnboarding | `src/pages/ExpertOnboarding.jsx` | ✅ Complete | Expert onboarding page |
-| StartupOnboarding | `src/pages/StartupOnboarding.jsx` | ✅ Complete | Startup onboarding page |
-| ResearcherOnboarding | `src/pages/ResearcherOnboarding.jsx` | ✅ Complete | Researcher onboarding page |
-| CitizenOnboarding | `src/pages/CitizenOnboarding.jsx` | ✅ Complete | Citizen onboarding page |
-| MunicipalityStaffOnboarding | `src/pages/MunicipalityStaffOnboarding.jsx` | ✅ Complete | Municipality staff onboarding page |
+| Component | Path | Description |
+|-----------|------|-------------|
+| OnboardingWizard | `src/components/onboarding/OnboardingWizard.jsx` | Main 6-step wizard with CV/LinkedIn import |
+| OnboardingWizardNew | `src/components/onboarding/OnboardingWizardNew.jsx` | Alternative/updated wizard implementation |
+| MunicipalityStaffOnboardingWizard | `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | Municipality-specific onboarding |
+| ResearcherOnboardingWizard | `src/components/onboarding/ResearcherOnboardingWizard.jsx` | Researcher-specific onboarding |
+| CitizenOnboardingWizard | `src/components/onboarding/CitizenOnboardingWizard.jsx` | Citizen-specific onboarding |
+| StartupOnboardingWizard | `src/components/startup/StartupOnboardingWizard.jsx` | Startup/provider-specific onboarding |
+| ExpertOnboardingWizard | `src/components/onboarding/ExpertOnboardingWizard.jsx` | Expert-specific onboarding with CV extraction |
 
 ### Enhancement Components
-| Component | Path | Status | Description |
-|-----------|------|--------|-------------|
-| FirstActionRecommender | `src/components/onboarding/FirstActionRecommender.jsx` | ✅ Integrated | AI-powered action recommendations |
-| ProfileCompletenessCoach | `src/components/onboarding/ProfileCompletenessCoach.jsx` | ✅ Integrated | Profile completion tracking |
-| OnboardingChecklist | `src/components/onboarding/OnboardingChecklist.jsx` | ✅ Integrated | Interactive checklist for new users |
-| SmartWelcomeEmail | `src/components/onboarding/SmartWelcomeEmail.jsx` | ✅ Complete | AI-powered welcome emails |
-| OnboardingAnalytics | `src/components/onboarding/OnboardingAnalytics.jsx` | ✅ Complete | Onboarding metrics dashboard |
-| ProgressiveProfilingPrompt | `src/components/onboarding/ProgressiveProfilingPrompt.jsx` | ✅ Integrated | Non-intrusive profile prompts |
-| ABTestingManager | `src/components/onboarding/ABTestingManager.jsx` | ✅ Complete | A/B test management UI |
 
-### Hooks
-| Hook | Path | Description |
+| Component | Path | Description |
+|-----------|------|-------------|
+| FirstActionRecommender | `src/components/onboarding/FirstActionRecommender.jsx` | AI-powered action recommendations based on role |
+| ProfileCompletenessCoach | `src/components/onboarding/ProfileCompletenessCoach.jsx` | Profile completion tracking with AI suggestions |
+| OnboardingChecklist | `src/components/onboarding/OnboardingChecklist.jsx` | Interactive checklist for new users |
+| SmartWelcomeEmail | `src/components/onboarding/SmartWelcomeEmail.jsx` | AI-powered welcome email generation |
+| OnboardingAnalytics | `src/components/onboarding/OnboardingAnalytics.jsx` | Onboarding metrics dashboard |
+| ProgressiveProfilingPrompt | `src/components/onboarding/ProgressiveProfilingPrompt.jsx` | Non-intrusive profile completion prompts |
+| ABTestingManager | `src/components/onboarding/ABTestingManager.jsx` | A/B test management UI |
+| AIRoleAssigner | `src/components/onboarding/AIRoleAssigner.jsx` | AI-based role suggestion |
+| PersonalizedOnboardingWizard | `src/components/onboarding/PersonalizedOnboardingWizard.jsx` | Role-specific step-by-step guide |
+
+### Onboarding Pages
+
+| Page | Path | Description |
 |------|------|-------------|
-| useOnboardingAnalytics | `src/hooks/useOnboardingAnalytics.js` | Tracks all onboarding events |
-| useABTesting | `src/hooks/useABTesting.js` | A/B testing variant assignment |
+| Onboarding | `src/pages/Onboarding.jsx` | Main onboarding entry point |
+| ExpertOnboarding | `src/pages/ExpertOnboarding.jsx` | Expert onboarding page |
+| StartupOnboarding | `src/pages/StartupOnboarding.jsx` | Startup onboarding page |
+| ResearcherOnboarding | `src/pages/ResearcherOnboarding.jsx` | Researcher onboarding page |
+| CitizenOnboarding | `src/pages/CitizenOnboarding.jsx` | Citizen onboarding page |
+| MunicipalityStaffOnboarding | `src/pages/MunicipalityStaffOnboarding.jsx` | Municipality staff onboarding page |
 
 ---
 
-## Database Tables
+## Hooks
 
-| Table | Purpose | Key Fields |
-|-------|---------|------------|
-| `user_profiles` | User profile data | `onboarding_completed`, `onboarding_completed_at`, `profile_completion_percentage`, `extracted_data`, `mobile_number`, `mobile_country_code`, `national_id`, `date_of_birth`, `gender`, `education_level`, `degree`, `location_city`, `location_region`, `preferred_language`, bilingual fields (`*_en`, `*_ar`) |
-| `user_roles` | Role assignments | `role`, `user_id`, `municipality_id`, `organization_id` |
-| `role_requests` | Pending role requests | `requested_role`, `justification`, `status`, `reviewed_by` |
-| `onboarding_events` | Analytics tracking | `event_type`, `step_number`, `duration_seconds`, `metadata` |
-| `ab_experiments` | A/B test definitions | `name`, `variants`, `status`, `allocation_percentages` |
-| `ab_assignments` | User variant assignments | `experiment_id`, `user_id`, `variant` |
-| `ab_conversions` | Conversion tracking | `assignment_id`, `conversion_type`, `conversion_value` |
-| `progressive_profiling_prompts` | Profile completion tracking | `user_id`, `prompt_type`, `shown_at`, `completed_at` |
-| `welcome_emails_sent` | Email send log | `user_id`, `persona`, `sent_at` |
+### useOnboardingAnalytics
+
+Tracks all onboarding events to the `onboarding_events` table.
+
+**Location:** `src/hooks/useOnboardingAnalytics.js`
+
+**Usage:**
+```javascript
+import { useOnboardingAnalytics } from '@/hooks/useOnboardingAnalytics';
+
+const { 
+  trackEvent,
+  trackStepStart,
+  trackStepComplete,
+  trackOnboardingComplete,
+  trackWizardOpened,
+  trackWizardAbandoned,
+  trackCVUploaded,
+  trackLinkedInImported,
+  trackAISuggestionApplied,
+  trackPersonaSelected
+} = useOnboardingAnalytics();
+
+// Track step start with duration calculation
+trackStepStart(1, 'welcome');
+
+// Track step completion (auto-calculates duration)
+trackStepComplete(1, 'welcome', { language_selected: 'en' });
+
+// Track onboarding completion
+trackOnboardingComplete('municipality_staff', { profile_completion: 85 });
+```
+
+**Events Tracked:**
+
+| Event | Method | Description |
+|-------|--------|-------------|
+| `wizard_opened` | `trackWizardOpened(source)` | Wizard was opened |
+| `step_started` | `trackStepStart(stepNumber, stepName)` | User started a step |
+| `step_completed` | `trackStepComplete(stepNumber, stepName, data)` | User completed a step |
+| `wizard_abandoned` | `trackWizardAbandoned(step, stepName, reason)` | User left without completing |
+| `cv_uploaded` | `trackCVUploaded(fileType, extractedFields)` | CV file uploaded |
+| `linkedin_imported` | `trackLinkedInImported(fieldsExtracted)` | LinkedIn data imported |
+| `ai_suggestion_applied` | `trackAISuggestionApplied(type)` | AI suggestion was applied |
+| `persona_selected` | `trackPersonaSelected(persona)` | User selected a persona |
+| `onboarding_completed` | `trackOnboardingComplete(persona, data)` | Onboarding finished |
+
+### useABTesting
+
+Handles A/B test variant assignment and conversion tracking.
+
+**Location:** `src/hooks/useABTesting.js`
+
+**Usage:**
+```javascript
+import { useABTesting } from '@/hooks/useABTesting';
+
+const { variant, trackConversion, isLoading } = useABTesting('onboarding_flow_test');
+
+// Render based on variant
+if (variant === 'A') {
+  return <ClassicOnboarding />;
+} else {
+  return <NewOnboarding />;
+}
+
+// Track conversion
+trackConversion('onboarding_completed', { time_taken: 120 });
+```
 
 ---
 
 ## Edge Functions
 
-| Function | Path | Trigger | Description |
-|----------|------|---------|-------------|
-| send-welcome-email | `supabase/functions/send-welcome-email/index.ts` | OnboardingWizard completion | Sends persona-specific bilingual welcome emails via Resend |
+### send-welcome-email
+
+**Path:** `supabase/functions/send-welcome-email/index.ts`
+
+**Purpose:** Sends persona-specific bilingual welcome emails via Resend API.
+
+**Trigger:** Called from OnboardingWizard on completion.
+
+**Request:**
+```typescript
+{
+  userEmail: string;
+  userName: string;
+  persona: 'municipality_staff' | 'provider' | 'researcher' | 'citizen' | 'expert' | 'viewer';
+  language?: 'en' | 'ar';
+}
+```
+
+**Response:**
+```typescript
+{
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+```
+
+**Features:**
+- Bilingual content (English/Arabic)
+- Persona-specific welcome messages
+- Role-specific action items
+- Platform introduction
 
 ---
 
-## Key Implementation Details
+## Database Schema
 
-### Profile Completion Calculation (OnboardingWizard.jsx)
+### user_profiles
+
+Primary table for user profile data.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key, references auth.users |
+| `user_id` | uuid | Auth user ID |
+| `full_name_en` | text | Full name in English |
+| `full_name_ar` | text | Full name in Arabic |
+| `job_title_en` | text | Job title in English |
+| `job_title_ar` | text | Job title in Arabic |
+| `bio_en` | text | Bio in English |
+| `bio_ar` | text | Bio in Arabic |
+| `organization_en` | text | Organization in English |
+| `organization_ar` | text | Organization in Arabic |
+| `department_en` | text | Department in English |
+| `department_ar` | text | Department in Arabic |
+| `mobile_number` | text | Mobile phone number |
+| `mobile_country_code` | text | Country code (e.g., +966) |
+| `national_id` | text | Saudi National ID/Iqama |
+| `date_of_birth` | date | Date of birth |
+| `gender` | text | Gender |
+| `education_level` | text | Education level |
+| `degree` | text | Degree name |
+| `location_city` | text | City |
+| `location_region` | text | Region |
+| `preferred_language` | text | Display language preference |
+| `expertise_areas` | text[] | Selected expertise areas (max 5) |
+| `linkedin_url` | text | LinkedIn profile URL |
+| `cv_url` | text | Uploaded CV URL |
+| `onboarding_completed` | boolean | Whether onboarding is complete |
+| `onboarding_completed_at` | timestamp | When onboarding was completed |
+| `profile_completion_percentage` | integer | Profile completion score |
+| `extracted_data` | jsonb | Data extracted from CV/LinkedIn |
+| `persona` | text | Selected persona |
+| `languages` | jsonb | Languages spoken |
+| `certifications` | jsonb | Professional certifications |
+| `years_of_experience` | integer | Years of experience |
+
+### onboarding_events
+
+Analytics table for tracking onboarding events.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `user_id` | uuid | User ID |
+| `user_email` | text | User email |
+| `event_type` | text | Event type |
+| `event_data` | jsonb | Additional event data |
+| `step_number` | integer | Current step number |
+| `step_name` | text | Step name |
+| `persona` | text | Selected persona |
+| `duration_seconds` | integer | Time spent on step |
+| `created_at` | timestamp | Event timestamp |
+
+### role_requests
+
+Pending role upgrade requests.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `user_id` | uuid | Requesting user ID |
+| `requested_role` | text | Role being requested |
+| `justification` | text | User's justification |
+| `status` | text | pending/approved/rejected |
+| `reviewed_by` | text | Admin who reviewed |
+| `reviewed_at` | timestamp | Review timestamp |
+| `created_at` | timestamp | Request timestamp |
+
+### ab_experiments
+
+A/B test definitions.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `name` | text | Experiment name |
+| `description` | text | Experiment description |
+| `variants` | jsonb | Variant definitions |
+| `allocation_percentages` | jsonb | Traffic allocation |
+| `status` | text | active/paused/completed |
+| `start_date` | timestamp | Start date |
+| `end_date` | timestamp | End date |
+
+### ab_assignments
+
+User variant assignments.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `experiment_id` | uuid | Experiment ID |
+| `user_id` | uuid | User ID |
+| `user_email` | text | User email |
+| `variant` | text | Assigned variant |
+| `assigned_at` | timestamp | Assignment timestamp |
+
+### ab_conversions
+
+Conversion tracking for A/B tests.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `assignment_id` | uuid | Assignment ID |
+| `experiment_id` | uuid | Experiment ID |
+| `user_id` | uuid | User ID |
+| `conversion_type` | text | Type of conversion |
+| `conversion_value` | numeric | Conversion value |
+| `metadata` | jsonb | Additional metadata |
+| `created_at` | timestamp | Conversion timestamp |
+
+---
+
+## Profile Completion Calculation
+
 ```javascript
 const calculateProfileCompletion = (data) => {
   let score = 0;
+  
+  // Core fields (50 points)
   if (data.full_name_en || data.full_name_ar) score += 15;
-  if (data.full_name_en && data.full_name_ar) score += 5; // Bonus for both languages
+  if (data.full_name_en && data.full_name_ar) score += 5; // Bonus for bilingual
   if (data.job_title_en || data.job_title_ar) score += 10;
   if (data.bio_en || data.bio_ar) score += 10;
   if (data.selectedPersona) score += 15;
+  
+  // Professional (25 points)
   if (data.expertise_areas?.length > 0) score += 10;
   if (data.cv_url || data.linkedin_url) score += 10;
+  if (data.years_of_experience > 0) score += 5;
+  
+  // Personal (25 points)
+  if (data.mobile_number) score += 5;
   if (data.national_id) score += 5;
   if (data.education_level) score += 5;
   if (data.location_city || data.location_region) score += 5;
   if (data.languages?.length > 0) score += 5;
-  if (data.years_of_experience > 0) score += 5;
-  if (data.mobile_number) score += 5;
+  
   return Math.min(score, 100);
 };
 ```
 
-### Field Validations
-- **Mobile Number**: 7-15 digits, international format with country code selector
-- **National ID/Iqama**: 10 digits starting with 1 or 2 (Saudi format)
-- **Date of Birth**: Age must be between 13-100 years
-- **LinkedIn URL**: Must match LinkedIn profile/company URL pattern
+---
 
-### Specialized Wizard Detection (OnboardingWizard.jsx:363-377)
-```javascript
-const needsSpecializedWizard = (persona) => {
-  return ['municipality_staff', 'provider', 'researcher', 'citizen', 'expert'].includes(persona);
-};
+## Field Validations
 
-const getSpecializedWizardPage = (persona) => {
-  const wizardMap = {
-    municipality_staff: 'MunicipalityStaffOnboarding',
-    provider: 'StartupOnboarding',
-    researcher: 'ResearcherOnboarding',
-    citizen: 'CitizenOnboarding',
-    expert: 'ExpertOnboarding'
-  };
-  return wizardMap[persona] || null;
-};
-```
+| Field | Validation | Format |
+|-------|------------|--------|
+| Mobile Number | 7-15 digits | International format with country code |
+| National ID | 10 digits | Starts with 1 or 2 (Saudi format) |
+| Date of Birth | Age 13-100 | Valid date |
+| LinkedIn URL | URL pattern | `linkedin.com/in/...` or `linkedin.com/company/...` |
+| Email | Valid email | Standard email format |
 
-### Role-Based Landing Page (OnboardingWizard.jsx:179-192)
-```javascript
-const getLandingPage = () => {
-  if (userRoles?.length > 0) {
-    const role = userRoles[0]?.role;
-    if (role === 'admin') return 'AdminDashboard';
-    if (role === 'municipality_admin' || role === 'municipality_staff') return 'MunicipalityDashboard';
-    if (role === 'provider') return 'ProviderDashboard';
-    if (role === 'researcher') return 'ResearcherDashboard';
-    if (role === 'citizen') return 'CitizenDashboard';
-  }
-  if (selectedPersona) {
-    return selectedPersona.landingPage;
-  }
-  return 'Home';
-};
-```
+---
+
+## Persona to Wizard/Dashboard Mapping
+
+| Persona | Specialized Wizard | Landing Dashboard |
+|---------|-------------------|-------------------|
+| `municipality_staff` | MunicipalityStaffOnboardingWizard | MunicipalityDashboard |
+| `provider` | StartupOnboardingWizard | ProviderDashboard |
+| `researcher` | ResearcherOnboardingWizard | ResearcherDashboard |
+| `citizen` | CitizenOnboardingWizard | CitizenDashboard |
+| `expert` | ExpertOnboardingWizard | AdminDashboard |
+| `viewer` | None (skip) | Home |
 
 ---
 
 ## Dashboard Integrations
 
-### MunicipalityDashboard
-- ✅ ProfileCompletenessCoach
-- ✅ FirstActionRecommender
-- ✅ ProgressiveProfilingPrompt
+Each dashboard includes post-onboarding enhancement components:
 
-### StartupDashboard
-- ✅ ProfileCompletenessCoach
-- ✅ FirstActionRecommender
-- ✅ ProgressiveProfilingPrompt
-
-### ResearcherDashboard
-- ✅ ProfileCompletenessCoach
-- ✅ FirstActionRecommender
-
-### CitizenDashboard
-- ✅ ProfileCompletenessCoach
-- ✅ FirstActionRecommender
-
----
-
-## Analytics Events Tracked
-
-| Event | Trigger | Data Captured |
-|-------|---------|---------------|
-| `wizard_opened` | Wizard mounts | `user_id`, `timestamp` |
-| `step_started` | Step change | `step_number`, `step_name`, `timestamp` |
-| `step_completed` | Next step clicked | `step_number`, `duration_seconds` |
-| `cv_uploaded` | CV file uploaded | `file_type`, `extraction_success` |
-| `linkedin_imported` | LinkedIn URL analyzed | `url_pattern`, `extraction_success` |
-| `ai_suggestion_applied` | User applies AI suggestion | `suggestion_type`, `field_updated` |
-| `persona_selected` | Persona card clicked | `persona_id`, `request_role` |
-| `onboarding_completed` | Final completion | `persona`, `profile_completion`, `duration_total` |
+| Dashboard | ProfileCompletenessCoach | FirstActionRecommender | ProgressiveProfilingPrompt |
+|-----------|--------------------------|------------------------|----------------------------|
+| MunicipalityDashboard | ✅ | ✅ | ✅ |
+| ProviderDashboard | ✅ | ✅ | ✅ |
+| StartupDashboard | ✅ | ✅ | ✅ |
+| ResearcherDashboard | ✅ | ✅ | - |
+| CitizenDashboard | ✅ | ✅ | - |
+| AdminDashboard | - | - | - |
 
 ---
 
 ## Testing Checklist
 
-### Persona Flow Tests
-- [ ] Municipality Staff: Auth → OnboardingWizard → MunicipalityStaffOnboarding → MunicipalityDashboard
-- [ ] Startup/Provider: Auth → OnboardingWizard → StartupOnboarding → StartupDashboard
-- [ ] Researcher: Auth → OnboardingWizard → ResearcherOnboarding → ResearcherDashboard
-- [ ] Citizen: Auth → OnboardingWizard → CitizenOnboarding → CitizenDashboard
-- [ ] Explorer/Viewer: Auth → OnboardingWizard → Home (no specialized wizard)
-- [ ] Admin (existing role): Auth → AdminDashboard (skip wizard if completed)
+### Flow Tests
+
+- [ ] **New Email User:** Auth → OnboardingWizard → Specialized Wizard → Dashboard
+- [ ] **OAuth User:** Google Auth → Profile Auto-created → OnboardingWizard → Dashboard
+- [ ] **Returning User:** Auth → Skip Wizard → Dashboard (if `onboarding_completed = true`)
+- [ ] **Skip Wizard:** Skip button → `onboarding_completed = true` → Home
+- [ ] **Role Request:** Select persona → Request role → Pending in `role_requests`
 
 ### Feature Tests
-- [ ] CV upload extracts profile data via ExtractDataFromUploadedFile
-- [ ] LinkedIn URL analysis works via InvokeLLM
+
+- [ ] CV upload extracts profile data via `extract-file-data` edge function
+- [ ] LinkedIn URL analysis works via `invoke-llm` edge function
 - [ ] AI suggestions generate correctly (bio, persona, expertise, tips)
-- [ ] Welcome email sends on completion via edge function
-- [ ] `onboarding_completed = true` prevents re-display of wizard
-- [ ] `onboarding_completed = false` with specialized wizard pending
-- [ ] Role request creates entry in `role_requests` table
-- [ ] Skip button sets `onboarding_completed = true` and redirects to Home
+- [ ] Welcome email sends on completion via `send-welcome-email` edge function
+- [ ] Analytics events tracked to `onboarding_events` table
+- [ ] A/B testing assigns users to variants correctly
 - [ ] Progressive profiling prompts appear for incomplete profiles
 - [ ] ProfileCompletenessCoach shows accurate percentage
-- [ ] FirstActionRecommender provides persona-appropriate actions
 
 ### Edge Cases
-- [ ] OAuth user gets profile created automatically
-- [ ] Returning user with completed onboarding skips wizard
-- [ ] User with existing role goes to role-appropriate dashboard
-- [ ] Form validation prevents proceeding without required fields
+
 - [ ] Network errors handled gracefully with toast messages
+- [ ] Form validation prevents proceeding without required fields
+- [ ] Duplicate email signup shows appropriate error
+- [ ] Session timeout redirects to auth page
 
 ---
 
-*Last Updated: 2025-12-09*
+## Implementation Status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Main OnboardingWizard | ✅ Complete | 6-step wizard with CV/LinkedIn import |
+| MunicipalityStaffOnboardingWizard | ✅ Complete | Municipality selection, department details |
+| StartupOnboardingWizard | ✅ Complete | Company details, solution categories |
+| ResearcherOnboardingWizard | ✅ Complete | Institution, research areas |
+| CitizenOnboardingWizard | ✅ Complete | Location, interests |
+| ExpertOnboardingWizard | ✅ Complete | Expertise, certifications, rates |
+| Welcome Email | ✅ Complete | Bilingual, persona-specific |
+| Analytics Tracking | ✅ Complete | useOnboardingAnalytics hook |
+| A/B Testing | ✅ Complete | useABTesting hook + ABTestingManager |
+| ProfileCompletenessCoach | ✅ Integrated | In all role dashboards |
+| FirstActionRecommender | ✅ Integrated | In all role dashboards |
+| ProgressiveProfilingPrompt | ✅ Integrated | In Municipality/Provider/Startup dashboards |
+| OnboardingChecklist | ✅ Integrated | In UserManagementHub |
+
+---
+
+*Last Updated: 2025-12-10*
 *Status: ✅ ALL FEATURES COMPLETE & INTEGRATED*
-
----
-
-## Recent Updates (2025-12-09)
-
-### Bilingual Profile Fields
-- All major profile fields now support English and Arabic with auto-translation
-- Added `preferred_language` to store user's display language preference
-
-### New Profile Fields Added
-- `mobile_number` with `mobile_country_code` (international support)
-- `national_id` (Saudi National ID/Iqama format)
-- `date_of_birth`, `gender`
-- `education_level`, `degree`
-- `location_city`, `location_region`
-- `certifications`, `languages` (JSON arrays)
-
-### Field Validations
-- Mobile number: 7-15 digits with country code selector (16 countries)
-- National ID: 10 digits starting with 1 or 2
-- Date of Birth: Age validation (13-100 years)
-- LinkedIn URL: Format validation
