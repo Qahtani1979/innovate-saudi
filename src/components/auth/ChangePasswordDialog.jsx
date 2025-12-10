@@ -117,10 +117,37 @@ export default function ChangePasswordDialog({ open, onOpenChange }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive" role="alert">
               {error}
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword">{t({ en: 'Current Password (Optional)', ar: 'كلمة المرور الحالية (اختياري)' })}</Label>
+            <div className="relative">
+              <Lock className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'} h-4 w-4 text-muted-foreground`} />
+              <Input
+                id="currentPassword"
+                type={showCurrentPassword ? 'text' : 'password'}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className={isRTL ? 'pr-10' : 'pl-10'}
+                placeholder="••••••••"
+                aria-describedby="currentPasswordHelp"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'} text-muted-foreground hover:text-foreground`}
+                aria-label={showCurrentPassword ? t({ en: 'Hide password', ar: 'إخفاء كلمة المرور' }) : t({ en: 'Show password', ar: 'إظهار كلمة المرور' })}
+              >
+                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <p id="currentPasswordHelp" className="text-xs text-muted-foreground">
+              {t({ en: 'For extra security, enter your current password', ar: 'لمزيد من الأمان، أدخل كلمة المرور الحالية' })}
+            </p>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="newPassword">{t({ en: 'New Password', ar: 'كلمة المرور الجديدة' })}</Label>
@@ -134,11 +161,13 @@ export default function ChangePasswordDialog({ open, onOpenChange }) {
                 className={isRTL ? 'pr-10' : 'pl-10'}
                 placeholder="••••••••"
                 required
+                aria-describedby="passwordRequirements"
               />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
                 className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'} text-muted-foreground hover:text-foreground`}
+                aria-label={showNewPassword ? t({ en: 'Hide password', ar: 'إخفاء كلمة المرور' }) : t({ en: 'Show password', ar: 'إظهار كلمة المرور' })}
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
