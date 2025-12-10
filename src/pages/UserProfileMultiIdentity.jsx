@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,27 +11,39 @@ import { User, Building2, Plus, Edit, Save } from 'lucide-react';
 
 export default function UserProfileMultiIdentity() {
   const { language, t } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [profileData, setProfileData] = useState({});
 
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
-
   const { data: profiles = [] } = useQuery({
     queryKey: ['user-profiles', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.UserProfile.filter({ user_email: user?.email });
-      return all;
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_email', user.email);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const updateProfile = useMutation({
-    mutationFn: ({ id, data }) => 
-      id ? base44.entities.UserProfile.update(id, data) : base44.entities.UserProfile.create({ ...data, user_email: user?.email }),
+    mutationFn: async ({ id, data }) => {
+      if (id) {
+        const { error } = await supabase
+          .from('user_profiles')
+          .update(data)
+          .eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert({ ...data, user_email: user?.email });
+        if (error) throw error;
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['user-profiles']);
       setEditing(false);
@@ -68,7 +81,7 @@ export default function UserProfileMultiIdentity() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700">{t({ en: 'Full Name', ar: 'الاسم الكامل' })}</label>
-              <p className="text-slate-900">{user?.full_name}</p>
+              <p className="text-slate-900">{primaryProfile?.full_name || user?.user_metadata?.full_name}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">{t({ en: 'Email', ar: 'البريد الإلكتروني' })}</label>
@@ -88,8 +101,8 @@ export default function UserProfileMultiIdentity() {
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Bio', ar: 'النبذة' })}</label>
                 <Input
-                  value={profileData.bio || primaryProfile?.bio || ''}
-                  onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                  value={profileData.bio || primaryProfile?.bio_en || ''}
+                  onChange={(e) => setProfileData({ ...profileData, bio_en: e.target.value })}
                 />
               </div>
               <Button onClick={() => updateProfile.mutate({ id: primaryProfile?.id, data: profileData })}>
@@ -104,7 +117,7 @@ export default function UserProfileMultiIdentity() {
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">{t({ en: 'Bio', ar: 'النبذة' })}</label>
-                <p className="text-slate-900">{primaryProfile?.bio || t({ en: 'No bio added', ar: 'لم تضاف نبذة' })}</p>
+                <p className="text-slate-900">{primaryProfile?.bio_en || t({ en: 'No bio added', ar: 'لم تضاف نبذة' })}</p>
               </div>
             </>
           )}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -60,21 +60,38 @@ function PilotsPage() {
 
   const { data: pilots = [], isLoading } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list('-created_date', 100)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*');
+      return data || [];
+    }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Pilot.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('pilots').delete().eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilots']);
       toast.success('Pilot deleted');
@@ -82,7 +99,10 @@ function PilotsPage() {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (id) => base44.entities.Pilot.update(id, { stage: 'terminated' }),
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('pilots').update({ stage: 'terminated' }).eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilots']);
       toast.success('Pilot archived');
@@ -98,13 +118,13 @@ function PilotsPage() {
     
     if (action === 'archive') {
       for (const id of selectedIds) {
-        await base44.entities.Pilot.update(id, { stage: 'terminated' });
+        await supabase.from('pilots').update({ stage: 'terminated' }).eq('id', id);
       }
       toast.success(`${selectedIds.length} pilots archived`);
     } else if (action === 'delete') {
       if (confirm(`Delete ${selectedIds.length} pilots permanently?`)) {
         for (const id of selectedIds) {
-          await base44.entities.Pilot.delete(id);
+          await supabase.from('pilots').delete().eq('id', id);
         }
         toast.success(`${selectedIds.length} pilots deleted`);
       }

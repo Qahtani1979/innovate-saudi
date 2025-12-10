@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,14 @@ export default function ActivityFeed({ limit = 10 }) {
 
   const { data: activities = [] } = useQuery({
     queryKey: ['system-activities', limit],
-    queryFn: () => base44.entities.SystemActivity.list('-created_date', limit)
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('system_activities')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      return data || [];
+    }
   });
 
   const activityConfig = {

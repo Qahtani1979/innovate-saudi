@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,28 +14,22 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function GettingStarted() {
   const { language, isRTL, t } = useLanguage();
+  const { user, userProfile } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
-
-  const { data: userProfile } = useQuery({
-    queryKey: ['user-profile', user?.email],
-    queryFn: async () => {
-      const profiles = await base44.entities.UserProfile.filter({ user_email: user?.email });
-      return profiles[0] || null;
-    },
-    enabled: !!user
-  });
-
   const updateProgressMutation = useMutation({
-    mutationFn: (data) => {
+    mutationFn: async (data) => {
       if (userProfile?.id) {
-        return base44.entities.UserProfile.update(userProfile.id, data);
-      } else {
-        return base44.entities.UserProfile.create({ ...data, user_email: user?.email });
+        const { error } = await supabase
+          .from('user_profiles')
+          .update(data)
+          .eq('id', userProfile.id);
+        if (error) throw error;
+      } else if (user?.email) {
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert({ ...data, user_email: user.email });
+        if (error) throw error;
       }
     },
     onSuccess: () => {

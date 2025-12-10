@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,53 +23,63 @@ function MyChallenges() {
   const [viewMode, setViewMode] = useState('grid');
   const [aiSuggestions, setAiSuggestions] = useState({});
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const { invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [analyzingId, setAnalyzingId] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: createdChallenges = [], isLoading: loadingCreated } = useQuery({
     queryKey: ['my-created-challenges', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      return await base44.entities.Challenge.filter({ created_by: user.email }, '-created_date');
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('challenge_owner_email', user.email)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const { data: followedChallenges = [], isLoading: loadingFollowed } = useQuery({
     queryKey: ['my-followed-challenges', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      const follows = await base44.entities.UserFollow.filter({
-        follower_email: user.email,
-        entity_type: 'challenge'
-      });
+      const { data: follows } = await supabase
+        .from('user_follows')
+        .select('entity_id')
+        .eq('follower_email', user.email)
+        .eq('entity_type', 'challenge');
+      if (!follows?.length) return [];
       const challengeIds = follows.map(f => f.entity_id);
-      if (challengeIds.length === 0) return [];
-      const allChallenges = await base44.entities.Challenge.list();
-      return allChallenges.filter(c => challengeIds.includes(c.id));
+      const { data } = await supabase
+        .from('challenges')
+        .select('*')
+        .in('id', challengeIds);
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const { data: assignedChallenges = [], isLoading: loadingAssigned } = useQuery({
     queryKey: ['my-assigned-challenges', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      const assignments = await base44.entities.ExpertAssignment.filter({
-        expert_email: user.email,
-        entity_type: 'challenge'
-      });
+      const { data: assignments } = await supabase
+        .from('expert_assignments')
+        .select('entity_id')
+        .eq('expert_email', user.email)
+        .eq('entity_type', 'challenge');
+      if (!assignments?.length) return [];
       const challengeIds = assignments.map(a => a.entity_id);
-      if (challengeIds.length === 0) return [];
-      const allChallenges = await base44.entities.Challenge.list();
-      return allChallenges.filter(c => challengeIds.includes(c.id));
+      const { data } = await supabase
+        .from('challenges')
+        .select('*')
+        .in('id', challengeIds);
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const challenges = [...createdChallenges, ...followedChallenges, ...assignedChallenges].filter(
