@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,22 +57,25 @@ export default function ChallengeDetail() {
   const { data: challenge, isLoading } = useQuery({
     queryKey: ['challenge', challengeId],
     queryFn: async () => {
-      const challenges = await base44.entities.Challenge.list();
-      return challenges.find(c => c.id === challengeId);
+      const { data } = await supabase.from('challenges').select('*').eq('id', challengeId).maybeSingle();
+      return data;
     },
     enabled: !!challengeId
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('*');
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-for-challenge', challengeId],
     queryFn: async () => {
-      const allPilots = await base44.entities.Pilot.list();
-      return allPilots.filter(p => p.challenge_id === challengeId);
+      const { data } = await supabase.from('pilots').select('*').eq('challenge_id', challengeId);
+      return data || [];
     },
     enabled: !!challengeId
   });
@@ -79,8 +83,8 @@ export default function ChallengeDetail() {
   const { data: comments = [] } = useQuery({
     queryKey: ['challenge-comments', challengeId],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeComment.list();
-      return all.filter(c => c.challenge_id === challengeId);
+      const { data } = await supabase.from('comments').select('*').eq('entity_type', 'challenge').eq('entity_id', challengeId);
+      return data || [];
     },
     enabled: !!challengeId
   });
@@ -88,22 +92,19 @@ export default function ChallengeDetail() {
   const { data: expertEvaluations = [] } = useQuery({
     queryKey: ['challenge-expert-evaluations', challengeId],
     queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === 'challenge' && e.entity_id === challengeId);
+      const { data } = await supabase.from('expert_evaluations').select('*').eq('entity_type', 'challenge').eq('entity_id', challengeId);
+      return data || [];
     },
     enabled: !!challengeId
   });
 
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: proposals = [] } = useQuery({
     queryKey: ['challenge-proposals', challengeId],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeProposal.list();
-      return all.filter(p => p.challenge_id === challengeId);
+      const { data } = await supabase.from('challenge_proposals').select('*').eq('challenge_id', challengeId);
+      return data || [];
     },
     enabled: !!challengeId
   });
@@ -112,8 +113,8 @@ export default function ChallengeDetail() {
     queryKey: ['challenge-programs', challengeId],
     queryFn: async () => {
       if (!challenge?.linked_program_ids || challenge.linked_program_ids.length === 0) return [];
-      const all = await base44.entities.Program.list();
-      return all.filter(p => challenge.linked_program_ids.includes(p.id));
+      const { data } = await supabase.from('programs').select('*');
+      return data?.filter(p => challenge.linked_program_ids.includes(p.id)) || [];
     },
     enabled: !!challenge
   });
@@ -121,8 +122,8 @@ export default function ChallengeDetail() {
   const { data: policyRecommendations = [] } = useQuery({
     queryKey: ['challenge-policies', challengeId],
     queryFn: async () => {
-      const all = await base44.entities.PolicyRecommendation.list();
-      return all.filter(p => p.challenge_id === challengeId);
+      const { data } = await supabase.from('policy_recommendations').select('*').eq('challenge_id', challengeId);
+      return data || [];
     },
     enabled: !!challengeId
   });
@@ -131,8 +132,8 @@ export default function ChallengeDetail() {
     queryKey: ['citizen-idea', challenge?.citizen_origin_idea_id],
     queryFn: async () => {
       if (!challenge?.citizen_origin_idea_id) return null;
-      const ideas = await base44.entities.CitizenIdea.list();
-      return ideas.find(i => i.id === challenge.citizen_origin_idea_id);
+      const { data } = await supabase.from('citizen_ideas').select('*').eq('id', challenge.citizen_origin_idea_id).maybeSingle();
+      return data;
     },
     enabled: !!challenge?.citizen_origin_idea_id
   });
@@ -140,10 +141,8 @@ export default function ChallengeDetail() {
   const { data: activities = [] } = useQuery({
     queryKey: ['challenge-activities', challengeId],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeActivity.list();
-      return all.filter(a => a.challenge_id === challengeId).sort((a, b) => 
-        new Date(b.timestamp) - new Date(a.timestamp)
-      );
+      const { data } = await supabase.from('challenge_activities').select('*').eq('challenge_id', challengeId).order('created_at', { ascending: false });
+      return data || [];
     },
     enabled: !!challengeId
   });
@@ -151,8 +150,8 @@ export default function ChallengeDetail() {
   const { data: contracts = [] } = useQuery({
     queryKey: ['challenge-contracts', challengeId],
     queryFn: async () => {
-      const all = await base44.entities.Contract.list();
-      return all.filter(c => c.challenge_id === challengeId);
+      const { data } = await supabase.from('contracts').select('*');
+      return data?.filter(c => c.challenge_id === challengeId) || [];
     },
     enabled: !!challengeId
   });
@@ -160,8 +159,8 @@ export default function ChallengeDetail() {
   const { data: events = [] } = useQuery({
     queryKey: ['challenge-events', challengeId],
     queryFn: async () => {
-      const all = await base44.entities.Event.list();
-      return all.filter(e => e.challenge_id === challengeId);
+      const { data } = await supabase.from('events').select('*');
+      return data?.filter(e => e.challenge_id === challengeId) || [];
     },
     enabled: !!challengeId
   });
@@ -169,8 +168,8 @@ export default function ChallengeDetail() {
   const { data: relations = [] } = useQuery({
     queryKey: ['challenge-relations', challengeId],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeRelation.list();
-      return all.filter(r => r.challenge_id === challengeId);
+      const { data } = await supabase.from('challenge_interests').select('*').eq('challenge_id', challengeId);
+      return data || [];
     },
     enabled: !!challengeId
   });
@@ -179,8 +178,8 @@ export default function ChallengeDetail() {
     queryKey: ['challenge-rd', challengeId],
     queryFn: async () => {
       if (!challenge?.linked_rd_ids || challenge.linked_rd_ids.length === 0) return [];
-      const all = await base44.entities.RDProject.list();
-      return all.filter(rd => challenge.linked_rd_ids.includes(rd.id));
+      const { data } = await supabase.from('rd_projects').select('*');
+      return data?.filter(rd => challenge.linked_rd_ids.includes(rd.id)) || [];
     },
     enabled: !!challenge
   });
@@ -188,7 +187,9 @@ export default function ChallengeDetail() {
   const queryClient = useQueryClient();
 
   const commentMutation = useMutation({
-    mutationFn: (data) => base44.entities.ChallengeComment.create(data),
+    mutationFn: async (data) => {
+      return supabase.from('comments').insert(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['challenge-comments']);
       setComment('');
@@ -198,7 +199,10 @@ export default function ChallengeDetail() {
 
   const { data: allChallenges = [] } = useQuery({
     queryKey: ['all-challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*');
+      return data || [];
+    }
   });
 
   const generateFreshInsights = async () => {

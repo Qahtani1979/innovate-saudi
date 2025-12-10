@@ -1,5 +1,6 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,36 +17,47 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function AdminPortal() {
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   // RLS: Admin sees EVERYTHING - no filters
   const { data: challenges = [] } = useQuery({
     queryKey: ['all-challenges-admin'],
-    queryFn: () => base44.entities.Challenge.list('-created_date', 500)
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*').order('created_at', { ascending: false }).limit(500);
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['all-pilots-admin'],
-    queryFn: () => base44.entities.Pilot.list('-created_date', 300)
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('*').order('created_at', { ascending: false }).limit(300);
+      return data || [];
+    }
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['all-solutions-admin'],
-    queryFn: () => base44.entities.Solution.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('*');
+      return data || [];
+    }
   });
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['all-organizations-admin'],
-    queryFn: () => base44.entities.Organization.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('organizations').select('*');
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['all-programs-admin'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('programs').select('*');
+      return data || [];
+    }
   });
 
   const { data: rdProjects = [] } = useQuery({

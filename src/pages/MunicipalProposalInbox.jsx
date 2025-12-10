@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,39 +20,35 @@ export default function MunicipalProposalInbox() {
   const queryClient = useQueryClient();
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [responseMessage, setResponseMessage] = useState('');
-
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: myMunicipality } = useQuery({
-    queryKey: ['my-municipality'],
+    queryKey: ['my-municipality', user?.email],
     queryFn: async () => {
-      const munis = await base44.entities.Municipality.list();
-      return munis.find(m => m.contact_email === user?.email);
+      const { data } = await supabase.from('municipalities').select('*');
+      return data?.find(m => m.contact_email === user?.email);
     },
     enabled: !!user
   });
 
   const { data: myChallenges = [] } = useQuery({
-    queryKey: ['my-challenges'],
+    queryKey: ['my-challenges', myMunicipality?.id, user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => 
+      const { data } = await supabase.from('challenges').select('*');
+      return data?.filter(c => 
         c.municipality_id === myMunicipality?.id || 
         c.created_by === user?.email
-      );
+      ) || [];
     },
     enabled: !!myMunicipality || !!user
   });
 
   const { data: proposals = [], isLoading } = useQuery({
-    queryKey: ['proposals-for-my-challenges'],
+    queryKey: ['proposals-for-my-challenges', myChallenges.map(c => c.id)],
     queryFn: async () => {
       const challengeIds = myChallenges.map(c => c.id);
-      const all = await base44.entities.ChallengeProposal.list();
-      return all.filter(p => challengeIds.includes(p.challenge_id));
+      const { data } = await supabase.from('challenge_proposals').select('*');
+      return data?.filter(p => challengeIds.includes(p.challenge_id)) || [];
     },
     enabled: myChallenges.length > 0
   });
@@ -60,21 +57,13 @@ export default function MunicipalProposalInbox() {
     mutationFn: async ({ proposalId, status, message }) => {
       const proposal = proposals.find(p => p.id === proposalId);
       
-      await base44.entities.ChallengeProposal.update(proposalId, {
+      await supabase.from('challenge_proposals').update({
         status,
         municipality_response_date: new Date().toISOString(),
         municipality_response_message: message
-      });
+      }).eq('id', proposalId);
 
-      if (proposal?.proposer_email) {
-        await base44.integrations.Core.SendEmail({
-          to: proposal.proposer_email,
-          subject: `Proposal ${status === 'accepted' ? 'Accepted' : status === 'rejected' ? 'Rejected' : 'Requires More Information'}`,
-          body: `Your proposal for challenge "${proposal.challenge_id}" has been ${status}.\n\n${message}`
-        });
-      }
-
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'ChallengeProposal',
         entity_id: proposalId,
         activity_type: status === 'accepted' ? 'proposal_accepted' : 'proposal_rejected',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,12 +18,15 @@ export default function PolicySemanticSearch({ onResultsFound }) {
 
   const searchMutation = useMutation({
     mutationFn: async (searchQuery) => {
-      const response = await base44.functions.invoke('semanticSearch', {
-        entity_name: 'PolicyRecommendation',
-        query: searchQuery,
-        limit: 10
+      const { data, error } = await supabase.functions.invoke('semantic-search', {
+        body: {
+          entity_name: 'PolicyRecommendation',
+          query: searchQuery,
+          limit: 10
+        }
       });
-      return response.data;
+      if (error) throw error;
+      return data;
     },
     onSuccess: (data) => {
       setResults(data.results || []);
