@@ -9291,6 +9291,93 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          allow_messages: boolean | null
+          auto_save: boolean | null
+          created_at: string | null
+          default_view: string | null
+          density: string | null
+          font_size: string | null
+          high_contrast: boolean | null
+          id: string
+          keyboard_navigation: boolean | null
+          notifications_challenges: boolean | null
+          notifications_digest_frequency: string | null
+          notifications_email: boolean | null
+          notifications_pilots: boolean | null
+          notifications_programs: boolean | null
+          notifications_push: boolean | null
+          notifications_quiet_hours_end: string | null
+          notifications_quiet_hours_start: string | null
+          preferred_language: string | null
+          profile_visibility: string | null
+          reduce_motion: boolean | null
+          screen_reader_optimized: boolean | null
+          show_activity: boolean | null
+          show_tutorials: boolean | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          allow_messages?: boolean | null
+          auto_save?: boolean | null
+          created_at?: string | null
+          default_view?: string | null
+          density?: string | null
+          font_size?: string | null
+          high_contrast?: boolean | null
+          id?: string
+          keyboard_navigation?: boolean | null
+          notifications_challenges?: boolean | null
+          notifications_digest_frequency?: string | null
+          notifications_email?: boolean | null
+          notifications_pilots?: boolean | null
+          notifications_programs?: boolean | null
+          notifications_push?: boolean | null
+          notifications_quiet_hours_end?: string | null
+          notifications_quiet_hours_start?: string | null
+          preferred_language?: string | null
+          profile_visibility?: string | null
+          reduce_motion?: boolean | null
+          screen_reader_optimized?: boolean | null
+          show_activity?: boolean | null
+          show_tutorials?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          allow_messages?: boolean | null
+          auto_save?: boolean | null
+          created_at?: string | null
+          default_view?: string | null
+          density?: string | null
+          font_size?: string | null
+          high_contrast?: boolean | null
+          id?: string
+          keyboard_navigation?: boolean | null
+          notifications_challenges?: boolean | null
+          notifications_digest_frequency?: string | null
+          notifications_email?: boolean | null
+          notifications_pilots?: boolean | null
+          notifications_programs?: boolean | null
+          notifications_push?: boolean | null
+          notifications_quiet_hours_end?: string | null
+          notifications_quiet_hours_start?: string | null
+          preferred_language?: string | null
+          profile_visibility?: string | null
+          reduce_motion?: boolean | null
+          screen_reader_optimized?: boolean | null
+          show_activity?: boolean | null
+          show_tutorials?: boolean | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           address: string | null
