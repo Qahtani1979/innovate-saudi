@@ -541,7 +541,7 @@ function UserProfile() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {(profileData.past_projects || user?.past_projects || []).map((project, i) => (
+              {(profileData.past_projects || profile?.past_projects || []).map((project, i) => (
                 <div key={i} className="p-4 border rounded-lg">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -562,7 +562,7 @@ function UserProfile() {
                   </div>
                 </div>
               ))}
-              {!(profileData.past_projects || user?.past_projects)?.length && (
+              {!(profileData.past_projects || profile?.past_projects)?.length && (
                 <p className="text-center text-slate-500 py-8">{t({ en: 'No projects added yet', ar: 'لا توجد مشاريع' })}</p>
               )}
             </CardContent>
@@ -584,7 +584,7 @@ function UserProfile() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {(profileData.training_completed || user?.training_completed || []).map((training, i) => (
+              {(profileData.training_completed || profile?.training_completed || []).map((training, i) => (
                 <div key={i} className="flex items-start justify-between p-3 border rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -606,7 +606,7 @@ function UserProfile() {
                   )}
                 </div>
               ))}
-              {!(profileData.training_completed || user?.training_completed)?.length && (
+              {!(profileData.training_completed || profile?.training_completed)?.length && (
                 <p className="text-center text-slate-500 py-8">{t({ en: 'No training added yet', ar: 'لا يوجد تدريب' })}</p>
               )}
             </CardContent>
@@ -615,15 +615,15 @@ function UserProfile() {
 
         <TabsContent value="connections">
           <div className="space-y-6">
-            <UserJourneyMapper userEmail={user?.email} />
+            <UserJourneyMapper userEmail={authUser?.email} />
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <AIConnectionsSuggester currentUser={user} />
+                <AIConnectionsSuggester currentUser={profile} />
               </div>
               <div>
                 <ProfileVisibilityControl 
-                  visibility={profileData.profile_visibility || user?.profile_visibility}
+                  visibility={profileData.profile_visibility || profile?.profile_visibility}
                   onChange={(val) => setProfileData({...profileData, profile_visibility: val})}
                 />
               </div>
