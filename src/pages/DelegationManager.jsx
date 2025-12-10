@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,35 +35,70 @@ export default function DelegationManager() {
     reason: ''
   });
 
+  // Get current user
   const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
+    queryKey: ['current-user-delegation'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    }
   });
 
+  // Fetch all user profiles
   const { data: users = [] } = useQuery({
-    queryKey: ['all-users'],
-    queryFn: () => base44.entities.User.list()
+    queryKey: ['all-users-delegation'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
+  // Fetch delegations I created
   const { data: delegations = [] } = useQuery({
-    queryKey: ['delegations', currentUser?.email],
-    queryFn: () => base44.entities.DelegationRule?.filter({ delegator_email: currentUser?.email }) || [],
-    enabled: !!currentUser
+    queryKey: ['my-delegations', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      const { data, error } = await supabase
+        .from('delegation_rules')
+        .select('*')
+        .eq('delegator_email', currentUser.email);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentUser?.email
   });
 
+  // Fetch delegations given to me
   const { data: receivedDelegations = [] } = useQuery({
     queryKey: ['received-delegations', currentUser?.email],
-    queryFn: () => base44.entities.DelegationRule?.filter({ delegate_email: currentUser?.email }) || [],
-    enabled: !!currentUser
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      const { data, error } = await supabase
+        .from('delegation_rules')
+        .select('*')
+        .eq('delegate_email', currentUser.email);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentUser?.email
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.DelegationRule.create({
-      ...data,
-      delegator_email: currentUser.email
-    }),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('delegation_rules')
+        .insert({
+          ...data,
+          delegator_email: currentUser.email,
+          is_active: true
+        });
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['delegations']);
+      queryClient.invalidateQueries(['my-delegations']);
       setDialogOpen(false);
       setFormData({
         delegate_email: '',
@@ -73,14 +108,26 @@ export default function DelegationManager() {
         reason: ''
       });
       toast.success(t({ en: 'Delegation created', ar: 'تم إنشاء التفويض' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.DelegationRule.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('delegation_rules')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['delegations']);
+      queryClient.invalidateQueries(['my-delegations']);
       toast.success(t({ en: 'Delegation removed', ar: 'تم إزالة التفويض' }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
@@ -113,7 +160,7 @@ export default function DelegationManager() {
       {/* Header */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-700 via-blue-700 to-cyan-700 p-8 text-white">
         <h1 className="text-5xl font-bold mb-2">
-          {t({ en: '🔄 Delegation Manager', ar: '🔄 مدير التفويض' })}
+          {t({ en: 'Delegation Manager', ar: 'مدير التفويض' })}
         </h1>
         <p className="text-xl text-white/90">
           {t({ en: 'Delegate your responsibilities when you are away', ar: 'فوض مسؤولياتك عندما تكون غائباً' })}
@@ -122,25 +169,25 @@ export default function DelegationManager() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-white">
+        <Card className="bg-gradient-to-br from-blue-50 to-background">
           <CardContent className="pt-6 text-center">
             <UserPlus className="h-8 w-8 text-blue-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-blue-600">{activeDelegations.length}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Active Delegations', ar: 'التفويضات النشطة' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Active Delegations', ar: 'التفويضات النشطة' })}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-green-50 to-white">
+        <Card className="bg-gradient-to-br from-green-50 to-background">
           <CardContent className="pt-6 text-center">
             <Shield className="h-8 w-8 text-green-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-green-600">{activeReceivedDelegations.length}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Delegated to Me', ar: 'مفوض لي' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Delegated to Me', ar: 'مفوض لي' })}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
+        <Card className="bg-gradient-to-br from-purple-50 to-background">
           <CardContent className="pt-6 text-center">
             <Calendar className="h-8 w-8 text-purple-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-purple-600">{delegations.length}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Total Delegations', ar: 'إجمالي التفويضات' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Total Delegations', ar: 'إجمالي التفويضات' })}</p>
           </CardContent>
         </Card>
       </div>
@@ -162,20 +209,20 @@ export default function DelegationManager() {
           {delegations.length > 0 ? (
             <div className="space-y-3">
               {delegations.map((delegation) => {
-                const delegate = users.find(u => u.email === delegation.delegate_email);
+                const delegate = users.find(u => u.user_email === delegation.delegate_email);
                 const isActive = activeDelegations.some(d => d.id === delegation.id);
 
                 return (
-                  <div key={delegation.id} className={`p-4 border rounded-lg ${isActive ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                  <div key={delegation.id} className={`p-4 border rounded-lg ${isActive ? 'bg-green-50 border-green-200' : 'bg-background'}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <p className="font-semibold text-slate-900">{delegate?.full_name || delegation.delegate_email}</p>
+                          <p className="font-semibold text-foreground">{delegate?.full_name || delegation.delegate_email}</p>
                           {isActive && (
                             <Badge className="bg-green-600">{t({ en: 'Active', ar: 'نشط' })}</Badge>
                           )}
                         </div>
-                        <p className="text-sm text-slate-600 mb-2">{delegation.reason}</p>
+                        <p className="text-sm text-muted-foreground mb-2">{delegation.reason}</p>
                         <div className="flex flex-wrap gap-1 mb-2">
                           {delegation.permission_types?.map((perm, idx) => (
                             <Badge key={idx} variant="outline" className="text-xs">
@@ -183,7 +230,7 @@ export default function DelegationManager() {
                             </Badge>
                           ))}
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span>{new Date(delegation.start_date).toLocaleDateString()}</span>
                           <span>→</span>
                           <span>{new Date(delegation.end_date).toLocaleDateString()}</span>
@@ -193,7 +240,7 @@ export default function DelegationManager() {
                         variant="ghost"
                         size="icon"
                         onClick={() => deleteMutation.mutate(delegation.id)}
-                        className="text-red-600 hover:bg-red-50"
+                        className="text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -203,7 +250,7 @@ export default function DelegationManager() {
               })}
             </div>
           ) : (
-            <p className="text-center text-slate-500 py-8">
+            <p className="text-center text-muted-foreground py-8">
               {t({ en: 'No delegations created', ar: 'لا توجد تفويضات' })}
             </p>
           )}
@@ -219,20 +266,20 @@ export default function DelegationManager() {
           <CardContent>
             <div className="space-y-3">
               {receivedDelegations.map((delegation) => {
-                const delegator = users.find(u => u.email === delegation.delegator_email);
+                const delegator = users.find(u => u.user_email === delegation.delegator_email);
                 const isActive = activeReceivedDelegations.some(d => d.id === delegation.id);
 
                 return (
-                  <div key={delegation.id} className={`p-4 border rounded-lg ${isActive ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}>
+                  <div key={delegation.id} className={`p-4 border rounded-lg ${isActive ? 'bg-blue-50 border-blue-200' : 'bg-background'}`}>
                     <div className="flex items-center gap-2 mb-2">
-                      <p className="font-semibold text-slate-900">
+                      <p className="font-semibold text-foreground">
                         {t({ en: 'From:', ar: 'من:' })} {delegator?.full_name || delegation.delegator_email}
                       </p>
                       {isActive && (
                         <Badge className="bg-blue-600">{t({ en: 'Active', ar: 'نشط' })}</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-slate-600 mb-2">{delegation.reason}</p>
+                    <p className="text-sm text-muted-foreground mb-2">{delegation.reason}</p>
                     <div className="flex flex-wrap gap-1 mb-2">
                       {delegation.permission_types?.map((perm, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs">
@@ -240,7 +287,7 @@ export default function DelegationManager() {
                         </Badge>
                       ))}
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>{new Date(delegation.start_date).toLocaleDateString()}</span>
                       <span>→</span>
                       <span>{new Date(delegation.end_date).toLocaleDateString()}</span>
@@ -269,9 +316,9 @@ export default function DelegationManager() {
                   <SelectValue placeholder={t({ en: 'Select user...', ar: 'اختر مستخدم...' })} />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.filter(u => u.email !== currentUser?.email).map(user => (
-                    <SelectItem key={user.id} value={user.email}>
-                      {user.full_name} ({user.email})
+                  {users.filter(u => u.user_email !== currentUser?.email).map(user => (
+                    <SelectItem key={user.id} value={user.user_email}>
+                      {user.full_name} ({user.user_email})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -343,7 +390,7 @@ export default function DelegationManager() {
             </Button>
             <Button 
               onClick={() => createMutation.mutate(formData)}
-              disabled={!formData.delegate_email || !formData.start_date || !formData.end_date || formData.permission_types.length === 0}
+              disabled={!formData.delegate_email || !formData.start_date || !formData.end_date || formData.permission_types.length === 0 || createMutation.isPending}
             >
               {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t({ en: 'Create', ar: 'إنشاء' })}
