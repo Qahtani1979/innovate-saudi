@@ -1,96 +1,99 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 
 export const usePermissions = () => {
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
-
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => base44.entities.Role?.list() || [],
-    enabled: !!user
-  });
-
-  const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: () => base44.entities.Team?.list() || [],
-    enabled: !!user
-  });
-
-  const { data: delegations = [] } = useQuery({
-    queryKey: ['active-delegations'],
+  // Get current user
+  const { data: session } = useQuery({
+    queryKey: ['session'],
     queryFn: async () => {
-      if (!user) return [];
-      const now = new Date().toISOString();
-      return base44.entities.DelegationRule.filter({
-        delegate_email: user.email,
-        is_active: true,
-        start_date: { $lte: now },
-        end_date: { $gte: now }
-      });
-    },
-    enabled: !!user
+      const { data } = await supabase.auth.getSession();
+      return data.session;
+    }
   });
 
-  const getUserPermissions = () => {
-    if (!user) return [];
+  const userId = session?.user?.id;
+  const userEmail = session?.user?.email;
 
-    const permissions = new Set();
+  // Get user profile
+  const { data: profile } = useQuery({
+    queryKey: ['user-profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId
+  });
 
-    // Admin has all permissions
-    if (user.role === 'admin') {
-      return ['*'];
-    }
+  // Get user's app_role from user_roles table
+  const { data: userRoles = [] } = useQuery({
+    queryKey: ['user-app-roles', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      if (error) throw error;
+      return data?.map(r => r.role) || [];
+    },
+    enabled: !!userId
+  });
 
-    // Priority 1: Get permissions from assigned roles
-    if (user.assigned_roles?.length) {
-      user.assigned_roles.forEach(roleId => {
-        const role = roles.find(r => r.id === roleId);
-        if (role?.permissions) {
-          role.permissions.forEach(p => permissions.add(p));
-        }
-      });
-    }
-
-    // Priority 2: Get permissions from assigned teams (merged with role permissions)
-    if (user.assigned_teams?.length) {
-      user.assigned_teams.forEach(teamId => {
-        const team = teams.find(t => t.id === teamId);
-        if (team?.permissions) {
-          team.permissions.forEach(p => permissions.add(p));
-        }
-      });
-    }
-
-    // Priority 3: Get permissions from active delegations
-    delegations.forEach(delegation => {
-      if (delegation.permission_types) {
-        delegation.permission_types.forEach(p => permissions.add(p));
+  // Get permissions using the new database function
+  const { data: permissions = [] } = useQuery({
+    queryKey: ['user-permissions', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .rpc('get_user_permissions', { _user_id: userId });
+      if (error) {
+        console.error('Error fetching permissions:', error);
+        return [];
       }
-    });
+      return data || [];
+    },
+    enabled: !!userId
+  });
 
-    // Return merged unique permissions from roles, teams, and delegations
-    return Array.from(permissions);
-  };
+  // Get functional roles using the new database function
+  const { data: functionalRoles = [] } = useQuery({
+    queryKey: ['user-functional-roles', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .rpc('get_user_functional_roles', { _user_id: userId });
+      if (error) {
+        console.error('Error fetching functional roles:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!userId
+  });
+
+  const isAdmin = userRoles.includes('admin');
 
   const hasPermission = (permission) => {
-    const userPermissions = getUserPermissions();
-    
     // Admin wildcard
-    if (userPermissions.includes('*')) return true;
-    
+    if (isAdmin || permissions.includes('*')) return true;
     // Check exact permission
-    return userPermissions.includes(permission);
+    return permissions.includes(permission);
   };
 
   const hasAnyPermission = (permissionList) => {
-    return permissionList.some(p => hasPermission(p));
+    if (isAdmin || permissions.includes('*')) return true;
+    return permissionList.some(p => permissions.includes(p));
   };
 
   const hasAllPermissions = (permissionList) => {
-    return permissionList.every(p => hasPermission(p));
+    if (isAdmin || permissions.includes('*')) return true;
+    return permissionList.every(p => permissions.includes(p));
   };
 
   const canAccessEntity = (entityType, action) => {
@@ -98,15 +101,34 @@ export const usePermissions = () => {
     return hasPermission(permissionKey);
   };
 
+  const hasRole = (role) => {
+    if (isAdmin) return true;
+    return userRoles.includes(role);
+  };
+
+  const hasFunctionalRole = (roleName) => {
+    if (isAdmin) return true;
+    return functionalRoles.some(r => r.role_name === roleName);
+  };
+
   return {
-    user,
-    roles,
-    teams,
-    permissions: getUserPermissions(),
+    user: session?.user ? { 
+      ...session.user, 
+      ...profile,
+      role: userRoles[0] || 'user'
+    } : null,
+    userId,
+    userEmail,
+    profile,
+    roles: userRoles,
+    functionalRoles,
+    permissions,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
     canAccessEntity,
-    isAdmin: user?.role === 'admin'
+    hasRole,
+    hasFunctionalRole,
+    isAdmin
   };
 };
