@@ -750,6 +750,13 @@ All other pages require authentication.
 | Email/Password Auth | ✅ Complete | Supabase Auth |
 | Google OAuth | ✅ Complete | Configured |
 | Microsoft OAuth | ✅ Complete | Configured |
+| **Forgot Password** | ✅ Complete | Email reset flow |
+| **Reset Password** | ✅ Complete | `ResetPassword.jsx` |
+| **Change Password** | ✅ Complete | `ChangePasswordDialog.jsx` |
+| **Delete Account** | ✅ Complete | `DeleteAccountDialog.jsx` |
+| **View Sessions** | ✅ Complete | `SessionsDialog.jsx` |
+| **Login History** | ✅ Complete | `LoginHistoryDialog.jsx` |
+| **Sign Out All Devices** | ✅ Complete | In SessionsDialog |
 | Main Onboarding Wizard | ✅ Complete | 6 steps with AI |
 | Municipality Onboarding | ✅ Complete | 5 steps (CV, Municipality, Department, Role, Complete) |
 | Startup Onboarding | ✅ Complete | 4 steps |
