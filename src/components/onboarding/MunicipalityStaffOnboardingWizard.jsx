@@ -61,6 +61,44 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
     justification: ''
   });
 
+  // Handle skip - mark as skipped in session storage so we don't ask again this session
+  const handleSkip = async () => {
+    try {
+      // Store skip timestamp in session storage (will reset on browser close)
+      sessionStorage.setItem('municipality_wizard_skipped', Date.now().toString());
+      
+      // Update profile to track skip count (optional - for analytics)
+      if (user?.id) {
+        await supabase
+          .from('user_profiles')
+          .update({
+            metadata: {
+              ...(userProfile?.metadata || {}),
+              wizard_skip_count: ((userProfile?.metadata?.wizard_skip_count || 0) + 1),
+              last_wizard_skip: new Date().toISOString()
+            }
+          })
+          .eq('user_id', user.id);
+      }
+      
+      toast.info(t({ 
+        en: 'You can complete your profile anytime from your dashboard settings.', 
+        ar: 'يمكنك إكمال ملفك الشخصي في أي وقت من إعدادات لوحة التحكم.' 
+      }));
+      
+      // Call parent onSkip if provided
+      onSkip?.();
+      
+      // Navigate to dashboard
+      navigate(createPageUrl('MunicipalityDashboard'));
+    } catch (error) {
+      console.error('Skip error:', error);
+      // Still navigate even if tracking fails
+      onSkip?.();
+      navigate(createPageUrl('MunicipalityDashboard'));
+    }
+  };
+
   // Pre-populate from Stage 1 onboarding data
   useEffect(() => {
     if (userProfile) {
@@ -807,11 +845,11 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
           <div className="flex justify-between">
             <Button
               variant="outline"
-              onClick={() => currentStep > 1 ? setCurrentStep(currentStep - 1) : onSkip?.()}
+              onClick={() => currentStep > 1 ? setCurrentStep(currentStep - 1) : handleSkip()}
               className="bg-white/10 text-white border-white/20 hover:bg-white/20"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {currentStep === 1 ? t({ en: 'Skip', ar: 'تخطي' }) : t({ en: 'Back', ar: 'رجوع' })}
+              {currentStep === 1 ? t({ en: 'Skip for now', ar: 'تخطي الآن' }) : t({ en: 'Back', ar: 'رجوع' })}
             </Button>
 
             {currentStep < 5 ? (
