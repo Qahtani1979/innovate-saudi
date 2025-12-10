@@ -373,6 +373,13 @@ export const AuthProvider = ({ children }) => {
     if (error) throw error;
   };
 
+  const updatePassword = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    if (error) throw error;
+  };
+
   const hasRole = (role) => {
     return userRoles.some(r => r.role === role);
   };
@@ -406,6 +413,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       resetPassword,
+      updatePassword,
       hasRole,
       isAdmin,
       checkAuth,

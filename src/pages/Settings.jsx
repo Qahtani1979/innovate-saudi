@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
 import TwoFactorSetup from '../components/security/TwoFactorSetup';
@@ -16,6 +17,10 @@ import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
 import TwoFactorAuth from '../components/auth/TwoFactorAuth';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import ChangePasswordDialog from '../components/auth/ChangePasswordDialog';
+import DeleteAccountDialog from '../components/auth/DeleteAccountDialog';
+import SessionsDialog from '../components/auth/SessionsDialog';
+import LoginHistoryDialog from '../components/auth/LoginHistoryDialog';
 
 function Settings() {
   const { language, isRTL, t } = useLanguage();
@@ -56,6 +61,12 @@ function Settings() {
     screen_reader: false,
     keyboard_nav: false
   });
+
+  // Dialog states
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [showSessions, setShowSessions] = useState(false);
+  const [showLoginHistory, setShowLoginHistory] = useState(false);
 
   const [workPrefs, setWorkPrefs] = useState({
     default_view: 'cards',
@@ -310,7 +321,7 @@ function Settings() {
               <CardContent className="space-y-4">
                 <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Change Password', ar: 'تغيير كلمة المرور' })}</label>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => setShowChangePassword(true)}>
                   {t({ en: 'Update Password', ar: 'تحديث كلمة المرور' })}
                 </Button>
               </div>
@@ -322,7 +333,7 @@ function Settings() {
                     <span>{t({ en: 'Current Device', ar: 'الجهاز الحالي' })}</span>
                     <Badge className="bg-green-600">{t({ en: 'Active', ar: 'نشط' })}</Badge>
                   </div>
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setShowSessions(true)}>
                     {t({ en: 'View All Sessions', ar: 'عرض جميع الجلسات' })}
                   </Button>
                 </div>
@@ -330,7 +341,7 @@ function Settings() {
 
               <div className="p-4 bg-slate-50 rounded-lg border">
                 <p className="text-sm font-medium text-slate-900 mb-2">{t({ en: 'Login History', ar: 'سجل الدخول' })}</p>
-                <Button variant="outline" size="sm" className="w-full">
+                <Button variant="outline" size="sm" className="w-full" onClick={() => setShowLoginHistory(true)}>
                   {t({ en: 'View Login History', ar: 'عرض سجل الدخول' })}
                 </Button>
               </div>
@@ -441,7 +452,7 @@ function Settings() {
                 <Button variant="outline" className="w-full mb-2">
                   {t({ en: 'Export My Data', ar: 'تصدير بياناتي' })}
                 </Button>
-                <Button variant="destructive" className="w-full">
+                <Button variant="destructive" className="w-full" onClick={() => setShowDeleteAccount(true)}>
                   {t({ en: 'Delete Account', ar: 'حذف الحساب' })}
                 </Button>
               </div>
@@ -602,6 +613,12 @@ function Settings() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Auth Dialogs */}
+      <ChangePasswordDialog open={showChangePassword} onOpenChange={setShowChangePassword} />
+      <DeleteAccountDialog open={showDeleteAccount} onOpenChange={setShowDeleteAccount} />
+      <SessionsDialog open={showSessions} onOpenChange={setShowSessions} />
+      <LoginHistoryDialog open={showLoginHistory} onOpenChange={setShowLoginHistory} />
     </div>
   );
 }
