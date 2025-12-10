@@ -6858,6 +6858,42 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_requests: {
         Row: {
           created_at: string | null
@@ -9070,6 +9106,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_functional_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_functional_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_invitations: {
         Row: {
           accepted_date: string | null
@@ -9675,6 +9749,19 @@ export type Database = {
           p_user_type?: string
         }
         Returns: Json
+      }
+      get_user_functional_roles: {
+        Args: { _user_id: string }
+        Returns: {
+          role_description: string
+          role_id: string
+          role_name: string
+        }[]
+      }
+      get_user_permissions: { Args: { _user_id: string }; Returns: string[] }
+      has_permission: {
+        Args: { _permission_code: string; _user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
