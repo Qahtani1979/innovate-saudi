@@ -133,8 +133,8 @@ function App() {
           <Router>
             <NavigationTracker />
             <AuthenticatedApp />
+            <Toaster />
           </Router>
-          <Toaster />
           <VisualEditAgent />
         </QueryClientProvider>
       </AuthProvider>
