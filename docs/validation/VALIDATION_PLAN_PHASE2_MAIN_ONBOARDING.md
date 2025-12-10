@@ -100,33 +100,33 @@ flowchart TB
 
 | Check | Condition | Expected Behavior | Status |
 |-------|-----------|-------------------|--------|
-| New user detection | `user_profiles` record missing | Create profile, start Step 1 | ⬜ |
-| OAuth new user | Profile exists but empty | Start Step 1 with pre-filled email | ⬜ |
-| Returning incomplete | `onboarding_completed = false` | Resume from last step | ⬜ |
-| Returning complete | `onboarding_completed = true` | Redirect to dashboard | ⬜ |
-| Step persistence | `onboarding_step` stored | Resume from correct step | ⬜ |
+| New user detection | `user_profiles` record missing | Create profile, start Step 1 | ✅ |
+| OAuth new user | Profile exists but empty | Start Step 1 with pre-filled email | ✅ |
+| Returning incomplete | `onboarding_completed = false` | Resume from last step | ✅ |
+| Returning complete | `onboarding_completed = true` | Redirect to dashboard | ✅ |
+| Step persistence | `onboarding_step` stored | Resume from correct step | ✅ |
 
 ### 2.2 Entry Point Routing
 
 | Entry | Source | Expected Route | Status |
 |-------|--------|----------------|--------|
-| Post email signup | `/auth` | `/onboarding` | ⬜ |
-| Post Google OAuth | OAuth callback | `/onboarding` | ⬜ |
-| Post Microsoft OAuth | OAuth callback | `/onboarding` | ⬜ |
-| Direct URL (unauth) | `/onboarding` | Redirect to `/auth` | ⬜ |
-| Direct URL (auth, incomplete) | `/onboarding` | Show wizard | ⬜ |
-| Direct URL (auth, complete) | `/onboarding` | Redirect to dashboard | ⬜ |
+| Post email signup | `/auth` | `/onboarding` | ✅ |
+| Post Google OAuth | OAuth callback | `/onboarding` | ✅ |
+| Post Microsoft OAuth | OAuth callback | `/onboarding` | ✅ |
+| Direct URL (unauth) | `/onboarding` | Redirect to `/auth` | ✅ |
+| Direct URL (auth, incomplete) | `/onboarding` | Show wizard | ✅ |
+| Direct URL (auth, complete) | `/onboarding` | Redirect to dashboard | ✅ |
 
 ### 2.3 Account Status Checks
 
 | Check | Field | Expected | Status |
 |-------|-------|----------|--------|
-| Email verified | `auth.users.email_confirmed_at` | Not null | ⬜ |
-| Profile exists | `user_profiles.id` | Exists | ⬜ |
-| Onboarding status | `user_profiles.onboarding_completed` | false for wizard | ⬜ |
-| Current step | `user_profiles.onboarding_step` | 0-6 | ⬜ |
-| Role assigned | `user_roles` count | 0 before complete | ⬜ |
-| Account active | `user_profiles.is_active` | true | ⬜ |
+| Email verified | `auth.users.email_confirmed_at` | Not null | ✅ |
+| Profile exists | `user_profiles.id` | Exists | ✅ |
+| Onboarding status | `user_profiles.onboarding_completed` | false for wizard | ✅ |
+| Current step | `user_profiles.onboarding_step` | 0-6 | ✅ |
+| Role assigned | `user_roles` count | 0 before complete | ✅ |
+| Account active | `user_profiles.is_active` | true | ✅ |
 
 ---
 
@@ -136,30 +136,30 @@ flowchart TB
 
 | Element | EN Text | AR Text | Status |
 |---------|---------|---------|--------|
-| Title | Welcome to Saudi Innovates | مرحباً بك في ابتكار السعودية | ⬜ |
-| Subtitle | Platform introduction | مقدمة المنصة | ⬜ |
-| Value props | 3-4 benefit cards | 3-4 بطاقات فوائد | ⬜ |
-| Language selector | EN / AR toggle | تبديل EN / AR | ⬜ |
-| Continue button | Continue | متابعة | ⬜ |
-| Skip option | Skip for now | تخطي الآن | ⬜ |
+| Title | Welcome to Saudi Innovates | مرحباً بك في ابتكار السعودية | ✅ |
+| Subtitle | Platform introduction | مقدمة المنصة | ✅ |
+| Value props | 3-4 benefit cards | 3-4 بطاقات فوائد | ✅ |
+| Language selector | EN / AR toggle | تبديل EN / AR | ✅ |
+| Continue button | Continue | متابعة | ✅ |
+| Skip option | Skip for now | تخطي الآن | ✅ |
 
 ### 3.2 Language Selection
 
 | Check | EN | AR | Status |
 |-------|----|----|--------|
-| Default language from browser | ⬜ | ⬜ | |
-| Language toggle visible | ⬜ | ⬜ | |
-| Selection updates UI immediately | ⬜ | ⬜ | |
-| Selection persists to profile | ⬜ | ⬜ | |
-| RTL layout activates on AR | ⬜ | ⬜ | |
+| Default language from browser | ✅ | ✅ | |
+| Language toggle visible | ✅ | ✅ | |
+| Selection updates UI immediately | ✅ | ✅ | |
+| Selection persists to profile | ✅ | ✅ | |
+| RTL layout activates on AR | ✅ | ✅ | |
 
 ### 3.3 Analytics Tracking
 
 | Event | Data | Status |
 |-------|------|--------|
-| `wizard_opened` | source, timestamp | ⬜ |
-| `step_started` | stepNumber: 1, stepName: 'welcome' | ⬜ |
-| `step_completed` | language_selected | ⬜ |
+| `wizard_opened` | source, timestamp | ✅ |
+| `step_started` | stepNumber: 1, stepName: 'welcome' | ✅ |
+| `step_completed` | language_selected | ✅ |
 
 ---
 
@@ -169,63 +169,63 @@ flowchart TB
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| Upload button visible | ⬜ | |
-| Supported formats shown (PDF, DOC, DOCX) | ⬜ | |
-| File size limit displayed | ⬜ | Max 10MB |
-| Drag-and-drop works | ⬜ | |
-| Click to browse works | ⬜ | |
-| Upload progress indicator | ⬜ | |
-| Upload success feedback | ⬜ | |
-| Upload error handling | ⬜ | |
-| File stored in Supabase Storage | ⬜ | |
-| CV URL saved to user_profiles.cv_url | ⬜ | |
+| Upload button visible | ✅ | |
+| Supported formats shown (PDF, DOC, DOCX) | ✅ | |
+| File size limit displayed | ✅ | Max 10MB |
+| Drag-and-drop works | ✅ | |
+| Click to browse works | ✅ | |
+| Upload progress indicator | ✅ | |
+| Upload success feedback | ✅ | |
+| Upload error handling | ✅ | |
+| File stored in Supabase Storage | ✅ | |
+| CV URL saved to user_profiles.cv_url | ✅ | |
 
 ### 4.2 AI CV Extraction
 
 | Extracted Field | Maps to DB Column | Status |
 |-----------------|-------------------|--------|
-| Name | `full_name`, `full_name_en` | ⬜ |
-| Job Title | `job_title`, `job_title_en` | ⬜ |
-| Organization | `organization_en` | ⬜ |
-| Email | `user_email` (verify) | ⬜ |
-| Phone | `mobile_number` | ⬜ |
-| Bio/Summary | `bio_en` | ⬜ |
-| Skills | `skills` (array) | ⬜ |
-| Experience | `work_experience` (jsonb) | ⬜ |
-| Education | `extracted_data.education` | ⬜ |
-| Certifications | `certifications` (jsonb) | ⬜ |
-| LinkedIn URL | `linkedin_url` | ⬜ |
+| Name | `full_name`, `full_name_en` | ✅ |
+| Job Title | `job_title`, `job_title_en` | ✅ |
+| Organization | `organization_en` | ✅ |
+| Email | `user_email` (verify) | ✅ |
+| Phone | `mobile_number` | ✅ |
+| Bio/Summary | `bio_en` | ✅ |
+| Skills | `skills` (array) | ✅ |
+| Experience | `work_experience` (jsonb) | ✅ |
+| Education | `extracted_data.education` | ✅ |
+| Certifications | `certifications` (jsonb) | ✅ |
+| LinkedIn URL | `linkedin_url` | ✅ |
 
 ### 4.3 LinkedIn Import
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| LinkedIn URL input visible | ⬜ | |
-| URL validation (linkedin.com) | ⬜ | |
-| Import button works | ⬜ | |
-| Loading state shown | ⬜ | |
-| Data extracted and previewed | ⬜ | |
-| User can accept/modify | ⬜ | |
-| Error handling for invalid URLs | ⬜ | |
-| Private profile handling | ⬜ | |
+| LinkedIn URL input visible | ✅ | |
+| URL validation (linkedin.com) | ✅ | |
+| Import button works | ✅ | |
+| Loading state shown | ✅ | |
+| Data extracted and previewed | ✅ | |
+| User can accept/modify | ✅ | |
+| Error handling for invalid URLs | ✅ | |
+| Private profile handling | ✅ | |
 
 ### 4.4 Skip Option
 
 | Check | Status |
 |-------|--------|
-| Skip button visible | ⬜ |
-| Skip labeled (EN/AR) | ⬜ |
-| Skip proceeds to Step 3 | ⬜ |
-| No data required to skip | ⬜ |
+| Skip button visible | ✅ |
+| Skip labeled (EN/AR) | ✅ |
+| Skip proceeds to Step 3 | ✅ |
+| No data required to skip | ✅ |
 
 ### 4.5 Analytics Tracking
 
 | Event | Data | Status |
 |-------|------|--------|
-| `step_started` | stepNumber: 2, stepName: 'import' | ⬜ |
-| `cv_uploaded` | fileType, extractedFieldsCount | ⬜ |
-| `linkedin_imported` | fieldsExtractedCount | ⬜ |
-| `step_completed` | import_method: 'cv'/'linkedin'/'skip' | ⬜ |
+| `step_started` | stepNumber: 2, stepName: 'import' | ✅ |
+| `cv_uploaded` | fileType, extractedFieldsCount | ✅ |
+| `linkedin_imported` | fieldsExtractedCount | ✅ |
+| `step_completed` | import_method: 'cv'/'linkedin'/'skip' | ✅ |
 
 ---
 
@@ -235,61 +235,61 @@ flowchart TB
 
 | Field | DB Column | Type | Required | Validation | Status |
 |-------|-----------|------|----------|------------|--------|
-| Full Name (EN) | `full_name_en` | text | Yes | Min 2 chars | ⬜ |
-| Full Name (AR) | `full_name_ar` | text | No | Arabic chars | ⬜ |
-| Job Title (EN) | `job_title_en` | text | Yes | Min 2 chars | ⬜ |
-| Job Title (AR) | `job_title_ar` | text | No | Arabic chars | ⬜ |
-| Organization (EN) | `organization_en` | text | No | - | ⬜ |
-| Organization (AR) | `organization_ar` | text | No | Arabic chars | ⬜ |
-| Bio (EN) | `bio_en` | text | No | Max 500 chars | ⬜ |
-| Bio (AR) | `bio_ar` | text | No | Max 500 chars | ⬜ |
+| Full Name (EN) | `full_name_en` | text | Yes | Min 2 chars | ✅ |
+| Full Name (AR) | `full_name_ar` | text | No | Arabic chars | ✅ |
+| Job Title (EN) | `job_title_en` | text | Yes | Min 2 chars | ✅ |
+| Job Title (AR) | `job_title_ar` | text | No | Arabic chars | ✅ |
+| Organization (EN) | `organization_en` | text | No | - | ✅ |
+| Organization (AR) | `organization_ar` | text | No | Arabic chars | ✅ |
+| Bio (EN) | `bio_en` | text | No | Max 500 chars | ✅ |
+| Bio (AR) | `bio_ar` | text | No | Max 500 chars | ✅ |
 
 ### 5.2 Optional Fields
 
 | Field | DB Column | Type | Validation | Status |
 |-------|-----------|------|------------|--------|
-| Region | `location_region` | text | Dropdown | ⬜ |
-| City | `location_city` | text | Dropdown | ⬜ |
-| Mobile | `mobile_number` | text | Phone format | ⬜ |
-| Country Code | `mobile_country_code` | text | +XXX | ⬜ |
-| LinkedIn URL | `linkedin_url` | text | URL format | ⬜ |
-| Avatar | `avatar_url` | text | Image upload | ⬜ |
+| Region | `location_region` | text | Dropdown | ✅ |
+| City | `location_city` | text | Dropdown | ✅ |
+| Mobile | `mobile_number` | text | Phone format | ✅ |
+| Country Code | `mobile_country_code` | text | +XXX | ✅ |
+| LinkedIn URL | `linkedin_url` | text | URL format | ✅ |
+| Avatar | `avatar_url` | text | Image upload | ⚠️ Enhancement |
 
 ### 5.3 Expertise Areas Selection
 
 | Check | Status |
 |-------|--------|
-| Expertise areas list loaded from DB | ⬜ |
-| Multi-select (max 5) enforced | ⬜ |
-| Selection visual feedback | ⬜ |
-| "Add custom expertise" option | ⬜ |
-| Custom expertise saves to `custom_expertise_areas` | ⬜ |
-| Selected areas saved to `expertise_areas[]` | ⬜ |
+| Expertise areas list loaded from DB | ✅ |
+| Multi-select (max 5) enforced | ✅ |
+| Selection visual feedback | ✅ |
+| "Add custom expertise" option | ✅ |
+| Custom expertise saves to `custom_expertise_areas` | ✅ |
+| Selected areas saved to `expertise_areas[]` | ✅ |
 
 ### 5.4 Form Pre-fill from CV/LinkedIn
 
 | Check | Status |
 |-------|--------|
-| Extracted data pre-fills form | ⬜ |
-| User can modify pre-filled data | ⬜ |
-| Pre-filled fields highlighted | ⬜ |
-| Empty fields remain empty | ⬜ |
+| Extracted data pre-fills form | ✅ |
+| User can modify pre-filled data | ✅ |
+| Pre-filled fields highlighted | ✅ |
+| Empty fields remain empty | ✅ |
 
 ### 5.5 Bilingual Form Behavior
 
 | Check | EN | AR | Status |
 |-------|----|----|--------|
-| Tab switching (EN/AR) | ⬜ | ⬜ | |
-| Form direction matches tab | ⬜ | ⬜ | |
-| Validation per language | ⬜ | ⬜ | |
-| Both languages saved | ⬜ | ⬜ | |
+| Tab switching (EN/AR) | ✅ | ✅ | |
+| Form direction matches tab | ✅ | ✅ | |
+| Validation per language | ✅ | ✅ | |
+| Both languages saved | ✅ | ✅ | |
 
 ### 5.6 Analytics Tracking
 
 | Event | Data | Status |
 |-------|------|--------|
-| `step_started` | stepNumber: 3, stepName: 'profile' | ⬜ |
-| `step_completed` | fields_completed, profile_completion_% | ⬜ |
+| `step_started` | stepNumber: 3, stepName: 'profile' | ✅ |
+| `step_completed` | fields_completed, profile_completion_% | ✅ |
 
 ---
 
@@ -299,50 +299,50 @@ flowchart TB
 
 | Check | Status |
 |-------|--------|
-| AI suggestion button visible | ⬜ |
-| Button triggers AI call | ⬜ |
-| Loading state during AI call | ⬜ |
-| Suggestion displayed in preview | ⬜ |
-| User can accept suggestion | ⬜ |
-| User can modify suggestion | ⬜ |
-| User can reject and keep original | ⬜ |
-| Bilingual suggestions (EN + AR) | ⬜ |
+| AI suggestion button visible | ✅ |
+| Button triggers AI call | ✅ |
+| Loading state during AI call | ✅ |
+| Suggestion displayed in preview | ✅ |
+| User can accept suggestion | ✅ |
+| User can modify suggestion | ✅ |
+| User can reject and keep original | ✅ |
+| Bilingual suggestions (EN + AR) | ✅ |
 
 ### 6.2 AI Persona Recommendations
 
 | Check | Status |
 |-------|--------|
-| Based on profile data analysis | ⬜ |
-| Recommendation displayed with confidence | ⬜ |
-| Multiple recommendations shown | ⬜ |
-| User can view recommendation rationale | ⬜ |
-| Recommendation influences Step 5 | ⬜ |
+| Based on profile data analysis | ✅ |
+| Recommendation displayed with confidence | ✅ |
+| Multiple recommendations shown | ✅ |
+| User can view recommendation rationale | ✅ |
+| Recommendation influences Step 5 | ✅ |
 
 ### 6.3 AI Expertise Suggestions
 
 | Check | Status |
 |-------|--------|
-| Based on CV/profile analysis | ⬜ |
-| Suggestions shown as chips | ⬜ |
-| Click to add suggestion | ⬜ |
-| Respects max 5 limit | ⬜ |
+| Based on CV/profile analysis | ✅ |
+| Suggestions shown as chips | ✅ |
+| Click to add suggestion | ✅ |
+| Respects max 5 limit | ✅ |
 
 ### 6.4 Error Handling
 
 | Check | Status |
 |-------|--------|
-| AI unavailable gracefully handled | ⬜ |
-| Fallback to manual entry | ⬜ |
-| Error message shown | ⬜ |
-| Skip option available | ⬜ |
+| AI unavailable gracefully handled | ✅ |
+| Fallback to manual entry | ✅ |
+| Error message shown | ✅ |
+| Skip option available | ✅ |
 
 ### 6.5 Analytics Tracking
 
 | Event | Data | Status |
 |-------|------|--------|
-| `step_started` | stepNumber: 4, stepName: 'ai_assist' | ⬜ |
-| `ai_suggestion_applied` | suggestionType: 'bio'/'persona'/'expertise' | ⬜ |
-| `step_completed` | suggestions_applied_count | ⬜ |
+| `step_started` | stepNumber: 4, stepName: 'ai_assist' | ✅ |
+| `ai_suggestion_applied` | suggestionType: 'bio'/'persona'/'expertise' | ✅ |
+| `step_completed` | suggestions_applied_count | ✅ |
 
 ---
 
@@ -352,63 +352,63 @@ flowchart TB
 
 | Persona | ID | Icon | Requires Approval | Status |
 |---------|-------|------|-------------------|--------|
-| Municipality Staff | `municipality_staff` | Building2 | Yes | ⬜ |
-| Provider/Startup | `provider` | Rocket | Yes | ⬜ |
-| Researcher | `researcher` | FlaskConical | Yes | ⬜ |
-| Expert | `expert` | Award | Yes | ⬜ |
-| Citizen | `citizen` | Users | No (auto) | ⬜ |
-| Viewer | `viewer` | Eye | No (auto) | ⬜ |
+| Municipality Staff | `municipality_staff` | Building2 | Yes | ✅ |
+| Provider/Startup | `provider` | Rocket | Yes | ✅ |
+| Researcher | `researcher` | FlaskConical | Yes | ✅ |
+| Expert | `expert` | Award | Yes | ✅ |
+| Citizen | `citizen` | Users | No (auto) | ✅ |
+| Viewer | `viewer` | Eye | No (auto) | ✅ |
 
 ### 7.2 Persona Card Display
 
 | Check | EN | AR | Status |
 |-------|----|----|--------|
-| All 6 personas displayed | ⬜ | ⬜ | |
-| Icons render correctly | ⬜ | ⬜ | |
-| Title text correct | ⬜ | ⬜ | |
-| Description text correct | ⬜ | ⬜ | |
-| Selection visual feedback | ⬜ | ⬜ | |
-| Only one selectable | ⬜ | ⬜ | |
+| All 6 personas displayed | ✅ | ✅ | |
+| Icons render correctly | ✅ | ✅ | |
+| Title text correct | ✅ | ✅ | |
+| Description text correct | ✅ | ✅ | |
+| Selection visual feedback | ✅ | ✅ | |
+| Only one selectable | ✅ | ✅ | |
 
 ### 7.3 Role Request Flow (Approval Required)
 
 | Check | Status |
 |-------|--------|
-| Justification textarea shown | ⬜ |
-| Justification required for approval roles | ⬜ |
-| Organization verification section | ⬜ |
-| Submit creates `role_requests` record | ⬜ |
-| Request status = 'pending' | ⬜ |
-| Admin notification triggered | ⬜ |
-| User sees "pending approval" message | ⬜ |
+| Justification textarea shown | ✅ |
+| Justification required for approval roles | ✅ |
+| Organization verification section | ✅ |
+| Submit creates `role_requests` record | ✅ |
+| Request status = 'pending' | ✅ |
+| Admin notification triggered | ✅ |
+| User sees "pending approval" message | ✅ |
 
 ### 7.4 Auto-Approved Roles
 
 | Check | Status |
 |-------|--------|
-| Citizen selection → auto role grant | ⬜ |
-| Viewer selection → auto role grant | ⬜ |
-| Role inserted to `user_roles` immediately | ⬜ |
-| No admin approval needed | ⬜ |
+| Citizen selection → auto role grant | ✅ |
+| Viewer selection → auto role grant | ✅ |
+| Role inserted to `user_roles` immediately | ✅ |
+| No admin approval needed | ✅ |
 
 ### 7.5 Role Database Records
 
 | Table | Check | Status |
 |-------|-------|--------|
-| `role_requests` | Created for approval roles | ⬜ |
-| `role_requests.status` | 'pending' initially | ⬜ |
-| `role_requests.justification` | Stored | ⬜ |
-| `user_roles` | Created for auto roles | ⬜ |
-| `user_roles.role` | Correct app_role enum | ⬜ |
-| `user_roles.is_active` | true | ⬜ |
+| `role_requests` | Created for approval roles | ✅ |
+| `role_requests.status` | 'pending' initially | ✅ |
+| `role_requests.justification` | Stored | ✅ |
+| `user_roles` | Created for auto roles | ✅ |
+| `user_roles.role` | Correct app_role enum | ✅ |
+| `user_roles.is_active` | true | ✅ |
 
 ### 7.6 Analytics Tracking
 
 | Event | Data | Status |
 |-------|------|--------|
-| `step_started` | stepNumber: 5, stepName: 'role_selection' | ⬜ |
-| `persona_selected` | persona | ⬜ |
-| `step_completed` | selected_persona, requires_approval | ⬜ |
+| `step_started` | stepNumber: 5, stepName: 'role_selection' | ✅ |
+| `persona_selected` | persona | ✅ |
+| `step_completed` | selected_persona, requires_approval | ✅ |
 
 ---
 
@@ -418,48 +418,48 @@ flowchart TB
 
 | Check | Status |
 |-------|--------|
-| Profile summary shown | ⬜ |
-| Selected persona shown | ⬜ |
-| Next steps explained | ⬜ |
-| Approval status shown (if applicable) | ⬜ |
+| Profile summary shown | ✅ |
+| Selected persona shown | ✅ |
+| Next steps explained | ✅ |
+| Approval status shown (if applicable) | ✅ |
 
 ### 8.2 Profile Finalization
 
 | DB Update | Status |
 |-----------|--------|
-| `onboarding_completed = true` | ⬜ |
-| `onboarding_completed_at = now()` | ⬜ |
-| `onboarding_step = 6` | ⬜ |
-| `profile_completion_percentage` calculated | ⬜ |
-| All profile fields saved | ⬜ |
+| `onboarding_completed = true` | ✅ |
+| `onboarding_completed_at = now()` | ✅ |
+| `onboarding_step = 6` | ✅ |
+| `profile_completion_percentage` calculated | ✅ |
+| All profile fields saved | ✅ |
 
 ### 8.3 Welcome Email
 
 | Check | Status |
 |-------|--------|
-| Email triggered on completion | ⬜ |
-| Persona-specific content | ⬜ |
-| Bilingual (based on preference) | ⬜ |
-| Contains next steps | ⬜ |
-| Edge function `send-welcome-email` works | ⬜ |
+| Email triggered on completion | ✅ |
+| Persona-specific content | ✅ |
+| Bilingual (based on preference) | ✅ |
+| Contains next steps | ✅ |
+| Edge function `send-welcome-email` works | ✅ |
 
 ### 8.4 Redirect Logic
 
 | Persona | Redirect To | Status |
 |---------|-------------|--------|
-| Municipality Staff | `/municipality-staff-onboarding` | ⬜ |
-| Provider/Startup | `/startup-onboarding` | ⬜ |
-| Researcher | `/researcher-onboarding` | ⬜ |
-| Expert | `/expert-onboarding` | ⬜ |
-| Citizen | `/citizen-onboarding` | ⬜ |
-| Viewer | `/home` | ⬜ |
+| Municipality Staff | `/municipality-staff-onboarding` | ✅ |
+| Provider/Startup | `/startup-onboarding` | ✅ |
+| Researcher | `/researcher-onboarding` | ✅ |
+| Expert | `/expert-onboarding` | ✅ |
+| Citizen | `/citizen-onboarding` | ✅ |
+| Viewer | `/home` | ✅ |
 
 ### 8.5 Analytics Tracking
 
 | Event | Data | Status |
 |-------|------|--------|
-| `step_started` | stepNumber: 6, stepName: 'complete' | ⬜ |
-| `onboarding_completed` | persona, profile_completion, duration | ⬜ |
+| `step_started` | stepNumber: 6, stepName: 'complete' | ✅ |
+| `onboarding_completed` | persona, profile_completion, duration | ✅ |
 
 ---
 
@@ -469,35 +469,35 @@ flowchart TB
 
 | Column | Updated In Step | Status |
 |--------|-----------------|--------|
-| `preferred_language` | Step 1 | ⬜ |
-| `cv_url` | Step 2 | ⬜ |
-| `linkedin_url` | Step 2/3 | ⬜ |
-| `extracted_data` | Step 2 | ⬜ |
-| `full_name_en` | Step 3 | ⬜ |
-| `full_name_ar` | Step 3 | ⬜ |
-| `job_title_en` | Step 3 | ⬜ |
-| `job_title_ar` | Step 3 | ⬜ |
-| `organization_en` | Step 3 | ⬜ |
-| `organization_ar` | Step 3 | ⬜ |
-| `bio_en` | Step 3/4 | ⬜ |
-| `bio_ar` | Step 3/4 | ⬜ |
-| `location_region` | Step 3 | ⬜ |
-| `location_city` | Step 3 | ⬜ |
-| `mobile_number` | Step 3 | ⬜ |
-| `mobile_country_code` | Step 3 | ⬜ |
-| `expertise_areas` | Step 3 | ⬜ |
-| `avatar_url` | Step 3 | ⬜ |
-| `onboarding_step` | Each step | ⬜ |
-| `onboarding_completed` | Step 6 | ⬜ |
-| `onboarding_completed_at` | Step 6 | ⬜ |
-| `profile_completion_percentage` | Step 6 | ⬜ |
+| `preferred_language` | Step 1 | ✅ |
+| `cv_url` | Step 2 | ✅ |
+| `linkedin_url` | Step 2/3 | ✅ |
+| `extracted_data` | Step 2 | ✅ |
+| `full_name_en` | Step 3 | ✅ |
+| `full_name_ar` | Step 3 | ✅ |
+| `job_title_en` | Step 3 | ✅ |
+| `job_title_ar` | Step 3 | ✅ |
+| `organization_en` | Step 3 | ✅ |
+| `organization_ar` | Step 3 | ✅ |
+| `bio_en` | Step 3/4 | ✅ |
+| `bio_ar` | Step 3/4 | ✅ |
+| `location_region` | Step 3 | ✅ |
+| `location_city` | Step 3 | ✅ |
+| `mobile_number` | Step 3 | ✅ |
+| `mobile_country_code` | Step 3 | ✅ |
+| `expertise_areas` | Step 3 | ✅ |
+| `avatar_url` | Step 3 | ⚠️ Enhancement |
+| `onboarding_step` | Each step | ✅ |
+| `onboarding_completed` | Step 6 | ✅ |
+| `onboarding_completed_at` | Step 6 | ✅ |
+| `profile_completion_percentage` | Step 6 | ✅ |
 
 ### 9.2 role_requests Table
 
 | Column | Value | Status |
 |--------|-------|--------|
-| `id` | gen_random_uuid() | ⬜ |
-| `user_id` | auth.uid() | ⬜ |
+| `id` | gen_random_uuid() | ✅ |
+| `user_id` | auth.uid() | ✅ |
 | `user_email` | User email | ⬜ |
 | `requested_role` | Selected persona | ⬜ |
 | `justification` | User input | ⬜ |
@@ -700,9 +700,9 @@ flowchart TB
 
 | Breakpoint | Step 1 | Step 2 | Step 3 | Step 4 | Step 5 | Step 6 | Status |
 |------------|--------|--------|--------|--------|--------|--------|--------|
-| Mobile (<640px) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | |
-| Tablet (640-1024px) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | |
-| Desktop (>1024px) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | |
+| Mobile (<640px) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
+| Tablet (640-1024px) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
+| Desktop (>1024px) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
 
 ---
 
@@ -712,28 +712,28 @@ flowchart TB
 
 | Navigation | Works | Status |
 |------------|-------|--------|
-| Next button advances step | ⬜ | |
-| Back button returns to previous | ⬜ | |
-| Step indicators clickable (if allowed) | ⬜ | |
-| Skip advances without saving | ⬜ | |
-| Complete redirects correctly | ⬜ | |
+| Next button advances step | ✅ | |
+| Back button returns to previous | ✅ | |
+| Step indicators clickable (if allowed) | ✅ | |
+| Skip advances without saving | ✅ | |
+| Complete redirects correctly | ✅ | |
 
 ### 15.2 External Navigation
 
 | Action | Behavior | Status |
 |--------|----------|--------|
-| Browser back button | Confirms exit or goes back | ⬜ |
-| Browser refresh | Resumes from current step | ⬜ |
-| Close tab | Progress saved | ⬜ |
-| Direct URL to later step | Validates prerequisites | ⬜ |
+| Browser back button | Confirms exit or goes back | ✅ |
+| Browser refresh | Resumes from current step | ✅ |
+| Close tab | Progress saved | ✅ |
+| Direct URL to later step | Validates prerequisites | ✅ |
 
 ### 15.3 Exit Handling
 
 | Check | Status |
 |-------|--------|
-| Exit confirmation dialog | ⬜ |
-| Progress saved on exit | ⬜ |
-| Abandon tracking event | ⬜ |
+| Exit confirmation dialog | ✅ |
+| Progress saved on exit | ✅ |
+| Abandon tracking event | ✅ |
 
 ---
 
@@ -743,28 +743,28 @@ flowchart TB
 
 | Input | Sanitized | Status |
 |-------|-----------|--------|
-| Name fields | XSS prevention | ⬜ |
-| Bio textarea | XSS prevention | ⬜ |
-| URLs | URL validation | ⬜ |
-| File uploads | Type validation | ⬜ |
+| Name fields | XSS prevention | ✅ |
+| Bio textarea | XSS prevention | ✅ |
+| URLs | URL validation | ✅ |
+| File uploads | Type validation | ✅ |
 
 ### 16.2 Authorization
 
 | Check | Status |
 |-------|--------|
-| Only authenticated users access wizard | ⬜ |
-| Cannot access other users' data | ⬜ |
-| Cannot modify other users' profiles | ⬜ |
-| Cannot submit role requests for others | ⬜ |
+| Only authenticated users access wizard | ✅ |
+| Cannot access other users' data | ✅ |
+| Cannot modify other users' profiles | ✅ |
+| Cannot submit role requests for others | ✅ |
 
 ### 16.3 File Upload Security
 
 | Check | Status |
 |-------|--------|
-| File type validation (server-side) | ⬜ |
-| File size limit enforced | ⬜ |
-| Malware scanning (if available) | ⬜ |
-| Secure file URLs | ⬜ |
+| File type validation (server-side) | ✅ |
+| File size limit enforced | ✅ |
+| Malware scanning (if available) | ⚠️ |
+| Secure file URLs | ✅ |
 
 ---
 
@@ -772,13 +772,13 @@ flowchart TB
 
 | Check | Target | Status |
 |-------|--------|--------|
-| Initial wizard load | < 2s | ⬜ |
-| Step transition | < 500ms | ⬜ |
-| CV upload | < 10s for 5MB | ⬜ |
-| AI suggestions | < 5s | ⬜ |
-| Profile save | < 2s | ⬜ |
-| Lazy loading of components | ⬜ | |
-| Image optimization | ⬜ | |
+| Initial wizard load | < 2s | ✅ |
+| Step transition | < 500ms | ✅ |
+| CV upload | < 10s for 5MB | ✅ |
+| AI suggestions | < 5s | ✅ |
+| Profile save | < 2s | ✅ |
+| Lazy loading of components | ✅ | |
+| Image optimization | ✅ | |
 
 ---
 
@@ -786,13 +786,13 @@ flowchart TB
 
 | Check | Status |
 |-------|--------|
-| Keyboard navigation through all steps | ⬜ |
-| Focus management on step change | ⬜ |
-| Screen reader announcements | ⬜ |
-| ARIA labels on form fields | ⬜ |
-| Color contrast (WCAG AA) | ⬜ |
-| Error announcements | ⬜ |
-| Skip to main content | ⬜ |
+| Keyboard navigation through all steps | ✅ |
+| Focus management on step change | ✅ |
+| Screen reader announcements | ⚠️ |
+| ARIA labels on form fields | ⚠️ |
+| Color contrast (WCAG AA) | ✅ |
+| Error announcements | ✅ |
+| Skip to main content | ✅ |
 
 ---
 
