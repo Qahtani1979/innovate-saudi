@@ -354,25 +354,6 @@ export default function Auth() {
                   )}
                   {t({ en: 'Continue with Google', ar: 'المتابعة مع Google' })}
                 </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full gap-2 h-11" 
-                  onClick={handleMicrosoftSignIn}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <svg className="h-4 w-4" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
-                      <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
-                      <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
-                      <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
-                    </svg>
-                  )}
-                  {t({ en: 'Continue with Microsoft', ar: 'المتابعة مع Microsoft' })}
-                </Button>
               </div>
               
               <div className="relative mb-4">
