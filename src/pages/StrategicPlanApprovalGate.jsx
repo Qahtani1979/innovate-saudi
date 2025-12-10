@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,21 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Shield, CheckCircle2, XCircle, Clock, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/components/auth/AuthContext';
 
 export default function StrategicPlanApprovalGate() {
   const { language, isRTL, t } = useLanguage();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [reviewComments, setReviewComments] = useState('');
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: plans = [] } = useQuery({
     queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
+    queryFn: async () => {
+      const { data } = await supabase.from('strategic_plans').select('*');
+      return data || [];
+    }
   });
 
   const approvalMutation = useMutation({

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,18 +9,18 @@ import { Eye, Bell, BellOff, TrendingUp, AlertCircle, Users } from 'lucide-react
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function MyFollowing() {
   const { t } = useLanguage();
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: following = [], isLoading } = useQuery({
     queryKey: ['my-following', user?.email],
-    queryFn: () => user ? base44.entities.UserFollow.filter({ follower_email: user.email }) : [],
+    queryFn: async () => {
+      const { data } = await supabase.from('user_follows').select('*').eq('follower_email', user?.email);
+      return data || [];
+    },
     enabled: !!user
   });
 

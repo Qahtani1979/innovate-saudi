@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,38 +18,26 @@ import ScalingListAIInsights from '../components/scaling/ScalingListAIInsights';
 import NationalIntegrationGate from '../components/scaling/NationalIntegrationGate';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import PolicyTabWidget from '../components/policy/PolicyTabWidget';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function ScalingWorkflow() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [scalingPlans, setScalingPlans] = useState({});
   const [showAdvancedWizard, setShowAdvancedWizard] = useState(false);
   const [selectedPilotForWizard, setSelectedPilotForWizard] = useState(null);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [showBudgetGate, setShowBudgetGate] = useState(false);
   const [showIntegrationGate, setShowIntegrationGate] = useState(false);
-  const [user, setUser] = React.useState(null);
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
-  // RLS: Admins see all completed/scaled pilots, municipalities see their own
   const { data: completedPilots = [] } = useQuery({
     queryKey: ['completed-pilots', user?.email, user?.role],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      const filtered = all.filter(p => p.stage === 'completed' && p.recommendation === 'scale');
-      if (user?.role === 'admin') return filtered;
-      const userOrgs = await base44.entities.Organization.list();
-      const userOrg = userOrgs.find(o => 
-        o.contact_email === user?.email || 
-        o.primary_contact_name === user?.full_name
-      );
-      if (userOrg?.org_type === 'municipality') {
-        return filtered.filter(p => p.municipality_id === userOrg.id);
-      }
-      return filtered;
+      const { data } = await supabase.from('pilots').select('*')
+        .eq('stage', 'completed')
+        .eq('recommendation', 'scale');
+      return data || [];
     },
     enabled: !!user
   });
@@ -57,29 +45,20 @@ function ScalingWorkflow() {
   const { data: scaledPilots = [] } = useQuery({
     queryKey: ['scaled-pilots', user?.email, user?.role],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      const filtered = all.filter(p => p.stage === 'scaled');
-      if (user?.role === 'admin') return filtered;
-      const userOrgs = await base44.entities.Organization.list();
-      const userOrg = userOrgs.find(o => 
-        o.contact_email === user?.email || 
-        o.primary_contact_name === user?.full_name
-      );
-      if (userOrg?.org_type === 'municipality') {
-        return filtered.filter(p => p.municipality_id === userOrg.id);
-      }
-      return filtered;
+      const { data } = await supabase.from('pilots').select('*').eq('stage', 'scaled');
+      return data || [];
     },
     enabled: !!user
   });
 
   const scaleApprovalMutation = useMutation({
     mutationFn: async ({ pilotId, plan }) => {
-      await base44.entities.Pilot.update(pilotId, { 
+      const { error } = await supabase.from('pilots').update({ 
         stage: 'scaled',
         scaling_plan: plan,
         scaled_date: new Date().toISOString()
-      });
+      }).eq('id', pilotId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['completed-pilots']);
@@ -95,7 +74,10 @@ function ScalingWorkflow() {
 
   const { data: scalingPlansData = [] } = useQuery({
     queryKey: ['scaling-plans'],
-    queryFn: () => base44.entities.ScalingPlan.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('scaling_plans').select('*');
+      return data || [];
+    }
   });
 
   return (

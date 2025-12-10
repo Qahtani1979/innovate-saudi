@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,27 +12,27 @@ import { Progress } from "@/components/ui/progress";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function MyLearning() {
   const { language, isRTL, t } = useLanguage();
   const [recommendations, setRecommendations] = useState(null);
   const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: knowledgeDocs = [] } = useQuery({
     queryKey: ['knowledge-docs'],
-    queryFn: () => base44.entities.KnowledgeDocument.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('knowledge_documents').select('*');
+      return data || [];
+    }
   });
 
   const { data: myChallenges = [] } = useQuery({
     queryKey: ['my-challenges-learning', user?.email],
     queryFn: async () => {
-      const challenges = await base44.entities.Challenge.list();
-      return challenges.filter(c => c.created_by === user?.email);
+      const { data } = await supabase.from('challenges').select('*').eq('created_by', user?.email);
+      return data || [];
     },
     enabled: !!user
   });
@@ -40,8 +40,8 @@ function MyLearning() {
   const { data: myPilots = [] } = useQuery({
     queryKey: ['my-pilots-learning', user?.email],
     queryFn: async () => {
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.filter(p => p.created_by === user?.email);
+      const { data } = await supabase.from('pilots').select('*').eq('created_by', user?.email);
+      return data || [];
     },
     enabled: !!user
   });

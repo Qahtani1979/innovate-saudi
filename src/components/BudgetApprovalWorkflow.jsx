@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,18 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { DollarSign, CheckCircle2, XCircle, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function BudgetApprovalWorkflow({ pilot, phase, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [decision, setDecision] = useState('');
   const [comments, setComments] = useState('');
   const [adjustedAmount, setAdjustedAmount] = useState('');
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const phases = {
     initial: { amount: pilot.budget, label: { en: 'Initial Budget', ar: 'الميزانية الأولية' } },
@@ -44,20 +41,22 @@ function BudgetApprovalWorkflow({ pilot, phase, onClose }) {
         comments
       };
 
-      await base44.entities.Pilot.update(pilot.id, {
+      const { error: pilotError } = await supabase.from('pilots').update({
         budget_approvals: [...budgetApprovals, newApproval],
         budget_released: approved
           ? (pilot.budget_released || 0) + newApproval.amount
           : pilot.budget_released
-      });
+      }).eq('id', pilot.id);
+      if (pilotError) throw pilotError;
 
-      await base44.entities.SystemActivity.create({
+      const { error: activityError } = await supabase.from('system_activities').insert({
         activity_type: 'budget_approval',
         entity_type: 'Pilot',
         entity_id: pilot.id,
         description: `Budget ${phase} ${approved ? 'approved' : 'rejected'} for "${pilot.title_en}"`,
         metadata: { phase, amount: newApproval.amount, decision: approved ? 'approved' : 'rejected' }
       });
+      if (activityError) throw activityError;
     },
     onSuccess: (_, approved) => {
       queryClient.invalidateQueries(['pilot']);

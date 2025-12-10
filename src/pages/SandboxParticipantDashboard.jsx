@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,23 +14,22 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function SandboxParticipantDashboard() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
-  const [user, setUser] = React.useState(null);
+  const { user } = useAuth();
   const [selectedProject, setSelectedProject] = React.useState(null);
   const [dataSubmission, setDataSubmission] = React.useState({ metric: '', value: '', notes: '' });
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: myApplications = [] } = useQuery({
     queryKey: ['my-sandbox-applications', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.SandboxApplication.list();
-      return all.filter(a => a.applicant_email === user?.email && a.status === 'approved');
+      const { data } = await supabase.from('sandbox_applications').select('*')
+        .eq('applicant_email', user?.email)
+        .eq('status', 'approved');
+      return data || [];
     },
     enabled: !!user
   });
@@ -40,8 +39,9 @@ function SandboxParticipantDashboard() {
     queryFn: async () => {
       if (myApplications.length === 0) return [];
       const projectIds = myApplications.map(a => a.id);
-      const all = await base44.entities.SandboxProjectMilestone.list();
-      return all.filter(m => projectIds.includes(m.project_id));
+      const { data } = await supabase.from('sandbox_project_milestones').select('*')
+        .in('project_id', projectIds);
+      return data || [];
     },
     enabled: myApplications.length > 0
   });
@@ -51,17 +51,18 @@ function SandboxParticipantDashboard() {
     queryFn: async () => {
       if (myApplications.length === 0) return [];
       const sandboxIds = [...new Set(myApplications.map(a => a.sandbox_id))];
-      const all = await base44.entities.SandboxMonitoringData.list();
-      return all.filter(m => sandboxIds.includes(m.sandbox_id))
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, 20);
+      const { data } = await supabase.from('sandbox_monitoring_data').select('*')
+        .in('sandbox_id', sandboxIds)
+        .order('timestamp', { ascending: false })
+        .limit(20);
+      return data || [];
     },
     enabled: myApplications.length > 0
   });
 
   const submitDataMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.SandboxMonitoringData.create({
+      const { data: result, error } = await supabase.from('sandbox_monitoring_data').insert({
         sandbox_id: selectedProject.sandbox_id,
         project_id: selectedProject.id,
         metric_name: data.metric,
@@ -69,7 +70,9 @@ function SandboxParticipantDashboard() {
         notes: data.notes,
         timestamp: new Date().toISOString(),
         submitted_by: user.email
-      });
+      }).select().single();
+      if (error) throw error;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-monitoring-data'] });

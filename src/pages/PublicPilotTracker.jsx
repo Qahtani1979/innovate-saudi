@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,37 +14,42 @@ import {
   Sparkles, BarChart3, Globe
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function PublicPilotTracker() {
   const { language, isRTL, t } = useLanguage();
   const [selectedSector, setSelectedSector] = useState('all');
   const [selectedCity, setSelectedCity] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: pilots = [], isLoading } = useQuery({
     queryKey: ['public-pilots'],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list('-created_date', 100);
-      return all.filter(p => p.is_published && !p.is_confidential && !p.is_deleted);
+      const { data } = await supabase.from('pilots').select('*')
+        .eq('is_published', true)
+        .eq('is_confidential', false)
+        .eq('is_deleted', false)
+        .order('created_date', { ascending: false })
+        .limit(100);
+      return data || [];
     }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-public'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const { data: enrollments = [] } = useQuery({
     queryKey: ['my-enrollments', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      const all = await base44.entities.CitizenPilotEnrollment.list();
-      return all.filter(e => e.citizen_email === user.email);
+      const { data } = await supabase.from('citizen_pilot_enrollments').select('*').eq('citizen_email', user.email);
+      return data || [];
     },
     enabled: !!user?.email
   });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,21 +13,18 @@ import {
   CheckCircle2, Activity, Zap, Bell
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function AcademiaDashboard() {
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   // Find researcher's profile
   const { data: myResearcherProfile } = useQuery({
     queryKey: ['my-researcher-profile', user?.email],
     queryFn: async () => {
-      const profiles = await base44.entities.ResearcherProfile.list();
-      return profiles.find(p => p.email === user?.email);
+      const { data } = await supabase.from('researcher_profiles').select('*').eq('email', user?.email).single();
+      return data;
     },
     enabled: !!user
   });
@@ -36,12 +33,11 @@ function AcademiaDashboard() {
   const { data: openRDCalls = [] } = useQuery({
     queryKey: ['open-rd-calls-researcher'],
     queryFn: async () => {
-      const all = await base44.entities.RDCall.list();
-      return all.filter(c => 
-        c.status === 'open' && 
-        c.is_published &&
-        new Date(c.close_date) > new Date()
-      );
+      const { data } = await supabase.from('rd_calls').select('*')
+        .eq('status', 'open')
+        .eq('is_published', true)
+        .gt('close_date', new Date().toISOString());
+      return data || [];
     }
   });
 
@@ -49,12 +45,8 @@ function AcademiaDashboard() {
   const { data: myRDProjects = [] } = useQuery({
     queryKey: ['my-rd-projects-researcher', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.RDProject.list();
-      return all.filter(p => 
-        p.created_by === user?.email || 
-        p.principal_investigator?.email === user?.email ||
-        p.team_members?.some(t => t.email === user?.email)
-      );
+      const { data } = await supabase.from('rd_projects').select('*').eq('created_by', user?.email);
+      return data || [];
     },
     enabled: !!user
   });
@@ -63,11 +55,9 @@ function AcademiaDashboard() {
   const { data: myProposals = [] } = useQuery({
     queryKey: ['my-rd-proposals', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.RDProposal.list();
-      return all.filter(p => 
-        p.created_by === user?.email ||
-        p.principal_investigator_email === user?.email
-      );
+      const { data } = await supabase.from('rd_proposals').select('*')
+        .or(`created_by.eq.${user?.email},principal_investigator_email.eq.${user?.email}`);
+      return data || [];
     },
     enabled: !!user
   });
@@ -76,12 +66,10 @@ function AcademiaDashboard() {
   const { data: researchChallenges = [] } = useQuery({
     queryKey: ['research-challenges-public'],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => 
-        c.track === 'r_and_d' && 
-        c.is_published &&
-        ['approved', 'in_treatment'].includes(c.status)
-      );
+      const { data } = await supabase.from('challenges').select('*')
+        .eq('is_published', true)
+        .in('status', ['approved', 'in_treatment']);
+      return data || [];
     }
   });
 
@@ -89,8 +77,10 @@ function AcademiaDashboard() {
   const { data: livingLabs = [] } = useQuery({
     queryKey: ['living-labs-public'],
     queryFn: async () => {
-      const all = await base44.entities.LivingLab.list();
-      return all.filter(l => l.is_active && l.is_public);
+      const { data } = await supabase.from('living_labs').select('*')
+        .eq('is_active', true)
+        .eq('is_public', true);
+      return data || [];
     }
   });
 
@@ -98,8 +88,8 @@ function AcademiaDashboard() {
   const { data: myLabBookings = [] } = useQuery({
     queryKey: ['my-lab-bookings', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.LivingLabBooking.list();
-      return all.filter(b => b.booked_by === user?.email);
+      const { data } = await supabase.from('living_lab_bookings').select('*').eq('booked_by', user?.email);
+      return data || [];
     },
     enabled: !!user
   });
@@ -108,12 +98,11 @@ function AcademiaDashboard() {
   const { data: researchPrograms = [] } = useQuery({
     queryKey: ['research-programs'],
     queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => 
-        p.is_published &&
-        ['fellowship', 'training', 'challenge'].includes(p.program_type) &&
-        (p.status === 'applications_open' || p.status === 'active')
-      );
+      const { data } = await supabase.from('programs').select('*')
+        .eq('is_published', true)
+        .in('program_type', ['fellowship', 'training', 'challenge'])
+        .in('status', ['applications_open', 'active']);
+      return data || [];
     }
   });
 

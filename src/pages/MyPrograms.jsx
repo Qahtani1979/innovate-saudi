@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,27 +11,28 @@ import { Calendar, Users, CheckCircle2, Clock, Award, Rocket } from 'lucide-reac
 import { Progress } from "@/components/ui/progress";
 import { format } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function MyPrograms() {
   const { language, isRTL, t } = useLanguage();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: myApplications = [] } = useQuery({
     queryKey: ['my-program-apps', user?.email],
     queryFn: async () => {
-      const apps = await base44.entities.ProgramApplication.list();
-      return apps.filter(a => a.applicant_email === user?.email || a.created_by === user?.email);
+      const { data } = await supabase.from('program_applications').select('*')
+        .or(`applicant_email.eq.${user?.email},created_by.eq.${user?.email}`);
+      return data || [];
     },
     enabled: !!user
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-detail'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('programs').select('*');
+      return data || [];
+    }
   });
 
   const enrolledApps = myApplications.filter(a => ['accepted', 'enrolled'].includes(a.status));
