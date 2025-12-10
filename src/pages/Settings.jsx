@@ -257,14 +257,10 @@ function Settings() {
       </div>
 
       <Tabs defaultValue="account">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="account">
             <User className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
             <span className="hidden sm:inline">{t({ en: 'Account', ar: 'الحساب' })}</span>
-          </TabsTrigger>
-          <TabsTrigger value="language">
-            <Globe className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden sm:inline">{t({ en: 'Language', ar: 'اللغة' })}</span>
           </TabsTrigger>
           <TabsTrigger value="security">
             <Shield className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
@@ -288,17 +284,43 @@ function Settings() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Email Address', ar: 'البريد الإلكتروني' })}</label>
-                <Input value={authUser?.email || ''} disabled className="bg-slate-100" />
+                <Input value={authUser?.email || ''} disabled className="bg-muted" />
                 <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Contact support to change your email', ar: 'اتصل بالدعم لتغيير بريدك الإلكتروني' })}</p>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Account Type', ar: 'نوع الحساب' })}</label>
-                <Input value={profile?.selected_persona || 'Citizen'} disabled className="bg-slate-100" />
+                <Input value={profile?.selected_persona || 'Citizen'} disabled className="bg-muted" />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Member Since', ar: 'عضو منذ' })}</label>
-                <Input value={profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : ''} disabled className="bg-slate-100" />
+                <Input 
+                  value={
+                    profile?.created_at 
+                      ? new Date(profile.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                      : authUser?.created_at 
+                        ? new Date(authUser.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                        : t({ en: 'Not available', ar: 'غير متوفر' })
+                  } 
+                  disabled 
+                  className="bg-muted" 
+                />
               </div>
+              
+              {/* Language Section */}
+              <div className="pt-4 border-t">
+                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Globe className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">
+                      {t({ en: 'Current Language: English', ar: 'اللغة الحالية: العربية' })}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t({ en: 'Use the globe icon in the top bar to switch languages', ar: 'استخدم أيقونة الكرة الأرضية في الشريط العلوي لتبديل اللغات' })}
+                  </p>
+                </div>
+              </div>
+              
               <div className="pt-4 border-t">
                 <p className="text-sm text-muted-foreground mb-3">{t({ en: 'To edit your profile details (name, bio, avatar, skills), visit the Profile page.', ar: 'لتعديل تفاصيل ملفك الشخصي (الاسم، السيرة، الصورة، المهارات)، قم بزيارة صفحة الملف الشخصي.' })}</p>
                 <Button variant="outline" onClick={() => window.location.href = '/user-profile'}>
