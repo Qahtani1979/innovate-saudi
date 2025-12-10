@@ -103,11 +103,12 @@ flowchart TB
 
     subgraph DASHBOARDS["📊 Role-Based Dashboards"]
         D1[MunicipalityDashboard]
-        D2[ProviderDashboard]
+        D2[StartupDashboard]
         D3[ResearcherDashboard]
         D4[CitizenDashboard]
-        D5[AdminDashboard]
-        D6[Home]
+        D5[ExpertAssignmentQueue]
+        D6[AdminPortal]
+        D7[Home]
     end
 
     E1 & E2 & E3 --> A1
@@ -121,7 +122,7 @@ flowchart TB
     PC3 -->|Yes| PC5
     PC5 -->|false| OW1
     PC5 -->|true| A4
-    A4 --> D1 & D2 & D3 & D4 & D5 & D6
+    A4 --> D1 & D2 & D3 & D4 & D5 & D6 & D7
 
     OW1 --> OW2 --> OW3 --> OW4 --> OW5 --> OW6
     OW6 --> SW1 & SW2 & SW3 & SW4 & SW5
@@ -494,6 +495,31 @@ const calculateProfileCompletion = (data) => {
 
 ---
 
+## Portals Reference
+
+The platform uses **Portals** as role-specific landing hubs accessible via the PortalSwitcher component.
+
+### Available Portals (PortalSwitcher.jsx)
+
+| Portal | Page | Required Roles |
+|--------|------|----------------|
+| Executive | `ExecutiveDashboard` | Executive Leadership, Super Admin |
+| Admin | `AdminPortal` | Super Admin, Platform Administrator, GDISB Strategy Lead |
+| Municipality | `MunicipalityDashboard` | Municipality Director, Municipality Innovation Officer |
+| Startup | `StartupDashboard` | Startup/Provider, Solution Provider |
+| Academia | `AcademiaDashboard` | Researcher/Academic, Research Lead |
+| Program Operator | `ProgramOperatorPortal` | Program Operator |
+| Public | `PublicPortal` | (Available to all) |
+
+### Additional Operator Portals (not in PortalSwitcher)
+
+| Portal | Page | Required Permission |
+|--------|------|---------------------|
+| Sandbox Operator | `SandboxOperatorPortal` | `sandbox_manage` |
+| Living Lab Operator | `LivingLabOperatorPortal` | `livinglab_manage` |
+
+---
+
 ## Dashboard Integrations
 
 Each dashboard includes post-onboarding enhancement components:
@@ -504,10 +530,13 @@ Each dashboard includes post-onboarding enhancement components:
 | StartupDashboard | ✅ | ✅ | ✅ |
 | ResearcherDashboard | ✅ | ✅ | - |
 | CitizenDashboard | ✅ | ✅ | - |
+| ExpertAssignmentQueue | - | - | - |
 | AcademiaDashboard | - | - | - |
 | AdminPortal | - | - | - |
 
-> **Note:** `ProviderDashboard` and `StartupDashboard` are the same page (StartupDashboard.jsx).
+> **Note:** `ProviderDashboard` referenced in code is an alias - actual page is `StartupDashboard.jsx`.
+> **Note:** `ExpertDashboard` referenced in code doesn't exist - should route to `ExpertAssignmentQueue`.
+> **Note:** `AdminDashboard` referenced in code doesn't exist - should route to `AdminPortal`.
 
 ---
 
@@ -563,13 +592,14 @@ Each dashboard includes post-onboarding enhancement components:
 
 ## Known Issues & Code Discrepancies
 
-| Issue | Location | Description | Fix Needed |
-|-------|----------|-------------|------------|
-| ExpertDashboard doesn't exist | `OnboardingWizard.jsx:103` | Expert persona has `landingPage: 'ExpertDashboard'` but page doesn't exist | Change to `ExpertAssignmentQueue` or `ExpertRegistry` |
-| ProviderDashboard alias | `OnboardingWizard.jsx:81` | References `ProviderDashboard` which routes to `StartupDashboard.jsx` | Working as intended (alias) |
-| Duplicate researcher dashboards | `src/pages/` | Both `ResearcherDashboard.jsx` and `AcademiaDashboard.jsx` exist | Clarify purpose or consolidate |
+| Issue | Location | Severity | Description | Recommended Fix |
+|-------|----------|----------|-------------|-----------------|
+| ExpertDashboard doesn't exist | `OnboardingWizard.jsx:103` | Medium | Expert persona has `landingPage: 'ExpertDashboard'` but page doesn't exist | Change to `ExpertAssignmentQueue` |
+| AdminDashboard doesn't exist | `OnboardingWizard.jsx:405`, `Onboarding.jsx:50` | Medium | Admin routing references `AdminDashboard` but actual page is `AdminPortal.jsx` | Change to `AdminPortal` |
+| ProviderDashboard alias | `OnboardingWizard.jsx:81` | Low | References `ProviderDashboard` which doesn't exist as a file - routes to `StartupDashboard.jsx` | Working as intended but could add explicit alias |
+| Duplicate researcher dashboards | `src/pages/` | Low | Both `ResearcherDashboard.jsx` and `AcademiaDashboard.jsx` exist | `ResearcherDashboard` = personal, `AcademiaDashboard` = R&D portal |
 
 ---
 
 *Last Updated: 2025-12-10*
-*Validation Status: ✅ VALIDATED against codebase with discrepancies noted*
+*Validation Status: ✅ DEEP VALIDATED against codebase with all menu/portal links verified*

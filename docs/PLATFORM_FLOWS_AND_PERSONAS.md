@@ -100,9 +100,11 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 | Icon | Award |
 | Color | Amber |
 | Requires Approval | Yes |
-| Landing Dashboard | `ExpertRegistry` |
+| Landing Dashboard | `ExpertAssignmentQueue` |
 | Specialized Onboarding | `ExpertOnboardingWizard` |
 | Onboarding Page | `/expert-onboarding` |
+
+> **Note:** Code references `ExpertDashboard` as landing page but this doesn't exist. The actual expert personal landing is `ExpertAssignmentQueue`. `ExpertRegistry` is an admin view of all experts.
 
 **Capabilities:**
 - Evaluate proposals and applications
@@ -113,10 +115,11 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 - Access evaluation dashboards
 
 **Key Pages:**
-- ExpertRegistry, ExpertDetail, ExpertAssignmentQueue
-- ExpertEvaluationWorkflow, ExpertPanelManagement
-- ExpertPerformanceDashboard, EvaluationPanel
-- MyEvaluatorProfile, MentorDashboard
+- ExpertAssignmentQueue (personal assignments)
+- ExpertRegistry (browse all experts - admin)
+- ExpertDetail, ExpertEvaluationWorkflow
+- ExpertPanelManagement, ExpertPerformanceDashboard
+- EvaluationPanel, MyEvaluatorProfile, MentorDashboard
 
 ---
 
@@ -182,8 +185,10 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 | Icon | Shield |
 | Color | Red |
 | Requires Approval | Manual assignment only |
-| Landing Dashboard | `AdminDashboard` |
+| Landing Dashboard | `AdminPortal` |
 | Specialized Onboarding | None |
+
+> **Note:** Code references `AdminDashboard` but the actual page is `AdminPortal.jsx`
 
 **Capabilities:**
 - Full platform administration
@@ -194,10 +199,55 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 - Content moderation
 
 **Key Pages:**
-- AdminDashboard, AdminPortal
-- UserManagement, RoleManagement
+- AdminPortal, UserManagementHub, RolePermissionManager
 - ApprovalCenter, AuditTrail
-- SystemSettings, FeatureFlagsDashboard
+- RBACDashboard, FeatureFlagsDashboard
+- SystemHealthDashboard
+
+---
+
+## Portals vs Dashboards
+
+The platform distinguishes between **Portals** (curated role-specific landing hubs) and **Dashboards** (personal workload/analytics views).
+
+### Portals (from PortalSwitcher.jsx)
+
+| Portal ID | Page Component | Required Roles | Icon |
+|-----------|----------------|----------------|------|
+| `executive` | `ExecutiveDashboard` | Executive Leadership, Super Admin | Target |
+| `admin` | `AdminPortal` | Super Admin, Platform Administrator, GDISB Strategy Lead | Shield |
+| `municipality` | `MunicipalityDashboard` | Municipality Director, Municipality Innovation Officer | Building2 |
+| `startup` | `StartupDashboard` | Startup/Provider, Solution Provider | Lightbulb |
+| `academia` | `AcademiaDashboard` | Researcher/Academic, Research Lead | Microscope |
+| `program` | `ProgramOperatorPortal` | Program Operator | Calendar |
+| `public` | `PublicPortal` | (All users) | Globe |
+
+### Additional Operator Portals (in MenuCoverageReport but not in PortalSwitcher)
+
+| Portal | Page Component | Description |
+|--------|----------------|-------------|
+| Sandbox Operator | `SandboxOperatorPortal` | Regulatory sandbox management |
+| Living Lab Operator | `LivingLabOperatorPortal` | Living lab project management |
+
+### Persona Dashboards (Personal Views)
+
+| Persona | Dashboard | Description |
+|---------|-----------|-------------|
+| Municipality Staff | `MunicipalityDashboard` | Municipal challenges, pilots, proposals |
+| Provider/Startup | `StartupDashboard` | Opportunities, solutions, applications |
+| Researcher | `ResearcherDashboard` | R&D calls, projects, knowledge |
+| Citizen | `CitizenDashboard` | Ideas, pilot enrollment, leaderboard |
+| Expert | `ExpertAssignmentQueue` | Evaluation assignments, panels |
+
+### Additional Feature Dashboards (Role-Agnostic)
+
+| Dashboard | Purpose |
+|-----------|---------|
+| `MyWorkloadDashboard` | Personal tasks across all roles |
+| `PersonalizedDashboard` | Customizable widget-based view |
+| `PilotMonitoringDashboard` | Pilot KPI tracking |
+| `SystemHealthDashboard` | Platform health (Admin) |
+| `RBACDashboard` | Role/permission management (Admin) |
 
 ---
 
@@ -720,13 +770,15 @@ All other pages require authentication.
 
 ## Known Issues & Discrepancies
 
-| Issue | Location | Severity | Description |
-|-------|----------|----------|-------------|
-| ExpertDashboard missing | `OnboardingWizard.jsx:103` | Medium | `landingPage: 'ExpertDashboard'` but page doesn't exist. Should route to `ExpertAssignmentQueue` |
-| Dual researcher dashboards | `src/pages/` | Low | Both `ResearcherDashboard.jsx` and `AcademiaDashboard.jsx` exist with overlapping functionality |
-| ProviderDashboard alias | Routes | Info | Code references `ProviderDashboard` which is an alias for `StartupDashboard` |
+| Issue | Location | Severity | Description | Recommended Fix |
+|-------|----------|----------|-------------|-----------------|
+| ExpertDashboard missing | `OnboardingWizard.jsx:103` | Medium | `landingPage: 'ExpertDashboard'` but page doesn't exist | Change to `ExpertAssignmentQueue` |
+| AdminDashboard missing | `OnboardingWizard.jsx:405`, `Onboarding.jsx:50` | Medium | `AdminDashboard` referenced but page is `AdminPortal` | Change to `AdminPortal` |
+| ProviderDashboard missing | `OnboardingWizard.jsx:81` | Low | `ProviderDashboard` referenced but page is `StartupDashboard` | Add alias route or change reference |
+| Dual researcher dashboards | `src/pages/` | Low | Both `ResearcherDashboard.jsx` and `AcademiaDashboard.jsx` exist | Clarify purpose - Academia is R&D focused portal |
+| Sandbox/LivingLab portals not in switcher | `PortalSwitcher.jsx` | Low | `SandboxOperatorPortal` and `LivingLabOperatorPortal` exist but not in portal switcher | Add to PortalSwitcher if needed |
 
 ---
 
 *Last Updated: 2025-12-10*
-*Validation Status: ✅ VALIDATED against codebase*
+*Validation Status: ✅ DEEP VALIDATED against codebase with all menu links verified*
