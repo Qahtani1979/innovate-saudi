@@ -325,7 +325,7 @@ function Settings() {
         <TabsContent value="security">
           <div className="space-y-4">
             <TwoFactorAuth 
-              user={user}
+              user={authUser}
               onUpdate={(data) => updateProfileMutation.mutate(data)}
             />
 
