@@ -259,7 +259,9 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     preferred_language: language,
     // Mobile number with country code
     mobile_number: '',
-    mobile_country_code: '+966'
+    mobile_country_code: '+966',
+    // Avatar
+    avatar_url: ''
   });
   
   const [isTranslating, setIsTranslating] = useState({});
@@ -378,6 +380,7 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
         mobile_country_code: userProfile?.mobile_country_code || '+966',
         years_of_experience: userProfile?.years_experience || 0,
         work_phone: userProfile?.work_phone || '',
+        avatar_url: userProfile?.avatar_url || '',
       }));
     }
   }, [userProfile, user]);
@@ -827,6 +830,7 @@ Return comprehensive suggestions for all fields.`,
         preferred_language: formData.preferred_language || language,
         mobile_number: formData.mobile_number || null,
         mobile_country_code: formData.mobile_country_code || '+966',
+        avatar_url: formData.avatar_url || null,
         // Only mark complete if no specialized wizard needed
         onboarding_completed: !redirectToSpecialized,
         onboarding_completed_at: redirectToSpecialized ? null : new Date().toISOString(),
@@ -1194,6 +1198,41 @@ Return comprehensive suggestions for all fields.`,
                 </p>
               </CardHeader>
               <CardContent className="space-y-5">
+                {/* Avatar Upload */}
+                <div className="flex items-center gap-4 p-4 bg-slate-50 border-2 border-slate-200 rounded-lg">
+                  <div className="relative">
+                    <div className="h-20 w-20 rounded-full bg-slate-200 border-2 border-slate-300 flex items-center justify-center overflow-hidden">
+                      {formData.avatar_url ? (
+                        <img src={formData.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-10 w-10 text-slate-400" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-sm font-medium text-slate-700 block mb-1">
+                      {t({ en: 'Profile Photo', ar: 'صورة الملف الشخصي' })}
+                    </Label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {t({ en: 'Optional - Add a profile picture', ar: 'اختياري - أضف صورة شخصية' })}
+                    </p>
+                    <FileUploader
+                      onUpload={(url) => setFormData({ ...formData, avatar_url: url })}
+                      accept="image/*"
+                      bucket="avatars"
+                      trigger={
+                        <Button type="button" variant="outline" size="sm">
+                          <Upload className="h-4 w-4 mr-2" />
+                          {formData.avatar_url 
+                            ? t({ en: 'Change Photo', ar: 'تغيير الصورة' })
+                            : t({ en: 'Upload Photo', ar: 'رفع صورة' })
+                          }
+                        </Button>
+                      }
+                    />
+                  </div>
+                </div>
+
                 {/* Full Name - Bilingual */}
                 <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg space-y-3">
                   <Label className="text-base font-semibold text-blue-900 block">

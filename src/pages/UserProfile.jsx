@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import UserJourneyMapper from '../components/access/UserJourneyMapper';
 import { User, Edit, Award, Briefcase, Mail, Globe, MapPin, Sparkles, Save, Upload, Plus, X, Calendar, Linkedin, Phone, GraduationCap, Languages } from 'lucide-react';
 import { toast } from 'sonner';
@@ -29,6 +30,7 @@ import {
 
 function UserProfile() {
   const { language, isRTL, t } = useLanguage();
+  const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
   const [profileData, setProfileData] = useState({});
@@ -37,71 +39,65 @@ function UserProfile() {
   const [newProject, setNewProject] = useState(null);
   const [newTraining, setNewTraining] = useState(null);
 
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
-
-  const { data: profile } = useQuery({
-    queryKey: ['userProfile', user?.email],
+  // Fetch user profile from Supabase
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['user-profile', authUser?.id],
     queryFn: async () => {
-      const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
-      return profiles[0] || null;
+      if (!authUser?.id) return null;
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
     },
-    enabled: !!user
+    enabled: !!authUser?.id
   });
 
-  const updateUserMutation = useMutation({
-    mutationFn: async (data) => {
-      return base44.auth.updateMe(data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['me']);
-      setEditMode(false);
-      toast.success(t({ en: 'Profile updated', ar: 'تم تحديث الملف' }));
-    }
-  });
-
+  // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data) => {
-      if (profile) {
-        return base44.entities.UserProfile.update(profile.id, data);
-      } else {
-        return base44.entities.UserProfile.create({ user_email: user.email, ...data });
-      }
+      if (!authUser?.id) throw new Error('Not authenticated');
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          ...data,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', authUser.id);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['userProfile']);
+      queryClient.invalidateQueries(['user-profile']);
       setEditMode(false);
       toast.success(t({ en: 'Profile updated', ar: 'تم تحديث الملف' }));
+    },
+    onError: (error) => {
+      console.error('Profile update error:', error);
+      toast.error(t({ en: 'Failed to update profile', ar: 'فشل في تحديث الملف' }));
     }
   });
 
   const handleSave = () => {
-    const { skills, areas_of_expertise, past_projects, training_completed, bio, linkedin_url, availability_status, ...profileFields } = profileData;
-    
-    // Update User entity fields
-    updateUserMutation.mutate({ 
-      skills, 
-      areas_of_expertise, 
-      past_projects, 
-      training_completed,
-      bio,
-      linkedin_url,
-      availability_status
-    });
-    
-    // Update UserProfile entity fields
-    if (Object.keys(profileFields).length > 0) {
-      updateProfileMutation.mutate(profileFields);
-    }
+    const updateData = {
+      bio_en: profileData.bio_en || profileData.bio,
+      bio_ar: profileData.bio_ar,
+      linkedin_url: profileData.linkedin_url,
+      title_en: profileData.title_en,
+      title_ar: profileData.title_ar,
+      skills: profileData.skills,
+      expertise_areas: profileData.areas_of_expertise || profileData.expertise_areas,
+      avatar_url: profileData.avatar_url,
+    };
+    updateProfileMutation.mutate(updateData);
   };
 
   const addSkill = () => {
     if (newSkill && !profileData.skills?.includes(newSkill)) {
       setProfileData({
         ...profileData,
-        skills: [...(profileData.skills || user.skills || []), newSkill]
+        skills: [...(profileData.skills || profile?.skills || []), newSkill]
       });
       setNewSkill('');
     }
@@ -110,7 +106,7 @@ function UserProfile() {
   const removeSkill = (skill) => {
     setProfileData({
       ...profileData,
-      skills: (profileData.skills || user.skills || []).filter(s => s !== skill)
+      skills: (profileData.skills || profile?.skills || []).filter(s => s !== skill)
     });
   };
 
@@ -118,7 +114,7 @@ function UserProfile() {
     if (newExpertise && !profileData.areas_of_expertise?.includes(newExpertise)) {
       setProfileData({
         ...profileData,
-        areas_of_expertise: [...(profileData.areas_of_expertise || user.areas_of_expertise || []), newExpertise]
+        areas_of_expertise: [...(profileData.areas_of_expertise || profile?.expertise_areas || []), newExpertise]
       });
       setNewExpertise('');
     }
@@ -127,14 +123,14 @@ function UserProfile() {
   const removeExpertise = (expertise) => {
     setProfileData({
       ...profileData,
-      areas_of_expertise: (profileData.areas_of_expertise || user.areas_of_expertise || []).filter(e => e !== expertise)
+      areas_of_expertise: (profileData.areas_of_expertise || profile?.expertise_areas || []).filter(e => e !== expertise)
     });
   };
 
   const addProject = (project) => {
     setProfileData({
       ...profileData,
-      past_projects: [...(profileData.past_projects || user.past_projects || []), project]
+      past_projects: [...(profileData.past_projects || profile?.work_experience || []), project]
     });
     setNewProject(null);
   };
@@ -142,14 +138,14 @@ function UserProfile() {
   const removeProject = (index) => {
     setProfileData({
       ...profileData,
-      past_projects: (profileData.past_projects || user.past_projects || []).filter((_, i) => i !== index)
+      past_projects: (profileData.past_projects || profile?.work_experience || []).filter((_, i) => i !== index)
     });
   };
 
   const addTraining = (training) => {
     setProfileData({
       ...profileData,
-      training_completed: [...(profileData.training_completed || user.training_completed || []), training]
+      training_completed: [...(profileData.training_completed || profile?.certifications || []), training]
     });
     setNewTraining(null);
   };
@@ -157,7 +153,7 @@ function UserProfile() {
   const removeTraining = (index) => {
     setProfileData({
       ...profileData,
-      training_completed: (profileData.training_completed || user.training_completed || []).filter((_, i) => i !== index)
+      training_completed: (profileData.training_completed || profile?.certifications || []).filter((_, i) => i !== index)
     });
   };
 
@@ -198,8 +194,8 @@ function UserProfile() {
             <div className="flex-1 mt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-slate-900">{user?.full_name}</h1>
-                  <p className="text-slate-600">{profile?.title_en || user?.role}</p>
+                  <h1 className="text-3xl font-bold text-slate-900">{profile?.full_name_en || profile?.full_name || authUser?.user_metadata?.full_name}</h1>
+                  <p className="text-slate-600">{profile?.title_en || profile?.job_title_en || profile?.selected_persona}</p>
                 </div>
                 <Button onClick={() => setEditMode(!editMode)} variant="outline">
                   <Edit className="h-4 w-4 mr-2" />
@@ -244,8 +240,8 @@ function UserProfile() {
                   <div>
                     <label className="text-sm font-medium mb-2 block">{t({ en: 'Bio', ar: 'السيرة' })}</label>
                     <Textarea
-                      value={profileData.bio || user?.bio || ''}
-                      onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                      value={profileData.bio_en || profile?.bio_en || profile?.bio || ''}
+                      onChange={(e) => setProfileData({...profileData, bio_en: e.target.value})}
                       rows={4}
                       placeholder={t({ en: 'Tell us about yourself...', ar: 'أخبرنا عن نفسك...' })}
                     />
@@ -253,15 +249,13 @@ function UserProfile() {
                   <div>
                     <label className="text-sm font-medium mb-2 block">{t({ en: 'LinkedIn', ar: 'لينكد إن' })}</label>
                     <Input
-                      value={profileData.linkedin_url || user?.linkedin_url || ''}
+                      value={profileData.linkedin_url || profile?.linkedin_url || ''}
                       onChange={(e) => setProfileData({...profileData, linkedin_url: e.target.value})}
                       placeholder="https://linkedin.com/in/..."
                     />
                   </div>
                 </CardContent>
               </Card>
-
-              <Card>
                 <CardHeader>
                   <CardTitle>{t({ en: 'Profile Fields (UserProfile)', ar: 'حقول الملف' })}</CardTitle>
                 </CardHeader>
@@ -298,7 +292,7 @@ function UserProfile() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <BioSection 
-                    bioEn={profile?.bio_en || user?.bio} 
+                    bioEn={profile?.bio_en || profile?.bio} 
                     bioAr={profile?.bio_ar} 
                     showBoth={!!(profile?.bio_en && profile?.bio_ar)}
                   />
@@ -349,7 +343,7 @@ function UserProfile() {
                   </CardHeader>
                   <CardContent>
                     <ContactSection
-                      email={user?.email || profile?.user_email}
+                      email={authUser?.email || profile?.user_email}
                       phone={profile?.phone_number}
                       mobileNumber={profile?.mobile_number}
                       mobileCountryCode={profile?.mobile_country_code}
