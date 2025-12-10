@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import TwoFactorSetup from '../components/security/TwoFactorSetup';
 import ExternalCalendarSync from '../components/calendar/ExternalCalendarSync';
 import { Settings as SettingsIcon, User, Bell, Globe, Shield, Save, Palette, Eye, Keyboard, Link as LinkIcon, Activity, CheckCircle2 } from 'lucide-react';
@@ -24,14 +25,26 @@ import LoginHistoryDialog from '../components/auth/LoginHistoryDialog';
 
 function Settings() {
   const { language, isRTL, t } = useLanguage();
+  const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
+  // Fetch user profile from Supabase
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['user-profile-settings', authUser?.id],
+    queryFn: async () => {
+      if (!authUser?.id) return null;
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!authUser?.id
   });
 
-  const [profile, setProfile] = useState({});
+  const [localProfile, setLocalProfile] = useState({});
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
@@ -74,17 +87,48 @@ function Settings() {
     show_tutorials: true
   });
 
+  // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data) => base44.auth.updateMe(data),
+    mutationFn: async (data) => {
+      if (!authUser?.id) throw new Error('Not authenticated');
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          ...data,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', authUser.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['me']);
+      queryClient.invalidateQueries(['user-profile-settings']);
       toast.success(t({ en: 'Profile updated', ar: 'تم تحديث الملف' }));
+    },
+    onError: (error) => {
+      console.error('Profile update error:', error);
+      toast.error(t({ en: 'Failed to update profile', ar: 'فشل في تحديث الملف' }));
     }
   });
 
-  React.useEffect(() => {
-    if (user) {
-      setProfile({ full_name: user.full_name, email: user.email });
+  useEffect(() => {
+    if (profile) {
+      setLocalProfile({ 
+        full_name: profile.full_name_en || profile.full_name, 
+        email: profile.user_email || authUser?.email,
+        title: profile.title_en || profile.job_title_en,
+        bio: profile.bio_en || profile.bio,
+        avatar_url: profile.avatar_url
+      });
+      // Load notification preferences if stored
+      if (profile.notification_preferences) {
+        setNotifications(prev => ({ ...prev, ...profile.notification_preferences }));
+      }
+      // Load visibility settings
+      if (profile.visibility_settings) {
+        setPrivacy(prev => ({ ...prev, ...profile.visibility_settings }));
+      }
+    }
+  }, [profile, authUser]);
     }
   }, [user]);
 
@@ -152,46 +196,52 @@ function Settings() {
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Avatar', ar: 'الصورة الشخصية' })}</label>
                 <FileUploader
-                  onUpload={(url) => setProfile({ ...profile, avatar_url: url })}
+                  onUpload={(url) => setLocalProfile({ ...localProfile, avatar_url: url })}
                   accept="image/*"
+                  bucket="avatars"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">{t({ en: 'Full Name', ar: 'الاسم الكامل' })}</label>
                   <Input
-                    value={profile.full_name || ''}
-                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                    value={localProfile.full_name || ''}
+                    onChange={(e) => setLocalProfile({ ...localProfile, full_name: e.target.value })}
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">{t({ en: 'Title/Position', ar: 'المسمى الوظيفي' })}</label>
                   <Input
-                    value={profile.title || ''}
-                    onChange={(e) => setProfile({ ...profile, title: e.target.value })}
+                    value={localProfile.title || ''}
+                    onChange={(e) => setLocalProfile({ ...localProfile, title: e.target.value })}
                   />
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Bio', ar: 'نبذة' })}</label>
                 <Textarea
-                  value={profile.bio || ''}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                  value={localProfile.bio || ''}
+                  onChange={(e) => setLocalProfile({ ...localProfile, bio: e.target.value })}
                   rows={3}
                   placeholder={t({ en: 'Tell us about yourself...', ar: 'أخبرنا عن نفسك...' })}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Email', ar: 'البريد الإلكتروني' })}</label>
-                <Input value={profile.email || ''} disabled className="bg-slate-100" />
+                <Input value={localProfile.email || ''} disabled className="bg-slate-100" />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Role', ar: 'الدور' })}</label>
-                <Input value={user?.role || ''} disabled className="bg-slate-100" />
+                <Input value={profile?.selected_persona || ''} disabled className="bg-slate-100" />
               </div>
               <Button
                 className="bg-blue-600"
-                onClick={() => updateProfileMutation.mutate(profile)}
+                onClick={() => updateProfileMutation.mutate({
+                  full_name_en: localProfile.full_name,
+                  title_en: localProfile.title,
+                  bio_en: localProfile.bio,
+                  avatar_url: localProfile.avatar_url
+                })}
               >
                 <Save className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {t({ en: 'Save Changes', ar: 'حفظ التغييرات' })}

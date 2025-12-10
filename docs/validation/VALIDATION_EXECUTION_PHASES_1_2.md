@@ -120,8 +120,8 @@
 | P1-001 | ⚠️ WARN | Leaked Password Protection disabled | Open (Supabase settings) |
 | P1-002 | ✅ FIXED | No "Forgot Password" link on auth page | Fixed 2024-12-10 |
 | P1-002b | ✅ FIXED | Missing ResetPassword page for password reset flow | Fixed 2024-12-10 |
-| P1-003 | ℹ️ INFO | Microsoft OAuth needs Azure config | Config needed |
-| P1-004 | ℹ️ INFO | Google OAuth needs GCP config | Config needed |
+| P1-003 | ⏸️ DISABLED | Microsoft OAuth needs Azure config | Disabled - not available in Lovable Cloud |
+| P1-004 | ✅ DONE | Google OAuth configured | Completed 2024-12-10 |
 
 ### 1.8 Password Reset Flow ✅ (NEW)
 
@@ -231,7 +231,7 @@
 | P2-001 | ⚠️ WARN | GDISB persona not in public selection | By design |
 | P2-002 | ℹ️ INFO | Admin persona only via manual assignment | By design |
 | P2-003 | ✅ FIXED | Region selector uses text, not region_id FK | Fixed 2024-12-10 |
-| P2-004 | ℹ️ INFO | Avatar upload not in Stage 1 | Enhancement |
+| P2-004 | ✅ FIXED | Avatar upload added to Stage 1 Profile step | Fixed 2024-12-10 |
 
 ---
 
@@ -292,12 +292,12 @@
 8. ~~**P2-003**: Update region selector to use region_id FK instead of text~~ ✅ DONE - Updated OnboardingWizard
 
 ### Medium Priority
-9. Configure Google OAuth in Supabase dashboard
-10. Configure Microsoft/Azure OAuth in Supabase dashboard
+9. ~~Configure Google OAuth in Supabase dashboard~~ ✅ DONE
+10. ~~Configure Microsoft/Azure OAuth in Supabase dashboard~~ ⏸️ DISABLED - not available in Lovable Cloud
 11. ~~Add ARIA attributes for better accessibility~~ ✅ DONE - Added to dialogs
 
 ### Low Priority
-12. Add avatar upload option in Stage 1 wizard
+12. ~~Add avatar upload option in Stage 1 wizard~~ ✅ DONE
 13. Add GDISB persona for internal users (admin-assigned)
 
 ---
@@ -366,7 +366,7 @@ The data flow fixes from the gap analysis have been successfully implemented and
 
 **Remaining External Configurations:**
 1. P1-001: Enable leaked password protection in Supabase Auth settings (external config)
-2. Google OAuth: Configure in Google Cloud Console
-3. Microsoft OAuth: Configure in Azure AD
+2. ~~Google OAuth: Configure in Google Cloud Console~~ ✅ DONE
+3. ~~Microsoft OAuth: Configure in Azure AD~~ ⏸️ DISABLED - not available in Lovable Cloud
 
 **Next Steps**: Proceed to Phase 3 (Municipality Staff Specialized Onboarding) validation.
