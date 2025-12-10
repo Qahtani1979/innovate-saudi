@@ -534,6 +534,63 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_approval_rules: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          municipality_id: string | null
+          organization_id: string | null
+          persona_type: string
+          priority: number | null
+          role_to_assign: string
+          rule_type: string
+          rule_value: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          municipality_id?: string | null
+          organization_id?: string | null
+          persona_type: string
+          priority?: number | null
+          role_to_assign: string
+          rule_type: string
+          rule_value?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          municipality_id?: string | null
+          organization_id?: string | null
+          persona_type?: string
+          priority?: number | null
+          role_to_assign?: string
+          rule_type?: string
+          rule_value?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_approval_rules_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_approval_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookmarks: {
         Row: {
           created_at: string | null
@@ -1959,6 +2016,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      custom_entries: {
+        Row: {
+          created_at: string | null
+          entry_type: string
+          id: string
+          merged_into_id: string | null
+          name_ar: string | null
+          name_en: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          submitted_by_email: string
+          submitted_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entry_type: string
+          id?: string
+          merged_into_id?: string | null
+          name_ar?: string | null
+          name_en: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          submitted_by_email: string
+          submitted_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entry_type?: string
+          id?: string
+          merged_into_id?: string | null
+          name_ar?: string | null
+          name_en?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          submitted_by_email?: string
+          submitted_by_user_id?: string | null
+        }
+        Relationships: []
       }
       custom_expertise_areas: {
         Row: {
@@ -3412,6 +3514,86 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lookup_departments: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+          parent_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          parent_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          parent_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lookup_departments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "lookup_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lookup_specializations: {
+        Row: {
+          category: string | null
+          code: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          code?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          code?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       matchmaker_applications: {
         Row: {
