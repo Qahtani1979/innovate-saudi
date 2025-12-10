@@ -102,7 +102,6 @@ Generate:
       toast.error(t({ en: 'Enhancement failed', ar: 'فشل التحسين' }));
     }
   };
-  };
 
   const submitMutation = useMutation({
     mutationFn: async (data) => {
