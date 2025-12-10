@@ -12,7 +12,9 @@ Administrators manage the platform operations, configure system settings, approv
 | **Role Code** | `admin`, `super_admin`, `gdisb_admin` |
 | **Organization Type** | Platform Operator |
 | **Primary Dashboard** | `AdminPortal` |
-| **Onboarding Flow** | Manual assignment by existing admin |
+| **Onboarding Flow** | Manual assignment by existing admin (bypasses standard 2-phase flow) |
+
+> **Note:** Admin roles are NOT self-requested. They are manually assigned by existing Super Admins via `UserManagementHub` → `RolePermissionManager`. New admins still complete Phase 1 onboarding but Phase 2 is handled internally.
 
 ## User Journey
 

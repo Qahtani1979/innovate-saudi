@@ -14,18 +14,38 @@ Municipality Staff represents government employees working in Saudi municipaliti
 | **Primary Dashboard** | `MunicipalityDashboard` |
 | **Onboarding Flow** | `MunicipalityStaffOnboarding.jsx` |
 
-## User Journey
+## User Journey (2-Phase Onboarding)
 
 ```mermaid
 graph TD
-    A[Registration] --> B[Email Verification]
-    B --> C[OnboardingWizard]
-    C --> D[Municipality Selection]
-    D --> E[Role Assignment Request]
-    E --> F{Admin Approval}
-    F -->|Approved| G[MunicipalityDashboard]
-    F -->|Rejected| H[Viewer Access Only]
+    subgraph PHASE1["Phase 1: General Onboarding"]
+        A[Registration] --> B[Email Verification]
+        B --> C[OnboardingWizard - 6 Steps]
+        C --> D["Persona Selection:<br/>Choose 'Municipality Staff'"]
+    end
+
+    subgraph PHASE2["Phase 2: Municipality Onboarding"]
+        D --> E[MunicipalityStaffOnboardingWizard]
+        E --> F[Step 1: Municipality Selection<br/>Choose from dropdown]
+        F --> G[Step 2: Department<br/>Select or enter department]
+        G --> H[Step 3: Role/Position<br/>Innovation officer, director, etc.]
+        H --> I[Step 4: Contact & Verification<br/>Work phone, ID]
+        I --> J[Submit Role Request]
+    end
+
+    subgraph APPROVAL["Role Approval"]
+        J --> K[role_requests table]
+        K --> L{Admin Approval}
+        L -->|Approved| M[municipality_staff role granted]
+        L -->|Rejected| N[Viewer Access Only]
+    end
+
+    subgraph DASHBOARD["Dashboard Access"]
+        M --> O[MunicipalityDashboard]
+    end
 ```
+
+> **Note:** Municipality Staff role requires admin approval to verify government affiliation. Domain verification (e.g., @municipality.gov.sa) may expedite approval.
 
 ## Permissions
 

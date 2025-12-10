@@ -14,21 +14,43 @@ Researchers and academics from universities and research institutions participat
 | **Primary Dashboard** | `AcademiaDashboard` |
 | **Onboarding Flow** | `ResearcherOnboarding` |
 
-## User Journey
+## User Journey (2-Phase Onboarding)
 
 ```mermaid
 graph TD
-    A[Registration] --> B[Email Verification]
-    B --> C[OnboardingWizard]
-    C --> D[ResearcherProfile Creation]
-    D --> E[Credential Verification]
-    E --> F[AcademiaDashboard]
-    F --> G[Browse R&D Calls]
-    G --> H[Submit Proposals]
-    H --> I[Project Execution]
-    I --> J[Research Outputs]
-    J --> K[Solution Commercialization]
+    subgraph PHASE1["Phase 1: General Onboarding"]
+        A[Registration] --> B[Email Verification]
+        B --> C[OnboardingWizard - 6 Steps]
+        C --> D["Persona Selection:<br/>Choose 'Researcher'"]
+    end
+
+    subgraph PHASE2["Phase 2: Researcher Onboarding"]
+        D --> E[ResearcherOnboardingWizard]
+        E --> F[Step 1: Academic Profile<br/>Name, institution]
+        F --> G[Step 2: Research Areas<br/>Expertise, sectors]
+        G --> H[Step 3: Publications Import<br/>ORCID, Google Scholar]
+        H --> I[Step 4: Credentials<br/>Degrees, certifications]
+        I --> J[Submit Role Request]
+    end
+
+    subgraph APPROVAL["Role Approval"]
+        J --> K[role_requests table]
+        K --> L{Admin Review}
+        L -->|Approved| M[researcher role granted]
+        L -->|Rejected| N[Viewer access only]
+    end
+
+    subgraph DASHBOARD["Dashboard Access"]
+        M --> O[AcademiaDashboard]
+        O --> P[Browse R&D Calls]
+        P --> Q[Submit Proposals]
+        Q --> R[Project Execution]
+        R --> S[Research Outputs]
+        S --> T[Solution Commercialization]
+    end
 ```
+
+> **Note:** Researcher role requires admin approval with credential verification. Users can browse public R&D calls while pending.
 
 ## Permissions
 

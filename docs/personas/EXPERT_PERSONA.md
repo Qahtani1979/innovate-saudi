@@ -57,50 +57,59 @@ Experts are domain specialists who evaluate challenges, solutions, proposals, pi
 
 ---
 
-## User Journey Flow
+## User Journey Flow (2-Phase Onboarding)
 
 ```mermaid
 graph TD
-    subgraph Onboarding
+    subgraph PHASE1["Phase 1: General Onboarding"]
         A[User Registration] --> B[Email Verification]
-        B --> C[ExpertOnboarding<br/>4-step wizard]
-        C --> D[Step 1: CV Upload<br/>AI extracts data]
-        D --> E[Step 2: Personal Info]
-        E --> F[Step 3: Expertise & Sectors]
-        F --> G[Step 4: Review & Submit]
+        B --> C[OnboardingWizard - 6 Steps]
+        C --> D["Persona Selection:<br/>Choose 'Expert'"]
     end
 
-    subgraph Approval
-        G --> H{Admin Review}
-        H -->|Approved| I[is_verified = true<br/>is_active = true]
-        H -->|Rejected| J[Rejection Email]
-        I --> K[Listed in ExpertRegistry]
+    subgraph PHASE2["Phase 2: Expert Onboarding"]
+        D --> E[ExpertOnboardingWizard]
+        E --> F[Step 1: CV Upload<br/>AI extracts expertise data]
+        F --> G[Step 2: Personal Info<br/>Title, position, bio]
+        G --> H[Step 3: Expertise & Sectors<br/>Areas, specializations]
+        H --> I[Step 4: Availability & Rates<br/>Hours, compensation]
+        I --> J[Submit for Verification]
     end
 
-    subgraph Daily Work
-        K --> L[Receive Assignment<br/>via Notification]
-        L --> M[ExpertAssignmentQueue]
-        M --> N{Accept/Decline}
-        N -->|Accept| O[ExpertEvaluationWorkflow]
-        N -->|Decline| P[Return to Pool]
-        O --> Q[Complete 8-Dimension<br/>Scorecard]
-        Q --> R[Submit Recommendation]
+    subgraph APPROVAL["Role Approval"]
+        J --> K[role_requests + expert_profiles]
+        K --> L{Admin Review}
+        L -->|Approved| M[expert role granted<br/>is_verified = true]
+        L -->|Rejected| N[Rejection Email<br/>Viewer access only]
+        M --> O[Listed in ExpertRegistry]
     end
 
-    subgraph Panel Work
-        R --> S{Panel Assignment?}
-        S -->|Yes| T[ExpertPanelDetail]
-        T --> U[Vote + Discussion]
-        U --> V[Consensus Check]
-        V --> W[Final Decision<br/>by Chair]
+    subgraph DAILY_WORK["Daily Work"]
+        O --> P[Receive Assignment<br/>via Notification]
+        P --> Q[ExpertAssignmentQueue]
+        Q --> R{Accept/Decline}
+        R -->|Accept| S[ExpertEvaluationWorkflow]
+        R -->|Decline| T[Return to Pool]
+        S --> U[Complete 8-Dimension<br/>Scorecard]
+        U --> V[Submit Recommendation]
     end
 
-    subgraph Performance
-        R --> X[ExpertPerformanceDashboard]
-        W --> X
-        X --> Y[Metrics Tracked:<br/>• Evaluations Completed<br/>• Avg Turnaround<br/>• SLA Compliance<br/>• Consensus Agreement]
+    subgraph PANEL_WORK["Panel Work"]
+        V --> W{Panel Assignment?}
+        W -->|Yes| X[ExpertPanelDetail]
+        X --> Y[Vote + Discussion]
+        Y --> Z[Consensus Check]
+        Z --> AA[Final Decision<br/>by Chair]
+    end
+
+    subgraph PERFORMANCE["Performance Tracking"]
+        V --> AB[ExpertPerformanceDashboard]
+        AA --> AB
+        AB --> AC[Metrics Tracked:<br/>• Evaluations Completed<br/>• Avg Turnaround<br/>• SLA Compliance<br/>• Consensus Agreement]
     end
 ```
+
+> **Note:** Expert role requires admin verification. The `expert_profiles` table is created during Phase 2 onboarding. Experts cannot receive assignments until verified.
 
 ---
 

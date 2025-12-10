@@ -26,10 +26,18 @@ graph TD
     C --> G[Innovation Map]
     C --> H[Program Information]
     B --> I{Register?}
-    I -->|Yes| J[Select Persona]
+    I -->|Yes| J[Phase 1: OnboardingWizard]
     I -->|No| K[Continue Browsing]
-    J --> L[Full Onboarding]
+    J --> L{Select Persona}
+    L -->|Municipality Staff| M[Phase 2: MunicipalityStaffOnboardingWizard]
+    L -->|Provider| N[Phase 2: StartupOnboardingWizard]
+    L -->|Researcher| O[Phase 2: ResearcherOnboardingWizard]
+    L -->|Citizen| P[Phase 2: CitizenOnboardingWizard]
+    L -->|Expert| Q[Phase 2: ExpertOnboardingWizard]
+    L -->|Stay Viewer| R[Skip Phase 2 - Home access]
 ```
+
+> **Note:** Viewers can upgrade to any persona by completing the 2-phase onboarding. Selecting "Viewer" in Phase 1 skips Phase 2 entirely.
 
 ## Permissions
 
