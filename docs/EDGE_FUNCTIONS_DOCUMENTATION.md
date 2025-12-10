@@ -1,85 +1,261 @@
 # Supabase Edge Functions Documentation
 
-This document provides a comprehensive overview of all **47 Supabase edge functions** in the `supabase/functions/` directory. These are the active, migrated versions from the legacy Base44 platform.
+> **Saudi Innovates Municipal Innovation Platform**  
+> Complete reference for all 47 deployed edge functions in `supabase/functions/`
 
-> **Note**: The `functions/` directory contains legacy Base44 functions that are no longer in use. All active edge functions are in `supabase/functions/`.
+---
+
+## Overview
+
+All edge functions are deployed to Supabase and accessible via:
+```
+https://wneorgiqyvkkjmqootpe.supabase.co/functions/v1/{function-name}
+```
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Frontend (React)                          │
+│  ┌─────────────────┐    ┌─────────────────┐                     │
+│  │ useAIWithFallback│    │ base44Client.js │                     │
+│  │     Hook        │    │ Compatibility   │                     │
+│  └────────┬────────┘    └────────┬────────┘                     │
+│           │                      │                               │
+│           └──────────┬───────────┘                               │
+│                      ▼                                           │
+│         supabase.functions.invoke()                              │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Supabase Edge Functions                       │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐            │
+│  │  invoke-llm  │ │  send-email  │ │ chat-agent   │ ...        │
+│  └──────────────┘ └──────────────┘ └──────────────┘            │
+│                                                                  │
+│  External APIs: Lovable AI Gateway, Resend, Unsplash            │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Supabase Database                             │
+│  Tables, RLS Policies, Database Functions                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Configuration
+
+All functions are configured in `supabase/config.toml`:
+
+```toml
+[functions.function-name]
+verify_jwt = true  # Requires authentication
+# or
+verify_jwt = false # Public endpoint
+```
 
 ---
 
 ## Quick Reference
 
-| Function | JWT Required | Category |
-|----------|-------------|----------|
-| `alumni-automation` | No | Automation |
-| `approve-delegation` | Yes | Approval Workflow |
-| `auto-expert-assignment` | No | Automation |
-| `auto-generate-success-story` | No | AI & ML |
-| `auto-matchmaker-enrollment` | No | Automation |
-| `auto-notification-triggers` | No | Notification |
-| `auto-program-startup-link` | No | Automation |
-| `auto-role-assignment` | Yes | Security & RBAC |
-| `budget-approval` | Yes | Approval Workflow |
-| `calculate-organization-reputation` | No | Scoring & Analytics |
-| `calculate-startup-reputation` | No | Scoring & Analytics |
-| `challenge-rd-backlink` | No | Utility |
-| `chat-agent` | Yes | AI & ML |
-| `check-consensus` | No | Approval Workflow |
-| `check-field-security` | Yes | Security & RBAC |
-| `citizen-notifications` | No | Notification |
-| `enroll-municipality-training` | No | Automation |
-| `evaluation-notifications` | No | Notification |
-| `extract-file-data` | No | AI & ML |
-| `generate-embeddings` | No | AI & ML |
-| `generate-image` | No | AI & ML |
-| `initiative-launch` | Yes | Approval Workflow |
-| `invoke-llm` | No | AI & ML |
-| `mii-citizen-integration` | No | Utility |
-| `points-automation` | No | Automation |
-| `portfolio-review` | Yes | Approval Workflow |
-| `program-sla-automation` | No | Automation |
-| `provider-match-notifications` | No | Notification |
-| `public-idea-ai` | No | AI & ML |
-| `publications-auto-tracker` | No | AI & ML |
-| `role-request-notification` | No | Notification |
-| `run-rbac-security-audit` | Yes | Security & RBAC |
-| `search-images` | No | Utility |
-| `semantic-search` | No | AI & ML |
-| `send-email` | No | Notification |
-| `send-welcome-email` | No | Notification |
-| `sla-automation` | No | Automation |
-| `strategic-plan-approval` | Yes | Approval Workflow |
-| `strategic-priority-scoring` | No | Scoring & Analytics |
-| `strategy-lab-research-generator` | No | AI & ML |
-| `strategy-program-theme-generator` | No | AI & ML |
-| `strategy-rd-call-generator` | No | AI & ML |
-| `strategy-sandbox-planner` | No | AI & ML |
-| `strategy-sector-gap-analysis` | No | AI & ML |
-| `translate-policy` | No | AI & ML |
-| `validate-permission` | Yes | Security & RBAC |
-| `weekly-ideas-report` | No | AI & ML |
+| Function | Auth | Category | External API |
+|----------|------|----------|--------------|
+| `invoke-llm` | ❌ | AI | Lovable AI |
+| `chat-agent` | ✅ | AI | Lovable AI |
+| `public-idea-ai` | ❌ | AI | Lovable AI |
+| `generate-embeddings` | ❌ | AI | Lovable AI |
+| `semantic-search` | ❌ | AI | Lovable AI |
+| `translate-policy` | ❌ | AI | Lovable AI |
+| `generate-image` | ❌ | AI | Lovable AI |
+| `extract-file-data` | ❌ | AI | Lovable AI |
+| `auto-generate-success-story` | ❌ | AI | Lovable AI |
+| `strategy-lab-research-generator` | ❌ | AI | Lovable AI |
+| `strategy-program-theme-generator` | ❌ | AI | Lovable AI |
+| `strategy-rd-call-generator` | ❌ | AI | Lovable AI |
+| `strategy-sandbox-planner` | ❌ | AI | Lovable AI |
+| `strategy-sector-gap-analysis` | ❌ | AI | Lovable AI |
+| `weekly-ideas-report` | ❌ | AI | Lovable AI |
+| `send-email` | ❌ | Email | Resend |
+| `send-welcome-email` | ❌ | Email | Resend |
+| `role-request-notification` | ❌ | Email | Resend |
+| `citizen-notifications` | ❌ | Notification | - |
+| `auto-notification-triggers` | ❌ | Notification | - |
+| `evaluation-notifications` | ❌ | Notification | - |
+| `provider-match-notifications` | ❌ | Notification | - |
+| `approve-delegation` | ✅ | Approval | - |
+| `budget-approval` | ✅ | Approval | - |
+| `check-consensus` | ❌ | Approval | - |
+| `initiative-launch` | ✅ | Approval | - |
+| `strategic-plan-approval` | ✅ | Approval | - |
+| `portfolio-review` | ✅ | Approval | - |
+| `alumni-automation` | ❌ | Automation | - |
+| `auto-expert-assignment` | ❌ | Automation | - |
+| `auto-matchmaker-enrollment` | ❌ | Automation | - |
+| `auto-program-startup-link` | ❌ | Automation | - |
+| `enroll-municipality-training` | ❌ | Automation | - |
+| `points-automation` | ❌ | Automation | - |
+| `sla-automation` | ❌ | Automation | - |
+| `program-sla-automation` | ❌ | Automation | - |
+| `publications-auto-tracker` | ❌ | Automation | - |
+| `calculate-organization-reputation` | ❌ | Analytics | - |
+| `calculate-startup-reputation` | ❌ | Analytics | - |
+| `strategic-priority-scoring` | ❌ | Analytics | - |
+| `auto-role-assignment` | ✅ | Security | - |
+| `validate-permission` | ✅ | Security | - |
+| `check-field-security` | ✅ | Security | - |
+| `run-rbac-security-audit` | ✅ | Security | - |
+| `search-images` | ❌ | Utility | Unsplash |
+| `mii-citizen-integration` | ❌ | Utility | - |
+| `challenge-rd-backlink` | ❌ | Utility | - |
 
 ---
 
-## Table of Contents
+## Environment Variables
 
-1. [AI & Machine Learning Functions](#ai--machine-learning-functions)
-2. [Notification Functions](#notification-functions)
-3. [Approval Workflow Functions](#approval-workflow-functions)
-4. [Automation Functions](#automation-functions)
-5. [Scoring & Analytics Functions](#scoring--analytics-functions)
-6. [Security & RBAC Functions](#security--rbac-functions)
-7. [Utility Functions](#utility-functions)
+| Secret | Required By | Purpose |
+|--------|-------------|---------|
+| `SUPABASE_URL` | All | Database connection |
+| `SUPABASE_SERVICE_ROLE_KEY` | All | Admin database access |
+| `LOVABLE_API_KEY` | AI functions | Lovable AI Gateway |
+| `RESEND_API_KEY` | Email functions | Email delivery |
+| `UNSPLASH_ACCESS_KEY` | `search-images` | Image search |
+| `GOOGLE_API_KEY` | Future use | Google services |
 
 ---
 
 ## AI & Machine Learning Functions
 
-### 1. `generate-embeddings`
-**Path:** `supabase/functions/generate-embeddings/index.ts`  
-**JWT Required:** No  
-**Purpose:** Generates metadata (keywords, themes, summary, sector tags) from text content using Lovable AI.
+### `invoke-llm`
+**The core AI function** used by all components via `useAIWithFallback` hook.
 
-**Parameters:**
+**Features:**
+- ✅ Rate limiting per user/session with database tracking
+- ✅ Role-based limits (admin: unlimited, staff: higher, citizen: standard, anonymous: lowest)
+- ✅ JSON schema support via tool calling
+- ✅ 80% usage warning emails
+- ✅ Proper 429/402 error handling
+
+**Request:**
+```typescript
+{
+  prompt: string;
+  response_json_schema?: object;  // For structured output
+  system_prompt?: string;
+  session_id?: string;  // For anonymous rate limiting
+}
+```
+
+**Response:**
+```typescript
+{
+  // AI response (parsed JSON if schema provided, or string)
+  ...result,
+  rate_limit_info: {
+    user_type: 'admin' | 'staff' | 'citizen' | 'anonymous';
+    daily_limit: number;
+    daily_used: number;
+    daily_remaining: number;
+  }
+}
+```
+
+---
+
+### `chat-agent`
+**Conversational AI** with persistent message history for strategic advisory.
+
+**Features:**
+- ✅ JWT authentication required
+- ✅ Conversation history from `ai_messages` table
+- ✅ Agent-specific system prompts (strategicAdvisor)
+- ✅ Real-time message storage
+
+**Request:**
+```typescript
+{
+  conversationId: string;
+  message: string;
+  agentName: string;  // 'strategicAdvisor'
+}
+```
+
+---
+
+### `public-idea-ai`
+**Public citizen idea analysis** - generates structured submissions from raw ideas.
+
+**Features:**
+- ✅ No authentication required (public portal)
+- ✅ Session-based rate limiting
+- ✅ Response caching (7 days) to reduce costs
+- ✅ Bilingual output (EN/AR)
+
+**Request:**
+```typescript
+{
+  idea: string;  // Min 20 characters
+  municipality?: string;
+  session_id?: string;
+  user_type?: string;
+}
+```
+
+**Response:**
+```typescript
+{
+  title_en: string;
+  title_ar: string;
+  description_en: string;
+  description_ar: string;
+  category: string;
+  tags_en: string[];
+  tags_ar: string[];
+  impact_score: number;  // 0-100
+  feasibility_score: number;  // 0-100
+  ai_summary_en: string;
+  ai_summary_ar: string;
+  _cached: boolean;
+  _rate_limit: object;
+}
+```
+
+---
+
+### `semantic-search`
+**AI-powered search** across entities using keyword extraction.
+
+**Request:**
+```typescript
+{
+  query: string;
+  entity_type?: 'challenges' | 'solutions' | 'pilots' | 'rd_projects';
+  limit?: number;  // Default: 10
+  threshold?: number;  // Default: 0.5
+}
+```
+
+**Response:**
+```typescript
+{
+  success: boolean;
+  query: string;
+  results: Array<{
+    entity_type: string;
+    entity_id: string;
+    title: string;
+    score: number;  // 0-1 relevance
+    data: object;
+  }>;
+}
+```
+
+---
+
+### `generate-embeddings`
+**Metadata extraction** from text content (keywords, themes, summary, sector tags).
+
+**Request:**
 ```typescript
 {
   entity_type: string;
@@ -89,106 +265,34 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 }
 ```
 
-**Returns:**
-```typescript
-{
-  entity_type: string;
-  entity_id: string;
-  keywords: string[];
-  themes: string[];
-  summary: string;
-  sector_tags: string[];
-}
-```
-
 ---
 
-### 2. `semantic-search`
-**Path:** `supabase/functions/semantic-search/index.ts`  
-**JWT Required:** No  
-**Purpose:** Performs semantic similarity search across entities.
+### `translate-policy`
+**Bilingual translation** optimized for formal policy documents.
 
----
-
-### 3. `translate-policy`
-**Path:** `supabase/functions/translate-policy/index.ts`  
-**JWT Required:** No  
-**Purpose:** Translates text between English and Arabic using AI, optimized for formal policy documents.
-
-**Parameters:**
+**Request:**
 ```typescript
 {
   text: string;
-  source_lang?: string; // 'en' | 'ar' (default: 'en')
-  target_lang?: string; // 'en' | 'ar' (default: 'ar')
+  source_lang?: 'en' | 'ar';  // Default: 'en'
+  target_lang?: 'en' | 'ar';  // Default: 'ar'
   context?: string;
 }
 ```
 
-**Returns:**
-```typescript
-{
-  success: boolean;
-  original_text: string;
-  translated_text: string;
-}
-```
-
 ---
 
-### 4. `auto-generate-success-story`
-**Path:** `supabase/functions/auto-generate-success-story/index.ts`  
-**JWT Required:** No  
-**Purpose:** Generates success stories for entities (pilots, solutions, programs) using AI.
+### `generate-image`
+**AI image generation** using Gemini 2.5 Flash Image model.
 
-**Parameters:**
-```typescript
-{
-  entity_type: 'pilot' | 'solution' | 'program';
-  entity_id: string;
-  metrics?: object;
-}
-```
-
----
-
-### 5. `publications-auto-tracker`
-**Path:** `supabase/functions/publications-auto-tracker/index.ts`  
-**JWT Required:** No  
-**Purpose:** Tracks and reports publications for entities.
-
-**Actions:** `track_publication`, `update_metrics`, `increment_views`, `get_report`
-
----
-
-### 6. `extract-file-data`
-**Path:** `supabase/functions/extract-file-data/index.ts`  
-**JWT Required:** No  
-**Purpose:** Extracts structured data from files using AI.
-
-**Parameters:**
-```typescript
-{
-  file_url: string;
-  json_schema?: object;
-}
-```
-
----
-
-### 7. `generate-image`
-**Path:** `supabase/functions/generate-image/index.ts`  
-**JWT Required:** No  
-**Purpose:** Generates images using Lovable AI (Gemini 2.5 Flash Image model).
-
-**Parameters:**
+**Request:**
 ```typescript
 {
   prompt: string;
 }
 ```
 
-**Returns:**
+**Response:**
 ```typescript
 {
   url: string | null;
@@ -198,75 +302,99 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 8. `invoke-llm`
-**Path:** `supabase/functions/invoke-llm/index.ts`  
-**JWT Required:** No  
-**Purpose:** General-purpose LLM invocation endpoint.
+### Strategy Generator Functions
+
+All use similar patterns - AI generates strategic content from plans/parameters.
+
+| Function | Purpose |
+|----------|---------|
+| `strategy-lab-research-generator` | Generate research priorities |
+| `strategy-program-theme-generator` | Generate program themes |
+| `strategy-rd-call-generator` | Generate R&D call focus areas |
+| `strategy-sandbox-planner` | Plan regulatory sandbox initiatives |
+| `strategy-sector-gap-analysis` | Analyze sector gaps |
 
 ---
 
-### 9. `chat-agent`
-**Path:** `supabase/functions/chat-agent/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** AI chat agent for conversational interactions.
+## Email & Notification Functions
 
----
+### `send-email`
+**Generic email sending** via Resend API.
 
-### 10. `public-idea-ai`
-**Path:** `supabase/functions/public-idea-ai/index.ts`  
-**JWT Required:** No  
-**Purpose:** AI assistance for public citizen idea submissions.
-
----
-
-### 11. `weekly-ideas-report`
-**Path:** `supabase/functions/weekly-ideas-report/index.ts`  
-**JWT Required:** No  
-**Purpose:** Generates weekly reports of citizen ideas for municipalities.
-
-**Parameters:**
+**Request:**
 ```typescript
 {
-  municipality_id?: string;
-  week_start?: string;
-  week_end?: string;
+  to: string | string[];
+  subject: string;
+  body?: string;  // Plain text
+  html?: string;  // HTML content
+}
+```
+
+**Response:**
+```typescript
+{
+  success: boolean;
+  id?: string;  // Resend email ID
+  error?: string;
 }
 ```
 
 ---
 
-### 12. Strategy Generator Functions
+### `send-welcome-email`
+**Persona-specific welcome emails** with role-based content.
 
-#### `strategy-lab-research-generator`
-**Path:** `supabase/functions/strategy-lab-research-generator/index.ts`  
-**Purpose:** Generates strategic research briefs using AI.
+**Features:**
+- ✅ Beautiful HTML templates
+- ✅ Bilingual (EN/AR)
+- ✅ Persona-specific benefits and next steps
+- ✅ Logs sent emails to database
 
-#### `strategy-program-theme-generator`
-**Path:** `supabase/functions/strategy-program-theme-generator/index.ts`  
-**Purpose:** Generates strategic program themes.
-
-#### `strategy-rd-call-generator`
-**Path:** `supabase/functions/strategy-rd-call-generator/index.ts`  
-**Purpose:** Generates R&D call focus areas.
-
-#### `strategy-sandbox-planner`
-**Path:** `supabase/functions/strategy-sandbox-planner/index.ts`  
-**Purpose:** Plans regulatory sandbox initiatives.
-
-#### `strategy-sector-gap-analysis`
-**Path:** `supabase/functions/strategy-sector-gap-analysis/index.ts`  
-**Purpose:** Analyzes sector gaps for strategic planning.
+**Request:**
+```typescript
+{
+  userId: string;
+  userEmail: string;
+  userName: string;
+  persona: 'municipality_staff' | 'provider' | 'researcher' | 'citizen' | 'expert';
+  language?: 'en' | 'ar';
+}
+```
 
 ---
 
-## Notification Functions
+### `role-request-notification`
+**Role request workflow emails** - submission, approval, rejection.
 
-### 1. `citizen-notifications`
-**Path:** `supabase/functions/citizen-notifications/index.ts`  
-**JWT Required:** No  
-**Purpose:** Creates notifications for citizens in the `citizen_notifications` table.
+**Features:**
+- ✅ User notifications with status updates
+- ✅ Admin notifications for new requests
+- ✅ In-app notifications created
+- ✅ Beautiful HTML templates with RTL support
 
-**Parameters:**
+**Request:**
+```typescript
+{
+  type: 'submitted' | 'approved' | 'rejected';
+  request_id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  requested_role: string;
+  justification?: string;
+  rejection_reason?: string;
+  language?: 'en' | 'ar';
+  notify_admins?: boolean;
+}
+```
+
+---
+
+### `citizen-notifications`
+**In-app notifications** stored in `citizen_notifications` table.
+
+**Request:**
 ```typescript
 {
   user_id?: string;
@@ -282,12 +410,10 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 2. `auto-notification-triggers`
-**Path:** `supabase/functions/auto-notification-triggers/index.ts`  
-**JWT Required:** No  
-**Purpose:** Handles automatic notifications based on trigger types (status changes, entity updates).
+### `auto-notification-triggers`
+**Status change notifications** - automatically notifies followers/stakeholders.
 
-**Parameters:**
+**Request:**
 ```typescript
 {
   trigger_type: string;
@@ -300,76 +426,16 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 3. `evaluation-notifications`
-**Path:** `supabase/functions/evaluation-notifications/index.ts`  
-**JWT Required:** No  
-**Purpose:** Sends evaluation-related notifications to recipients.
-
-**Parameters:**
-```typescript
-{
-  entity_type: string;
-  entity_id: string;
-  notification_type: string;
-  recipients: string[];
-  evaluation_data?: object;
-}
-```
-
----
-
-### 4. `provider-match-notifications`
-**Path:** `supabase/functions/provider-match-notifications/index.ts`  
-**JWT Required:** No  
-**Purpose:** Handles provider match notifications for challenges.
-
-**Actions:** `notify_match`, `get_matches`, `accept_match`, `decline_match`
-
----
-
-### 5. `role-request-notification`
-**Path:** `supabase/functions/role-request-notification/index.ts`  
-**JWT Required:** No  
-**Purpose:** Sends notifications for role access requests.
-
----
-
-### 6. `send-email`
-**Path:** `supabase/functions/send-email/index.ts`  
-**JWT Required:** No  
-**Purpose:** Sends emails via Resend API.
-
-**Parameters:**
-```typescript
-{
-  to: string | string[];
-  subject: string;
-  body?: string;
-  html?: string;
-}
-```
-
----
-
-### 7. `send-welcome-email`
-**Path:** `supabase/functions/send-welcome-email/index.ts`  
-**JWT Required:** No  
-**Purpose:** Sends welcome emails to new users.
-
----
-
 ## Approval Workflow Functions
 
-### 1. `approve-delegation`
-**Path:** `supabase/functions/approve-delegation/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** Approves or rejects delegation rules.
+### `approve-delegation`
+**Delegation rule approval** - approves/rejects delegation requests.
 
-**Parameters:**
+**Request:**
 ```typescript
 {
   delegation_id: string;
-  action?: string;
+  action?: 'approve' | 'reject';
   approved?: boolean;
   comments?: string;
 }
@@ -377,12 +443,10 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 2. `budget-approval`
-**Path:** `supabase/functions/budget-approval/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** Handles pilot budget approval/rejection workflow.
+### `budget-approval`
+**Pilot budget workflow** - creates approval records and updates pilot status.
 
-**Parameters:**
+**Request:**
 ```typescript
 {
   action: 'approve' | 'reject';
@@ -396,12 +460,10 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 3. `check-consensus`
-**Path:** `supabase/functions/check-consensus/index.ts`  
-**JWT Required:** No  
-**Purpose:** Checks for expert evaluation consensus.
+### `check-consensus`
+**Expert evaluation consensus** - calculates if evaluators agree.
 
-**Parameters:**
+**Request:**
 ```typescript
 {
   entity_type: string;
@@ -411,7 +473,7 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 }
 ```
 
-**Returns:**
+**Response:**
 ```typescript
 {
   success: boolean;
@@ -429,12 +491,10 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 4. `initiative-launch`
-**Path:** `supabase/functions/initiative-launch/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** Handles launch/rejection of initiatives (pilots, programs, rd_projects).
+### `initiative-launch`
+**Launch/rejection workflow** for pilots, programs, R&D projects.
 
-**Parameters:**
+**Request:**
 ```typescript
 {
   action: 'launch' | 'approve' | 'reject';
@@ -447,41 +507,75 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 5. `strategic-plan-approval`
-**Path:** `supabase/functions/strategic-plan-approval/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** Handles strategic plan approval workflow.
-
-**Actions:** `approve`, `reject`, `request_changes`, `submit_for_approval`
-
----
-
-### 6. `portfolio-review`
-**Path:** `supabase/functions/portfolio-review/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** Handles portfolio review operations.
-
-**Actions:** `submit_review`, `get_portfolio_stats`, `generate_report`
-
----
-
 ## Automation Functions
 
-### 1. `alumni-automation`
-**Path:** `supabase/functions/alumni-automation/index.ts`  
-**JWT Required:** No  
-**Purpose:** Automates alumni network management.
+### `points-automation`
+**Gamification points system** - awards points for actions.
 
-**Actions:** `graduate`, `send_newsletter`, `track_success`
+**Points Configuration:**
+| Action | Points |
+|--------|--------|
+| `idea_submitted` | 10 |
+| `idea_approved` | 25 |
+| `idea_converted_challenge` | 50 |
+| `idea_converted_pilot` | 100 |
+| `vote_cast` | 2 |
+| `vote_received` | 5 |
+| `comment_posted` | 3 |
+| `feedback_submitted` | 5 |
+| `challenge_resolved` | 100 |
+| `pilot_completed` | 200 |
+| `badge_earned` | 50 |
+
+**Request:**
+```typescript
+{
+  user_id?: string;
+  user_email?: string;
+  action: string;
+  points_override?: number;
+  metadata?: object;
+}
+```
+
+**Response:**
+```typescript
+{
+  success: boolean;
+  points_awarded: number;
+  total_points: number;
+  total_earned: number;
+  level: number;
+}
+```
 
 ---
 
-### 2. `auto-expert-assignment`
-**Path:** `supabase/functions/auto-expert-assignment/index.ts`  
-**JWT Required:** No  
-**Purpose:** Automatically assigns experts to entities based on sector and workload.
+### `sla-automation`
+**SLA monitoring** - checks deadlines and escalates overdue items.
 
-**Parameters:**
+**SLA Days by Priority:**
+| Priority | Days |
+|----------|------|
+| critical | 3 |
+| high | 7 |
+| medium | 14 |
+| low | 21 |
+
+**Request:**
+```typescript
+{
+  entity_type: string;
+  check_all?: boolean;
+}
+```
+
+---
+
+### `auto-expert-assignment`
+**Smart expert matching** - assigns experts based on sector and workload.
+
+**Request:**
 ```typescript
 {
   entity_type: string;
@@ -493,134 +587,12 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 3. `auto-matchmaker-enrollment`
-**Path:** `supabase/functions/auto-matchmaker-enrollment/index.ts`  
-**JWT Required:** No  
-**Purpose:** Handles matchmaker enrollment automation.
-
----
-
-### 4. `auto-program-startup-link`
-**Path:** `supabase/functions/auto-program-startup-link/index.ts`  
-**JWT Required:** No  
-**Purpose:** Links/unlinks programs with startups, auto-matches based on sector.
-
-**Actions:** `link`, `unlink`, `auto_match`
-
----
-
-### 5. `enroll-municipality-training`
-**Path:** `supabase/functions/enroll-municipality-training/index.ts`  
-**JWT Required:** No  
-**Purpose:** Enrolls municipalities in training programs.
-
-**Parameters:**
-```typescript
-{
-  municipality_id: string;
-  training_program_id: string;
-  user_email?: string;
-  participants?: string[];
-}
-```
-
----
-
-### 6. `points-automation`
-**Path:** `supabase/functions/points-automation/index.ts`  
-**JWT Required:** No  
-**Purpose:** Automates gamification points distribution.
-
----
-
-### 7. `sla-automation`
-**Path:** `supabase/functions/sla-automation/index.ts`  
-**JWT Required:** No  
-**Purpose:** Automates SLA checks and escalations for entities.
-
-**Parameters:**
-```typescript
-{
-  entity_type: string;
-  check_all?: boolean;
-}
-```
-
----
-
-### 8. `program-sla-automation`
-**Path:** `supabase/functions/program-sla-automation/index.ts`  
-**JWT Required:** No  
-**Purpose:** Program-specific SLA automation.
-
-**Actions:** `check_sla`, `escalate`, `update_sla`
-
----
-
-## Scoring & Analytics Functions
-
-### 1. `calculate-organization-reputation`
-**Path:** `supabase/functions/calculate-organization-reputation/index.ts`  
-**JWT Required:** No  
-**Purpose:** Calculates reputation scores for organizations.
-
-**Parameters:**
-```typescript
-{
-  organization_id?: string;
-  calculate_all?: boolean;
-}
-```
-
----
-
-### 2. `calculate-startup-reputation`
-**Path:** `supabase/functions/calculate-startup-reputation/index.ts`  
-**JWT Required:** No  
-**Purpose:** Calculates reputation scores for startups.
-
-**Parameters:**
-```typescript
-{
-  startup_id: string;
-}
-```
-
----
-
-### 3. `strategic-priority-scoring`
-**Path:** `supabase/functions/strategic-priority-scoring/index.ts`  
-**JWT Required:** No  
-**Purpose:** Calculates strategic priority scores for entities.
-
-**Parameters:**
-```typescript
-{
-  entity_type: string;
-  entity_id: string;
-  criteria: object;
-}
-```
-
----
-
 ## Security & RBAC Functions
 
-### 1. `auto-role-assignment`
-**Path:** `supabase/functions/auto-role-assignment/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** Handles automatic role assignment for users.
+### `validate-permission`
+**Permission check** - validates if user can perform action.
 
-**Actions:** `assign`, `revoke`, `auto_assign`
-
----
-
-### 2. `validate-permission`
-**Path:** `supabase/functions/validate-permission/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** Validates user permissions for actions on resources.
-
-**Parameters:**
+**Request:**
 ```typescript
 {
   user_id?: string;
@@ -631,7 +603,7 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 }
 ```
 
-**Returns:**
+**Response:**
 ```typescript
 {
   success: boolean;
@@ -643,12 +615,15 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 3. `check-field-security`
-**Path:** `supabase/functions/check-field-security/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** Validates field-level access permissions.
+### `check-field-security`
+**Field-level access** - validates read/write access to specific fields.
 
-**Parameters:**
+**Security Levels:**
+- `restricted`: Admin only
+- `sensitive`: Admin + authorized staff
+- `public`: All authenticated users
+
+**Request:**
 ```typescript
 {
   user_id?: string;
@@ -661,21 +636,12 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 4. `run-rbac-security-audit`
-**Path:** `supabase/functions/run-rbac-security-audit/index.ts`  
-**JWT Required:** Yes  
-**Purpose:** Runs security audits on RBAC configuration.
-
----
-
 ## Utility Functions
 
-### 1. `search-images`
-**Path:** `supabase/functions/search-images/index.ts`  
-**JWT Required:** No  
-**Purpose:** Searches images via Unsplash API or returns placeholders.
+### `search-images`
+**Image search** via Unsplash API with fallback to placeholders.
 
-**Parameters:**
+**Request:**
 ```typescript
 {
   query: string;
@@ -686,21 +652,10 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-### 2. `mii-citizen-integration`
-**Path:** `supabase/functions/mii-citizen-integration/index.ts`  
-**JWT Required:** No  
-**Purpose:** Handles MII Citizen service integration.
+### `challenge-rd-backlink`
+**Bidirectional linking** - syncs challenge↔R&D project references.
 
-**Actions:** `sync_profile`, `verify_identity`, `get_services`, `submit_request`
-
----
-
-### 3. `challenge-rd-backlink`
-**Path:** `supabase/functions/challenge-rd-backlink/index.ts`  
-**JWT Required:** No  
-**Purpose:** Synchronizes backlinks between challenges and R&D projects.
-
-**Parameters:**
+**Request:**
 ```typescript
 {
   challenge_id?: string;
@@ -711,33 +666,76 @@ This document provides a comprehensive overview of all **47 Supabase edge functi
 
 ---
 
-## Configuration
+## Error Handling
 
-All edge functions are configured in `supabase/config.toml`. JWT verification settings:
+All functions follow consistent error patterns:
 
-```toml
-[functions.function-name]
-verify_jwt = true  # or false for public endpoints
+```typescript
+// Success
+{ success: true, ...data }
+
+// Rate limit (429)
+{ error: "Rate limit exceeded", rate_limit_info: {...} }
+
+// Payment required (402)
+{ error: "AI credits exhausted" }
+
+// Server error (500)
+{ error: "Error message" }
 ```
 
 ---
 
-## Environment Variables / Secrets
+## Frontend Integration
 
-The following secrets are available to edge functions:
+### Via Compatibility Layer
 
-| Secret | Purpose |
-|--------|---------|
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key for admin operations |
-| `SUPABASE_ANON_KEY` | Anonymous key for public operations |
-| `LOVABLE_API_KEY` | Lovable AI API access |
-| `RESEND_API_KEY` | Email sending via Resend |
-| `UNSPLASH_ACCESS_KEY` | Image search via Unsplash |
-| `GOOGLE_API_KEY` | Google services integration |
+```typescript
+import { base44 } from '@/api/base44Client';
+
+// AI calls
+const result = await base44.integrations.Core.InvokeLLM({
+  prompt: "...",
+  response_json_schema: {...}
+});
+
+// Email
+await base44.integrations.Core.SendEmail({
+  to: "user@example.com",
+  subject: "...",
+  html: "..."
+});
+
+// File upload
+const { file_url } = await base44.integrations.Core.UploadFile({ file });
+```
+
+### Via Direct Function Invoke
+
+```typescript
+import { supabase } from '@/integrations/supabase/client';
+
+const { data, error } = await supabase.functions.invoke('function-name', {
+  body: { ...params }
+});
+```
 
 ---
 
-## Legacy Functions
+## Deployment
 
-The `functions/` directory (root level) contains legacy Base44 functions that have been migrated. These are **no longer in use** and kept for reference only.
+All edge functions are **automatically deployed** when code is pushed. No manual deployment required.
+
+To test locally:
+```bash
+supabase functions serve function-name --env-file .env.local
+```
+
+---
+
+## Monitoring
+
+- **Logs**: Available in Supabase Dashboard → Edge Functions → Logs
+- **Metrics**: Function invocations, errors, latency
+- **Rate Limits**: Tracked in `ai_usage_tracking` table
+- **Errors**: Logged with `console.error()` for debugging
