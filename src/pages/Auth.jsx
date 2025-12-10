@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -164,6 +165,30 @@ export default function Auth() {
         description: error.message || t({ en: 'Failed to sign in with Microsoft', ar: 'فشل تسجيل الدخول باستخدام Microsoft' }),
         variant: 'destructive',
       });
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!loginEmail) return;
+    
+    setIsLoading(true);
+    try {
+      const { resetPassword } = useAuth;
+      await supabase.auth.resetPasswordForEmail(loginEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      toast({
+        title: t({ en: 'Reset Email Sent', ar: 'تم إرسال بريد إعادة التعيين' }),
+        description: t({ en: 'Check your email for the password reset link', ar: 'تحقق من بريدك الإلكتروني للحصول على رابط إعادة تعيين كلمة المرور' }),
+      });
+    } catch (error) {
+      toast({
+        title: t({ en: 'Reset Failed', ar: 'فشل إعادة التعيين' }),
+        description: error.message || t({ en: 'Failed to send reset email', ar: 'فشل إرسال بريد إعادة التعيين' }),
+        variant: 'destructive',
+      });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -395,6 +420,28 @@ export default function Auth() {
                           disabled={isLoading}
                         />
                       </div>
+                    </div>
+                    
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="px-0 text-muted-foreground hover:text-primary"
+                        onClick={() => {
+                          if (loginEmail) {
+                            handleForgotPassword();
+                          } else {
+                            toast({
+                              title: t({ en: 'Enter Email', ar: 'أدخل البريد الإلكتروني' }),
+                              description: t({ en: 'Please enter your email address first', ar: 'يرجى إدخال بريدك الإلكتروني أولاً' }),
+                              variant: 'destructive',
+                            });
+                          }
+                        }}
+                      >
+                        {t({ en: 'Forgot Password?', ar: 'نسيت كلمة المرور؟' })}
+                      </Button>
                     </div>
                     
                     <Button type="submit" className="w-full h-11" disabled={isLoading}>
