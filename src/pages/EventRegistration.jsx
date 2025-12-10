@@ -1,32 +1,28 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { Calendar, Users, MapPin, Clock, CheckCircle2 } from 'lucide-react';
+import { Calendar, Users, MapPin, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function EventRegistration() {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const urlParams = new URLSearchParams(window.location.search);
   const eventId = urlParams.get('id');
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['event-registration', eventId],
     queryFn: async () => {
-      const events = await base44.entities.Event.filter({ id: eventId });
-      return events[0];
+      const { data } = await supabase.from('events').select('*').eq('id', eventId).single();
+      return data;
     },
     enabled: !!eventId
   });
-
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   if (isLoading || !event) {
     return (

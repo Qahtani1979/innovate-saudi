@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,26 +10,23 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/components/auth/AuthContext';
 
 export default function MyWorkPrioritizer() {
   const { language, isRTL, t } = useLanguage();
   const [aiPriorities, setAiPriorities] = useState(null);
+  const { user } = useAuth();
   
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
     fallbackData: null
   });
 
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
-
   const { data: myChallenges = [] } = useQuery({
     queryKey: ['my-challenges', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.created_by === user?.email);
+      const { data } = await supabase.from('challenges').select('*').eq('created_by', user?.email);
+      return data || [];
     },
     enabled: !!user
   });
@@ -37,8 +34,8 @@ export default function MyWorkPrioritizer() {
   const { data: myPilots = [] } = useQuery({
     queryKey: ['my-pilots', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.created_by === user?.email || p.team?.some(m => m.email === user?.email));
+      const { data } = await supabase.from('pilots').select('*').eq('created_by', user?.email);
+      return data || [];
     },
     enabled: !!user
   });
@@ -46,8 +43,10 @@ export default function MyWorkPrioritizer() {
   const { data: myTasks = [] } = useQuery({
     queryKey: ['my-tasks', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Task.list();
-      return all.filter(t => t.assigned_to === user?.email && t.status !== 'completed');
+      const { data } = await supabase.from('tasks').select('*')
+        .eq('assigned_to', user?.email)
+        .neq('status', 'completed');
+      return data || [];
     },
     enabled: !!user
   });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -11,6 +11,7 @@ import { Loader2, X, Eye, Sparkles, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/components/auth/AuthContext';
 
 export default function ExpertEvaluationWorkflow() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -18,13 +19,14 @@ export default function ExpertEvaluationWorkflow() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [savingDraft, setSavingDraft] = useState(false);
 
   const { data: assignment, isLoading: assignmentLoading } = useQuery({
     queryKey: ['assignment', assignmentId],
     queryFn: async () => {
-      const assignments = await base44.entities.ExpertAssignment.list();
-      return assignments.find(a => a.id === assignmentId);
+      const { data } = await supabase.from('expert_assignments').select('*').eq('id', assignmentId).single();
+      return data;
     },
     enabled: !!assignmentId
   });
@@ -34,37 +36,35 @@ export default function ExpertEvaluationWorkflow() {
     queryFn: async () => {
       if (!assignment) return null;
       
-      const entityMap = {
-        challenge: () => base44.entities.Challenge.list(),
-        pilot: () => base44.entities.Pilot.list(),
-        solution: () => base44.entities.Solution.list(),
-        rd_proposal: () => base44.entities.RDProposal.list(),
-        rd_project: () => base44.entities.RDProject.list(),
-        program_application: () => base44.entities.ProgramApplication.list(),
-        matchmaker_application: () => base44.entities.MatchmakerApplication.list(),
-        scaling_plan: () => base44.entities.ScalingPlan.list(),
-        citizen_idea: () => base44.entities.CitizenIdea.list()
+      const tableMap = {
+        challenge: 'challenges',
+        pilot: 'pilots',
+        solution: 'solutions',
+        rd_proposal: 'rd_proposals',
+        rd_project: 'rd_projects',
+        program_application: 'program_applications',
+        matchmaker_application: 'matchmaker_applications',
+        scaling_plan: 'scaling_plans',
+        citizen_idea: 'citizen_ideas'
       };
 
-      const fetchFn = entityMap[assignment.entity_type];
-      if (!fetchFn) return null;
+      const table = tableMap[assignment.entity_type];
+      if (!table) return null;
 
-      const entities = await fetchFn();
-      return entities.find(e => e.id === assignment.entity_id);
+      const { data } = await supabase.from(table).select('*').eq('id', assignment.entity_id).single();
+      return data;
     },
     enabled: !!assignment
   });
 
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
-
   const updateAssignmentMutation = useMutation({
-    mutationFn: (status) => base44.entities.ExpertAssignment.update(assignmentId, {
-      status,
-      completed_date: status === 'completed' ? new Date().toISOString() : undefined
-    }),
+    mutationFn: async (status) => {
+      const { error } = await supabase.from('expert_assignments').update({
+        status,
+        completed_date: status === 'completed' ? new Date().toISOString() : undefined
+      }).eq('id', assignmentId);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['expert-assignments']);
     }

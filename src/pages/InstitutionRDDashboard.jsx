@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,24 +10,17 @@ import { createPageUrl } from '../utils';
 import { Microscope, TrendingUp, Award, BookOpen, DollarSign, Users, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function InstitutionRDDashboard() {
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['institution-rd-projects'],
     queryFn: async () => {
-      const all = await base44.entities.RDProject.list();
-      // Filter by user's institution if researcher
-      if (user?.researcher_profile?.institution_name) {
-        return all.filter(p => p.institution_en === user.researcher_profile.institution_name);
-      }
-      return all;
+      const { data } = await supabase.from('rd_projects').select('*');
+      return data || [];
     },
     enabled: !!user
   });
@@ -35,11 +28,8 @@ function InstitutionRDDashboard() {
   const { data: rdProposals = [] } = useQuery({
     queryKey: ['institution-rd-proposals'],
     queryFn: async () => {
-      const all = await base44.entities.RDProposal.list();
-      if (user?.researcher_profile?.institution_name) {
-        return all.filter(p => p.institution_name === user.researcher_profile.institution_name);
-      }
-      return all;
+      const { data } = await supabase.from('rd_proposals').select('*');
+      return data || [];
     },
     enabled: !!user
   });

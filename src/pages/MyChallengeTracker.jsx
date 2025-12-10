@@ -1,39 +1,38 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { AlertCircle, CheckCircle2, Clock, TrendingUp, Heart, Lightbulb } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/components/auth/AuthContext';
 
 function MyChallengeTracker() {
   const { language, isRTL, t } = useLanguage();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   // Get challenges created from user's ideas
   const { data: myIdeas = [] } = useQuery({
     queryKey: ['my-ideas', user?.email],
     queryFn: async () => {
-      const ideas = await base44.entities.CitizenIdea.list();
-      return ideas.filter(i => i.created_by === user?.email);
+      const { data } = await supabase.from('citizen_ideas').select('*').eq('created_by', user?.email);
+      return data || [];
     },
     enabled: !!user
   });
 
   const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-from-my-ideas'],
+    queryKey: ['challenges-from-my-ideas', myIdeas],
     queryFn: async () => {
-      const allChallenges = await base44.entities.Challenge.list();
       const myIdeaIds = myIdeas.map(i => i.id);
-      return allChallenges.filter(c => myIdeaIds.includes(c.citizen_origin_idea_id));
+      if (myIdeaIds.length === 0) return [];
+      const { data } = await supabase.from('challenges').select('*').in('citizen_origin_idea_id', myIdeaIds);
+      return data || [];
     },
     enabled: myIdeas.length > 0
   });
