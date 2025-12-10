@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,36 +26,63 @@ import PersonaDashboardWidget from '../components/PersonaDashboardWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function Home() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const { language, isRTL, t } = useLanguage();
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list('-created_date', 10)
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('challenges')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list('-created_date', 10)
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('pilots')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      return data || [];
+    }
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list('-created_date', 10)
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('solutions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      return data || [];
+    }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-home'],
-    queryFn: () => base44.entities.Program.list('-created_date', 10)
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('programs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      return data || [];
+    }
   });
 
   const { data: recentActivities = [] } = useQuery({

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -199,9 +200,10 @@ function PilotDetailPage() {
   const [aiInsights, setAiInsights] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
 
+  const { user: authUser } = useAuth();
   React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+    if (authUser) setUser({ id: authUser.id, email: authUser.email });
+  }, [authUser]);
 
   const commentMutation = useMutation({
     mutationFn: (data) => base44.entities.PilotComment.create(data),

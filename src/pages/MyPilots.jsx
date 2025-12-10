@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,19 +19,21 @@ function MyPilots() {
   const [stageFilter, setStageFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: pilots = [], isLoading } = useQuery({
     queryKey: ['my-pilots', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      return await base44.entities.Pilot.filter({ created_by: user.email }, '-created_date');
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('created_by', user.email)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const filteredPilots = pilots.filter(pilot => {

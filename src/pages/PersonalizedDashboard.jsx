@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
@@ -14,49 +15,58 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
  
 function PersonalizedDashboard() {
   const { t, isRTL } = useLanguage();
+  const { user: currentUser } = useAuth();
   const [aiSummary, setAiSummary] = useState(null);
   const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
-
   const { data: myTasks = [] } = useQuery({
-    queryKey: ['my-tasks'],
+    queryKey: ['my-tasks', currentUser?.email],
     queryFn: async () => {
-      const tasks = await base44.entities.Task?.filter({ assigned_to: currentUser?.email }) || [];
-      return tasks.filter(t => t.status !== 'completed');
+      const { data } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('assigned_to', currentUser?.email)
+        .neq('status', 'completed');
+      return data || [];
     },
-    enabled: !!currentUser
+    enabled: !!currentUser?.email
   });
 
   const { data: myApprovals = [] } = useQuery({
-    queryKey: ['my-approvals'],
+    queryKey: ['my-approvals', currentUser?.email],
     queryFn: async () => {
-      const approvals = await base44.entities.PilotApproval?.filter({ 
-        approver_email: currentUser?.email,
-        status: 'pending'
-      }) || [];
-      return approvals;
+      const { data } = await supabase
+        .from('pilot_approvals')
+        .select('*')
+        .eq('approver_email', currentUser?.email)
+        .eq('status', 'pending');
+      return data || [];
     },
-    enabled: !!currentUser
+    enabled: !!currentUser?.email
   });
 
   const { data: myChallenges = [] } = useQuery({
-    queryKey: ['my-challenges'],
+    queryKey: ['my-challenges', currentUser?.email],
     queryFn: async () => {
-      const challenges = await base44.entities.Challenge?.filter({ created_by: currentUser?.email }) || [];
-      return challenges.filter(c => !['resolved', 'archived'].includes(c.status));
+      const { data } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('challenge_owner_email', currentUser?.email)
+        .not('status', 'in', '("resolved","archived")');
+      return data || [];
     },
-    enabled: !!currentUser
+    enabled: !!currentUser?.email
   });
 
   const { data: myPilots = [] } = useQuery({
-    queryKey: ['my-pilots'],
+    queryKey: ['my-pilots', currentUser?.email],
     queryFn: async () => {
-      const pilots = await base44.entities.Pilot?.list() || [];
-      return pilots.filter(p => 
+      const { data } = await supabase
+        .from('pilots')
+        .select('*')
+        .not('stage', 'in', '("completed","cancelled")');
+      // Filter by team membership on client side since team is JSON
+      return (data || []).filter(p =>
         p.team?.some(member => member.email === currentUser?.email) &&
         !['completed', 'terminated', 'archived'].includes(p.stage)
       );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,19 +16,21 @@ function Messaging() {
   const [selectedThread, setSelectedThread] = useState(null);
   const [messageText, setMessageText] = useState('');
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: messages = [] } = useQuery({
     queryKey: ['messages'],
-    queryFn: () => base44.entities.Message.list()
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
+    queryFn: async () => {
+      const { data } = await supabase.from('messages').select('*');
+      return data || [];
+    }
   });
 
   const sendMutation = useMutation({
-    mutationFn: (data) => base44.entities.Message.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('messages').insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['messages']);
       setMessageText('');

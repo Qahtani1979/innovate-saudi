@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,31 +19,47 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function ExecutiveDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [showMap, setShowMap] = useState(false);
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   // RLS: Executive sees ALL data but prioritizes strategic/high-impact items
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-executive'],
-    queryFn: () => base44.entities.Challenge.list('-overall_score', 200)
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('challenges')
+        .select('*')
+        .order('overall_score', { ascending: false, nullsFirst: false })
+        .limit(200);
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-executive'],
-    queryFn: () => base44.entities.Pilot.list('-success_probability', 100)
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('pilots')
+        .select('*')
+        .order('success_probability', { ascending: false, nullsFirst: false })
+        .limit(100);
+      return data || [];
+    }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-executive'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-executive'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('programs').select('*');
+      return data || [];
+    }
   });
 
   const { data: insights = [] } = useQuery({
