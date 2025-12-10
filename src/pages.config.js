@@ -444,7 +444,7 @@ import MatchmakerSuccessAnalytics from './pages/MatchmakerSuccessAnalytics';
 import MyBookmarks from './pages/MyBookmarks';
 import SectorAnalyticsDashboard from './pages/SectorAnalyticsDashboard';
 import RegionalAnalyticsDashboard from './pages/RegionalAnalyticsDashboard';
-import RoleRequestApprovalQueue from './pages/RoleRequestApprovalQueue';
+// RoleRequestApprovalQueue removed - functionality merged into RoleRequestCenter
 import FinalImplementationSummary from './pages/FinalImplementationSummary';
 import OrganizationVerificationQueue from './pages/OrganizationVerificationQueue';
 import RemainingGapsReport from './pages/RemainingGapsReport';
@@ -920,7 +920,7 @@ export const PAGES = {
     "MyBookmarks": MyBookmarks,
     "SectorAnalyticsDashboard": SectorAnalyticsDashboard,
     "RegionalAnalyticsDashboard": RegionalAnalyticsDashboard,
-    "RoleRequestApprovalQueue": RoleRequestApprovalQueue,
+    // "RoleRequestApprovalQueue" removed - use RoleRequestCenter instead
     "FinalImplementationSummary": FinalImplementationSummary,
     "OrganizationVerificationQueue": OrganizationVerificationQueue,
     "RemainingGapsReport": RemainingGapsReport,

@@ -1,36 +1,85 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { UserPlus, Clock, CheckCircle, XCircle } from 'lucide-react';
 import RoleRequestDialog from '../components/access/RoleRequestDialog';
 import RoleRequestApprovalQueue from '../components/access/RoleRequestApprovalQueue';
 import { usePermissions } from '../components/permissions/usePermissions';
 
 export default function RoleRequestCenter() {
-  const { t } = useLanguage();
-  const { user, isAdmin } = usePermissions();
+  const { t, language } = useLanguage();
+  const { user } = useAuth();
+  const { isAdmin } = usePermissions();
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
 
+  // Fetch available roles from Supabase
   const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => base44.entities.Role.list()
+    queryKey: ['roles-supabase'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
+    }
   });
 
+  // Fetch user's role requests from Supabase
   const { data: myRequests = [] } = useQuery({
     queryKey: ['role-requests', user?.email],
-    queryFn: () => base44.entities.RoleRequest.filter({ user_email: user?.email }),
+    queryFn: async () => {
+      if (!user?.email) return [];
+      
+      const { data, error } = await supabase
+        .from('role_requests')
+        .select('*')
+        .eq('user_email', user.email)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !!user?.email
   });
 
   // Filter roles user doesn't already have
   const userRoleIds = user?.assigned_roles || [];
   const availableRoles = roles.filter(role => 
-    !userRoleIds.includes(role.id) && role.can_be_requested !== false
+    !userRoleIds.includes(role.id)
   );
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'approved':
+        return (
+          <Badge className="bg-green-600">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            {t({ en: 'Approved', ar: 'موافق عليه' })}
+          </Badge>
+        );
+      case 'rejected':
+        return (
+          <Badge variant="destructive">
+            <XCircle className="h-3 w-3 mr-1" />
+            {t({ en: 'Rejected', ar: 'مرفوض' })}
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="border-orange-600 text-orange-600">
+            <Clock className="h-3 w-3 mr-1" />
+            {t({ en: 'Pending', ar: 'معلق' })}
+          </Badge>
+        );
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -60,53 +109,39 @@ export default function RoleRequestCenter() {
         </CardHeader>
         <CardContent>
           {myRequests.length === 0 ? (
-            <p className="text-sm text-slate-600 text-center py-8">
+            <p className="text-sm text-muted-foreground text-center py-8">
               {t({ en: 'No role requests yet', ar: 'لا توجد طلبات أدوار بعد' })}
             </p>
           ) : (
             <div className="space-y-3">
               {myRequests.map((request) => {
-                const role = roles.find(r => r.id === request.requested_role_id);
+                const role = roles.find(r => r.id === request.requested_role || r.name === request.requested_role);
                 
                 return (
                   <div key={request.id} className="p-4 border rounded-lg">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <Badge className="mb-2">{role?.name}</Badge>
-                        <p className="text-sm text-slate-600">
-                          {t({ en: 'Requested:', ar: 'تم الطلب:' })} {new Date(request.requested_date).toLocaleDateString()}
+                        <Badge className="mb-2 bg-blue-600">{role?.name || request.requested_role}</Badge>
+                        <p className="text-sm text-muted-foreground">
+                          {t({ en: 'Requested:', ar: 'تم الطلب:' })} {new Date(request.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
                         </p>
                       </div>
-                      <Badge 
-                        variant={
-                          request.status === 'approved' ? 'default' :
-                          request.status === 'rejected' ? 'destructive' :
-                          'outline'
-                        }
-                        className={
-                          request.status === 'approved' ? 'bg-green-600' :
-                          request.status === 'rejected' ? 'bg-red-600' :
-                          'border-orange-600 text-orange-600'
-                        }
-                      >
-                        {request.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {request.status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
-                        {request.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
-                        {request.status}
-                      </Badge>
+                      {getStatusBadge(request.status)}
                     </div>
-                    <div className="bg-slate-50 p-3 rounded text-sm">
-                      <p className="text-xs font-medium text-slate-600 mb-1">
-                        {t({ en: 'Justification:', ar: 'المبرر:' })}
-                      </p>
-                      <p className="text-slate-700">{request.justification}</p>
-                    </div>
-                    {request.review_notes && (
-                      <div className="mt-2 bg-blue-50 p-3 rounded text-sm">
-                        <p className="text-xs font-medium text-blue-900 mb-1">
-                          {t({ en: 'Admin Notes:', ar: 'ملاحظات الإدارة:' })}
+                    {request.justification && (
+                      <div className="bg-muted p-3 rounded text-sm">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
+                          {t({ en: 'Justification:', ar: 'المبرر:' })}
                         </p>
-                        <p className="text-blue-700">{request.review_notes}</p>
+                        <p>{request.justification}</p>
+                      </div>
+                    )}
+                    {request.rejection_reason && request.status === 'rejected' && (
+                      <div className="mt-2 bg-red-50 dark:bg-red-950/20 p-3 rounded text-sm border border-red-200 dark:border-red-800">
+                        <p className="text-xs font-medium text-red-900 dark:text-red-200 mb-1">
+                          {t({ en: 'Rejection Reason:', ar: 'سبب الرفض:' })}
+                        </p>
+                        <p className="text-red-700 dark:text-red-300">{request.rejection_reason}</p>
                       </div>
                     )}
                   </div>
@@ -124,7 +159,6 @@ export default function RoleRequestCenter() {
       <RoleRequestDialog
         open={requestDialogOpen}
         onOpenChange={setRequestDialogOpen}
-        user={user}
         availableRoles={availableRoles}
       />
     </div>
