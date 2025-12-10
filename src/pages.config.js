@@ -1,5 +1,6 @@
 import Home from './pages/Home';
 import Auth from './pages/Auth';
+import ResetPassword from './pages/ResetPassword';
 import Challenges from './pages/Challenges';
 import ChallengeCreate from './pages/ChallengeCreate';
 import ChallengeDetail from './pages/ChallengeDetail';
@@ -948,6 +949,7 @@ export const PAGES = {
     "StartupOnboarding": StartupOnboarding,
     "Onboarding": Onboarding,
     "Auth": Auth,
+    "ResetPassword": ResetPassword,
 }
 
 export const pagesConfig = {
