@@ -44,6 +44,22 @@ function Settings() {
     enabled: !!authUser?.id
   });
 
+  // Fetch user settings from Supabase
+  const { data: userSettings, isLoading: settingsLoading } = useQuery({
+    queryKey: ['user-settings', authUser?.id],
+    queryFn: async () => {
+      if (!authUser?.id) return null;
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!authUser?.id
+  });
+
   const [localProfile, setLocalProfile] = useState({});
   const [notifications, setNotifications] = useState({
     email: true,
@@ -110,6 +126,29 @@ function Settings() {
     }
   });
 
+  // Update settings mutation (upsert)
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (data) => {
+      if (!authUser?.id) throw new Error('Not authenticated');
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: authUser.id,
+          ...data,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['user-settings']);
+      toast.success(t({ en: 'Settings saved', ar: 'تم حفظ الإعدادات' }));
+    },
+    onError: (error) => {
+      console.error('Settings update error:', error);
+      toast.error(t({ en: 'Failed to save settings', ar: 'فشل في حفظ الإعدادات' }));
+    }
+  });
+
   useEffect(() => {
     if (profile) {
       setLocalProfile({ 
@@ -119,16 +158,92 @@ function Settings() {
         bio: profile.bio_en || profile.bio,
         avatar_url: profile.avatar_url
       });
-      // Load notification preferences if stored
-      if (profile.notification_preferences) {
-        setNotifications(prev => ({ ...prev, ...profile.notification_preferences }));
-      }
-      // Load visibility settings
-      if (profile.visibility_settings) {
-        setPrivacy(prev => ({ ...prev, ...profile.visibility_settings }));
-      }
     }
   }, [profile, authUser]);
+
+  // Load settings from database
+  useEffect(() => {
+    if (userSettings) {
+      setNotifications({
+        email: userSettings.notifications_email ?? true,
+        push: userSettings.notifications_push ?? false,
+        challenges: userSettings.notifications_challenges ?? true,
+        pilots: userSettings.notifications_pilots ?? true,
+        programs: userSettings.notifications_programs ?? true,
+        digest_frequency: userSettings.notifications_digest_frequency ?? 'daily',
+        quiet_hours_start: userSettings.notifications_quiet_hours_start ?? '22:00',
+        quiet_hours_end: userSettings.notifications_quiet_hours_end ?? '08:00'
+      });
+      setAppearance({
+        theme: userSettings.theme ?? 'auto',
+        font_size: userSettings.font_size ?? 'medium',
+        density: userSettings.density ?? 'comfortable'
+      });
+      setPrivacy({
+        profile_visibility: userSettings.profile_visibility ?? 'public',
+        show_activity: userSettings.show_activity ?? true,
+        allow_messages: userSettings.allow_messages ?? true
+      });
+      setAccessibility({
+        high_contrast: userSettings.high_contrast ?? false,
+        reduce_motion: userSettings.reduce_motion ?? false,
+        screen_reader: userSettings.screen_reader_optimized ?? false,
+        keyboard_nav: userSettings.keyboard_navigation ?? false
+      });
+      setWorkPrefs({
+        default_view: userSettings.default_view ?? 'cards',
+        auto_save: userSettings.auto_save ?? true,
+        show_tutorials: userSettings.show_tutorials ?? true
+      });
+    }
+  }, [userSettings]);
+
+  // Save handlers
+  const saveNotifications = () => {
+    updateSettingsMutation.mutate({
+      notifications_email: notifications.email,
+      notifications_push: notifications.push,
+      notifications_challenges: notifications.challenges,
+      notifications_pilots: notifications.pilots,
+      notifications_programs: notifications.programs,
+      notifications_digest_frequency: notifications.digest_frequency,
+      notifications_quiet_hours_start: notifications.quiet_hours_start,
+      notifications_quiet_hours_end: notifications.quiet_hours_end
+    });
+  };
+
+  const saveAppearance = () => {
+    updateSettingsMutation.mutate({
+      theme: appearance.theme,
+      font_size: appearance.font_size,
+      density: appearance.density
+    });
+  };
+
+  const savePrivacy = () => {
+    updateSettingsMutation.mutate({
+      profile_visibility: privacy.profile_visibility,
+      show_activity: privacy.show_activity,
+      allow_messages: privacy.allow_messages
+    });
+  };
+
+  const saveAccessibility = () => {
+    updateSettingsMutation.mutate({
+      high_contrast: accessibility.high_contrast,
+      reduce_motion: accessibility.reduce_motion,
+      screen_reader_optimized: accessibility.screen_reader,
+      keyboard_navigation: accessibility.keyboard_nav
+    });
+  };
+
+  const saveWorkPrefs = () => {
+    updateSettingsMutation.mutate({
+      default_view: workPrefs.default_view,
+      auto_save: workPrefs.auto_save,
+      show_tutorials: workPrefs.show_tutorials
+    });
+  };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -293,7 +408,7 @@ function Settings() {
                   </div>
                 </div>
 
-                <Button onClick={() => toast.success(t({ en: 'Notification preferences saved', ar: 'تم حفظ تفضيلات الإشعارات' }))} className="w-full bg-blue-600">
+                <Button onClick={saveNotifications} disabled={updateSettingsMutation.isPending} className="w-full bg-blue-600">
                   <Save className="h-4 w-4 mr-2" />
                   {t({ en: 'Save Preferences', ar: 'حفظ التفضيلات' })}
                 </Button>
@@ -413,7 +528,7 @@ function Settings() {
                 </Select>
               </div>
 
-              <Button onClick={() => toast.success(t({ en: 'Appearance saved', ar: 'تم حفظ المظهر' }))} className="w-full bg-purple-600">
+              <Button onClick={saveAppearance} disabled={updateSettingsMutation.isPending} className="w-full bg-purple-600">
                 <Save className="h-4 w-4 mr-2" />
                 {t({ en: 'Save Appearance', ar: 'حفظ المظهر' })}
               </Button>
@@ -462,6 +577,11 @@ function Settings() {
                   onCheckedChange={(v) => setPrivacy({...privacy, allow_messages: v})}
                 />
               </div>
+
+              <Button onClick={savePrivacy} disabled={updateSettingsMutation.isPending} className="w-full bg-green-600 mb-4">
+                <Save className="h-4 w-4 mr-2" />
+                {t({ en: 'Save Privacy Settings', ar: 'حفظ إعدادات الخصوصية' })}
+              </Button>
 
               <div className="pt-4 border-t">
                 <Button variant="outline" className="w-full mb-2">
@@ -522,7 +642,7 @@ function Settings() {
                 />
               </div>
 
-              <Button onClick={() => toast.success(t({ en: 'Accessibility saved', ar: 'تم حفظ إمكانية الوصول' }))} className="w-full bg-indigo-600">
+              <Button onClick={saveAccessibility} disabled={updateSettingsMutation.isPending} className="w-full bg-indigo-600">
                 <Save className="h-4 w-4 mr-2" />
                 {t({ en: 'Save Accessibility', ar: 'حفظ إمكانية الوصول' })}
               </Button>
@@ -596,7 +716,7 @@ function Settings() {
                 />
               </div>
 
-              <Button onClick={() => toast.success(t({ en: 'Work preferences saved', ar: 'تم حفظ تفضيلات العمل' }))} className="w-full bg-cyan-600">
+              <Button onClick={saveWorkPrefs} disabled={updateSettingsMutation.isPending} className="w-full bg-cyan-600">
                 <Save className="h-4 w-4 mr-2" />
                 {t({ en: 'Save Preferences', ar: 'حفظ التفضيلات' })}
               </Button>
