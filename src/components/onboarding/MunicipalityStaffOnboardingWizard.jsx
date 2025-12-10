@@ -16,9 +16,10 @@ import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
+import { useDepartments, useSpecializations, submitCustomEntry } from '@/hooks/useLookupData';
 import { 
   Building2, ArrowRight, ArrowLeft, CheckCircle2, 
-  MapPin, Users, Shield, BookOpen, Loader2, Upload, FileText, Globe
+  MapPin, Users, Shield, BookOpen, Loader2, Upload, FileText, Globe, Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,34 +31,10 @@ const STEPS = [
   { id: 5, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
 ];
 
-const DEPARTMENTS = [
-  { en: 'Urban Planning', ar: 'التخطيط العمراني' },
-  { en: 'Public Works', ar: 'الأشغال العامة' },
-  { en: 'Environmental Services', ar: 'الخدمات البيئية' },
-  { en: 'Transportation', ar: 'النقل' },
-  { en: 'Digital Services', ar: 'الخدمات الرقمية' },
-  { en: 'Community Services', ar: 'خدمات المجتمع' },
-  { en: 'Economic Development', ar: 'التنمية الاقتصادية' },
-  { en: 'Public Safety', ar: 'السلامة العامة' },
-  { en: 'Innovation & Technology', ar: 'الابتكار والتقنية' },
-  { en: 'Other', ar: 'أخرى' }
-];
-
 const ROLE_LEVELS = [
   { id: 'staff', label: { en: 'Staff Member', ar: 'موظف' }, description: { en: 'View challenges and submit ideas', ar: 'عرض التحديات وتقديم الأفكار' } },
   { id: 'coordinator', label: { en: 'Innovation Coordinator', ar: 'منسق الابتكار' }, description: { en: 'Manage challenges and pilots', ar: 'إدارة التحديات والتجارب' } },
   { id: 'manager', label: { en: 'Department Manager', ar: 'مدير القسم' }, description: { en: 'Approve and oversee projects', ar: 'الموافقة والإشراف على المشاريع' } }
-];
-
-const SPECIALIZATIONS = [
-  { en: 'Project Management', ar: 'إدارة المشاريع' },
-  { en: 'Policy Development', ar: 'تطوير السياسات' },
-  { en: 'Community Engagement', ar: 'التفاعل المجتمعي' },
-  { en: 'Technical Solutions', ar: 'الحلول التقنية' },
-  { en: 'Data Analysis', ar: 'تحليل البيانات' },
-  { en: 'Budget Management', ar: 'إدارة الميزانية' },
-  { en: 'Procurement', ar: 'المشتريات' },
-  { en: 'Quality Assurance', ar: 'ضمان الجودة' }
 ];
 
 export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }) {
@@ -121,6 +98,16 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
       return data || [];
     }
   });
+
+  // Fetch dynamic departments and specializations
+  const { data: departments = [] } = useDepartments();
+  const { data: specializations = [] } = useSpecializations();
+  
+  // Custom entry states
+  const [showCustomDepartment, setShowCustomDepartment] = useState(false);
+  const [customDepartment, setCustomDepartment] = useState('');
+  const [showCustomSpecialization, setShowCustomSpecialization] = useState(false);
+  const [customSpecialization, setCustomSpecialization] = useState('');
 
   // Helper to check if user's email domain is approved for auto-approval
   const checkEmailDomainApproval = (userEmail, municipalityId) => {
@@ -539,19 +526,78 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
                   <Label>{t({ en: 'Department', ar: 'القسم' })} *</Label>
                   <Select
                     value={formData.department}
-                    onValueChange={(value) => setFormData({ ...formData, department: value })}
+                    onValueChange={(value) => {
+                      if (value === '__custom__') {
+                        setShowCustomDepartment(true);
+                      } else {
+                        setFormData({ ...formData, department: value });
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={t({ en: 'Select department...', ar: 'اختر القسم...' })} />
                     </SelectTrigger>
                     <SelectContent>
-                      {DEPARTMENTS.map((d) => (
-                        <SelectItem key={d.en} value={d.en}>
-                          {language === 'ar' ? d.ar : d.en}
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.name_en}>
+                          {language === 'ar' ? (d.name_ar || d.name_en) : d.name_en}
                         </SelectItem>
                       ))}
+                      <SelectItem value="__custom__" className="text-purple-600 font-medium">
+                        <span className="flex items-center gap-1">
+                          <Plus className="h-3 w-3" />
+                          {t({ en: 'Add Custom Department', ar: 'إضافة قسم مخصص' })}
+                        </span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
+                  
+                  {/* Custom department input */}
+                  {showCustomDepartment && (
+                    <div className="mt-2 flex gap-2">
+                      <Input
+                        value={customDepartment}
+                        onChange={(e) => setCustomDepartment(e.target.value)}
+                        placeholder={t({ en: 'Enter department name', ar: 'أدخل اسم القسم' })}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={async () => {
+                          if (customDepartment.trim()) {
+                            try {
+                              await submitCustomEntry({
+                                entryType: 'department',
+                                nameEn: customDepartment,
+                                userEmail: user?.email,
+                                userId: user?.id
+                              });
+                              setFormData({ ...formData, department: customDepartment });
+                              setShowCustomDepartment(false);
+                              setCustomDepartment('');
+                              toast.success(t({ en: 'Custom department added', ar: 'تم إضافة القسم المخصص' }));
+                            } catch (error) {
+                              toast.error(t({ en: 'Failed to add department', ar: 'فشل في إضافة القسم' }));
+                            }
+                          }
+                        }}
+                      >
+                        {t({ en: 'Add', ar: 'إضافة' })}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowCustomDepartment(false);
+                          setCustomDepartment('');
+                        }}
+                      >
+                        {t({ en: 'Cancel', ar: 'إلغاء' })}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -586,21 +632,80 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
                 <div>
                   <Label className="mb-2 block">{t({ en: 'Specializations (max 5)', ar: 'التخصصات (حد أقصى 5)' })}</Label>
                   <div className="flex flex-wrap gap-2">
-                    {SPECIALIZATIONS.map((spec) => {
-                      const isSelected = formData.specializations.includes(spec.en);
+                    {specializations.map((spec) => {
+                      const isSelected = formData.specializations.includes(spec.name_en);
                       return (
                         <Badge
-                          key={spec.en}
+                          key={spec.id}
                           variant={isSelected ? 'default' : 'outline'}
                           className={`cursor-pointer transition-all ${isSelected ? 'bg-purple-600' : 'hover:bg-purple-50'}`}
-                          onClick={() => toggleSpecialization(spec.en)}
+                          onClick={() => toggleSpecialization(spec.name_en)}
                         >
                           {isSelected && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                          {spec[language]}
+                          {language === 'ar' ? (spec.name_ar || spec.name_en) : spec.name_en}
                         </Badge>
                       );
                     })}
+                    {/* Add custom specialization button */}
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer border-dashed border-purple-400 text-purple-600 hover:bg-purple-50"
+                      onClick={() => setShowCustomSpecialization(true)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      {t({ en: 'Add Custom', ar: 'إضافة مخصص' })}
+                    </Badge>
                   </div>
+                  
+                  {/* Custom specialization input */}
+                  {showCustomSpecialization && (
+                    <div className="mt-2 flex gap-2">
+                      <Input
+                        value={customSpecialization}
+                        onChange={(e) => setCustomSpecialization(e.target.value)}
+                        placeholder={t({ en: 'Enter specialization', ar: 'أدخل التخصص' })}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={async () => {
+                          if (customSpecialization.trim() && formData.specializations.length < 5) {
+                            try {
+                              await submitCustomEntry({
+                                entryType: 'specialization',
+                                nameEn: customSpecialization,
+                                userEmail: user?.email,
+                                userId: user?.id
+                              });
+                              setFormData({ 
+                                ...formData, 
+                                specializations: [...formData.specializations, customSpecialization] 
+                              });
+                              setShowCustomSpecialization(false);
+                              setCustomSpecialization('');
+                              toast.success(t({ en: 'Custom specialization added', ar: 'تم إضافة التخصص المخصص' }));
+                            } catch (error) {
+                              toast.error(t({ en: 'Failed to add specialization', ar: 'فشل في إضافة التخصص' }));
+                            }
+                          }
+                        }}
+                      >
+                        {t({ en: 'Add', ar: 'إضافة' })}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowCustomSpecialization(false);
+                          setCustomSpecialization('');
+                        }}
+                      >
+                        {t({ en: 'Cancel', ar: 'إلغاء' })}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
