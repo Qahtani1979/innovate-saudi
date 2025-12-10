@@ -8,10 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import UserJourneyMapper from '../components/access/UserJourneyMapper';
+
 import { User, Edit, Award, Briefcase, Mail, Globe, MapPin, Sparkles, Save, Upload, Plus, X, Calendar, Linkedin, Phone, GraduationCap, Languages } from 'lucide-react';
 import { toast } from 'sonner';
-import FileUploader from '../components/FileUploader';
+import SupabaseFileUploader from '../components/uploads/SupabaseFileUploader';
 import ProfileCompletionAI from '../components/profiles/ProfileCompletionAI';
 import AIConnectionsSuggester from '../components/profile/AIConnectionsSuggester';
 import ProfileVisibilityControl from '../components/users/ProfileVisibilityControl';
@@ -89,6 +89,7 @@ function UserProfile() {
       skills: profileData.skills,
       expertise_areas: profileData.areas_of_expertise || profileData.expertise_areas,
       avatar_url: profileData.avatar_url,
+      cover_image_url: profileData.cover_image_url,
     };
     updateProfileMutation.mutate(updateData);
   };
@@ -161,12 +162,22 @@ function UserProfile() {
     <div className="space-y-6 max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Cover & Avatar */}
       <Card className="overflow-hidden">
-        <div className="h-48 bg-gradient-to-br from-blue-600 to-purple-600 relative">
+        <div className="h-48 bg-gradient-to-br from-blue-600 to-purple-600 relative overflow-hidden">
+          {profile?.cover_image_url && (
+            <img src={profile.cover_image_url} alt="Cover" className="w-full h-full object-cover absolute inset-0" />
+          )}
           {editMode && (
-            <Button size="sm" variant="secondary" className="absolute top-4 right-4">
-              <Upload className="h-3 w-3 mr-1" />
-              {t({ en: 'Change Cover', ar: 'تغيير الغلاف' })}
-            </Button>
+            <SupabaseFileUploader
+              bucket="avatars"
+              onUpload={(url) => setProfileData({...profileData, cover_image_url: url})}
+              accept="image/*"
+              trigger={
+                <Button size="sm" variant="secondary" className="absolute top-4 right-4">
+                  <Upload className="h-3 w-3 mr-1" />
+                  {t({ en: 'Change Cover', ar: 'تغيير الغلاف' })}
+                </Button>
+              }
+            />
           )}
         </div>
         <CardContent className="pt-0">
@@ -180,7 +191,8 @@ function UserProfile() {
                 )}
               </div>
               {editMode && (
-                <FileUploader
+                <SupabaseFileUploader
+                  bucket="avatars"
                   onUpload={(url) => setProfileData({...profileData, avatar_url: url})}
                   accept="image/*"
                   trigger={
@@ -614,19 +626,34 @@ function UserProfile() {
         </TabsContent>
 
         <TabsContent value="connections">
-          <div className="space-y-6">
-            <UserJourneyMapper userEmail={authUser?.email} />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <AIConnectionsSuggester currentUser={profile} />
-              </div>
-              <div>
-                <ProfileVisibilityControl 
-                  visibility={profileData.profile_visibility || profile?.profile_visibility}
-                  onChange={(val) => setProfileData({...profileData, profile_visibility: val})}
-                />
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <AIConnectionsSuggester currentUser={profile} />
+            </div>
+            <div className="space-y-6">
+              <ProfileVisibilityControl 
+                visibility={profileData.profile_visibility || profile?.profile_visibility}
+                onChange={(val) => setProfileData({...profileData, profile_visibility: val})}
+              />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">{t({ en: 'Profile Stats', ar: 'إحصائيات الملف' })}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">{t({ en: 'Profile Views', ar: 'مشاهدات الملف' })}</span>
+                    <Badge variant="secondary">0</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">{t({ en: 'Connections', ar: 'الاتصالات' })}</span>
+                    <Badge variant="secondary">0</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">{t({ en: 'Contribution Points', ar: 'نقاط المساهمة' })}</span>
+                    <Badge variant="secondary">{profile?.contribution_count || 0}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </TabsContent>

@@ -15,7 +15,7 @@ import { Settings as SettingsIcon, User, Bell, Globe, Shield, Save, Palette, Eye
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from 'sonner';
-import FileUploader from '../components/FileUploader';
+import SupabaseFileUploader from '../components/uploads/SupabaseFileUploader';
 import TwoFactorAuth from '../components/auth/TwoFactorAuth';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import ChangePasswordDialog from '../components/auth/ChangePasswordDialog';
@@ -141,11 +141,11 @@ function Settings() {
         </p>
       </div>
 
-      <Tabs defaultValue="profile">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-10">
-          <TabsTrigger value="profile">
+      <Tabs defaultValue="account">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
+          <TabsTrigger value="account">
             <User className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span className="hidden lg:inline">{t({ en: 'Profile', ar: 'الملف' })}</span>
+            <span className="hidden lg:inline">{t({ en: 'Account', ar: 'الحساب' })}</span>
           </TabsTrigger>
           <TabsTrigger value="notifications">
             <Bell className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
@@ -185,65 +185,32 @@ function Settings() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile">
+        <TabsContent value="account">
           <Card>
             <CardHeader>
-              <CardTitle>{t({ en: 'Profile Information', ar: 'معلومات الملف' })}</CardTitle>
+              <CardTitle>{t({ en: 'Account Information', ar: 'معلومات الحساب' })}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Avatar', ar: 'الصورة الشخصية' })}</label>
-                <FileUploader
-                  onUpload={(url) => setLocalProfile({ ...localProfile, avatar_url: url })}
-                  accept="image/*"
-                  bucket="avatars"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">{t({ en: 'Full Name', ar: 'الاسم الكامل' })}</label>
-                  <Input
-                    value={localProfile.full_name || ''}
-                    onChange={(e) => setLocalProfile({ ...localProfile, full_name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">{t({ en: 'Title/Position', ar: 'المسمى الوظيفي' })}</label>
-                  <Input
-                    value={localProfile.title || ''}
-                    onChange={(e) => setLocalProfile({ ...localProfile, title: e.target.value })}
-                  />
-                </div>
+                <label className="text-sm font-medium mb-2 block">{t({ en: 'Email Address', ar: 'البريد الإلكتروني' })}</label>
+                <Input value={authUser?.email || ''} disabled className="bg-slate-100" />
+                <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Contact support to change your email', ar: 'اتصل بالدعم لتغيير بريدك الإلكتروني' })}</p>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Bio', ar: 'نبذة' })}</label>
-                <Textarea
-                  value={localProfile.bio || ''}
-                  onChange={(e) => setLocalProfile({ ...localProfile, bio: e.target.value })}
-                  rows={3}
-                  placeholder={t({ en: 'Tell us about yourself...', ar: 'أخبرنا عن نفسك...' })}
-                />
+                <label className="text-sm font-medium mb-2 block">{t({ en: 'Account Type', ar: 'نوع الحساب' })}</label>
+                <Input value={profile?.selected_persona || 'Citizen'} disabled className="bg-slate-100" />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Email', ar: 'البريد الإلكتروني' })}</label>
-                <Input value={localProfile.email || ''} disabled className="bg-slate-100" />
+                <label className="text-sm font-medium mb-2 block">{t({ en: 'Member Since', ar: 'عضو منذ' })}</label>
+                <Input value={profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : ''} disabled className="bg-slate-100" />
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Role', ar: 'الدور' })}</label>
-                <Input value={profile?.selected_persona || ''} disabled className="bg-slate-100" />
+              <div className="pt-4 border-t">
+                <p className="text-sm text-muted-foreground mb-3">{t({ en: 'To edit your profile details (name, bio, avatar, skills), visit the Profile page.', ar: 'لتعديل تفاصيل ملفك الشخصي (الاسم، السيرة، الصورة، المهارات)، قم بزيارة صفحة الملف الشخصي.' })}</p>
+                <Button variant="outline" onClick={() => window.location.href = '/user-profile'}>
+                  <User className="h-4 w-4 mr-2" />
+                  {t({ en: 'Go to Profile', ar: 'الذهاب للملف الشخصي' })}
+                </Button>
               </div>
-              <Button
-                className="bg-blue-600"
-                onClick={() => updateProfileMutation.mutate({
-                  full_name_en: localProfile.full_name,
-                  title_en: localProfile.title,
-                  bio_en: localProfile.bio,
-                  avatar_url: localProfile.avatar_url
-                })}
-              >
-                <Save className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {t({ en: 'Save Changes', ar: 'حفظ التغييرات' })}
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
