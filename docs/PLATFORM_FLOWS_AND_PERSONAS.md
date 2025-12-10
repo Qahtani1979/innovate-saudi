@@ -44,7 +44,7 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 | Icon | Rocket |
 | Color | Blue |
 | Requires Approval | Yes |
-| Landing Dashboard | `StartupDashboard` (aliased as `ProviderDashboard`) |
+| Landing Dashboard | `StartupDashboard` |
 | Specialized Onboarding | `StartupOnboardingWizard` |
 | Onboarding Page | `/startup-onboarding` |
 
@@ -103,8 +103,6 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 | Landing Dashboard | `ExpertAssignmentQueue` |
 | Specialized Onboarding | `ExpertOnboardingWizard` |
 | Onboarding Page | `/expert-onboarding` |
-
-> **Note:** Code references `ExpertDashboard` as landing page but this doesn't exist. The actual expert personal landing is `ExpertAssignmentQueue`. `ExpertRegistry` is an admin view of all experts.
 
 **Capabilities:**
 - Evaluate proposals and applications
@@ -187,8 +185,6 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 | Requires Approval | Manual assignment only |
 | Landing Dashboard | `AdminPortal` |
 | Specialized Onboarding | None |
-
-> **Note:** Code references `AdminDashboard` but the actual page is `AdminPortal.jsx`
 
 **Capabilities:**
 - Full platform administration
