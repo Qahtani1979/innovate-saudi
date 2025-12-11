@@ -1,24 +1,29 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Target, TrendingUp, Calendar, CheckCircle2, Star, Users } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function MenteeProgress() {
   const { t } = useLanguage();
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: myMentorships = [], isLoading } = useQuery({
     queryKey: ['my-mentorships-mentee', user?.email],
-    queryFn: () => user ? base44.entities.ProgramMentorship.filter({ mentee_email: user.email }) : [],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('program_mentorships')
+        .select('*')
+        .eq('mentee_email', user.email);
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !!user
   });
 

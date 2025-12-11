@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,13 +105,16 @@ Generate:
 
   const submitMutation = useMutation({
     mutationFn: async (data) => {
-      const user = await base44.auth.me().catch(() => null);
-      return await base44.entities.InnovationProposal.create({
-        ...data,
-        code: `PROP-${Date.now().toString().slice(-8)}`,
-        status: 'submitted',
-        created_by: user?.email || data.submitter_email
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('innovation_proposals')
+        .insert({
+          ...data,
+          code: `PROP-${Date.now().toString().slice(-8)}`,
+          status: 'submitted',
+          created_by: user?.email || data.submitter_email
+        });
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success(t({ en: 'Proposal submitted!', ar: 'تم التقديم!' }));

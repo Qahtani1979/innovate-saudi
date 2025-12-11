@@ -1,30 +1,35 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Users, Search, Mail, Building2, Microscope } from 'lucide-react';
 
 export default function CollaborationHub() {
   const { language, isRTL, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects-all'],
-    queryFn: () => base44.entities.RDProject.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('rd_projects').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('organizations').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   // Find potential collaborators based on sectors/themes

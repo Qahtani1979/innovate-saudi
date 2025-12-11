@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { CheckCircle2, XCircle, FileText, DollarSign, Clock, Loader2, Rocket } from 'lucide-react';
@@ -15,27 +16,44 @@ import ProposalToPilotConverter from '../components/challenges/ProposalToPilotCo
 export default function ChallengeProposalReview() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [reviewNotes, setReviewNotes] = useState({});
   const [convertingProposal, setConvertingProposal] = useState(null);
 
   const { data: proposals = [] } = useQuery({
     queryKey: ['challenge-proposals'],
-    queryFn: () => base44.entities.ChallengeProposal.list('-submission_date', 100)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenge_proposals')
+        .select('*')
+        .order('submitted_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('challenges').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const reviewMutation = useMutation({
     mutationFn: async ({ proposalId, status, notes }) => {
-      return await base44.entities.ChallengeProposal.update(proposalId, {
-        status,
-        review_notes: notes,
-        reviewer_email: (await base44.auth.me()).email,
-        review_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('challenge_proposals')
+        .update({
+          status,
+          review_notes: notes,
+          reviewer_email: user?.email,
+          review_date: new Date().toISOString()
+        })
+        .eq('id', proposalId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['challenge-proposals']);

@@ -1,35 +1,47 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Building2, CheckCircle2, XCircle, Star } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function VendorApproval() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedVendor, setSelectedVendor] = React.useState(null);
   const [reviewNotes, setReviewNotes] = React.useState('');
 
   const { data: vendors = [], isLoading } = useQuery({
     queryKey: ['vendors-pending'],
-    queryFn: () => base44.entities.Vendor.filter({ status: 'under_review' })
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('*')
+        .eq('status', 'under_review');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const approveMutation = useMutation({
     mutationFn: async ({ vendorId, approved }) => {
-      const user = await base44.auth.me();
-      return base44.entities.Vendor.update(vendorId, {
-        status: approved ? 'approved' : 'registered',
-        is_approved: approved,
-        approval_date: approved ? new Date().toISOString() : null,
-        reviewed_by: user.email,
-        review_notes: reviewNotes
-      });
+      const { error } = await supabase
+        .from('vendors')
+        .update({
+          status: approved ? 'approved' : 'registered',
+          is_approved: approved,
+          approval_date: approved ? new Date().toISOString() : null,
+          reviewed_by: user?.email,
+          review_notes: reviewNotes
+        })
+        .eq('id', vendorId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendors-pending'] });

@@ -1,11 +1,12 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { 
   Beaker, Users, Award, CheckCircle2, Star, Upload, MessageSquare 
 } from 'lucide-react';
@@ -14,24 +15,28 @@ import { toast } from 'sonner';
 export default function CitizenLabParticipation() {
   const { t, language } = useLanguage();
   const queryClient = useQueryClient();
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: myParticipations = [] } = useQuery({
     queryKey: ['my-lab-participations', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.CitizenParticipant.list();
-      return all.filter(p => p.citizen_email === user?.email);
+      const { data, error } = await supabase
+        .from('citizen_participants')
+        .select('*')
+        .eq('citizen_email', user?.email);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user
   });
 
   const { data: livingLabs = [] } = useQuery({
     queryKey: ['living-labs-citizen'],
-    queryFn: () => base44.entities.LivingLab.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('living_labs').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: myDataSubmissions = [] } = useQuery({
@@ -39,8 +44,12 @@ export default function CitizenLabParticipation() {
     queryFn: async () => {
       const participantIds = myParticipations.map(p => p.id);
       if (participantIds.length === 0) return [];
-      const all = await base44.entities.CitizenDataCollection.list();
-      return all.filter(d => participantIds.includes(d.citizen_participant_id));
+      const { data, error } = await supabase
+        .from('citizen_data_collections')
+        .select('*')
+        .in('citizen_participant_id', participantIds);
+      if (error) throw error;
+      return data || [];
     },
     enabled: myParticipations.length > 0
   });

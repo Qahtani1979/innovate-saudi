@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import {
   Send, FileText, User, Shield
 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import RequesterAI from './RequesterAI';
 import ReviewerAI from './ReviewerAI';
 import ProgramExpertEvaluation from '../programs/ProgramExpertEvaluation';
@@ -26,22 +27,22 @@ export default function UnifiedWorkflowApprovalTab({
 }) {
   const { t, language, isRTL } = useLanguage();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [selectedGate, setSelectedGate] = useState(null);
   const [showSelfCheck, setShowSelfCheck] = useState(false);
-  
-  // Get current user
-  const [currentUser, setCurrentUser] = useState(null);
-  React.useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
-  }, []);
 
   // Fetch approval requests for this entity
   const { data: approvalRequests = [] } = useQuery({
     queryKey: ['approval-requests', entityType, entityId],
-    queryFn: () => base44.entities.ApprovalRequest.filter({ 
-      entity_type: entityType, 
-      entity_id: entityId 
-    }),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('approval_requests')
+        .select('*')
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId);
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !!entityId
   });
 

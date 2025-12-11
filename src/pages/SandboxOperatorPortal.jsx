@@ -1,10 +1,11 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
@@ -16,21 +17,18 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function SandboxOperatorPortal() {
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   // Find sandboxes I operate
   const { data: mySandboxes = [] } = useQuery({
     queryKey: ['my-sandboxes', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Sandbox.list();
-      return all.filter(s => 
-        s.manager_email === user?.email || 
-        s.created_by === user?.email
-      );
+      const { data, error } = await supabase
+        .from('sandboxes')
+        .select('*')
+        .or(`manager_email.eq.${user?.email},created_by.eq.${user?.email}`);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user
   });

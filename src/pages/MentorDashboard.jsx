@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
@@ -17,32 +18,35 @@ import { Progress } from "@/components/ui/progress";
 
 export default function MentorDashboard() {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const [selectedProgram, setSelectedProgram] = useState(null);
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
 
   const { data: assignments = [] } = useQuery({
     queryKey: ['mentor-assignments', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.ExpertAssignment.list();
-      return all.filter(a => 
-        a.expert_email === user?.email && 
-        a.assignment_type === 'mentor' &&
-        a.status !== 'declined'
-      );
+      const { data, error } = await supabase
+        .from('expert_assignments')
+        .select('*')
+        .eq('expert_email', user?.email)
+        .eq('assignment_type', 'mentor')
+        .neq('status', 'declined');
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user?.email
   });
 
   const { data: programs = [] } = useQuery({
-    queryKey: ['mentor-programs'],
+    queryKey: ['mentor-programs', assignments],
     queryFn: async () => {
       const programIds = [...new Set(assignments.map(a => a.entity_id))];
-      const all = await base44.entities.Program.list();
-      return all.filter(p => programIds.includes(p.id));
+      if (programIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .in('id', programIds);
+      if (error) throw error;
+      return data || [];
     },
     enabled: assignments.length > 0
   });

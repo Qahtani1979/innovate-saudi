@@ -1,33 +1,46 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { FileText, CheckCircle2, XCircle } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function ContractApproval() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedContract, setSelectedContract] = React.useState(null);
   const [reviewComments, setReviewComments] = React.useState('');
 
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ['contracts-pending'],
-    queryFn: () => base44.entities.Contract.filter({ status: 'under_review' })
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('*')
+        .eq('status', 'under_review');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const approveMutation = useMutation({
     mutationFn: async ({ contractId, approved }) => {
-      return base44.entities.Contract.update(contractId, {
-        status: approved ? 'approved' : 'draft',
-        review_comments: reviewComments,
-        reviewed_by: (await base44.auth.me()).email,
-        reviewed_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('contracts')
+        .update({
+          status: approved ? 'approved' : 'draft',
+          review_comments: reviewComments,
+          reviewed_by: user?.email,
+          reviewed_date: new Date().toISOString()
+        })
+        .eq('id', contractId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contracts-pending'] });

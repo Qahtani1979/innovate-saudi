@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
@@ -22,14 +23,20 @@ function ExpertPanelDetail() {
   const panelId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [vote, setVote] = useState('');
   const [notes, setNotes] = useState('');
 
   const { data: panel, isLoading } = useQuery({
     queryKey: ['expert-panel', panelId],
     queryFn: async () => {
-      const panels = await base44.entities.ExpertPanel.list();
-      return panels.find(p => p.id === panelId);
+      const { data, error } = await supabase
+        .from('expert_panels')
+        .select('*')
+        .eq('id', panelId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!panelId
   });
@@ -38,23 +45,25 @@ function ExpertPanelDetail() {
     queryKey: ['panel-evaluations', panel?.entity_id],
     queryFn: async () => {
       if (!panel) return [];
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => 
-        e.entity_type === panel.entity_type && 
-        e.entity_id === panel.entity_id &&
-        panel.panel_members?.includes(e.expert_email)
-      );
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_type', panel.entity_type)
+        .eq('entity_id', panel.entity_id);
+      if (error) throw error;
+      return (data || []).filter(e => panel.panel_members?.includes(e.expert_email));
     },
     enabled: !!panel
   });
 
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
-
   const recordDecisionMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExpertPanel.update(panelId, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('expert_panels')
+        .update(data)
+        .eq('id', panelId);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['expert-panel']);
       toast.success(t({ en: 'Decision recorded', ar: 'تم تسجيل القرار' }));

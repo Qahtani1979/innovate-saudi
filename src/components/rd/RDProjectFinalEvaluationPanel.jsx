@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Award, CheckCircle2, AlertCircle, Users, X, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [evaluationData, setEvaluationData] = useState({
     overall_score: 80,
     innovation_score: 80,
@@ -29,15 +30,16 @@ export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
     improvement_suggestions: []
   });
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const { data: evaluations = [] } = useQuery({
     queryKey: ['rd-project-final-evaluations', project.id],
     queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === 'rd_project' && e.entity_id === project.id);
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_type', 'rd_project')
+        .eq('entity_id', project.id);
+      if (error) throw error;
+      return data || [];
     }
   });
 
