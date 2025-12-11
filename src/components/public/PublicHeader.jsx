@@ -12,9 +12,13 @@ import UserAvatarMenu from '@/components/shared/UserAvatarMenu';
 export default function PublicHeader() {
   const { language, isRTL, toggleLanguage, t } = useLanguage();
   const { isAuthenticated, user } = useAuth();
-  const { defaultDashboard, dashboardLabel } = usePersonaRouting();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Get persona routing - the hook handles unauthenticated users gracefully
+  const personaRouting = usePersonaRouting();
+  const defaultDashboard = personaRouting?.defaultDashboard || '/citizen-dashboard';
+  const dashboardLabel = personaRouting?.dashboardLabel || { en: 'Dashboard', ar: 'لوحة التحكم' };
 
   const navLinks = [
     { href: '/', label: t({ en: 'Home', ar: 'الرئيسية' }) },
