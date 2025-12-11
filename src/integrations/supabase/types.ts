@@ -1100,6 +1100,7 @@ export type Database = {
           constraints: Json | null
           coordinates: Json | null
           created_at: string
+          created_by: string | null
           current_situation_ar: string | null
           current_situation_en: string | null
           data_evidence: Json | null
@@ -1198,6 +1199,7 @@ export type Database = {
           constraints?: Json | null
           coordinates?: Json | null
           created_at?: string
+          created_by?: string | null
           current_situation_ar?: string | null
           current_situation_en?: string | null
           data_evidence?: Json | null
@@ -1296,6 +1298,7 @@ export type Database = {
           constraints?: Json | null
           coordinates?: Json | null
           created_at?: string
+          created_by?: string | null
           current_situation_ar?: string | null
           current_situation_en?: string | null
           data_evidence?: Json | null
@@ -5102,6 +5105,7 @@ export type Database = {
           city_id: string | null
           code: string | null
           created_at: string
+          created_by: string | null
           deleted_by: string | null
           deleted_date: string | null
           description_ar: string | null
@@ -5173,6 +5177,7 @@ export type Database = {
           city_id?: string | null
           code?: string | null
           created_at?: string
+          created_by?: string | null
           deleted_by?: string | null
           deleted_date?: string | null
           description_ar?: string | null
@@ -5244,6 +5249,7 @@ export type Database = {
           city_id?: string | null
           code?: string | null
           created_at?: string
+          created_by?: string | null
           deleted_by?: string | null
           deleted_date?: string | null
           description_ar?: string | null
@@ -5948,6 +5954,7 @@ export type Database = {
           sector_id: string | null
           service_focus_ids: string[] | null
           solution_types_targeted: string[] | null
+          status: string | null
           strategic_kpi_contributions: Json | null
           strategic_objective_ids: string[] | null
           strategic_pillar_id: string | null
@@ -6026,6 +6033,7 @@ export type Database = {
           sector_id?: string | null
           service_focus_ids?: string[] | null
           solution_types_targeted?: string[] | null
+          status?: string | null
           strategic_kpi_contributions?: Json | null
           strategic_objective_ids?: string[] | null
           strategic_pillar_id?: string | null
@@ -6104,6 +6112,7 @@ export type Database = {
           sector_id?: string | null
           service_focus_ids?: string[] | null
           solution_types_targeted?: string[] | null
+          status?: string | null
           strategic_kpi_contributions?: Json | null
           strategic_objective_ids?: string[] | null
           strategic_pillar_id?: string | null
@@ -6371,6 +6380,7 @@ export type Database = {
           code: string | null
           commercialization_potential: Json | null
           created_at: string
+          created_by: string | null
           data_management_plan: string | null
           datasets: Json | null
           deleted_by: string | null
@@ -6456,6 +6466,7 @@ export type Database = {
           code?: string | null
           commercialization_potential?: Json | null
           created_at?: string
+          created_by?: string | null
           data_management_plan?: string | null
           datasets?: Json | null
           deleted_by?: string | null
@@ -6541,6 +6552,7 @@ export type Database = {
           code?: string | null
           commercialization_potential?: Json | null
           created_at?: string
+          created_by?: string | null
           data_management_plan?: string | null
           datasets?: Json | null
           deleted_by?: string | null
