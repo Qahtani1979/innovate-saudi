@@ -49,8 +49,17 @@ export function usePersonaRouting() {
       };
     }
 
-    // Municipality Staff
-    if (isMunicipality || roles.some(r => r.includes('municipality'))) {
+    // Municipality Staff (all municipality roles including staff)
+    if (isMunicipality || roles.some(r => 
+      r.includes('municipality') || 
+      r === 'municipality_admin' || 
+      r === 'municipality_staff' ||
+      r === 'municipality_coordinator' ||
+      r === 'municipality_manager' ||
+      r === 'municipality_director' ||
+      r === 'municipality_innovation_officer' ||
+      r === 'municipality_viewer'
+    )) {
       return {
         persona: 'municipality',
         defaultDashboard: '/municipality-dashboard',

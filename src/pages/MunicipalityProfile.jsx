@@ -1,5 +1,6 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,12 +36,31 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function MunicipalityProfile() {
   const urlParams = new URLSearchParams(window.location.search);
-  const municipalityId = urlParams.get('id');
+  const urlMunicipalityId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const [showAIInsights, setShowAIInsights] = React.useState(false);
   const [aiInsights, setAiInsights] = React.useState(null);
   
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+
+  // Get user's municipality from auth context if no ID provided
+  const { data: userProfile } = useQuery({
+    queryKey: ['current-user-profile-for-municipality'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return null;
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('municipality_id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !urlMunicipalityId
+  });
+
+  // Use URL param if provided, otherwise fallback to user's municipality
+  const municipalityId = urlMunicipalityId || userProfile?.municipality_id;
 
   const { data: municipality, isLoading } = useQuery({
     queryKey: ['municipality', municipalityId],
