@@ -24,6 +24,7 @@ import QuickActionsPanel from '../components/QuickActionsPanel';
 import NationalMap from '../components/NationalMap';
 import PersonaDashboardWidget from '../components/PersonaDashboardWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import RoleRequestStatusBanner from '../components/profile/RoleRequestStatusBanner';
 
 function Home() {
   const { user } = useAuth();
@@ -169,6 +170,9 @@ function Home() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Role Request Status Banner */}
+      <RoleRequestStatusBanner />
+      
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

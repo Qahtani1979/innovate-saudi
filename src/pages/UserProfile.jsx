@@ -28,6 +28,7 @@ import {
   SkillsBadges,
   WorkExperienceSection 
 } from '../components/profile/BilingualProfileDisplay';
+import RoleRequestStatusBanner from '../components/profile/RoleRequestStatusBanner';
 
 function UserProfile() {
   const { language, isRTL, t } = useLanguage();
@@ -235,6 +236,9 @@ function UserProfile() {
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto px-2 sm:px-4" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Role Request Status Banner */}
+      <RoleRequestStatusBanner />
+      
       {/* Cover & Avatar */}
       <Card className="overflow-hidden">
         <div className="h-32 sm:h-48 bg-gradient-to-br from-primary/80 to-primary relative overflow-hidden">
