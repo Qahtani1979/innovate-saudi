@@ -66,7 +66,6 @@ export const SIDEBAR_MENUS = {
     color: 'from-purple-600 to-violet-500',
     items: [
       { name: 'ExecutiveDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
-      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
       { name: 'StrategicPlans', icon: Target, label: { en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' } },
       { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' } },
       { name: 'Pilots', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
@@ -74,7 +73,7 @@ export const SIDEBAR_MENUS = {
       { name: 'NationalInnovationMap', icon: Map, label: { en: 'Innovation Map', ar: 'خريطة الابتكار' } },
       { name: 'Municipalities', icon: Building2, label: { en: 'Municipalities', ar: 'البلديات' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
-      { name: 'ReportsBuilder', icon: FileBarChart, label: { en: 'Reports', ar: 'التقارير' } },
+      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics & Reports', ar: 'التحليلات والتقارير' } },
     ]
   },
 
