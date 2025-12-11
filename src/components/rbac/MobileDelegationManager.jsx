@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,27 +7,37 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Mobile-optimized delegation manager
  */
 export default function MobileDelegationManager() {
+  const { user } = useAuth();
   const [delegatee, setDelegatee] = useState('');
   const [selectedPermissions, setSelectedPermissions] = useState([]);
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
-
   const { data: myDelegations = [] } = useQuery({
-    queryKey: ['my-delegations'],
-    queryFn: () => base44.entities.DelegationRule.filter({ delegator_email: user?.email })
+    queryKey: ['my-delegations', user?.email],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('delegation_rules')
+        .select('*')
+        .eq('delegator_email', user?.email);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.DelegationRule.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('delegation_rules')
+        .insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['my-delegations']);
       toast.success('Delegation created');
@@ -42,11 +52,12 @@ export default function MobileDelegationManager() {
     if (!delegatee || selectedPermissions.length === 0) return;
 
     createMutation.mutate({
-      delegator_email: user.email,
-      delegatee_email: delegatee,
-      delegated_permissions: selectedPermissions,
-      approval_status: 'pending',
-      is_active: false
+      delegator_email: user?.email,
+      delegate_email: delegatee,
+      permission_types: selectedPermissions,
+      is_active: false,
+      start_date: new Date().toISOString(),
+      end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     });
   };
 
@@ -93,13 +104,13 @@ export default function MobileDelegationManager() {
           <Card key={d.id} className="border">
             <CardContent className="pt-4">
               <div className="flex items-center justify-between mb-2">
-                <p className="font-medium text-sm">{d.delegatee_email}</p>
-                <Badge className={d.approval_status === 'approved' ? 'bg-green-600' : 'bg-amber-600'}>
-                  {d.approval_status}
+                <p className="font-medium text-sm">{d.delegate_email}</p>
+                <Badge className={d.is_active ? 'bg-green-600' : 'bg-amber-600'}>
+                  {d.is_active ? 'active' : 'pending'}
                 </Badge>
               </div>
               <div className="flex flex-wrap gap-1">
-                {d.delegated_permissions?.map((p, i) => (
+                {d.permission_types?.map((p, i) => (
                   <Badge key={i} variant="outline" className="text-xs">{p}</Badge>
                 ))}
               </div>

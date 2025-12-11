@@ -1,20 +1,31 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Handshake, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * AI-powered partnership orchestration
  * Suggests partnerships based on strategic alignment
  */
 export default function PartnershipOrchestrator({ organizationId }) {
+  const { user } = useAuth();
+
   const { data: org } = useQuery({
     queryKey: ['org', organizationId],
-    queryFn: () => base44.entities.Organization.filter({ id: organizationId }).then(r => r[0]),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', organizationId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
     enabled: !!organizationId
   });
 
@@ -23,13 +34,14 @@ export default function PartnershipOrchestrator({ organizationId }) {
     queryFn: async () => {
       if (!org) return [];
       
-      // Find organizations with complementary capabilities
-      const allOrgs = await base44.entities.Organization.filter({
-        id: { $ne: organizationId },
-        is_active: true
-      });
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .neq('id', organizationId)
+        .eq('is_active', true);
+      if (error) throw error;
 
-      return allOrgs.filter(o => {
+      return (data || []).filter(o => {
         const hasComplementary = org.capabilities?.some(cap => 
           o.capabilities?.includes(cap)
         );
@@ -42,13 +54,16 @@ export default function PartnershipOrchestrator({ organizationId }) {
 
   const suggestPartnership = async (partnerId) => {
     try {
-      await base44.entities.Partnership.create({
-        organization_a_id: organizationId,
-        organization_b_id: partnerId,
-        partnership_type: 'strategic',
-        status: 'proposed',
-        proposed_by: (await base44.auth.me()).email
-      });
+      const { error } = await supabase
+        .from('partnerships')
+        .insert({
+          organization_a_id: organizationId,
+          organization_b_id: partnerId,
+          partnership_type: 'strategic',
+          status: 'proposed',
+          proposed_by: user?.email
+        });
+      if (error) throw error;
       toast.success('Partnership proposal sent');
     } catch (error) {
       toast.error('Failed to propose partnership');

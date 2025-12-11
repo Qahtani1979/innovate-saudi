@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,41 +8,43 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { Heart, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ExpressInterestButton({ challenge }) {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [interestType, setInterestType] = useState('solution_provider');
   const [notes, setNotes] = useState('');
 
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
-
   const { data: existingInterest } = useQuery({
     queryKey: ['my-interest', challenge.id, user?.email],
     queryFn: async () => {
-      const interests = await base44.entities.ChallengeInterest.filter({
-        challenge_id: challenge.id,
-        user_email: user.email
-      });
-      return interests[0];
+      const { data, error } = await supabase
+        .from('challenge_interests')
+        .select('*')
+        .eq('challenge_id', challenge.id)
+        .eq('user_email', user?.email)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!user && !!challenge
   });
 
   const expressMutation = useMutation({
     mutationFn: async () => {
-      return await base44.entities.ChallengeInterest.create({
-        challenge_id: challenge.id,
-        user_email: user.email,
-        interest_type: interestType,
-        notes,
-        expressed_date: new Date().toISOString(),
-        status: 'watching'
-      });
+      const { error } = await supabase
+        .from('challenge_interests')
+        .insert({
+          challenge_id: challenge.id,
+          user_email: user?.email,
+          interest_type: interestType,
+          notes,
+          status: 'watching'
+        });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['my-interest']);
@@ -53,9 +55,11 @@ export default function ExpressInterestButton({ challenge }) {
 
   const withdrawMutation = useMutation({
     mutationFn: async () => {
-      return await base44.entities.ChallengeInterest.update(existingInterest.id, {
-        status: 'no_longer_interested'
-      });
+      const { error } = await supabase
+        .from('challenge_interests')
+        .update({ status: 'no_longer_interested' })
+        .eq('id', existingInterest.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['my-interest']);

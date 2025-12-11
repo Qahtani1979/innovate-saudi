@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Plus, CheckCircle2, Clock, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ParticipantAssignmentSystem({ programId }) {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [newAssignment, setNewAssignment] = useState({
@@ -24,8 +26,13 @@ export default function ParticipantAssignmentSystem({ programId }) {
   const { data: program } = useQuery({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const programs = await base44.entities.Program.list();
-      return programs.find(p => p.id === programId);
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('id', programId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!programId
   });
@@ -33,30 +40,34 @@ export default function ParticipantAssignmentSystem({ programId }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['program-applications', programId],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => a.program_id === programId && a.status === 'accepted');
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', programId)
+        .eq('status', 'accepted');
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
 
   const assignments = program?.assignments || [];
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
-
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.Program.update(programId, {
-        assignments: [...assignments, {
-          ...data,
-          id: Date.now().toString(),
-          created_date: new Date().toISOString(),
-          created_by: currentUser?.email,
-          submissions: []
-        }]
-      });
+      const { error } = await supabase
+        .from('programs')
+        .update({
+          assignments: [...assignments, {
+            ...data,
+            id: Date.now().toString(),
+            created_date: new Date().toISOString(),
+            created_by: user?.email,
+            submissions: []
+          }]
+        })
+        .eq('id', programId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['program', programId]);
