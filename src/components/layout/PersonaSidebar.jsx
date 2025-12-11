@@ -73,12 +73,14 @@ export default function PersonaSidebar({ isOpen, onClose }) {
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100%-80px)]">
           {menuConfig.items.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.name);
+            // Use item.path for external links (like home), otherwise use createPageUrl
+            const linkPath = item.path || createPageUrl(item.name);
+            const active = item.path ? location.pathname === item.path : isActive(item.name);
             
             return (
               <Link
                 key={item.name}
-                to={createPageUrl(item.name)}
+                to={linkPath}
                 onClick={onClose}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",

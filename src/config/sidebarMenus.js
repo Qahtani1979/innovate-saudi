@@ -60,8 +60,12 @@ import {
   LineChart,
   Compass,
   FlaskConical,
-  Cpu
+  Cpu,
+  Home
 } from 'lucide-react';
+
+// Common home link that appears at top of all persona sidebars
+const HOME_LINK = { name: 'PublicPortal', icon: Home, label: { en: 'Home', ar: 'الرئيسية' }, isExternal: true, path: '/' };
 
 // Flat menu configurations per persona
 // Note: Profile and Settings are in the header dropdown, not sidebar
@@ -71,6 +75,7 @@ export const SIDEBAR_MENUS = {
     icon: Shield,
     color: 'from-red-600 to-rose-500',
     items: [
+      HOME_LINK,
       { name: 'Home', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'UserManagementHub', icon: Users, label: { en: 'Users', ar: 'المستخدمين' } },
       { name: 'RolePermissionManager', icon: UserCheck, label: { en: 'Roles & Permissions', ar: 'الأدوار والصلاحيات' } },
@@ -105,6 +110,7 @@ export const SIDEBAR_MENUS = {
     icon: Target,
     color: 'from-purple-600 to-violet-500',
     items: [
+      HOME_LINK,
       { name: 'ExecutiveDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'StrategyCockpit', icon: Gauge, label: { en: 'Strategy Cockpit', ar: 'قمرة الاستراتيجية' } },
       { name: 'OKRManagementSystem', icon: Target, label: { en: 'OKR Management', ar: 'إدارة الأهداف' } },
@@ -133,6 +139,7 @@ export const SIDEBAR_MENUS = {
     icon: Globe,
     color: 'from-indigo-600 to-blue-500',
     items: [
+      HOME_LINK,
       { name: 'ExecutiveDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'RegionalDashboard', icon: Map, label: { en: 'Regional Dashboard', ar: 'لوحة إقليمية' } },
       { name: 'SectorDashboard', icon: PieChart, label: { en: 'Sector Dashboard', ar: 'لوحة القطاع' } },
@@ -158,6 +165,7 @@ export const SIDEBAR_MENUS = {
     icon: Building2,
     color: 'from-emerald-600 to-green-500',
     items: [
+      HOME_LINK,
       { name: 'MunicipalityDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'MunicipalityProfile', icon: Building2, label: { en: 'Municipality Profile', ar: 'ملف البلدية' } },
       { name: 'MIIDrillDown', icon: PieChart, label: { en: 'MII Score Details', ar: 'تفاصيل المؤشر' } },
@@ -185,6 +193,7 @@ export const SIDEBAR_MENUS = {
     icon: Briefcase,
     color: 'from-orange-600 to-amber-500',
     items: [
+      HOME_LINK,
       { name: 'StartupDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'SolutionCreateWizard', icon: Lightbulb, label: { en: 'Create Solution', ar: 'إنشاء حل' } },
       { name: 'ProviderPortfolioDashboard', icon: FolderKanban, label: { en: 'My Solutions', ar: 'حلولي' } },
@@ -210,6 +219,7 @@ export const SIDEBAR_MENUS = {
     icon: GraduationCap,
     color: 'from-amber-600 to-yellow-500',
     items: [
+      HOME_LINK,
       { name: 'ExpertDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'ExpertProfile', icon: UserCircle, label: { en: 'My Profile', ar: 'ملفي الشخصي' } },
       { name: 'ExpertPerformanceDashboard', icon: Activity, label: { en: 'Performance', ar: 'الأداء' } },
@@ -231,6 +241,7 @@ export const SIDEBAR_MENUS = {
     icon: Microscope,
     color: 'from-teal-600 to-cyan-500',
     items: [
+      HOME_LINK,
       { name: 'ResearcherDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'RDCalls', icon: Rocket, label: { en: 'R&D Calls', ar: 'دعوات البحث' } },
       { name: 'ResearchOutputsHub', icon: FileSearch, label: { en: 'Research Outputs', ar: 'مخرجات البحث' } },
@@ -252,6 +263,7 @@ export const SIDEBAR_MENUS = {
     icon: Users,
     color: 'from-slate-600 to-gray-500',
     items: [
+      HOME_LINK,
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
       { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Submit Proposal', ar: 'تقديم مقترح' } },
@@ -274,6 +286,7 @@ export const SIDEBAR_MENUS = {
     icon: User,
     color: 'from-gray-600 to-slate-500',
     items: [
+      HOME_LINK,
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
       { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Submit Proposal', ar: 'تقديم مقترح' } },
@@ -293,6 +306,7 @@ export const SIDEBAR_MENUS = {
     icon: User,
     color: 'from-gray-500 to-slate-400',
     items: [
+      HOME_LINK,
       { name: 'ViewerDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
