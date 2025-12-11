@@ -89,28 +89,43 @@ For admins: focus on reviewing submissions`,
 
   const roleBasedQuickActions = {
     municipality_admin: [
-      { label: 'Submit First Challenge', page: 'ChallengeCreate' },
-      { label: 'View Open Pilots', page: 'Pilots' },
-      { label: 'Complete City Profile', page: 'MunicipalityDashboard' }
+      { label: t({ en: 'Submit First Challenge', ar: 'إرسال التحدي الأول' }), page: 'ChallengeCreate' },
+      { label: t({ en: 'View Open Pilots', ar: 'عرض التجارب المفتوحة' }), page: 'Pilots' },
+      { label: t({ en: 'Complete City Profile', ar: 'إكمال ملف المدينة' }), page: 'MunicipalityDashboard' }
     ],
     startup_user: [
-      { label: 'Browse Challenges', page: 'Challenges' },
-      { label: 'Complete Solution Profile', page: 'SolutionCreate' },
-      { label: 'Join Matchmaker', page: 'MatchmakerJourney' }
+      { label: t({ en: 'Browse Challenges', ar: 'تصفح التحديات' }), page: 'Challenges' },
+      { label: t({ en: 'Complete Solution Profile', ar: 'إكمال ملف الحل' }), page: 'SolutionCreate' },
+      { label: t({ en: 'Join Matchmaker', ar: 'انضم للمطابقة' }), page: 'MatchmakerJourney' }
     ],
     researcher: [
-      { label: 'Explore R&D Calls', page: 'RDCalls' },
-      { label: 'Complete Researcher Profile', page: 'ResearcherProfile' },
-      { label: 'Browse Living Labs', page: 'LivingLabs' }
+      { label: t({ en: 'Explore R&D Calls', ar: 'استكشاف طلبات البحث' }), page: 'RDCalls' },
+      { label: t({ en: 'Complete Researcher Profile', ar: 'إكمال ملف الباحث' }), page: 'ResearcherProfile' },
+      { label: t({ en: 'Browse Living Labs', ar: 'تصفح المختبرات الحية' }), page: 'LivingLabs' }
+    ],
+    citizen: [
+      { label: t({ en: 'Submit Your First Idea', ar: 'أرسل فكرتك الأولى' }), page: 'CitizenIdeaSubmission' },
+      { label: t({ en: 'Vote on Ideas', ar: 'صوت للأفكار' }), page: 'PublicIdeasBoard' },
+      { label: t({ en: 'Browse Public Pilots', ar: 'تصفح التجارب العامة' }), page: 'PublicPilotTracker' }
+    ],
+    user: [
+      { label: t({ en: 'Submit Your First Idea', ar: 'أرسل فكرتك الأولى' }), page: 'CitizenIdeaSubmission' },
+      { label: t({ en: 'Vote on Ideas', ar: 'صوت للأفكار' }), page: 'PublicIdeasBoard' },
+      { label: t({ en: 'View Upcoming Events', ar: 'عرض الفعاليات القادمة' }), page: 'EventCalendar' }
+    ],
+    viewer: [
+      { label: t({ en: 'Browse Public Ideas', ar: 'تصفح الأفكار العامة' }), page: 'PublicIdeasBoard' },
+      { label: t({ en: 'View Upcoming Events', ar: 'عرض الفعاليات القادمة' }), page: 'EventCalendar' },
+      { label: t({ en: 'Read Latest News', ar: 'اقرأ آخر الأخبار' }), page: 'News' }
     ],
     admin: [
-      { label: 'Review Pending Challenges', page: 'ChallengeReviewQueue' },
-      { label: 'Check System Health', page: 'SystemHealthDashboard' },
-      { label: 'View Analytics', page: 'ExecutiveDashboard' }
+      { label: t({ en: 'Review Pending Challenges', ar: 'مراجعة التحديات المعلقة' }), page: 'ChallengeReviewQueue' },
+      { label: t({ en: 'Check System Health', ar: 'فحص صحة النظام' }), page: 'SystemHealthDashboard' },
+      { label: t({ en: 'View Analytics', ar: 'عرض التحليلات' }), page: 'ExecutiveDashboard' }
     ]
   };
 
-  const quickActions = roleBasedQuickActions[user.role] || roleBasedQuickActions.admin;
+  const quickActions = roleBasedQuickActions[user.role] || roleBasedQuickActions.citizen;
 
   return (
     <Card className="border-2 border-purple-300">
