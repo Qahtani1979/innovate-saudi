@@ -6,5 +6,5 @@ export { useChallengesWithVisibility } from './useChallengesWithVisibility';
 export { usePilotsWithVisibility } from './usePilotsWithVisibility';
 export { useProgramsWithVisibility } from './useProgramsWithVisibility';
 
-// Note: Import usePermissions directly from '@/components/permissions/usePermissions'
-// to avoid circular dependency issues
+// Re-export permissions hook
+export { usePermissions } from '@/components/permissions/usePermissions';
