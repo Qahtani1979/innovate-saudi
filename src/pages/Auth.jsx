@@ -259,7 +259,7 @@ export default function Auth() {
 
         {/* Center Content */}
         <div className="relative z-10 flex-1 flex flex-col justify-center">
-          <div className="flex items-center gap-3 mb-8">
+          <Link to="/" className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
             <div className="p-3 bg-primary-foreground/20 rounded-xl">
               <Building2 className="h-10 w-10 text-primary-foreground" />
             </div>
@@ -271,7 +271,7 @@ export default function Auth() {
                 {t({ en: 'Municipal Innovation Management', ar: 'إدارة الابتكار البلدي' })}
               </p>
             </div>
-          </div>
+          </Link>
 
           <p className="text-lg text-primary-foreground/90 mb-10 max-w-md leading-relaxed">
             {t({ 
@@ -332,12 +332,12 @@ export default function Auth() {
                 {language === 'en' ? 'العربية' : 'English'}
               </Button>
             </div>
-            <div className="flex items-center gap-3 mb-2">
+            <Link to="/" className="flex items-center gap-3 mb-2 hover:opacity-80 transition-opacity">
               <Building2 className="h-8 w-8 text-primary" />
               <h1 className="text-xl font-bold text-foreground">
                 {t({ en: 'Innovation Platform', ar: 'منصة الابتكار' })}
               </h1>
-            </div>
+            </Link>
           </div>
 
           <Card className="border-border/50 shadow-xl">
