@@ -258,6 +258,7 @@ function ExpertRegistry() {
             </Link>
           ))
         )}
+      </div>
     </PageLayout>
   );
 }
