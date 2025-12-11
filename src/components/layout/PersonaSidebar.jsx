@@ -11,7 +11,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 export default function PersonaSidebar({ isOpen, onClose }) {
   const { t, language, isRTL } = useLanguage();
   const { persona } = usePersonaRouting();
-  const { hasPermission, hasRole, roles, userMunicipality, isAdmin } = usePermissions();
+  const { hasPermission, hasAnyPermission, roles, userMunicipality, isAdmin } = usePermissions();
   const location = useLocation();
 
   const menuConfig = SIDEBAR_MENUS[persona] || SIDEBAR_MENUS.user;
@@ -26,7 +26,7 @@ export default function PersonaSidebar({ isOpen, onClose }) {
   const filteredItems = useMemo(() => {
     return menuConfig.items.filter((item) => {
       // Always show items without permission requirements (like Home)
-      if (!item.permission && !item.roles) return true;
+      if (!item.permission && !item.anyPermission && !item.roles) return true;
       
       // Admin sees everything
       if (isAdmin) return true;
@@ -38,14 +38,19 @@ export default function PersonaSidebar({ isOpen, onClose }) {
         }
       }
       
-      // Check permission
+      // Check anyPermission (user needs at least one)
+      if (item.anyPermission && item.anyPermission.length > 0) {
+        return hasAnyPermission(item.anyPermission);
+      }
+      
+      // Check single permission
       if (item.permission) {
         return hasPermission(item.permission);
       }
       
       return true;
     });
-  }, [menuConfig.items, hasPermission, hasRole, roles, isAdmin]);
+  }, [menuConfig.items, hasPermission, hasAnyPermission, roles, isAdmin]);
 
   // Build link path with municipality ID for pages that need it
   const buildLinkPath = (item) => {
