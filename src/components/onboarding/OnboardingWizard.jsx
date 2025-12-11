@@ -22,7 +22,7 @@ import {
   Rocket, Target, BookOpen, Network, X, Loader2,
   User, Briefcase, GraduationCap, Wand2, RefreshCw,
   Upload, FileText, Linkedin, Globe, Award, AlertTriangle, 
-  Info, Plus, Bot
+  Info, Plus, Bot, Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
@@ -56,9 +56,31 @@ const sendRoleRequestNotification = async (type, requestData) => {
 
 // Roles that require approval vs auto-approved
 const AUTO_APPROVED_ROLES = ['citizen', 'viewer'];
-const REQUIRES_APPROVAL_ROLES = ['municipality_staff', 'provider', 'researcher', 'expert'];
+const REQUIRES_APPROVAL_ROLES = ['municipality_staff', 'provider', 'researcher', 'expert', 'deputyship'];
+
+// MoMAH (Ministry of Municipal, Housing and Rural Affairs) domain for auto-detecting deputyship users
+const MOMAH_DOMAINS = ['momah.gov.sa', 'momra.gov.sa', 'housing.gov.sa'];
+
+// Helper to detect if email belongs to MoMAH
+const isMoMAHEmail = (email) => {
+  if (!email) return false;
+  const domain = email.split('@')[1]?.toLowerCase();
+  return MOMAH_DOMAINS.some(d => domain === d || domain?.endsWith('.' + d));
+};
 
 const PERSONAS = [
+  {
+    id: 'deputyship',
+    icon: Shield,
+    color: 'from-indigo-500 to-indigo-700',
+    bgColor: 'bg-indigo-50',
+    borderColor: 'border-indigo-200',
+    title: { en: 'MoMAH / Deputyship', ar: 'وزارة الشؤون البلدية / الوكالة' },
+    description: { en: 'I work at MoMAH and oversee municipal innovation nationally', ar: 'أعمل في وزارة الشؤون البلدية وأشرف على الابتكار البلدي وطنياً' },
+    landingPage: 'ExecutiveDashboard',
+    requiresApproval: true,
+    domainHint: MOMAH_DOMAINS
+  },
   {
     id: 'municipality_staff',
     icon: Building2,
@@ -765,19 +787,28 @@ Return comprehensive suggestions for all fields.`,
 
   // Check if specialized wizard is needed
   const needsSpecializedWizard = (persona) => {
-    return ['municipality_staff', 'provider', 'researcher', 'citizen', 'expert'].includes(persona);
+    return ['municipality_staff', 'provider', 'researcher', 'citizen', 'expert', 'deputyship'].includes(persona);
   };
 
   // Get specialized wizard page
   const getSpecializedWizardPage = (persona) => {
     const wizardMap = {
       municipality_staff: 'MunicipalityStaffOnboarding',
-      provider: 'StartupOnboarding',
+      provider: 'ProviderOnboarding',
       researcher: 'ResearcherOnboarding',
       citizen: 'CitizenOnboarding',
-      expert: 'ExpertOnboarding'
+      expert: 'ExpertOnboarding',
+      deputyship: 'DeputyshipOnboarding'
     };
     return wizardMap[persona] || null;
+  };
+
+  // Auto-suggest persona based on email domain
+  const getSuggestedPersona = () => {
+    if (user?.email && isMoMAHEmail(user.email)) {
+      return 'deputyship';
+    }
+    return null;
   };
 
   const handleComplete = async () => {
