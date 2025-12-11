@@ -128,6 +128,9 @@ export default function RBACDashboardContent() {
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--destructive))', 'hsl(217, 91%, 60%)', 'hsl(330, 81%, 60%)', 'hsl(190, 90%, 50%)'];
 
+  // Inactive roles for alert
+  const inactiveRoles = roleUsageData.filter(r => r.users === 0);
+
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
@@ -179,7 +182,7 @@ export default function RBACDashboardContent() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-blue-600" />
-              {t({ en: 'Role Usage', ar: 'استخدام الأدوار' })}
+              {t({ en: 'Role Usage Distribution', ar: 'توزيع استخدام الأدوار' })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -198,7 +201,7 @@ export default function RBACDashboardContent() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-purple-600" />
-              {t({ en: 'Top Permissions', ar: 'أهم الصلاحيات' })}
+              {t({ en: 'Top 10 Permissions Used', ar: 'أكثر 10 صلاحيات استخداماً' })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -212,7 +215,88 @@ export default function RBACDashboardContent() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-green-600" />
+              {t({ en: 'Entity Access Distribution', ar: 'توزيع الوصول للكيانات' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={entityAccessData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {entityAccessData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-orange-600" />
+              {t({ en: 'Role Complexity', ar: 'تعقيد الأدوار' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {roleUsageData.slice(0, 8).map((role, i) => (
+                <div key={i} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">{role.name}</span>
+                    <span className="text-muted-foreground">{role.permissions} perms</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                      style={{ width: `${Math.min(100, (role.permissions / 50) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Inactive Roles Alert */}
+      {inactiveRoles.length > 0 && (
+        <Card className="border-2 border-amber-300 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-900">
+              <AlertTriangle className="h-5 w-5" />
+              {t({ en: 'Inactive Roles Detected', ar: 'أدوار غير نشطة مكتشفة' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-foreground/70 mb-3">
+              {t({ en: 'The following roles have no users assigned:', ar: 'الأدوار التالية ليس لديها مستخدمين معينين:' })}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {inactiveRoles.map((role, i) => (
+                <Badge key={i} variant="outline" className="text-amber-700">
+                  {role.name}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick Links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
