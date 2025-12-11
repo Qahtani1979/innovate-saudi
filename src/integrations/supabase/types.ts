@@ -9549,26 +9549,32 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          assigned_at: string | null
           created_at: string
           id: string
           municipality_id: string | null
           organization_id: string | null
+          revoked_at: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          assigned_at?: string | null
           created_at?: string
           id?: string
           municipality_id?: string | null
           organization_id?: string | null
+          revoked_at?: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          assigned_at?: string | null
           created_at?: string
           id?: string
           municipality_id?: string | null
           organization_id?: string | null
+          revoked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
