@@ -5,14 +5,45 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { 
   Menu, CheckCircle, XCircle, AlertTriangle, ArrowRight, 
-  Shield, Target, Building2, Briefcase, GraduationCap, Microscope, Users, User, Globe
+  Shield, Target, Building2, Briefcase, GraduationCap, Microscope, Users, User, Globe,
+  Key, Lock, Eye, Edit, Database
 } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function MenuSidebarComparison() {
   const { t, isRTL } = useLanguage();
   const [selectedPersona, setSelectedPersona] = useState('admin');
+
+  // Complete System Roles (from database app_role enum)
+  const systemRoles = [
+    { role: 'admin', label: 'Platform Administrator', persona: 'admin', dashboard: '/home', gdisbMapping: 'Platform Administrator', permissions: ['Full system access', 'User management', 'Role management', 'System configuration', 'All entity CRUD'], color: 'bg-red-100 text-red-700' },
+    { role: 'municipality_admin', label: 'Municipality Admin', persona: 'municipality', dashboard: '/municipality-dashboard', gdisbMapping: null, permissions: ['Municipality data CRUD', 'Local user management', 'Challenge/Pilot creation', 'Budget management'], color: 'bg-emerald-100 text-emerald-700' },
+    { role: 'municipality_staff', label: 'Municipality Staff', persona: 'municipality', dashboard: '/municipality-dashboard', gdisbMapping: null, permissions: ['View municipality data', 'Challenge submission', 'Pilot tracking', 'Limited approvals'], color: 'bg-emerald-100 text-emerald-700' },
+    { role: 'municipality_coordinator', label: 'Municipality Coordinator', persona: 'municipality', dashboard: '/municipality-dashboard', gdisbMapping: null, permissions: ['Cross-department coordination', 'Progress reporting', 'Team management'], color: 'bg-emerald-100 text-emerald-700' },
+    { role: 'deputyship_admin', label: 'Deputyship Admin', persona: 'deputyship', dashboard: '/executive-dashboard', gdisbMapping: 'GDISB Strategy Lead', permissions: ['Regional oversight', 'Multi-city orchestration', 'Policy management', 'Strategic planning'], color: 'bg-indigo-100 text-indigo-700' },
+    { role: 'deputyship_staff', label: 'Deputyship Staff', persona: 'deputyship', dashboard: '/executive-dashboard', gdisbMapping: null, permissions: ['View regional data', 'Report generation', 'Limited approvals'], color: 'bg-indigo-100 text-indigo-700' },
+    { role: 'provider', label: 'Solution Provider', persona: 'provider', dashboard: '/startup-dashboard', gdisbMapping: null, permissions: ['Solution CRUD (own)', 'Proposal submission', 'Contract management', 'Pilot participation'], color: 'bg-orange-100 text-orange-700' },
+    { role: 'expert', label: 'Expert/Evaluator', persona: 'expert', dashboard: '/expert-dashboard', gdisbMapping: null, permissions: ['Evaluation assignments', 'Panel participation', 'Scoring', 'Feedback provision'], color: 'bg-amber-100 text-amber-700' },
+    { role: 'researcher', label: 'Researcher', persona: 'researcher', dashboard: '/researcher-dashboard', gdisbMapping: null, permissions: ['R&D project creation', 'Research outputs', 'Funding applications', 'Collaboration'], color: 'bg-teal-100 text-teal-700' },
+    { role: 'investor', label: 'Investor', persona: 'provider', dashboard: '/startup-dashboard', gdisbMapping: null, permissions: ['Portfolio view', 'Deal flow access', 'Investment tracking'], color: 'bg-purple-100 text-purple-700' },
+    { role: 'ministry', label: 'Ministry Official', persona: 'executive', dashboard: '/executive-dashboard', gdisbMapping: 'Executive Leadership', permissions: ['Strategic oversight', 'Policy review', 'National metrics', 'Approval authority'], color: 'bg-purple-100 text-purple-700' },
+    { role: 'moderator', label: 'Content Moderator', persona: 'admin', dashboard: '/home', gdisbMapping: null, permissions: ['Content moderation', 'User flagging', 'Community management'], color: 'bg-gray-100 text-gray-700' },
+    { role: 'citizen', label: 'Citizen', persona: 'citizen', dashboard: '/citizen-dashboard', gdisbMapping: null, permissions: ['Idea submission', 'Voting', 'Feedback', 'Pilot enrollment', 'Events access'], color: 'bg-slate-100 text-slate-700' },
+    { role: 'viewer', label: 'Viewer', persona: 'user', dashboard: '/home', gdisbMapping: null, permissions: ['Read-only access', 'Public content'], color: 'bg-gray-100 text-gray-700' },
+    { role: 'user', label: 'Basic User', persona: 'user', dashboard: '/home', gdisbMapping: null, permissions: ['Profile management', 'Basic navigation', 'Public content'], color: 'bg-gray-100 text-gray-700' }
+  ];
+
+  // GDISB Sub-Personas (Functional roles within Innovation Department)
+  const gdisbSubPersonas = [
+    { name: 'GDISB Strategy Lead', databaseRoles: ['admin', 'deputyship_admin'], persona: 'executive', dashboard: '/executive-dashboard', focus: 'Strategic direction, high-level decisions, tier-1 priority approvals', keyPages: ['StrategyCockpit', 'ExecutiveDashboard', 'StrategicPlanBuilder', 'OKRManagementSystem'], permissions: ['strategy_manage', 'approve_strategic_initiatives', 'budget_allocation', 'policy_direction', 'national_oversight', 'tier1_approval'] },
+    { name: 'Platform Administrator', databaseRoles: ['admin'], persona: 'admin', dashboard: '/home', focus: 'Platform operations, user management, system configuration', keyPages: ['UserManagementHub', 'RBACDashboard', 'DataManagementHub', 'SystemHealthDashboard'], permissions: ['user_manage', 'role_manage', 'system_config', 'audit_access', 'entity_crud_all', 'feature_flags'] },
+    { name: 'Program Operator', databaseRoles: ['admin', 'moderator'], persona: 'executive', dashboard: '/executive-dashboard', focus: 'Program management, cohort oversight, application review', keyPages: ['ProgramOperatorPortal', 'ProgramsControlDashboard', 'ApplicationReviewHub'], permissions: ['program_manage', 'application_review', 'cohort_manage', 'mentor_assign', 'alumni_manage'] },
+    { name: 'Executive Leadership', databaseRoles: ['ministry', 'deputyship_admin'], persona: 'executive', dashboard: '/executive-dashboard', focus: 'National innovation metrics, policy impact, strategic approvals', keyPages: ['ExecutiveDashboard', 'NationalInnovationMap', 'StrategicKPITracker', 'Portfolio'], permissions: ['view_all_dashboards', 'approve_strategic_initiatives', 'national_oversight', 'policy_review', 'budget_approval'] },
+    { name: 'Sector Specialist', databaseRoles: ['deputyship_staff', 'expert'], persona: 'deputyship', dashboard: '/executive-dashboard', focus: 'Sector-specific analysis, benchmarking, capacity planning', keyPages: ['SectorDashboard', 'CapacityPlanning', 'CrossCityLearningHub'], permissions: ['sector_analysis', 'benchmark_view', 'capacity_planning', 'cross_city_coordination'] },
+    { name: 'Quality Assurance', databaseRoles: ['admin', 'expert'], persona: 'admin', dashboard: '/home', focus: 'Data quality, validation, coverage audits', keyPages: ['DataQualityDashboard', 'ValidationDashboard', 'MenuRBACCoverageReport'], permissions: ['data_quality_manage', 'validation_rules', 'coverage_audit', 'data_governance'] }
+  ];
 
   // OLD MENU STRUCTURE (14 sections, ~247 items)
   const oldMenuSections = [
@@ -506,12 +537,189 @@ export default function MenuSidebarComparison() {
       </Card>
 
       <Tabs defaultValue="comparison" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="comparison">Side by Side</TabsTrigger>
+          <TabsTrigger value="roles">Roles & Routing</TabsTrigger>
           <TabsTrigger value="old-menu">Old Menu (14 Sections)</TabsTrigger>
           <TabsTrigger value="new-sidebar">New Sidebar (9 Personas)</TabsTrigger>
           <TabsTrigger value="gaps">Missing Items</TabsTrigger>
         </TabsList>
+
+        {/* Roles & Routing Tab */}
+        <TabsContent value="roles" className="space-y-6">
+          {/* Database Roles Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-primary" />
+                System Roles (Database app_role enum)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Role Code</TableHead>
+                      <TableHead>Label</TableHead>
+                      <TableHead>Persona</TableHead>
+                      <TableHead>Dashboard</TableHead>
+                      <TableHead>GDISB Mapping</TableHead>
+                      <TableHead>Key Permissions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {systemRoles.map((r) => (
+                      <TableRow key={r.role}>
+                        <TableCell>
+                          <Badge variant="outline" className={r.color}>{r.role}</Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{r.label}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{r.persona}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{r.dashboard}</TableCell>
+                        <TableCell>
+                          {r.gdisbMapping ? (
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                              {r.gdisbMapping}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1 max-w-[250px]">
+                            {r.permissions.slice(0, 3).map((p, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">{p}</Badge>
+                            ))}
+                            {r.permissions.length > 3 && (
+                              <Badge variant="outline" className="text-xs">+{r.permissions.length - 3}</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* GDISB Sub-Personas */}
+          <Card className="border-purple-200 bg-purple-50/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-700">
+                <Target className="h-5 w-5" />
+                GDISB / Innovation Department Sub-Personas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                These are functional roles within the Innovation Department that map to database roles. GDISB members are assigned one or more of these sub-personas based on their responsibilities.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {gdisbSubPersonas.map((subPersona) => (
+                  <Card key={subPersona.name} className="bg-white">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Key className="h-4 w-4 text-purple-600" />
+                        {subPersona.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Database Roles:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {subPersona.databaseRoles.map(r => (
+                            <Badge key={r} variant="outline" className="text-xs">{r}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">{subPersona.persona}</Badge>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{subPersona.dashboard}</span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Focus:</p>
+                        <p className="text-xs">{subPersona.focus}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Key Pages:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {subPersona.keyPages.slice(0, 3).map(p => (
+                            <Badge key={p} variant="outline" className="text-xs">{p}</Badge>
+                          ))}
+                          {subPersona.keyPages.length > 3 && (
+                            <Badge variant="outline" className="text-xs">+{subPersona.keyPages.length - 3}</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Permissions:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {subPersona.permissions.slice(0, 3).map(p => (
+                            <Badge key={p} variant="secondary" className="text-xs">{p}</Badge>
+                          ))}
+                          {subPersona.permissions.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">+{subPersona.permissions.length - 3}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Role to Persona Mapping Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ArrowRight className="h-5 w-5 text-primary" />
+                Role → Persona Routing Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {['admin', 'executive', 'deputyship', 'municipality', 'provider', 'expert', 'researcher', 'citizen', 'user'].map(persona => {
+                  const rolesForPersona = systemRoles.filter(r => r.persona === persona);
+                  const personaConfig = {
+                    admin: { icon: Shield, color: 'text-red-500', bg: 'bg-red-50' },
+                    executive: { icon: Target, color: 'text-purple-500', bg: 'bg-purple-50' },
+                    deputyship: { icon: Globe, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+                    municipality: { icon: Building2, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                    provider: { icon: Briefcase, color: 'text-orange-500', bg: 'bg-orange-50' },
+                    expert: { icon: GraduationCap, color: 'text-amber-500', bg: 'bg-amber-50' },
+                    researcher: { icon: Microscope, color: 'text-teal-500', bg: 'bg-teal-50' },
+                    citizen: { icon: Users, color: 'text-slate-500', bg: 'bg-slate-50' },
+                    user: { icon: User, color: 'text-gray-500', bg: 'bg-gray-50' }
+                  }[persona];
+                  const Icon = personaConfig.icon;
+                  return (
+                    <div key={persona} className={`p-3 rounded-lg border ${personaConfig.bg}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon className={`h-4 w-4 ${personaConfig.color}`} />
+                        <span className="font-medium capitalize">{persona}</span>
+                        <Badge variant="outline" className="ml-auto">{rolesForPersona.length}</Badge>
+                      </div>
+                      <div className="space-y-1">
+                        {rolesForPersona.map(r => (
+                          <div key={r.role} className="text-xs text-muted-foreground flex items-center gap-1">
+                            <ArrowRight className="h-2 w-2" />
+                            {r.role}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="comparison" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
