@@ -368,6 +368,7 @@ import MyChallengeTracker from './pages/MyChallengeTracker';
 import ProviderNotificationPreferences from './pages/ProviderNotificationPreferences';
 import RBACCoverageReport from './pages/RBACCoverageReport';
 import CitizenDashboard from './pages/CitizenDashboard';
+import ViewerDashboard from './pages/ViewerDashboard';
 import CitizenLeaderboard from './pages/CitizenLeaderboard';
 import PublicPilotFeedbackForm from './pages/PublicPilotFeedbackForm';
 import IdeaEvaluationQueue from './pages/IdeaEvaluationQueue';
@@ -845,6 +846,7 @@ export const PAGES = {
     "ProviderNotificationPreferences": ProviderNotificationPreferences,
     "RBACCoverageReport": RBACCoverageReport,
     "CitizenDashboard": CitizenDashboard,
+    "ViewerDashboard": ViewerDashboard,
     "CitizenLeaderboard": CitizenLeaderboard,
     "PublicPilotFeedbackForm": PublicPilotFeedbackForm,
     "IdeaEvaluationQueue": IdeaEvaluationQueue,

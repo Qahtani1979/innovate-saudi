@@ -2,7 +2,11 @@
 
 ## Overview
 
-Viewers are unauthenticated or minimally authenticated users who browse public information on the platform. They can explore success stories, published challenges, verified solutions, and platform statistics without full registration.
+Viewers are minimally authenticated users who can **browse-only** public information on the platform. They **cannot participate** (submit ideas, vote, provide feedback). This role is for users who want to observe without engaging.
+
+**Key Difference from Citizen:**
+- **Viewer**: Browse-only, no participation features, cannot submit ideas or vote
+- **Citizen**: Full participation, can submit ideas, vote, provide feedback, earn points
 
 ## Persona Attributes
 
@@ -11,40 +15,36 @@ Viewers are unauthenticated or minimally authenticated users who browse public i
 | **Role Name** | Viewer / Public User |
 | **Role Code** | `viewer` |
 | **Organization Type** | N/A |
-| **Primary Dashboard** | `PublicPortal` |
-| **Onboarding Flow** | Minimal (can upgrade to other personas) |
+| **Primary Dashboard** | `ViewerDashboard` |
+| **Onboarding Flow** | None (can upgrade to Citizen or other personas) |
 
 ## User Journey
 
 ```mermaid
 graph TD
-    A[Visit Platform] --> B[PublicPortal]
-    B --> C{Browse Content}
-    C --> D[Success Stories]
-    C --> E[Published Challenges]
-    C --> F[Verified Solutions]
-    C --> G[Innovation Map]
-    C --> H[Program Information]
-    B --> I{Register?}
-    I -->|Yes| J[Phase 1: OnboardingWizard]
-    I -->|No| K[Continue Browsing]
-    J --> L{Select Persona}
-    L -->|Municipality Staff| M[Phase 2: MunicipalityStaffOnboardingWizard]
-    L -->|Provider| N[Phase 2: StartupOnboardingWizard]
-    L -->|Researcher| O[Phase 2: ResearcherOnboardingWizard]
-    L -->|Citizen| P[Phase 2: CitizenOnboardingWizard]
-    L -->|Expert| Q[Phase 2: ExpertOnboardingWizard]
-    L -->|Stay Viewer| R[Skip Phase 2 - Home access]
+    A[Visit Platform] --> B{Authenticated?}
+    B -->|No| C[PublicLandingPage - Marketing]
+    B -->|Yes| D{Has Role?}
+    D -->|viewer| E[ViewerDashboard - Browse Only]
+    D -->|citizen| F[CitizenDashboard - Full Participation]
+    D -->|none| G[Default to CitizenDashboard]
+    E --> H{Want to Participate?}
+    H -->|Yes| I[Upgrade via Onboarding]
+    I --> J[Select Persona]
+    J --> F
 ```
 
-> **Note:** Viewers can upgrade to any persona by completing the 2-phase onboarding. Selecting "Viewer" in Phase 1 skips Phase 2 entirely.
+> **Note:** Viewers can upgrade to Citizen or other personas by completing onboarding. The default for new authenticated users without roles is Citizen.
 
 ## Permissions
 
 ### Core Permissions
 - View-only access to published content
-- No create/update/delete permissions
-- Can register to upgrade access
+- **NO** create/update/delete permissions
+- **CANNOT** submit ideas
+- **CANNOT** vote
+- **CANNOT** provide feedback
+- Can upgrade to other personas
 
 ### RLS Scope
 ```sql

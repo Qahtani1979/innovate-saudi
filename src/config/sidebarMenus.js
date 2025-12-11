@@ -267,31 +267,32 @@ export const SIDEBAR_MENUS = {
     ]
   },
 
+  // Generic authenticated user - defaults to citizen-like access
   user: {
     label: { en: 'User', ar: 'مستخدم' },
     icon: User,
     color: 'from-gray-600 to-slate-500',
     items: [
-      { name: 'Home', icon: LayoutDashboard, label: { en: 'Home', ar: 'الرئيسية' } },
+      { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'PublicIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
+      { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
-      { name: 'PublicIdeasBoard', icon: Lightbulb, label: { en: 'Ideas', ar: 'الأفكار' } },
-      { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
-      { name: 'Solutions', icon: Sparkles, label: { en: 'Solutions', ar: 'الحلول' } },
+      { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
     ]
   },
 
+  // Viewer - minimal authenticated access (browse only, cannot participate)
   viewer: {
     label: { en: 'Visitor', ar: 'زائر' },
     icon: User,
     color: 'from-gray-500 to-slate-400',
     items: [
-      { name: 'PublicPortal', icon: LayoutDashboard, label: { en: 'Home', ar: 'الرئيسية' } },
+      { name: 'ViewerDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'PublicIdeasBoard', icon: Lightbulb, label: { en: 'Ideas', ar: 'الأفكار' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
-      { name: 'Solutions', icon: Sparkles, label: { en: 'Solutions', ar: 'الحلول' } },
     ]
   }
 };
