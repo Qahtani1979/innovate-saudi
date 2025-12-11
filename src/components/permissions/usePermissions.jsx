@@ -15,7 +15,7 @@ export const usePermissions = () => {
   const userId = session?.user?.id;
   const userEmail = session?.user?.email;
 
-  // Get user profile
+  // Get user profile (handle case where profile doesn't exist yet)
   const { data: profile } = useQuery({
     queryKey: ['user-profile', userId],
     queryFn: async () => {
@@ -24,8 +24,11 @@ export const usePermissions = () => {
         .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
-      if (error) throw error;
+        .maybeSingle();
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
       return data;
     },
     enabled: !!userId
