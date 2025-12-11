@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Trophy, Medal, Award, Star, TrendingUp, Crown } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/CitizenPageLayout';
 
 function CitizenLeaderboard() {
   const { language, isRTL, t } = useLanguage();
@@ -37,15 +38,12 @@ function CitizenLeaderboard() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-900 to-orange-700 bg-clip-text text-transparent">
-          {t({ en: 'Top Contributors Leaderboard', ar: 'قائمة أفضل المساهمين' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Recognizing our most engaged citizens', ar: 'تقدير المواطنين الأكثر مشاركة' })}
-        </p>
-      </div>
+    <CitizenPageLayout>
+      <CitizenPageHeader
+        icon={Trophy}
+        title={{ en: 'Top Contributors Leaderboard', ar: 'قائمة أفضل المساهمين' }}
+        subtitle={{ en: 'Recognizing our most engaged citizens', ar: 'تقدير المواطنين الأكثر مشاركة' }}
+      />
 
       {/* Top 3 Podium */}
       <div className="grid grid-cols-3 gap-4 items-end">
@@ -128,7 +126,7 @@ function CitizenLeaderboard() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </CitizenPageLayout>
   );
 }
 

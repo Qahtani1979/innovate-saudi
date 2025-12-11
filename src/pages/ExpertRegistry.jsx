@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ExpertRegistry() {
   const { hasPermission } = usePermissions();
@@ -69,35 +70,32 @@ function ExpertRegistry() {
     : 0;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent">
-            {t({ en: 'Expert Registry', ar: 'سجل الخبراء' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Browse and connect with domain experts', ar: 'تصفح وتواصل مع الخبراء المتخصصين' })}
-          </p>
-        </div>
-        {hasPermission('expert_register') && (
-          <div className="flex gap-2">
-            <Button onClick={runSemanticSearch} disabled={semanticSearching} variant="outline" className="gap-2">
-              {semanticSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              AI Search
-            </Button>
-            <Button onClick={exportExperts} variant="outline" className="gap-2">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-            <Link to={createPageUrl('ExpertOnboarding')}>
-              <Button className="bg-gradient-to-r from-purple-600 to-blue-600">
-                <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {t({ en: 'Become an Expert', ar: 'كن خبيراً' })}
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Expert Registry', ar: 'سجل الخبراء' }}
+        subtitle={{ en: 'Browse and connect with domain experts', ar: 'تصفح وتواصل مع الخبراء المتخصصين' }}
+        icon={<Users className="h-6 w-6 text-white" />}
+        actions={
+          hasPermission('expert_register') && (
+            <div className="flex gap-2">
+              <Button onClick={runSemanticSearch} disabled={semanticSearching} variant="outline" className="gap-2">
+                {semanticSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                AI Search
               </Button>
-            </Link>
-          </div>
-        )}
-      </div>
+              <Button onClick={exportExperts} variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+              <Link to={createPageUrl('ExpertOnboarding')}>
+                <Button className="bg-gradient-to-r from-purple-600 to-blue-600">
+                  <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {t({ en: 'Become an Expert', ar: 'كن خبيراً' })}
+                </Button>
+              </Link>
+            </div>
+          )
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -260,7 +258,7 @@ function ExpertRegistry() {
             </Link>
           ))
         )}
-      </div>
+    </PageLayout>
     </div>
   );
 }

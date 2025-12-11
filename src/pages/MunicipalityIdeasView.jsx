@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Building2, Lightbulb, ThumbsUp, MapPin, Search, TrendingUp } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MunicipalityIdeasView() {
   const { language, isRTL, t } = useLanguage();
@@ -38,15 +39,12 @@ function MunicipalityIdeasView() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-teal-700 bg-clip-text text-transparent">
-          {t({ en: 'Ideas from My Municipality', ar: 'أفكار من بلديتي' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Citizen ideas specific to your municipality', ar: 'أفكار المواطنين الخاصة ببلديتك' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Ideas from My Municipality', ar: 'أفكار من بلديتي' }}
+        subtitle={{ en: 'Citizen ideas specific to your municipality', ar: 'أفكار المواطنين الخاصة ببلديتك' }}
+        icon={<Lightbulb className="h-6 w-6 text-white" />}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
@@ -137,7 +135,7 @@ function MunicipalityIdeasView() {
           </Link>
         ))}
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

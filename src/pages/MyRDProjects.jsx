@@ -16,6 +16,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MyRDProjects() {
   const { language, isRTL, t } = useLanguage();
@@ -107,25 +108,21 @@ Be concise and actionable.`,
   }
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
       <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <Microscope className="h-8 w-8 text-indigo-600" />
-            {t({ en: 'My R&D Projects', ar: 'مشاريع البحث الخاصة بي' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Track your research projects, milestones, and outputs', ar: 'تتبع مشاريع البحث والمعالم والمخرجات' })}
-          </p>
-        </div>
-        <Link to={createPageUrl('RDProjectCreate')}>
-          <Button className="bg-indigo-600 hover:bg-indigo-700">
-            {t({ en: 'New R&D Project', ar: 'مشروع بحث جديد' })}
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title={{ en: 'My R&D Projects', ar: 'مشاريع البحث الخاصة بي' }}
+        subtitle={{ en: 'Track your research projects, milestones, and outputs', ar: 'تتبع مشاريع البحث والمعالم والمخرجات' }}
+        icon={<Microscope className="h-6 w-6 text-white" />}
+        actions={
+          <Link to={createPageUrl('RDProjectCreate')}>
+            <Button className="bg-indigo-600 hover:bg-indigo-700">
+              {t({ en: 'New R&D Project', ar: 'مشروع بحث جديد' })}
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -385,7 +382,7 @@ Be concise and actionable.`,
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

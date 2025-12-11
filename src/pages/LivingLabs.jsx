@@ -33,6 +33,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function LivingLabsPage() {
   const { hasPermission } = usePermissions();
@@ -131,55 +132,52 @@ Provide:
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">
-            {t({ en: 'Living Labs Network', ar: 'شبكة المختبرات الحية' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Innovation testbeds and experimentation facilities', ar: 'منصات الاختبار والتجريب للابتكار' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('map')}
-            >
-              <Map className="h-4 w-4" />
-            </Button>
-          </div>
-          <Button onClick={handleAIInsights} variant="outline" className="gap-2" disabled={aiLoading || !isAvailable}>
-            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-          </Button>
-          {hasPermission('livinglab_manage') && (
-            <Link to={createPageUrl('LivingLabCreate')}>
-              <Button className="bg-gradient-to-r from-purple-600 to-blue-600">
-                <Plus className="h-4 w-4 mr-2" />
-                {t({ en: 'Create Lab', ar: 'إنشاء مختبر' })}
+      <PageHeader
+        title={{ en: 'Living Labs Network', ar: 'شبكة المختبرات الحية' }}
+        subtitle={{ en: 'Innovation testbeds and experimentation facilities', ar: 'منصات الاختبار والتجريب للابتكار' }}
+        icon={<Microscope className="h-6 w-6 text-white" />}
+        actions={
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 border rounded-lg p-1">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="h-4 w-4" />
               </Button>
-            </Link>
-          )}
-        </div>
-      </div>
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'map' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('map')}
+              >
+                <Map className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button onClick={handleAIInsights} variant="outline" className="gap-2" disabled={aiLoading || !isAvailable}>
+              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+            </Button>
+            {hasPermission('livinglab_manage') && (
+              <Link to={createPageUrl('LivingLabCreate')}>
+                <Button className="bg-gradient-to-r from-purple-600 to-blue-600">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t({ en: 'Create Lab', ar: 'إنشاء مختبر' })}
+                </Button>
+              </Link>
+            )}
+          </div>
+        }
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -519,11 +517,11 @@ Provide:
         <div className="text-center py-12">
           <Microscope className="h-12 w-12 text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500">
-            {t({ en: 'No living labs found', ar: 'لم يتم العثور على مختبرات' })}
-          </p>
-        </div>
-      )}
-    </div>
+          {t({ en: 'No living labs found', ar: 'لم يتم العثور على مختبرات' })}
+        </p>
+      </div>
+    )}
+    </PageLayout>
   );
 }
 
