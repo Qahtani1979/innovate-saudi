@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { format } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MyPrograms() {
   const { language, isRTL, t } = useLanguage();
@@ -47,15 +48,12 @@ function MyPrograms() {
   }).slice(0, 5);
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'My Programs', ar: 'برامجي' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Programs you\'re enrolled in', ar: 'البرامج المسجل فيها' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'My Programs', ar: 'برامجي' }}
+        subtitle={{ en: 'Programs you\'re enrolled in', ar: 'البرامج المسجل فيها' }}
+        icon={<Rocket className="h-6 w-6 text-white" />}
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -194,7 +192,7 @@ function MyPrograms() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

@@ -34,6 +34,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function SolutionsPage() {
   const { hasPermission, isAdmin } = usePermissions();
@@ -152,30 +153,28 @@ Provide bilingual insights (each item should have both English and Arabic versio
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-            {t({ en: 'Solutions Marketplace', ar: 'سوق الحلول' })}
-          </h1>
-          <p className="text-slate-600 mt-2">{t({ en: 'Discover validated solutions from providers across the ecosystem', ar: 'اكتشف الحلول المعتمدة من مقدمي الخدمات عبر النظام البيئي' })}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
-            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-          </Button>
-          {hasPermission('solution_create') && (
-            <Link to={createPageUrl('SolutionCreate')}>
-              <Button className="bg-gradient-to-r from-blue-600 to-teal-600">
-                <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {t({ en: 'Add Solution', ar: 'إضافة حل' })}
-              </Button>
-            </Link>
-          )}
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Solutions Marketplace', ar: 'سوق الحلول' }}
+        subtitle={{ en: 'Discover validated solutions from providers across the ecosystem', ar: 'اكتشف الحلول المعتمدة من مقدمي الخدمات عبر النظام البيئي' }}
+        icon={<Lightbulb className="h-6 w-6 text-white" />}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button variant="outline" className="gap-2 bg-white/50" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+            </Button>
+            {hasPermission('solution_create') && (
+              <Link to={createPageUrl('SolutionCreate')}>
+                <Button variant="secondary">
+                  <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {t({ en: 'Add Solution', ar: 'إضافة حل' })}
+                </Button>
+              </Link>
+            )}
+          </div>
+        }
+      />
 
       {/* AI Insights Modal */}
       {showAIInsights && (
@@ -489,7 +488,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
           ))
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
