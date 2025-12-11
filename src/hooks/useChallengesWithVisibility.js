@@ -7,7 +7,7 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * Hook for fetching challenges with visibility rules applied.
  * 
  * Visibility:
- * - Admin: All challenges
+ * - Admin / Full Visibility Users: All challenges
  * - National Deputyship: All challenges in their sector(s)
  * - Municipality Staff: Own + national challenges
  * - Others: Published challenges only
@@ -27,6 +27,7 @@ export function useChallengesWithVisibility(options = {}) {
     sectorIds, 
     userMunicipalityId, 
     nationalRegionId,
+    hasFullVisibility,
     isLoading: visibilityLoading 
   } = useEntityVisibility();
 
@@ -39,6 +40,7 @@ export function useChallengesWithVisibility(options = {}) {
     queryKey: ['challenges-with-visibility', {
       userId,
       isAdmin,
+      hasFullVisibility,
       isNational,
       sectorIds,
       userMunicipalityId,
@@ -81,8 +83,8 @@ export function useChallengesWithVisibility(options = {}) {
         return data || [];
       }
 
-      // Admin sees everything
-      if (isAdmin) {
+      // Admin or full visibility users see everything
+      if (hasFullVisibility) {
         const { data, error } = await query;
         if (error) throw error;
         return data || [];

@@ -160,6 +160,26 @@ const PERMISSION_CATEGORIES = {
       { key: 'publish_policy', label: { en: 'Publish Policy', ar: 'نشر السياسة' } },
       { key: 'view_all_policies', label: { en: 'View All Policies', ar: 'عرض جميع السياسات' } },
     ]
+  },
+  visibility: {
+    label: { en: 'Data Visibility', ar: 'رؤية البيانات' },
+    permissions: [
+      { key: 'visibility_all_municipalities', label: { en: 'View All Municipalities Data', ar: 'عرض بيانات جميع البلديات' } },
+      { key: 'visibility_all_sectors', label: { en: 'View All Sectors Data', ar: 'عرض بيانات جميع القطاعات' } },
+      { key: 'visibility_national', label: { en: 'View National Level Data', ar: 'عرض البيانات الوطنية' } },
+      { key: 'visibility_cross_region', label: { en: 'View Cross-Region Data', ar: 'عرض البيانات عبر المناطق' } },
+      { key: 'scope_override_municipality', label: { en: 'Override Municipality Scope', ar: 'تجاوز نطاق البلدية' } },
+      { key: 'scope_override_sector', label: { en: 'Override Sector Scope', ar: 'تجاوز نطاق القطاع' } },
+    ]
+  },
+  deputyship: {
+    label: { en: 'Deputyship (National)', ar: 'الوكالات (المستوى الوطني)' },
+    permissions: [
+      { key: 'deputyship_sector_manage', label: { en: 'Manage Sector Strategy', ar: 'إدارة استراتيجية القطاع' } },
+      { key: 'deputyship_policy_create', label: { en: 'Create Sector Policies', ar: 'إنشاء سياسات القطاع' } },
+      { key: 'deputyship_benchmark', label: { en: 'Benchmark Municipalities', ar: 'مقارنة البلديات' } },
+      { key: 'deputyship_guidance_publish', label: { en: 'Publish National Guidance', ar: 'نشر التوجيهات الوطنية' } },
+    ]
   }
 };
 

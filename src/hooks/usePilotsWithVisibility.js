@@ -7,7 +7,7 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * Hook for fetching pilots with visibility rules applied.
  * 
  * Visibility:
- * - Admin: All pilots
+ * - Admin / Full Visibility Users: All pilots
  * - National Deputyship: All pilots in their sector(s)
  * - Municipality Staff: Own + national pilots
  * - Provider: Own pilots (as solution provider)
@@ -28,6 +28,7 @@ export function usePilotsWithVisibility(options = {}) {
     sectorIds, 
     userMunicipalityId, 
     nationalRegionId,
+    hasFullVisibility,
     isLoading: visibilityLoading 
   } = useEntityVisibility();
 
@@ -42,6 +43,7 @@ export function usePilotsWithVisibility(options = {}) {
     queryKey: ['pilots-with-visibility', {
       userId,
       isAdmin,
+      hasFullVisibility,
       isNational,
       sectorIds,
       userMunicipalityId,
@@ -101,8 +103,8 @@ export function usePilotsWithVisibility(options = {}) {
         query = query.eq('sector_id', sectorId);
       }
 
-      // Admin sees everything
-      if (isAdmin) {
+      // Admin or full visibility users see everything
+      if (hasFullVisibility) {
         const { data, error } = await query;
         if (error) throw error;
         return data || [];

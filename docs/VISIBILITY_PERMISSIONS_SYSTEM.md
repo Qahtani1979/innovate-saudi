@@ -20,6 +20,12 @@ This document describes the comprehensive visibility and permissions system for 
 - **Data Access**: All records in their sector across all municipalities
 - **Examples**: Deputyship of Infrastructure, Deputyship of Environment, etc.
 
+### 1.3 Full-Visibility Users
+- **Scope**: Platform-wide
+- **Identified by**: Has `visibility_all_municipalities` or `visibility_all_sectors` permission
+- **Data Access**: All records across all municipalities and sectors
+- **Examples**: Platform Admin, Executive Leadership, Ministry Representatives, GDISB Strategy Lead
+
 ---
 
 ## 2. Database Schema
@@ -41,8 +47,8 @@ This document describes the comprehensive visibility and permissions system for 
 - name_en: text
 - name_ar: text
 - region_id: uuid  -- References regions
-- sector_id: uuid  -- For national deputyships (NEW)
-- focus_sectors: uuid[]  -- Multiple sector coverage (NEW)
+- sector_id: uuid  -- For national deputyships
+- focus_sectors: uuid[]  -- Multiple sector coverage
 - city_type: text  -- 'metropolitan', 'major', 'medium', 'small', 'national'
 - is_active: boolean
 ```
