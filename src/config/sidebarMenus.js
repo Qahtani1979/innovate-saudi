@@ -254,8 +254,11 @@ export const SIDEBAR_MENUS = {
     items: [
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
-      { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Respond to Challenge', ar: 'الرد على التحدي' } },
+      { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Submit Proposal', ar: 'تقديم مقترح' } },
       { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },
+      { name: 'Challenges', icon: Target, label: { en: 'Browse Challenges', ar: 'تصفح التحديات' } },
+      { name: 'Solutions', icon: Lightbulb, label: { en: 'Browse Solutions', ar: 'تصفح الحلول' } },
+      { name: 'LivingLabs', icon: FlaskConical, label: { en: 'Living Labs', ar: 'المختبرات الحية' } },
       { name: 'CitizenRewards', icon: Gift, label: { en: 'Rewards & Points', ar: 'المكافآت والنقاط' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
       { name: 'CitizenPilotEnrollment', icon: UserCheck, label: { en: 'Pilot Enrollment', ar: 'التسجيل في التجارب' } },
@@ -273,11 +276,14 @@ export const SIDEBAR_MENUS = {
     items: [
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
-      { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Respond to Challenge', ar: 'الرد على التحدي' } },
+      { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Submit Proposal', ar: 'تقديم مقترح' } },
       { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },
+      { name: 'Challenges', icon: Target, label: { en: 'Browse Challenges', ar: 'تصفح التحديات' } },
+      { name: 'Solutions', icon: Lightbulb, label: { en: 'Browse Solutions', ar: 'تصفح الحلول' } },
+      { name: 'LivingLabs', icon: FlaskConical, label: { en: 'Living Labs', ar: 'المختبرات الحية' } },
+      { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
-      { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
     ]
   },
 

@@ -38,7 +38,7 @@ const toKebabCase = (str) => str
 
 // Pages that don't need the layout wrapper
 const noLayoutPages = ['Auth', 'ResetPassword', 'Onboarding', 'StartupOnboarding', 'MunicipalityStaffOnboarding', 
-  'ResearcherOnboarding', 'CitizenOnboarding', 'ExpertOnboarding', 'PublicPortal'];
+  'ResearcherOnboarding', 'CitizenOnboarding', 'ExpertOnboarding', 'PublicPortal', 'PersonaLandingDashboard'];
 
 // Pages that are public (don't require authentication)
 const publicPages = ['Auth', 'ResetPassword', 'PublicPortal', 'PublicSolutionsMarketplace', 'PublicIdeaSubmission', 

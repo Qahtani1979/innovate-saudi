@@ -32,11 +32,18 @@ export default function Auth() {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - to role-based dashboard
   useEffect(() => {
     if (isAuthenticated && !isLoadingAuth) {
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
+      // If there's a specific page they were trying to access, go there
+      const from = location.state?.from?.pathname;
+      if (from && from !== '/' && from !== '/auth') {
+        navigate(from, { replace: true });
+        return;
+      }
+      // Otherwise, redirect to their role-based dashboard
+      // Redirect to persona landing dashboard for role-based routing
+      navigate('/persona-landing-dashboard', { replace: true });
     }
   }, [isAuthenticated, isLoadingAuth, navigate, location]);
 
@@ -74,8 +81,13 @@ export default function Auth() {
         title: t({ en: 'Welcome back!', ar: 'مرحباً بعودتك!' }),
         description: t({ en: 'You have successfully logged in.', ar: 'لقد قمت بتسجيل الدخول بنجاح.' }),
       });
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
+      // Redirect to persona landing for role-based dashboard
+      const from = location.state?.from?.pathname;
+      if (from && from !== '/' && from !== '/auth') {
+        navigate(from, { replace: true });
+      } else {
+        navigate('/persona-landing-dashboard', { replace: true });
+      }
     } catch (error) {
       toast({
         title: t({ en: 'Login failed', ar: 'فشل تسجيل الدخول' }),
@@ -124,8 +136,8 @@ export default function Auth() {
         title: t({ en: 'Account created!', ar: 'تم إنشاء الحساب!' }),
         description: t({ en: 'You have successfully signed up.', ar: 'لقد قمت بالتسجيل بنجاح.' }),
       });
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
+      // Redirect to persona landing dashboard for role-based routing
+      navigate('/persona-landing-dashboard', { replace: true });
     } catch (error) {
       let errorMessage = error.message || t({ en: 'Failed to create account', ar: 'فشل إنشاء الحساب' });
       if (error.message?.includes('already registered')) {
