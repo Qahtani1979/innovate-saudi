@@ -169,15 +169,19 @@ export function PageHeader({
       </div>
 
       {/* Stats row */}
-      {stats.length > 0 && (
+      {Array.isArray(stats) && stats.length > 0 && (
         <div className="relative flex flex-wrap gap-4 mt-6 pt-6 border-t border-border/50">
-          {stats.map((stat, idx) => (
-            <div key={idx} className="flex items-center gap-2 bg-background/60 backdrop-blur-sm rounded-lg px-4 py-2">
-              {stat.icon && <stat.icon className={`h-4 w-4 ${iconColor}`} />}
-              <span className="text-lg font-semibold text-foreground">{stat.value}</span>
-              <span className="text-sm text-muted-foreground">{resolveText(stat.label)}</span>
-            </div>
-          ))}
+          {stats.map((stat, idx) => {
+            if (!stat) return null;
+            const StatIcon = stat.icon;
+            return (
+              <div key={idx} className="flex items-center gap-2 bg-background/60 backdrop-blur-sm rounded-lg px-4 py-2">
+                {StatIcon && <StatIcon className={`h-4 w-4 ${iconColor}`} />}
+                <span className="text-lg font-semibold text-foreground">{stat.value}</span>
+                <span className="text-sm text-muted-foreground">{resolveText(stat.label)}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
