@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,7 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { checkAndAssignRole } = useAutoRoleAssignment();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -196,10 +198,24 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
         .from('providers')
         .upsert(providerData, { onConflict: 'user_id' });
 
+      // Auto-assign role or create pending request
+      const roleResult = await checkAndAssignRole({
+        userId: user.id,
+        userEmail: user.email,
+        personaType: 'provider',
+        justification: 'Provider onboarding completed',
+        language
+      });
+
+      if (roleResult.autoApproved) {
+        toast.success(t({ en: 'Provider role approved! Welcome aboard!', ar: 'تمت الموافقة على دور المزود! مرحباً بك!' }));
+      } else {
+        toast.info(t({ en: 'Provider profile created! Role pending approval.', ar: 'تم إنشاء ملف المزود! الدور في انتظار الموافقة.' }));
+      }
+
       await queryClient.invalidateQueries(['user-profile']);
       if (checkAuth) await checkAuth();
 
-      toast.success(t({ en: 'Provider profile created! Welcome aboard!', ar: 'تم إنشاء ملف المزود! مرحباً بك!' }));
       onComplete?.(formData);
       navigate(createPageUrl('StartupDashboard'));
     } catch (error) {

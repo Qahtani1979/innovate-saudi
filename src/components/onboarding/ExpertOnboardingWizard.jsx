@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,7 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { checkAndAssignRole } = useAutoRoleAssignment();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -250,10 +252,24 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
           });
       }
 
+      // Auto-assign role or create pending request
+      const roleResult = await checkAndAssignRole({
+        userId: user.id,
+        userEmail: user.email,
+        personaType: 'expert',
+        justification: 'Expert onboarding completed',
+        language
+      });
+
       await queryClient.invalidateQueries(['user-profile']);
       if (checkAuth) await checkAuth();
       
-      toast.success(t({ en: 'Expert profile created!', ar: 'تم إنشاء ملف الخبير!' }));
+      if (roleResult.autoApproved) {
+        toast.success(t({ en: 'Expert role approved!', ar: 'تمت الموافقة على دور الخبير!' }));
+      } else {
+        toast.info(t({ en: 'Expert profile created! Role pending approval.', ar: 'تم إنشاء ملف الخبير! الدور في انتظار الموافقة.' }));
+      }
+
       onComplete?.(formData);
       navigate(createPageUrl('ExpertRegistry'));
     } catch (error) {

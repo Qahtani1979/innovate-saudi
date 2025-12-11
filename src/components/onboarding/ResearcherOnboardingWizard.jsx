@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,7 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { checkAndAssignRole } = useAutoRoleAssignment();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -213,10 +215,24 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
         is_verified: false
       }, { onConflict: 'user_id' });
 
+      // Auto-assign role or create pending request
+      const roleResult = await checkAndAssignRole({
+        userId: user.id,
+        userEmail: user.email,
+        personaType: 'researcher',
+        justification: 'Researcher onboarding completed',
+        language
+      });
+
       await queryClient.invalidateQueries(['user-profile']);
       if (checkAuth) await checkAuth();
 
-      toast.success(t({ en: 'Researcher profile complete!', ar: 'تم إكمال ملف الباحث!' }));
+      if (roleResult.autoApproved) {
+        toast.success(t({ en: 'Researcher role approved!', ar: 'تمت الموافقة على دور الباحث!' }));
+      } else {
+        toast.info(t({ en: 'Researcher profile created! Role pending approval.', ar: 'تم إنشاء ملف الباحث! الدور في انتظار الموافقة.' }));
+      }
+
       onComplete?.(formData);
       navigate(createPageUrl('ResearcherDashboard'));
     } catch (error) {

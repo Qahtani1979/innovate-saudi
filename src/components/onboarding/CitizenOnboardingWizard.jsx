@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { assignRole } = useAutoRoleAssignment();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -177,6 +179,13 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
         level: 1,
         total_earned: 10
       }, { onConflict: 'user_id' });
+
+      // Auto-assign citizen role (always approved)
+      await assignRole({
+        userId: user.id,
+        userEmail: user.email,
+        role: 'citizen'
+      });
 
       await queryClient.invalidateQueries(['user-profile']);
       if (checkAuth) await checkAuth();
