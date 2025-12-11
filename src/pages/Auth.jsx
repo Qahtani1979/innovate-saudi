@@ -41,9 +41,8 @@ export default function Auth() {
         navigate(from, { replace: true });
         return;
       }
-      // Otherwise, redirect to their role-based dashboard
-      // Redirect to persona landing dashboard for role-based routing
-      navigate('/persona-landing-dashboard', { replace: true });
+      // Otherwise, redirect to citizen dashboard (default for new users)
+      navigate('/citizen-dashboard', { replace: true });
     }
   }, [isAuthenticated, isLoadingAuth, navigate, location]);
 
@@ -81,12 +80,12 @@ export default function Auth() {
         title: t({ en: 'Welcome back!', ar: 'مرحباً بعودتك!' }),
         description: t({ en: 'You have successfully logged in.', ar: 'لقد قمت بتسجيل الدخول بنجاح.' }),
       });
-      // Redirect to persona landing for role-based dashboard
+      // Redirect to intended page or citizen dashboard
       const from = location.state?.from?.pathname;
       if (from && from !== '/' && from !== '/auth') {
         navigate(from, { replace: true });
       } else {
-        navigate('/persona-landing-dashboard', { replace: true });
+        navigate('/citizen-dashboard', { replace: true });
       }
     } catch (error) {
       toast({
@@ -136,8 +135,8 @@ export default function Auth() {
         title: t({ en: 'Account created!', ar: 'تم إنشاء الحساب!' }),
         description: t({ en: 'You have successfully signed up.', ar: 'لقد قمت بالتسجيل بنجاح.' }),
       });
-      // Redirect to persona landing dashboard for role-based routing
-      navigate('/persona-landing-dashboard', { replace: true });
+      // Redirect to citizen dashboard
+      navigate('/citizen-dashboard', { replace: true });
     } catch (error) {
       let errorMessage = error.message || t({ en: 'Failed to create account', ar: 'فشل إنشاء الحساب' });
       if (error.message?.includes('already registered')) {
