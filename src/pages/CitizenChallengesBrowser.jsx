@@ -3,14 +3,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Search, Target, Calendar, Building2, ArrowRight, ThumbsUp, MessageSquare, Bookmark, Send } from 'lucide-react';
+import { Target, Calendar, Building2, ArrowRight, ThumbsUp, Bookmark, Send, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { 
+  CitizenPageLayout, 
+  CitizenPageHeader, 
+  CitizenSearchFilter, 
+  CitizenCardGrid, 
+  CitizenEmptyState 
+} from '@/components/citizen/CitizenPageLayout';
 
 function CitizenChallengesBrowser() {
   const { language, isRTL, t } = useLanguage();
@@ -19,8 +25,9 @@ function CitizenChallengesBrowser() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
+  const [viewMode, setViewMode] = useState('grid');
 
-  const { data: challenges = [], isLoading } = useQuery({
+  const { data: challenges = [], isLoading, refetch } = useQuery({
     queryKey: ['citizen-challenges-browser'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -34,8 +41,7 @@ function CitizenChallengesBrowser() {
     }
   });
 
-  // Get user's votes
-  const { data: userVotes = [] } = useQuery({
+  const { data: userVotes = [], refetch: refetchVotes } = useQuery({
     queryKey: ['citizen-challenge-votes', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
@@ -50,8 +56,7 @@ function CitizenChallengesBrowser() {
     enabled: !!user?.email
   });
 
-  // Get user's bookmarks
-  const { data: userBookmarks = [] } = useQuery({
+  const { data: userBookmarks = [], refetch: refetchBookmarks } = useQuery({
     queryKey: ['citizen-challenge-bookmarks', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
@@ -67,6 +72,7 @@ function CitizenChallengesBrowser() {
   });
 
   const sectors = [...new Set(challenges.map(c => c.sector).filter(Boolean))];
+  const priorities = ['critical', 'high', 'medium', 'low'];
 
   const filteredChallenges = challenges.filter(c => {
     const sectorMatch = selectedSector === 'all' || c.sector === selectedSector;
@@ -79,13 +85,14 @@ function CitizenChallengesBrowser() {
   });
 
   const handleVote = async (challengeId) => {
-    if (!user?.email) return;
+    if (!user?.email) {
+      toast({ title: t({ en: 'Please login to vote', ar: 'يرجى تسجيل الدخول للتصويت' }), variant: 'destructive' });
+      return;
+    }
     try {
       const isVoted = userVotes.includes(challengeId);
       if (isVoted) {
-        await supabase
-          .from('citizen_votes')
-          .delete()
+        await supabase.from('citizen_votes').delete()
           .eq('user_email', user.email)
           .eq('entity_id', challengeId)
           .eq('entity_type', 'challenge');
@@ -100,19 +107,21 @@ function CitizenChallengesBrowser() {
         });
         toast({ title: t({ en: 'Voted!', ar: 'تم التصويت!' }) });
       }
+      refetchVotes();
     } catch (err) {
       toast({ title: t({ en: 'Error voting', ar: 'خطأ في التصويت' }), variant: 'destructive' });
     }
   };
 
   const handleBookmark = async (challengeId) => {
-    if (!user?.email) return;
+    if (!user?.email) {
+      toast({ title: t({ en: 'Please login to bookmark', ar: 'يرجى تسجيل الدخول للحفظ' }), variant: 'destructive' });
+      return;
+    }
     try {
       const isBookmarked = userBookmarks.includes(challengeId);
       if (isBookmarked) {
-        await supabase
-          .from('bookmarks')
-          .delete()
+        await supabase.from('bookmarks').delete()
           .eq('user_email', user.email)
           .eq('entity_id', challengeId)
           .eq('entity_type', 'challenge');
@@ -125,6 +134,7 @@ function CitizenChallengesBrowser() {
         });
         toast({ title: t({ en: 'Bookmarked!', ar: 'تم حفظ الإشارة!' }) });
       }
+      refetchBookmarks();
     } catch (err) {
       toast({ title: t({ en: 'Error', ar: 'خطأ' }), variant: 'destructive' });
     }
@@ -132,205 +142,153 @@ function CitizenChallengesBrowser() {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'critical': return 'bg-red-100 text-red-700';
-      case 'high': return 'bg-orange-100 text-orange-700';
-      case 'medium': return 'bg-yellow-100 text-yellow-700';
-      default: return 'bg-green-100 text-green-700';
+      case 'critical': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      case 'high': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'medium': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+      default: return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
     }
   };
 
+  const activeFiltersCount = (selectedSector !== 'all' ? 1 : 0) + (selectedPriority !== 'all' ? 1 : 0);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Target className="h-5 w-5 text-primary" />
-            </div>
-            {t({ en: 'Browse Challenges', ar: 'تصفح التحديات' })}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t({ en: 'Explore municipal challenges and submit your innovative solutions', ar: 'استكشف التحديات البلدية وقدم حلولك المبتكرة' })}
-          </p>
-        </div>
-        <Link to="/challenge-idea-response">
-          <Button className="gap-2">
-            <Send className="h-4 w-4" />
-            {t({ en: 'Submit Proposal', ar: 'تقديم مقترح' })}
-          </Button>
-        </Link>
-      </div>
+    <CitizenPageLayout>
+      <CitizenPageHeader
+        icon={Target}
+        title={t({ en: 'Browse Challenges', ar: 'تصفح التحديات' })}
+        description={t({ en: 'Explore municipal challenges and submit your innovative solutions', ar: 'استكشف التحديات البلدية وقدم حلولك المبتكرة' })}
+        accentColor="teal"
+        stats={[
+          { value: challenges.length, label: t({ en: 'Challenges', ar: 'تحدي' }), icon: Target, color: 'teal' },
+          { value: challenges.filter(c => c.priority === 'critical' || c.priority === 'high').length, label: t({ en: 'High Priority', ar: 'أولوية عالية' }), color: 'amber' },
+        ]}
+        action={
+          <Link to="/challenge-idea-response">
+            <Button className="gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg">
+              <Send className="h-4 w-4" />
+              {t({ en: 'Submit Proposal', ar: 'تقديم مقترح' })}
+            </Button>
+          </Link>
+        }
+      />
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className={`absolute top-3 h-4 w-4 text-muted-foreground ${isRTL ? 'right-3' : 'left-3'}`} />
-              <Input
-                placeholder={t({ en: 'Search challenges...', ar: 'ابحث عن التحديات...' })}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={isRTL ? 'pr-10' : 'pl-10'}
-              />
-            </div>
-            <select
-              value={selectedSector}
-              onChange={(e) => setSelectedSector(e.target.value)}
-              className="px-4 py-2 border rounded-md bg-background"
-            >
-              <option value="all">{t({ en: 'All Sectors', ar: 'جميع القطاعات' })}</option>
-              {sectors.map(sector => (
-                <option key={sector} value={sector}>{sector}</option>
-              ))}
-            </select>
-            <select
-              value={selectedPriority}
-              onChange={(e) => setSelectedPriority(e.target.value)}
-              className="px-4 py-2 border rounded-md bg-background"
-            >
-              <option value="all">{t({ en: 'All Priorities', ar: 'جميع الأولويات' })}</option>
-              <option value="critical">{t({ en: 'Critical', ar: 'حرج' })}</option>
-              <option value="high">{t({ en: 'High', ar: 'عالي' })}</option>
-              <option value="medium">{t({ en: 'Medium', ar: 'متوسط' })}</option>
-              <option value="low">{t({ en: 'Low', ar: 'منخفض' })}</option>
-            </select>
-          </div>
-        </CardContent>
-      </Card>
+      <CitizenSearchFilter
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder={t({ en: 'Search challenges...', ar: 'ابحث عن التحديات...' })}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        activeFilters={activeFiltersCount}
+        onClearFilters={() => { setSelectedSector('all'); setSelectedPriority('all'); }}
+        filters={[
+          {
+            label: t({ en: 'Sectors', ar: 'القطاعات' }),
+            placeholder: t({ en: 'Sector', ar: 'القطاع' }),
+            value: selectedSector,
+            onChange: setSelectedSector,
+            options: sectors.map(s => ({ value: s, label: s }))
+          },
+          {
+            label: t({ en: 'Priority', ar: 'الأولوية' }),
+            placeholder: t({ en: 'Priority', ar: 'الأولوية' }),
+            value: selectedPriority,
+            onChange: setSelectedPriority,
+            options: priorities.map(p => ({ value: p, label: t({ en: p.charAt(0).toUpperCase() + p.slice(1), ar: p }) }))
+          }
+        ]}
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-primary">{challenges.length}</p>
-            <p className="text-sm text-muted-foreground">{t({ en: 'Total Challenges', ar: 'إجمالي التحديات' })}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-red-600">{challenges.filter(c => c.priority === 'critical').length}</p>
-            <p className="text-sm text-muted-foreground">{t({ en: 'Critical', ar: 'حرجة' })}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-amber-600">{userVotes.length}</p>
-            <p className="text-sm text-muted-foreground">{t({ en: 'Your Votes', ar: 'تصويتاتك' })}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-blue-600">{userBookmarks.length}</p>
-            <p className="text-sm text-muted-foreground">{t({ en: 'Bookmarked', ar: 'محفوظة' })}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Challenges Grid */}
-      {isLoading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-4 bg-muted rounded w-1/4 mb-4" />
-                <div className="h-6 bg-muted rounded w-3/4 mb-3" />
-                <div className="h-4 bg-muted rounded w-full mb-2" />
-                <div className="h-4 bg-muted rounded w-2/3" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : filteredChallenges.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <Target className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">
-              {t({ en: 'No challenges found', ar: 'لم يتم العثور على تحديات' })}
-            </h3>
-            <p className="text-muted-foreground">
-              {t({ en: 'Try adjusting your search or filters.', ar: 'حاول تعديل البحث أو الفلاتر.' })}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredChallenges.map(challenge => (
-            <Card key={challenge.id} className="hover:shadow-lg transition-shadow group">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-4 flex-wrap">
-                  {challenge.priority && (
+      <CitizenCardGrid 
+        viewMode={viewMode}
+        emptyState={
+          <CitizenEmptyState
+            icon={Target}
+            title={t({ en: 'No challenges found', ar: 'لم يتم العثور على تحديات' })}
+            description={t({ en: 'Try adjusting your filters or check back later', ar: 'حاول تعديل الفلاتر أو تحقق لاحقاً' })}
+          />
+        }
+      >
+        {filteredChallenges.map(challenge => (
+          <Card 
+            key={challenge.id} 
+            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${
+              viewMode === 'list' ? 'flex flex-row' : ''
+            }`}
+          >
+            <CardContent className={`p-5 ${viewMode === 'list' ? 'flex items-center gap-6 w-full' : ''}`}>
+              <div className={viewMode === 'list' ? 'flex-1' : ''}>
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex flex-wrap gap-2">
                     <Badge className={getPriorityColor(challenge.priority)}>
-                      {challenge.priority}
+                      {challenge.priority || 'medium'}
                     </Badge>
-                  )}
-                  {challenge.sector && (
-                    <Badge variant="outline">{challenge.sector}</Badge>
-                  )}
-                  {challenge.status && (
-                    <Badge variant="secondary">{challenge.status}</Badge>
-                  )}
-                </div>
-                
-                <h3 className="font-bold text-lg text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
-                  {language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}
-                </h3>
-                
-                <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
-                  {language === 'ar' && challenge.description_ar ? challenge.description_ar : challenge.description_en}
-                </p>
-                
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                  {challenge.municipalities && (
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      <span>
-                        {language === 'ar' && challenge.municipalities.name_ar 
-                          ? challenge.municipalities.name_ar 
-                          : challenge.municipalities.name_en}
-                      </span>
-                    </div>
-                  )}
-                  {challenge.created_at && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{new Date(challenge.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-4 border-t">
-                  <Button
-                    variant={userVotes.includes(challenge.id) ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleVote(challenge.id)}
-                    className="flex-1 gap-1"
-                  >
-                    <ThumbsUp className="h-4 w-4" />
-                    {t({ en: 'Vote', ar: 'صوّت' })}
-                  </Button>
-                  <Button
-                    variant={userBookmarks.includes(challenge.id) ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleBookmark(challenge.id)}
-                  >
-                    <Bookmark className="h-4 w-4" />
-                  </Button>
-                  <Link to={`/challenge-idea-response?challengeId=${challenge.id}`}>
-                    <Button size="sm" className="gap-1">
-                      <Send className="h-4 w-4" />
-                      {t({ en: 'Respond', ar: 'استجب' })}
+                    {challenge.sector && (
+                      <Badge variant="outline" className="text-xs">
+                        {challenge.sector}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-8 w-8 p-0 ${userVotes.includes(challenge.id) ? 'text-primary' : 'text-muted-foreground'}`}
+                      onClick={(e) => { e.preventDefault(); handleVote(challenge.id); }}
+                    >
+                      <ThumbsUp className="h-4 w-4" />
                     </Button>
-                  </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-8 w-8 p-0 ${userBookmarks.includes(challenge.id) ? 'text-amber-500' : 'text-muted-foreground'}`}
+                      onClick={(e) => { e.preventDefault(); handleBookmark(challenge.id); }}
+                    >
+                      <Bookmark className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+
+                <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                  {language === 'ar' ? (challenge.title_ar || challenge.title_en) : (challenge.title_en || challenge.title_ar)}
+                </h3>
+
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  {language === 'ar' ? (challenge.description_ar || challenge.description_en) : (challenge.description_en || challenge.description_ar)}
+                </p>
+
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                  {challenge.municipalities?.name_en && (
+                    <span className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      {language === 'ar' ? challenge.municipalities.name_ar : challenge.municipalities.name_en}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(challenge.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+
+                <Link to={`/challenge-detail?id=${challenge.id}`}>
+                  <Button variant="outline" size="sm" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    {t({ en: 'View Details', ar: 'عرض التفاصيل' })}
+                    <ArrowRight className={`h-4 w-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </CitizenCardGrid>
+    </CitizenPageLayout>
   );
 }
 

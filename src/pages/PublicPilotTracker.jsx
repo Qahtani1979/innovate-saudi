@@ -4,23 +4,29 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   TestTube, MapPin, Calendar, TrendingUp, Users, Target,
-  Search, Filter, Eye, Bell, CheckCircle2, AlertCircle,
-  Sparkles, BarChart3, Globe
+  Eye, Bell, CheckCircle2, Loader2, ArrowRight
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { 
+  CitizenPageLayout, 
+  CitizenPageHeader, 
+  CitizenSearchFilter, 
+  CitizenCardGrid, 
+  CitizenEmptyState 
+} from '@/components/citizen/CitizenPageLayout';
 
 function PublicPilotTracker() {
   const { language, isRTL, t } = useLanguage();
   const [selectedSector, setSelectedSector] = useState('all');
   const [selectedCity, setSelectedCity] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState('grid');
   const { user } = useAuth();
 
   const { data: pilots = [], isLoading } = useQuery({
@@ -30,7 +36,7 @@ function PublicPilotTracker() {
         .eq('is_published', true)
         .eq('is_confidential', false)
         .eq('is_deleted', false)
-        .order('created_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(100);
       return data || [];
     }
@@ -73,145 +79,108 @@ function PublicPilotTracker() {
   const sectors = [...new Set(pilots.map(p => p.sector).filter(Boolean))];
 
   const stageColors = {
-    design: 'bg-slate-100 text-slate-700',
-    approved: 'bg-blue-100 text-blue-700',
-    preparation: 'bg-purple-100 text-purple-700',
-    active: 'bg-green-100 text-green-700',
-    monitoring: 'bg-teal-100 text-teal-700',
-    evaluation: 'bg-amber-100 text-amber-700',
-    completed: 'bg-green-100 text-green-700',
-    scaled: 'bg-blue-100 text-blue-700'
+    design: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    approved: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    preparation: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    monitoring: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+    evaluation: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    scaled: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
   };
+
+  const activeFiltersCount = (selectedSector !== 'all' ? 1 : 0) + (selectedCity !== 'all' ? 1 : 0);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-2xl p-8 text-white">
-        <div className="flex items-center gap-3 mb-4">
-          <Globe className="h-12 w-12" />
-          <div>
-            <h1 className="text-4xl font-bold">
-              {t({ en: 'Public Pilot Tracker', ar: 'متتبع التجارب العامة' })}
-            </h1>
-            <p className="text-lg text-white/90 mt-2">
-              {t({ 
-                en: 'Discover innovation pilots testing solutions in your area',
-                ar: 'اكتشف تجارب الابتكار التي تختبر الحلول في منطقتك'
-              })}
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div className="bg-white/20 backdrop-blur rounded-lg p-4">
-            <p className="text-3xl font-bold">{pilots.length}</p>
-            <p className="text-sm">{t({ en: 'Active Pilots', ar: 'تجارب نشطة' })}</p>
-          </div>
-          <div className="bg-white/20 backdrop-blur rounded-lg p-4">
-            <p className="text-3xl font-bold">{myAreaPilots.length}</p>
-            <p className="text-sm">{t({ en: 'In Your Area', ar: 'في منطقتك' })}</p>
-          </div>
-          <div className="bg-white/20 backdrop-blur rounded-lg p-4">
-            <p className="text-3xl font-bold">{enrollments.length}</p>
-            <p className="text-sm">{t({ en: 'Your Enrollments', ar: 'تسجيلاتك' })}</p>
-          </div>
-          <div className="bg-white/20 backdrop-blur rounded-lg p-4">
-            <p className="text-3xl font-bold">{sectors.length}</p>
-            <p className="text-sm">{t({ en: 'Sectors', ar: 'قطاعات' })}</p>
-          </div>
-        </div>
-      </div>
+    <CitizenPageLayout>
+      <CitizenPageHeader
+        icon={TestTube}
+        title={t({ en: 'Public Pilots', ar: 'التجارب العامة' })}
+        description={t({ en: 'Discover innovation pilots testing solutions in your area', ar: 'اكتشف تجارب الابتكار التي تختبر الحلول في منطقتك' })}
+        accentColor="teal"
+        stats={[
+          { value: pilots.length, label: t({ en: 'Active Pilots', ar: 'تجارب نشطة' }), icon: TestTube, color: 'teal' },
+          { value: myAreaPilots.length, label: t({ en: 'In Your Area', ar: 'في منطقتك' }), icon: MapPin, color: 'blue' },
+          { value: enrollments.length, label: t({ en: 'Your Enrollments', ar: 'تسجيلاتك' }), icon: Users, color: 'purple' },
+          { value: sectors.length, label: t({ en: 'Sectors', ar: 'قطاعات' }), color: 'amber' },
+        ]}
+      />
 
-      <Card>
-        <CardContent className="pt-4">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
-              <Input
-                placeholder={t({ en: 'Search pilots...', ar: 'بحث التجارب...' })}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={isRTL ? 'pr-10' : 'pl-10'}
-              />
-            </div>
-            <Filter className="h-4 w-4 text-slate-500" />
-            <select
-              value={selectedSector}
-              onChange={(e) => setSelectedSector(e.target.value)}
-              className="px-3 py-2 border rounded-lg text-sm"
-            >
-              <option value="all">{t({ en: 'All Sectors', ar: 'كل القطاعات' })}</option>
-              {sectors.map(s => (
-                <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-              ))}
-            </select>
-            <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="px-3 py-2 border rounded-lg text-sm"
-            >
-              <option value="all">{t({ en: 'All Cities', ar: 'كل المدن' })}</option>
-              {municipalities.map(m => (
-                <option key={m.id} value={m.id}>
-                  {language === 'ar' && m.name_ar ? m.name_ar : m.name_en}
-                </option>
-              ))}
-            </select>
-          </div>
-        </CardContent>
-      </Card>
+      <CitizenSearchFilter
+        searchTerm={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder={t({ en: 'Search pilots...', ar: 'بحث التجارب...' })}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        activeFilters={activeFiltersCount}
+        onClearFilters={() => { setSelectedSector('all'); setSelectedCity('all'); }}
+        filters={[
+          {
+            label: t({ en: 'Sectors', ar: 'القطاعات' }),
+            placeholder: t({ en: 'Sector', ar: 'القطاع' }),
+            value: selectedSector,
+            onChange: setSelectedSector,
+            options: sectors.map(s => ({ value: s, label: s.replace(/_/g, ' ') }))
+          },
+          {
+            label: t({ en: 'Cities', ar: 'المدن' }),
+            placeholder: t({ en: 'City', ar: 'المدينة' }),
+            value: selectedCity,
+            onChange: setSelectedCity,
+            options: municipalities.map(m => ({ 
+              value: m.id, 
+              label: language === 'ar' && m.name_ar ? m.name_ar : m.name_en 
+            }))
+          }
+        ]}
+      />
 
+      {/* My Area Pilots */}
       {myAreaPilots.length > 0 && (
-        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-900">
-              <MapPin className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
               {t({ en: 'Pilots in Your Area', ar: 'تجارب في منطقتك' })}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {myAreaPilots.slice(0, 4).map(pilot => (
-                <Card key={pilot.id} className="hover:shadow-lg transition-shadow">
+                <Card key={pilot.id} className="hover:shadow-lg transition-shadow border-border/50">
                   <CardContent className="pt-4">
                     <div className="flex items-start justify-between mb-3">
-                      <div>
+                      <div className="flex flex-wrap gap-2">
                         <Badge className={stageColors[pilot.stage] || 'bg-slate-100'}>
                           {pilot.stage?.replace(/_/g, ' ')}
                         </Badge>
                         {pilot.sector && (
-                          <Badge variant="outline" className="ml-2">
+                          <Badge variant="outline">
                             {pilot.sector.replace(/_/g, ' ')}
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <h3 className="font-semibold text-slate-900 mb-2">
+                    <h3 className="font-semibold text-foreground mb-2">
                       {language === 'ar' && pilot.title_ar ? pilot.title_ar : pilot.title_en}
                     </h3>
-                    <p className="text-sm text-slate-600 line-clamp-2 mb-3">
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                       {language === 'ar' && pilot.description_ar ? pilot.description_ar : pilot.description_en}
                     </p>
-                    <div className="flex items-center justify-between">
-                      <Link to={createPageUrl(`PublicPilotDetail?id=${pilot.id}`)}>
-                        <Button size="sm" variant="outline">
-                          <Eye className="h-3 w-3 mr-2" />
-                          {t({ en: 'View Details', ar: 'عرض التفاصيل' })}
-                        </Button>
-                      </Link>
-                      <Link to={createPageUrl(`CitizenPilotEnrollment?pilot_id=${pilot.id}`)}>
-                        <Button size="sm" className="bg-blue-600">
-                          <Bell className="h-3 w-3 mr-2" />
-                          {t({ en: 'Enroll', ar: 'تسجيل' })}
-                        </Button>
-                      </Link>
-                    </div>
+                    <Link to={createPageUrl('CitizenPilotEnrollment') + `?pilotId=${pilot.id}`}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        {t({ en: 'Learn More', ar: 'اعرف المزيد' })}
+                        <ArrowRight className={`h-4 w-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}
@@ -220,106 +189,80 @@ function PublicPilotTracker() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {filtered.map(pilot => {
-          const municipality = municipalities.find(m => m.id === pilot.municipality_id);
-          const isEnrolled = enrollments.some(e => e.pilot_id === pilot.id);
-
-          return (
-            <Card key={pilot.id} className="hover:shadow-xl transition-all">
-              <CardContent className="pt-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    {pilot.code && (
-                      <Badge variant="outline" className="mb-2 font-mono text-xs">
-                        {pilot.code}
+      {/* All Pilots */}
+      <CitizenCardGrid 
+        viewMode={viewMode}
+        emptyState={
+          <CitizenEmptyState
+            icon={TestTube}
+            title={t({ en: 'No pilots found', ar: 'لم يتم العثور على تجارب' })}
+            description={t({ en: 'Try adjusting your filters or check back later', ar: 'حاول تعديل الفلاتر أو تحقق لاحقاً' })}
+          />
+        }
+      >
+        {filtered.map(pilot => (
+          <Card 
+            key={pilot.id} 
+            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${
+              viewMode === 'list' ? 'flex flex-row' : ''
+            }`}
+          >
+            <CardContent className={`p-5 ${viewMode === 'list' ? 'flex items-center gap-6 w-full' : ''}`}>
+              <div className={viewMode === 'list' ? 'flex-1' : ''}>
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className={stageColors[pilot.stage] || 'bg-slate-100'}>
+                      {pilot.stage?.replace(/_/g, ' ')}
+                    </Badge>
+                    {pilot.sector && (
+                      <Badge variant="outline" className="text-xs">
+                        {pilot.sector.replace(/_/g, ' ')}
                       </Badge>
                     )}
-                    <h3 className="font-semibold text-slate-900 mb-1">
-                      {language === 'ar' && pilot.title_ar ? pilot.title_ar : pilot.title_en}
-                    </h3>
-                    {pilot.tagline_en && (
-                      <p className="text-sm text-slate-600 mb-2">
-                        {language === 'ar' && pilot.tagline_ar ? pilot.tagline_ar : pilot.tagline_en}
-                      </p>
-                    )}
                   </div>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-blue-600" />
-                    <span className="text-slate-700">
-                      {municipality ? (language === 'ar' && municipality.name_ar ? municipality.name_ar : municipality.name_en) : 'N/A'}
-                    </span>
-                  </div>
-                  {pilot.sector && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Target className="h-4 w-4 text-purple-600" />
-                      <span className="text-slate-700">{pilot.sector.replace(/_/g, ' ')}</span>
-                    </div>
-                  )}
-                  {pilot.timeline?.pilot_start && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-green-600" />
-                      <span className="text-slate-700">{pilot.timeline.pilot_start}</span>
-                    </div>
-                  )}
-                  {pilot.target_population?.size && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Users className="h-4 w-4 text-amber-600" />
-                      <span className="text-slate-700">
-                        {pilot.target_population.size.toLocaleString()} {t({ en: 'beneficiaries', ar: 'مستفيد' })}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge className={stageColors[pilot.stage] || 'bg-slate-100 text-slate-700'}>
-                    {pilot.stage?.replace(/_/g, ' ')}
-                  </Badge>
-                  {isEnrolled && (
-                    <Badge className="bg-green-100 text-green-700">
+                  {enrollments.some(e => e.pilot_id === pilot.id) && (
+                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       {t({ en: 'Enrolled', ar: 'مسجل' })}
                     </Badge>
                   )}
                 </div>
 
-                <div className="flex gap-2">
-                  <Link to={createPageUrl(`PublicPilotDetail?id=${pilot.id}`)} className="flex-1">
-                    <Button size="sm" variant="outline" className="w-full">
-                      <Eye className="h-3 w-3 mr-2" />
-                      {t({ en: 'Details', ar: 'التفاصيل' })}
-                    </Button>
-                  </Link>
-                  {!isEnrolled && ['active', 'preparation'].includes(pilot.stage) && (
-                    <Link to={createPageUrl(`CitizenPilotEnrollment?pilot_id=${pilot.id}`)}>
-                      <Button size="sm" className="bg-blue-600">
-                        <Bell className="h-3 w-3 mr-2" />
-                        {t({ en: 'Enroll', ar: 'تسجيل' })}
-                      </Button>
-                    </Link>
+                <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                  {language === 'ar' && pilot.title_ar ? pilot.title_ar : pilot.title_en}
+                </h3>
+
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  {language === 'ar' && pilot.description_ar ? pilot.description_ar : pilot.description_en}
+                </p>
+
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                  {pilot.start_date && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(pilot.start_date).toLocaleDateString()}
+                    </span>
+                  )}
+                  {pilot.target_beneficiaries && (
+                    <span className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      {pilot.target_beneficiaries}
+                    </span>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
-      {filtered.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <TestTube className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500">
-              {t({ en: 'No pilots found matching your filters', ar: 'لم يتم العثور على تجارب' })}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+                <Link to={createPageUrl('CitizenPilotEnrollment') + `?pilotId=${pilot.id}`}>
+                  <Button variant="outline" size="sm" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    {t({ en: 'View Details', ar: 'عرض التفاصيل' })}
+                    <ArrowRight className={`h-4 w-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </CitizenCardGrid>
+    </CitizenPageLayout>
   );
 }
 
