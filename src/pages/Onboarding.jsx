@@ -47,35 +47,43 @@ export default function Onboarding() {
       
       // Admin takes priority
       if (role === 'admin') {
-        navigate(createPageUrl('AdminPortal'));
+        navigate('/home');
       } 
+      // Executive / Leadership
+      else if (role === 'executive' || role === 'leadership') {
+        navigate('/executive-dashboard');
+      }
+      // Deputyship
+      else if (role === 'deputyship_admin' || role === 'deputyship_staff' || persona === 'deputyship') {
+        navigate('/executive-dashboard');
+      }
       // Municipality staff - check both role and persona
-      else if (role === 'municipality_admin' || role === 'municipality_staff' || persona === 'municipality_staff') {
-        navigate(createPageUrl('MunicipalityDashboard'));
+      else if (role === 'municipality_admin' || role === 'municipality_staff' || role === 'municipality_coordinator' || persona === 'municipality_staff') {
+        navigate('/municipality-dashboard');
       } 
       // Solution provider / startup
-      else if (role === 'provider' || persona === 'provider') {
-        navigate(createPageUrl('StartupDashboard'));
+      else if (role === 'provider' || persona === 'provider' || persona === 'startup') {
+        navigate('/startup-dashboard');
+      }
+      // Expert
+      else if (role === 'expert' || role === 'evaluator' || persona === 'expert') {
+        navigate('/expert-registry');
       }
       // Researcher / academic
       else if (role === 'researcher' || persona === 'researcher') {
-        navigate(createPageUrl('ResearcherDashboard'));
+        navigate('/researcher-dashboard');
       } 
       // Citizen
       else if (role === 'citizen' || persona === 'citizen') {
-        navigate(createPageUrl('CitizenDashboard'));
-      }
-      // Expert
-      else if (role === 'expert' || persona === 'expert') {
-        navigate(createPageUrl('ExpertRegistry'));
+        navigate('/citizen-dashboard');
       }
       // Viewer / observer or default
       else if (persona === 'viewer') {
-        navigate(createPageUrl('Home'));
+        navigate('/home');
       }
       // Default fallback
       else {
-        navigate(createPageUrl('Home'));
+        navigate('/home');
       }
     }, 100);
   };
