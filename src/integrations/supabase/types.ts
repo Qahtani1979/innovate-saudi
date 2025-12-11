@@ -3975,6 +3975,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ministries: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name_ar: string | null
+          name_en: string
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name_ar?: string | null
+          name_en: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name_ar?: string | null
+          name_en?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       municipalities: {
         Row: {
           active_challenges: number | null
@@ -4001,6 +4037,7 @@ export type Database = {
           logo_url: string | null
           mii_rank: number | null
           mii_score: number | null
+          ministry_id: string | null
           name_ar: string
           name_en: string
           population: number | null
@@ -4036,6 +4073,7 @@ export type Database = {
           logo_url?: string | null
           mii_rank?: number | null
           mii_score?: number | null
+          ministry_id?: string | null
           name_ar: string
           name_en: string
           population?: number | null
@@ -4071,6 +4109,7 @@ export type Database = {
           logo_url?: string | null
           mii_rank?: number | null
           mii_score?: number | null
+          ministry_id?: string | null
           name_ar?: string
           name_en?: string
           population?: number | null
@@ -4081,7 +4120,15 @@ export type Database = {
           verification_date?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "municipalities_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       municipality_staff_profiles: {
         Row: {
