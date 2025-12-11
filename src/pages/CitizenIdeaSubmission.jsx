@@ -343,9 +343,9 @@ function CitizenIdeaSubmission() {
                   </div>
 
                   {formData.ai_summary && (
-                    <div className="p-4 bg-muted/50 rounded-lg">
+                    <div className="p-4 bg-muted/50 rounded-lg" dir={isRTL ? 'rtl' : 'ltr'}>
                       <p className="text-sm font-medium mb-2">{t({ en: 'AI Summary', ar: 'ملخص الذكاء الاصطناعي' })}</p>
-                      <p className="text-sm text-muted-foreground">{formData.ai_summary}</p>
+                      <p className={`text-sm text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}`}>{formData.ai_summary}</p>
                     </div>
                   )}
 

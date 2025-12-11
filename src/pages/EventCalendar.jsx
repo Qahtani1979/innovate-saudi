@@ -5,14 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { Calendar, Plus, Users, MapPin, Clock, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function EventCalendar() {
-  const { t } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
+  const { user } = useAuth();
+  const { roles } = useUserRoles(user?.id, user?.email);
   const [viewMode, setViewMode] = useState('list');
+
+  // Check if user can create events (admin, municipality_admin, or internal staff)
+  const canCreateEvents = roles?.some(r => 
+    ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r)
+  );
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['events'],
@@ -59,23 +68,25 @@ function EventCalendar() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">
+          <h1 className="text-3xl font-bold text-foreground">
             {t({ en: 'Event Calendar', ar: 'تقويم الفعاليات' })}
           </h1>
-          <p className="text-slate-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             {t({ en: 'Workshops, conferences, and innovation events', ar: 'ورش العمل والمؤتمرات وفعاليات الابتكار' })}
           </p>
         </div>
-        <Link to={createPageUrl('EventDetail') + '?mode=create'}>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            {t({ en: 'Create Event', ar: 'إنشاء فعالية' })}
-          </Button>
-        </Link>
+        {canCreateEvents && (
+          <Link to={createPageUrl('EventDetail') + '?mode=create'}>
+            <Button className="bg-primary hover:bg-primary/90">
+              <Plus className="h-4 w-4 mr-2" />
+              {t({ en: 'Create Event', ar: 'إنشاء فعالية' })}
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Stats */}
@@ -84,46 +95,46 @@ function EventCalendar() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Total Events', ar: 'إجمالي الفعاليات' })}</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                <p className="text-sm text-muted-foreground">{t({ en: 'Total Events', ar: 'إجمالي الفعاليات' })}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
               </div>
-              <Calendar className="h-8 w-8 text-slate-400" />
+              <Calendar className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-blue-200 bg-blue-50">
+        <Card className="border-2 border-primary/20 bg-primary/5">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Upcoming', ar: 'قادم' })}</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.upcoming}</p>
+                <p className="text-sm text-muted-foreground">{t({ en: 'Upcoming', ar: 'قادم' })}</p>
+                <p className="text-2xl font-bold text-primary">{stats.upcoming}</p>
               </div>
-              <Clock className="h-8 w-8 text-blue-400" />
+              <Clock className="h-8 w-8 text-primary/60" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-green-200">
+        <Card className="border-2 border-green-500/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'This Month', ar: 'هذا الشهر' })}</p>
-                <p className="text-2xl font-bold text-green-600">{stats.this_month}</p>
+                <p className="text-sm text-muted-foreground">{t({ en: 'This Month', ar: 'هذا الشهر' })}</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.this_month}</p>
               </div>
-              <Calendar className="h-8 w-8 text-green-400" />
+              <Calendar className="h-8 w-8 text-green-500/60" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
+        <Card className="bg-gradient-to-br from-purple-50 to-background dark:from-purple-950/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Registrations', ar: 'التسجيلات' })}</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.registered}</p>
+                <p className="text-sm text-muted-foreground">{t({ en: 'Registrations', ar: 'التسجيلات' })}</p>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.registered}</p>
               </div>
-              <Users className="h-8 w-8 text-purple-400" />
+              <Users className="h-8 w-8 text-purple-500/60" />
             </div>
           </CardContent>
         </Card>
@@ -138,27 +149,27 @@ function EventCalendar() {
           <div className="space-y-4">
             {upcomingEvents.length === 0 ? (
               <div className="text-center py-12">
-                <Calendar className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">{t({ en: 'No upcoming events', ar: 'لا توجد فعاليات قادمة' })}</p>
+                <Calendar className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-muted-foreground">{t({ en: 'No upcoming events', ar: 'لا توجد فعاليات قادمة' })}</p>
               </div>
             ) : (
               upcomingEvents.map(event => (
                 <Link key={event.id} to={createPageUrl('EventDetail') + `?id=${event.id}`}>
-                  <div className="p-4 border rounded-lg hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
+                  <div className="p-4 border rounded-lg hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">
                     <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 text-center p-3 bg-blue-50 rounded-lg">
-                        <p className="text-2xl font-bold text-blue-600">
+                      <div className="flex-shrink-0 text-center p-3 bg-primary/10 rounded-lg">
+                        <p className="text-2xl font-bold text-primary">
                           {event.start_datetime ? new Date(event.start_datetime).getDate() : '?'}
                         </p>
-                        <p className="text-xs text-slate-600">
+                        <p className="text-xs text-muted-foreground">
                           {event.start_datetime ? new Date(event.start_datetime).toLocaleDateString('en-US', { month: 'short' }) : ''}
                         </p>
                       </div>
 
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-slate-900">
-                            {event.title_en || event.title_ar}
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <h3 className="font-semibold text-foreground">
+                            {language === 'ar' ? (event.title_ar || event.title_en) : (event.title_en || event.title_ar)}
                           </h3>
                           <Badge className={eventTypeColors[event.event_type]}>
                             {event.event_type?.replace(/_/g, ' ')}
@@ -171,11 +182,11 @@ function EventCalendar() {
                           )}
                         </div>
                         
-                        <p className="text-sm text-slate-600 mb-2">
-                          {event.description_en || event.description_ar}
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                          {language === 'ar' ? (event.description_ar || event.description_en) : (event.description_en || event.description_ar)}
                         </p>
 
-                        <div className="flex items-center gap-4 text-sm text-slate-500">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                           {event.start_datetime && (
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
@@ -198,7 +209,7 @@ function EventCalendar() {
                       </div>
 
                       {event.registration_required && (
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <Button size="sm">
                           {t({ en: 'Register', ar: 'التسجيل' })}
                         </Button>
                       )}
