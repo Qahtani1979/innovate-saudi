@@ -14,6 +14,7 @@ import {
   FileText, DollarSign, Calendar, AlertCircle, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function MunicipalProposalInbox() {
   const { language, isRTL, t } = useLanguage();
@@ -88,16 +89,12 @@ export default function MunicipalProposalInbox() {
   }
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900 flex items-center gap-3">
-          <Inbox className="h-10 w-10 text-blue-600" />
-          {t({ en: 'Solution Proposal Inbox', ar: 'صندوق مقترحات الحلول' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Review and respond to solution proposals from providers', ar: 'مراجعة والرد على مقترحات الحلول من المزودين' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Solution Proposal Inbox', ar: 'صندوق مقترحات الحلول' }}
+        subtitle={{ en: 'Review and respond to solution proposals from providers', ar: 'مراجعة والرد على مقترحات الحلول من المزودين' }}
+        icon={<Inbox className="h-6 w-6 text-white" />}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -277,7 +274,7 @@ export default function MunicipalProposalInbox() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

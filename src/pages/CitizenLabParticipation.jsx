@@ -11,6 +11,7 @@ import {
   Beaker, Users, Award, CheckCircle2, Star, Upload, MessageSquare 
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/CitizenPageLayout';
 
 export default function CitizenLabParticipation() {
   const { t, language } = useLanguage();
@@ -75,15 +76,12 @@ export default function CitizenLabParticipation() {
   const allBadges = myParticipations.flatMap(p => p.recognition_badges || []);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: '🧪 My Living Lab Participation', ar: '🧪 مشاركتي في المختبرات الحية' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Co-create solutions through citizen science', ar: 'شارك في إنشاء الحلول من خلال علم المواطن' })}
-        </p>
-      </div>
+    <CitizenPageLayout>
+      <CitizenPageHeader
+        icon={Beaker}
+        title={{ en: 'My Living Lab Participation', ar: 'مشاركتي في المختبرات الحية' }}
+        subtitle={{ en: 'Co-create solutions through citizen science', ar: 'شارك في إنشاء الحلول من خلال علم المواطن' }}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -213,6 +211,6 @@ export default function CitizenLabParticipation() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </CitizenPageLayout>
   );
 }

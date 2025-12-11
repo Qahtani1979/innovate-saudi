@@ -4,9 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Users, TrendingUp, MessageSquare, MapPin } from 'lucide-react';
+import { Users, TrendingUp, MessageSquare, MapPin, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function CitizenEngagementDashboard() {
   const { language, t } = useLanguage();
@@ -44,15 +45,12 @@ function CitizenEngagementDashboard() {
     .slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Citizen Engagement Analytics', ar: 'تحليلات مشاركة المواطنين' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Track citizen participation, trending topics, and sentiment', ar: 'تتبع مشاركة المواطنين والمواضيع الرائجة والمشاعر' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Citizen Engagement Analytics', ar: 'تحليلات مشاركة المواطنين' }}
+        subtitle={{ en: 'Track citizen participation, trending topics, and sentiment', ar: 'تتبع مشاركة المواطنين والمواضيع الرائجة والمشاعر' }}
+        icon={<BarChart3 className="h-6 w-6 text-white" />}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -162,7 +160,7 @@ function CitizenEngagementDashboard() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 
