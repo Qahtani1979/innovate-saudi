@@ -137,7 +137,7 @@ export const SIDEBAR_MENUS = {
     icon: GraduationCap,
     color: 'from-amber-600 to-yellow-500',
     items: [
-      { name: 'ExpertRegistry', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'ExpertDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'EvaluationPanel', icon: CheckCircle, label: { en: 'Evaluations', ar: 'التقييمات' } },
       { name: 'ExpertAssignmentQueue', icon: Inbox, label: { en: 'My Assignments', ar: 'مهامي' } },
       { name: 'PilotEvaluations', icon: TestTube, label: { en: 'Pilot Reviews', ar: 'مراجعات التجارب' } },
