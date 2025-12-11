@@ -254,6 +254,7 @@ export const SIDEBAR_MENUS = {
     items: [
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
+      { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Respond to Challenge', ar: 'الرد على التحدي' } },
       { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },
       { name: 'CitizenRewards', icon: Gift, label: { en: 'Rewards & Points', ar: 'المكافآت والنقاط' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
@@ -272,6 +273,7 @@ export const SIDEBAR_MENUS = {
     items: [
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
+      { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Respond to Challenge', ar: 'الرد على التحدي' } },
       { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
