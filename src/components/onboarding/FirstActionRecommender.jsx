@@ -125,7 +125,10 @@ For admins: focus on reviewing submissions`,
     ]
   };
 
-  const quickActions = roleBasedQuickActions[user.role] || roleBasedQuickActions.citizen;
+  const quickActions = roleBasedQuickActions[user?.role] || roleBasedQuickActions.citizen || [];
+  
+  // Helper to safely create page URLs
+  const safePageUrl = (page) => page ? createPageUrl(page) : '/citizen-dashboard';
 
   return (
     <Card className="border-2 border-purple-300">
@@ -161,7 +164,7 @@ For admins: focus on reviewing submissions`,
               </h4>
               <div className="space-y-2">
                 {quickActions.map((action, i) => (
-                  <Link key={i} to={createPageUrl(action.page)}>
+                  <Link key={i} to={safePageUrl(action.page)}>
                     <button className="w-full text-left p-3 bg-white hover:bg-purple-50 rounded-lg border border-slate-200 transition-colors flex items-center justify-between">
                       <span className="text-sm font-medium text-slate-900">{action.label}</span>
                       <ArrowRight className="h-4 w-4 text-purple-600" />
@@ -179,7 +182,7 @@ For admins: focus on reviewing submissions`,
                 <h4 className="font-bold text-purple-900">{recommendations.primary.action}</h4>
               </div>
               <p className="text-sm text-slate-700 mb-3">{recommendations.primary.reason}</p>
-              <Link to={createPageUrl(recommendations.primary.page)}>
+              <Link to={safePageUrl(recommendations.primary?.page)}>
                 <Button className="bg-purple-600 w-full">
                   {t({ en: 'Start Now', ar: 'ابدأ الآن' })}
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -194,7 +197,7 @@ For admins: focus on reviewing submissions`,
                   <h4 className="font-semibold text-blue-900">{recommendations.secondary.action}</h4>
                 </div>
                 <p className="text-sm text-slate-700 mb-2">{recommendations.secondary.reason}</p>
-                <Link to={createPageUrl(recommendations.secondary.page)}>
+                <Link to={safePageUrl(recommendations.secondary?.page)}>
                   <Button variant="outline" size="sm">
                     {t({ en: 'View', ar: 'عرض' })}
                   </Button>
@@ -209,7 +212,7 @@ For admins: focus on reviewing submissions`,
                   <h4 className="font-semibold text-green-900">{recommendations.quick_win.action}</h4>
                 </div>
                 <p className="text-sm text-slate-700 mb-2">{recommendations.quick_win.reason}</p>
-                <Link to={createPageUrl(recommendations.quick_win.page)}>
+                <Link to={safePageUrl(recommendations.quick_win?.page)}>
                   <Button variant="outline" size="sm">
                     {t({ en: 'View', ar: 'عرض' })}
                   </Button>
