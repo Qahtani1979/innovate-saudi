@@ -9901,6 +9901,10 @@ export type Database = {
         | "municipality_admin"
         | "deputyship_admin"
         | "deputyship_staff"
+        | "gdibs_internal"
+        | "super_admin"
+        | "gdibs_analyst"
+        | "gdibs_coordinator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -10044,6 +10048,10 @@ export const Constants = {
         "municipality_admin",
         "deputyship_admin",
         "deputyship_staff",
+        "gdibs_internal",
+        "super_admin",
+        "gdibs_analyst",
+        "gdibs_coordinator",
       ],
     },
   },
