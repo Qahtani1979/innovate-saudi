@@ -3,7 +3,7 @@
  * Handles rate limits, failures, and provides fallback behavior
  */
 
-import * as React from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -35,11 +35,11 @@ export function useAIWithFallback(options = {}) {
     onError = null
   } = options;
 
-  const [status, setStatus] = React.useState(AI_STATUS.IDLE);
-  const [error, setError] = React.useState(null);
-  const [rateLimitInfo, setRateLimitInfo] = React.useState(null);
+  const [status, setStatus] = useState(AI_STATUS.IDLE);
+  const [error, setError] = useState(null);
+  const [rateLimitInfo, setRateLimitInfo] = useState(null);
 
-  const invokeAI = React.useCallback(async ({ prompt, response_json_schema, system_prompt }) => {
+  const invokeAI = useCallback(async ({ prompt, response_json_schema, system_prompt }) => {
     setStatus(AI_STATUS.LOADING);
     setError(null);
 
@@ -111,7 +111,7 @@ export function useAIWithFallback(options = {}) {
     }
   }, [showToasts, fallbackData, onRateLimited, onError]);
 
-  const reset = React.useCallback(() => {
+  const reset = useCallback(() => {
     setStatus(AI_STATUS.IDLE);
     setError(null);
     setRateLimitInfo(null);
