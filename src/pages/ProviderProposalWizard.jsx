@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../components/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { FileText, DollarSign, Clock, Users, CheckCircle2, Sparkles } from 'lucide-react';
+import { FileText, DollarSign, Clock, Users, CheckCircle2, Sparkles, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/CitizenPageLayout';
 
 function ProviderProposalWizard() {
   const { language, isRTL, t } = useLanguage();
@@ -87,13 +88,13 @@ function ProviderProposalWizard() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'Submit Proposal', ar: 'تقديم مقترح' })}
-        </h1>
-        <p className="text-slate-600 mt-2">{challenge?.title_en}</p>
-      </div>
+    <CitizenPageLayout className="max-w-4xl mx-auto">
+      <CitizenPageHeader
+        icon={Send}
+        title={t({ en: 'Submit Proposal', ar: 'تقديم مقترح' })}
+        description={challenge ? (language === 'ar' ? challenge.title_ar : challenge.title_en) : t({ en: 'Submit your proposal for this challenge', ar: 'قدم مقترحك لهذا التحدي' })}
+        accentColor="blue"
+      />
 
       <Card>
         <CardHeader>
@@ -180,7 +181,7 @@ function ProviderProposalWizard() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </CitizenPageLayout>
   );
 }
 

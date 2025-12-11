@@ -9,10 +9,11 @@ import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
-  Lightbulb, Heart, TrendingUp, Trophy, Star, Calendar, TestTube, Newspaper
+  Lightbulb, Heart, TrendingUp, Trophy, Star, Calendar, TestTube, LayoutDashboard
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
+import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/CitizenPageLayout';
 
 function CitizenDashboard() {
   const { user } = useAuth();
@@ -74,66 +75,20 @@ function CitizenDashboard() {
   ];
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">
-          {t({ en: 'Welcome Back!', ar: 'مرحباً بعودتك!' })}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          {t({ en: 'Your civic participation hub', ar: 'مركز مشاركتك المدنية' })}
-        </p>
-      </div>
+    <CitizenPageLayout>
+      <CitizenPageHeader
+        icon={LayoutDashboard}
+        title={t({ en: 'Welcome Back!', ar: 'مرحباً بعودتك!' })}
+        description={t({ en: 'Your civic participation hub', ar: 'مركز مشاركتك المدنية' })}
+        accentColor="primary"
+        stats={[
+          { icon: Lightbulb, value: stats?.ideasCount || 0, label: t({ en: 'Ideas', ar: 'الأفكار' }), color: 'purple' },
+          { icon: Heart, value: stats?.votesCount || 0, label: t({ en: 'Votes', ar: 'الأصوات' }), color: 'primary' },
+          { icon: Trophy, value: stats?.points || 0, label: t({ en: 'Points', ar: 'النقاط' }), color: 'amber' },
+          { icon: TrendingUp, value: stats?.level || 1, label: t({ en: 'Level', ar: 'المستوى' }), color: 'teal' },
+        ]}
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-background">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t({ en: 'Ideas', ar: 'الأفكار' })}</p>
-                <p className="text-2xl font-bold text-purple-600">{stats?.ideasCount || 0}</p>
-              </div>
-              <Lightbulb className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-pink-50 to-white dark:from-pink-950/20 dark:to-background">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t({ en: 'Votes', ar: 'الأصوات' })}</p>
-                <p className="text-2xl font-bold text-pink-600">{stats?.votesCount || 0}</p>
-              </div>
-              <Heart className="h-8 w-8 text-pink-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-background">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t({ en: 'Points', ar: 'النقاط' })}</p>
-                <p className="text-2xl font-bold text-amber-600">{stats?.points || 0}</p>
-              </div>
-              <Trophy className="h-8 w-8 text-amber-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/20 dark:to-background">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t({ en: 'Level', ar: 'المستوى' })}</p>
-                <p className="text-2xl font-bold text-teal-600">{stats?.level || 1}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-teal-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* AI First Action Recommender */}
       <FirstActionRecommender user={{ role: 'citizen', email: user?.email || '' }} />
@@ -214,7 +169,7 @@ function CitizenDashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </CitizenPageLayout>
   );
 }
 
