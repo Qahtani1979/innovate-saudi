@@ -12,7 +12,7 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import { 
   CheckCircle, Clock, AlertCircle, FileText, TestTube, Microscope, 
-  Calendar, Send, Sparkles, Loader2, TrendingUp, Shield, Target 
+  Calendar, Send, Sparkles, Loader2, TrendingUp, Shield, Target, Users 
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import InlineApprovalWizard from '../components/approval/InlineApprovalWizard';
