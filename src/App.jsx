@@ -25,6 +25,9 @@ import PublicSolutions from './pages/public/PublicSolutions';
 import Privacy from './pages/public/Privacy';
 import Terms from './pages/public/Terms';
 import PublicIdeaSubmission from './pages/PublicIdeaSubmission';
+import CitizenChallengesBrowser from './pages/CitizenChallengesBrowser';
+import CitizenSolutionsBrowser from './pages/CitizenSolutionsBrowser';
+import CitizenLivingLabsBrowser from './pages/CitizenLivingLabsBrowser';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -95,6 +98,9 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/public-idea-submission" element={<PublicIdeaSubmission />} />
+      <Route path="/citizen-challenges-browser" element={<CitizenChallengesBrowser />} />
+      <Route path="/citizen-solutions-browser" element={<CitizenSolutionsBrowser />} />
+      <Route path="/citizen-living-labs-browser" element={<CitizenLivingLabsBrowser />} />
       
       {/* All other pages */}
       {Object.entries(Pages).map(([pageName, Page]) => {
