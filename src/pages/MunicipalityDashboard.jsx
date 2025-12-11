@@ -199,13 +199,17 @@ function MunicipalityDashboard() {
   const { data: matchedSolutions = [] } = useQuery({
     queryKey: ['matched-solutions-feed', challenges.length],
     queryFn: async () => {
-      const matches = await base44.entities.ChallengeSolutionMatch.list();
+      if (challenges.length === 0) return [];
       const myChallengeIds = challenges.map(c => c.id);
-      return matches.filter(m => 
-        myChallengeIds.includes(m.challenge_id) && 
-        m.status === 'pending' &&
-        m.match_score >= 70
-      ).slice(0, 5);
+      const { data, error } = await supabase
+        .from('challenge_solution_matches')
+        .select('*')
+        .in('challenge_id', myChallengeIds)
+        .eq('status', 'pending')
+        .gte('match_score', 70)
+        .limit(5);
+      if (error) return [];
+      return data || [];
     },
     enabled: challenges.length > 0
   });
@@ -213,34 +217,55 @@ function MunicipalityDashboard() {
   const { data: recentActivities = [] } = useQuery({
     queryKey: ['municipality-activities', challenges.length],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeActivity.list();
+      if (challenges.length === 0) return [];
       const myChallengeIds = challenges.map(c => c.id);
-      return all.filter(a => myChallengeIds.includes(a.challenge_id))
-        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
-        .slice(0, 10);
+      const { data, error } = await supabase
+        .from('challenge_activities')
+        .select('*')
+        .in('challenge_id', myChallengeIds)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) return [];
+      return data || [];
     },
     enabled: challenges.length > 0
   });
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*');
+      if (error) return [];
+      return data || [];
+    }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('municipalities')
+        .select('*');
+      if (error) return [];
+      return data || [];
+    }
   });
 
   const { data: regionalPrograms = [] } = useQuery({
     queryKey: ['regional-programs', myMunicipality?.region_id],
     queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => 
-        p.is_published &&
-        (p.region_targets?.includes(myMunicipality?.region_id) ||
-         p.municipality_targets?.includes(myMunicipality?.id) ||
-         !p.region_targets && !p.municipality_targets)
+      if (!myMunicipality) return [];
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_published', true);
+      if (error) return [];
+      return (data || []).filter(p => 
+        p.region_targets?.includes(myMunicipality?.region_id) ||
+        p.municipality_targets?.includes(myMunicipality?.id) ||
+        (!p.region_targets && !p.municipality_targets)
       );
     },
     enabled: !!myMunicipality
