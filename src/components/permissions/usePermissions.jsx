@@ -37,12 +37,34 @@ export const usePermissions = () => {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('role, municipality_id, organization_id')
         .eq('user_id', userId);
       if (error) throw error;
-      return data?.map(r => r.role) || [];
+      return data || [];
     },
     enabled: !!userId
+  });
+
+  // Get user's municipality details (including region for national check)
+  const { data: userMunicipality } = useQuery({
+    queryKey: ['user-municipality', userRoles[0]?.municipality_id],
+    queryFn: async () => {
+      const municipalityId = userRoles[0]?.municipality_id;
+      if (!municipalityId) return null;
+      
+      const { data, error } = await supabase
+        .from('municipalities')
+        .select(`
+          *,
+          region:regions(id, code, name_en, name_ar)
+        `)
+        .eq('id', municipalityId)
+        .single();
+      
+      if (error) return null;
+      return data;
+    },
+    enabled: !!userRoles[0]?.municipality_id
   });
 
   // Get permissions using the new database function
@@ -77,7 +99,28 @@ export const usePermissions = () => {
     enabled: !!userId
   });
 
-  const isAdmin = userRoles.includes('admin');
+  // Extract role names for easier checking
+  const roleNames = userRoles.map(r => r.role);
+  
+  const isAdmin = roleNames.includes('admin');
+  
+  // Check if user belongs to a national deputyship
+  const isNationalEntity = userMunicipality?.region?.code === 'NATIONAL';
+  
+  // Deputyship user check
+  const isDeputyship = isNationalEntity || 
+    roleNames.includes('deputyship_admin') || 
+    roleNames.includes('deputyship_staff');
+  
+  // Municipality user check
+  const isMunicipality = !isNationalEntity && (
+    roleNames.includes('municipality_admin') || 
+    roleNames.includes('municipality_staff') || 
+    roleNames.includes('municipality_coordinator')
+  );
+
+  // Staff user (either municipality or deputyship)
+  const isStaffUser = isMunicipality || isDeputyship;
 
   const hasPermission = (permission) => {
     // Admin wildcard
@@ -103,7 +146,7 @@ export const usePermissions = () => {
 
   const hasRole = (role) => {
     if (isAdmin) return true;
-    return userRoles.includes(role);
+    return roleNames.includes(role);
   };
 
   const hasFunctionalRole = (roleName) => {
@@ -111,16 +154,46 @@ export const usePermissions = () => {
     return functionalRoles.some(r => r.role_name === roleName);
   };
 
+  // Get visibility scope for the user
+  const getVisibilityScope = () => {
+    if (isAdmin) {
+      return { type: 'global', sectorIds: [], municipalityId: null };
+    }
+    
+    if (isDeputyship && userMunicipality) {
+      return {
+        type: 'sectoral',
+        sectorIds: userMunicipality.focus_sectors?.length > 0 
+          ? userMunicipality.focus_sectors 
+          : [userMunicipality.sector_id].filter(Boolean),
+        municipalityId: userMunicipality.id
+      };
+    }
+    
+    if (isMunicipality && userMunicipality) {
+      return {
+        type: 'geographic',
+        sectorIds: [],
+        municipalityId: userMunicipality.id
+      };
+    }
+    
+    return { type: 'public', sectorIds: [], municipalityId: null };
+  };
+
   return {
     user: session?.user ? { 
       ...session.user, 
       ...profile,
-      role: userRoles[0] || 'user'
+      role: roleNames[0] || 'user',
+      municipality: userMunicipality
     } : null,
     userId,
     userEmail,
     profile,
-    roles: userRoles,
+    roles: roleNames,
+    userRoles, // Full role objects with municipality_id/organization_id
+    userMunicipality,
     functionalRoles,
     permissions,
     hasPermission,
@@ -129,6 +202,12 @@ export const usePermissions = () => {
     canAccessEntity,
     hasRole,
     hasFunctionalRole,
-    isAdmin
+    isAdmin,
+    // New visibility-related helpers
+    isDeputyship,
+    isMunicipality,
+    isStaffUser,
+    isNationalEntity,
+    getVisibilityScope
   };
 };
