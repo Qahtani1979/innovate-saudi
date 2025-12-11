@@ -9905,6 +9905,15 @@ export type Database = {
         | "super_admin"
         | "gdibs_analyst"
         | "gdibs_coordinator"
+        | "executive"
+        | "auditor"
+        | "program_manager"
+        | "data_analyst"
+        | "evaluator"
+        | "living_lab_admin"
+        | "knowledge_manager"
+        | "legal_officer"
+        | "financial_controller"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -10052,6 +10061,15 @@ export const Constants = {
         "super_admin",
         "gdibs_analyst",
         "gdibs_coordinator",
+        "executive",
+        "auditor",
+        "program_manager",
+        "data_analyst",
+        "evaluator",
+        "living_lab_admin",
+        "knowledge_manager",
+        "legal_officer",
+        "financial_controller",
       ],
     },
   },

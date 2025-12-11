@@ -1,0 +1,10 @@
+-- Add missing functional roles to the app_role enum
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'executive';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'auditor';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'program_manager';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'data_analyst';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'evaluator';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'living_lab_admin';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'knowledge_manager';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'legal_officer';
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'financial_controller';
