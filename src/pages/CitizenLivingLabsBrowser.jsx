@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Search, FlaskConical, MapPin, Calendar, Users, Bookmark, ExternalLink, UserPlus } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { createPageUrl } from '@/utils';
+import { createPageUrl } from '@/utils/url';
 
 export default function CitizenLivingLabsBrowser() {
   const { language, isRTL, t } = useLanguage();

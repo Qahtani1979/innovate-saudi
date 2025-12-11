@@ -14,39 +14,10 @@ export const AI_STATUS = {
   RATE_LIMITED: 'rate_limited',
   ERROR: 'error',
   UNAVAILABLE: 'unavailable'
-} as const;
-
-type AIStatusType = typeof AI_STATUS[keyof typeof AI_STATUS];
-
-interface RateLimitInfo {
-  daily_remaining: number;
-  daily_limit: number;
-  [key: string]: unknown;
-}
-
-interface AIInvokeParams {
-  prompt: string;
-  response_json_schema?: Record<string, unknown>;
-  system_prompt?: string;
-}
-
-interface AIInvokeResult {
-  success: boolean;
-  data: unknown;
-  fallback: boolean;
-  rateLimited?: boolean;
-  error?: Error;
-}
-
-interface UseAIWithFallbackOptions {
-  showToasts?: boolean;
-  fallbackData?: unknown;
-  onRateLimited?: ((error: Error) => void) | null;
-  onError?: ((error: Error) => void) | null;
-}
+};
 
 // Get or create session ID for anonymous rate limiting
-const getSessionId = (): string | null => {
+const getSessionId = () => {
   if (typeof window === 'undefined') return null;
   let sessionId = sessionStorage.getItem('ai_session_id');
   if (!sessionId) {
@@ -56,7 +27,7 @@ const getSessionId = (): string | null => {
   return sessionId;
 };
 
-export function useAIWithFallback(options: UseAIWithFallbackOptions = {}) {
+export function useAIWithFallback(options = {}) {
   const {
     showToasts = true,
     fallbackData = null,
@@ -64,11 +35,11 @@ export function useAIWithFallback(options: UseAIWithFallbackOptions = {}) {
     onError = null
   } = options;
 
-  const [status, setStatus] = useState<AIStatusType>(AI_STATUS.IDLE);
-  const [error, setError] = useState<string | null>(null);
-  const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitInfo | null>(null);
+  const [status, setStatus] = useState(AI_STATUS.IDLE);
+  const [error, setError] = useState(null);
+  const [rateLimitInfo, setRateLimitInfo] = useState(null);
 
-  const invokeAI = useCallback(async ({ prompt, response_json_schema, system_prompt }: AIInvokeParams): Promise<AIInvokeResult> => {
+  const invokeAI = useCallback(async ({ prompt, response_json_schema, system_prompt }) => {
     setStatus(AI_STATUS.LOADING);
     setError(null);
 
@@ -85,7 +56,7 @@ export function useAIWithFallback(options: UseAIWithFallbackOptions = {}) {
 
       // Check for error in response body (edge function returns 429 with error in body)
       if (result?.error && result?.rate_limit_info) {
-        const rateLimitError = new Error(result.error) as Error & { status?: number; rateLimitInfo?: RateLimitInfo };
+        const rateLimitError = new Error(result.error);
         rateLimitError.status = 429;
         rateLimitError.rateLimitInfo = result.rate_limit_info;
         throw rateLimitError;
@@ -105,13 +76,11 @@ export function useAIWithFallback(options: UseAIWithFallbackOptions = {}) {
 
       setStatus(AI_STATUS.SUCCESS);
       return { success: true, data: result, fallback: false };
-    } catch (err: unknown) {
+    } catch (err) {
       console.error('AI invocation error:', err);
       
-      const errorObj = err as Error & { status?: number; message?: string };
-      
       // Handle rate limiting
-      if (errorObj?.message?.includes('Rate limit') || errorObj?.status === 429) {
+      if (err?.message?.includes('Rate limit') || err?.status === 429) {
         setStatus(AI_STATUS.RATE_LIMITED);
         setError('You have reached your AI usage limit. Please try again later.');
         
@@ -120,7 +89,7 @@ export function useAIWithFallback(options: UseAIWithFallbackOptions = {}) {
         }
         
         if (onRateLimited) {
-          onRateLimited(errorObj);
+          onRateLimited(err);
         }
         
         return { success: false, data: fallbackData, fallback: true, rateLimited: true };
@@ -128,17 +97,17 @@ export function useAIWithFallback(options: UseAIWithFallbackOptions = {}) {
       
       // Handle other errors
       setStatus(AI_STATUS.ERROR);
-      setError(errorObj?.message || 'AI service temporarily unavailable');
+      setError(err?.message || 'AI service temporarily unavailable');
       
       if (showToasts) {
         toast.error('AI assistance unavailable. You can continue manually.');
       }
       
       if (onError) {
-        onError(errorObj);
+        onError(err);
       }
       
-      return { success: false, data: fallbackData, fallback: true, error: errorObj };
+      return { success: false, data: fallbackData, fallback: true, error: err };
     }
   }, [showToasts, fallbackData, onRateLimited, onError]);
 

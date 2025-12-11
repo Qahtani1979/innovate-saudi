@@ -26,11 +26,6 @@ import Privacy from './pages/public/Privacy';
 import Terms from './pages/public/Terms';
 import PublicIdeaSubmission from './pages/PublicIdeaSubmission';
 
-// Citizen pages
-import CitizenChallengesBrowser from './pages/CitizenChallengesBrowser';
-import CitizenSolutionsBrowser from './pages/CitizenSolutionsBrowser';
-import CitizenLivingLabsBrowser from './pages/CitizenLivingLabsBrowser';
-
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -100,29 +95,6 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/public-idea-submission" element={<PublicIdeaSubmission />} />
-      
-      {/* Citizen pages (requires auth) */}
-      <Route path="/citizen-challenges" element={
-        isAuthenticated ? (
-          <LayoutWrapper currentPageName="CitizenChallengesBrowser">
-            <CitizenChallengesBrowser />
-          </LayoutWrapper>
-        ) : <Navigate to="/auth" replace />
-      } />
-      <Route path="/citizen-solutions" element={
-        isAuthenticated ? (
-          <LayoutWrapper currentPageName="CitizenSolutionsBrowser">
-            <CitizenSolutionsBrowser />
-          </LayoutWrapper>
-        ) : <Navigate to="/auth" replace />
-      } />
-      <Route path="/citizen-living-labs" element={
-        isAuthenticated ? (
-          <LayoutWrapper currentPageName="CitizenLivingLabsBrowser">
-            <CitizenLivingLabsBrowser />
-          </LayoutWrapper>
-        ) : <Navigate to="/auth" replace />
-      } />
       
       {/* All other pages */}
       {Object.entries(Pages).map(([pageName, Page]) => {
