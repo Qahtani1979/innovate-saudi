@@ -193,7 +193,22 @@ export default function MenuSidebarComparison() {
     }
   ];
 
-  // NEW SIDEBAR MENUS (Per Persona)
+  // GDISB / Innovation Department Routing Note
+  const gdisbNote = {
+    title: { en: 'GDISB / Innovation Department Routing', ar: 'توجيه الوكالة العامة / قسم الابتكار' },
+    description: {
+      en: 'GDISB (General Directorate of Innovation & Smart Buildings) members are routed based on their sub-role:',
+      ar: 'يتم توجيه أعضاء الوكالة العامة بناءً على دورهم الفرعي:'
+    },
+    roles: [
+      { role: 'GDISB Strategy Lead', persona: 'executive', dashboard: '/executive-dashboard' },
+      { role: 'Platform Administrator', persona: 'admin', dashboard: '/home' },
+      { role: 'Program Operator', persona: 'executive', dashboard: '/executive-dashboard' },
+      { role: 'Executive Leadership', persona: 'executive', dashboard: '/executive-dashboard' },
+    ]
+  };
+
+  // NEW SIDEBAR MENUS (Per Persona) - UPDATED with requested items
   const newSidebarMenus = {
     admin: {
       label: 'Platform Admin',
@@ -203,7 +218,11 @@ export default function MenuSidebarComparison() {
         { name: 'Home', label: 'Dashboard' },
         { name: 'UserManagementHub', label: 'Users' },
         { name: 'RolePermissionManager', label: 'Roles & Permissions' },
+        { name: 'RBACHub', label: 'RBAC Dashboard' },
         { name: 'ApprovalCenter', label: 'Approvals' },
+        { name: 'DataManagementHub', label: 'Data Management' },
+        { name: 'BulkDataOperations', label: 'Bulk Operations' },
+        { name: 'ExpertRegistry', label: 'Expert Registry' },
         { name: 'Challenges', label: 'Challenges' },
         { name: 'Pilots', label: 'Pilots' },
         { name: 'Solutions', label: 'Solutions' },
@@ -215,30 +234,29 @@ export default function MenuSidebarComparison() {
         { name: 'SystemHealthDashboard', label: 'System Health' }
       ],
       missingCritical: [
-        'Coverage Reports (34 items)',
+        'Coverage Reports (34 items) - via /menu-rbac-coverage-report',
         'Journey Analysis (12 items)',
-        'Data Management Hub',
-        'RBAC Dashboard',
-        'Bulk Data Operations',
-        'Expert Registry',
         'Media Library',
         'Branding Settings',
         'Taxonomy Builder',
         'Feature Flags',
         'Integration Manager',
-        'Email Templates',
-        'R&D Projects',
-        'Living Labs',
-        'Strategic Plans'
+        'Email Templates'
       ]
     },
     executive: {
-      label: 'Executive',
+      label: 'Executive / GDISB',
       icon: Target,
       color: 'text-purple-500',
       items: [
         { name: 'ExecutiveDashboard', label: 'Dashboard' },
+        { name: 'StrategyCockpit', label: 'Strategy Cockpit' },
+        { name: 'OKRManagementSystem', label: 'OKR Management' },
+        { name: 'Portfolio', label: 'Portfolio Management' },
         { name: 'StrategicPlans', label: 'Strategic Plans' },
+        { name: 'ExecutiveBriefGenerator', label: 'Brief Generator' },
+        { name: 'QuarterlyReviewWizard', label: 'Quarterly Review' },
+        { name: 'DecisionSimulator', label: 'Decision Simulator' },
         { name: 'Challenges', label: 'Challenges' },
         { name: 'Pilots', label: 'Pilots' },
         { name: 'PipelineHealthDashboard', label: 'Pipeline Health' },
@@ -248,12 +266,6 @@ export default function MenuSidebarComparison() {
         { name: 'ReportsBuilder', label: 'Analytics & Reports' }
       ],
       missingCritical: [
-        'Strategy Cockpit',
-        'OKR Management',
-        'Portfolio Management',
-        'Executive Brief Generator',
-        'Quarterly Review Wizard',
-        'Decision Simulator',
         'Predictive Forecasting',
         'Competitive Intelligence',
         'International Benchmarking',
@@ -267,6 +279,12 @@ export default function MenuSidebarComparison() {
       color: 'text-indigo-500',
       items: [
         { name: 'ExecutiveDashboard', label: 'Dashboard' },
+        { name: 'RegionalDashboard', label: 'Regional Dashboard' },
+        { name: 'MultiCityOrchestration', label: 'Multi-City Orchestration' },
+        { name: 'CrossCityLearningHub', label: 'Cross-City Learning' },
+        { name: 'StrategicPlans', label: 'Strategic Plans' },
+        { name: 'PolicyHub', label: 'Policy Hub' },
+        { name: 'MIIDrillDown', label: 'MII Drill Down' },
         { name: 'NationalInnovationMap', label: 'National Overview' },
         { name: 'Municipalities', label: 'Municipalities' },
         { name: 'Challenges', label: 'Challenges' },
@@ -277,13 +295,8 @@ export default function MenuSidebarComparison() {
         { name: 'ReportsBuilder', label: 'Analytics' }
       ],
       missingCritical: [
-        'Regional Dashboard',
-        'Multi-City Orchestration',
-        'Cross-City Learning Hub',
-        'Strategic Plans',
-        'Policy Hub',
-        'MII Drill Down',
-        'Sector Dashboard'
+        'Sector Dashboard',
+        'Capacity Planning'
       ]
     },
     municipality: {
@@ -292,8 +305,14 @@ export default function MenuSidebarComparison() {
       color: 'text-emerald-500',
       items: [
         { name: 'MunicipalityDashboard', label: 'Dashboard' },
+        { name: 'MunicipalityProfile', label: 'Municipality Profile' },
+        { name: 'MIIDrillDown', label: 'MII Score Details' },
+        { name: 'MunicipalityPeerMatcher', label: 'Peer Benchmarking' },
+        { name: 'ChallengeCreateWizard', label: 'Create Challenge' },
+        { name: 'PilotCreateWizard', label: 'Create Pilot' },
         { name: 'MyChallenges', label: 'My Challenges' },
         { name: 'MyPilots', label: 'My Pilots' },
+        { name: 'Programs', label: 'Programs' },
         { name: 'MunicipalProposalInbox', label: 'Proposals' },
         { name: 'Solutions', label: 'Solutions' },
         { name: 'MyApprovals', label: 'Approvals' },
@@ -304,12 +323,6 @@ export default function MenuSidebarComparison() {
         { name: 'ReportsBuilder', label: 'Analytics' }
       ],
       missingCritical: [
-        'Municipality Profile',
-        'MII Score Details',
-        'Peer Benchmarking',
-        'Challenge Create Wizard',
-        'Pilot Create Wizard',
-        'Programs',
         'Living Labs',
         'Knowledge Hub'
       ]
@@ -320,23 +333,23 @@ export default function MenuSidebarComparison() {
       color: 'text-orange-500',
       items: [
         { name: 'StartupDashboard', label: 'Dashboard' },
+        { name: 'SolutionCreateWizard', label: 'Create Solution' },
         { name: 'ProviderPortfolioDashboard', label: 'My Solutions' },
+        { name: 'StartupProfile', label: 'Company Profile' },
+        { name: 'TeamManagement', label: 'Team Members' },
+        { name: 'FinancialsDashboard', label: 'Financials' },
         { name: 'OpportunityFeed', label: 'Opportunities' },
         { name: 'MyChallengeTracker', label: 'Challenge Tracker' },
         { name: 'MyApplications', label: 'Applications' },
         { name: 'MyPilots', label: 'My Pilots' },
         { name: 'ContractManagement', label: 'Contracts' },
         { name: 'MyPartnershipsPage', label: 'Partnerships' },
+        { name: 'Knowledge', label: 'Knowledge Hub' },
+        { name: 'Network', label: 'Network' },
         { name: 'Programs', label: 'Programs' },
         { name: 'Messaging', label: 'Messages' }
       ],
       missingCritical: [
-        'Solution Create Wizard',
-        'Company Profile Edit',
-        'Team Members',
-        'Financials',
-        'Knowledge Hub',
-        'Network',
         'Events'
       ]
     },
@@ -346,21 +359,20 @@ export default function MenuSidebarComparison() {
       color: 'text-amber-500',
       items: [
         { name: 'ExpertDashboard', label: 'Dashboard' },
+        { name: 'ExpertProfile', label: 'My Profile' },
+        { name: 'ExpertPerformanceDashboard', label: 'Performance' },
+        { name: 'ExpertPanelManagement', label: 'Panel Management' },
         { name: 'EvaluationPanel', label: 'Evaluations' },
         { name: 'ExpertAssignmentQueue', label: 'My Assignments' },
+        { name: 'EvaluationHistory', label: 'Evaluation History' },
         { name: 'PilotEvaluations', label: 'Pilot Reviews' },
         { name: 'ExpertMatchingEngine', label: 'Expert Network' },
+        { name: 'CalendarView', label: 'Calendar' },
         { name: 'Knowledge', label: 'Knowledge Hub' },
         { name: 'MyDeadlines', label: 'Deadlines' },
         { name: 'Messaging', label: 'Messages' }
       ],
-      missingCritical: [
-        'Expert Profile Edit',
-        'Performance Dashboard',
-        'Panel Management',
-        'Evaluation History',
-        'Calendar'
-      ]
+      missingCritical: []
     },
     researcher: {
       label: 'Researcher',
@@ -368,6 +380,11 @@ export default function MenuSidebarComparison() {
       color: 'text-teal-500',
       items: [
         { name: 'ResearcherDashboard', label: 'Dashboard' },
+        { name: 'RDCalls', label: 'R&D Calls' },
+        { name: 'ResearchOutputsHub', label: 'Research Outputs' },
+        { name: 'AcademiaDashboard', label: 'Institution Dashboard' },
+        { name: 'FundingTracker', label: 'Funding Tracker' },
+        { name: 'Publications', label: 'Publications' },
         { name: 'ResearcherWorkspace', label: 'Workspace' },
         { name: 'MyRDProjects', label: 'My Projects' },
         { name: 'RDProjects', label: 'R&D Hub' },
@@ -376,13 +393,7 @@ export default function MenuSidebarComparison() {
         { name: 'MyDeadlines', label: 'Deadlines' },
         { name: 'Messaging', label: 'Messages' }
       ],
-      missingCritical: [
-        'R&D Calls',
-        'Research Outputs Hub',
-        'Institution Dashboard',
-        'Funding Tracker',
-        'Publications'
-      ]
+      missingCritical: []
     },
     citizen: {
       label: 'Citizen',
@@ -393,17 +404,16 @@ export default function MenuSidebarComparison() {
         { name: 'PublicIdeaSubmission', label: 'Submit Idea' },
         { name: 'PublicIdeasBoard', label: 'Ideas Board' },
         { name: 'IdeasManagement', label: 'My Ideas' },
+        { name: 'CitizenFeedbackHistory', label: 'Feedback History' },
+        { name: 'CitizenRewards', label: 'Rewards & Points' },
         { name: 'PublicPilotTracker', label: 'Public Pilots' },
         { name: 'CitizenPilotEnrollment', label: 'Pilot Enrollment' },
+        { name: 'Events', label: 'Events' },
+        { name: 'News', label: 'News' },
         { name: 'CitizenLeaderboard', label: 'Leaderboard' },
         { name: 'CitizenNotifications', label: 'Notifications' }
       ],
-      missingCritical: [
-        'Feedback History',
-        'Rewards/Points',
-        'Events',
-        'News'
-      ]
+      missingCritical: []
     },
     user: {
       label: 'Basic User',
@@ -411,16 +421,15 @@ export default function MenuSidebarComparison() {
       color: 'text-gray-500',
       items: [
         { name: 'Home', label: 'Dashboard' },
+        { name: 'UserProfile', label: 'Profile' },
+        { name: 'Settings', label: 'Settings' },
+        { name: 'News', label: 'News' },
+        { name: 'Events', label: 'Events' },
         { name: 'PublicIdeasBoard', label: 'Ideas' },
         { name: 'PublicPilotTracker', label: 'Pilots' },
         { name: 'Solutions', label: 'Solutions' }
       ],
-      missingCritical: [
-        'Profile',
-        'Settings',
-        'News',
-        'Events'
-      ]
+      missingCritical: []
     }
   };
 
@@ -475,6 +484,31 @@ export default function MenuSidebarComparison() {
           </CardContent>
         </Card>
       </div>
+
+      {/* GDISB Routing Info */}
+      <Card className="border-purple-200 bg-purple-50/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-purple-700">
+            <Target className="h-5 w-5" />
+            {t(gdisbNote.title)}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-3">{t(gdisbNote.description)}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+            {gdisbNote.roles.map((item) => (
+              <div key={item.role} className="p-2 bg-white rounded border">
+                <p className="font-medium text-sm">{item.role}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="outline" className="text-xs">{item.persona}</Badge>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">{item.dashboard}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="comparison" className="space-y-4">
         <TabsList>
