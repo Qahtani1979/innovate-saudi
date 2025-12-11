@@ -74,16 +74,8 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
-      {/* Root path: Show PublicPortal for non-auth, Home for authenticated */}
-      <Route path="/" element={
-        isAuthenticated ? (
-          <LayoutWrapper currentPageName={mainPageKey}>
-            <MainPage />
-          </LayoutWrapper>
-        ) : (
-          <PublicPortal />
-        )
-      } />
+      {/* Root path: Always show PublicPortal - accessible to everyone */}
+      <Route path="/" element={<PublicPortal />} />
       
       {/* Public pages with PublicHeader/Footer */}
       <Route path="/about" element={<PublicAbout />} />
