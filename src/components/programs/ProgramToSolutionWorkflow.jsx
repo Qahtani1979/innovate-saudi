@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,12 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ProgramToSolutionWorkflow({ program, graduateApplication }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -65,26 +67,26 @@ Generate marketplace-ready solution profile:`,
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const user = await base44.auth.me();
-      const solution = await base44.entities.Solution.create({
+      const { data: solution, error: solutionError } = await supabase.from('solutions').insert({
         ...formData,
         workflow_stage: 'draft',
         sectors: program.focus_areas || [],
         tags: [`program_graduate:${program.id}`]
-      });
+      }).select().single();
+      if (solutionError) throw solutionError;
 
-      await base44.entities.ChallengeRelation.create({
+      await supabase.from('challenge_relations').insert({
         challenge_id: program.id,
         related_entity_type: 'solution',
         related_entity_id: solution.id,
         relation_role: 'derived_from'
       });
 
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'program',
         entity_id: program.id,
         activity_type: 'solution_created',
-        performed_by: user.email,
+        performed_by: user?.email,
         timestamp: new Date().toISOString(),
         metadata: { solution_id: solution.id, graduate: graduateApplication?.applicant_name }
       });

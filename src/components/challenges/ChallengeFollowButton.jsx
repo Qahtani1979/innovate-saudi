@@ -1,25 +1,24 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Bell, BellOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ChallengeFollowButton({ challengeId, variant = "outline", size = "sm" }) {
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: follows = [] } = useQuery({
     queryKey: ['challenge-follows', user?.email],
-    queryFn: () => base44.entities.UserFollow.filter({
-      follower_email: user.email,
-      entity_type: 'challenge',
-      entity_id: challengeId
-    }),
+    queryFn: async () => {
+      const { data } = await supabase.from('user_follows').select('*')
+        .eq('follower_email', user.email)
+        .eq('entity_type', 'challenge')
+        .eq('entity_id', challengeId);
+      return data || [];
+    },
     enabled: !!user
   });
 
@@ -28,9 +27,10 @@ export default function ChallengeFollowButton({ challengeId, variant = "outline"
   const followMutation = useMutation({
     mutationFn: async () => {
       if (isFollowing) {
-        await base44.entities.UserFollow.delete(follows[0].id);
+        const { error } = await supabase.from('user_follows').delete().eq('id', follows[0].id);
+        if (error) throw error;
       } else {
-        await base44.entities.UserFollow.create({
+        const { error } = await supabase.from('user_follows').insert({
           follower_email: user.email,
           entity_type: 'challenge',
           entity_id: challengeId,
@@ -40,6 +40,7 @@ export default function ChallengeFollowButton({ challengeId, variant = "outline"
             pilot_created: true
           }
         });
+        if (error) throw error;
       }
     },
     onSuccess: () => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,25 +14,22 @@ import {
   TrendingUp, BarChart3, Send, Bell, CheckCircle2, Sparkles
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function PublicPilotDetail() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const pilotId = urlParams.get('id');
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  const [user, setUser] = useState(null);
   const [feedback, setFeedback] = useState('');
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: pilot, isLoading } = useQuery({
     queryKey: ['pilot-public', pilotId],
     queryFn: async () => {
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.find(p => p.id === pilotId && p.is_published && !p.is_confidential);
+      const { data } = await supabase.from('pilots').select('*').eq('id', pilotId).eq('is_published', true).eq('is_confidential', false).single();
+      return data;
     },
     enabled: !!pilotId
   });
@@ -40,8 +37,8 @@ function PublicPilotDetail() {
   const { data: municipality } = useQuery({
     queryKey: ['municipality', pilot?.municipality_id],
     queryFn: async () => {
-      const municipalities = await base44.entities.Municipality.list();
-      return municipalities.find(m => m.id === pilot?.municipality_id);
+      const { data } = await supabase.from('municipalities').select('*').eq('id', pilot?.municipality_id).single();
+      return data;
     },
     enabled: !!pilot?.municipality_id
   });
@@ -49,14 +46,17 @@ function PublicPilotDetail() {
   const { data: enrollment } = useQuery({
     queryKey: ['enrollment-check', pilotId, user?.email],
     queryFn: async () => {
-      const enrollments = await base44.entities.CitizenPilotEnrollment.list();
-      return enrollments.find(e => e.pilot_id === pilotId && e.citizen_email === user?.email);
+      const { data } = await supabase.from('citizen_pilot_enrollments').select('*').eq('pilot_id', pilotId).eq('user_email', user?.email).single();
+      return data;
     },
     enabled: !!(pilotId && user?.email)
   });
 
   const feedbackMutation = useMutation({
-    mutationFn: (data) => base44.entities.CitizenFeedback.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('citizen_feedback').insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['citizen-feedback']);
       setFeedback('');

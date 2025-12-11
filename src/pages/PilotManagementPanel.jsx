@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,32 +14,31 @@ import {
   RefreshCw, XCircle, Pause, Play, Award, TestTube, Shield, Calendar
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function PilotManagementPanel() {
   const { language, isRTL, t } = useLanguage();
   const [selectedStage, setSelectedStage] = useState('all');
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   // RLS: Admins see all, municipalities see their own pilots
   const { data: pilots = [], isLoading } = useQuery({
-    queryKey: ['all-pilots', user?.email, user?.role],
+    queryKey: ['all-pilots', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      if (user?.role === 'admin') return all;
+      const { data: all } = await supabase.from('pilots').select('*');
+      const { data: userRoles } = await supabase.from('user_roles').select('role').eq('user_id', user?.id);
+      const isAdmin = userRoles?.some(r => r.role === 'admin');
+      if (isAdmin) return all || [];
       // Municipality users see only their city's pilots
-      const userOrgs = await base44.entities.Organization.list();
-      const userOrg = userOrgs.find(o => 
+      const { data: userOrgs } = await supabase.from('organizations').select('*');
+      const userOrg = userOrgs?.find(o => 
         o.contact_email === user?.email || 
         o.primary_contact_name === user?.full_name
       );
       if (userOrg?.org_type === 'municipality') {
-        return all.filter(p => p.municipality_id === userOrg.id);
+        return (all || []).filter(p => p.municipality_id === userOrg.id);
       }
-      return all;
+      return all || [];
     },
     enabled: !!user
   });

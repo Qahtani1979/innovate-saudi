@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,21 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { Send, Loader2, FileText, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ProposalSubmissionForm({ challenge, onSuccess, onCancel }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['my-solutions', user?.email],
     queryFn: async () => {
-      const allSolutions = await base44.entities.Solution.list();
-      return allSolutions.filter(s => s.created_by === user?.email);
+      const { data } = await supabase.from('solutions').select('*').eq('created_by', user?.email);
+      return data || [];
     },
     enabled: !!user
   });
@@ -43,13 +40,14 @@ export default function ProposalSubmissionForm({ challenge, onSuccess, onCancel 
 
   const submitMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.ChallengeProposal.create({
+      const { error } = await supabase.from('challenge_proposals').insert({
         challenge_id: challenge.id,
         proposer_email: user.email,
         ...data,
         submission_date: new Date().toISOString(),
         status: 'submitted'
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['proposals']);

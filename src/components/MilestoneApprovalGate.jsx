@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Flag, CheckCircle2, XCircle, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 function MilestoneApprovalGate({ pilot, milestone, milestoneIndex, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [decision, setDecision] = useState('');
   const [comments, setComments] = useState('');
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const approveMutation = useMutation({
     mutationFn: async (approved) => {
@@ -31,11 +28,12 @@ function MilestoneApprovalGate({ pilot, milestone, milestoneIndex, onClose }) {
         approval_comments: comments
       };
       
-      await base44.entities.Pilot.update(pilot.id, {
+      const { error } = await supabase.from('pilots').update({
         milestones: updatedMilestones
-      });
+      }).eq('id', pilot.id);
+      if (error) throw error;
 
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         activity_type: 'milestone_approval',
         entity_type: 'Pilot',
         entity_id: pilot.id,

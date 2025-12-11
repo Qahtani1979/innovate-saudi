@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,17 +19,14 @@ import InlineApprovalWizard from '../components/approval/InlineApprovalWizard';
 import { getGateConfig } from '../components/approval/ApprovalGateConfig';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 function ApprovalCenter() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const { invokeAI, status: aiStatus, isLoading: analyzingLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [analyzingId, setAnalyzingId] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const queryClient = useQueryClient();
 

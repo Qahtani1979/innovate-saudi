@@ -8,13 +8,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { Calendar as CalendarIcon, Plus, MapPin, User, Clock } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tantml:react-query';
-import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function SessionScheduler({ programId }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [newSession, setNewSession] = useState({
@@ -29,8 +31,8 @@ export default function SessionScheduler({ programId }) {
   const { data: program } = useQuery({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const programs = await base44.entities.Program.list();
-      return programs.find(p => p.id === programId);
+      const { data } = await supabase.from('programs').select('*').eq('id', programId).single();
+      return data;
     },
     enabled: !!programId
   });
@@ -39,19 +41,20 @@ export default function SessionScheduler({ programId }) {
 
   const createSessionMutation = useMutation({
     mutationFn: async (sessionData) => {
-      await base44.entities.Program.update(programId, {
+      const { error } = await supabase.from('programs').update({
         events: [...sessions, {
           ...sessionData,
           status: 'scheduled',
           created_date: new Date().toISOString()
         }]
-      });
+      }).eq('id', programId);
+      if (error) throw error;
 
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'program',
         entity_id: programId,
         activity_type: 'session_scheduled',
-        performed_by: (await base44.auth.me()).email,
+        performed_by: user?.email,
         timestamp: new Date().toISOString(),
         metadata: { session_title: sessionData.title, session_date: sessionData.date }
       });

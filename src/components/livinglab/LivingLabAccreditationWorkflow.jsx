@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { Award, Beaker } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [criteria, setCriteria] = useState({
     infrastructure: false,
     equipment: false,
@@ -25,13 +27,13 @@ export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
 
   const accreditMutation = useMutation({
     mutationFn: async () => {
-      const user = await base44.auth.me();
-      await base44.entities.LivingLab.update(lab.id, {
+      const { error } = await supabase.from('living_labs').update({
         accreditation_status: 'accredited',
         accreditation_date: new Date().toISOString(),
-        accredited_by: user.email,
+        accredited_by: user?.email,
         accreditation_notes: notes
-      });
+      }).eq('id', lab.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['livinglab']);

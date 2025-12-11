@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -8,28 +8,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { Bell, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ProviderNotificationPreferences() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('sectors').select('*');
+      return data || [];
+    }
   });
 
   const { data: preferences } = useQuery({
     queryKey: ['notification-prefs', user?.email],
     queryFn: async () => {
-      const prefs = await base44.entities.UserNotificationPreference.filter({
-        user_email: user.email
-      });
-      return prefs[0];
+      const { data } = await supabase.from('user_notification_preferences').select('*').eq('user_email', user.email).single();
+      return data;
     },
     enabled: !!user
   });
@@ -48,9 +46,11 @@ export default function ProviderNotificationPreferences() {
       };
 
       if (preferences?.id) {
-        return await base44.entities.UserNotificationPreference.update(preferences.id, data);
+        const { error } = await supabase.from('user_notification_preferences').update(data).eq('id', preferences.id);
+        if (error) throw error;
       } else {
-        return await base44.entities.UserNotificationPreference.create(data);
+        const { error } = await supabase.from('user_notification_preferences').insert(data);
+        if (error) throw error;
       }
     },
     onSuccess: () => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Shield, Users, CheckCircle2, XCircle, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function MultiStakeholderApprovalPanel({ sandboxApplicationId }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [evaluating, setEvaluating] = useState(false);
   const [myEvaluation, setMyEvaluation] = useState({
     safety_score: 50,
@@ -26,14 +28,13 @@ export default function MultiStakeholderApprovalPanel({ sandboxApplicationId }) 
   const { data: evaluations = [] } = useQuery({
     queryKey: ['sandbox-evaluations', sandboxApplicationId],
     queryFn: async () => {
-      const all = await base44.entities.SandboxApplicationEvaluation.list();
-      return all.filter(e => e.sandbox_application_id === sandboxApplicationId);
+      const { data } = await supabase.from('sandbox_application_evaluations').select('*').eq('sandbox_application_id', sandboxApplicationId);
+      return data || [];
     }
   });
 
   const submitEvaluationMutation = useMutation({
     mutationFn: async () => {
-      const user = await base44.auth.me();
       const overall = Math.round(
         (myEvaluation.safety_score * 0.3) +
         (myEvaluation.regulatory_compliance_score * 0.3) +
@@ -41,10 +42,10 @@ export default function MultiStakeholderApprovalPanel({ sandboxApplicationId }) 
         (myEvaluation.infrastructure_readiness_score * 0.2)
       );
 
-      return await base44.entities.SandboxApplicationEvaluation.create({
+      const { error } = await supabase.from('sandbox_application_evaluations').insert({
         sandbox_application_id: sandboxApplicationId,
-        evaluator_email: user.email,
-        evaluator_role: user.role === 'admin' ? 'regulatory_authority' : 'technical_expert',
+        evaluator_email: user?.email,
+        evaluator_role: 'technical_expert',
         safety_score: myEvaluation.safety_score,
         regulatory_compliance_score: myEvaluation.regulatory_compliance_score,
         technical_feasibility_score: myEvaluation.technical_feasibility_score,
@@ -54,6 +55,7 @@ export default function MultiStakeholderApprovalPanel({ sandboxApplicationId }) 
         evaluation_notes: myEvaluation.evaluation_notes,
         evaluation_date: new Date().toISOString()
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sandbox-evaluations'] });
