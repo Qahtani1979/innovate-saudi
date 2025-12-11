@@ -286,7 +286,7 @@ export const SIDEBAR_MENUS = {
     icon: User,
     color: 'from-gray-600 to-slate-500',
     items: [
-      HOME_LINK,
+      { name: 'PublicPortal', icon: Home, label: { en: 'Home', ar: 'الرئيسية' }, path: '/' },
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
       { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Submit Proposal', ar: 'تقديم مقترح' } },
