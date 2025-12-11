@@ -119,8 +119,13 @@ export function PageHeader({
   actions,
   children
 }) {
-  const { isRTL, t, language } = useLanguage();
-  const { bgGradient, iconColor } = usePersonaColors();
+  const languageContext = useLanguage();
+  const isRTL = languageContext?.isRTL || false;
+  const language = languageContext?.language || 'en';
+  
+  const personaColors = usePersonaColors();
+  const bgGradient = personaColors?.bgGradient || 'from-slate-500/10 via-gray-500/5 to-transparent';
+  const iconColor = personaColors?.iconColor || 'text-slate-500';
   
   // Helper to resolve bilingual text
   const resolveText = (text) => {
@@ -129,7 +134,7 @@ export function PageHeader({
     if (typeof text === 'object' && (text.en || text.ar)) {
       return language === 'ar' && text.ar ? text.ar : text.en;
     }
-    return text;
+    return String(text);
   };
 
   const resolvedTitle = resolveText(title);
