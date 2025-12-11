@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Target, Calendar, Building2, ArrowRight, ThumbsUp, MessageSquare, Bookmark, Send } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { createPageUrl } from '@/utils/url';
+import { createPageUrl } from '@/utils';
 
 export default function CitizenChallengesBrowser() {
   const { language, isRTL, t } = useLanguage();
