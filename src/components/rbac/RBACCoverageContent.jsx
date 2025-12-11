@@ -410,9 +410,9 @@ export default function RBACCoverageContent() {
             </div>
             
             <Button asChild className="w-full mt-3 bg-blue-600 hover:bg-blue-700">
-              <Link to={createPageUrl('RBACComprehensiveAudit')}>
+              <Link to={createPageUrl('RBACHub')}>
                 <Shield className="h-4 w-4 mr-2" />
-                {t({ en: 'Open Comprehensive Audit', ar: 'افتح التدقيق الشامل' })}
+                {t({ en: 'Open RBAC Hub', ar: 'افتح مركز الصلاحيات' })}
               </Link>
             </Button>
           </div>
