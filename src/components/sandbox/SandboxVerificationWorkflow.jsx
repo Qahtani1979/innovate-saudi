@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { Shield, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function SandboxVerificationWorkflow({ sandbox, onClose }) {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [checklist, setChecklist] = useState({
     regulatory_framework: false,
@@ -25,22 +27,28 @@ export default function SandboxVerificationWorkflow({ sandbox, onClose }) {
 
   const verifyMutation = useMutation({
     mutationFn: async () => {
-      const user = await base44.auth.me();
-      await base44.entities.Sandbox.update(sandbox.id, {
-        status: 'verified',
-        verification_date: new Date().toISOString(),
-        verified_by: user.email,
-        verification_notes: notes
-      });
+      const { error: updateError } = await supabase
+        .from('sandboxes')
+        .update({
+          status: 'verified',
+          verification_date: new Date().toISOString(),
+          verified_by: user?.email,
+          verification_notes: notes
+        })
+        .eq('id', sandbox.id);
+      if (updateError) throw updateError;
 
-      await base44.entities.SystemActivity.create({
-        entity_type: 'Sandbox',
-        entity_id: sandbox.id,
-        activity_type: 'verified',
-        description: `Sandbox "${sandbox.name_en}" verified and approved`,
-        performed_by: user.email,
-        timestamp: new Date().toISOString()
-      });
+      const { error: activityError } = await supabase
+        .from('system_activities')
+        .insert({
+          entity_type: 'Sandbox',
+          entity_id: sandbox.id,
+          activity_type: 'verified',
+          description: `Sandbox "${sandbox.name_en}" verified and approved`,
+          performed_by: user?.email,
+          timestamp: new Date().toISOString()
+        });
+      if (activityError) console.log('Activity log error:', activityError);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['sandbox']);

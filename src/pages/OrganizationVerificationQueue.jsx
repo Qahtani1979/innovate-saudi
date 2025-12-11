@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,11 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { useAuth } from '@/lib/AuthContext';
 
 function OrganizationVerificationQueue() {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [verificationData, setVerificationData] = useState({
@@ -28,8 +30,13 @@ function OrganizationVerificationQueue() {
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations-verification'],
     queryFn: async () => {
-      const all = await base44.entities.Organization.list();
-      return all.filter(o => !o.is_verified);
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('is_verified', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
@@ -42,26 +49,33 @@ function OrganizationVerificationQueue() {
         verificationData.technical_verified
       ].filter(Boolean).length * 25;
 
-      await base44.entities.OrganizationVerification.create({
-        organization_id: orgId,
-        verifier_email: (await base44.auth.me()).email,
-        legal_verified: verificationData.legal_verified,
-        financial_verified: verificationData.financial_verified,
-        operational_verified: verificationData.operational_verified,
-        technical_verified: verificationData.technical_verified,
-        overall_status: decision,
-        verification_score: score,
-        verification_notes: verificationData.verification_notes,
-        risk_flags: verificationData.risk_flags,
-        verification_date: new Date().toISOString(),
-        expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-      });
+      const { error: verifyError } = await supabase
+        .from('organization_verifications')
+        .insert({
+          organization_id: orgId,
+          verifier_email: user?.email,
+          legal_verified: verificationData.legal_verified,
+          financial_verified: verificationData.financial_verified,
+          operational_verified: verificationData.operational_verified,
+          technical_verified: verificationData.technical_verified,
+          overall_status: decision,
+          verification_score: score,
+          verification_notes: verificationData.verification_notes,
+          risk_flags: verificationData.risk_flags,
+          verification_date: new Date().toISOString(),
+          expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        });
+      if (verifyError) throw verifyError;
 
-      await base44.entities.Organization.update(orgId, {
-        is_verified: decision === 'verified',
-        verification_date: new Date().toISOString(),
-        verification_notes: verificationData.verification_notes
-      });
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({
+          is_verified: decision === 'verified',
+          verification_date: new Date().toISOString(),
+          verification_notes: verificationData.verification_notes
+        })
+        .eq('id', orgId);
+      if (updateError) throw updateError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations-verification'] });

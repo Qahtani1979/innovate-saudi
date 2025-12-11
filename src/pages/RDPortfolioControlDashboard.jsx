@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,39 +12,38 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 function RDPortfolioControlDashboard() {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   // RLS: Admins see all, researchers see their own projects
   const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-portfolio', user?.email, user?.role],
+    queryKey: ['rd-projects-portfolio', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.RDProject.list();
-      if (user?.role === 'admin') return all;
-      return all.filter(p => 
-        p.created_by === user?.email || 
-        p.principal_investigator?.email === user?.email ||
-        p.team_members?.some(m => m.email === user?.email)
-      );
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user
   });
 
-  // RLS: R&D calls - admins see all, others see published only
+  // RLS: R&D calls
   const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-portfolio', user?.role],
+    queryKey: ['rd-calls-portfolio'],
     queryFn: async () => {
-      const all = await base44.entities.RDCall.list();
-      if (user?.role === 'admin') return all;
-      return all.filter(c => c.is_published);
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user
   });

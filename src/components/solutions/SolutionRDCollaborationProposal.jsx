@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,11 @@ import { Microscope, Loader2, Sparkles, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function SolutionRDCollaborationProposal({ solution, onClose }) {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     title_en: `R&D Collaboration: ${solution.name_en}`,
@@ -32,13 +34,13 @@ export default function SolutionRDCollaborationProposal({ solution, onClose }) {
   });
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
-
   const createRDProject = useMutation({
-    mutationFn: (data) => base44.entities.RDProject.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('rd_projects')
+        .insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-projects']);
       toast.success(t({ en: 'R&D proposal created', ar: 'تم إنشاء المقترح' }));

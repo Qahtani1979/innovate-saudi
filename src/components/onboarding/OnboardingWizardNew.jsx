@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -103,7 +103,20 @@ export default function OnboardingWizardNew({ user, onComplete }) {
   ];
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data) => base44.auth.updateMe(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          organization_type: data.organization_type,
+          organization_name: data.organization_name,
+          sector: data.sector,
+          city: data.city,
+          job_title: data.job_title,
+          onboarding_completed: true
+        })
+        .eq('user_id', user?.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       toast.success(t({ en: 'Profile updated successfully!', ar: 'تم تحديث الملف بنجاح!' }));
       onComplete?.();
