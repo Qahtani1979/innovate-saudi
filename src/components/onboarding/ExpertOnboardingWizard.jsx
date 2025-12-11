@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { base44 } from '@/api/base44Client';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,18 +10,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
 import { 
-  CheckCircle2, ArrowRight, ArrowLeft, Sparkles, 
-  GraduationCap, Award, Briefcase, FileText, 
-  Loader2, Upload, Star, Clock, Building2, Globe
+  Award, ArrowRight, ArrowLeft, CheckCircle2, 
+  GraduationCap, Briefcase, Clock, Upload, FileText, 
+  Loader2, Globe, Star, Plus, X
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+const STEPS = [
+  { id: 1, title: { en: 'CV Import', ar: 'استيراد السيرة' }, icon: Upload },
+  { id: 2, title: { en: 'Basic Info', ar: 'المعلومات الأساسية' }, icon: Briefcase },
+  { id: 3, title: { en: 'Expertise', ar: 'الخبرات' }, icon: GraduationCap },
+  { id: 4, title: { en: 'Availability', ar: 'التوفر' }, icon: Clock },
+  { id: 5, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
+];
 
 const EXPERTISE_AREAS = [
   { en: 'Urban Planning', ar: 'التخطيط الحضري' },
@@ -37,17 +45,18 @@ const EXPERTISE_AREAS = [
   { en: 'Digital Transformation', ar: 'التحول الرقمي' },
 ];
 
-const STEPS = [
-  { id: 1, title: { en: 'Basic Info', ar: 'معلومات أساسية' }, icon: Briefcase },
-  { id: 2, title: { en: 'Expertise', ar: 'الخبرات' }, icon: GraduationCap },
-  { id: 3, title: { en: 'Credentials', ar: 'المؤهلات' }, icon: Award },
-  { id: 4, title: { en: 'Availability', ar: 'التوفر' }, icon: Clock },
-  { id: 5, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
+const ENGAGEMENT_TYPES = [
+  { id: 'evaluation', label: { en: 'Solution Evaluation', ar: 'تقييم الحلول' } },
+  { id: 'advisory', label: { en: 'Advisory & Consulting', ar: 'الاستشارات' } },
+  { id: 'mentoring', label: { en: 'Mentoring', ar: 'التوجيه' } },
+  { id: 'jury', label: { en: 'Jury & Judging', ar: 'لجان التحكيم' } },
+  { id: 'technical_review', label: { en: 'Technical Review', ar: 'المراجعة الفنية' } }
 ];
 
 export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -68,21 +77,21 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
     availability_hours_per_week: '',
     preferred_engagement_types: [],
     languages: ['English'],
-    portfolio_url: '',
-    publications: ''
+    portfolio_url: ''
   });
 
+  // Pre-populate from Stage 1 onboarding data
   useEffect(() => {
     if (userProfile) {
       setFormData(prev => ({
         ...prev,
-        full_name: userProfile.full_name || '',
-        job_title: userProfile.job_title || '',
-        organization: userProfile.organization || '',
-        expertise_areas: userProfile.expertise_areas || [],
-        cv_url: userProfile.cv_url || '',
-        linkedin_url: userProfile.linkedin_url || '',
-        bio: userProfile.bio || ''
+        full_name: userProfile.full_name_en || userProfile.full_name || prev.full_name,
+        job_title: userProfile.job_title_en || userProfile.job_title || prev.job_title,
+        organization: userProfile.organization_en || userProfile.organization || prev.organization,
+        expertise_areas: userProfile.expertise_areas || prev.expertise_areas,
+        cv_url: userProfile.cv_url || prev.cv_url,
+        linkedin_url: userProfile.linkedin_url || prev.linkedin_url,
+        bio: userProfile.bio_en || userProfile.bio || prev.bio
       }));
     }
   }, [userProfile]);
@@ -133,7 +142,7 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
       }
     } catch (error) {
       console.error('CV extraction error:', error);
-      toast.error(t({ en: 'Could not extract CV data automatically', ar: 'تعذر استخراج بيانات السيرة الذاتية تلقائياً' }));
+      toast.info(t({ en: 'CV uploaded. Please fill in details manually.', ar: 'تم رفع السيرة الذاتية. يرجى ملء التفاصيل يدوياً.' }));
     } finally {
       setIsExtractingCV(false);
     }
@@ -190,9 +199,13 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
         .from('user_profiles')
         .update({
           full_name: formData.full_name,
+          full_name_en: formData.full_name,
           job_title: formData.job_title,
+          job_title_en: formData.job_title,
           organization: formData.organization,
+          organization_en: formData.organization,
           bio: formData.bio,
+          bio_en: formData.bio,
           expertise_areas: formData.expertise_areas,
           cv_url: formData.cv_url,
           linkedin_url: formData.linkedin_url,
@@ -213,7 +226,7 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
         .maybeSingle();
 
       if (!existingExpert) {
-        const { error: expertError } = await supabase
+        await supabase
           .from('expert_profiles')
           .insert({
             user_id: user.id,
@@ -235,20 +248,14 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
             status: 'pending_verification',
             is_available: true
           });
-
-        if (expertError) {
-          console.error('Expert profile error:', expertError);
-        }
       }
 
-      await checkAuth();
-      toast.success(t({ en: 'Expert profile created!', ar: 'تم إنشاء ملف الخبير!' }));
+      await queryClient.invalidateQueries(['user-profile']);
+      if (checkAuth) await checkAuth();
       
-      if (onComplete) {
-        onComplete();
-      } else {
-        navigate(createPageUrl('ExpertRegistry'));
-      }
+      toast.success(t({ en: 'Expert profile created!', ar: 'تم إنشاء ملف الخبير!' }));
+      onComplete?.(formData);
+      navigate(createPageUrl('ExpertRegistry'));
     } catch (error) {
       console.error('Submission error:', error);
       toast.error(t({ en: 'Failed to save profile', ar: 'فشل في حفظ الملف الشخصي' }));
@@ -258,8 +265,6 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
   };
 
   const handleSkip = async () => {
-    if (!user?.id) return;
-
     try {
       await supabase
         .from('user_profiles')
@@ -270,449 +275,416 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
         .eq('user_id', user.id);
 
       await checkAuth();
-      
-      if (onSkip) {
-        onSkip();
-      } else {
-        navigate(createPageUrl('Home'));
-      }
+      onSkip?.();
+      navigate(createPageUrl('Home'));
     } catch (error) {
       console.error('Skip error:', error);
-    }
-  };
-
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mx-auto mb-4">
-                <GraduationCap className="h-8 w-8 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold">
-                {t({ en: 'Become an Expert', ar: 'كن خبيراً' })}
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {t({ en: 'Share your expertise with municipalities', ar: 'شارك خبرتك مع البلديات' })}
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label>{t({ en: 'Upload CV/Resume', ar: 'تحميل السيرة الذاتية' })}</Label>
-                <FileUploader
-                  accept=".pdf,.doc,.docx"
-                  maxSize={10}
-                  value={formData.cv_url}
-                  onChange={handleCVUpload}
-                />
-                {isExtractingCV && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t({ en: 'Extracting data from CV...', ar: 'جاري استخراج البيانات...' })}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>{t({ en: 'Full Name', ar: 'الاسم الكامل' })} *</Label>
-                  <Input
-                    value={formData.full_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                    placeholder={t({ en: 'Dr. Ahmed Al-Farsi', ar: 'د. أحمد الفارسي' })}
-                  />
-                </div>
-                <div>
-                  <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })} *</Label>
-                  <Input
-                    value={formData.job_title}
-                    onChange={(e) => setFormData(prev => ({ ...prev, job_title: e.target.value }))}
-                    placeholder={t({ en: 'Senior Urban Planner', ar: 'مخطط حضري أول' })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>{t({ en: 'Organization', ar: 'المنظمة' })}</Label>
-                  <Input
-                    value={formData.organization}
-                    onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
-                    placeholder={t({ en: 'King Saud University', ar: 'جامعة الملك سعود' })}
-                  />
-                </div>
-                <div>
-                  <Label>{t({ en: 'Years of Experience', ar: 'سنوات الخبرة' })} *</Label>
-                  <Input
-                    type="number"
-                    value={formData.years_of_experience}
-                    onChange={(e) => setFormData(prev => ({ ...prev, years_of_experience: e.target.value }))}
-                    placeholder="10"
-                    min="0"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>{t({ en: 'LinkedIn Profile', ar: 'ملف LinkedIn' })}</Label>
-                <Input
-                  value={formData.linkedin_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, linkedin_url: e.target.value }))}
-                  placeholder="https://linkedin.com/in/yourprofile"
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold">
-                {t({ en: 'Your Expertise', ar: 'خبراتك' })}
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {t({ en: 'Select up to 5 areas of expertise', ar: 'اختر حتى 5 مجالات خبرة' })}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {EXPERTISE_AREAS.map((area) => (
-                <button
-                  key={area.en}
-                  onClick={() => toggleExpertise(area.en)}
-                  className={`p-3 rounded-lg border text-sm text-start transition-all ${
-                    formData.expertise_areas.includes(area.en)
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-card hover:bg-muted border-border'
-                  }`}
-                >
-                  {language === 'ar' ? area.ar : area.en}
-                </button>
-              ))}
-            </div>
-
-            <div className="text-sm text-muted-foreground text-center">
-              {formData.expertise_areas.length}/5 {t({ en: 'selected', ar: 'مختار' })}
-            </div>
-
-            <div>
-              <Label>{t({ en: 'Professional Bio', ar: 'نبذة مهنية' })}</Label>
-              <Textarea
-                value={formData.bio}
-                onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                placeholder={t({ 
-                  en: 'Describe your professional background and expertise...', 
-                  ar: 'صف خلفيتك المهنية وخبراتك...' 
-                })}
-                rows={4}
-              />
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold">
-                {t({ en: 'Credentials & Certifications', ar: 'المؤهلات والشهادات' })}
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {t({ en: 'Add your professional certifications', ar: 'أضف شهاداتك المهنية' })}
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {formData.certifications.map((cert, index) => (
-                  <Badge key={index} variant="secondary" className="gap-1">
-                    <Award className="h-3 w-3" />
-                    {cert}
-                    <button
-                      onClick={() => removeCertification(index)}
-                      className="ml-1 hover:text-destructive"
-                    >
-                      ×
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-
-              <Button variant="outline" onClick={addCertification} className="w-full">
-                <Award className="h-4 w-4 mr-2" />
-                {t({ en: 'Add Certification', ar: 'إضافة شهادة' })}
-              </Button>
-
-              <div>
-                <Label>{t({ en: 'Portfolio/Website URL', ar: 'رابط الموقع/المعرض' })}</Label>
-                <Input
-                  value={formData.portfolio_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, portfolio_url: e.target.value }))}
-                  placeholder="https://yourportfolio.com"
-                />
-              </div>
-
-              <div>
-                <Label>{t({ en: 'Notable Publications', ar: 'المنشورات البارزة' })}</Label>
-                <Textarea
-                  value={formData.publications}
-                  onChange={(e) => setFormData(prev => ({ ...prev, publications: e.target.value }))}
-                  placeholder={t({ 
-                    en: 'List any academic papers, articles, or research publications...', 
-                    ar: 'اذكر أي أوراق أكاديمية أو مقالات أو منشورات بحثية...' 
-                  })}
-                  rows={3}
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold">
-                {t({ en: 'Availability & Preferences', ar: 'التوفر والتفضيلات' })}
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {t({ en: 'Set your availability for engagements', ar: 'حدد توفرك للمشاركات' })}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>{t({ en: 'Hours Available per Week', ar: 'الساعات المتاحة أسبوعياً' })}</Label>
-                <Input
-                  type="number"
-                  value={formData.availability_hours_per_week}
-                  onChange={(e) => setFormData(prev => ({ ...prev, availability_hours_per_week: e.target.value }))}
-                  placeholder="10"
-                  min="1"
-                  max="40"
-                />
-              </div>
-              <div>
-                <Label>{t({ en: 'Hourly Rate (SAR)', ar: 'السعر بالساعة (ريال)' })}</Label>
-                <Input
-                  type="number"
-                  value={formData.hourly_rate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
-                  placeholder="500"
-                  min="0"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-3 block">{t({ en: 'Preferred Engagement Types', ar: 'أنواع المشاركة المفضلة' })}</Label>
-              <div className="space-y-2">
-                {[
-                  { id: 'evaluation', label: { en: 'Proposal Evaluation', ar: 'تقييم المقترحات' } },
-                  { id: 'mentorship', label: { en: 'Mentorship', ar: 'الإرشاد' } },
-                  { id: 'consulting', label: { en: 'Consulting', ar: 'الاستشارات' } },
-                  { id: 'workshops', label: { en: 'Workshops & Training', ar: 'ورش العمل والتدريب' } },
-                  { id: 'research', label: { en: 'Research Collaboration', ar: 'التعاون البحثي' } }
-                ].map((type) => (
-                  <div key={type.id} className="flex items-center gap-2">
-                    <Checkbox
-                      id={type.id}
-                      checked={formData.preferred_engagement_types.includes(type.id)}
-                      onCheckedChange={() => toggleEngagementType(type.id)}
-                    />
-                    <Label htmlFor={type.id} className="font-normal cursor-pointer">
-                      {language === 'ar' ? type.label.ar : type.label.en}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="h-10 w-10 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold">
-                {t({ en: 'Profile Complete!', ar: 'اكتمل الملف!' })}
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {t({ en: 'Your expert profile is ready for review', ar: 'ملفك الخبير جاهز للمراجعة' })}
-              </p>
-            </div>
-
-            <Card className="bg-muted/50">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Briefcase className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-medium">{formData.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{formData.job_title}</p>
-                    </div>
-                  </div>
-                  
-                  {formData.organization && (
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <p>{formData.organization}</p>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-2">
-                    {formData.expertise_areas.slice(0, 3).map((area) => (
-                      <Badge key={area} variant="secondary">{area}</Badge>
-                    ))}
-                    {formData.expertise_areas.length > 3 && (
-                      <Badge variant="outline">+{formData.expertise_areas.length - 3}</Badge>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-              <div className="flex gap-3">
-                <Star className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-amber-900 dark:text-amber-100">
-                    {t({ en: 'What happens next?', ar: 'ماذا يحدث بعد ذلك؟' })}
-                  </p>
-                  <p className="text-sm text-amber-800 dark:text-amber-200 mt-1">
-                    {t({ 
-                      en: 'Your profile will be reviewed by our team. Once verified, you\'ll receive expert assignments and evaluation requests.',
-                      ar: 'سيتم مراجعة ملفك من قبل فريقنا. بمجرد التحقق، ستتلقى مهام خبير وطلبات تقييم.'
-                    })}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
+      onSkip?.();
+      navigate(createPageUrl('Home'));
     }
   };
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1:
-        return formData.full_name && formData.job_title && formData.years_of_experience;
-      case 2:
-        return formData.expertise_areas.length > 0;
-      case 3:
-        return true;
-      case 4:
-        return true;
-      case 5:
-        return true;
-      default:
-        return false;
+      case 1: return true; // CV is optional
+      case 2: return formData.full_name.trim() !== '' && formData.years_of_experience !== '';
+      case 3: return formData.expertise_areas.length > 0;
+      default: return true;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-background p-4 md:p-8" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="max-w-2xl mx-auto">
-        {/* Header with Language Toggle */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Award className="h-6 w-6 text-amber-600" />
-            {t({ en: 'Expert Profile Setup', ar: 'إعداد ملف الخبير' })}
-          </h1>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={toggleLanguage}
-              className="font-medium"
-            >
-              <Globe className="h-4 w-4 mr-1" />
-              {language === 'en' ? 'عربي' : 'English'}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleSkip}>
-              {t({ en: 'Skip', ar: 'تخطي' })}
-            </Button>
-          </div>
-        </div>
-
-        {/* Progress */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium">
-              {t({ en: `Step ${currentStep} of ${STEPS.length}`, ar: `الخطوة ${currentStep} من ${STEPS.length}` })}
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
+    <div className="fixed inset-0 bg-gradient-to-br from-amber-900/95 via-slate-900/95 to-orange-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="min-h-screen py-8 px-4">
+        <div className="max-w-2xl mx-auto space-y-6">
           
-          <div className="flex justify-between mt-4">
-            {STEPS.map((step) => {
-              const Icon = step.icon;
-              const isActive = step.id === currentStep;
-              const isComplete = step.id < currentStep;
-              
-              return (
-                <div key={step.id} className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    isComplete 
-                      ? 'bg-green-500 text-white' 
-                      : isActive 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {isComplete ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-                  </div>
-                  <span className={`text-xs mt-1 hidden md:block ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                    {language === 'ar' ? step.title.ar : step.title.en}
-                  </span>
-                </div>
-              );
-            })}
+          {/* Header with Language Toggle */}
+          <div className="text-center text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-24" />
+              <div className="flex items-center gap-2">
+                <Award className="h-8 w-8 text-amber-400" />
+                <h1 className="text-2xl font-bold">
+                  {t({ en: 'Expert Profile Setup', ar: 'إعداد ملف الخبير' })}
+                </h1>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleLanguage}
+                className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
+              >
+                <Globe className="h-4 w-4 mr-1" />
+                {language === 'en' ? 'عربي' : 'English'}
+              </Button>
+            </div>
+            <p className="text-white/60">
+              {t({ en: 'Share your expertise with municipalities', ar: 'شارك خبرتك مع البلديات' })}
+            </p>
           </div>
-        </div>
 
-        {/* Step Content */}
-        <Card>
-          <CardContent className="pt-6">
-            {renderStep()}
-          </CardContent>
-        </Card>
+          {/* Progress */}
+          <Card className="border-0 bg-white/10 backdrop-blur-sm">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {STEPS.map((step, index) => {
+                  const StepIcon = step.icon;
+                  const isActive = currentStep === step.id;
+                  const isComplete = currentStep > step.id;
+                  
+                  return (
+                    <React.Fragment key={step.id}>
+                      <Badge className={`px-3 py-2 border-0 ${
+                        isActive ? 'bg-amber-600 text-white' : 
+                        isComplete ? 'bg-orange-600 text-white' : 'bg-white/10 text-white/60'
+                      }`}>
+                        <StepIcon className="h-4 w-4 mr-1" />
+                        {step.title[language]}
+                      </Badge>
+                      {index < STEPS.length - 1 && (
+                        <ArrowRight className="h-4 w-4 text-white/30" />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+              <Progress value={progress} className="h-2 mt-4 bg-white/10" />
+            </CardContent>
+          </Card>
 
-        {/* Navigation */}
-        <div className="flex justify-between mt-6">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentStep(prev => prev - 1)}
-            disabled={currentStep === 1}
-          >
-            <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2 rotate-180' : 'mr-2'}`} />
-            {t({ en: 'Back', ar: 'رجوع' })}
-          </Button>
+          {/* Step 1: CV Import */}
+          {currentStep === 1 && (
+            <Card className="border-2 border-amber-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5 text-amber-600" />
+                  {t({ en: 'Import CV (Optional)', ar: 'استيراد السيرة الذاتية (اختياري)' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 border-2 border-dashed border-amber-200 rounded-lg bg-amber-50/50">
+                  <div className="flex items-start gap-4">
+                    <FileText className="h-10 w-10 text-amber-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-amber-900 mb-1">
+                        {t({ en: 'Upload Your CV', ar: 'رفع سيرتك الذاتية' })}
+                      </h3>
+                      <p className="text-sm text-amber-700 mb-3">
+                        {t({ en: 'AI will extract your expertise, certifications, and experience', ar: 'سيستخرج الذكاء الاصطناعي خبراتك وشهاداتك وتجربتك' })}
+                      </p>
+                      <FileUploader
+                        onUploadComplete={handleCVUpload}
+                        type="document"
+                        label={t({ en: 'Upload CV (PDF, DOCX)', ar: 'رفع السيرة الذاتية (PDF, DOCX)' })}
+                        maxSize={10}
+                      />
+                      {isExtractingCV && (
+                        <div className="flex items-center gap-2 mt-3 text-amber-600">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">{t({ en: 'AI is extracting your information...', ar: 'الذكاء الاصطناعي يستخرج معلوماتك...' })}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-          {currentStep < STEPS.length ? (
-            <Button onClick={() => setCurrentStep(prev => prev + 1)} disabled={!canProceed()}>
-              {t({ en: 'Continue', ar: 'متابعة' })}
-              <ArrowRight className={`h-4 w-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
-            </Button>
-          ) : (
-            <Button onClick={handleComplete} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-              )}
-              {t({ en: 'Complete Registration', ar: 'إكمال التسجيل' })}
-            </Button>
+                {formData.cv_url && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-amber-800">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="font-medium">{t({ en: 'CV uploaded and processed!', ar: 'تم رفع ومعالجة السيرة الذاتية!' })}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
+
+          {/* Step 2: Basic Info */}
+          {currentStep === 2 && (
+            <Card className="border-2 border-amber-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-amber-600" />
+                  {t({ en: 'Basic Information', ar: 'المعلومات الأساسية' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>{t({ en: 'Full Name', ar: 'الاسم الكامل' })} *</Label>
+                    <Input
+                      value={formData.full_name}
+                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      placeholder={t({ en: 'Dr. Ahmed Al-Farsi', ar: 'د. أحمد الفارسي' })}
+                    />
+                  </div>
+                  <div>
+                    <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}</Label>
+                    <Input
+                      value={formData.job_title}
+                      onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                      placeholder={t({ en: 'Senior Urban Planner', ar: 'مخطط حضري أول' })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>{t({ en: 'Organization', ar: 'المنظمة' })}</Label>
+                    <Input
+                      value={formData.organization}
+                      onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                      placeholder={t({ en: 'King Saud University', ar: 'جامعة الملك سعود' })}
+                    />
+                  </div>
+                  <div>
+                    <Label>{t({ en: 'Years of Experience', ar: 'سنوات الخبرة' })} *</Label>
+                    <Input
+                      type="number"
+                      value={formData.years_of_experience}
+                      onChange={(e) => setFormData({ ...formData, years_of_experience: e.target.value })}
+                      placeholder="10"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>{t({ en: 'LinkedIn Profile', ar: 'ملف LinkedIn' })}</Label>
+                  <Input
+                    value={formData.linkedin_url}
+                    onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+                    placeholder="https://linkedin.com/in/yourprofile"
+                  />
+                </div>
+
+                <div>
+                  <Label>{t({ en: 'Professional Bio', ar: 'نبذة مهنية' })}</Label>
+                  <Textarea
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    placeholder={t({ en: 'Describe your professional background...', ar: 'صف خلفيتك المهنية...' })}
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 3: Expertise */}
+          {currentStep === 3 && (
+            <Card className="border-2 border-amber-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-amber-600" />
+                  {t({ en: 'Expertise & Credentials', ar: 'الخبرات والمؤهلات' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <Label className="mb-3 block">
+                    {t({ en: 'Areas of Expertise (select up to 5)', ar: 'مجالات الخبرة (اختر حتى 5)' })} *
+                  </Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {EXPERTISE_AREAS.map((area) => (
+                      <button
+                        key={area.en}
+                        onClick={() => toggleExpertise(area.en)}
+                        className={`p-3 rounded-lg border text-sm text-start transition-all ${
+                          formData.expertise_areas.includes(area.en)
+                            ? 'bg-amber-100 border-amber-500 text-amber-900'
+                            : 'border-border hover:border-amber-300'
+                        }`}
+                      >
+                        {language === 'ar' ? area.ar : area.en}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="text-sm text-muted-foreground text-center mt-2">
+                    {formData.expertise_areas.length}/5 {t({ en: 'selected', ar: 'مختار' })}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="mb-3 block">{t({ en: 'Certifications', ar: 'الشهادات' })}</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.certifications.map((cert, index) => (
+                      <Badge key={index} variant="secondary" className="gap-1">
+                        <Award className="h-3 w-3" />
+                        {cert}
+                        <button
+                          onClick={() => removeCertification(index)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <Button variant="outline" onClick={addCertification} size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    {t({ en: 'Add Certification', ar: 'إضافة شهادة' })}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 4: Availability */}
+          {currentStep === 4 && (
+            <Card className="border-2 border-amber-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-amber-600" />
+                  {t({ en: 'Availability & Engagement', ar: 'التوفر والمشاركة' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>{t({ en: 'Hourly Rate (SAR)', ar: 'الأجر بالساعة (ريال)' })}</Label>
+                    <Input
+                      type="number"
+                      value={formData.hourly_rate}
+                      onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                      placeholder="500"
+                    />
+                  </div>
+                  <div>
+                    <Label>{t({ en: 'Hours/Week Available', ar: 'ساعات متاحة/أسبوع' })}</Label>
+                    <Input
+                      type="number"
+                      value={formData.availability_hours_per_week}
+                      onChange={(e) => setFormData({ ...formData, availability_hours_per_week: e.target.value })}
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="mb-3 block">{t({ en: 'Preferred Engagement Types', ar: 'أنواع المشاركة المفضلة' })}</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ENGAGEMENT_TYPES.map((type) => (
+                      <div
+                        key={type.id}
+                        onClick={() => toggleEngagementType(type.id)}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                          formData.preferred_engagement_types.includes(type.id)
+                            ? 'border-amber-500 bg-amber-50'
+                            : 'border-border hover:border-amber-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Star className={`h-4 w-4 ${formData.preferred_engagement_types.includes(type.id) ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                          <span className="text-sm">{type.label[language]}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label>{t({ en: 'Portfolio URL', ar: 'رابط المعرض' })}</Label>
+                  <Input
+                    value={formData.portfolio_url}
+                    onChange={(e) => setFormData({ ...formData, portfolio_url: e.target.value })}
+                    placeholder="https://yourportfolio.com"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 5: Complete */}
+          {currentStep === 5 && (
+            <Card className="border-2 border-amber-300">
+              <CardContent className="pt-8 pb-8">
+                <div className="text-center space-y-6">
+                  <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle2 className="w-10 h-10 text-green-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold">
+                    {t({ en: 'Expert Profile Ready!', ar: 'ملف الخبير جاهز!' })}
+                  </h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    {t({
+                      en: 'Your expert profile will be reviewed. You\'ll be notified when you\'re matched with evaluation opportunities.',
+                      ar: 'سيتم مراجعة ملف الخبير الخاص بك. سيتم إعلامك عند مطابقتك مع فرص التقييم.'
+                    })}
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2 pt-4">
+                    <Badge variant="outline" className="text-sm">
+                      <GraduationCap className="w-3 h-3 mr-1" />
+                      {formData.expertise_areas.length} {t({ en: 'Expertise Areas', ar: 'مجالات خبرة' })}
+                    </Badge>
+                    <Badge variant="outline" className="text-sm">
+                      <Award className="w-3 h-3 mr-1" />
+                      {formData.certifications.length} {t({ en: 'Certifications', ar: 'شهادات' })}
+                    </Badge>
+                    <Badge variant="outline" className="text-sm">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {formData.availability_hours_per_week || '?'} {t({ en: 'hrs/week', ar: 'ساعة/أسبوع' })}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              {currentStep > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  {t({ en: 'Previous', ar: 'السابق' })}
+                </Button>
+              )}
+              {currentStep === 1 && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  className="text-white/60 hover:text-white hover:bg-white/10"
+                >
+                  {t({ en: 'Skip for now', ar: 'تخطي الآن' })}
+                </Button>
+              )}
+            </div>
+
+            {currentStep < STEPS.length ? (
+              <Button
+                onClick={() => setCurrentStep(currentStep + 1)}
+                disabled={!canProceed()}
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                {t({ en: 'Next', ar: 'التالي' })}
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleComplete}
+                disabled={isSubmitting}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t({ en: 'Creating Profile...', ar: 'جاري إنشاء الملف...' })}
+                  </>
+                ) : (
+                  <>
+                    {t({ en: 'Create Expert Profile', ar: 'إنشاء ملف الخبير' })}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

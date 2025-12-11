@@ -1,57 +1,60 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import {
-  Building2,
-  Target,
-  Users,
-  BarChart3,
-  Shield,
-  CheckCircle,
-  ArrowRight,
-  ArrowLeft,
-  Globe,
-  Layers,
-  Map,
-  Activity
+import { useAuth } from '@/lib/AuthContext';
+import { createPageUrl } from '@/utils';
+import { 
+  Shield, ArrowRight, ArrowLeft, CheckCircle2, 
+  Building2, Target, BarChart3, Layers, Map, Globe, Loader2, Activity
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const STEPS = [
-  { id: 'welcome', title: { en: 'Welcome', ar: 'مرحباً' } },
-  { id: 'profile', title: { en: 'Your Profile', ar: 'ملفك الشخصي' } },
-  { id: 'sectors', title: { en: 'Sector Focus', ar: 'تركيز القطاع' } },
-  { id: 'responsibilities', title: { en: 'Responsibilities', ar: 'المسؤوليات' } },
-  { id: 'complete', title: { en: 'Complete', ar: 'اكتمل' } },
+  { id: 1, title: { en: 'Welcome', ar: 'مرحباً' }, icon: Shield },
+  { id: 2, title: { en: 'Profile', ar: 'الملف الشخصي' }, icon: Building2 },
+  { id: 3, title: { en: 'Sectors', ar: 'القطاعات' }, icon: Layers },
+  { id: 4, title: { en: 'Oversight', ar: 'الإشراف' }, icon: Map },
+  { id: 5, title: { en: 'Complete', ar: 'اكتمال' }, icon: CheckCircle2 }
 ];
 
-export default function DeputyshipOnboardingWizard({ onComplete }) {
-  const { t, language } = useLanguage();
-  const navigate = useNavigate();
+const OVERSIGHT_CAPABILITIES = [
+  { id: 'cross_municipal', icon: Map, title: { en: 'Cross-Municipal Oversight', ar: 'الإشراف عبر البلديات' }, desc: { en: 'View challenges and pilots across all municipalities', ar: 'عرض التحديات والتجارب عبر جميع البلديات' } },
+  { id: 'strategic_guidance', icon: Target, title: { en: 'Strategic Guidance', ar: 'التوجيه الاستراتيجي' }, desc: { en: 'Publish national guidance and best practices', ar: 'نشر التوجيهات الوطنية وأفضل الممارسات' } },
+  { id: 'benchmarking', icon: BarChart3, title: { en: 'Benchmarking', ar: 'المقارنة المعيارية' }, desc: { en: 'Compare performance across municipalities', ar: 'مقارنة الأداء عبر البلديات' } },
+  { id: 'sector_analytics', icon: Activity, title: { en: 'Sector Analytics', ar: 'تحليلات القطاع' }, desc: { en: 'Access comprehensive sector-level analytics', ar: 'الوصول إلى تحليلات شاملة على مستوى القطاع' } },
+];
+
+export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
+  const { language, isRTL, t, toggleLanguage } = useLanguage();
+  const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
-  const [currentStep, setCurrentStep] = useState(0);
+  const navigate = useNavigate();
+  
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [formData, setFormData] = useState({
-    title: '',
+    job_title: '',
     department: '',
     phone: '',
     bio: '',
     selectedSectors: [],
-    focusAreas: [],
-    municipalitiesCount: 0,
+    focusAreas: []
   });
 
   // Fetch sectors
   const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
+    queryKey: ['sectors-active'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sectors')
@@ -76,55 +79,21 @@ export default function DeputyshipOnboardingWizard({ onComplete }) {
     }
   });
 
-  const updateProfile = useMutation({
-    mutationFn: async (profileData) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // Update user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({
-          title: profileData.title,
-          department: profileData.department,
-          phone: profileData.phone,
-          bio: profileData.bio,
-          onboarding_completed: true,
-          onboarding_completed_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
-
-      if (profileError) throw profileError;
-
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-profile']);
-      toast.success(t({ en: 'Profile updated successfully!', ar: 'تم تحديث الملف بنجاح!' }));
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to update profile', ar: 'فشل تحديث الملف' }));
-      console.error('Profile update error:', error);
+  // Pre-populate from Stage 1 onboarding data
+  useEffect(() => {
+    if (userProfile) {
+      setFormData(prev => ({
+        ...prev,
+        job_title: userProfile.job_title_en || userProfile.job_title || prev.job_title,
+        department: userProfile.department_en || userProfile.department || prev.department,
+        phone: userProfile.work_phone || prev.phone,
+        bio: userProfile.bio_en || userProfile.bio || prev.bio,
+        selectedSectors: userProfile.expertise_areas?.length > 0 ? userProfile.expertise_areas : prev.selectedSectors,
+      }));
     }
-  });
+  }, [userProfile]);
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleComplete = async () => {
-    await updateProfile.mutateAsync(formData);
-    onComplete?.();
-    navigate('/executive-dashboard');
-  };
+  const progress = (currentStep / STEPS.length) * 100;
 
   const toggleSector = (sectorId) => {
     setFormData(prev => ({
@@ -135,243 +104,384 @@ export default function DeputyshipOnboardingWizard({ onComplete }) {
     }));
   };
 
-  const progress = ((currentStep + 1) / STEPS.length) * 100;
+  const handleComplete = async () => {
+    if (!user?.id) {
+      toast.error(t({ en: 'User not found', ar: 'المستخدم غير موجود' }));
+      return;
+    }
 
-  const renderStep = () => {
-    switch (STEPS[currentStep].id) {
-      case 'welcome':
-        return (
-          <div className="text-center space-y-6 py-8">
-            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-primary to-primary/60 rounded-full flex items-center justify-center">
-              <Shield className="w-10 h-10 text-primary-foreground" />
-            </div>
-            <h2 className="text-2xl font-bold">
-              {t({ en: 'Welcome to the Deputyship Portal', ar: 'مرحباً بك في بوابة الوكالة' })}
-            </h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              {t({
-                en: 'As a deputyship member, you have national-level oversight of municipal innovation across your sector focus areas.',
-                ar: 'كعضو في الوكالة، لديك إشراف على المستوى الوطني على الابتكار البلدي في مجالات تركيز قطاعك.'
-              })}
-            </p>
-            <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto pt-4">
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <Building2 className="w-6 h-6 mx-auto mb-2 text-primary" />
-                <div className="text-2xl font-bold">{municipalitiesCount}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Municipalities', ar: 'البلديات' })}</div>
-              </div>
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <Layers className="w-6 h-6 mx-auto mb-2 text-primary" />
-                <div className="text-2xl font-bold">{sectors.length}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Sectors', ar: 'القطاعات' })}</div>
-              </div>
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <Globe className="w-6 h-6 mx-auto mb-2 text-primary" />
-                <div className="text-2xl font-bold">13</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Regions', ar: 'المناطق' })}</div>
-              </div>
-            </div>
-          </div>
-        );
+    setIsSubmitting(true);
+    
+    try {
+      // Update user profile
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({
+          job_title: formData.job_title || null,
+          job_title_en: formData.job_title || null,
+          department: formData.department || null,
+          department_en: formData.department || null,
+          work_phone: formData.phone || null,
+          bio: formData.bio || null,
+          bio_en: formData.bio || null,
+          expertise_areas: formData.selectedSectors,
+          onboarding_completed: true,
+          persona_onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+          metadata: {
+            oversight_scope: 'national',
+            focus_sectors: formData.selectedSectors
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
 
-      case 'profile':
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold">{t({ en: 'Complete Your Profile', ar: 'أكمل ملفك الشخصي' })}</h2>
-              <p className="text-muted-foreground text-sm">{t({ en: 'Tell us about your role', ar: 'أخبرنا عن دورك' })}</p>
-            </div>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}</Label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder={t({ en: 'e.g., Deputy Director of Innovation', ar: 'مثال: نائب مدير الابتكار' })}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t({ en: 'Department', ar: 'الإدارة' })}</Label>
-                <Input
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  placeholder={t({ en: 'e.g., Strategy & Innovation', ar: 'مثال: الاستراتيجية والابتكار' })}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t({ en: 'Phone', ar: 'الهاتف' })}</Label>
-                <Input
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+966 5X XXX XXXX"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t({ en: 'Bio', ar: 'نبذة' })}</Label>
-                <Textarea
-                  value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                  placeholder={t({ en: 'Brief description of your expertise...', ar: 'وصف موجز لخبرتك...' })}
-                  rows={3}
-                />
-              </div>
-            </div>
-          </div>
-        );
+      if (profileError) throw profileError;
 
-      case 'sectors':
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold">{t({ en: 'Select Your Sector Focus', ar: 'اختر تركيز قطاعك' })}</h2>
-              <p className="text-muted-foreground text-sm">
-                {t({ en: 'Choose the sectors you oversee', ar: 'اختر القطاعات التي تشرف عليها' })}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {sectors.map((sector) => (
-                <button
-                  key={sector.id}
-                  onClick={() => toggleSector(sector.id)}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    formData.selectedSectors.includes(sector.id)
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <div className="text-2xl mb-2">{sector.icon || '🏢'}</div>
-                  <div className="font-medium text-sm">
-                    {language === 'ar' ? sector.name_ar : sector.name_en}
-                  </div>
-                  {formData.selectedSectors.includes(sector.id) && (
-                    <CheckCircle className="w-4 h-4 text-primary mt-2" />
-                  )}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground text-center">
-              {t({ en: `${formData.selectedSectors.length} sector(s) selected`, ar: `تم اختيار ${formData.selectedSectors.length} قطاع` })}
-            </p>
-          </div>
-        );
+      await queryClient.invalidateQueries(['user-profile']);
+      if (checkAuth) await checkAuth();
 
-      case 'responsibilities':
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold">{t({ en: 'Your Responsibilities', ar: 'مسؤولياتك' })}</h2>
-              <p className="text-muted-foreground text-sm">
-                {t({ en: 'Key areas of your oversight', ar: 'المجالات الرئيسية لإشرافك' })}
-              </p>
-            </div>
-            <div className="space-y-3">
-              {[
-                { icon: Map, title: { en: 'Cross-Municipal Oversight', ar: 'الإشراف عبر البلديات' }, desc: { en: 'View challenges and pilots across all municipalities', ar: 'عرض التحديات والتجارب عبر جميع البلديات' } },
-                { icon: Target, title: { en: 'Strategic Guidance', ar: 'التوجيه الاستراتيجي' }, desc: { en: 'Publish national guidance and best practices', ar: 'نشر التوجيهات الوطنية وأفضل الممارسات' } },
-                { icon: BarChart3, title: { en: 'Benchmarking', ar: 'المقارنة المعيارية' }, desc: { en: 'Compare performance across municipalities', ar: 'مقارنة الأداء عبر البلديات' } },
-                { icon: Activity, title: { en: 'Sector Analytics', ar: 'تحليلات القطاع' }, desc: { en: 'Access comprehensive sector-level analytics', ar: 'الوصول إلى تحليلات شاملة على مستوى القطاع' } },
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <item.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="font-medium">{t(item.title)}</div>
-                    <div className="text-sm text-muted-foreground">{t(item.desc)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
+      toast.success(t({ en: 'Deputyship profile complete! Welcome to national oversight.', ar: 'تم إكمال ملف الوكالة! مرحباً بك في الإشراف الوطني.' }));
+      onComplete?.(formData);
+      navigate(createPageUrl('ExecutiveDashboard'));
+    } catch (error) {
+      console.error('Onboarding error:', error);
+      toast.error(t({ en: 'Failed to complete setup', ar: 'فشل في إكمال الإعداد' }));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-      case 'complete':
-        return (
-          <div className="text-center space-y-6 py-8">
-            <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-10 h-10 text-green-600" />
-            </div>
-            <h2 className="text-2xl font-bold">
-              {t({ en: "You're All Set!", ar: 'أنت جاهز!' })}
-            </h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              {t({
-                en: 'Your deputyship profile is complete. You can now access your executive dashboard to oversee innovation across municipalities.',
-                ar: 'تم إكمال ملف الوكالة الخاص بك. يمكنك الآن الوصول إلى لوحة التحكم التنفيذية للإشراف على الابتكار عبر البلديات.'
-              })}
-            </p>
-            <div className="flex flex-wrap justify-center gap-2 pt-4">
-              <Badge variant="outline" className="text-sm">
-                <Building2 className="w-3 h-3 mr-1" />
-                {t({ en: 'All Municipalities Access', ar: 'الوصول لجميع البلديات' })}
-              </Badge>
-              <Badge variant="outline" className="text-sm">
-                <Layers className="w-3 h-3 mr-1" />
-                {formData.selectedSectors.length} {t({ en: 'Sectors', ar: 'قطاعات' })}
-              </Badge>
-              <Badge variant="outline" className="text-sm">
-                <Shield className="w-3 h-3 mr-1" />
-                {t({ en: 'National Oversight', ar: 'إشراف وطني' })}
-              </Badge>
-            </div>
-          </div>
-        );
+  const handleSkip = async () => {
+    try {
+      sessionStorage.setItem('deputyship_wizard_skipped', Date.now().toString());
+      toast.info(t({ 
+        en: 'You can complete your profile anytime from settings.', 
+        ar: 'يمكنك إكمال ملفك الشخصي في أي وقت من الإعدادات.' 
+      }));
+      onSkip?.();
+      navigate(createPageUrl('ExecutiveDashboard'));
+    } catch (error) {
+      console.error('Skip error:', error);
+      onSkip?.();
+      navigate(createPageUrl('ExecutiveDashboard'));
+    }
+  };
 
-      default:
-        return null;
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1: return true;
+      case 2: return formData.job_title.trim() !== '';
+      case 3: return formData.selectedSectors.length > 0;
+      default: return true;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="border-b">
-          <div className="flex items-center justify-between mb-4">
-            <Badge variant="secondary">{t({ en: 'Deputyship Onboarding', ar: 'تأهيل الوكالة' })}</Badge>
-            <span className="text-sm text-muted-foreground">
-              {t({ en: `Step ${currentStep + 1} of ${STEPS.length}`, ar: `الخطوة ${currentStep + 1} من ${STEPS.length}` })}
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between mt-2">
-            {STEPS.map((step, idx) => (
-              <span
-                key={step.id}
-                className={`text-xs ${idx <= currentStep ? 'text-primary' : 'text-muted-foreground'}`}
+    <div className="fixed inset-0 bg-gradient-to-br from-indigo-900/95 via-slate-900/95 to-purple-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="min-h-screen py-8 px-4">
+        <div className="max-w-2xl mx-auto space-y-6">
+          
+          {/* Header with Language Toggle */}
+          <div className="text-center text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-24" />
+              <div className="flex items-center gap-2">
+                <Shield className="h-8 w-8 text-indigo-400" />
+                <h1 className="text-2xl font-bold">
+                  {t({ en: 'Deputyship Profile Setup', ar: 'إعداد ملف الوكالة' })}
+                </h1>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleLanguage}
+                className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
               >
-                {t(step.title)}
-              </span>
-            ))}
+                <Globe className="h-4 w-4 mr-1" />
+                {language === 'en' ? 'عربي' : 'English'}
+              </Button>
+            </div>
+            <p className="text-white/60">
+              {t({ en: 'National oversight of municipal innovation', ar: 'الإشراف الوطني على الابتكار البلدي' })}
+            </p>
           </div>
-        </CardHeader>
 
-        <CardContent className="pt-6">
-          {renderStep()}
-        </CardContent>
+          {/* Progress */}
+          <Card className="border-0 bg-white/10 backdrop-blur-sm">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {STEPS.map((step, index) => {
+                  const StepIcon = step.icon;
+                  const isActive = currentStep === step.id;
+                  const isComplete = currentStep > step.id;
+                  
+                  return (
+                    <React.Fragment key={step.id}>
+                      <Badge className={`px-3 py-2 border-0 ${
+                        isActive ? 'bg-indigo-600 text-white' : 
+                        isComplete ? 'bg-purple-600 text-white' : 'bg-white/10 text-white/60'
+                      }`}>
+                        <StepIcon className="h-4 w-4 mr-1" />
+                        {step.title[language]}
+                      </Badge>
+                      {index < STEPS.length - 1 && (
+                        <ArrowRight className="h-4 w-4 text-white/30" />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+              <Progress value={progress} className="h-2 mt-4 bg-white/10" />
+            </CardContent>
+          </Card>
 
-        <CardFooter className="border-t pt-4 flex justify-between">
-          <Button
-            variant="outline"
-            onClick={handlePrev}
-            disabled={currentStep === 0}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            {t({ en: 'Previous', ar: 'السابق' })}
-          </Button>
-
-          {currentStep === STEPS.length - 1 ? (
-            <Button onClick={handleComplete} disabled={updateProfile.isPending}>
-              {t({ en: 'Go to Dashboard', ar: 'انتقل للوحة التحكم' })}
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          ) : (
-            <Button onClick={handleNext}>
-              {t({ en: 'Next', ar: 'التالي' })}
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+          {/* Step 1: Welcome */}
+          {currentStep === 1 && (
+            <Card className="border-2 border-indigo-300">
+              <CardContent className="pt-8 pb-8">
+                <div className="text-center space-y-6">
+                  <div className="w-20 h-20 mx-auto bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <Shield className="w-10 h-10 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold">
+                    {t({ en: 'Welcome to the Deputyship Portal', ar: 'مرحباً بك في بوابة الوكالة' })}
+                  </h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    {t({
+                      en: 'As a deputyship member, you have national-level oversight of municipal innovation across your sector focus areas.',
+                      ar: 'كعضو في الوكالة، لديك إشراف على المستوى الوطني على الابتكار البلدي في مجالات تركيز قطاعك.'
+                    })}
+                  </p>
+                  <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto pt-4">
+                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                      <Building2 className="w-6 h-6 mx-auto mb-2 text-indigo-600" />
+                      <div className="text-2xl font-bold text-indigo-900">{municipalitiesCount}</div>
+                      <div className="text-xs text-indigo-700">{t({ en: 'Municipalities', ar: 'البلديات' })}</div>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <Layers className="w-6 h-6 mx-auto mb-2 text-purple-600" />
+                      <div className="text-2xl font-bold text-purple-900">{sectors.length}</div>
+                      <div className="text-xs text-purple-700">{t({ en: 'Sectors', ar: 'القطاعات' })}</div>
+                    </div>
+                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                      <Globe className="w-6 h-6 mx-auto mb-2 text-indigo-600" />
+                      <div className="text-2xl font-bold text-indigo-900">13</div>
+                      <div className="text-xs text-indigo-700">{t({ en: 'Regions', ar: 'المناطق' })}</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </CardFooter>
-      </Card>
+
+          {/* Step 2: Profile */}
+          {currentStep === 2 && (
+            <Card className="border-2 border-indigo-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-indigo-600" />
+                  {t({ en: 'Your Profile', ar: 'ملفك الشخصي' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })} *</Label>
+                  <Input
+                    value={formData.job_title}
+                    onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                    placeholder={t({ en: 'e.g., Deputy Director of Innovation', ar: 'مثال: نائب مدير الابتكار' })}
+                  />
+                </div>
+
+                <div>
+                  <Label>{t({ en: 'Department / Deputyship', ar: 'الإدارة / الوكالة' })}</Label>
+                  <Input
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    placeholder={t({ en: 'e.g., Strategy & Innovation Deputyship', ar: 'مثال: وكالة الاستراتيجية والابتكار' })}
+                  />
+                </div>
+
+                <div>
+                  <Label>{t({ en: 'Phone', ar: 'الهاتف' })}</Label>
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+966 5X XXX XXXX"
+                  />
+                </div>
+
+                <div>
+                  <Label>{t({ en: 'Bio', ar: 'نبذة' })}</Label>
+                  <Textarea
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    placeholder={t({ en: 'Brief description of your role and expertise...', ar: 'وصف موجز لدورك وخبرتك...' })}
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 3: Sectors */}
+          {currentStep === 3 && (
+            <Card className="border-2 border-indigo-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-indigo-600" />
+                  {t({ en: 'Sector Focus', ar: 'تركيز القطاع' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Select the sectors you oversee or specialize in', ar: 'اختر القطاعات التي تشرف عليها أو تتخصص فيها' })}
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {sectors.map((sector) => (
+                    <div
+                      key={sector.id}
+                      onClick={() => toggleSector(sector.id)}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        formData.selectedSectors.includes(sector.id)
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-border hover:border-indigo-300'
+                      }`}
+                    >
+                      <div className="text-2xl mb-2">{sector.icon || '🏢'}</div>
+                      <div className="font-medium text-sm">
+                        {language === 'ar' ? sector.name_ar : sector.name_en}
+                      </div>
+                      {formData.selectedSectors.includes(sector.id) && (
+                        <CheckCircle2 className="w-4 h-4 text-indigo-600 mt-2" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-center text-muted-foreground">
+                  {t({ en: `${formData.selectedSectors.length} sector(s) selected`, ar: `تم اختيار ${formData.selectedSectors.length} قطاع` })}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 4: Oversight Capabilities */}
+          {currentStep === 4 && (
+            <Card className="border-2 border-indigo-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Map className="h-5 w-5 text-indigo-600" />
+                  {t({ en: 'Your Oversight Capabilities', ar: 'صلاحيات الإشراف' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {OVERSIGHT_CAPABILITIES.map((item) => (
+                  <div key={item.id} className="flex items-start gap-4 p-4 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                    <div className="p-2 bg-indigo-100 rounded-lg">
+                      <item.icon className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium">{t(item.title)}</div>
+                      <div className="text-sm text-muted-foreground">{t(item.desc)}</div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 5: Complete */}
+          {currentStep === 5 && (
+            <Card className="border-2 border-indigo-300">
+              <CardContent className="pt-8 pb-8">
+                <div className="text-center space-y-6">
+                  <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle2 className="w-10 h-10 text-green-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold">
+                    {t({ en: "You're All Set!", ar: 'أنت جاهز!' })}
+                  </h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    {t({
+                      en: 'Your deputyship profile is complete. Access your executive dashboard to oversee innovation across municipalities.',
+                      ar: 'تم إكمال ملف الوكالة الخاص بك. يمكنك الآن الوصول إلى لوحة التحكم التنفيذية.'
+                    })}
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2 pt-4">
+                    <Badge variant="outline" className="text-sm">
+                      <Building2 className="w-3 h-3 mr-1" />
+                      {t({ en: 'All Municipalities Access', ar: 'الوصول لجميع البلديات' })}
+                    </Badge>
+                    <Badge variant="outline" className="text-sm">
+                      <Layers className="w-3 h-3 mr-1" />
+                      {formData.selectedSectors.length} {t({ en: 'Sectors', ar: 'قطاعات' })}
+                    </Badge>
+                    <Badge variant="outline" className="text-sm">
+                      <Shield className="w-3 h-3 mr-1" />
+                      {t({ en: 'National Oversight', ar: 'إشراف وطني' })}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              {currentStep > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  {t({ en: 'Previous', ar: 'السابق' })}
+                </Button>
+              )}
+              {currentStep === 1 && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  className="text-white/60 hover:text-white hover:bg-white/10"
+                >
+                  {t({ en: 'Skip for now', ar: 'تخطي الآن' })}
+                </Button>
+              )}
+            </div>
+
+            {currentStep < STEPS.length ? (
+              <Button
+                onClick={() => setCurrentStep(currentStep + 1)}
+                disabled={!canProceed()}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                {t({ en: 'Next', ar: 'التالي' })}
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleComplete}
+                disabled={isSubmitting}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t({ en: 'Completing...', ar: 'جاري الإكمال...' })}
+                  </>
+                ) : (
+                  <>
+                    {t({ en: 'Go to Dashboard', ar: 'انتقل للوحة التحكم' })}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
