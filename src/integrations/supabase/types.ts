@@ -9916,6 +9916,56 @@ export type Database = {
         | "financial_controller"
         | "executive_leader"
         | "executive_director"
+        | "deputyship_analyst"
+        | "deputyship_director"
+        | "deputyship_manager"
+        | "municipality_director"
+        | "municipality_manager"
+        | "municipality_viewer"
+        | "municipality_innovation_officer"
+        | "gdisb_data_analyst"
+        | "gdisb_operations_manager"
+        | "gdisb_strategy_lead"
+        | "platform_admin"
+        | "system_administrator"
+        | "security_administrator"
+        | "pilot_manager"
+        | "challenge_lead"
+        | "challenge_reviewer"
+        | "policy_officer"
+        | "partnership_manager"
+        | "risk_manager"
+        | "budget_officer"
+        | "data_manager"
+        | "content_manager"
+        | "content_moderator"
+        | "communication_manager"
+        | "communications_lead"
+        | "program_director"
+        | "program_evaluator"
+        | "program_operator"
+        | "research_lead"
+        | "research_evaluator"
+        | "rd_manager"
+        | "solution_provider"
+        | "solution_evaluator"
+        | "solution_verifier"
+        | "living_lab_director"
+        | "living_lab_manager"
+        | "sandbox_manager"
+        | "sandbox_operator"
+        | "ai_analyst"
+        | "report_analyst"
+        | "domain_expert"
+        | "idea_moderator"
+        | "implementation_officer"
+        | "council_member"
+        | "ministry_representative"
+        | "matchmaker_manager"
+        | "team_lead"
+        | "technical_lead"
+        | "citizen_engagement_manager"
+        | "executive_leadership"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -10074,6 +10124,56 @@ export const Constants = {
         "financial_controller",
         "executive_leader",
         "executive_director",
+        "deputyship_analyst",
+        "deputyship_director",
+        "deputyship_manager",
+        "municipality_director",
+        "municipality_manager",
+        "municipality_viewer",
+        "municipality_innovation_officer",
+        "gdisb_data_analyst",
+        "gdisb_operations_manager",
+        "gdisb_strategy_lead",
+        "platform_admin",
+        "system_administrator",
+        "security_administrator",
+        "pilot_manager",
+        "challenge_lead",
+        "challenge_reviewer",
+        "policy_officer",
+        "partnership_manager",
+        "risk_manager",
+        "budget_officer",
+        "data_manager",
+        "content_manager",
+        "content_moderator",
+        "communication_manager",
+        "communications_lead",
+        "program_director",
+        "program_evaluator",
+        "program_operator",
+        "research_lead",
+        "research_evaluator",
+        "rd_manager",
+        "solution_provider",
+        "solution_evaluator",
+        "solution_verifier",
+        "living_lab_director",
+        "living_lab_manager",
+        "sandbox_manager",
+        "sandbox_operator",
+        "ai_analyst",
+        "report_analyst",
+        "domain_expert",
+        "idea_moderator",
+        "implementation_officer",
+        "council_member",
+        "ministry_representative",
+        "matchmaker_manager",
+        "team_lead",
+        "technical_lead",
+        "citizen_engagement_manager",
+        "executive_leadership",
       ],
     },
   },
