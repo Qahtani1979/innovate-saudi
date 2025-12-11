@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -19,6 +19,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import AICurriculumGenerator from '../components/programs/AICurriculumGenerator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 function ProgramEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -26,13 +27,19 @@ function ProgramEditPage() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { invokeAI, status, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: program, isLoading } = useQuery({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const programs = await base44.entities.Program.list();
-      return programs.find(p => p.id === programId);
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('id', programId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!programId
   });
@@ -118,14 +125,18 @@ function ProgramEditPage() {
         previous_version_id: programId
       };
 
-      await base44.entities.Program.update(programId, updates);
+      const { error } = await supabase
+        .from('programs')
+        .update(updates)
+        .eq('id', programId);
+      if (error) throw error;
 
       // Log activity
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'program',
         entity_id: programId,
         activity_type: 'program_updated',
-        performed_by: (await base44.auth.me()).email,
+        performed_by: user?.email,
         timestamp: new Date().toISOString(),
         metadata: {
           changed_fields: Object.keys(changedFields),
@@ -137,7 +148,7 @@ function ProgramEditPage() {
       localStorage.removeItem(`program_edit_draft_${programId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['program', programId]);
+      queryClient.invalidateQueries({ queryKey: ['program', programId] });
       toast.success(t({ en: 'Program updated', ar: 'تم تحديث البرنامج' }));
       navigate(createPageUrl(`ProgramDetail?id=${programId}`));
     }

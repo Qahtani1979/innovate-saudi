@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from './LanguageContext';
 import { Calendar, Clock, Package, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function LivingLabResourceBooking({ lab }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     resource_type: 'equipment',
     resource_name: '',
@@ -29,26 +31,30 @@ export default function LivingLabResourceBooking({ lab }) {
   const { data: resourceBookings = [] } = useQuery({
     queryKey: ['resource-bookings', lab.id],
     queryFn: async () => {
-      const all = await base44.entities.LivingLabResourceBooking.list();
-      return all.filter(b => b.living_lab_id === lab.id);
+      const { data, error } = await supabase
+        .from('living_lab_resource_bookings')
+        .select('*')
+        .eq('living_lab_id', lab.id);
+      if (error) throw error;
+      return data || [];
     }
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
   });
 
   const bookingMutation = useMutation({
     mutationFn: async (data) => {
-      const booking = await base44.entities.LivingLabResourceBooking.create({
-        ...data,
-        living_lab_id: lab.id,
-        status: 'pending'
-      });
+      const { data: booking, error } = await supabase
+        .from('living_lab_resource_bookings')
+        .insert({
+          ...data,
+          living_lab_id: lab.id,
+          status: 'pending'
+        })
+        .select()
+        .single();
+      if (error) throw error;
 
       // Create notification for lab admin
-      await base44.entities.Notification.create({
+      await supabase.from('notifications').insert({
         title: `New Resource Booking Request - ${lab.name_en}`,
         body: `${data.requester_name} has requested ${data.resource_name} from ${new Date(data.start_datetime).toLocaleString()} to ${new Date(data.end_datetime).toLocaleString()}`,
         notification_type: 'approval',
@@ -60,7 +66,7 @@ export default function LivingLabResourceBooking({ lab }) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['resource-bookings']);
+      queryClient.invalidateQueries({ queryKey: ['resource-bookings'] });
       toast.success(t({ en: 'Booking request submitted', ar: 'تم إرسال طلب الحجز' }));
       setFormData({
         resource_type: 'equipment',
@@ -78,17 +84,21 @@ export default function LivingLabResourceBooking({ lab }) {
   const approvalMutation = useMutation({
     mutationFn: async ({ id, approved }) => {
       const booking = resourceBookings.find(b => b.id === id);
-      await base44.entities.LivingLabResourceBooking.update(id, {
-        status: approved ? 'approved' : 'rejected',
-        approved_by: user?.email,
-        approval_date: new Date().toISOString(),
-        notification_sent: true
-      });
+      const { error } = await supabase
+        .from('living_lab_resource_bookings')
+        .update({
+          status: approved ? 'approved' : 'rejected',
+          approved_by: user?.email,
+          approval_date: new Date().toISOString(),
+          notification_sent: true
+        })
+        .eq('id', id);
+      if (error) throw error;
 
       // Notify requester
-      await base44.entities.Notification.create({
+      await supabase.from('notifications').insert({
         title: approved ? 'Resource Booking Approved' : 'Resource Booking Rejected',
-        body: `Your booking request for ${booking.resource_name} has been ${approved ? 'approved' : 'rejected'}.`,
+        body: `Your booking request for ${booking?.resource_name} has been ${approved ? 'approved' : 'rejected'}.`,
         notification_type: 'alert',
         priority: approved ? 'medium' : 'high',
         link_url: `/LivingLabDetail?id=${lab.id}`,
@@ -97,7 +107,7 @@ export default function LivingLabResourceBooking({ lab }) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['resource-bookings']);
+      queryClient.invalidateQueries({ queryKey: ['resource-bookings'] });
       toast.success(t({ en: 'Booking updated', ar: 'تم تحديث الحجز' }));
     }
   });

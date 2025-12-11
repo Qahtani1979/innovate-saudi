@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,12 @@ import { Target, TestTube, Microscope, Calendar, Shield, Sparkles, CheckCircle2,
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ChallengeTrackAssignmentDecision({ challenge, onClose }) {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedTracks, setSelectedTracks] = useState(challenge.tracks || []);
   const [rationale, setRationale] = useState('');
   const { invokeAI, status, isLoading: aiProcessing, rateLimitInfo, isAvailable } = useAIWithFallback();
@@ -97,28 +99,30 @@ Recommend which track(s) are most appropriate and provide brief rationale for ea
 
   const assignMutation = useMutation({
     mutationFn: async () => {
-      const user = await base44.auth.me();
-      
-      await base44.entities.Challenge.update(challenge.id, {
-        tracks: selectedTracks,
-        track_assignment_rationale: rationale,
-        track_assigned_by: user.email,
-        track_assigned_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('challenges')
+        .update({
+          tracks: selectedTracks,
+          track_assignment_rationale: rationale,
+          track_assigned_by: user?.email,
+          track_assigned_date: new Date().toISOString()
+        })
+        .eq('id', challenge.id);
+      if (error) throw error;
 
       // Log activity
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'Challenge',
         entity_id: challenge.id,
         activity_type: 'track_assigned',
         description: `Treatment tracks assigned: ${selectedTracks.join(', ')}`,
-        performed_by: user.email,
+        performed_by: user?.email,
         timestamp: new Date().toISOString(),
         metadata: { tracks: selectedTracks, rationale }
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['challenge']);
+      queryClient.invalidateQueries({ queryKey: ['challenge'] });
       toast.success(t({ en: 'Tracks assigned successfully', ar: 'تم تعيين المسارات بنجاح' }));
       onClose?.();
     }

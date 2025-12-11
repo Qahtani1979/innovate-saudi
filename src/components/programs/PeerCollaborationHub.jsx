@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Users, MessageSquare, FileText, CheckCircle2, Plus, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function PeerCollaborationHub({ programId }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(null);
   const [newProject, setNewProject] = useState({
@@ -25,8 +27,13 @@ export default function PeerCollaborationHub({ programId }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['program-participants', programId],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => a.program_id === programId && a.status === 'accepted');
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', programId)
+        .eq('status', 'accepted');
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
@@ -34,8 +41,13 @@ export default function PeerCollaborationHub({ programId }) {
   const { data: program } = useQuery({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const programs = await base44.entities.Program.list();
-      return programs.find(p => p.id === programId);
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('id', programId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!programId
   });
@@ -44,27 +56,25 @@ export default function PeerCollaborationHub({ programId }) {
 
   const createProjectMutation = useMutation({
     mutationFn: async (projectData) => {
-      await base44.entities.Program.update(programId, {
-        peer_projects: [...projects, {
-          ...projectData,
-          id: Date.now().toString(),
-          created_date: new Date().toISOString(),
-          created_by: (await base44.auth.me()).email,
-          reviews: []
-        }]
-      });
+      const newProjects = [...projects, {
+        ...projectData,
+        id: Date.now().toString(),
+        created_date: new Date().toISOString(),
+        created_by: user?.email || 'anonymous',
+        reviews: []
+      }];
+      const { error } = await supabase
+        .from('programs')
+        .update({ peer_projects: newProjects })
+        .eq('id', programId);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['program', programId]);
+      queryClient.invalidateQueries({ queryKey: ['program', programId] });
       setShowProjectForm(false);
       setNewProject({ title: '', description: '', team_members: [] });
       toast.success(t({ en: 'Team project created', ar: 'تم إنشاء مشروع الفريق' }));
     }
-  });
-
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
   });
 
   const submitReviewMutation = useMutation({
@@ -73,7 +83,7 @@ export default function PeerCollaborationHub({ programId }) {
         p.id === projectId ? {
           ...p,
           reviews: [...(p.reviews || []), {
-            reviewer_email: currentUser?.email || 'anonymous',
+            reviewer_email: user?.email || 'anonymous',
             rating: reviewData.rating,
             feedback: reviewData.feedback,
             review_date: new Date().toISOString()
@@ -81,12 +91,14 @@ export default function PeerCollaborationHub({ programId }) {
         } : p
       );
 
-      await base44.entities.Program.update(programId, {
-        peer_projects: updatedProjects
-      });
+      const { error } = await supabase
+        .from('programs')
+        .update({ peer_projects: updatedProjects })
+        .eq('id', programId);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['program', programId]);
+      queryClient.invalidateQueries({ queryKey: ['program', programId] });
       setShowReviewForm(null);
       setReview({ rating: 5, feedback: '' });
       toast.success(t({ en: 'Peer review submitted', ar: 'تم إرسال تقييم الأقران' }));

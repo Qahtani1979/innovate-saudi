@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,47 +8,42 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { MessageSquare, Send, Loader2, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function PolicyCommentThread({ policyId }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState('');
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
-  // Fetch comments - using generic approach since PolicyComment entity may not exist
+  // Fetch comments from comments table
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['policy-comments', policyId],
     queryFn: async () => {
-      try {
-        // Try to fetch from a PolicyComment entity if it exists
-        const allComments = await base44.entities.PolicyComment?.list() || [];
-        return allComments.filter(c => c.policy_id === policyId);
-      } catch {
-        // Fallback: use ChallengeComment entity structure
-        return [];
-      }
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('entity_type', 'policy')
+        .eq('entity_id', policyId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const addCommentMutation = useMutation({
     mutationFn: async (commentText) => {
-      try {
-        await base44.entities.PolicyComment.create({
-          policy_id: policyId,
-          comment_text: commentText,
-          is_internal: false
-        });
-      } catch {
-        // Fallback: store in a generic comment system
-        console.log('PolicyComment entity not available');
-      }
+      const { error } = await supabase.from('comments').insert({
+        entity_type: 'policy',
+        entity_id: policyId,
+        comment_text: commentText,
+        user_email: user?.email || 'anonymous',
+        is_internal: false
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['policy-comments']);
+      queryClient.invalidateQueries({ queryKey: ['policy-comments'] });
       setNewComment('');
       toast.success(t({ en: 'Comment added', ar: 'تمت إضافة التعليق' }));
     }

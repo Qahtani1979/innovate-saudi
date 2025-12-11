@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import PolicyLibraryWidget from '../components/knowledge/PolicyLibraryWidget';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 function KnowledgePage() {
   const { language, isRTL, t } = useLanguage();
@@ -24,38 +25,54 @@ function KnowledgePage() {
   const [contentTypeFilter, setContentTypeFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
   const [activeTab, setActiveTab] = useState('all');
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const queryClient = useQueryClient();
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const { data: knowledgeDocs = [] } = useQuery({
     queryKey: ['knowledge-docs'],
-    queryFn: () => base44.entities.KnowledgeDocument.list('-created_date')
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: caseStudies = [] } = useQuery({
     queryKey: ['case-studies'],
-    queryFn: () => base44.entities.CaseStudy.list('-created_date')
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('case_studies')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.KnowledgeDocument.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('knowledge_documents').delete().eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['knowledge-docs']);
+      queryClient.invalidateQueries({ queryKey: ['knowledge-docs'] });
       toast.success(t({ en: 'Document deleted', ar: 'تم حذف المستند' }));
     }
   });
 
   const deleteCaseMutation = useMutation({
-    mutationFn: (id) => base44.entities.CaseStudy.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('case_studies').delete().eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['case-studies']);
+      queryClient.invalidateQueries({ queryKey: ['case-studies'] });
       toast.success(t({ en: 'Case study deleted', ar: 'تم حذف دراسة الحالة' }));
     }
   });

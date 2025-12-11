@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Award, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ProgramExpertEvaluation({ program, approvalRequest }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     feasibility_score: 0,
     impact_score: 0,
@@ -27,54 +29,62 @@ export default function ProgramExpertEvaluation({ program, approvalRequest }) {
   });
 
   const { data: existingEvaluation } = useQuery({
-    queryKey: ['expert_evaluation', program.id],
+    queryKey: ['expert_evaluation', program.id, user?.email],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      const evals = await base44.entities.ExpertEvaluation.filter({
-        entity_type: 'program',
-        entity_id: program.id,
-        expert_email: user.email
-      });
-      return evals[0];
-    }
+      if (!user?.email) return null;
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_type', 'program')
+        .eq('entity_id', program.id)
+        .eq('expert_email', user.email)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.email
   });
 
   const evaluateMutation = useMutation({
     mutationFn: async (data) => {
-      const user = await base44.auth.me();
       const overall_score = (data.feasibility_score + data.impact_score + data.innovation_score + 
                             data.sustainability_score + data.quality_score + data.alignment_score + 
                             data.scalability_score + (100 - data.risk_score)) / 8;
 
       if (existingEvaluation) {
-        await base44.entities.ExpertEvaluation.update(existingEvaluation.id, {
-          ...data,
-          overall_score,
-          evaluation_date: new Date().toISOString()
-        });
+        const { error } = await supabase
+          .from('expert_evaluations')
+          .update({
+            ...data,
+            overall_score,
+            evaluation_date: new Date().toISOString()
+          })
+          .eq('id', existingEvaluation.id);
+        if (error) throw error;
       } else {
-        await base44.entities.ExpertEvaluation.create({
+        const { error } = await supabase.from('expert_evaluations').insert({
           entity_type: 'program',
           entity_id: program.id,
-          expert_email: user.email,
-          expert_name: user.full_name,
+          expert_email: user?.email,
+          expert_name: user?.full_name,
           ...data,
           overall_score,
           evaluation_date: new Date().toISOString()
         });
+        if (error) throw error;
       }
 
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'program',
         entity_id: program.id,
         activity_type: 'expert_evaluation_submitted',
-        performed_by: user.email,
+        performed_by: user?.email,
         timestamp: new Date().toISOString(),
         metadata: { overall_score, recommendation: data.recommendation }
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['expert_evaluation', program.id]);
+      queryClient.invalidateQueries({ queryKey: ['expert_evaluation', program.id] });
       toast.success(t({ en: 'Evaluation submitted', ar: 'تم إرسال التقييم' }));
     }
   });
