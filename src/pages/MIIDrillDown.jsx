@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -13,7 +14,26 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 export default function MIIDrillDown() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
-  const municipalityId = urlParams.get('id');
+  const urlMunicipalityId = urlParams.get('id');
+
+  // Get user's municipality from auth context if no ID provided
+  const { data: userProfile } = useQuery({
+    queryKey: ['current-user-profile-for-mii'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return null;
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('municipality_id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !urlMunicipalityId
+  });
+
+  // Use URL param if provided, otherwise fallback to user's municipality
+  const municipalityId = urlMunicipalityId || userProfile?.municipality_id;
 
   const { data: municipality } = useQuery({
     queryKey: ['municipality', municipalityId],

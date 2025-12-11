@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '../LanguageContext';
 import { usePersonaRouting } from '@/hooks/usePersonaRouting';
+import { usePermissions } from '../permissions/usePermissions';
 import { SIDEBAR_MENUS } from '@/config/sidebarMenus';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -10,6 +11,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 export default function PersonaSidebar({ isOpen, onClose }) {
   const { t, language, isRTL } = useLanguage();
   const { persona } = usePersonaRouting();
+  const { hasPermission, hasRole, roles, userMunicipality, isAdmin } = usePermissions();
   const location = useLocation();
 
   const menuConfig = SIDEBAR_MENUS[persona] || SIDEBAR_MENUS.user;
@@ -18,6 +20,46 @@ export default function PersonaSidebar({ isOpen, onClose }) {
   const isActive = (pageName) => {
     const pageUrl = createPageUrl(pageName);
     return location.pathname === pageUrl;
+  };
+
+  // Filter menu items based on permissions
+  const filteredItems = useMemo(() => {
+    return menuConfig.items.filter((item) => {
+      // Always show items without permission requirements (like Home)
+      if (!item.permission && !item.roles) return true;
+      
+      // Admin sees everything
+      if (isAdmin) return true;
+      
+      // Check role-based restriction first
+      if (item.roles && item.roles.length > 0) {
+        if (!item.roles.some(r => roles.includes(r))) {
+          return false;
+        }
+      }
+      
+      // Check permission
+      if (item.permission) {
+        return hasPermission(item.permission);
+      }
+      
+      return true;
+    });
+  }, [menuConfig.items, hasPermission, hasRole, roles, isAdmin]);
+
+  // Build link path with municipality ID for pages that need it
+  const buildLinkPath = (item) => {
+    if (item.path) return item.path;
+    
+    let basePath = createPageUrl(item.name);
+    
+    // For pages that need municipality ID, append it as query param
+    if (item.useMyMunicipality && userMunicipality?.id) {
+      const separator = basePath.includes('?') ? '&' : '?';
+      return `${basePath}${separator}id=${userMunicipality.id}`;
+    }
+    
+    return basePath;
   };
 
   return (
@@ -71,10 +113,9 @@ export default function PersonaSidebar({ isOpen, onClose }) {
 
         {/* Menu Items */}
         <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100%-80px)]">
-          {menuConfig.items.map((item) => {
+          {filteredItems.map((item) => {
             const Icon = item.icon;
-            // Use item.path for external links (like home), otherwise use createPageUrl
-            const linkPath = item.path || createPageUrl(item.name);
+            const linkPath = buildLinkPath(item);
             const active = item.path ? location.pathname === item.path : isActive(item.name);
             
             return (
