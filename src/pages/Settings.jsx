@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/AuthContext';
 import TwoFactorSetup from '../components/security/TwoFactorSetup';
 import ExternalCalendarSync from '../components/calendar/ExternalCalendarSync';
 import { Settings as SettingsIcon, User, Bell, Globe, Shield, Save, Palette, Eye, Keyboard, Link as LinkIcon, Activity, CheckCircle2 } from 'lucide-react';
+import RoleRequestCard from '../components/settings/RoleRequestCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from 'sonner';
@@ -276,7 +277,7 @@ function Settings() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="account">
+        <TabsContent value="account" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>{t({ en: 'Account Information', ar: 'معلومات الحساب' })}</CardTitle>
@@ -286,10 +287,6 @@ function Settings() {
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Email Address', ar: 'البريد الإلكتروني' })}</label>
                 <Input value={authUser?.email || ''} disabled className="bg-muted" />
                 <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Contact support to change your email', ar: 'اتصل بالدعم لتغيير بريدك الإلكتروني' })}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Account Type', ar: 'نوع الحساب' })}</label>
-                <Input value={profile?.selected_persona || 'Citizen'} disabled className="bg-muted" />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Member Since', ar: 'عضو منذ' })}</label>
@@ -345,6 +342,9 @@ function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Role Request Card */}
+          <RoleRequestCard />
         </TabsContent>
 
         {/* Notifications tab removed - not needed */}

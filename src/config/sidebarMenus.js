@@ -253,17 +253,14 @@ export const SIDEBAR_MENUS = {
     color: 'from-slate-600 to-gray-500',
     items: [
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
-      { name: 'PublicIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
+      { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
       { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },
-      { name: 'IdeasManagement', icon: FileText, label: { en: 'My Ideas', ar: 'أفكاري' } },
-      { name: 'CitizenFeedbackHistory', icon: History, label: { en: 'Feedback History', ar: 'سجل الملاحظات' } },
       { name: 'CitizenRewards', icon: Gift, label: { en: 'Rewards & Points', ar: 'المكافآت والنقاط' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
       { name: 'CitizenPilotEnrollment', icon: UserCheck, label: { en: 'Pilot Enrollment', ar: 'التسجيل في التجارب' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'CitizenLeaderboard', icon: Award, label: { en: 'Leaderboard', ar: 'المتصدرين' } },
-      { name: 'CitizenNotifications', icon: Bell, label: { en: 'Notifications', ar: 'الإشعارات' } },
     ]
   },
 
@@ -274,7 +271,7 @@ export const SIDEBAR_MENUS = {
     color: 'from-gray-600 to-slate-500',
     items: [
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
-      { name: 'PublicIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
+      { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
       { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
