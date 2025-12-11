@@ -240,6 +240,20 @@ function ApprovalCenter() {
     }
   });
 
+  // Fetch R&D projects pending approval/kickoff
+  const { data: rdProjects = [] } = useQuery({
+    queryKey: ['rd-projects-approval'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .in('status', ['proposed', 'pending_approval', 'submitted'])
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const approveMutation = useMutation({
     mutationFn: async ({ entity, id, updates }) => {
       if (entity === 'challenge') {
