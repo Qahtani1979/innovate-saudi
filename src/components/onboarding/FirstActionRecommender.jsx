@@ -112,13 +112,13 @@ Return page names from this list only:
     ],
     citizen: [
       { label: t({ en: 'Submit Your First Idea', ar: 'أرسل فكرتك الأولى' }), page: 'CitizenIdeaSubmission' },
-      { label: t({ en: 'Vote on Ideas', ar: 'صوت للأفكار' }), page: 'PublicIdeasBoard' },
-      { label: t({ en: 'Browse Public Pilots', ar: 'تصفح التجارب العامة' }), page: 'PublicPilotTracker' }
+      { label: t({ en: 'Respond to a Challenge', ar: 'الرد على تحدي' }), page: 'ChallengeIdeaResponse' },
+      { label: t({ en: 'Vote on Ideas', ar: 'صوت للأفكار' }), page: 'PublicIdeasBoard' }
     ],
     user: [
       { label: t({ en: 'Submit Your First Idea', ar: 'أرسل فكرتك الأولى' }), page: 'CitizenIdeaSubmission' },
-      { label: t({ en: 'Vote on Ideas', ar: 'صوت للأفكار' }), page: 'PublicIdeasBoard' },
-      { label: t({ en: 'View Upcoming Events', ar: 'عرض الفعاليات القادمة' }), page: 'EventCalendar' }
+      { label: t({ en: 'Respond to a Challenge', ar: 'الرد على تحدي' }), page: 'ChallengeIdeaResponse' },
+      { label: t({ en: 'Vote on Ideas', ar: 'صوت للأفكار' }), page: 'PublicIdeasBoard' }
     ],
     viewer: [
       { label: t({ en: 'Browse Public Ideas', ar: 'تصفح الأفكار العامة' }), page: 'PublicIdeasBoard' },
