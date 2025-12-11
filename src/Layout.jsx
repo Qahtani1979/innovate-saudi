@@ -73,8 +73,10 @@ import { LanguageProvider, useLanguage } from './components/LanguageContext';
 import ArabicFontOptimizer from './components/ui/ArabicFontOptimizer';
 import AIAssistant from './components/AIAssistant';
 import PortalSwitcher from './components/layout/PortalSwitcher';
+import PersonaHeader from './components/layout/PersonaHeader';
 import { Badge } from "@/components/ui/badge";
 import { usePermissions } from './components/permissions/usePermissions';
+import { usePersonaRouting } from '@/hooks/usePersonaRouting';
 import { useAuth } from '@/lib/AuthContext';
 import OnboardingWizard from './components/onboarding/OnboardingWizard';
 
@@ -86,7 +88,8 @@ function LayoutContent({ children, currentPageName }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { language, isRTL, toggleLanguage } = useLanguage();
-  const { user, hasPermission, hasAnyPermission, isAdmin } = usePermissions();
+  const { user, hasPermission, hasAnyPermission, isAdmin, isDeputyship, isMunicipality } = usePermissions();
+  const { persona, menuVisibility, defaultDashboard } = usePersonaRouting();
   const { isAuthenticated, userProfile, checkAuth, logout } = useAuth();
 
   // Show onboarding wizard for new users who haven't completed it
@@ -799,6 +802,11 @@ function LayoutContent({ children, currentPageName }) {
                 <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full"></span>
               </Button>
             </Link>
+
+            {/* Persona Badge */}
+            <div className="hidden lg:block">
+              <PersonaHeader size="small" />
+            </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
