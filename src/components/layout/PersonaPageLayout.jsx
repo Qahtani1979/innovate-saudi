@@ -129,12 +129,18 @@ export function PageHeader({
   
   // Helper to resolve bilingual text
   const resolveText = (text) => {
-    if (!text) return null;
+    if (text === null || text === undefined) return null;
     if (typeof text === 'string') return text;
-    if (typeof text === 'object' && (text.en || text.ar)) {
-      return language === 'ar' && text.ar ? text.ar : text.en;
+    if (typeof text === 'number') return String(text);
+    if (typeof text === 'object' && text !== null && (text.en !== undefined || text.ar !== undefined)) {
+      return language === 'ar' && text.ar ? text.ar : (text.en || '');
     }
-    return String(text);
+    // For any other type, try to convert to string safely
+    try {
+      return String(text);
+    } catch {
+      return '';
+    }
   };
 
   const resolvedTitle = resolveText(title);
@@ -180,13 +186,14 @@ export function PageHeader({
       {/* Stats row */}
       {Array.isArray(stats) && stats.length > 0 && (
         <div className="relative flex flex-wrap gap-4 mt-6 pt-6 border-t border-border/50">
-          {stats.map((stat, idx) => {
+      {stats.map((stat, idx) => {
             if (!stat) return null;
             const StatIcon = stat.icon;
+            const statValue = stat.value !== undefined && stat.value !== null ? String(stat.value) : '—';
             return (
               <div key={idx} className="flex items-center gap-2 bg-background/60 backdrop-blur-sm rounded-lg px-4 py-2">
-                {StatIcon && <StatIcon className={`h-4 w-4 ${iconColor}`} />}
-                <span className="text-lg font-semibold text-foreground">{stat.value}</span>
+                {StatIcon && typeof StatIcon === 'function' && <StatIcon className={`h-4 w-4 ${iconColor}`} />}
+                <span className="text-lg font-semibold text-foreground">{statValue}</span>
                 <span className="text-sm text-muted-foreground">{resolveText(stat.label)}</span>
               </div>
             );
