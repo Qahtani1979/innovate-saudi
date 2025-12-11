@@ -10,9 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Search, FlaskConical, MapPin, Calendar, Users, Bookmark, ExternalLink, UserPlus } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 
-
-export default function CitizenLivingLabsBrowser() {
+function CitizenLivingLabsBrowser() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -321,3 +321,5 @@ export default function CitizenLivingLabsBrowser() {
     </div>
   );
 }
+
+export default ProtectedPage(CitizenLivingLabsBrowser, { requiredPermissions: [] });
