@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import PersonaPageLayout from '@/components/layout/PersonaPageLayout';
 import PeerBenchmarkingTool from '@/components/municipalities/PeerBenchmarkingTool';
 import { Users } from 'lucide-react';
