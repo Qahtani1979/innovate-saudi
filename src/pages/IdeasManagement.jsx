@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,11 +92,10 @@ function IdeasManagement() {
   const handleReview = async (action) => {
     if (!selectedIdea) return;
 
-    const user = await base44.auth.me();
     const updates = {
       status: action,
       review_notes: reviewNotes,
-      reviewed_by: user.email,
+      reviewed_by: userProfile?.user_email,
       review_date: new Date().toISOString()
     };
 
@@ -104,12 +103,14 @@ function IdeasManagement() {
 
     // Trigger auto-notification
     if (selectedIdea.submitter_email) {
-      await base44.functions.invoke('autoNotificationTriggers', {
-        entity_name: 'CitizenIdea',
-        entity_id: selectedIdea.id,
-        old_status: selectedIdea.status,
-        new_status: action,
-        citizen_email: selectedIdea.submitter_email
+      await supabase.functions.invoke('autoNotificationTriggers', {
+        body: {
+          entity_name: 'CitizenIdea',
+          entity_id: selectedIdea.id,
+          old_status: selectedIdea.status,
+          new_status: action,
+          citizen_email: selectedIdea.submitter_email
+        }
       });
     }
   };
@@ -119,47 +120,58 @@ function IdeasManagement() {
     
     setConvertingToChallenge(true);
     try {
-      const user = await base44.auth.me();
-      
-      const newChallenge = await base44.entities.Challenge.create({
-        code: `CH-IDEA-${Date.now().toString().slice(-6)}`,
-        title_en: selectedIdea.title,
-        title_ar: selectedIdea.title,
-        description_en: selectedIdea.description,
-        description_ar: selectedIdea.description,
-        sector: selectedIdea.category,
-        municipality_id: selectedIdea.municipality_id || municipalityFilter,
-        priority: 'tier_3',
-        status: 'submitted',
-        source: 'citizen_idea',
-        citizen_origin_idea_id: selectedIdea.id, // Link back to original idea
-        keywords: selectedIdea.ai_classification?.keywords || [],
-        created_by: user.email,
-        challenge_owner: selectedIdea.submitter_email || user.email
-      });
+      const { data: newChallenge, error } = await supabase
+        .from('challenges')
+        .insert({
+          code: `CH-IDEA-${Date.now().toString().slice(-6)}`,
+          title_en: selectedIdea.title,
+          title_ar: selectedIdea.title,
+          description_en: selectedIdea.description,
+          description_ar: selectedIdea.description,
+          sector: selectedIdea.category,
+          municipality_id: selectedIdea.municipality_id || municipalityFilter,
+          priority: 'tier_3',
+          status: 'submitted',
+          source: 'citizen_idea',
+          citizen_origin_idea_id: selectedIdea.id,
+          keywords: selectedIdea.ai_classification?.keywords || [],
+          created_by: userProfile?.user_email,
+          challenge_owner: selectedIdea.submitter_email || userProfile?.user_email
+        })
+        .select()
+        .single();
 
-      await base44.entities.CitizenIdea.update(selectedIdea.id, {
-        status: 'converted_to_challenge',
-        converted_challenge_id: newChallenge.id,
-        reviewed_by: user.email,
-        review_date: new Date().toISOString()
-      });
+      if (error) throw error;
+
+      await supabase
+        .from('citizen_ideas')
+        .update({
+          status: 'converted_to_challenge',
+          converted_challenge_id: newChallenge.id,
+          reviewed_by: userProfile?.user_email,
+          review_date: new Date().toISOString()
+        })
+        .eq('id', selectedIdea.id);
 
       // Notify the idea submitter about conversion
       if (selectedIdea.submitter_email) {
-        await base44.functions.invoke('autoNotificationTriggers', {
-          entity_name: 'CitizenIdea',
-          entity_id: selectedIdea.id,
-          old_status: selectedIdea.status,
-          new_status: 'converted_to_challenge',
-          citizen_email: selectedIdea.submitter_email,
-          challenge_id: newChallenge.id
+        await supabase.functions.invoke('autoNotificationTriggers', {
+          body: {
+            entity_name: 'CitizenIdea',
+            entity_id: selectedIdea.id,
+            old_status: selectedIdea.status,
+            new_status: 'converted_to_challenge',
+            citizen_email: selectedIdea.submitter_email,
+            challenge_id: newChallenge.id
+          }
         });
       }
 
-      await base44.functions.invoke('generateEmbeddings', {
-        entity_name: 'Challenge',
-        mode: 'missing'
+      await supabase.functions.invoke('generateEmbeddings', {
+        body: {
+          entity_name: 'Challenge',
+          mode: 'missing'
+        }
       });
 
       toast.success(t({ en: 'Converted to challenge!', ar: 'تم التحويل إلى تحدي!' }));

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Globe, Lock, CheckCircle2, Shield, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PublishingWorkflow({ challenge, onClose, isCreationMode = false }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [publishData, setPublishData] = useState({
     is_published: challenge?.is_published || false,
     is_confidential: challenge?.is_confidential || false,
@@ -36,12 +38,16 @@ export default function PublishingWorkflow({ challenge, onClose, isCreationMode 
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      return await base44.entities.Challenge.update(challenge.id, {
-        is_published: publishData.is_published,
-        is_confidential: publishData.is_confidential,
-        publishing_approved_by: (await base44.auth.me()).email,
-        publishing_approved_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('challenges')
+        .update({
+          is_published: publishData.is_published,
+          is_confidential: publishData.is_confidential,
+          publishing_approved_by: user?.email,
+          publishing_approved_date: new Date().toISOString()
+        })
+        .eq('id', challenge.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['challenge', challenge.id]);

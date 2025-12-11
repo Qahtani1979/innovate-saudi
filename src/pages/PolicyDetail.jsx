@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
@@ -45,7 +46,7 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 export default function PolicyDetail() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [showAmendmentWizard, setShowAmendmentWizard] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   
   const { invokeAI, status: aiStatus, isLoading: isAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const urlParams = new URLSearchParams(window.location.search);
@@ -54,15 +55,16 @@ export default function PolicyDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const { data: policy, isLoading } = useQuery({
     queryKey: ['policy', policyId],
     queryFn: async () => {
-      const policies = await base44.entities.PolicyRecommendation.list();
-      return policies.find(p => p.id === policyId);
+      const { data, error } = await supabase
+        .from('policy_recommendations')
+        .select('*')
+        .eq('id', policyId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!policyId
   });

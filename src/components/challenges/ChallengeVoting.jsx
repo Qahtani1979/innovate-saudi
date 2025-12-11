@@ -1,28 +1,28 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from '@/lib/AuthContext';
 import { ThumbsUp, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ChallengeVoting({ challengeId, initialVotes = 0 }) {
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: userVote } = useQuery({
     queryKey: ['user-vote', challengeId, user?.email],
     queryFn: async () => {
-      const votes = await base44.entities.CitizenVote.filter({
-        voter_email: user.email,
-        entity_type: 'challenge',
-        entity_id: challengeId
-      });
-      return votes[0] || null;
+      const { data, error } = await supabase
+        .from('citizen_votes')
+        .select('*')
+        .eq('user_email', user?.email)
+        .eq('entity_type', 'challenge')
+        .eq('entity_id', challengeId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!user
   });

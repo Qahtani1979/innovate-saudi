@@ -5,13 +5,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 import { CheckCircle2, X, AlertTriangle, ThumbsUp, ThumbsDown, Clock } from 'lucide-react';
 
 export default function ProposalReviewWorkflow({ proposal, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [reviewNotes, setReviewNotes] = useState('');
   const [decision, setDecision] = useState(null);
   
@@ -28,13 +30,17 @@ export default function ProposalReviewWorkflow({ proposal, onClose }) {
 
   const reviewMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.RDProposal.update(proposal.id, {
-        status: decision === 'approve' ? 'under_review' : decision === 'reject' ? 'rejected' : 'revision_requested',
-        review_date: new Date().toISOString(),
-        review_notes: reviewNotes,
-        review_checklist: checklist,
-        reviewer: (await base44.auth.me()).email
-      });
+      const { error } = await supabase
+        .from('rd_proposals')
+        .update({
+          status: decision === 'approve' ? 'under_review' : decision === 'reject' ? 'rejected' : 'revision_requested',
+          review_date: new Date().toISOString(),
+          review_notes: reviewNotes,
+          review_checklist: checklist,
+          reviewer: user?.email
+        })
+        .eq('id', proposal.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['rdProposal']);

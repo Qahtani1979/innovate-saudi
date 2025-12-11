@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Bell, Mail, Smartphone, Clock, Loader2 } from 'lucide-react';
 import {
   Select,
@@ -18,17 +19,18 @@ import { toast } from 'sonner';
 export default function NotificationPreferences() {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
-
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user: currentUser } = useAuth();
 
   const { data: preferences, isLoading } = useQuery({
     queryKey: ['notification-prefs', currentUser?.email],
     queryFn: async () => {
-      const prefs = await base44.entities.UserNotificationPreference?.filter({ user_email: currentUser?.email });
-      return prefs?.[0] || null;
+      const { data, error } = await supabase
+        .from('user_notification_preferences')
+        .select('*')
+        .eq('user_email', currentUser?.email)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!currentUser
   });

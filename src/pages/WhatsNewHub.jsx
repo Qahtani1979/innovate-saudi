@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import { 
   Megaphone, Bell, Sparkles, Calendar, FileText, 
   AlertCircle, X, ExternalLink, CheckCircle2 
@@ -15,17 +16,18 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function WhatsNewHub() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: announcements = [] } = useQuery({
     queryKey: ['platform-insights'],
     queryFn: async () => {
-      const insights = await base44.entities.PlatformInsight.list('-created_date', 20);
-      return insights;
+      const { data, error } = await supabase
+        .from('platform_insights')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
     }
   });
 
