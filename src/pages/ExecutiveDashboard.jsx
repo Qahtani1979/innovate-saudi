@@ -14,6 +14,7 @@ import NationalMap from '../components/NationalMap';
 import AIRiskForecasting from '../components/executive/AIRiskForecasting';
 import PriorityRecommendations from '../components/executive/PriorityRecommendations';
 import ExecutiveBriefingGenerator from '../components/executive/ExecutiveBriefingGenerator';
+import PolicyPipelineWidget from '../components/executive/PolicyPipelineWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function ExecutiveDashboard() {
