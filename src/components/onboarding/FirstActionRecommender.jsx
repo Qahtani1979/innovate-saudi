@@ -33,24 +33,31 @@ export default function FirstActionRecommender({ user }) {
     initialData: []
   });
 
+  const userRole = user?.role || 'citizen';
+  
   const getRecommendations = async () => {
     const { success, data } = await invokeAI({
-      prompt: `Recommend the most impactful first action for this user:
+      prompt: `Recommend the most impactful first action for this specific user:
 
-User Role: ${user.role}
-User Email Domain: ${user.email.split('@')[1]}
-Available Challenges: ${challenges.slice(0, 3).map(c => c.title_en).join(', ')}
-Available R&D Calls: ${rdCalls.map(r => r.title_en).join(', ')}
+User Role: ${userRole}
+User Email Domain: ${user?.email?.split('@')[1] || 'unknown'}
+Available Challenges: ${challenges.slice(0, 3).map(c => c.title_en).join(', ') || 'None'}
+Available R&D Calls: ${rdCalls.map(r => r.title_en).join(', ') || 'None'}
 
-Based on their role and platform needs, recommend:
-1. Primary action (most impactful)
-2. Secondary action
-3. Quick win action
+IMPORTANT: Tailor recommendations specifically for "${userRole}" role:
+- citizen/user: Submit ideas, vote on community ideas, browse public pilots, attend events
+- viewer: Browse public content, view events, read news
+- municipality_admin: Submit challenges, manage pilots, review city data
+- startup_user: Browse challenges, submit proposals, complete solution profiles
+- researcher: Explore R&D calls, join living labs, complete researcher profile
+- admin: Review pending submissions, check system health, view analytics
 
-For municipality users: focus on submitting challenges
-For startup users: focus on browsing challenges and submitting proposals
-For researchers: focus on exploring R&D calls
-For admins: focus on reviewing submissions`,
+Return page names from this list only:
+- CitizenIdeaSubmission, PublicIdeasBoard, PublicPilotTracker, EventCalendar (for citizens/users)
+- Challenges, SolutionCreate, MatchmakerJourney (for startups)
+- RDCalls, ResearcherProfile, LivingLabs (for researchers)
+- ChallengeCreate, Pilots, MunicipalityDashboard (for municipality)
+- ChallengeReviewQueue, SystemHealthDashboard, ExecutiveDashboard (for admins)`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -125,7 +132,7 @@ For admins: focus on reviewing submissions`,
     ]
   };
 
-  const quickActions = roleBasedQuickActions[user?.role] || roleBasedQuickActions.citizen || [];
+  const quickActions = roleBasedQuickActions[userRole] || roleBasedQuickActions.citizen || [];
   
   // Helper to safely create page URLs
   const safePageUrl = (page) => page ? createPageUrl(page) : '/citizen-dashboard';
