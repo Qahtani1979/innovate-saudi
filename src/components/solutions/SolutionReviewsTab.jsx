@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,25 +11,23 @@ import { useLanguage } from '../LanguageContext';
 import { Star, ThumbsUp, MessageSquare, Award, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function SolutionReviewsTab({ solution }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showReviewForm, setShowReviewForm] = useState(false);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: reviews = [] } = useQuery({
     queryKey: ['solution-reviews', solution.id],
     queryFn: async () => {
-      const allReviews = await base44.entities.SolutionReview?.filter({
-        solution_id: solution.id,
-        is_public: true
-      }, '-created_date', 100) || [];
-      return allReviews;
+      const { data } = await supabase.from('solution_reviews').select('*')
+        .eq('solution_id', solution.id)
+        .eq('is_public', true)
+        .order('created_date', { ascending: false })
+        .limit(100);
+      return data || [];
     }
   });
 
@@ -37,12 +35,11 @@ export default function SolutionReviewsTab({ solution }) {
     queryKey: ['user-solution-pilots', solution.id],
     queryFn: async () => {
       if (!user) return [];
-      const pilots = await base44.entities.Pilot.filter({
-        solution_id: solution.id,
-        created_by: user.email,
-        stage: { $in: ['completed', 'scaled'] }
-      }) || [];
-      return pilots;
+      const { data } = await supabase.from('pilots').select('*')
+        .eq('solution_id', solution.id)
+        .eq('created_by', user.email)
+        .in('stage', ['completed', 'scaled']);
+      return data || [];
     },
     enabled: !!user
   });

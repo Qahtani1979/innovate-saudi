@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,12 @@ import { useLanguage } from '../LanguageContext';
 import { BookOpen, FileText, Video, Link as LinkIcon, Download, Plus, X } from 'lucide-react';
 import FileUploader from '../FileUploader';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ResourceLibrary({ programId }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('all');
   const [newResource, setNewResource] = useState({
@@ -25,29 +27,25 @@ export default function ResourceLibrary({ programId }) {
   const { data: program } = useQuery({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const programs = await base44.entities.Program.list();
-      return programs.find(p => p.id === programId);
+      const { data } = await supabase.from('programs').select('*').eq('id', programId).single();
+      return data;
     },
     enabled: !!programId
   });
 
   const resources = program?.resources || [];
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
-
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.Program.update(programId, {
+      const { error } = await supabase.from('programs').update({
         resources: [...resources, {
           ...data,
           id: Date.now().toString(),
           uploaded_date: new Date().toISOString(),
-          uploaded_by: currentUser?.email
+          uploaded_by: user?.email
         }]
-      });
+      }).eq('id', programId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['program', programId]);

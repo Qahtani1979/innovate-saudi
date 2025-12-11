@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,21 +12,18 @@ import {
   FileText, Activity, BarChart3, Plus, Bell, Zap, TestTube, MessageSquare
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function ProgramOperatorPortal() {
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   // Find programs I operate
   const { data: myOrganization } = useQuery({
     queryKey: ['my-org-operator', user?.email],
     queryFn: async () => {
-      const orgs = await base44.entities.Organization.list();
-      return orgs.find(o => o.contact_email === user?.email);
+      const { data } = await supabase.from('organizations').select('*');
+      return data?.find(o => o.contact_email === user?.email);
     },
     enabled: !!user
   });
@@ -35,8 +32,8 @@ function ProgramOperatorPortal() {
   const { data: myPrograms = [] } = useQuery({
     queryKey: ['my-operated-programs', myOrganization?.id],
     queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => 
+      const { data } = await supabase.from('programs').select('*');
+      return (data || []).filter(p => 
         p.operator_organization_id === myOrganization?.id || 
         p.created_by === user?.email
       );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,20 +9,20 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { Award, DollarSign, Calendar, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function RDProposalAwardWorkflow({ proposal, rdCall, onClose }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [awardAmount, setAwardAmount] = useState(proposal.budget_requested || 0);
   const [awardNotes, setAwardNotes] = useState('');
   const [startDate, setStartDate] = useState('');
 
   const awardMutation = useMutation({
     mutationFn: async () => {
-      const user = await base44.auth.me();
-
       // Create R&D Project from awarded proposal
-      const rdProject = await base44.entities.RDProject.create({
+      const { data: rdProject, error: projectError } = await supabase.from('rd_projects').insert({
         code: `RD-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
         title_en: proposal.title_en,
         title_ar: proposal.title_ar,
@@ -50,34 +50,37 @@ export default function RDProposalAwardWorkflow({ proposal, rdCall, onClose }) {
           milestones: []
         },
         is_published: false
-      });
+      }).select().single();
+      if (projectError) throw projectError;
 
       // Update proposal with award info
-      await base44.entities.RDProposal.update(proposal.id, {
+      await supabase.from('rd_proposals').update({
         status: 'approved',
         awarded_amount: awardAmount,
         award_date: new Date().toISOString(),
         award_notes: awardNotes,
         converted_rd_project_id: rdProject.id
-      });
+      }).eq('id', proposal.id);
 
       // Log activity
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'RDProposal',
         entity_id: proposal.id,
         activity_type: 'approved',
         description: `Proposal awarded ${awardAmount} SAR and converted to R&D project`,
-        performed_by: user.email,
+        performed_by: user?.email,
         timestamp: new Date().toISOString(),
         metadata: { rd_project_id: rdProject.id, awarded_amount: awardAmount }
       });
 
-      // Notify PI
+      // Notify PI via edge function if needed
       if (proposal.principal_investigator?.email) {
-        await base44.integrations.Core.SendEmail({
-          to: proposal.principal_investigator.email,
-          subject: `🎉 Congratulations! Your R&D Proposal Has Been Awarded`,
-          body: `Dear ${proposal.principal_investigator.name},\n\nCongratulations! Your research proposal "${proposal.title_en}" has been selected for funding.\n\nAwarded Amount: ${awardAmount.toLocaleString()} SAR\nProject Start Date: ${startDate}\n\nNext steps:\n1. Review award agreement\n2. Complete project kickoff\n3. Begin research activities\n\nBest regards,\nSaudi Innovates Platform`
+        await supabase.functions.invoke('send-email', {
+          body: {
+            to: proposal.principal_investigator.email,
+            subject: `🎉 Congratulations! Your R&D Proposal Has Been Awarded`,
+            body: `Dear ${proposal.principal_investigator.name},\n\nCongratulations! Your research proposal "${proposal.title_en}" has been selected for funding.\n\nAwarded Amount: ${awardAmount.toLocaleString()} SAR\nProject Start Date: ${startDate}\n\nNext steps:\n1. Review award agreement\n2. Complete project kickoff\n3. Begin research activities\n\nBest regards,\nSaudi Innovates Platform`
+          }
         });
       }
     },

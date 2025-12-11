@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,11 @@ import { AlertTriangle, Shield, ArrowRight, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function AutoRiskRouter({ entity, entityType }) {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [riskAssessment, setRiskAssessment] = useState(null);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
@@ -59,8 +61,8 @@ Provide sandbox recommendation if needed.`,
   const routeToSandbox = async () => {
     try {
       // Create sandbox application automatically
-      await base44.entities.SandboxApplication.create({
-        applicant_email: (await base44.auth.me()).email,
+      const { error } = await supabase.from('sandbox_applications').insert({
+        applicant_email: user?.email,
         source_entity_type: entityType,
         source_entity_id: entity.id,
         project_title: entity.title_en || entity.name_en,
@@ -68,6 +70,7 @@ Provide sandbox recommendation if needed.`,
         risk_level: riskAssessment.overall_risk >= 70 ? 'high' : riskAssessment.overall_risk >= 40 ? 'medium' : 'low',
         status: 'pending'
       });
+      if (error) throw error;
 
       toast.success(t({ en: 'Sandbox application created', ar: 'تم إنشاء طلب منطقة التجريب' }));
     } catch (error) {

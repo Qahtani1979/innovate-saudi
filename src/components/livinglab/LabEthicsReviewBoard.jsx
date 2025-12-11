@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,10 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Shield, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function LabEthicsReviewBoard({ livingLabId, projectId }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [evaluationData, setEvaluationData] = useState({
     scientific_merit_score: 50,
     citizen_benefit_score: 50,
@@ -33,10 +35,10 @@ export default function LabEthicsReviewBoard({ livingLabId, projectId }) {
         (evaluationData.feasibility_score * 0.1)
       );
 
-      return await base44.entities.LabProjectEvaluation.create({
+      const { error } = await supabase.from('lab_project_evaluations').insert({
         living_lab_id: livingLabId,
         project_id: projectId,
-        evaluator_email: (await base44.auth.me()).email,
+        evaluator_email: user?.email,
         evaluation_type: 'ethics_review',
         scientific_merit_score: evaluationData.scientific_merit_score,
         citizen_benefit_score: evaluationData.citizen_benefit_score,
@@ -50,6 +52,7 @@ export default function LabEthicsReviewBoard({ livingLabId, projectId }) {
         evaluation_notes: evaluationData.evaluation_notes,
         evaluation_date: new Date().toISOString()
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lab-evaluations'] });

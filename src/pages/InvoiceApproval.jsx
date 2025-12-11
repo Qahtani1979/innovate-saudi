@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,27 +8,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { FileText, CheckCircle2, XCircle, DollarSign } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function InvoiceApproval() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedInvoice, setSelectedInvoice] = React.useState(null);
   const [approvalNotes, setApprovalNotes] = React.useState('');
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['invoices-pending'],
-    queryFn: () => base44.entities.Invoice.filter({ status: 'submitted' })
+    queryFn: async () => {
+      const { data } = await supabase.from('invoices').select('*').eq('status', 'submitted');
+      return data || [];
+    }
   });
 
   const approveMutation = useMutation({
     mutationFn: async ({ invoiceId, approved }) => {
-      const user = await base44.auth.me();
-      return base44.entities.Invoice.update(invoiceId, {
+      const { error } = await supabase.from('invoices').update({
         status: approved ? 'approved' : 'draft',
-        approved_by: approved ? user.email : null,
+        approved_by: approved ? user?.email : null,
         approval_date: approved ? new Date().toISOString() : null,
         approval_notes: approvalNotes
-      });
+      }).eq('id', invoiceId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices-pending'] });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,13 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 function RDCallDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const callId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const [comment, setComment] = useState('');
   const [showPublish, setShowPublish] = useState(false);
   const [showReview, setShowReview] = useState(false);
@@ -43,13 +45,8 @@ function RDCallDetailPage() {
   const [showAutoAssign, setShowAutoAssign] = useState(false);
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: call, isLoading } = useQuery({
     queryKey: ['rd-call', callId],

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,34 +9,36 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Users, MessageSquare, Send, TrendingUp, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function StakeholderHub({ pilot }) {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [feedback, setFeedback] = useState('');
   const [satisfaction, setSatisfaction] = useState(5);
 
   const { data: stakeholderFeedback = [] } = useQuery({
     queryKey: ['stakeholder-feedback', pilot.id],
     queryFn: async () => {
-      const all = await base44.entities.StakeholderFeedback.list();
-      return all.filter(f => f.pilot_id === pilot.id);
+      const { data } = await supabase.from('stakeholder_feedback').select('*').eq('pilot_id', pilot.id);
+      return data || [];
     },
     initialData: []
   });
 
   const submitFeedbackMutation = useMutation({
     mutationFn: async (data) => {
-      const user = await base44.auth.me();
-      return base44.entities.StakeholderFeedback.create({
+      const { error } = await supabase.from('stakeholder_feedback').insert({
         pilot_id: pilot.id,
-        stakeholder_email: user.email,
-        stakeholder_role: user.role,
+        stakeholder_email: user?.email,
+        stakeholder_role: 'stakeholder',
         feedback_type: 'progress_update',
         satisfaction_score: data.satisfaction,
         comments: data.feedback,
         sentiment: data.satisfaction >= 4 ? 'positive' : data.satisfaction >= 3 ? 'neutral' : 'negative'
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['stakeholder-feedback']);
