@@ -13,9 +13,18 @@ import { Search, LayoutGrid, List, X } from 'lucide-react';
  * Returns gradient colors, icon colors, and persona info based on current user's role
  */
 export function usePersonaColors() {
-  const { persona } = usePersonaRouting();
-  const menuConfig = SIDEBAR_MENUS[persona] || SIDEBAR_MENUS.citizen;
-  const gradientColor = menuConfig.color || 'from-slate-600 to-gray-500';
+  let persona = 'citizen';
+  let menuConfig = SIDEBAR_MENUS.citizen || { color: 'from-slate-600 to-gray-500' };
+  
+  try {
+    const routing = usePersonaRouting();
+    persona = routing?.persona || 'citizen';
+    menuConfig = SIDEBAR_MENUS[persona] || SIDEBAR_MENUS.citizen || { color: 'from-slate-600 to-gray-500' };
+  } catch (e) {
+    console.warn('usePersonaColors: Error getting persona routing', e);
+  }
+  
+  const gradientColor = menuConfig?.color || 'from-slate-600 to-gray-500';
   
   // Map persona gradients to color names for styling
   const colorMap = {
@@ -93,11 +102,13 @@ export function usePersonaColors() {
     },
   };
   
+  const defaultColors = colorMap['from-slate-600 to-gray-500'];
+  
   return {
-    ...colorMap[gradientColor] || colorMap['from-slate-600 to-gray-500'],
+    ...(colorMap[gradientColor] || defaultColors),
     persona,
-    label: menuConfig.label,
-    PersonaIcon: menuConfig.icon
+    label: menuConfig?.label || { en: 'Dashboard', ar: 'لوحة التحكم' },
+    PersonaIcon: menuConfig?.icon
   };
 }
 
