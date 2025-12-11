@@ -43,6 +43,13 @@ export const AuthProvider = ({ children }) => {
     return false;
   };
 
+  // Auto-redirect to onboarding when needed
+  useEffect(() => {
+    if (needsOnboarding && isAuthenticated && !isLoadingAuth) {
+      redirectToOnboardingIfNeeded();
+    }
+  }, [needsOnboarding, isAuthenticated, isLoadingAuth]);
+
   useEffect(() => {
     // Handle OAuth callback - check for tokens in URL hash
     const handleOAuthCallback = async () => {
