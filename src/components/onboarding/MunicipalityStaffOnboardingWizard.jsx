@@ -275,7 +275,7 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
             user_id: user.id,
             user_email: user.email,
             role: 'municipality_staff',
-            organization_id: formData.municipality_id,
+            municipality_id: formData.municipality_id,
             action: 'assign'
           }
         });
