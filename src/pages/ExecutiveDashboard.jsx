@@ -16,6 +16,7 @@ import PriorityRecommendations from '../components/executive/PriorityRecommendat
 import ExecutiveBriefingGenerator from '../components/executive/ExecutiveBriefingGenerator';
 import PolicyPipelineWidget from '../components/executive/PolicyPipelineWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ExecutiveDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -121,23 +122,19 @@ function ExecutiveDashboard() {
     : 0;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent">
-            {t({ en: 'Executive Dashboard', ar: 'لوحة القيادة التنفيذية' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'National innovation overview and strategic insights', ar: 'نظرة عامة وطنية ورؤى استراتيجية' })}
-          </p>
-        </div>
-        <Link to={createPageUrl('ExecutiveStrategicChallengeQueue')}>
-          <Button className="bg-gradient-to-r from-purple-600 to-indigo-600">
-            <Zap className="h-4 w-4 mr-2" />
-            {t({ en: 'Strategic Queue', ar: 'قائمة استراتيجية' })}
-          </Button>
-        </Link>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Executive Dashboard', ar: 'لوحة القيادة التنفيذية' }}
+        subtitle={{ en: 'National innovation overview and strategic insights', ar: 'نظرة عامة وطنية ورؤى استراتيجية' }}
+        actions={
+          <Link to={createPageUrl('ExecutiveStrategicChallengeQueue')}>
+            <Button className="bg-gradient-to-r from-purple-600 to-indigo-600">
+              <Zap className="h-4 w-4 mr-2" />
+              {t({ en: 'Strategic Queue', ar: 'قائمة استراتيجية' })}
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Critical Alerts */}
       {criticalChallenges.length > 0 && (
@@ -631,7 +628,7 @@ function ExecutiveDashboard() {
       <AIRiskForecasting />
       <PriorityRecommendations />
       <ExecutiveBriefingGenerator />
-    </div>
+    </PageLayout>
   );
 }
 

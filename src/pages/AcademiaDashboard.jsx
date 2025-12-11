@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function AcademiaDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -109,20 +110,12 @@ function AcademiaDashboard() {
   const totalFunding = openRDCalls.reduce((acc, c) => acc + (c.budget_total || 0), 0);
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-purple-600 bg-clip-text text-transparent">
-            {t({ en: 'Academia & Research Portal', ar: 'بوابة الأكاديميين والباحثين' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Advance municipal innovation through applied research', ar: 'تطوير الابتكار البلدي من خلال البحث التطبيقي' })}
-          </p>
-        </div>
-        <div className="p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg">
-          <Microscope className="h-6 w-6 text-white" />
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Academia & Research Portal', ar: 'بوابة الأكاديميين والباحثين' }}
+        subtitle={{ en: 'Advance municipal innovation through applied research', ar: 'تطوير الابتكار البلدي من خلال البحث التطبيقي' }}
+        icon={<Microscope className="h-6 w-6 text-white" />}
+      />
 
       {/* Urgent Deadlines */}
       {openRDCalls.filter(c => {
@@ -524,7 +517,7 @@ function AcademiaDashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
