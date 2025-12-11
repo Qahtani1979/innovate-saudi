@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 import {
   Select,
   SelectContent,
@@ -45,60 +46,86 @@ function ExpertMatchingEnginePage() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const { invokeAI, isLoading: matching, status, error, rateLimitInfo } = useAIWithFallback();
+  const { user: currentUser } = useAuth();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
   });
 
   const { data: rdProposals = [] } = useQuery({
     queryKey: ['rd-proposals'],
-    queryFn: () => base44.entities.RDProposal.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase.from('rd_proposals').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
   });
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase.from('rd_projects').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
   });
 
   const { data: programApps = [] } = useQuery({
     queryKey: ['program-apps'],
-    queryFn: () => base44.entities.ProgramApplication.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase.from('program_applications').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
   });
 
   const { data: matchmakerApps = [] } = useQuery({
     queryKey: ['matchmaker-apps'],
-    queryFn: () => base44.entities.MatchmakerApplication.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase.from('matchmaker_applications').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
   });
 
   const { data: scalingPlans = [] } = useQuery({
     queryKey: ['scaling-plans'],
-    queryFn: () => base44.entities.ScalingPlan.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase.from('scaling_plans').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
   });
 
   const { data: experts = [] } = useQuery({
     queryKey: ['expert-profiles'],
-    queryFn: () => base44.entities.ExpertProfile.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_profiles').select('*');
+      return data || [];
+    }
   });
 
   const { data: existingAssignments = [] } = useQuery({
     queryKey: ['all-expert-assignments'],
-    queryFn: () => base44.entities.ExpertAssignment.list()
-  });
-
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_assignments').select('*');
+      return data || [];
+    }
   });
 
   const assignMutation = useMutation({

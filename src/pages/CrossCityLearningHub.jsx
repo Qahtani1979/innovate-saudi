@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,40 +14,50 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function CrossCityLearningHub() {
   const { t, language } = useLanguage();
   const queryClient = useQueryClient();
-  const [user, setUser] = React.useState(null);
+  const { user } = useAuth();
   const [shareDialog, setShareDialog] = useState(null);
   const [learningNote, setLearningNote] = useState('');
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: myMunicipality } = useQuery({
     queryKey: ['my-municipality-learning', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Municipality.list();
-      return all.find(m => m.contact_email === user?.email);
+      const { data } = await supabase
+        .from('municipalities')
+        .select('*')
+        .eq('contact_email', user?.email)
+        .maybeSingle();
+      return data;
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const { data: allMunicipalities = [] } = useQuery({
     queryKey: ['all-municipalities-learning'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-learning'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('*');
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-learning'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*');
+      return data || [];
+    }
   });
 
   const shareLearningMutation = useMutation({

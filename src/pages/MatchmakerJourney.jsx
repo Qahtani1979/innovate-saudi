@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -12,7 +12,15 @@ function MatchmakerJourney() {
 
   const { data: applications = [] } = useQuery({
     queryKey: ['matchmaker-applications'],
-    queryFn: () => base44.entities.MatchmakerApplication.list('-created_date', 100),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('matchmaker_applications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,39 +8,46 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { Trophy, Award, Star, TrendingUp, Users, Zap, Target, Medal } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/lib/AuthContext';
 
 export default function UserGamification() {
   const { t, isRTL } = useLanguage();
-
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user: currentUser } = useAuth();
 
   const { data: achievements = [] } = useQuery({
     queryKey: ['achievements'],
-    queryFn: () => base44.entities.Achievement?.list() || []
+    queryFn: async () => {
+      const { data } = await supabase.from('achievements').select('*');
+      return data || [];
+    }
   });
 
   const { data: userAchievements = [] } = useQuery({
     queryKey: ['user-achievements', currentUser?.email],
-    queryFn: () => base44.entities.UserAchievement?.filter({ user_email: currentUser?.email }) || [],
-    enabled: !!currentUser
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_achievements')
+        .select('*')
+        .eq('user_email', currentUser?.email);
+      return data || [];
+    },
+    enabled: !!currentUser?.email
   });
 
   const { data: allUserAchievements = [] } = useQuery({
     queryKey: ['all-user-achievements'],
-    queryFn: () => base44.entities.UserAchievement?.list() || []
-  });
-
-  const { data: users = [] } = useQuery({
-    queryKey: ['all-users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('user_achievements').select('*');
+      return data || [];
+    }
   });
 
   const { data: activities = [] } = useQuery({
     queryKey: ['user-activities'],
-    queryFn: () => base44.entities.UserActivity.list('-created_date', 1000)
+    queryFn: async () => {
+      const { data } = await supabase.from('user_activities').select('*').order('created_at', { ascending: false }).limit(1000);
+      return data || [];
+    }
   });
 
   // Calculate user points and rank

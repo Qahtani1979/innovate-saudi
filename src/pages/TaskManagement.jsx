@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function TaskManagement() {
   const { language, isRTL, t } = useLanguage();
@@ -19,28 +20,38 @@ function TaskManagement() {
   const [formData, setFormData] = useState({});
   const [filter, setFilter] = useState('all');
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list()
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('tasks').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: expertAssignments = [] } = useQuery({
     queryKey: ['expert-assignments-tasks', user?.email],
     queryFn: async () => {
-      const assignments = await base44.entities.ExpertAssignment.list();
-      return assignments.filter(a => a.expert_email === user?.email && a.status !== 'completed');
+      const { data, error } = await supabase
+        .from('expert_assignments')
+        .select('*')
+        .eq('expert_email', user?.email)
+        .neq('status', 'completed');
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Task.create({ ...data, assigned_to: user?.email }),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('tasks')
+        .insert({ ...data, assigned_to: user?.email });
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['tasks']);
       setShowForm(false);
@@ -49,7 +60,10 @@ function TaskManagement() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Task.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { error } = await supabase.from('tasks').update(data).eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => queryClient.invalidateQueries(['tasks'])
   });
 

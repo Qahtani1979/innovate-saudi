@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,30 +14,38 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function CrossEntityActivityStream() {
   const { language, isRTL, t } = useLanguage();
   const [filterType, setFilterType] = useState('all');
   const [filterOrg, setFilterOrg] = useState('all');
+  const { user } = useAuth();
 
   const { data: activities = [], isLoading, refetch } = useQuery({
     queryKey: ['system-activities'],
-    queryFn: () => base44.entities.SystemActivity.list('-created_date', 50),
-    refetchInterval: 30000 // Auto-refresh every 30 seconds
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('system_activities')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+    refetchInterval: 30000
   });
 
   const { data: userProfile } = useQuery({
     queryKey: ['user-profile', user?.email],
     queryFn: async () => {
-      const profiles = await base44.entities.UserProfile.filter({ user_email: user?.email });
-      return profiles[0];
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_email', user?.email)
+        .single();
+      return data;
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const activityConfig = {
