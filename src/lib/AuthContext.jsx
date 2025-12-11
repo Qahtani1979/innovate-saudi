@@ -46,7 +46,15 @@ export const AuthProvider = ({ children }) => {
   // Auto-redirect to onboarding when needed
   useEffect(() => {
     if (needsOnboarding && isAuthenticated && !isLoadingAuth) {
-      redirectToOnboardingIfNeeded();
+      const currentPath = window.location.pathname.toLowerCase();
+      const onboardingPaths = ['/auth', '/onboarding', '/startup-onboarding', '/municipality-staff-onboarding', 
+        '/researcher-onboarding', '/citizen-onboarding', '/expert-onboarding', '/deputyship-onboarding'];
+      const isOnOnboardingPage = onboardingPaths.some(p => currentPath.includes(p.toLowerCase()));
+      
+      if (!isOnOnboardingPage) {
+        console.log('Redirecting to onboarding - needsOnboarding:', needsOnboarding);
+        window.location.href = '/onboarding';
+      }
     }
   }, [needsOnboarding, isAuthenticated, isLoadingAuth]);
 
