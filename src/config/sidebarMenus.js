@@ -272,9 +272,8 @@ export const SIDEBAR_MENUS = {
     icon: User,
     color: 'from-gray-600 to-slate-500',
     items: [
-      { name: 'Home', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
-      { name: 'UserProfile', icon: UserCircle, label: { en: 'Profile', ar: 'الملف الشخصي' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
+      { name: 'Home', icon: LayoutDashboard, label: { en: 'Home', ar: 'الرئيسية' } },
+      { name: 'RoleRequestStatus', icon: Clock, label: { en: 'Role Request Status', ar: 'حالة طلب الدور' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'PublicIdeasBoard', icon: Lightbulb, label: { en: 'Ideas', ar: 'الأفكار' } },
