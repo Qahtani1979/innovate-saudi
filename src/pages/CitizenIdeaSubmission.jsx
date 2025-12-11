@@ -17,6 +17,7 @@ import {
 import { toast } from 'sonner';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import InnovationProposalWorkflowTab from '@/components/citizen/InnovationProposalWorkflowTab';
+import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/CitizenPageLayout';
 
 function CitizenIdeaSubmission() {
   const { language, isRTL, t } = useLanguage();
@@ -185,15 +186,16 @@ function CitizenIdeaSubmission() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">
-          {t({ en: 'Innovation Ideas', ar: 'أفكار الابتكار' })}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          {t({ en: 'Submit and track your innovation ideas', ar: 'قدم وتابع أفكارك الابتكارية' })}
-        </p>
-      </div>
+    <CitizenPageLayout>
+      <CitizenPageHeader
+        icon={Lightbulb}
+        title={t({ en: 'Innovation Ideas', ar: 'أفكار الابتكار' })}
+        description={t({ en: 'Submit and track your innovation ideas', ar: 'قدم وتابع أفكارك الابتكارية' })}
+        accentColor="purple"
+        stats={[
+          { icon: FileText, value: myIdeas.length, label: t({ en: 'My Ideas', ar: 'أفكاري' }), color: 'purple' },
+        ]}
+      />
 
       <Tabs defaultValue="submit" className="space-y-6">
         <TabsList>
@@ -422,7 +424,7 @@ function CitizenIdeaSubmission() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </CitizenPageLayout>
   );
 }
 
