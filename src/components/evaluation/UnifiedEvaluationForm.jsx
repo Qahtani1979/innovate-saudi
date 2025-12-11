@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Sparkles, Loader2, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function UnifiedEvaluationForm({ 
   entityType, 
@@ -22,6 +23,7 @@ export default function UnifiedEvaluationForm({
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiAssisting, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { user } = useAuth();
 
   const [scores, setScores] = useState({
     feasibility_score: 50,
@@ -43,11 +45,10 @@ export default function UnifiedEvaluationForm({
 
   const createEvaluationMutation = useMutation({
     mutationFn: async (evaluationData) => {
-      const user = await base44.auth.me();
       const overallScore = Object.values(scores).reduce((a, b) => a + b, 0) / Object.keys(scores).length;
 
-      return base44.entities.ExpertEvaluation.create({
-        expert_email: user.email,
+      const { error } = await supabase.from('expert_evaluations').insert({
+        expert_email: user?.email,
         assignment_id: assignmentId,
         entity_type: entityType,
         entity_id: entityId,
@@ -61,6 +62,7 @@ export default function UnifiedEvaluationForm({
         improvement_suggestions: improvements.filter(i => i.trim()),
         conditions: recommendation.includes('conditions') ? conditions.filter(c => c.trim()) : []
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['expert-evaluations']);

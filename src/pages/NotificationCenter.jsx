@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,42 +8,62 @@ import { useLanguage } from '../components/LanguageContext';
 import { Bell, CheckCircle, AlertCircle, Clock, Filter, Trash2, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function NotificationCenter() {
   const { language, isRTL, t } = useLanguage();
   const [filter, setFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Notification.list('-created_date', 100);
-      return all.filter(n => n.recipient_email === user?.email);
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('recipient_email', user?.email)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const markAsRead = useMutation({
-    mutationFn: (id) => base44.entities.Notification.update(id, { read: true }),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => queryClient.invalidateQueries(['notifications'])
   });
 
   const deleteNotification = useMutation({
-    mutationFn: (id) => base44.entities.Notification.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => queryClient.invalidateQueries(['notifications'])
   });
 
   const markAllAsRead = useMutation({
     mutationFn: async () => {
-      await Promise.all(
-        notifications.filter(n => !n.read).map(n => base44.entities.Notification.update(n.id, { read: true }))
-      );
+      const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+      if (unreadIds.length > 0) {
+        const { error } = await supabase
+          .from('notifications')
+          .update({ read: true })
+          .in('id', unreadIds);
+        if (error) throw error;
+      }
     },
     onSuccess: () => queryClient.invalidateQueries(['notifications'])
   });

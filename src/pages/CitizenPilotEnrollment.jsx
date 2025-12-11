@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Bell, CheckCircle2, Shield, Users, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function CitizenPilotEnrollment() {
   const { language, isRTL, t } = useLanguage();
@@ -16,23 +17,22 @@ export default function CitizenPilotEnrollment() {
   const pilotId = urlParams.get('pilot_id');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  const [user, setUser] = useState(null);
   const [enrollmentType, setEnrollmentType] = useState('feedback_provider');
   const [consent, setConsent] = useState(false);
   const [notifications, setNotifications] = useState(true);
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {
-      base44.auth.redirectToLogin(window.location.href);
-    });
-  }, []);
-
   const { data: pilot } = useQuery({
     queryKey: ['pilot', pilotId],
     queryFn: async () => {
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.find(p => p.id === pilotId);
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('id', pilotId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilotId
   });
@@ -40,15 +40,22 @@ export default function CitizenPilotEnrollment() {
   const { data: existingEnrollment } = useQuery({
     queryKey: ['enrollment', pilotId, user?.email],
     queryFn: async () => {
-      const enrollments = await base44.entities.CitizenPilotEnrollment.list();
-      return enrollments.find(e => e.pilot_id === pilotId && e.citizen_email === user?.email);
+      const { data, error } = await supabase
+        .from('citizen_pilot_enrollments')
+        .select('*')
+        .eq('pilot_id', pilotId)
+        .eq('user_email', user?.email)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!(pilotId && user?.email)
   });
 
   const enrollMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.CitizenPilotEnrollment.create(data);
+      const { error } = await supabase.from('citizen_pilot_enrollments').insert(data);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['enrollment']);

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Bell, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 export function useWebSocketNotifications(userId) {
   const [notifications, setNotifications] = useState([]);
@@ -10,27 +11,22 @@ export function useWebSocketNotifications(userId) {
   useEffect(() => {
     if (!userId) return;
 
-    // Note: WebSocket implementation placeholder
-    // In production, this would connect to a WebSocket server
-    // For now, we'll use polling as fallback
-    
     const pollNotifications = async () => {
       try {
-        const data = await base44.entities.Notification.filter(
-          { recipient_email: userId, is_read: false },
-          '-created_date',
-          5
-        );
-        setNotifications(data);
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('recipient_email', userId)
+          .eq('is_read', false)
+          .order('created_at', { ascending: false })
+          .limit(5);
+        if (!error) setNotifications(data || []);
       } catch (error) {
         console.error('Notification polling error:', error);
       }
     };
 
-    // Initial fetch
     pollNotifications();
-    
-    // Poll every 30 seconds
     const interval = setInterval(pollNotifications, 30000);
 
     return () => clearInterval(interval);
@@ -63,20 +59,13 @@ export function useWebSocketNotifications(userId) {
   };
 }
 
-// Real-time notification component
 export function RealTimeNotificationProvider({ children }) {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { notifications, showToast } = useWebSocketNotifications(user?.email);
 
-  // Show toast for new notifications
   useEffect(() => {
     if (notifications.length > 0) {
-      // Only show the most recent one as toast
       const latest = notifications[0];
       if (latest && !latest.is_read) {
         showToast(latest);

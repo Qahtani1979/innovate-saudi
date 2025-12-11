@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +13,20 @@ function TeamPerformance() {
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('teams').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: members = [], isLoading: membersLoading } = useQuery({
     queryKey: ['team-members'],
-    queryFn: () => base44.entities.TeamMember.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('team_members').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const activeTeams = teams.filter(t => t.status === 'active');

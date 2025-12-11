@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -20,23 +20,25 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function ExpertAssignmentQueue() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('pending');
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: assignments = [], isLoading } = useQuery({
     queryKey: ['expert-assignments', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      const all = await base44.entities.ExpertAssignment.list();
-      return all.filter(a => a.expert_email === user.email && !a.is_deleted);
+      const { data, error } = await supabase
+        .from('expert_assignments')
+        .select('*')
+        .eq('expert_email', user.email)
+        .neq('is_deleted', true);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user?.email
   });

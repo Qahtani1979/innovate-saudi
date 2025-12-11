@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -10,22 +10,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { Heart, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ExpressInterestButton({ solution, challenge = null, variant = "default" }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [challenges, setChallenges] = useState([]);
+  const { user } = useAuth();
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-    if (!challenge) {
-      base44.entities.Challenge.filter({ status: { $in: ['approved', 'in_treatment'] } }, '-created_date', 50)
-        .then(setChallenges)
-        .catch(() => {});
-    }
-  }, []);
+  const { data: challenges = [] } = useQuery({
+    queryKey: ['challenges-for-interest'],
+    queryFn: async () => {
+      if (challenge) return [];
+      const { data } = await supabase
+        .from('challenges')
+        .select('*')
+        .in('status', ['approved', 'in_treatment'])
+        .order('created_at', { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+    enabled: !challenge
+  });
 
   const [formData, setFormData] = useState({
     challenge_id: challenge?.id || '',

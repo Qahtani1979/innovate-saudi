@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,11 +10,12 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { Users, Star, MessageSquare, Send, Loader2, CheckCircle2, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function CollaborativeReviewPanel({ proposal, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [myReview, setMyReview] = useState({
     innovation: 0,
     feasibility: 0,
@@ -24,10 +25,6 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
     comments: '',
     recommendation: ''
   });
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const existingReviews = proposal.reviewer_scores || [];
   const myExistingReview = existingReviews.find(r => r.reviewer_email === user?.email);
