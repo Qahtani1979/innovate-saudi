@@ -70,6 +70,7 @@ import FileLibrary from './pages/FileLibrary';
 import VersionHistory from './pages/VersionHistory';
 import MunicipalityCreate from './pages/MunicipalityCreate';
 import MunicipalityEdit from './pages/MunicipalityEdit';
+import MunicipalityPeerMatcher from './pages/MunicipalityPeerMatcher';
 import RDProjectCreate from './pages/RDProjectCreate';
 import AdvancedSearch from './pages/AdvancedSearch';
 import ProgramOperatorPortal from './pages/ProgramOperatorPortal';
@@ -596,6 +597,7 @@ export const PAGES = {
     "LivingLabCoverageReport": LivingLabCoverageReport,
     "RDProposalCoverageReport": RDProposalCoverageReport,
     "MunicipalityCoverageReport": MunicipalityCoverageReport,
+    "MunicipalityPeerMatcher": MunicipalityPeerMatcher,
     "MatchersCoverageReport": MatchersCoverageReport,
     "ScalingCoverageReport": ScalingCoverageReport,
     "MatchmakerCoverageReport": MatchmakerCoverageReport,
