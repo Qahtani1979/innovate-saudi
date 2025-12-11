@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,31 +7,48 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Calendar, ChevronLeft, ChevronRight, TestTube, Target, Users } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function CalendarView() {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: expertAssignments = [] } = useQuery({
     queryKey: ['expert-assignments-calendar', user?.email],
     queryFn: async () => {
-      const assignments = await base44.entities.ExpertAssignment.list();
-      return assignments.filter(a => a.expert_email === user?.email && a.due_date);
+      const { data, error } = await supabase
+        .from('expert_assignments')
+        .select('*')
+        .eq('expert_email', user?.email)
+        .not('due_date', 'is', null)
+        .order('due_date', { ascending: true });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user
   });

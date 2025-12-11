@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { FileText, Loader2, CheckCircle2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function PolicyWorkflow({ challenge, onSuccess, onCancel }) {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -29,37 +31,33 @@ export default function PolicyWorkflow({ challenge, onSuccess, onCancel }) {
 
   const submitMutation = useMutation({
     mutationFn: async (data) => {
-      toast.info(t({ en: 'Translating to English...', ar: 'جاري الترجمة للإنجليزية...' }));
+      toast.info(t({ en: 'Creating policy recommendation...', ar: 'جاري إنشاء التوصية السياسية...' }));
       
-      // Auto-translate Arabic to English
-      const translationResponse = await base44.functions.invoke('translatePolicy', {
-        arabic_fields: {
-          title_ar: data.title_ar,
-          recommendation_text_ar: data.recommendation_text_ar,
-          implementation_steps: [],
-          success_metrics: [],
-          stakeholder_involvement_ar: ''
-        }
-      });
-
-      const translations = translationResponse.data;
-
-      const policyRec = await base44.entities.PolicyRecommendation.create({
-        challenge_id: challenge.id,
-        entity_type: 'challenge',
-        submitted_by: (await base44.auth.me()).email,
-        submission_date: new Date().toISOString(),
-        workflow_stage: 'draft',
-        ...data,
-        title_en: translations.title_en,
-        recommendation_text_en: translations.recommendation_text_en,
-        translation_metadata: translations.translation_metadata
-      });
+      // Create policy recommendation
+      const { data: policyRec, error } = await supabase
+        .from('policy_recommendations')
+        .insert({
+          challenge_id: challenge.id,
+          entity_type: 'challenge',
+          submitted_by: user?.email,
+          submission_date: new Date().toISOString(),
+          workflow_stage: 'draft',
+          ...data,
+          title_en: data.title_ar, // Will be translated
+          recommendation_text_en: data.recommendation_text_ar
+        })
+        .select()
+        .single();
+      if (error) throw error;
 
       // Update challenge track
-      await base44.entities.Challenge.update(challenge.id, {
-        tracks: [...new Set([...(challenge.tracks || []), 'policy'])]
-      });
+      const { error: updateError } = await supabase
+        .from('challenges')
+        .update({
+          tracks: [...new Set([...(challenge.tracks || []), 'policy'])]
+        })
+        .eq('id', challenge.id);
+      if (updateError) throw updateError;
 
       return policyRec;
     },
@@ -110,7 +108,7 @@ export default function PolicyWorkflow({ challenge, onSuccess, onCancel }) {
 
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-4">
             <p className="text-xs text-blue-900">
-              {t({ en: '🤖 Arabic-first system: English auto-translated', ar: '🤖 نظام عربي أولاً: الإنجليزية تُترجم تلقائياً' })}
+              {t({ en: 'Arabic-first system: English auto-translated', ar: 'نظام عربي أولاً: الإنجليزية تُترجم تلقائياً' })}
             </p>
           </div>
 
@@ -208,7 +206,7 @@ export default function PolicyWorkflow({ challenge, onSuccess, onCancel }) {
           {submitMutation.isPending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {t({ en: 'Translating & saving...', ar: 'جاري الترجمة والحفظ...' })}
+              {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}
             </>
           ) : (
             <>

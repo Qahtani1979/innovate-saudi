@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,11 @@ import { createPageUrl } from '../utils';
 import { FileText, DollarSign, Clock, Users, CheckCircle2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function ProviderProposalWizard() {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const challengeId = new URLSearchParams(window.location.search).get('challenge_id');
@@ -32,46 +34,50 @@ function ProviderProposalWizard() {
     team_composition: [{ role: '', expertise: '' }]
   });
 
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
-
   const { data: challenge } = useQuery({
     queryKey: ['challenge', challengeId],
     queryFn: async () => {
-      const challenges = await base44.entities.Challenge.list();
-      return challenges.find(c => c.id === challengeId);
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('id', challengeId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!challengeId
   });
 
   const { data: mySolutions = [] } = useQuery({
-    queryKey: ['my-solutions'],
+    queryKey: ['my-solutions', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.created_by === user?.email);
+      const { data, error } = await supabase
+        .from('solutions')
+        .select('*')
+        .eq('created_by', user?.email)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user
   });
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      return await base44.entities.ChallengeProposal.create({
-        challenge_id: challengeId,
-        solution_id: formData.solution_id,
-        proposer_email: user.email,
-        proposal_title: formData.proposal_title,
-        proposal_text: formData.proposal_text,
-        timeline_weeks: parseInt(formData.timeline_weeks),
-        pricing_model: formData.pricing_model,
-        estimated_cost: parseFloat(formData.estimated_cost),
-        key_deliverables: formData.key_deliverables.filter(d => d),
-        success_metrics: formData.success_metrics.filter(m => m.metric),
-        team_composition: formData.team_composition.filter(t => t.role),
-        status: 'submitted',
-        submission_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('challenge_proposals')
+        .insert({
+          challenge_id: challengeId,
+          solution_id: formData.solution_id,
+          proposer_email: user?.email,
+          title: formData.proposal_title,
+          description: formData.proposal_text,
+          timeline: formData.timeline_weeks,
+          budget_estimate: parseFloat(formData.estimated_cost),
+          status: 'submitted',
+          submitted_at: new Date().toISOString()
+        });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['proposals']);
