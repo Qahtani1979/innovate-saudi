@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { checkAndAssignRole } = useAutoRoleAssignment();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,10 +140,24 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
 
       if (profileError) throw profileError;
 
+      // Check auto-approval for deputyship role (usually requires MoMAH email domain)
+      const roleResult = await checkAndAssignRole({
+        userId: user.id,
+        userEmail: user.email,
+        personaType: 'deputyship',
+        justification: 'Deputyship onboarding completed',
+        language
+      });
+
       await queryClient.invalidateQueries(['user-profile']);
       if (checkAuth) await checkAuth();
 
-      toast.success(t({ en: 'Deputyship profile complete! Welcome to national oversight.', ar: 'تم إكمال ملف الوكالة! مرحباً بك في الإشراف الوطني.' }));
+      if (roleResult.autoApproved) {
+        toast.success(t({ en: 'Deputyship role approved! Welcome to national oversight.', ar: 'تمت الموافقة على دور الوكالة! مرحباً بك في الإشراف الوطني.' }));
+      } else {
+        toast.info(t({ en: 'Deputyship profile complete! Role pending approval.', ar: 'تم إكمال ملف الوكالة! الدور في انتظار الموافقة.' }));
+      }
+
       onComplete?.(formData);
       navigate(createPageUrl('ExecutiveDashboard'));
     } catch (error) {
