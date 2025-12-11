@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { TestTube, Plus, Search, TrendingUp, Calendar, Target, LayoutGrid, List, Eye } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MyPilots() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,41 +55,38 @@ function MyPilots() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">
-            {t({ en: 'My Pilots', ar: 'تجاربي' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Track and manage your pilot projects', ar: 'تتبع وإدارة مشاريعك التجريبية' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'My Pilots', ar: 'تجاربي' }}
+        subtitle={{ en: 'Track and manage your pilot projects', ar: 'تتبع وإدارة مشاريعك التجريبية' }}
+        icon={<TestTube className="h-6 w-6 text-white" />}
+        actions={
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 border rounded-lg p-1 bg-white/50">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+            <Link to={createPageUrl('PilotCreate')}>
+              <Button variant="secondary">
+                <Plus className="h-4 w-4 mr-2" />
+                {t({ en: 'New Pilot', ar: 'تجربة جديدة' })}
+              </Button>
+            </Link>
           </div>
-          <Link to={createPageUrl('PilotCreate')}>
-            <Button className="bg-gradient-to-r from-blue-600 to-teal-600">
-              <Plus className="h-4 w-4 mr-2" />
-              {t({ en: 'New Pilot', ar: 'تجربة جديدة' })}
-            </Button>
-          </Link>
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
@@ -293,7 +291,7 @@ function MyPilots() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

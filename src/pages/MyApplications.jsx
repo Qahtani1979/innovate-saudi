@@ -11,6 +11,7 @@ import { createPageUrl } from '../utils';
 import { FileText, Clock, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MyApplications() {
   const { language, isRTL, t } = useLanguage();
@@ -58,15 +59,12 @@ function MyApplications() {
   ).length;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'My Applications & Proposals', ar: 'طلباتي ومقترحاتي' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Track all your submissions', ar: 'تتبع جميع تقديماتك' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'My Applications & Proposals', ar: 'طلباتي ومقترحاتي' }}
+        subtitle={{ en: 'Track all your submissions', ar: 'تتبع جميع تقديماتك' }}
+        icon={<FileText className="h-6 w-6 text-white" />}
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -187,7 +185,7 @@ function MyApplications() {
           ))}
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
 

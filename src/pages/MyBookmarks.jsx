@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useLanguage } from '../components/LanguageContext';
 import { toast } from 'sonner';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function MyBookmarks() {
   const { t, isRTL } = useLanguage();
@@ -50,23 +51,20 @@ export default function MyBookmarks() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">
-            {t({ en: 'My Bookmarks', ar: 'إشاراتي المرجعية' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Quick access to your saved items', ar: 'وصول سريع للعناصر المحفوظة' })}
-          </p>
-        </div>
-        {bookmarks.length > 0 && (
-          <Button variant="outline" onClick={clearAll}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            {t({ en: 'Clear All', ar: 'مسح الكل' })}
-          </Button>
-        )}
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'My Bookmarks', ar: 'إشاراتي المرجعية' }}
+        subtitle={{ en: 'Quick access to your saved items', ar: 'وصول سريع للعناصر المحفوظة' }}
+        icon={<Bookmark className="h-6 w-6 text-white" />}
+        actions={
+          bookmarks.length > 0 && (
+            <Button variant="outline" onClick={clearAll} className="bg-white/50">
+              <Trash2 className="h-4 w-4 mr-2" />
+              {t({ en: 'Clear All', ar: 'مسح الكل' })}
+            </Button>
+          )
+        }
+      />
 
       {bookmarks.length === 0 ? (
         <Card>
@@ -113,6 +111,6 @@ export default function MyBookmarks() {
           ))}
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }
