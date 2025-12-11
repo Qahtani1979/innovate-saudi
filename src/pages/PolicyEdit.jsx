@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -25,6 +26,7 @@ function PolicyEdit() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const urlParams = new URLSearchParams(window.location.search);
   const policyId = urlParams.get('id');
   const [formData, setFormData] = useState(null);
@@ -37,13 +39,17 @@ function PolicyEdit() {
   const { data: policy, isLoading } = useQuery({
     queryKey: ['policy', policyId],
     queryFn: async () => {
-      const policies = await base44.entities.PolicyRecommendation.list();
-      const found = policies.find(p => p.id === policyId);
-      if (found) {
-        setFormData(found);
-        setOriginalData(found);
+      const { data, error } = await supabase
+        .from('policy_recommendations')
+        .select('*')
+        .eq('id', policyId)
+        .single();
+      if (error) throw error;
+      if (data) {
+        setFormData(data);
+        setOriginalData(data);
       }
-      return found;
+      return data;
     },
     enabled: !!policyId
   });
@@ -137,12 +143,11 @@ function PolicyEdit() {
       // Log changes to SystemActivity
       if (Object.keys(changes).length > 0) {
         try {
-          const user = await base44.auth.me();
-          await base44.entities.SystemActivity.create({
+          await supabase.from('system_activities').insert({
             entity_type: 'PolicyRecommendation',
             entity_id: policyId,
             action_type: 'updated',
-            user_email: user.email,
+            user_email: user?.email,
             changes: changes,
             metadata: { field_count: Object.keys(changes).length, auto_translated: !!arabicChanged }
           });
@@ -152,7 +157,13 @@ function PolicyEdit() {
       }
 
       const updateData = arabicChanged ? { ...formData, ...translations } : formData;
-      const updated = await base44.entities.PolicyRecommendation.update(policyId, updateData);
+      const { data: updated, error } = await supabase
+        .from('policy_recommendations')
+        .update(updateData)
+        .eq('id', policyId)
+        .select()
+        .single();
+      if (error) throw error;
       localStorage.removeItem(`policy_edit_draft_${policyId}`);
       return updated;
     },
