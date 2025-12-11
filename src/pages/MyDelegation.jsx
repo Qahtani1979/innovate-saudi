@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function MyDelegation() {
   const { language, isRTL, t } = useLanguage();
@@ -18,52 +19,72 @@ function MyDelegation() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedDelegate, setSelectedDelegate] = useState('');
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
+  const { user } = useAuth();
 
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['team-members', user?.email],
     queryFn: async () => {
-      const userProfile = await base44.entities.UserProfile.filter({ user_email: user?.email });
-      if (!userProfile[0]?.organization_id) return [];
+      if (!user?.email) return [];
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_email', user.email)
+        .maybeSingle();
+      if (!userProfile?.organization_id) return [];
       
-      const allProfiles = await base44.entities.UserProfile.list();
-      return allProfiles.filter(p => p.organization_id === userProfile[0].organization_id && p.user_email !== user?.email);
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('organization_id', userProfile.organization_id)
+        .neq('user_email', user.email);
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const { data: myTasks = [] } = useQuery({
     queryKey: ['delegatable-tasks', user?.email],
     queryFn: async () => {
-      const tasks = await base44.entities.Task.list();
-      return tasks.filter(t => t.created_by === user?.email && !t.delegated_to && t.status !== 'completed');
+      if (!user?.email) return [];
+      const { data } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('created_by', user.email)
+        .is('delegated_to', null)
+        .neq('status', 'completed');
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const { data: delegatedItems = [] } = useQuery({
     queryKey: ['delegated-items', user?.email],
     queryFn: async () => {
-      const tasks = await base44.entities.Task.list();
-      return tasks.filter(t => t.delegated_by === user?.email);
+      if (!user?.email) return [];
+      const { data } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('delegated_by', user.email);
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   const delegateMutation = useMutation({
-    mutationFn: ({ taskId, delegateTo }) => 
-      base44.entities.Task.update(taskId, {
-        delegated_to: delegateTo,
-        delegated_by: user?.email,
-        delegated_date: new Date().toISOString()
-      }),
+    mutationFn: async ({ taskId, delegateTo }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          delegated_to: delegateTo,
+          delegated_by: user?.email,
+          delegated_date: new Date().toISOString()
+        })
+        .eq('id', taskId);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['delegatable-tasks']);
-      queryClient.invalidateQueries(['delegated-items']);
+      queryClient.invalidateQueries({ queryKey: ['delegatable-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['delegated-items'] });
       setDelegateDialogOpen(false);
       setSelectedItem(null);
       setSelectedDelegate('');
@@ -72,15 +93,20 @@ function MyDelegation() {
   });
 
   const recallMutation = useMutation({
-    mutationFn: (taskId) => 
-      base44.entities.Task.update(taskId, {
-        delegated_to: null,
-        delegated_by: null,
-        delegated_date: null
-      }),
+    mutationFn: async (taskId) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          delegated_to: null,
+          delegated_by: null,
+          delegated_date: null
+        })
+        .eq('id', taskId);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['delegatable-tasks']);
-      queryClient.invalidateQueries(['delegated-items']);
+      queryClient.invalidateQueries({ queryKey: ['delegatable-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['delegated-items'] });
       toast.success(t({ en: 'Task recalled successfully', ar: 'تم استرجاع المهمة بنجاح' }));
     }
   });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -10,16 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { Calendar, Loader2, Video } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function RequestDemoButton({ solution, challenge = null }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     preferred_date: '',
@@ -31,30 +28,15 @@ export default function RequestDemoButton({ solution, challenge = null }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const demoRequest = await base44.entities.DemoRequest.create(data);
-      
-      // Notify provider
-      await base44.integrations.Core.SendEmail({
-        to: solution.contact_email || solution.support_contact_email,
-        subject: `Demo Request for ${solution.name_en}`,
-        body: `
-          A municipality has requested a demo of your solution "${solution.name_en}".
-          
-          Requester: ${data.requester_name} (${data.requester_email})
-          Municipality: ${data.municipality_id}
-          Preferred Date: ${data.preferred_date}
-          Demo Type: ${data.demo_type}
-          Attendees: ${data.attendee_count}
-          
-          Message:
-          ${data.message}
-          
-          Please respond to schedule the demo.
-        `
-      });
+      const { data: demoRequest, error } = await supabase
+        .from('demo_requests')
+        .insert(data)
+        .select()
+        .single();
+      if (error) throw error;
 
       // Log activity
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'Solution',
         entity_id: solution.id,
         activity_type: 'demo_requested',
@@ -69,7 +51,7 @@ export default function RequestDemoButton({ solution, challenge = null }) {
       return demoRequest;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['solution-activities']);
+      queryClient.invalidateQueries({ queryKey: ['solution-activities'] });
       toast.success(t({ en: 'Demo request sent to provider!', ar: 'تم إرسال طلب العرض للمزود!' }));
       setOpen(false);
       setFormData({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -19,6 +19,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { Badge } from "@/components/ui/badge";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 function PilotEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -26,6 +27,7 @@ function PilotEditPage() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
   
   const [previewMode, setPreviewMode] = useState(false);
@@ -35,45 +37,71 @@ function PilotEditPage() {
   const { data: pilot, isLoading } = useQuery({
     queryKey: ['pilot', pilotId],
     queryFn: async () => {
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.find(p => p.id === pilotId);
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('id', pilotId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilotId
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*');
+      return data || [];
+    }
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('*');
+      return data || [];
+    }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const { data: regions = [] } = useQuery({
     queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('regions').select('*');
+      return data || [];
+    }
   });
 
   const { data: cities = [] } = useQuery({
     queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('cities').select('*');
+      return data || [];
+    }
   });
 
   const { data: livingLabs = [] } = useQuery({
     queryKey: ['livingLabs'],
-    queryFn: () => base44.entities.LivingLab.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('living_labs').select('*');
+      return data || [];
+    }
   });
 
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes'],
-    queryFn: () => base44.entities.Sandbox.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('sandboxes').select('*');
+      return data || [];
+    }
   });
 
   const [formData, setFormData] = useState(null);
@@ -143,7 +171,6 @@ function PilotEditPage() {
   const updateMutation = useMutation({
     mutationFn: async (data) => {
       const oldStage = pilot.stage;
-      const user = await base44.auth.me();
       
       // Increment version
       const updateData = {
@@ -152,11 +179,15 @@ function PilotEditPage() {
         previous_version_id: pilot.id
       };
       
-      await base44.entities.Pilot.update(pilotId, updateData);
+      const { error } = await supabase
+        .from('pilots')
+        .update(updateData)
+        .eq('id', pilotId);
+      if (error) throw error;
       
       // Log activity
       if (changedFields.length > 0) {
-        await base44.entities.SystemActivity.create({
+        await supabase.from('system_activities').insert({
           entity_type: 'pilot',
           entity_id: pilotId,
           activity_type: 'updated',
@@ -167,7 +198,7 @@ function PilotEditPage() {
       }
       
       if (data.stage && data.stage !== oldStage) {
-        await base44.entities.SystemActivity.create({
+        await supabase.from('system_activities').insert({
           entity_type: 'pilot',
           entity_id: pilotId,
           activity_type: 'stage_changed',
@@ -192,12 +223,7 @@ function PilotEditPage() {
       localStorage.removeItem(`pilot-edit-${pilotId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['pilot', pilotId]);
-      // Auto-generate embedding if content changed
-      base44.functions.invoke('generateEmbeddings', {
-        entity_name: 'Pilot',
-        mode: 'missing'
-      }).catch(err => console.error('Embedding generation failed:', err));
+      queryClient.invalidateQueries({ queryKey: ['pilot', pilotId] });
       toast.success(t({ en: 'Pilot updated', ar: 'تم تحديث التجربة' }));
       navigate(createPageUrl(`PilotDetail?id=${pilotId}`));
     }

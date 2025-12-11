@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ import RDProposalAIScorerWidget from '../components/rd/RDProposalAIScorerWidget'
 import RDProposalEscalationAutomation from '../components/rd/RDProposalEscalationAutomation';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 function RDProposalDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -57,19 +58,20 @@ function RDProposalDetail() {
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const [comment, setComment] = useState('');
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const { invokeAI, status, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: proposal, isLoading } = useQuery({
     queryKey: ['rd-proposal', proposalId],
     queryFn: async () => {
-      const proposals = await base44.entities.RDProposal.list();
-      return proposals.find(p => p.id === proposalId);
+      const { data, error } = await supabase
+        .from('rd_proposals')
+        .select('*')
+        .eq('id', proposalId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!proposalId
   });
@@ -77,8 +79,13 @@ function RDProposalDetail() {
   const { data: rdCall } = useQuery({
     queryKey: ['rd-call', proposal?.rd_call_id],
     queryFn: async () => {
-      const calls = await base44.entities.RDCall.list();
-      return calls.find(c => c.id === proposal?.rd_call_id);
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .eq('id', proposal?.rd_call_id)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!proposal?.rd_call_id
   });
@@ -86,16 +93,24 @@ function RDProposalDetail() {
   const { data: comments = [] } = useQuery({
     queryKey: ['rdproposal-comments', proposalId],
     queryFn: async () => {
-      const all = await base44.entities.RDProposalComment.list();
-      return all.filter(c => c.rd_proposal_id === proposalId);
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('entity_type', 'rd_proposal')
+        .eq('entity_id', proposalId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!proposalId
   });
 
   const commentMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDProposalComment.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('comments').insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['rdproposal-comments']);
+      queryClient.invalidateQueries({ queryKey: ['rdproposal-comments'] });
       setComment('');
       toast.success(t({ en: 'Comment added', ar: 'تم إضافة التعليق' }));
     }

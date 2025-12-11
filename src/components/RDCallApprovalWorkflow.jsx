@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,28 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, XCircle, AlertCircle, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function RDCallApprovalWorkflow({ rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [decision, setDecision] = useState('');
   const [comments, setComments] = useState('');
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const approvalMutation = useMutation({
     mutationFn: async () => {
-      const approvalData = {
-        rd_call_id: rdCall.id,
-        approver_email: user?.email,
-        decision,
-        comments,
-        approval_date: new Date().toISOString()
-      };
-
       // Update call status based on decision
       let newStatus = rdCall.status;
       if (decision === 'approved') {
@@ -40,18 +29,20 @@ export default function RDCallApprovalWorkflow({ rdCall, onClose }) {
         newStatus = 'draft';
       }
 
-      await base44.entities.RDCall.update(rdCall.id, {
-        status: newStatus,
-        approval_status: decision,
-        approval_comments: comments,
-        approved_by: user?.email,
-        approval_date: new Date().toISOString()
-      });
-
-      return approvalData;
+      const { error } = await supabase
+        .from('rd_calls')
+        .update({
+          status: newStatus,
+          approval_status: decision,
+          approval_comments: comments,
+          approved_by: user?.email,
+          approval_date: new Date().toISOString()
+        })
+        .eq('id', rdCall.id);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['rd-call']);
+      queryClient.invalidateQueries({ queryKey: ['rd-call'] });
       toast.success(t({ en: 'Approval decision recorded', ar: 'تم تسجيل قرار الموافقة' }));
       onClose();
     }

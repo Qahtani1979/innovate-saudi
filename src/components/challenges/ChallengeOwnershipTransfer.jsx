@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,41 +7,44 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ChallengeOwnershipTransfer({ challenge, onTransferComplete }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [newOwnerEmail, setNewOwnerEmail] = useState('');
   const [transferReason, setTransferReason] = useState('');
 
   const { data: users = [] } = useQuery({
     queryKey: ['users-for-transfer'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('user_profiles').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const transferMutation = useMutation({
     mutationFn: async () => {
       const oldOwner = challenge.challenge_owner_email;
       
-      await base44.entities.Challenge.update(challenge.id, {
-        challenge_owner_email: newOwnerEmail,
-        ownership_transfer_history: [
-          ...(challenge.ownership_transfer_history || []),
-          {
-            from: oldOwner,
-            to: newOwnerEmail,
-            reason: transferReason,
-            date: new Date().toISOString(),
-            transferred_by: (await base44.auth.me()).email
-          }
-        ]
-      });
-
-      // Send notification to new owner
-      await base44.integrations.Core.SendEmail({
-        to: newOwnerEmail,
-        subject: `Challenge Ownership Transferred: ${challenge.title_en}`,
-        body: `You are now the owner of challenge "${challenge.title_en}". Reason: ${transferReason}`
-      });
+      const { error } = await supabase
+        .from('challenges')
+        .update({
+          challenge_owner_email: newOwnerEmail,
+          ownership_transfer_history: [
+            ...(challenge.ownership_transfer_history || []),
+            {
+              from: oldOwner,
+              to: newOwnerEmail,
+              reason: transferReason,
+              date: new Date().toISOString(),
+              transferred_by: user?.email || 'unknown'
+            }
+          ]
+        })
+        .eq('id', challenge.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });

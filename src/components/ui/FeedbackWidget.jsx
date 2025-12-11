@@ -4,22 +4,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, X, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function FeedbackWidget() {
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [rating, setRating] = useState(0);
+  const { user } = useAuth();
 
   const submitFeedback = async () => {
     if (!feedback.trim()) return;
 
     try {
-      const user = await base44.auth.me();
-      await base44.integrations.Core.SendEmail({
-        to: 'platform-feedback@example.com',
-        subject: `User Feedback - Rating: ${rating}/5`,
-        body: `From: ${user.email}\nRating: ${rating}/5\nPage: ${window.location.pathname}\n\n${feedback}`
+      // Store feedback in user_activities table
+      await supabase.from('user_activities').insert({
+        user_email: user?.email || 'anonymous',
+        activity_type: 'feedback',
+        activity_description: `Platform Feedback - Rating: ${rating}/5`,
+        metadata: {
+          rating,
+          feedback,
+          page: window.location.pathname,
+          timestamp: new Date().toISOString()
+        }
       });
 
       toast.success('Feedback sent! Thank you.');

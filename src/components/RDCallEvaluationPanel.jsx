@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,39 +10,40 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Users, Award, BarChart3, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function RDCallEvaluationPanel({ rdCall, proposals }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [scores, setScores] = useState({});
   const [comments, setComments] = useState('');
 
   const scoreMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.RDProposal.update(data.proposalId, {
-        reviewer_scores: [...(data.existingScores || []), {
-          reviewer: data.reviewer,
-          scores: data.scores,
-          comments: data.comments,
-          total: data.total,
-          date: new Date().toISOString()
-        }],
-        ai_score: data.aiScore
-      });
+      const { error } = await supabase
+        .from('rd_proposals')
+        .update({
+          reviewer_scores: [...(data.existingScores || []), {
+            reviewer: data.reviewer,
+            scores: data.scores,
+            comments: data.comments,
+            total: data.total,
+            date: new Date().toISOString()
+          }],
+          ai_score: data.aiScore
+        })
+        .eq('id', data.proposalId);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['proposals']);
+      queryClient.invalidateQueries({ queryKey: ['proposals'] });
       toast.success(t({ en: 'Score submitted', ar: 'تم إرسال التقييم' }));
       setSelectedProposal(null);
       setScores({});
       setComments('');
     }
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
   });
 
   const evaluationCriteria = rdCall.evaluation_criteria || [

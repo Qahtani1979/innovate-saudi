@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,27 +12,25 @@ import {
 import { Shield, TrendingUp, FileText, Download, Calendar } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function SandboxReporting() {
   const { language, isRTL, t } = useLanguage();
   const [selectedSandbox, setSelectedSandbox] = useState('all');
   const [timeRange, setTimeRange] = useState('6m');
-  const [user, setUser] = useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   // RLS: Sandbox operators see only their sandboxes, admins see all
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes', user?.email, user?.role],
     queryFn: async () => {
-      const all = await base44.entities.Sandbox.list();
-      if (user?.role === 'admin') return all;
-      return all.filter(s => 
-        s.manager_email === user?.email || 
-        s.created_by === user?.email
-      );
+      let query = supabase.from('sandboxes').select('*');
+      if (user?.role !== 'admin') {
+        query = query.or(`manager_email.eq.${user?.email},created_by.eq.${user?.email}`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user
   });
@@ -42,15 +40,23 @@ function SandboxReporting() {
     queryKey: ['sandbox-applications', sandboxes.length],
     queryFn: async () => {
       const sandboxIds = sandboxes.map(s => s.id);
-      const all = await base44.entities.SandboxApplication.list();
-      return all.filter(a => sandboxIds.includes(a.sandbox_id));
+      const { data, error } = await supabase
+        .from('sandbox_applications')
+        .select('*')
+        .in('sandbox_id', sandboxIds);
+      if (error) throw error;
+      return data || [];
     },
     enabled: sandboxes.length > 0
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   // Filter data based on selected sandbox
