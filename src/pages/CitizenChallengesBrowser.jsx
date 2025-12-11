@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Target, Calendar, Building2, ArrowRight, ThumbsUp, MessageSquare, Bookmark, Send } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { createPageUrl } from '@/utils/url';
+
 
 export default function CitizenChallengesBrowser() {
   const { language, isRTL, t } = useLanguage();
@@ -154,7 +154,7 @@ export default function CitizenChallengesBrowser() {
             {t({ en: 'Explore municipal challenges and submit your innovative solutions', ar: 'استكشف التحديات البلدية وقدم حلولك المبتكرة' })}
           </p>
         </div>
-        <Link to={createPageUrl('ChallengeIdeaResponse')}>
+        <Link to="/challenge-idea-response">
           <Button className="gap-2">
             <Send className="h-4 w-4" />
             {t({ en: 'Submit Proposal', ar: 'تقديم مقترح' })}
@@ -318,7 +318,7 @@ export default function CitizenChallengesBrowser() {
                   >
                     <Bookmark className="h-4 w-4" />
                   </Button>
-                  <Link to={createPageUrl(`ChallengeIdeaResponse?challengeId=${challenge.id}`)}>
+                  <Link to={`/challenge-idea-response?challengeId=${challenge.id}`}>
                     <Button size="sm" className="gap-1">
                       <Send className="h-4 w-4" />
                       {t({ en: 'Respond', ar: 'استجب' })}

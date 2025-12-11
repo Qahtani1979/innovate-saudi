@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Lightbulb, CheckCircle2, Star, Building2, Bookmark, ExternalLink, ThumbsUp } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { createPageUrl } from '@/utils/url';
+
 
 export default function CitizenSolutionsBrowser() {
   const { language, isRTL, t } = useLanguage();
@@ -261,7 +261,7 @@ export default function CitizenSolutionsBrowser() {
                 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 pt-4 border-t">
-                  <Link to={createPageUrl(`SolutionDetail?id=${solution.id}`)} className="flex-1">
+                  <Link to={`/solution-detail?id=${solution.id}`} className="flex-1">
                     <Button variant="outline" size="sm" className="w-full gap-1">
                       <ExternalLink className="h-4 w-4" />
                       {t({ en: 'View Details', ar: 'عرض التفاصيل' })}
