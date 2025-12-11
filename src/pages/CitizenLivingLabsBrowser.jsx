@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Search, FlaskConical, MapPin, Calendar, Users, Bookmark, ExternalLink, UserPlus } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { createPageUrl } from '@/utils/url';
+
 
 export default function CitizenLivingLabsBrowser() {
   const { language, isRTL, t } = useLanguage();
@@ -284,7 +284,7 @@ export default function CitizenLivingLabsBrowser() {
                 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 pt-4 border-t">
-                  <Link to={createPageUrl(`LivingLabDetail?id=${lab.id}`)} className="flex-1">
+                  <Link to={`/living-lab-detail?id=${lab.id}`} className="flex-1">
                     <Button variant="outline" size="sm" className="w-full gap-1">
                       <ExternalLink className="h-4 w-4" />
                       {t({ en: 'View', ar: 'عرض' })}
