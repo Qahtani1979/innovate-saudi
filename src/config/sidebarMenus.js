@@ -6,7 +6,6 @@ import {
   Microscope,
   TrendingUp,
   BarChart3,
-  Settings,
   Users,
   CheckCircle,
   FileText,
@@ -31,6 +30,7 @@ import {
 } from 'lucide-react';
 
 // Flat menu configurations per persona
+// Note: Profile and Settings are in the header dropdown, not sidebar
 export const SIDEBAR_MENUS = {
   admin: {
     label: { en: 'Platform Admin', ar: 'مدير المنصة' },
@@ -46,7 +46,6 @@ export const SIDEBAR_MENUS = {
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'ExecutiveAnalytics', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
       { name: 'SystemHealthDashboard', icon: Activity, label: { en: 'System Health', ar: 'صحة النظام' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
     ]
   },
 
@@ -62,7 +61,6 @@ export const SIDEBAR_MENUS = {
       { name: 'NationalInnovationMap', icon: Map, label: { en: 'Innovation Map', ar: 'خريطة الابتكار' } },
       { name: 'Municipalities', icon: Building2, label: { en: 'Municipalities', ar: 'البلديات' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
     ]
   },
 
@@ -79,7 +77,6 @@ export const SIDEBAR_MENUS = {
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
       { name: 'ExecutiveAnalytics', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
     ]
   },
 
@@ -96,7 +93,6 @@ export const SIDEBAR_MENUS = {
       { name: 'MyApprovals', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
       { name: 'MunicipalityIdeasView', icon: Sparkles, label: { en: 'Citizen Ideas', ar: 'أفكار المواطنين' } },
       { name: 'MunicipalityAnalytics', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
     ]
   },
 
@@ -112,8 +108,6 @@ export const SIDEBAR_MENUS = {
       { name: 'MyApplications', icon: FileText, label: { en: 'Applications', ar: 'الطلبات' } },
       { name: 'MyPartnershipsPage', icon: Handshake, label: { en: 'Partnerships', ar: 'الشراكات' } },
       { name: 'Messaging', icon: MessageSquare, label: { en: 'Messages', ar: 'الرسائل' } },
-      { name: 'StartupProfile', icon: User, label: { en: 'Profile', ar: 'الملف' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
     ]
   },
 
@@ -128,8 +122,6 @@ export const SIDEBAR_MENUS = {
       { name: 'ExpertiseDirectory', icon: Users, label: { en: 'Expert Network', ar: 'شبكة الخبراء' } },
       { name: 'KnowledgeHub', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
       { name: 'MyDeadlines', icon: Clock, label: { en: 'Deadlines', ar: 'المواعيد' } },
-      { name: 'UserProfile', icon: User, label: { en: 'Profile', ar: 'الملف' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
     ]
   },
 
@@ -143,8 +135,6 @@ export const SIDEBAR_MENUS = {
       { name: 'MyRDProjects', icon: TestTube, label: { en: 'My Projects', ar: 'مشاريعي' } },
       { name: 'RDProjectsHub', icon: Rocket, label: { en: 'R&D Hub', ar: 'مركز البحث' } },
       { name: 'KnowledgeHub', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
-      { name: 'ResearcherProfile', icon: User, label: { en: 'Profile', ar: 'الملف' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
     ]
   },
 
@@ -159,8 +149,6 @@ export const SIDEBAR_MENUS = {
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
       { name: 'CitizenLeaderboard', icon: Award, label: { en: 'Leaderboard', ar: 'المتصدرين' } },
       { name: 'CitizenNotifications', icon: Bell, label: { en: 'Notifications', ar: 'الإشعارات' } },
-      { name: 'UserProfile', icon: User, label: { en: 'Profile', ar: 'الملف' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
     ]
   },
 
@@ -172,8 +160,6 @@ export const SIDEBAR_MENUS = {
       { name: 'Home', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'PublicIdeasBoard', icon: Lightbulb, label: { en: 'Ideas', ar: 'الأفكار' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
-      { name: 'UserProfile', icon: User, label: { en: 'Profile', ar: 'الملف' } },
-      { name: 'Settings', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' } },
     ]
   }
 };
