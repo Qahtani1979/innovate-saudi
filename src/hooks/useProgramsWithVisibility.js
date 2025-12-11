@@ -7,7 +7,7 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * Hook for fetching programs with visibility rules applied.
  * 
  * Visibility:
- * - Admin: All programs
+ * - Admin / Full Visibility Users: All programs
  * - National Deputyship: All programs in their sector(s)
  * - Municipality Staff: Own + national programs
  * - Provider: Programs they've applied to
@@ -27,6 +27,7 @@ export function useProgramsWithVisibility(options = {}) {
     sectorIds, 
     userMunicipalityId, 
     nationalRegionId,
+    hasFullVisibility,
     isLoading: visibilityLoading 
   } = useEntityVisibility();
 
@@ -39,6 +40,7 @@ export function useProgramsWithVisibility(options = {}) {
     queryKey: ['programs-with-visibility', {
       userId,
       isAdmin,
+      hasFullVisibility,
       isNational,
       sectorIds,
       userMunicipalityId,
@@ -74,8 +76,8 @@ export function useProgramsWithVisibility(options = {}) {
         query = query.eq('program_type', programType);
       }
 
-      // Admin sees everything
-      if (isAdmin) {
+      // Admin or full visibility users see everything
+      if (hasFullVisibility) {
         const { data, error } = await query;
         if (error) throw error;
         return data || [];

@@ -7,12 +7,25 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * 
  * Visibility Rules:
  * - Platform Admin: See all records
+ * - Users with visibility_all_municipalities: See all records
+ * - Users with visibility_all_sectors: See all records across sectors
  * - National Deputyship: See all records in their sector(s) across all municipalities
  * - Geographic Municipality: See own records + all national-level records
  * - Other roles (Provider, Expert, etc.): Use entity-specific rules
  */
 export function useEntityVisibility() {
-  const { userId, isAdmin, hasRole } = usePermissions();
+  const { userId, isAdmin, hasRole, hasPermission } = usePermissions();
+
+  // Check for full-visibility permissions
+  const hasFullMunicipalityVisibility = hasPermission('visibility_all_municipalities');
+  const hasFullSectorVisibility = hasPermission('visibility_all_sectors');
+  const hasNationalVisibility = hasPermission('visibility_national');
+  const hasCrossRegionVisibility = hasPermission('visibility_cross_region');
+  const canOverrideMunicipality = hasPermission('scope_override_municipality');
+  const canOverrideSector = hasPermission('scope_override_sector');
+  
+  // Full visibility if admin or has full visibility permissions
+  const hasFullVisibility = isAdmin || hasFullMunicipalityVisibility || hasFullSectorVisibility;
 
   // Get user's visibility scope from database
   const { data: visibilityScope, isLoading } = useQuery({
@@ -51,7 +64,7 @@ export function useEntityVisibility() {
   });
 
   const isNational = visibilityScope?.is_national || false;
-  const scopeType = isAdmin ? 'global' : (visibilityScope?.scope_type || 'none');
+  const scopeType = hasFullVisibility ? 'global' : (isAdmin ? 'global' : (visibilityScope?.scope_type || 'none'));
   const sectorIds = visibilityScope?.sector_ids || [];
   const userMunicipalityId = visibilityScope?.municipality_id;
 
@@ -59,7 +72,8 @@ export function useEntityVisibility() {
    * Check if user can view a specific entity
    */
   const canViewEntity = async (entityMunicipalityId, entitySectorId) => {
-    if (isAdmin) return true;
+    // Full visibility users can see everything
+    if (hasFullVisibility) return true;
     if (!userId) return false;
 
     const { data, error } = await supabase
@@ -90,8 +104,8 @@ export function useEntityVisibility() {
       sectorColumn = 'sector_id'
     } = options;
 
-    // Admin sees everything
-    if (isAdmin) {
+    // Full visibility users see everything
+    if (hasFullVisibility) {
       return query;
     }
 
@@ -119,7 +133,7 @@ export function useEntityVisibility() {
    * Get filter parameters for manual query building
    */
   const getVisibilityParams = () => {
-    if (isAdmin) {
+    if (hasFullVisibility) {
       return { type: 'all' };
     }
 
@@ -168,6 +182,15 @@ export function useEntityVisibility() {
     sectorIds,
     userMunicipalityId,
     nationalRegionId: nationalRegion?.id,
+    
+    // Full visibility flags
+    hasFullVisibility,
+    hasFullMunicipalityVisibility,
+    hasFullSectorVisibility,
+    hasNationalVisibility,
+    hasCrossRegionVisibility,
+    canOverrideMunicipality,
+    canOverrideSector,
     
     // Functions
     canViewEntity,
