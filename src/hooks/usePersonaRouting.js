@@ -77,7 +77,7 @@ export function usePersonaRouting() {
         roles.some(r => r.includes('expert') || r.includes('evaluator'))) {
       return {
         persona: 'expert',
-        defaultDashboard: '/expert-dashboard',
+        defaultDashboard: '/expert-registry',
         dashboardLabel: { en: 'Expert Dashboard', ar: 'لوحة الخبير' },
         onboardingWizard: 'ExpertOnboarding',
         portalType: 'expert',
@@ -89,8 +89,8 @@ export function usePersonaRouting() {
         roles.some(r => r.includes('researcher'))) {
       return {
         persona: 'researcher',
-        defaultDashboard: '/researcher-workspace',
-        dashboardLabel: { en: 'Research Workspace', ar: 'مساحة البحث' },
+        defaultDashboard: '/researcher-dashboard',
+        dashboardLabel: { en: 'Research Dashboard', ar: 'لوحة البحث' },
         onboardingWizard: 'ResearcherOnboarding',
         portalType: 'researcher',
       };

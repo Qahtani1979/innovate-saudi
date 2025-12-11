@@ -26,7 +26,14 @@ import {
   Map,
   Briefcase,
   GraduationCap,
-  Clock
+  Clock,
+  FileBarChart,
+  ScrollText,
+  Wallet,
+  History,
+  DollarSign,
+  UserCheck,
+  Inbox
 } from 'lucide-react';
 
 // Flat menu configurations per persona
@@ -39,12 +46,16 @@ export const SIDEBAR_MENUS = {
     items: [
       { name: 'Home', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'UserManagementHub', icon: Users, label: { en: 'Users', ar: 'المستخدمين' } },
+      { name: 'RolePermissionManager', icon: UserCheck, label: { en: 'Roles & Permissions', ar: 'الأدوار والصلاحيات' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
       { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' } },
       { name: 'Pilots', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
       { name: 'Solutions', icon: Lightbulb, label: { en: 'Solutions', ar: 'الحلول' } },
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
-      { name: 'ExecutiveAnalytics', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
+      { name: 'Municipalities', icon: Building2, label: { en: 'Municipalities', ar: 'البلديات' } },
+      { name: 'Organizations', icon: Briefcase, label: { en: 'Organizations', ar: 'المنظمات' } },
+      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
+      { name: 'AuditTrail', icon: History, label: { en: 'Audit Logs', ar: 'سجلات التدقيق' } },
       { name: 'SystemHealthDashboard', icon: Activity, label: { en: 'System Health', ar: 'صحة النظام' } },
     ]
   },
@@ -55,12 +66,15 @@ export const SIDEBAR_MENUS = {
     color: 'from-purple-600 to-violet-500',
     items: [
       { name: 'ExecutiveDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
-      { name: 'ExecutiveAnalytics', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
+      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
       { name: 'StrategicPlans', icon: Target, label: { en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' } },
+      { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' } },
+      { name: 'Pilots', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
       { name: 'PipelineHealthDashboard', icon: Activity, label: { en: 'Pipeline Health', ar: 'صحة الخط' } },
       { name: 'NationalInnovationMap', icon: Map, label: { en: 'Innovation Map', ar: 'خريطة الابتكار' } },
       { name: 'Municipalities', icon: Building2, label: { en: 'Municipalities', ar: 'البلديات' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
+      { name: 'ReportsBuilder', icon: FileBarChart, label: { en: 'Reports', ar: 'التقارير' } },
     ]
   },
 
@@ -74,9 +88,10 @@ export const SIDEBAR_MENUS = {
       { name: 'Municipalities', icon: Building2, label: { en: 'Municipalities', ar: 'البلديات' } },
       { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' } },
       { name: 'Pilots', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
+      { name: 'Solutions', icon: Lightbulb, label: { en: 'Solutions', ar: 'الحلول' } },
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
-      { name: 'ExecutiveAnalytics', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
+      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
     ]
   },
 
@@ -88,11 +103,14 @@ export const SIDEBAR_MENUS = {
       { name: 'MunicipalityDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'MyChallenges', icon: AlertCircle, label: { en: 'My Challenges', ar: 'تحدياتي' } },
       { name: 'MyPilots', icon: TestTube, label: { en: 'My Pilots', ar: 'تجاربي' } },
-      { name: 'MunicipalProposalInbox', icon: FileText, label: { en: 'Proposals', ar: 'المقترحات' } },
+      { name: 'MunicipalProposalInbox', icon: Inbox, label: { en: 'Proposals', ar: 'المقترحات' } },
       { name: 'Solutions', icon: Lightbulb, label: { en: 'Solutions', ar: 'الحلول' } },
       { name: 'MyApprovals', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
       { name: 'MunicipalityIdeasView', icon: Sparkles, label: { en: 'Citizen Ideas', ar: 'أفكار المواطنين' } },
-      { name: 'MunicipalityAnalytics', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
+      { name: 'ContractManagement', icon: ScrollText, label: { en: 'Contracts', ar: 'العقود' } },
+      { name: 'BudgetManagement', icon: Wallet, label: { en: 'Budget', ar: 'الميزانية' } },
+      { name: 'TeamManagement', icon: Users, label: { en: 'Team', ar: 'الفريق' } },
+      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
     ]
   },
 
@@ -106,7 +124,10 @@ export const SIDEBAR_MENUS = {
       { name: 'OpportunityFeed', icon: Sparkles, label: { en: 'Opportunities', ar: 'الفرص' } },
       { name: 'MyChallengeTracker', icon: Target, label: { en: 'Challenge Tracker', ar: 'متتبع التحديات' } },
       { name: 'MyApplications', icon: FileText, label: { en: 'Applications', ar: 'الطلبات' } },
+      { name: 'MyPilots', icon: TestTube, label: { en: 'My Pilots', ar: 'تجاربي' } },
+      { name: 'ContractManagement', icon: ScrollText, label: { en: 'Contracts', ar: 'العقود' } },
       { name: 'MyPartnershipsPage', icon: Handshake, label: { en: 'Partnerships', ar: 'الشراكات' } },
+      { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'Messaging', icon: MessageSquare, label: { en: 'Messages', ar: 'الرسائل' } },
     ]
   },
@@ -116,12 +137,14 @@ export const SIDEBAR_MENUS = {
     icon: GraduationCap,
     color: 'from-amber-600 to-yellow-500',
     items: [
-      { name: 'ExpertDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'ExpertRegistry', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'EvaluationPanel', icon: CheckCircle, label: { en: 'Evaluations', ar: 'التقييمات' } },
+      { name: 'ExpertAssignmentQueue', icon: Inbox, label: { en: 'My Assignments', ar: 'مهامي' } },
       { name: 'PilotEvaluations', icon: TestTube, label: { en: 'Pilot Reviews', ar: 'مراجعات التجارب' } },
-      { name: 'ExpertiseDirectory', icon: Users, label: { en: 'Expert Network', ar: 'شبكة الخبراء' } },
-      { name: 'KnowledgeHub', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
+      { name: 'ExpertMatchingEngine', icon: Users, label: { en: 'Expert Network', ar: 'شبكة الخبراء' } },
+      { name: 'Knowledge', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
       { name: 'MyDeadlines', icon: Clock, label: { en: 'Deadlines', ar: 'المواعيد' } },
+      { name: 'Messaging', icon: MessageSquare, label: { en: 'Messages', ar: 'الرسائل' } },
     ]
   },
 
@@ -133,8 +156,11 @@ export const SIDEBAR_MENUS = {
       { name: 'ResearcherDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'ResearcherWorkspace', icon: Microscope, label: { en: 'Workspace', ar: 'مساحة العمل' } },
       { name: 'MyRDProjects', icon: TestTube, label: { en: 'My Projects', ar: 'مشاريعي' } },
-      { name: 'RDProjectsHub', icon: Rocket, label: { en: 'R&D Hub', ar: 'مركز البحث' } },
-      { name: 'KnowledgeHub', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
+      { name: 'RDProjects', icon: Rocket, label: { en: 'R&D Hub', ar: 'مركز البحث' } },
+      { name: 'CollaborationHub', icon: Users, label: { en: 'Collaboration', ar: 'التعاون' } },
+      { name: 'Knowledge', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
+      { name: 'MyDeadlines', icon: Clock, label: { en: 'Deadlines', ar: 'المواعيد' } },
+      { name: 'Messaging', icon: MessageSquare, label: { en: 'Messages', ar: 'الرسائل' } },
     ]
   },
 
@@ -146,7 +172,9 @@ export const SIDEBAR_MENUS = {
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'PublicIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
       { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },
+      { name: 'IdeasManagement', icon: FileText, label: { en: 'My Ideas', ar: 'أفكاري' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
+      { name: 'CitizenPilotEnrollment', icon: UserCheck, label: { en: 'Pilot Enrollment', ar: 'التسجيل في التجارب' } },
       { name: 'CitizenLeaderboard', icon: Award, label: { en: 'Leaderboard', ar: 'المتصدرين' } },
       { name: 'CitizenNotifications', icon: Bell, label: { en: 'Notifications', ar: 'الإشعارات' } },
     ]
@@ -160,6 +188,7 @@ export const SIDEBAR_MENUS = {
       { name: 'Home', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'PublicIdeasBoard', icon: Lightbulb, label: { en: 'Ideas', ar: 'الأفكار' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
+      { name: 'Solutions', icon: Sparkles, label: { en: 'Solutions', ar: 'الحلول' } },
     ]
   }
 };
