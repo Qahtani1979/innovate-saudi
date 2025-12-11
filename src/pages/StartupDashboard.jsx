@@ -233,7 +233,7 @@ function StartupDashboard() {
       {/* Profile Completeness & First Action */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ProfileCompletenessCoach profile={userProfile} role="startup_user" />
-        <FirstActionRecommender user={{ role: 'startup_user', email: authUser?.email || user?.email || '' }} />
+        <FirstActionRecommender user={{ role: 'startup_user', email: user?.email || '' }} />
       </div>
 
       {/* Progressive Profiling Prompt */}
