@@ -1,46 +1,57 @@
 import React from 'react';
 import { useLanguage } from '@/components/LanguageContext';
+import { usePersonaRouting } from '@/hooks/usePersonaRouting';
+import { SIDEBAR_MENUS } from '@/config/sidebarMenus';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, SlidersHorizontal, LayoutGrid, List, X } from 'lucide-react';
 
+// Hook to get persona-based colors
+export function usePersonaColors() {
+  const { persona } = usePersonaRouting();
+  const menuConfig = SIDEBAR_MENUS[persona] || SIDEBAR_MENUS.citizen;
+  const gradientColor = menuConfig.color || 'from-slate-600 to-gray-500';
+  
+  // Map persona gradients to color names for styling
+  const colorMap = {
+    'from-red-600 to-rose-500': { name: 'red', gradient: gradientColor, bgGradient: 'from-red-500/10 via-rose-500/5 to-transparent', iconColor: 'text-red-500', buttonGradient: 'from-red-600 to-rose-500' },
+    'from-purple-600 to-violet-500': { name: 'purple', gradient: gradientColor, bgGradient: 'from-purple-500/10 via-violet-500/5 to-transparent', iconColor: 'text-purple-500', buttonGradient: 'from-purple-600 to-violet-500' },
+    'from-indigo-600 to-blue-500': { name: 'indigo', gradient: gradientColor, bgGradient: 'from-indigo-500/10 via-blue-500/5 to-transparent', iconColor: 'text-indigo-500', buttonGradient: 'from-indigo-600 to-blue-500' },
+    'from-emerald-600 to-green-500': { name: 'emerald', gradient: gradientColor, bgGradient: 'from-emerald-500/10 via-green-500/5 to-transparent', iconColor: 'text-emerald-500', buttonGradient: 'from-emerald-600 to-green-500' },
+    'from-orange-600 to-amber-500': { name: 'orange', gradient: gradientColor, bgGradient: 'from-orange-500/10 via-amber-500/5 to-transparent', iconColor: 'text-orange-500', buttonGradient: 'from-orange-600 to-amber-500' },
+    'from-amber-600 to-yellow-500': { name: 'amber', gradient: gradientColor, bgGradient: 'from-amber-500/10 via-yellow-500/5 to-transparent', iconColor: 'text-amber-500', buttonGradient: 'from-amber-600 to-yellow-500' },
+    'from-teal-600 to-cyan-500': { name: 'teal', gradient: gradientColor, bgGradient: 'from-teal-500/10 via-cyan-500/5 to-transparent', iconColor: 'text-teal-500', buttonGradient: 'from-teal-600 to-cyan-500' },
+    'from-slate-600 to-gray-500': { name: 'slate', gradient: gradientColor, bgGradient: 'from-slate-500/10 via-gray-500/5 to-transparent', iconColor: 'text-slate-500', buttonGradient: 'from-slate-600 to-gray-500' },
+    'from-gray-600 to-slate-500': { name: 'gray', gradient: gradientColor, bgGradient: 'from-gray-500/10 via-slate-500/5 to-transparent', iconColor: 'text-gray-500', buttonGradient: 'from-gray-600 to-slate-500' },
+  };
+  
+  return {
+    ...colorMap[gradientColor] || colorMap['from-slate-600 to-gray-500'],
+    persona,
+    label: menuConfig.label,
+    PersonaIcon: menuConfig.icon
+  };
+}
+
 /**
  * Standardized layout wrapper for all citizen-facing pages
- * Provides consistent header, search/filters, and grid layout
+ * Provides consistent header, search/filters, and grid layout with persona-aware colors
  */
 export function CitizenPageHeader({ 
   icon: Icon, 
   title, 
   description, 
-  accentColor = 'primary',
   stats = [],
   action 
 }) {
   const { isRTL } = useLanguage();
+  const { bgGradient, iconColor, buttonGradient } = usePersonaColors();
   
-  const gradientMap = {
-    primary: 'from-primary/10 via-primary/5 to-transparent',
-    purple: 'from-purple-500/10 via-purple-500/5 to-transparent',
-    teal: 'from-teal-500/10 via-teal-500/5 to-transparent',
-    amber: 'from-amber-500/10 via-amber-500/5 to-transparent',
-    blue: 'from-blue-500/10 via-blue-500/5 to-transparent',
-    green: 'from-green-500/10 via-green-500/5 to-transparent',
-  };
-
-  const iconColorMap = {
-    primary: 'text-primary',
-    purple: 'text-purple-500',
-    teal: 'text-teal-500',
-    amber: 'text-amber-500',
-    blue: 'text-blue-500',
-    green: 'text-green-500',
-  };
-
   return (
     <div 
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradientMap[accentColor]} border border-border/50 p-6 md:p-8`}
+      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bgGradient} border border-border/50 p-6 md:p-8`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Decorative background elements */}
@@ -50,7 +61,7 @@ export function CitizenPageHeader({
       <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
           {Icon && (
-            <div className={`p-3 rounded-xl bg-background/80 backdrop-blur-sm shadow-sm ${iconColorMap[accentColor]}`}>
+            <div className={`p-3 rounded-xl bg-background/80 backdrop-blur-sm shadow-sm ${iconColor}`}>
               <Icon className="h-7 w-7" />
             </div>
           )}
@@ -70,7 +81,7 @@ export function CitizenPageHeader({
         <div className="relative flex flex-wrap gap-4 mt-6 pt-6 border-t border-border/50">
           {stats.map((stat, idx) => (
             <div key={idx} className="flex items-center gap-2 bg-background/60 backdrop-blur-sm rounded-lg px-4 py-2">
-              {stat.icon && <stat.icon className={`h-4 w-4 ${iconColorMap[stat.color || accentColor]}`} />}
+              {stat.icon && <stat.icon className={`h-4 w-4 ${iconColor}`} />}
               <span className="text-lg font-semibold text-foreground">{stat.value}</span>
               <span className="text-sm text-muted-foreground">{stat.label}</span>
             </div>

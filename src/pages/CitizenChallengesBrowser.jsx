@@ -165,14 +165,13 @@ function CitizenChallengesBrowser() {
         icon={Target}
         title={t({ en: 'Browse Challenges', ar: 'تصفح التحديات' })}
         description={t({ en: 'Explore municipal challenges and submit your innovative solutions', ar: 'استكشف التحديات البلدية وقدم حلولك المبتكرة' })}
-        accentColor="teal"
         stats={[
-          { value: challenges.length, label: t({ en: 'Challenges', ar: 'تحدي' }), icon: Target, color: 'teal' },
-          { value: challenges.filter(c => c.priority === 'critical' || c.priority === 'high').length, label: t({ en: 'High Priority', ar: 'أولوية عالية' }), color: 'amber' },
+          { value: challenges.length, label: t({ en: 'Challenges', ar: 'تحدي' }), icon: Target },
+          { value: challenges.filter(c => c.priority === 'critical' || c.priority === 'high').length, label: t({ en: 'High Priority', ar: 'أولوية عالية' }) },
         ]}
         action={
           <Link to="/challenge-idea-response">
-            <Button className="gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg">
+            <Button className="gap-2 bg-gradient-to-r from-slate-600 to-gray-500 hover:opacity-90 text-white shadow-lg">
               <Send className="h-4 w-4" />
               {t({ en: 'Submit Proposal', ar: 'تقديم مقترح' })}
             </Button>

@@ -105,12 +105,11 @@ function PublicPilotTracker() {
         icon={TestTube}
         title={t({ en: 'Public Pilots', ar: 'التجارب العامة' })}
         description={t({ en: 'Discover innovation pilots testing solutions in your area', ar: 'اكتشف تجارب الابتكار التي تختبر الحلول في منطقتك' })}
-        accentColor="teal"
         stats={[
-          { value: pilots.length, label: t({ en: 'Active Pilots', ar: 'تجارب نشطة' }), icon: TestTube, color: 'teal' },
-          { value: myAreaPilots.length, label: t({ en: 'In Your Area', ar: 'في منطقتك' }), icon: MapPin, color: 'blue' },
-          { value: enrollments.length, label: t({ en: 'Your Enrollments', ar: 'تسجيلاتك' }), icon: Users, color: 'purple' },
-          { value: sectors.length, label: t({ en: 'Sectors', ar: 'قطاعات' }), color: 'amber' },
+          { value: pilots.length, label: t({ en: 'Active Pilots', ar: 'تجارب نشطة' }), icon: TestTube },
+          { value: myAreaPilots.length, label: t({ en: 'In Your Area', ar: 'في منطقتك' }), icon: MapPin },
+          { value: enrollments.length, label: t({ en: 'Your Enrollments', ar: 'تسجيلاتك' }), icon: Users },
+          { value: sectors.length, label: t({ en: 'Sectors', ar: 'قطاعات' }) },
         ]}
       />
 

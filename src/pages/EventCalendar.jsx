@@ -81,16 +81,15 @@ function EventCalendar() {
         icon={Calendar}
         title={t({ en: 'Events', ar: 'الفعاليات' })}
         description={t({ en: 'Workshops, conferences, and innovation events', ar: 'ورش العمل والمؤتمرات وفعاليات الابتكار' })}
-        accentColor="blue"
         stats={[
-          { value: stats.total, label: t({ en: 'Total', ar: 'الإجمالي' }), icon: Calendar, color: 'blue' },
-          { value: stats.upcoming, label: t({ en: 'Upcoming', ar: 'قادم' }), icon: Clock, color: 'teal' },
-          { value: stats.this_month, label: t({ en: 'This Month', ar: 'هذا الشهر' }), color: 'green' },
-          { value: stats.registered, label: t({ en: 'Registrations', ar: 'التسجيلات' }), icon: Users, color: 'purple' },
+          { value: stats.total, label: t({ en: 'Total', ar: 'الإجمالي' }), icon: Calendar },
+          { value: stats.upcoming, label: t({ en: 'Upcoming', ar: 'قادم' }), icon: Clock },
+          { value: stats.this_month, label: t({ en: 'This Month', ar: 'هذا الشهر' }) },
+          { value: stats.registered, label: t({ en: 'Registrations', ar: 'التسجيلات' }), icon: Users },
         ]}
         action={canCreateEvents && (
           <Link to={createPageUrl('EventDetail') + '?mode=create'}>
-            <Button className="gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg">
+            <Button className="gap-2 bg-gradient-to-r from-slate-600 to-gray-500 hover:opacity-90 text-white shadow-lg">
               <Plus className="h-4 w-4" />
               {t({ en: 'Create Event', ar: 'إنشاء فعالية' })}
             </Button>

@@ -155,15 +155,14 @@ function PublicIdeasBoard() {
         icon={Lightbulb}
         title={t({ en: 'Ideas Board', ar: 'لوحة الأفكار' })}
         description={t({ en: 'Share your ideas, vote on others, and help shape the future of your city', ar: 'شارك أفكارك، صوّت على أفكار الآخرين، وساعد في تشكيل مستقبل مدينتك' })}
-        accentColor="purple"
         stats={[
-          { value: stats.total, label: t({ en: 'Total Ideas', ar: 'إجمالي الأفكار' }), icon: Lightbulb, color: 'purple' },
-          { value: stats.popular, label: t({ en: 'Popular', ar: 'شائعة' }), icon: TrendingUp, color: 'green' },
-          { value: stats.thisMonth, label: t({ en: 'This Month', ar: 'هذا الشهر' }), icon: Calendar, color: 'blue' },
+          { value: stats.total, label: t({ en: 'Total Ideas', ar: 'إجمالي الأفكار' }), icon: Lightbulb },
+          { value: stats.popular, label: t({ en: 'Popular', ar: 'شائعة' }), icon: TrendingUp },
+          { value: stats.thisMonth, label: t({ en: 'This Month', ar: 'هذا الشهر' }), icon: Calendar },
         ]}
         action={
           <Link to={createPageUrl('CitizenIdeaSubmission')}>
-            <Button className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg">
+            <Button className="gap-2 bg-gradient-to-r from-slate-600 to-gray-500 hover:opacity-90 text-white shadow-lg">
               <Plus className="h-4 w-4" />
               {t({ en: 'Submit Your Idea', ar: 'أرسل فكرتك' })}
             </Button>
@@ -213,7 +212,7 @@ function PublicIdeasBoard() {
             description={t({ en: 'Be the first to share your idea!', ar: 'كن أول من يشارك فكرته!' })}
             action={
               <Link to={createPageUrl('CitizenIdeaSubmission')}>
-                <Button className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Button className="bg-gradient-to-r from-slate-600 to-gray-500 text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   {t({ en: 'Submit Idea', ar: 'إرسال فكرة' })}
                 </Button>

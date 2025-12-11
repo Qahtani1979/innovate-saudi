@@ -191,9 +191,8 @@ function CitizenIdeaSubmission() {
         icon={Lightbulb}
         title={t({ en: 'Innovation Ideas', ar: 'أفكار الابتكار' })}
         description={t({ en: 'Submit and track your innovation ideas', ar: 'قدم وتابع أفكارك الابتكارية' })}
-        accentColor="purple"
         stats={[
-          { icon: FileText, value: myIdeas.length, label: t({ en: 'My Ideas', ar: 'أفكاري' }), color: 'purple' },
+          { icon: FileText, value: myIdeas.length, label: t({ en: 'My Ideas', ar: 'أفكاري' }) },
         ]}
       />
 

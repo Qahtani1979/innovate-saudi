@@ -110,10 +110,9 @@ function News() {
         icon={Megaphone}
         title={t({ en: 'News & Updates', ar: 'الأخبار والتحديثات' })}
         description={t({ en: 'Latest innovations, milestones, and announcements', ar: 'آخر الابتكارات والإنجازات والإعلانات' })}
-        accentColor="amber"
         stats={[
-          { value: newsItems.length, label: t({ en: 'Updates', ar: 'تحديثات' }), icon: TrendingUp, color: 'amber' },
-          { value: announcements.length, label: t({ en: 'Announcements', ar: 'إعلانات' }), icon: Megaphone, color: 'blue' },
+          { value: newsItems.length, label: t({ en: 'Updates', ar: 'تحديثات' }), icon: TrendingUp },
+          { value: announcements.length, label: t({ en: 'Announcements', ar: 'إعلانات' }), icon: Megaphone },
         ]}
       />
 
