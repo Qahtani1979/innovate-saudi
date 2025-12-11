@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -22,6 +23,7 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const { invokeAI, status: aiStatus, isLoading: aiProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
@@ -50,54 +52,83 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('organizations').select('*');
+      return data || [];
+    }
   });
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('sectors').select('*');
+      return data || [];
+    }
   });
 
   const { data: subsectors = [] } = useQuery({
     queryKey: ['subsectors'],
-    queryFn: () => base44.entities.Subsector.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('subsectors').select('*');
+      return data || [];
+    }
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('services').select('*');
+      return data || [];
+    }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const { data: regions = [] } = useQuery({
     queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('regions').select('*');
+      return data || [];
+    }
   });
 
   const { data: cities = [] } = useQuery({
     queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('cities').select('*');
+      return data || [];
+    }
   });
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('strategic_plans').select('*');
+      return data || [];
+    }
   });
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const program = await base44.entities.Program.create(data);
+      const { data: program, error } = await supabase
+        .from('programs')
+        .insert(data)
+        .select()
+        .single();
+      if (error) throw error;
       
       // Log creation
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'program',
         entity_id: program.id,
         activity_type: 'program_created',
-        performed_by: (await base44.auth.me()).email,
+        performed_by: user?.email,
         timestamp: new Date().toISOString(),
         metadata: { wizard: true }
       });
