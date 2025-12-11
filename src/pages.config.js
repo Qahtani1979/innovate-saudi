@@ -288,9 +288,7 @@ import UserFeatureAudit from './pages/UserFeatureAudit';
 import RolePermissionManager from './pages/RolePermissionManager';
 import PlatformCoverageAudit from './pages/PlatformCoverageAudit';
 import EnhancementRoadmapMaster from './pages/EnhancementRoadmapMaster';
-import RBACAuditReport from './pages/RBACAuditReport';
-import RBACDashboard from './pages/RBACDashboard';
-import RBACImplementationTracker from './pages/RBACImplementationTracker';
+import RBACHub from './pages/RBACHub';
 import RoleRequestCenter from './pages/RoleRequestCenter';
 import BilingualRTLAudit from './pages/BilingualRTLAudit';
 import ContentAudit from './pages/ContentAudit';
@@ -764,9 +762,7 @@ export const PAGES = {
     "RolePermissionManager": RolePermissionManager,
     "PlatformCoverageAudit": PlatformCoverageAudit,
     "EnhancementRoadmapMaster": EnhancementRoadmapMaster,
-    "RBACAuditReport": RBACAuditReport,
-    "RBACDashboard": RBACDashboard,
-    "RBACImplementationTracker": RBACImplementationTracker,
+    "RBACHub": RBACHub,
     "RoleRequestCenter": RoleRequestCenter,
     "BilingualRTLAudit": BilingualRTLAudit,
     "ContentAudit": ContentAudit,
