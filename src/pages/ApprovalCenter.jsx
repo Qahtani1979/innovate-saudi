@@ -364,7 +364,7 @@ Provide approval recommendation with reasoning.`;
                        rdApprovals.length + programApprovalRequests.length + 
                        matchmakerApprovalRequests.length + policyApprovals.length +
                        solutionApprovals.length + programEntityApprovals.length +
-                       ideaApprovals.length + innovationProposalApprovals.length;
+                       citizenIdeas.length + innovationProposalApprovals.length;
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -451,7 +451,7 @@ Provide approval recommendation with reasoning.`;
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-sm text-slate-600">{t({ en: 'Ideas', ar: 'الأفكار' })}</p>
-              <p className="text-3xl font-bold text-purple-600 mt-1">{ideaApprovals.length}</p>
+              <p className="text-3xl font-bold text-purple-600 mt-1">{citizenIdeas.length}</p>
             </div>
           </CardContent>
         </Card>
@@ -718,8 +718,8 @@ Provide approval recommendation with reasoning.`;
         </TabsContent>
 
         <TabsContent value="ideas" className="space-y-4">
-          {ideaApprovals.length > 0 ? (
-            ideaApprovals.map((idea) => (
+          {citizenIdeas.length > 0 ? (
+            citizenIdeas.map((idea) => (
               <Card key={idea.id} className="border-2 hover:border-purple-400">
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between">
