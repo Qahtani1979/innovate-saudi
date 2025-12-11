@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,12 +9,10 @@ import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
-  Lightbulb, Heart, TrendingUp, Trophy, Star, Calendar, TestTube, Newspaper, Loader2
+  Lightbulb, Heart, TrendingUp, Trophy, Star, Calendar, TestTube, Newspaper
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-
-// Lazy load to avoid React initialization timing issues
-const FirstActionRecommender = lazy(() => import('../components/onboarding/FirstActionRecommender'));
+import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
 
 function CitizenDashboard() {
   const { user } = useAuth();
@@ -138,15 +136,7 @@ function CitizenDashboard() {
       </div>
 
       {/* AI First Action Recommender */}
-      <Suspense fallback={
-        <Card className="border-2 border-purple-300">
-          <CardContent className="py-8 flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
-          </CardContent>
-        </Card>
-      }>
-        <FirstActionRecommender user={{ role: 'citizen', email: user?.email || '' }} />
-      </Suspense>
+      <FirstActionRecommender user={{ role: 'citizen', email: user?.email || '' }} />
 
       {/* Quick Actions */}
       <Card>
