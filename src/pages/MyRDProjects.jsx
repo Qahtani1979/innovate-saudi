@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,22 +15,23 @@ import { format, addDays, isWithinInterval } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useAuth } from '@/lib/AuthContext';
 
 function MyRDProjects() {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const [filter, setFilter] = useState('all');
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-
-  const { data: user } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me()
-  });
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['my-rd-projects', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.RDProject.list();
-      return all.filter(p => 
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []).filter(p => 
         p.principal_investigator?.email === user?.email || 
         p.team_members?.some(m => m.email === user?.email)
       );
@@ -41,8 +42,13 @@ function MyRDProjects() {
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['open-rd-calls'],
     queryFn: async () => {
-      const calls = await base44.entities.RDCall.list();
-      return calls.filter(c => c.status === 'open');
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 

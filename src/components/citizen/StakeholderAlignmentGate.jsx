@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from 'sonner';
 import { Users, CheckCircle2, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function StakeholderAlignmentGate({ proposal, onGateComplete }) {
+  const { user } = useAuth();
   const [alignment, setAlignment] = useState({
     stakeholder_buy_in: null,
     resource_availability: null,
@@ -23,22 +25,25 @@ export default function StakeholderAlignmentGate({ proposal, onGateComplete }) {
 
   const submitAlignmentMutation = useMutation({
     mutationFn: async (data) => {
-      // Update proposal with stakeholder alignment gate
-      await base44.entities.InnovationProposal.update(proposal.id, {
-        stakeholder_alignment_gate: {
-          stakeholder_buy_in: data.stakeholder_buy_in,
-          resource_availability: data.resource_availability,
-          policy_alignment: data.policy_alignment,
-          notes: data.notes,
-          decision: data.decision,
-          reviewed_by: (await base44.auth.me()).email,
-          review_date: new Date().toISOString(),
-          passed: data.decision === 'approved'
-        },
-        status: data.decision === 'approved' ? 'approved' : 
-                data.decision === 'rejected' ? 'rejected' : 
-                'under_evaluation'
-      });
+      const { error } = await supabase
+        .from('innovation_proposals')
+        .update({
+          stakeholder_alignment_gate: {
+            stakeholder_buy_in: data.stakeholder_buy_in,
+            resource_availability: data.resource_availability,
+            policy_alignment: data.policy_alignment,
+            notes: data.notes,
+            decision: data.decision,
+            reviewed_by: user?.email,
+            review_date: new Date().toISOString(),
+            passed: data.decision === 'approved'
+          },
+          status: data.decision === 'approved' ? 'approved' : 
+                  data.decision === 'rejected' ? 'rejected' : 
+                  'under_evaluation'
+        })
+        .eq('id', proposal.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['innovation-proposals']);

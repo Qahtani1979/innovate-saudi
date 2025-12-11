@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,9 +12,11 @@ import { useLanguage } from './LanguageContext';
 import { CheckCircle2, X, Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from './FileUploader';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function RDProjectMilestoneGate({ project, milestone, onClose }) {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   
   const [deliverables, setDeliverables] = useState({});
@@ -38,12 +40,16 @@ export default function RDProjectMilestoneGate({ project, milestone, onClose }) 
           : m
       );
 
-      await base44.entities.RDProject.update(project.id, {
-        timeline: {
-          ...project.timeline,
-          milestones: updatedMilestones
-        }
-      });
+      const { error } = await supabase
+        .from('rd_projects')
+        .update({
+          timeline: {
+            ...project.timeline,
+            milestones: updatedMilestones
+          }
+        })
+        .eq('id', project.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-project']);
@@ -52,10 +58,9 @@ export default function RDProjectMilestoneGate({ project, milestone, onClose }) 
     }
   });
 
-  const handleApprove = async () => {
-    const user = await base44.auth.me();
+  const handleApprove = () => {
     approveMutation.mutate({
-      approver: user.email,
+      approver: user?.email,
       notes: approvalNotes,
       evidence: evidenceUrls,
       deliverables

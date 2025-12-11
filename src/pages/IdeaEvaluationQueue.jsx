@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,11 @@ import { useLanguage } from '../components/LanguageContext';
 import { CheckCircle2, Target, Lightbulb, Award, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function IdeaEvaluationQueue() {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [evaluation, setEvaluation] = useState({
     feasibility_score: 50,
@@ -29,27 +31,32 @@ function IdeaEvaluationQueue() {
 
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
-
   const { data: ideasToEvaluate = [] } = useQuery({
     queryKey: ['ideas-to-evaluate'],
     queryFn: async () => {
-      const ideas = await base44.entities.CitizenIdea.list();
-      return ideas.filter(i => i.status === 'under_review' || i.status === 'approved');
+      const { data, error } = await supabase
+        .from('citizen_ideas')
+        .select('*')
+        .in('status', ['under_review', 'approved'])
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const submitEvaluationMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExpertEvaluation.create({
-      ...data,
-      expert_email: user?.email,
-      entity_type: 'citizen_idea',
-      evaluation_date: new Date().toISOString(),
-      overall_score: (data.feasibility_score + data.impact_score + data.innovation_score + data.cost_effectiveness_score + data.strategic_alignment_score) / 5
-    }),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('expert_evaluations')
+        .insert({
+          ...data,
+          expert_email: user?.email,
+          entity_type: 'citizen_idea',
+          evaluation_date: new Date().toISOString(),
+          overall_score: (data.feasibility_score + data.impact_score + data.innovation_score + data.cost_effectiveness_score + data.strategic_alignment_score) / 5
+        });
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['ideas-to-evaluate']);
       setSelectedIdea(null);
@@ -205,7 +212,7 @@ function IdeaEvaluationQueue() {
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <span>{idea.category}</span>
                 <span>•</span>
-                <span>{idea.vote_count || 0} votes</span>
+                <span>{idea.votes_count || 0} votes</span>
               </div>
               <Button size="sm" className="w-full mt-3 bg-purple-600">
                 <Award className="h-4 w-4 mr-2" />

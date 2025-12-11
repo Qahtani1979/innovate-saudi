@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function OrganizationVerificationWorkflow({ organization, onClose }) {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [checks, setChecks] = useState({
     identity_verified: false,
@@ -22,13 +24,16 @@ export default function OrganizationVerificationWorkflow({ organization, onClose
 
   const verifyMutation = useMutation({
     mutationFn: async () => {
-      const user = await base44.auth.me();
-      await base44.entities.Organization.update(organization.id, {
-        is_verified: true,
-        verification_date: new Date().toISOString().split('T')[0],
-        verification_notes: notes,
-        verified_by: user.email
-      });
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          is_verified: true,
+          verification_date: new Date().toISOString().split('T')[0],
+          verification_notes: notes,
+          verified_by: user?.email
+        })
+        .eq('id', organization.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['organization']);

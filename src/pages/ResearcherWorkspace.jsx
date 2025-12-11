@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,20 +9,21 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Microscope, FileText, CheckCircle2, Clock, TrendingUp, Plus, Megaphone } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
 
 function ResearcherWorkspace() {
   const { language, isRTL, t } = useLanguage();
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: myProjects = [] } = useQuery({
-    queryKey: ['my-rd-projects'],
+    queryKey: ['my-rd-projects', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.RDProject.list();
-      return all.filter(p => 
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []).filter(p => 
         p.principal_investigator?.email === user?.email ||
         p.team_members?.some(m => m.email === user?.email) ||
         p.created_by === user?.email
@@ -32,10 +33,15 @@ function ResearcherWorkspace() {
   });
 
   const { data: myProposals = [] } = useQuery({
-    queryKey: ['my-rd-proposals'],
+    queryKey: ['my-rd-proposals', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.RDProposal.list();
-      return all.filter(p => p.created_by === user?.email);
+      const { data, error } = await supabase
+        .from('rd_proposals')
+        .select('*')
+        .eq('created_by', user?.email)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user
   });
@@ -43,8 +49,13 @@ function ResearcherWorkspace() {
   const { data: openCalls = [] } = useQuery({
     queryKey: ['open-rd-calls'],
     queryFn: async () => {
-      const all = await base44.entities.RDCall.list();
-      return all.filter(c => c.status === 'open');
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
