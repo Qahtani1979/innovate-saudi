@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,17 +16,29 @@ export default function PeerBenchmarkingTool({ municipality }) {
 
   const { data: allMunicipalities = [] } = useQuery({
     queryKey: ['municipalities-benchmark'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('municipalities').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-benchmark'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-benchmark'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   // Find peer municipalities (similar size or region)
