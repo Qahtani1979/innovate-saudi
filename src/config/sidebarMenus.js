@@ -184,7 +184,7 @@ export const SIDEBAR_MENUS = {
       { name: 'ContractManagement', icon: ScrollText, label: { en: 'Contracts', ar: 'العقود' }, anyPermission: ['contract_view', 'contract_manage'] },
       { name: 'BudgetManagement', icon: Wallet, label: { en: 'Budget', ar: 'الميزانية' }, anyPermission: ['budget_view', 'budget_manage'] },
       { name: 'TeamManagement', icon: Users, label: { en: 'Team', ar: 'الفريق' }, anyPermission: ['user_manage', 'team_manage'], roles: ['municipality_admin', 'municipality_director', 'municipality_manager'] },
-      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, anyPermission: ['reports_view', 'analytics_view'] },
+      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, anyPermission: ['reports_view', 'analytics_view', 'analytics_view_own'] },
     ]
   },
 
