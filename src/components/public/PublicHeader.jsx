@@ -1,26 +1,19 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Globe, Menu, Sparkles, User, LogOut, LayoutDashboard, ChevronDown } from 'lucide-react';
+import { Globe, Menu, Sparkles, LayoutDashboard } from 'lucide-react';
 import { usePersonaRouting } from '@/hooks/usePersonaRouting';
+import UserAvatarMenu from '@/components/shared/UserAvatarMenu';
 
 export default function PublicHeader() {
   const { language, isRTL, toggleLanguage, t } = useLanguage();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { defaultDashboard, dashboardLabel } = usePersonaRouting();
   const location = useLocation();
-  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
   const navLinks = [
@@ -36,14 +29,10 @@ export default function PublicHeader() {
 
   const isActive = (href) => location.pathname === href;
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
-
   const getUserInitials = () => {
-    if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const name = user?.user_metadata?.full_name || user?.full_name;
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     }
     return user?.email?.charAt(0).toUpperCase() || 'U';
   };
@@ -51,7 +40,7 @@ export default function PublicHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-lg">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        {/* Logo - Same as PublicPortal */}
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
             <Sparkles className="h-5 w-5 text-white" />
@@ -100,43 +89,8 @@ export default function PublicHeader() {
                 </Button>
               </Link>
 
-              {/* User Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2 px-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                        {getUserInitials()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground hidden sm:block" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user?.user_metadata?.full_name || t({ en: 'User', ar: 'مستخدم' })}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to={defaultDashboard} className="cursor-pointer">
-                      <LayoutDashboard className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                      {language === 'en' ? dashboardLabel.en : dashboardLabel.ar}
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/my-profiles-hub" className="cursor-pointer">
-                      <User className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                      {t({ en: 'My Profile', ar: 'ملفي الشخصي' })}
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                    <LogOut className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    {t({ en: 'Sign Out', ar: 'تسجيل الخروج' })}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Shared User Avatar Menu */}
+              <UserAvatarMenu showDashboardLink={false} showName={false} />
             </>
           ) : (
             <>
@@ -165,12 +119,14 @@ export default function PublicHeader() {
               {isAuthenticated && (
                 <div className="flex items-center gap-3 mb-6 pb-4 border-b">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-primary/10 text-primary">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-teal-500 text-white">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{user?.user_metadata?.full_name || t({ en: 'User', ar: 'مستخدم' })}</p>
+                    <p className="font-medium text-sm truncate">
+                      {user?.user_metadata?.full_name || user?.full_name || t({ en: 'User', ar: 'مستخدم' })}
+                    </p>
                     <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                   </div>
                 </div>
@@ -201,23 +157,16 @@ export default function PublicHeader() {
                         {language === 'en' ? dashboardLabel.en : dashboardLabel.ar}
                       </Button>
                     </Link>
-                    <Link to="/my-profiles-hub" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full gap-2">
-                        <User className="h-4 w-4" />
+                    <Link to="/user-profile" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" className="w-full gap-2 mt-2">
                         {t({ en: 'My Profile', ar: 'ملفي الشخصي' })}
                       </Button>
                     </Link>
-                    <Button 
-                      variant="destructive" 
-                      className="w-full gap-2"
-                      onClick={() => {
-                        handleLogout();
-                        setIsOpen(false);
-                      }}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      {t({ en: 'Sign Out', ar: 'تسجيل الخروج' })}
-                    </Button>
+                    <Link to="/settings" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" className="w-full gap-2 mt-2">
+                        {t({ en: 'Settings', ar: 'الإعدادات' })}
+                      </Button>
+                    </Link>
                   </>
                 ) : (
                   <>
@@ -227,7 +176,7 @@ export default function PublicHeader() {
                       </Button>
                     </Link>
                     <Link to="/auth" onClick={() => setIsOpen(false)}>
-                      <Button className="w-full">
+                      <Button className="w-full mt-2">
                         {t({ en: 'Get Started', ar: 'ابدأ' })}
                       </Button>
                     </Link>

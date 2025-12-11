@@ -4,15 +4,12 @@ import { createPageUrl } from './utils';
 import { Button } from "@/components/ui/button";
 import {
   Network,
-  Settings,
   Bell,
   Search,
   Menu,
   X,
   ChevronDown,
   Globe,
-  User,
-  LogOut,
   Sparkles,
   Target,
   Shield,
@@ -26,15 +23,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LanguageProvider, useLanguage } from './components/LanguageContext';
+import { useLanguage } from './components/LanguageContext';
 import ArabicFontOptimizer from './components/ui/ArabicFontOptimizer';
 import AIAssistant from './components/AIAssistant';
 import PortalSwitcher from './components/layout/PortalSwitcher';
 import PersonaHeader from './components/layout/PersonaHeader';
 import PersonaSidebar from './components/layout/PersonaSidebar';
+import UserAvatarMenu from './components/shared/UserAvatarMenu';
 import { Badge } from "@/components/ui/badge";
 import { usePermissions } from './components/permissions/usePermissions';
 import { usePersonaRouting } from '@/hooks/usePersonaRouting';
@@ -274,36 +271,8 @@ function LayoutContent({ children, currentPageName }) {
               <PersonaHeader size="small" />
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-1 md:gap-2 hover:bg-slate-100 px-2 md:px-4">
-                  <div className="h-7 w-7 md:h-8 md:w-8 rounded-lg bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center">
-                    <User className="h-3 w-3 md:h-4 md:w-4 text-white" />
-                  </div>
-                  <span className="text-xs md:text-sm font-medium hidden sm:inline truncate max-w-[100px] md:max-w-none">{user?.full_name || 'User'}</span>
-                  <ChevronDown className="h-3 md:h-4 w-3 md:w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-48">
-                <Link to={createPageUrl('UserProfile')}>
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    {language === 'en' ? 'Profile' : 'الملف الشخصي'}
-                  </DropdownMenuItem>
-                </Link>
-                <Link to={createPageUrl('Settings')}>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    {language === 'en' ? 'Settings' : 'الإعدادات'}
-                  </DropdownMenuItem>
-                </Link>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => logout()}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  {language === 'en' ? 'Logout' : 'تسجيل الخروج'}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Shared User Avatar Menu - same style as PublicHeader */}
+            <UserAvatarMenu showDashboardLink={false} showName={true} />
           </div>
         </div>
       </header>
