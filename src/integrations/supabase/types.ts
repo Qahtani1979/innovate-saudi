@@ -4138,6 +4138,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "municipalities_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "municipalities_sector_id_fkey"
             columns: ["sector_id"]
             isOneToOne: false
