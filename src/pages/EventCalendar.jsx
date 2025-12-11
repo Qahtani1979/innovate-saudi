@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { useAuth } from '@/lib/AuthContext';
-import { useUserRoles } from '@/hooks/useUserRoles';
+import { usePermissions } from '@/components/permissions/usePermissions';
 import { Calendar, Plus, Users, MapPin, Clock, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -14,30 +13,35 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function EventCalendar() {
   const { t, isRTL, language } = useLanguage();
-  const { user } = useAuth();
-  const { roles } = useUserRoles(user?.id, user?.email);
+  const { roles, hasAnyPermission } = usePermissions();
   const [viewMode, setViewMode] = useState('list');
 
   // Check if user can create events (admin, municipality_admin, or internal staff)
-  const canCreateEvents = roles?.some(r => 
-    ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r)
-  );
+  const canCreateEvents = hasAnyPermission(['event_create', 'admin']) || 
+    roles?.some(r => ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r));
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['events'],
-    queryFn: () => base44.entities.Event.list('-start_datetime')
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('start_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const upcomingEvents = events.filter(e => 
-    e.start_datetime && new Date(e.start_datetime) >= new Date()
+    e.start_date && new Date(e.start_date) >= new Date()
   ).slice(0, 10);
 
   const stats = {
     total: events.length,
     upcoming: upcomingEvents.length,
     this_month: events.filter(e => {
-      if (!e.start_datetime) return false;
-      const eventDate = new Date(e.start_datetime);
+      if (!e.start_date) return false;
+      const eventDate = new Date(e.start_date);
       const now = new Date();
       return eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear();
     }).length,
@@ -159,10 +163,10 @@ function EventCalendar() {
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 text-center p-3 bg-primary/10 rounded-lg">
                         <p className="text-2xl font-bold text-primary">
-                          {event.start_datetime ? new Date(event.start_datetime).getDate() : '?'}
+                          {event.start_date ? new Date(event.start_date).getDate() : '?'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {event.start_datetime ? new Date(event.start_datetime).toLocaleDateString('en-US', { month: 'short' }) : ''}
+                          {event.start_date ? new Date(event.start_date).toLocaleDateString('en-US', { month: 'short' }) : ''}
                         </p>
                       </div>
 
@@ -187,10 +191,10 @@ function EventCalendar() {
                         </p>
 
                         <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                          {event.start_datetime && (
+                          {event.start_date && (
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {new Date(event.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(event.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           )}
                           {event.location?.venue_name && (
