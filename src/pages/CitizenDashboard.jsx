@@ -80,12 +80,11 @@ function CitizenDashboard() {
         icon={LayoutDashboard}
         title={t({ en: 'Welcome Back!', ar: 'مرحباً بعودتك!' })}
         description={t({ en: 'Your civic participation hub', ar: 'مركز مشاركتك المدنية' })}
-        accentColor="primary"
         stats={[
-          { icon: Lightbulb, value: stats?.ideasCount || 0, label: t({ en: 'Ideas', ar: 'الأفكار' }), color: 'purple' },
-          { icon: Heart, value: stats?.votesCount || 0, label: t({ en: 'Votes', ar: 'الأصوات' }), color: 'primary' },
-          { icon: Trophy, value: stats?.points || 0, label: t({ en: 'Points', ar: 'النقاط' }), color: 'amber' },
-          { icon: TrendingUp, value: stats?.level || 1, label: t({ en: 'Level', ar: 'المستوى' }), color: 'teal' },
+          { icon: Lightbulb, value: stats?.ideasCount || 0, label: t({ en: 'Ideas', ar: 'الأفكار' }) },
+          { icon: Heart, value: stats?.votesCount || 0, label: t({ en: 'Votes', ar: 'الأصوات' }) },
+          { icon: Trophy, value: stats?.points || 0, label: t({ en: 'Points', ar: 'النقاط' }) },
+          { icon: TrendingUp, value: stats?.level || 1, label: t({ en: 'Level', ar: 'المستوى' }) },
         ]}
       />
 

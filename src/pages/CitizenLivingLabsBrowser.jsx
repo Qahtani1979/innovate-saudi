@@ -167,11 +167,10 @@ function CitizenLivingLabsBrowser() {
         icon={FlaskConical}
         title={t({ en: 'Living Labs', ar: 'المختبرات الحية' })}
         description={t({ en: 'Explore innovation labs and participate in citizen-driven research', ar: 'استكشف مختبرات الابتكار وشارك في البحث المدفوع من المواطنين' })}
-        accentColor="blue"
         stats={[
-          { value: livingLabs.length, label: t({ en: 'Labs', ar: 'مختبر' }), icon: FlaskConical, color: 'blue' },
-          { value: livingLabs.filter(l => l.status === 'active').length, label: t({ en: 'Active', ar: 'نشط' }), color: 'green' },
-          { value: userEnrollments.length, label: t({ en: 'My Participations', ar: 'مشاركاتي' }), icon: Users, color: 'purple' },
+          { value: livingLabs.length, label: t({ en: 'Labs', ar: 'مختبر' }), icon: FlaskConical },
+          { value: livingLabs.filter(l => l.status === 'active').length, label: t({ en: 'Active', ar: 'نشط' }) },
+          { value: userEnrollments.length, label: t({ en: 'My Participations', ar: 'مشاركاتي' }), icon: Users },
         ]}
       />
 
@@ -269,7 +268,7 @@ function CitizenLivingLabsBrowser() {
                     <Button 
                       size="sm" 
                       onClick={() => handleEnroll(lab.id)}
-                      className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                      className="bg-gradient-to-r from-slate-600 to-gray-500 hover:opacity-90"
                     >
                       <UserPlus className="h-4 w-4" />
                     </Button>

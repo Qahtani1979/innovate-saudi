@@ -93,7 +93,6 @@ function ProviderProposalWizard() {
         icon={Send}
         title={t({ en: 'Submit Proposal', ar: 'تقديم مقترح' })}
         description={challenge ? (language === 'ar' ? challenge.title_ar : challenge.title_en) : t({ en: 'Submit your proposal for this challenge', ar: 'قدم مقترحك لهذا التحدي' })}
-        accentColor="blue"
       />
 
       <Card>

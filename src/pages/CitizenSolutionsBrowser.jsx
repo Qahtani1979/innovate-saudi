@@ -128,11 +128,10 @@ function CitizenSolutionsBrowser() {
         icon={Lightbulb}
         title={t({ en: 'Browse Solutions', ar: 'تصفح الحلول' })}
         description={t({ en: 'Discover innovative solutions transforming municipal services', ar: 'اكتشف الحلول المبتكرة التي تحول الخدمات البلدية' })}
-        accentColor="purple"
         stats={[
-          { value: solutions.length, label: t({ en: 'Solutions', ar: 'حلول' }), icon: Lightbulb, color: 'purple' },
-          { value: solutions.filter(s => s.is_verified).length, label: t({ en: 'Verified', ar: 'معتمدة' }), icon: CheckCircle2, color: 'green' },
-          { value: solutions.filter(s => s.maturity_level === 'proven').length, label: t({ en: 'Proven', ar: 'مثبتة' }), icon: Star, color: 'amber' },
+          { value: solutions.length, label: t({ en: 'Solutions', ar: 'حلول' }), icon: Lightbulb },
+          { value: solutions.filter(s => s.is_verified).length, label: t({ en: 'Verified', ar: 'معتمدة' }), icon: CheckCircle2 },
+          { value: solutions.filter(s => s.maturity_level === 'proven').length, label: t({ en: 'Proven', ar: 'مثبتة' }), icon: Star },
         ]}
       />
 
