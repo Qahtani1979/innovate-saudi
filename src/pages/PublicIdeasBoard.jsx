@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
@@ -12,22 +11,27 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import {
   Lightbulb, ThumbsUp, MessageSquare, TrendingUp, Plus,
-  Search, MapPin, Calendar, User, Filter, Sparkles, Eye
+  MapPin, Calendar, User, Filter, Sparkles, Loader2, ArrowRight
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import AIPrioritySorter from '../components/citizen/AIPrioritySorter';
-import AdvancedFilters from '../components/citizen/AdvancedFilters';
+import { useAuth } from '@/lib/AuthContext';
+import { 
+  CitizenPageLayout, 
+  CitizenPageHeader, 
+  CitizenSearchFilter, 
+  CitizenCardGrid, 
+  CitizenEmptyState 
+} from '@/components/citizen/CitizenPageLayout';
 
 function PublicIdeasBoard() {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
-  const [sortedIdeas, setSortedIdeas] = useState([]);
-  const [advancedFilters, setAdvancedFilters] = useState({});
+  const [viewMode, setViewMode] = useState('grid');
   const queryClient = useQueryClient();
 
-  // Real-time updates every 30 seconds
   React.useEffect(() => {
     const interval = setInterval(() => {
       queryClient.invalidateQueries(['public-ideas']);
@@ -38,228 +42,250 @@ function PublicIdeasBoard() {
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ['public-ideas'],
     queryFn: async () => {
-      const all = await base44.entities.CitizenIdea.list('-created_date', 200);
-      return all.filter(i => ['submitted', 'under_review', 'approved'].includes(i.status));
+      const { data, error } = await supabase
+        .from('citizen_ideas')
+        .select('*')
+        .in('status', ['submitted', 'under_review', 'approved'])
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data || [];
     }
+  });
+
+  const { data: userVotes = [], refetch: refetchVotes } = useQuery({
+    queryKey: ['idea-votes', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from('citizen_votes')
+        .select('entity_id')
+        .eq('user_id', user.id)
+        .eq('entity_type', 'idea');
+      return data?.map(v => v.entity_id) || [];
+    },
+    enabled: !!user?.id
   });
 
   const voteMutation = useMutation({
     mutationFn: async (ideaId) => {
+      if (!user?.id) throw new Error('Not logged in');
+      const isVoted = userVotes.includes(ideaId);
+      
+      if (isVoted) {
+        await supabase.from('citizen_votes').delete()
+          .eq('user_id', user.id)
+          .eq('entity_id', ideaId)
+          .eq('entity_type', 'idea');
+      } else {
+        await supabase.from('citizen_votes').insert({
+          user_id: user.id,
+          user_email: user.email,
+          entity_id: ideaId,
+          entity_type: 'idea',
+          vote_type: 'upvote'
+        });
+      }
+
+      // Update vote count
       const idea = ideas.find(i => i.id === ideaId);
-      await base44.entities.CitizenIdea.update(ideaId, {
-        vote_count: (idea.vote_count || 0) + 1
-      });
+      const newCount = isVoted ? (idea?.votes_count || 1) - 1 : (idea?.votes_count || 0) + 1;
+      await supabase.from('citizen_ideas').update({ votes_count: newCount }).eq('id', ideaId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['public-ideas']);
+      refetchVotes();
       toast.success(t({ en: 'Vote recorded!', ar: 'تم تسجيل التصويت!' }));
+    },
+    onError: () => {
+      toast.error(t({ en: 'Please login to vote', ar: 'يرجى تسجيل الدخول للتصويت' }));
     }
   });
 
-  const baseIdeas = sortedIdeas.length > 0 ? sortedIdeas : ideas;
+  const categories = [
+    { value: 'transport', label: t({ en: 'Transport', ar: 'النقل' }) },
+    { value: 'environment', label: t({ en: 'Environment', ar: 'البيئة' }) },
+    { value: 'digital_services', label: t({ en: 'Digital Services', ar: 'الخدمات الرقمية' }) },
+    { value: 'public_safety', label: t({ en: 'Public Safety', ar: 'السلامة العامة' }) },
+    { value: 'urban_planning', label: t({ en: 'Urban Planning', ar: 'التخطيط العمراني' }) },
+    { value: 'other', label: t({ en: 'Other', ar: 'أخرى' }) },
+  ];
 
-  const filteredIdeas = baseIdeas.filter(idea => {
-    const matchesSearch = idea.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         idea.description?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredIdeas = ideas.filter(idea => {
+    const matchesSearch = !searchTerm || 
+      idea.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      idea.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || idea.category === categoryFilter;
-    
-    // Advanced filters
-    const voteCount = idea.vote_count || 0;
-    const matchesMinVotes = !advancedFilters.minVotes || voteCount >= advancedFilters.minVotes;
-    const matchesMaxVotes = !advancedFilters.maxVotes || voteCount <= advancedFilters.maxVotes;
-    
-    const createdDate = new Date(idea.created_date);
-    const matchesFromDate = !advancedFilters.fromDate || createdDate >= new Date(advancedFilters.fromDate);
-    const matchesToDate = !advancedFilters.toDate || createdDate <= new Date(advancedFilters.toDate);
-    
-    const priorityScore = idea.ai_classification?.priority_score || 0;
-    const matchesPriority = !advancedFilters.priorityRange || advancedFilters.priorityRange === 'all' ||
-      (advancedFilters.priorityRange === 'high' && priorityScore >= 80) ||
-      (advancedFilters.priorityRange === 'medium' && priorityScore >= 50 && priorityScore < 80) ||
-      (advancedFilters.priorityRange === 'low' && priorityScore < 50);
-    
-    const matchesEmbedding = !advancedFilters.hasEmbedding || advancedFilters.hasEmbedding === 'all' ||
-      (advancedFilters.hasEmbedding === 'yes' && idea.embedding?.length > 0) ||
-      (advancedFilters.hasEmbedding === 'no' && !idea.embedding?.length);
-    
-    const matchesSentiment = !advancedFilters.sentiment || advancedFilters.sentiment === 'all' ||
-      idea.ai_classification?.sentiment === advancedFilters.sentiment;
-    
-    return matchesSearch && matchesCategory && matchesMinVotes && matchesMaxVotes && 
-           matchesFromDate && matchesToDate && matchesPriority && matchesEmbedding && matchesSentiment;
+    return matchesSearch && matchesCategory;
   });
 
-  const displayIdeas = [...filteredIdeas].sort((a, b) => {
-    if (sortBy === 'recent') return new Date(b.created_date) - new Date(a.created_date);
-    if (sortBy === 'popular') return (b.vote_count || 0) - (a.vote_count || 0);
-    if (sortBy === 'trending') return (b.comment_count || 0) - (a.comment_count || 0);
+  const sortedIdeas = [...filteredIdeas].sort((a, b) => {
+    if (sortBy === 'recent') return new Date(b.created_at) - new Date(a.created_at);
+    if (sortBy === 'popular') return (b.votes_count || 0) - (a.votes_count || 0);
     return 0;
   });
 
   const stats = {
     total: ideas.length,
-    popular: ideas.filter(i => (i.vote_count || 0) > 10).length,
-    thisMonth: ideas.filter(i => new Date(i.created_date) > new Date(Date.now() - 30*24*60*60*1000)).length
+    popular: ideas.filter(i => (i.votes_count || 0) > 10).length,
+    thisMonth: ideas.filter(i => new Date(i.created_at) > new Date(Date.now() - 30*24*60*60*1000)).length
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      case 'under_review': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+      default: return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+    }
+  };
+
+  const activeFiltersCount = categoryFilter !== 'all' ? 1 : 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="inline-block p-3 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-lg">
-          <Lightbulb className="h-12 w-12 text-white" />
-        </div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-pink-700 bg-clip-text text-transparent">
-          {t({ en: 'Community Ideas Board', ar: 'لوحة أفكار المجتمع' })}
-        </h1>
-        <p className="text-slate-600 max-w-2xl mx-auto">
-          {t({ 
-            en: 'Share your ideas, vote on others, and help shape the future of your city', 
-            ar: 'شارك أفكارك، صوّت على أفكار الآخرين، وساعد في تشكيل مستقبل مدينتك' 
-          })}
-        </p>
-        <Link to={createPageUrl('PublicIdeaSubmission')}>
-          <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg">
-            <Plus className="h-5 w-5 mr-2" />
-            {t({ en: 'Submit Your Idea', ar: 'أرسل فكرتك' })}
-          </Button>
-        </Link>
+    <CitizenPageLayout>
+      <CitizenPageHeader
+        icon={Lightbulb}
+        title={t({ en: 'Ideas Board', ar: 'لوحة الأفكار' })}
+        description={t({ en: 'Share your ideas, vote on others, and help shape the future of your city', ar: 'شارك أفكارك، صوّت على أفكار الآخرين، وساعد في تشكيل مستقبل مدينتك' })}
+        accentColor="purple"
+        stats={[
+          { value: stats.total, label: t({ en: 'Total Ideas', ar: 'إجمالي الأفكار' }), icon: Lightbulb, color: 'purple' },
+          { value: stats.popular, label: t({ en: 'Popular', ar: 'شائعة' }), icon: TrendingUp, color: 'green' },
+          { value: stats.thisMonth, label: t({ en: 'This Month', ar: 'هذا الشهر' }), icon: Calendar, color: 'blue' },
+        ]}
+        action={
+          <Link to={createPageUrl('CitizenIdeaSubmission')}>
+            <Button className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg">
+              <Plus className="h-4 w-4" />
+              {t({ en: 'Submit Your Idea', ar: 'أرسل فكرتك' })}
+            </Button>
+          </Link>
+        }
+      />
+
+      <CitizenSearchFilter
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder={t({ en: 'Search ideas...', ar: 'ابحث عن الأفكار...' })}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        activeFilters={activeFiltersCount}
+        onClearFilters={() => setCategoryFilter('all')}
+        filters={[
+          {
+            label: t({ en: 'Category', ar: 'الفئة' }),
+            placeholder: t({ en: 'Category', ar: 'الفئة' }),
+            value: categoryFilter,
+            onChange: setCategoryFilter,
+            options: categories
+          }
+        ]}
+      />
+
+      {/* Sort options */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">{t({ en: 'Sort by:', ar: 'ترتيب حسب:' })}</span>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[140px] bg-background/80 border-border/50">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-popover border shadow-lg">
+            <SelectItem value="recent">{t({ en: 'Most Recent', ar: 'الأحدث' })}</SelectItem>
+            <SelectItem value="popular">{t({ en: 'Most Popular', ar: 'الأكثر شيوعاً' })}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200">
-          <CardContent className="pt-6 text-center">
-            <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
-            <p className="text-sm text-slate-600 mt-1">{t({ en: 'Total Ideas', ar: 'إجمالي الأفكار' })}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-green-50 to-white border-green-200">
-          <CardContent className="pt-6 text-center">
-            <p className="text-3xl font-bold text-green-600">{stats.popular}</p>
-            <p className="text-sm text-slate-600 mt-1">{t({ en: 'Popular Ideas', ar: 'الأفكار الشائعة' })}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-200">
-          <CardContent className="pt-6 text-center">
-            <p className="text-3xl font-bold text-purple-600">{stats.thisMonth}</p>
-            <p className="text-sm text-slate-600 mt-1">{t({ en: 'This Month', ar: 'هذا الشهر' })}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* AI Sorting */}
-      <Card className="p-4">
-        <AIPrioritySorter ideas={ideas} onSort={setSortedIdeas} />
-      </Card>
-
-      {/* Advanced Filters */}
-      <AdvancedFilters filters={advancedFilters} onChange={setAdvancedFilters} />
-
-      {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
-            <Input
-              placeholder={t({ en: 'Search ideas...', ar: 'ابحث عن الأفكار...' })}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={isRTL ? 'pr-10' : 'pl-10'}
-            />
-          </div>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-48">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder={t({ en: 'Category', ar: 'الفئة' })} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t({ en: 'All', ar: 'الكل' })}</SelectItem>
-              <SelectItem value="transport">{t({ en: 'Transport', ar: 'النقل' })}</SelectItem>
-              <SelectItem value="environment">{t({ en: 'Environment', ar: 'البيئة' })}</SelectItem>
-              <SelectItem value="digital_services">{t({ en: 'Digital', ar: 'رقمي' })}</SelectItem>
-              <SelectItem value="safety">{t({ en: 'Safety', ar: 'السلامة' })}</SelectItem>
-              <SelectItem value="health">{t({ en: 'Health', ar: 'الصحة' })}</SelectItem>
-              <SelectItem value="other">{t({ en: 'Other', ar: 'أخرى' })}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-48">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">{t({ en: 'Most Recent', ar: 'الأحدث' })}</SelectItem>
-              <SelectItem value="popular">{t({ en: 'Most Popular', ar: 'الأكثر شعبية' })}</SelectItem>
-              <SelectItem value="trending">{t({ en: 'Trending', ar: 'الرائج' })}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </Card>
-
-      {/* Ideas Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayIdeas.map((idea) => (
-          <Card key={idea.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between mb-2">
-                <Badge variant="outline" className="capitalize">
-                  {idea.category?.replace(/_/g, ' ')}
-                </Badge>
-                {idea.status === 'approved' && (
-                  <Badge className="bg-green-100 text-green-700">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    {t({ en: 'Approved', ar: 'معتمد' })}
-                  </Badge>
-                )}
-              </div>
-              <CardTitle className="text-lg leading-tight">{idea.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-slate-600 line-clamp-3">{idea.description}</p>
-
-              <div className="flex items-center gap-4 text-xs text-slate-500">
-                {idea.submitter_name && (
-                  <div className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    {idea.submitter_name}
-                  </div>
-                )}
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {new Date(idea.created_date).toLocaleDateString()}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-3 border-t">
-                <div className="flex items-center gap-4">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => voteMutation.mutate(idea.id)}
-                    disabled={voteMutation.isPending}
-                    className="gap-1"
-                  >
-                    <ThumbsUp className="h-4 w-4 text-green-600" />
-                    <span className="font-medium">{idea.vote_count || 0}</span>
-                  </Button>
-                  <div className="flex items-center gap-1 text-sm text-slate-600">
-                    <MessageSquare className="h-4 w-4" />
-                    {idea.comment_count || 0}
+      <CitizenCardGrid 
+        viewMode={viewMode}
+        emptyState={
+          <CitizenEmptyState
+            icon={Lightbulb}
+            title={t({ en: 'No ideas found', ar: 'لم يتم العثور على أفكار' })}
+            description={t({ en: 'Be the first to share your idea!', ar: 'كن أول من يشارك فكرته!' })}
+            action={
+              <Link to={createPageUrl('CitizenIdeaSubmission')}>
+                <Button className="bg-gradient-to-r from-purple-500 to-pink-500">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t({ en: 'Submit Idea', ar: 'إرسال فكرة' })}
+                </Button>
+              </Link>
+            }
+          />
+        }
+      >
+        {sortedIdeas.map(idea => (
+          <Card 
+            key={idea.id} 
+            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${
+              viewMode === 'list' ? 'flex flex-row' : ''
+            }`}
+          >
+            <CardContent className={`p-5 ${viewMode === 'list' ? 'flex items-center gap-6 w-full' : ''}`}>
+              <div className={viewMode === 'list' ? 'flex-1' : ''}>
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className={getStatusColor(idea.status)}>
+                      {idea.status?.replace(/_/g, ' ')}
+                    </Badge>
+                    {idea.category && (
+                      <Badge variant="outline" className="text-xs">
+                        {categories.find(c => c.value === idea.category)?.label || idea.category}
+                      </Badge>
+                    )}
                   </div>
                 </div>
-                <Link to={createPageUrl(`IdeaDetail?id=${idea.id}`)}>
-                  <Button size="sm" variant="outline">
-                    <Eye className="h-4 w-4 mr-1" />
-                    {t({ en: 'View', ar: 'عرض' })}
+
+                <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                  {idea.title}
+                </h3>
+
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  {idea.description}
+                </p>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(idea.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`gap-1 ${userVotes.includes(idea.id) ? 'text-primary' : 'text-muted-foreground'}`}
+                      onClick={() => voteMutation.mutate(idea.id)}
+                      disabled={voteMutation.isPending}
+                    >
+                      <ThumbsUp className="h-4 w-4" />
+                      <span className="font-medium">{idea.votes_count || 0}</span>
+                    </Button>
+                  </div>
+                </div>
+
+                <Link to={`/idea-detail?id=${idea.id}`} className="block mt-3">
+                  <Button variant="outline" size="sm" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    {t({ en: 'View Details', ar: 'عرض التفاصيل' })}
+                    <ArrowRight className={`h-4 w-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
                   </Button>
                 </Link>
               </div>
             </CardContent>
           </Card>
         ))}
-      </div>
-    </div>
+      </CitizenCardGrid>
+    </CitizenPageLayout>
   );
 }
 
