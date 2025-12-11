@@ -10,6 +10,11 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PlatformInsightsWidget() {
+  // Temporarily disabled due to React hook initialization issues
+  // TODO: Re-enable once Vite cache is cleared
+  return null;
+  
+  /*
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
@@ -137,4 +142,5 @@ Generate insights about:
       </CardContent>
     </Card>
   );
+  */
 }
