@@ -1,0 +1,191 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useEntityVisibility } from './useEntityVisibility';
+import { usePermissions } from '@/components/permissions/usePermissions';
+
+/**
+ * Hook for fetching pilots with visibility rules applied.
+ * 
+ * Visibility:
+ * - Admin: All pilots
+ * - National Deputyship: All pilots in their sector(s)
+ * - Municipality Staff: Own + national pilots
+ * - Provider: Own pilots (as solution provider)
+ * - Others: Published/public pilots only
+ */
+export function usePilotsWithVisibility(options = {}) {
+  const { 
+    status,
+    sectorId,
+    limit = 100,
+    includeDeleted = false,
+    providerId = null
+  } = options;
+
+  const { isAdmin, hasRole, userId, profile } = usePermissions();
+  const { 
+    isNational, 
+    sectorIds, 
+    userMunicipalityId, 
+    nationalRegionId,
+    isLoading: visibilityLoading 
+  } = useEntityVisibility();
+
+  const isStaffUser = hasRole('municipality_staff') || 
+                      hasRole('municipality_admin') || 
+                      hasRole('deputyship_staff') || 
+                      hasRole('deputyship_admin');
+
+  const isProvider = hasRole('provider');
+
+  return useQuery({
+    queryKey: ['pilots-with-visibility', {
+      userId,
+      isAdmin,
+      isNational,
+      sectorIds,
+      userMunicipalityId,
+      status,
+      sectorId,
+      limit,
+      providerId
+    }],
+    queryFn: async () => {
+      let baseSelect = `
+        *,
+        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        sector:sectors(id, name_en, name_ar, code),
+        solution:solutions(id, name_en, name_ar, provider_id)
+      `;
+
+      // Provider sees their own pilots
+      if (isProvider && !isStaffUser && !isAdmin) {
+        const userProviderId = providerId || profile?.provider_id;
+        if (!userProviderId) {
+          return [];
+        }
+
+        const { data, error } = await supabase
+          .from('pilots')
+          .select(baseSelect)
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (error) throw error;
+        
+        // Filter by provider through solution relationship
+        return (data || []).filter(pilot => 
+          pilot.solution?.provider_id === userProviderId
+        );
+      }
+
+      let query = supabase
+        .from('pilots')
+        .select(baseSelect)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      // Apply deleted filter
+      if (!includeDeleted) {
+        query = query.eq('is_deleted', false);
+      }
+
+      // Apply status filter if provided
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      // Apply sector filter if provided
+      if (sectorId) {
+        query = query.eq('sector_id', sectorId);
+      }
+
+      // Admin sees everything
+      if (isAdmin) {
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      }
+
+      // Non-staff users only see active/completed pilots
+      if (!isStaffUser) {
+        query = query.in('status', ['active', 'completed', 'scaling']);
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      }
+
+      // National deputyship: Filter by sector
+      if (isNational && sectorIds?.length > 0) {
+        query = query.in('sector_id', sectorIds);
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      }
+
+      // Geographic municipality: Own + national
+      if (userMunicipalityId) {
+        // First get own municipality pilots
+        const { data: ownPilots, error: ownError } = await supabase
+          .from('pilots')
+          .select(baseSelect)
+          .eq('municipality_id', userMunicipalityId)
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false });
+
+        if (ownError) throw ownError;
+
+        // Then get national pilots
+        let nationalPilots = [];
+        if (nationalRegionId) {
+          const { data: nationalMunicipalities } = await supabase
+            .from('municipalities')
+            .select('id')
+            .eq('region_id', nationalRegionId);
+
+          if (nationalMunicipalities?.length > 0) {
+            const nationalMunicipalityIds = nationalMunicipalities.map(m => m.id);
+            const { data: natPilots, error: natError } = await supabase
+              .from('pilots')
+              .select(baseSelect)
+              .in('municipality_id', nationalMunicipalityIds)
+              .eq('is_deleted', false)
+              .order('created_at', { ascending: false });
+
+            if (!natError) {
+              nationalPilots = natPilots || [];
+            }
+          }
+        }
+
+        // Combine and deduplicate
+        const allPilots = [...(ownPilots || []), ...nationalPilots];
+        const uniquePilots = allPilots.filter((pilot, index, self) =>
+          index === self.findIndex(p => p.id === pilot.id)
+        );
+
+        // Apply additional filters
+        let filtered = uniquePilots;
+        if (status) {
+          filtered = filtered.filter(p => p.status === status);
+        }
+        if (sectorId) {
+          filtered = filtered.filter(p => p.sector_id === sectorId);
+        }
+
+        return filtered.slice(0, limit);
+      }
+
+      // Fallback: active/completed only
+      query = query.in('status', ['active', 'completed', 'scaling']);
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !visibilityLoading,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+export default usePilotsWithVisibility;

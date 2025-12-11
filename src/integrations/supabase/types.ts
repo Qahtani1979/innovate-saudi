@@ -4028,6 +4028,7 @@ export type Database = {
           deactivation_reason: string | null
           deleted_by: string | null
           deleted_date: string | null
+          focus_sectors: string[] | null
           gallery_urls: string[] | null
           id: string
           image_url: string | null
@@ -4043,6 +4044,7 @@ export type Database = {
           population: number | null
           region: string
           region_id: string | null
+          sector_id: string | null
           strategic_plan_id: string | null
           updated_at: string
           verification_date: string | null
@@ -4064,6 +4066,7 @@ export type Database = {
           deactivation_reason?: string | null
           deleted_by?: string | null
           deleted_date?: string | null
+          focus_sectors?: string[] | null
           gallery_urls?: string[] | null
           id?: string
           image_url?: string | null
@@ -4079,6 +4082,7 @@ export type Database = {
           population?: number | null
           region: string
           region_id?: string | null
+          sector_id?: string | null
           strategic_plan_id?: string | null
           updated_at?: string
           verification_date?: string | null
@@ -4100,6 +4104,7 @@ export type Database = {
           deactivation_reason?: string | null
           deleted_by?: string | null
           deleted_date?: string | null
+          focus_sectors?: string[] | null
           gallery_urls?: string[] | null
           id?: string
           image_url?: string | null
@@ -4115,6 +4120,7 @@ export type Database = {
           population?: number | null
           region?: string
           region_id?: string | null
+          sector_id?: string | null
           strategic_plan_id?: string | null
           updated_at?: string
           verification_date?: string | null
@@ -4126,6 +4132,13 @@ export type Database = {
             columns: ["ministry_id"]
             isOneToOne: false
             referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "municipalities_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
             referencedColumns: ["id"]
           },
         ]
@@ -9788,6 +9801,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_entity: {
+        Args: {
+          p_entity_municipality_id: string
+          p_entity_sector_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       check_ai_rate_limit: {
         Args: {
           p_endpoint?: string
@@ -9806,6 +9827,15 @@ export type Database = {
         }[]
       }
       get_user_permissions: { Args: { _user_id: string }; Returns: string[] }
+      get_user_visibility_scope: {
+        Args: { p_user_id: string }
+        Returns: {
+          is_national: boolean
+          municipality_id: string
+          scope_type: string
+          sector_ids: string[]
+        }[]
+      }
       has_permission: {
         Args: { _permission_code: string; _user_id: string }
         Returns: boolean
@@ -9818,6 +9848,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_national_entity: {
+        Args: { p_municipality_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
@@ -9834,6 +9868,8 @@ export type Database = {
         | "user"
         | "municipality_coordinator"
         | "municipality_admin"
+        | "deputyship_admin"
+        | "deputyship_staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -9975,6 +10011,8 @@ export const Constants = {
         "user",
         "municipality_coordinator",
         "municipality_admin",
+        "deputyship_admin",
+        "deputyship_staff",
       ],
     },
   },
