@@ -153,6 +153,7 @@ import CampaignPlanner from './pages/CampaignPlanner';
 import WorkflowDesigner from './pages/WorkflowDesigner';
 import CustomReportBuilder from './pages/CustomReportBuilder';
 import MenuCoverageReport from './pages/MenuCoverageReport';
+import MenuSidebarComparison from './pages/MenuSidebarComparison';
 import PlatformToolsCoverageReport from './pages/PlatformToolsCoverageReport';
 import KnowledgeResourcesCoverageReport from './pages/KnowledgeResourcesCoverageReport';
 import ProfilesIdentityCoverageReport from './pages/ProfilesIdentityCoverageReport';
@@ -629,6 +630,7 @@ export const PAGES = {
     "WorkflowDesigner": WorkflowDesigner,
     "CustomReportBuilder": CustomReportBuilder,
     "MenuCoverageReport": MenuCoverageReport,
+    "MenuSidebarComparison": MenuSidebarComparison,
     "PlatformToolsCoverageReport": PlatformToolsCoverageReport,
     "KnowledgeResourcesCoverageReport": KnowledgeResourcesCoverageReport,
     "ProfilesIdentityCoverageReport": ProfilesIdentityCoverageReport,
