@@ -240,6 +240,20 @@ function ApprovalCenter() {
     }
   });
 
+  // Fetch innovation proposals pending screening
+  const { data: innovationProposals = [] } = useQuery({
+    queryKey: ['innovation-proposals-screening'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('innovation_proposals')
+        .select('*')
+        .in('status', ['submitted', 'under_review', 'pending'])
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   // Fetch R&D projects pending approval/kickoff
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects-approval'],
