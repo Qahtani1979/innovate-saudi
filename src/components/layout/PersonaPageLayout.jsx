@@ -108,13 +108,32 @@ export function usePersonaColors() {
 export function PageHeader({ 
   icon: Icon, 
   title, 
+  subtitle,
   description, 
   stats = [],
   action,
+  actions,
   children
 }) {
-  const { isRTL } = useLanguage();
+  const { isRTL, t, language } = useLanguage();
   const { bgGradient, iconColor } = usePersonaColors();
+  
+  // Helper to resolve bilingual text
+  const resolveText = (text) => {
+    if (!text) return null;
+    if (typeof text === 'string') return text;
+    if (typeof text === 'object' && (text.en || text.ar)) {
+      return language === 'ar' && text.ar ? text.ar : text.en;
+    }
+    return text;
+  };
+
+  const resolvedTitle = resolveText(title);
+  const resolvedSubtitle = resolveText(subtitle);
+  const resolvedDescription = resolveText(description);
+  
+  // Support both 'action' and 'actions' props
+  const actionContent = actions || action;
   
   return (
     <div 
@@ -128,19 +147,25 @@ export function PageHeader({
       <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
           {Icon && (
-            <div className={`p-3 rounded-xl bg-background/80 backdrop-blur-sm shadow-sm ${iconColor}`}>
-              <Icon className="h-7 w-7" />
-            </div>
+            typeof Icon === 'function' ? (
+              <div className={`p-3 rounded-xl bg-background/80 backdrop-blur-sm shadow-sm ${iconColor}`}>
+                <Icon className="h-7 w-7" />
+              </div>
+            ) : (
+              <div className={`p-3 rounded-xl bg-background/80 backdrop-blur-sm shadow-sm ${iconColor}`}>
+                {Icon}
+              </div>
+            )
           )}
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{title}</h1>
-            {description && (
-              <p className="text-muted-foreground mt-1 max-w-xl">{description}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{resolvedTitle}</h1>
+            {(resolvedSubtitle || resolvedDescription) && (
+              <p className="text-muted-foreground mt-1 max-w-xl">{resolvedSubtitle || resolvedDescription}</p>
             )}
           </div>
         </div>
         
-        {action && <div className="flex-shrink-0">{action}</div>}
+        {actionContent && <div className="flex-shrink-0">{actionContent}</div>}
       </div>
 
       {/* Stats row */}
@@ -150,7 +175,7 @@ export function PageHeader({
             <div key={idx} className="flex items-center gap-2 bg-background/60 backdrop-blur-sm rounded-lg px-4 py-2">
               {stat.icon && <stat.icon className={`h-4 w-4 ${iconColor}`} />}
               <span className="text-lg font-semibold text-foreground">{stat.value}</span>
-              <span className="text-sm text-muted-foreground">{stat.label}</span>
+              <span className="text-sm text-muted-foreground">{resolveText(stat.label)}</span>
             </div>
           ))}
         </div>
