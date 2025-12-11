@@ -208,7 +208,7 @@ export default function MenuSidebarComparison() {
     ]
   };
 
-  // NEW SIDEBAR MENUS (Per Persona) - UPDATED with requested items
+  // NEW SIDEBAR MENUS (Per Persona) - UPDATED with all items
   const newSidebarMenus = {
     admin: {
       label: 'Platform Admin',
@@ -223,6 +223,14 @@ export default function MenuSidebarComparison() {
         { name: 'DataManagementHub', label: 'Data Management' },
         { name: 'BulkDataOperations', label: 'Bulk Operations' },
         { name: 'ExpertRegistry', label: 'Expert Registry' },
+        { name: 'MenuRBACCoverageReport', label: 'Coverage Reports' },
+        { name: 'ValidationDashboard', label: 'Journey Analysis' },
+        { name: 'MediaLibrary', label: 'Media Library' },
+        { name: 'BrandingSettings', label: 'Branding Settings' },
+        { name: 'TaxonomyBuilder', label: 'Taxonomy Builder' },
+        { name: 'FeatureFlagsDashboard', label: 'Feature Flags' },
+        { name: 'IntegrationManager', label: 'Integration Manager' },
+        { name: 'EmailTemplateEditor', label: 'Email Templates' },
         { name: 'Challenges', label: 'Challenges' },
         { name: 'Pilots', label: 'Pilots' },
         { name: 'Solutions', label: 'Solutions' },
@@ -233,16 +241,7 @@ export default function MenuSidebarComparison() {
         { name: 'AuditTrail', label: 'Audit Logs' },
         { name: 'SystemHealthDashboard', label: 'System Health' }
       ],
-      missingCritical: [
-        'Coverage Reports (34 items) - via /menu-rbac-coverage-report',
-        'Journey Analysis (12 items)',
-        'Media Library',
-        'Branding Settings',
-        'Taxonomy Builder',
-        'Feature Flags',
-        'Integration Manager',
-        'Email Templates'
-      ]
+      missingCritical: []
     },
     executive: {
       label: 'Executive / GDISB',
@@ -257,6 +256,11 @@ export default function MenuSidebarComparison() {
         { name: 'ExecutiveBriefGenerator', label: 'Brief Generator' },
         { name: 'QuarterlyReviewWizard', label: 'Quarterly Review' },
         { name: 'DecisionSimulator', label: 'Decision Simulator' },
+        { name: 'PredictiveForecastingDashboard', label: 'Predictive Forecasting' },
+        { name: 'CompetitiveIntelligenceDashboard', label: 'Competitive Intelligence' },
+        { name: 'InternationalBenchmarkingSuite', label: 'International Benchmarking' },
+        { name: 'Programs', label: 'Programs Overview' },
+        { name: 'RDProjects', label: 'R&D Overview' },
         { name: 'Challenges', label: 'Challenges' },
         { name: 'Pilots', label: 'Pilots' },
         { name: 'PipelineHealthDashboard', label: 'Pipeline Health' },
@@ -265,13 +269,7 @@ export default function MenuSidebarComparison() {
         { name: 'ApprovalCenter', label: 'Approvals' },
         { name: 'ReportsBuilder', label: 'Analytics & Reports' }
       ],
-      missingCritical: [
-        'Predictive Forecasting',
-        'Competitive Intelligence',
-        'International Benchmarking',
-        'Programs Overview',
-        'R&D Overview'
-      ]
+      missingCritical: []
     },
     deputyship: {
       label: 'Deputyship',
@@ -280,8 +278,10 @@ export default function MenuSidebarComparison() {
       items: [
         { name: 'ExecutiveDashboard', label: 'Dashboard' },
         { name: 'RegionalDashboard', label: 'Regional Dashboard' },
+        { name: 'SectorDashboard', label: 'Sector Dashboard' },
         { name: 'MultiCityOrchestration', label: 'Multi-City Orchestration' },
         { name: 'CrossCityLearningHub', label: 'Cross-City Learning' },
+        { name: 'CapacityPlanning', label: 'Capacity Planning' },
         { name: 'StrategicPlans', label: 'Strategic Plans' },
         { name: 'PolicyHub', label: 'Policy Hub' },
         { name: 'MIIDrillDown', label: 'MII Drill Down' },
@@ -294,10 +294,7 @@ export default function MenuSidebarComparison() {
         { name: 'ApprovalCenter', label: 'Approvals' },
         { name: 'ReportsBuilder', label: 'Analytics' }
       ],
-      missingCritical: [
-        'Sector Dashboard',
-        'Capacity Planning'
-      ]
+      missingCritical: []
     },
     municipality: {
       label: 'Municipality',
@@ -313,19 +310,18 @@ export default function MenuSidebarComparison() {
         { name: 'MyChallenges', label: 'My Challenges' },
         { name: 'MyPilots', label: 'My Pilots' },
         { name: 'Programs', label: 'Programs' },
+        { name: 'LivingLabs', label: 'Living Labs' },
         { name: 'MunicipalProposalInbox', label: 'Proposals' },
         { name: 'Solutions', label: 'Solutions' },
         { name: 'MyApprovals', label: 'Approvals' },
         { name: 'MunicipalityIdeasView', label: 'Citizen Ideas' },
+        { name: 'Knowledge', label: 'Knowledge Hub' },
         { name: 'ContractManagement', label: 'Contracts' },
         { name: 'BudgetManagement', label: 'Budget' },
         { name: 'TeamManagement', label: 'Team' },
         { name: 'ReportsBuilder', label: 'Analytics' }
       ],
-      missingCritical: [
-        'Living Labs',
-        'Knowledge Hub'
-      ]
+      missingCritical: []
     },
     provider: {
       label: 'Provider',
@@ -346,12 +342,11 @@ export default function MenuSidebarComparison() {
         { name: 'MyPartnershipsPage', label: 'Partnerships' },
         { name: 'Knowledge', label: 'Knowledge Hub' },
         { name: 'Network', label: 'Network' },
+        { name: 'EventCalendar', label: 'Events' },
         { name: 'Programs', label: 'Programs' },
         { name: 'Messaging', label: 'Messages' }
       ],
-      missingCritical: [
-        'Events'
-      ]
+      missingCritical: []
     },
     expert: {
       label: 'Expert',
@@ -408,7 +403,7 @@ export default function MenuSidebarComparison() {
         { name: 'CitizenRewards', label: 'Rewards & Points' },
         { name: 'PublicPilotTracker', label: 'Public Pilots' },
         { name: 'CitizenPilotEnrollment', label: 'Pilot Enrollment' },
-        { name: 'Events', label: 'Events' },
+        { name: 'EventCalendar', label: 'Events' },
         { name: 'News', label: 'News' },
         { name: 'CitizenLeaderboard', label: 'Leaderboard' },
         { name: 'CitizenNotifications', label: 'Notifications' }
@@ -424,7 +419,7 @@ export default function MenuSidebarComparison() {
         { name: 'UserProfile', label: 'Profile' },
         { name: 'Settings', label: 'Settings' },
         { name: 'News', label: 'News' },
-        { name: 'Events', label: 'Events' },
+        { name: 'EventCalendar', label: 'Events' },
         { name: 'PublicIdeasBoard', label: 'Ideas' },
         { name: 'PublicPilotTracker', label: 'Pilots' },
         { name: 'Solutions', label: 'Solutions' }
