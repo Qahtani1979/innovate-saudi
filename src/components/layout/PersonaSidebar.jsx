@@ -14,6 +14,9 @@ export default function PersonaSidebar({ isOpen, onClose }) {
 
   const menuConfig = SIDEBAR_MENUS[persona] || SIDEBAR_MENUS.user;
   const MenuIcon = menuConfig.icon;
+  
+  // Debug: log menu items to verify home link is present
+  console.log('Sidebar persona:', persona, 'Items:', menuConfig.items?.map(i => i.name));
 
   const isActive = (pageName) => {
     const pageUrl = createPageUrl(pageName);
