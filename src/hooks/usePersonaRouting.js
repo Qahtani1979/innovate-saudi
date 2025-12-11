@@ -108,24 +108,24 @@ export function usePersonaRouting() {
       };
     }
 
-    // Viewer - users with viewer role (public portal access)
+    // Viewer - users with viewer role (browse-only access)
     if (roles.some(r => r === 'viewer')) {
       return {
         persona: 'viewer',
-        defaultDashboard: '/public-portal',
-        dashboardLabel: { en: 'Public Portal', ar: 'البوابة العامة' },
+        defaultDashboard: '/viewer-dashboard',
+        dashboardLabel: { en: 'Visitor Dashboard', ar: 'لوحة الزائر' },
         onboardingWizard: null,
-        portalType: 'public',
+        portalType: 'viewer',
       };
     }
 
-    // Default fallback for authenticated users without roles
+    // Default fallback for authenticated users without roles - treat as citizen
     return {
       persona: 'user',
-      defaultDashboard: '/home',
+      defaultDashboard: '/citizen-dashboard',
       dashboardLabel: { en: 'Dashboard', ar: 'لوحة التحكم' },
       onboardingWizard: 'Onboarding',
-      portalType: 'public',
+      portalType: 'citizen',
     };
   }, [isAdmin, roles, hasPermission, isDeputyship, isMunicipality, isNationalEntity, hasAnyPermission]);
 
