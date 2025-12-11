@@ -96,8 +96,9 @@ export function usePersonaRouting() {
       };
     }
 
-    // Citizen (default for authenticated users)
-    if (hasAnyPermission(['citizen_idea_submit', 'citizen_dashboard_view'])) {
+    // Citizen - users with citizen role
+    if (hasAnyPermission(['citizen_idea_submit', 'citizen_dashboard_view']) || 
+        roles.some(r => r === 'citizen')) {
       return {
         persona: 'citizen',
         defaultDashboard: '/citizen-dashboard',
@@ -107,7 +108,18 @@ export function usePersonaRouting() {
       };
     }
 
-    // Default fallback
+    // Viewer - users with viewer role (public portal access)
+    if (roles.some(r => r === 'viewer')) {
+      return {
+        persona: 'viewer',
+        defaultDashboard: '/public-portal',
+        dashboardLabel: { en: 'Public Portal', ar: 'البوابة العامة' },
+        onboardingWizard: null,
+        portalType: 'public',
+      };
+    }
+
+    // Default fallback for authenticated users without roles
     return {
       persona: 'user',
       defaultDashboard: '/home',
