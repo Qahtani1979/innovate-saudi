@@ -1,3 +1,4 @@
+// Force cache invalidation: 1765466913208
 import { usePermissions } from '@/components/permissions/usePermissions';
 
 /**
