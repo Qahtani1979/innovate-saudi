@@ -10,9 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Search, Target, Calendar, Building2, ArrowRight, ThumbsUp, MessageSquare, Bookmark, Send } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 
-
-export default function CitizenChallengesBrowser() {
+function CitizenChallengesBrowser() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -333,3 +333,5 @@ export default function CitizenChallengesBrowser() {
     </div>
   );
 }
+
+export default ProtectedPage(CitizenChallengesBrowser, { requiredPermissions: [] });
