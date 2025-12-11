@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import AutomatedAuditScheduler from '@/components/access/AutomatedAuditScheduler';
 import { 
@@ -459,51 +460,182 @@ export default function RBACAuditContent() {
         <AuditCard title={t({ en: 'Excessive Role Permissions', ar: 'أدوار بصلاحيات مفرطة' })} icon={AlertTriangle} count={auditResults.excessivePermissionRoles.length} severity={auditResults.excessivePermissionRoles.length > 0 ? 'warning' : 'ok'} items={auditResults.excessivePermissionRoles.map(r => r.name)} emptyMessage={t({ en: 'No excessive permissions', ar: 'لا توجد صلاحيات مفرطة' })} />
       </div>
 
-      {/* Delegations & Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" />{t({ en: 'Active Delegations', ar: 'التفويضات النشطة' })}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {auditResults.activeDelegations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t({ en: 'No active delegations', ar: 'لا توجد تفويضات نشطة' })}</p>
-            ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {auditResults.activeDelegations.map((d, i) => (
-                  <div key={i} className="p-2 border rounded text-xs">
-                    <p className="font-medium">{d.delegator_email} → {d.delegate_email}</p>
-                    <p className="text-muted-foreground">Until: {new Date(d.end_date).toLocaleDateString()}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Detailed Views Tabs */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" />
+            {t({ en: 'Detailed Analysis', ar: 'التحليل التفصيلي' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="issues" className="space-y-4">
+            <TabsList className="grid grid-cols-5 w-full">
+              <TabsTrigger value="issues" className="flex items-center gap-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="hidden sm:inline">{t({ en: 'Issues', ar: 'المشاكل' })}</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">{t({ en: 'Users', ar: 'المستخدمون' })}</span>
+              </TabsTrigger>
+              <TabsTrigger value="roles" className="flex items-center gap-1">
+                <Key className="h-4 w-4" />
+                <span className="hidden sm:inline">{t({ en: 'Roles', ar: 'الأدوار' })}</span>
+              </TabsTrigger>
+              <TabsTrigger value="delegations" className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">{t({ en: 'Delegations', ar: 'التفويضات' })}</span>
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="flex items-center gap-1">
+                <Activity className="h-4 w-4" />
+                <span className="hidden sm:inline">{t({ en: 'Activity', ar: 'النشاط' })}</span>
+              </TabsTrigger>
+            </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" />{t({ en: 'Access Activity', ar: 'نشاط الوصول' })}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">{t({ en: 'Total Access Attempts:', ar: 'محاولات الوصول:' })}</span>
-              <span className="font-medium">{auditResults.totalAccessAttempts}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">{t({ en: 'Denied Attempts:', ar: 'المرفوضة:' })}</span>
-              <span className="font-medium text-red-600">{auditResults.deniedAttempts}</span>
-            </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm text-muted-foreground">{t({ en: 'Success Rate:', ar: 'معدل النجاح:' })}</span>
-                <span className="font-medium">{(100 - parseFloat(auditResults.denialRate)).toFixed(1)}%</span>
+            <TabsContent value="issues" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <AuditCard title={t({ en: 'Users Without Roles', ar: 'مستخدمون بدون أدوار' })} icon={UserX} count={auditResults.usersWithoutRoles.length} severity={auditResults.usersWithoutRoles.length > 5 ? 'critical' : auditResults.usersWithoutRoles.length > 0 ? 'warning' : 'ok'} items={auditResults.usersWithoutRoles.map(u => u.user_email || u.full_name || 'Unknown')} emptyMessage={t({ en: 'All users have roles assigned', ar: 'جميع المستخدمين لديهم أدوار' })} />
+                <AuditCard title={t({ en: 'Roles Without Users', ar: 'أدوار بدون مستخدمين' })} icon={KeyRound} count={auditResults.rolesWithoutUsers.length} severity={auditResults.rolesWithoutUsers.length > 3 ? 'warning' : 'ok'} items={auditResults.rolesWithoutUsers.map(r => r.name)} emptyMessage={t({ en: 'All roles have users assigned', ar: 'جميع الأدوار لديها مستخدمون' })} />
+                <AuditCard title={t({ en: 'Orphaned Permissions', ar: 'صلاحيات يتيمة' })} icon={FileWarning} count={auditResults.orphanedPermissions.length} severity={auditResults.orphanedPermissions.length > 5 ? 'warning' : 'ok'} items={auditResults.orphanedPermissions.map(p => p.code || p.name)} emptyMessage={t({ en: 'All permissions are assigned', ar: 'جميع الصلاحيات مُعينة' })} />
+                <AuditCard title={t({ en: 'Expired Assignments', ar: 'تعيينات منتهية' })} icon={Clock} count={auditResults.expiredAssignments.length} severity={auditResults.expiredAssignments.length > 0 ? 'critical' : 'ok'} items={auditResults.expiredAssignments.map(a => `Role ${a.role_id?.slice(0, 8)}...`)} emptyMessage={t({ en: 'No expired assignments', ar: 'لا توجد تعيينات منتهية' })} />
+                <AuditCard title={t({ en: 'Inactive Assignments', ar: 'تعيينات غير نشطة' })} icon={XCircle} count={auditResults.inactiveAssignments.length} severity={auditResults.inactiveAssignments.length > 10 ? 'warning' : 'ok'} items={auditResults.inactiveAssignments.map(a => `Role ${a.role_id?.slice(0, 8)}...`)} emptyMessage={t({ en: 'All assignments are active', ar: 'جميع التعيينات نشطة' })} />
+                <AuditCard title={t({ en: 'Excessive Role Permissions', ar: 'أدوار بصلاحيات مفرطة' })} icon={AlertTriangle} count={auditResults.excessivePermissionRoles.length} severity={auditResults.excessivePermissionRoles.length > 0 ? 'warning' : 'ok'} items={auditResults.excessivePermissionRoles.map(r => r.name)} emptyMessage={t({ en: 'No excessive permissions', ar: 'لا توجد صلاحيات مفرطة' })} />
               </div>
-              <Progress value={100 - parseFloat(auditResults.denialRate)} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </TabsContent>
+
+            <TabsContent value="users">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {allUsers.map(user => {
+                  const userAppRoles = userRoles.filter(ur => ur.user_id === user.user_id);
+                  const userFuncRoles = userFunctionalRoles.filter(ufr => ufr.user_id === user.user_id && ufr.is_active);
+                  const hasAnyRole = userAppRoles.length > 0 || userFuncRoles.length > 0;
+                  
+                  return (
+                    <div key={user.user_id} className={`p-3 rounded border ${!hasAnyRole ? 'border-red-200 bg-red-50' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{user.full_name || user.user_email}</p>
+                          <p className="text-xs text-muted-foreground">{user.user_email}</p>
+                        </div>
+                        <div className="flex gap-1 flex-wrap justify-end">
+                          {userAppRoles.map(ur => (
+                            <Badge key={ur.id} variant="default" className="text-xs">{ur.role}</Badge>
+                          ))}
+                          {userFuncRoles.map(ufr => {
+                            const role = roles.find(r => r.id === ufr.role_id);
+                            return <Badge key={ufr.id} variant="outline" className="text-xs">{role?.name || 'Unknown'}</Badge>;
+                          })}
+                          {!hasAnyRole && <Badge variant="destructive" className="text-xs">{t({ en: 'No Roles', ar: 'بدون أدوار' })}</Badge>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="roles">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {roles.map(role => {
+                  const permCount = rolePermissions.filter(rp => rp.role_id === role.id).length;
+                  const userCount = userFunctionalRoles.filter(ufr => ufr.role_id === role.id && ufr.is_active).length;
+                  
+                  return (
+                    <div key={role.id} className={`p-3 rounded border ${userCount === 0 ? 'border-yellow-200 bg-yellow-50' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{role.name}</p>
+                          <p className="text-xs text-muted-foreground">{role.description}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge variant="outline" className="text-xs">{permCount} {t({ en: 'permissions', ar: 'صلاحيات' })}</Badge>
+                          <Badge variant={userCount === 0 ? 'secondary' : 'default'} className="text-xs">{userCount} {t({ en: 'users', ar: 'مستخدمين' })}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="delegations">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      {t({ en: 'Active Delegations', ar: 'التفويضات النشطة' })}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResults.activeDelegations.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">{t({ en: 'No active delegations', ar: 'لا توجد تفويضات نشطة' })}</p>
+                    ) : (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {auditResults.activeDelegations.map(d => (
+                          <div key={d.id} className="p-2 rounded border text-xs">
+                            <p><strong>{d.delegator_email}</strong> → {d.delegate_email}</p>
+                            <p className="text-muted-foreground">{t({ en: 'Until:', ar: 'حتى:' })} {new Date(d.end_date).toLocaleDateString()}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-red-500" />
+                      {t({ en: 'Expired Delegations', ar: 'التفويضات المنتهية' })}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResults.expiredDelegations.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">{t({ en: 'No expired delegations', ar: 'لا توجد تفويضات منتهية' })}</p>
+                    ) : (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {auditResults.expiredDelegations.map(d => (
+                          <div key={d.id} className="p-2 rounded border border-red-200 bg-red-50 text-xs">
+                            <p><strong>{d.delegator_email}</strong> → {d.delegate_email}</p>
+                            <p className="text-red-600">{t({ en: 'Expired:', ar: 'انتهى:' })} {new Date(d.end_date).toLocaleDateString()}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="activity">
+              <Card>
+                <CardContent className="pt-4">
+                  {accessLogs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t({ en: 'No recent access logs', ar: 'لا توجد سجلات وصول حديثة' })}</p>
+                  ) : (
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {accessLogs.slice(0, 30).map(log => (
+                        <div key={log.id} className="p-2 rounded border text-xs flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{log.action}</p>
+                            <p className="text-muted-foreground">{log.user_email || 'Anonymous'}</p>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="outline" className="text-xs">{log.entity_type}</Badge>
+                            <p className="text-xs text-muted-foreground mt-1">{new Date(log.created_at).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

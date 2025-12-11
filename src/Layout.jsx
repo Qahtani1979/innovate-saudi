@@ -477,7 +477,6 @@ function LayoutContent({ children, currentPageName }) {
             { name: 'UserManagementHub', icon: Users, label: { en: 'User Management Hub', ar: 'مركز إدارة المستخدمين' } },
             { name: 'RBACHub', icon: Shield, label: { en: 'RBAC Management Hub', ar: 'مركز إدارة الصلاحيات' } },
             { name: 'RolePermissionManager', icon: Shield, label: { en: 'Roles & Permissions', ar: 'الأدوار والصلاحيات' } },
-            { name: 'RBACComprehensiveAudit', icon: Shield, label: { en: 'Comprehensive RBAC Audit', ar: 'التدقيق الشامل لـ RBAC' } },
             { name: 'RoleRequestCenter', icon: UserPlus, label: { en: 'Role Requests', ar: 'طلبات الأدوار' } },
             { name: 'RoleRequestApprovalQueue', icon: CheckCircle, label: { en: 'Approve Roles', ar: 'الموافقة على الأدوار' }, requireAdmin: true },
             { name: 'UserActivityDashboard', icon: Activity, label: { en: 'User Analytics', ar: 'تحليلات المستخدمين' } },
