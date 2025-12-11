@@ -214,8 +214,8 @@ function ApprovalCenter() {
   });
 
   // Fetch citizen idea approval requests
-  const { data: ideaApprovals = [] } = useQuery({
-    queryKey: ['idea-approvals'],
+  const { data: citizenIdeas = [] } = useQuery({
+    queryKey: ['citizen-ideas-approvals'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('citizen_ideas')
