@@ -213,6 +213,33 @@ function ApprovalCenter() {
     }
   });
 
+  // Fetch citizen idea approval requests
+  const { data: ideaApprovals = [] } = useQuery({
+    queryKey: ['idea-approvals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('citizen_ideas')
+        .select('*')
+        .in('status', ['submitted', 'under_review'])
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch innovation proposal approval requests
+  const { data: innovationProposalApprovals = [] } = useQuery({
+    queryKey: ['innovation-proposal-approvals'],
+    queryFn: async () => {
+      const approvals = await base44.entities.ApprovalRequest.filter({ 
+        entity_type: 'innovation_proposal',
+        status: { $in: ['pending', 'under_review'] }
+      });
+      const proposals = await base44.entities.InnovationProposal.list();
+      return approvals.map(a => ({ ...a, proposalData: proposals.find(p => p.id === a.entity_id) })).filter(a => a.proposalData);
+    }
+  });
+
   const approveMutation = useMutation({
     mutationFn: async ({ entity, id, updates }) => {
       if (entity === 'challenge') {
