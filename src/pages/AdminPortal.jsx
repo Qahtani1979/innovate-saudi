@@ -14,6 +14,7 @@ import {
   Lightbulb, TestTube, Calendar, MapPin, Network, BookOpen, Sparkles
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function AdminPortal() {
   const { language, isRTL, t } = useLanguage();
@@ -164,20 +165,12 @@ function AdminPortal() {
   ];
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">
-            {t({ en: 'GDISB Admin Portal', ar: 'بوابة إدارة GDISB' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Platform administration and system configuration', ar: 'إدارة المنصة وتكوين النظام' })}
-          </p>
-        </div>
-        <div className="p-3 bg-gradient-to-br from-blue-600 to-teal-600 rounded-xl shadow-lg">
-          <Shield className="h-6 w-6 text-white" />
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'GDISB Admin Portal', ar: 'بوابة إدارة GDISB' }}
+        subtitle={{ en: 'Platform administration and system configuration', ar: 'إدارة المنصة وتكوين النظام' }}
+        icon={<Shield className="h-6 w-6 text-white" />}
+      />
 
       {/* Approval Alerts */}
       {((pendingApprovals?.challenges?.length || 0) + (pendingApprovals?.pilots?.length || 0)) > 0 && (
@@ -476,7 +469,7 @@ function AdminPortal() {
           </Card>
         );
       })}
-    </div>
+    </PageLayout>
   );
 }
 
