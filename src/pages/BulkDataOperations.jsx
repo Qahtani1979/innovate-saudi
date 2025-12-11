@@ -32,13 +32,22 @@ export default function BulkDataOperations() {
   const handleImport = async () => {
     if (!file) return;
     
-    const fileUrl = await uploadFile.mutateAsync(file);
-    const schema = await base44.entities[selectedEntity].schema();
-    const result = await extractData.mutateAsync({ fileUrl, schema });
-    
-    if (result.status === 'success' && result.output) {
-      await base44.entities[selectedEntity].bulkCreate(Array.isArray(result.output) ? result.output : [result.output]);
-      alert(t({ en: 'Import successful', ar: 'نجح الاستيراد' }));
+    try {
+      const fileUrl = await uploadFile.mutateAsync(file);
+      const schema = await base44.entities[selectedEntity].schema();
+      const result = await extractData.mutateAsync({ fileUrl, schema });
+      
+      // Handle response - edge function returns extracted data directly
+      if (result && !result.error) {
+        const dataToImport = Array.isArray(result) ? result : [result];
+        await base44.entities[selectedEntity].bulkCreate(dataToImport);
+        alert(t({ en: 'Import successful', ar: 'نجح الاستيراد' }));
+      } else {
+        alert(t({ en: 'Import failed: ' + (result?.error || 'Unknown error'), ar: 'فشل الاستيراد' }));
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      alert(t({ en: 'Import failed: ' + error.message, ar: 'فشل الاستيراد' }));
     }
   };
 

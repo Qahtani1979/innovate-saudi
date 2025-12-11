@@ -387,6 +387,107 @@ function createEntityHandler(entityName) {
         throw error;
       }
       return count || 0;
+    },
+
+    /**
+     * Bulk create multiple records
+     */
+    async bulkCreate(records) {
+      if (!records || records.length === 0) return [];
+      
+      // Clean data - remove empty IDs
+      const cleanRecords = records.map(record => {
+        const clean = { ...record };
+        if (!clean.id) delete clean.id;
+        return clean;
+      });
+      
+      const { data, error } = await supabase
+        .from(tableName)
+        .insert(cleanRecords)
+        .select();
+      
+      if (error) {
+        console.error(`Error bulk creating ${entityName}:`, error);
+        throw error;
+      }
+      return data || [];
+    },
+
+    /**
+     * Get schema for the entity (returns basic structure for AI extraction)
+     */
+    async schema() {
+      // Return a basic schema structure based on entity type
+      // This is used by AI to understand what fields to extract
+      const commonFields = {
+        id: { type: 'string', format: 'uuid' },
+        created_at: { type: 'string', format: 'date-time' },
+        updated_at: { type: 'string', format: 'date-time' },
+      };
+      
+      const entitySchemas = {
+        challenges: {
+          type: 'object',
+          properties: {
+            ...commonFields,
+            title_en: { type: 'string' },
+            title_ar: { type: 'string' },
+            description_en: { type: 'string' },
+            description_ar: { type: 'string' },
+            status: { type: 'string' },
+            priority: { type: 'string' },
+            category: { type: 'string' },
+            sector: { type: 'string' },
+          },
+          required: ['title_en']
+        },
+        pilots: {
+          type: 'object',
+          properties: {
+            ...commonFields,
+            title_en: { type: 'string' },
+            title_ar: { type: 'string' },
+            description_en: { type: 'string' },
+            description_ar: { type: 'string' },
+            status: { type: 'string' },
+            start_date: { type: 'string', format: 'date' },
+            end_date: { type: 'string', format: 'date' },
+          },
+          required: ['title_en']
+        },
+        solutions: {
+          type: 'object',
+          properties: {
+            ...commonFields,
+            name_en: { type: 'string' },
+            name_ar: { type: 'string' },
+            description_en: { type: 'string' },
+            description_ar: { type: 'string' },
+            status: { type: 'string' },
+            category: { type: 'string' },
+          },
+          required: ['name_en']
+        },
+        rd_projects: {
+          type: 'object',
+          properties: {
+            ...commonFields,
+            title_en: { type: 'string' },
+            title_ar: { type: 'string' },
+            description_en: { type: 'string' },
+            description_ar: { type: 'string' },
+            status: { type: 'string' },
+            research_type: { type: 'string' },
+          },
+          required: ['title_en']
+        },
+      };
+      
+      return entitySchemas[tableName] || {
+        type: 'object',
+        properties: commonFields,
+      };
     }
   };
 }
