@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
 import useOnboardingAnalytics from '@/hooks/useOnboardingAnalytics';
+import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { 
   CheckCircle2, ArrowRight, ArrowLeft, Sparkles, 
   Building2, Lightbulb, FlaskConical, Users, Eye,
@@ -187,6 +188,7 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
   const { user, userProfile, checkAuth, userRoles } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { checkAndAssignRole, assignRole } = useAutoRoleAssignment();
   
   const { invokeAI, status: aiStatus, isLoading: isGeneratingAI, isAvailable, rateLimitInfo } = useAIWithFallback();
   
@@ -894,23 +896,49 @@ Return comprehensive suggestions for all fields.`,
 
       console.log('Profile updated successfully:', updateData);
 
-      // Submit role request if needed
-      if (formData.requestRole && formData.selectedPersona && formData.roleJustification) {
-        const { error: roleError } = await supabase
-          .from('role_requests')
-          .insert({
-            user_id: user.id,
-            user_email: user.email,
-            requested_role: formData.selectedPersona,
-            justification: formData.roleJustification,
-            status: 'pending'
-          });
+      // Handle role assignment based on persona type
+      const selectedPersona = formData.selectedPersona;
+      
+      if (selectedPersona === 'viewer') {
+        // Viewer is always auto-approved - assign directly
+        await assignRole({
+          userId: user.id,
+          userEmail: user.email,
+          role: 'viewer'
+        });
+        console.log('Viewer role assigned');
+      } else if (selectedPersona && !redirectToSpecialized) {
+        // Non-specialized persona that doesn't have a stage 2 wizard
+        // Check auto-approval and assign or create request
+        const roleResult = await checkAndAssignRole({
+          userId: user.id,
+          userEmail: user.email,
+          personaType: selectedPersona,
+          justification: `Onboarding completed as ${selectedPersona}`,
+          language
+        });
         
-        if (roleError) {
-          console.error('Role request error:', roleError);
-          toast.info(t({ en: 'Role request could not be submitted', ar: 'تعذر إرسال طلب الدور' }));
+        if (roleResult.autoApproved) {
+          toast.success(t({ en: 'Role automatically approved!', ar: 'تمت الموافقة على الدور تلقائياً!' }));
         } else {
-          toast.success(t({ en: 'Role request submitted for approval!', ar: 'تم إرسال طلب الدور للموافقة!' }));
+          toast.info(t({ en: 'Role request submitted for approval.', ar: 'تم تقديم طلب الدور للموافقة.' }));
+        }
+      } else if (selectedPersona && redirectToSpecialized) {
+        // For specialized personas redirecting to stage 2:
+        // Pre-check auto-approval and create pending request if not auto-approved
+        // The stage 2 wizard will finalize the role assignment
+        const roleResult = await checkAndAssignRole({
+          userId: user.id,
+          userEmail: user.email,
+          personaType: selectedPersona,
+          justification: `Stage 1 onboarding completed, proceeding to ${selectedPersona} setup`,
+          language
+        });
+        
+        if (roleResult.autoApproved) {
+          console.log(`Role ${selectedPersona} auto-approved in stage 1`);
+        } else {
+          console.log(`Role request created for ${selectedPersona}, pending stage 2 completion or admin approval`);
         }
       }
       
