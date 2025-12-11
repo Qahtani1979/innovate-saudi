@@ -13,6 +13,7 @@ import {
   ChevronRight, Play, Star, Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import PublicHeader from '@/components/public/PublicHeader';
 
 function PublicPortal() {
   const { language, isRTL, t, toggleLanguage } = useLanguage();
@@ -118,69 +119,8 @@ function PublicPortal() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-bold text-xl text-slate-900">
-                {t({ en: 'Saudi Innovates', ar: 'الابتكار السعودي' })}
-              </span>
-            </div>
-            
-            <div className="hidden md:flex items-center gap-6">
-              <Link to="/about" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'About', ar: 'عن المنصة' })}
-              </Link>
-              <Link to="/public-challenges" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'Challenges', ar: 'التحديات' })}
-              </Link>
-              <Link to="/public-solutions" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'Solutions', ar: 'الحلول' })}
-              </Link>
-              <Link to="/for-municipalities" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'For Municipalities', ar: 'للبلديات' })}
-              </Link>
-              <Link to="/for-providers" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'For Providers', ar: 'للمزودين' })}
-              </Link>
-              <Link to="/for-innovators" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'For Innovators', ar: 'للمبتكرين' })}
-              </Link>
-              <Link to="/for-researchers" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                {t({ en: 'For Researchers', ar: 'للباحثين' })}
-              </Link>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleLanguage}
-                className="text-slate-600 gap-2"
-              >
-                <Globe className="h-4 w-4" />
-                <span className="hidden sm:inline">{language === 'en' ? 'العربية' : 'English'}</span>
-              </Button>
-              <Link to="/auth">
-                <Button variant="ghost" size="sm" className="text-slate-600">
-                  <LogIn className="h-4 w-4 mr-2" />
-                  {t({ en: 'Sign In', ar: 'تسجيل الدخول' })}
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  {t({ en: 'Get Started', ar: 'ابدأ الآن' })}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Use shared PublicHeader for consistent auth status display */}
+      <PublicHeader />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
