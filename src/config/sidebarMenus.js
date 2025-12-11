@@ -96,6 +96,7 @@ export const SIDEBAR_MENUS = {
       { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
       { name: 'AuditTrail', icon: History, label: { en: 'Audit Logs', ar: 'سجلات التدقيق' } },
       { name: 'SystemHealthDashboard', icon: Activity, label: { en: 'System Health', ar: 'صحة النظام' } },
+      { name: 'MenuSidebarComparison', icon: LayoutGrid, label: { en: 'Menu Comparison', ar: 'مقارنة القوائم' } },
     ]
   },
 
