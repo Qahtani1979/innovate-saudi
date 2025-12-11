@@ -9564,30 +9564,36 @@ export type Database = {
           assigned_at: string | null
           created_at: string
           id: string
+          is_active: boolean | null
           municipality_id: string | null
           organization_id: string | null
           revoked_at: string | null
           role: Database["public"]["Enums"]["app_role"]
+          user_email: string | null
           user_id: string
         }
         Insert: {
           assigned_at?: string | null
           created_at?: string
           id?: string
+          is_active?: boolean | null
           municipality_id?: string | null
           organization_id?: string | null
           revoked_at?: string | null
           role: Database["public"]["Enums"]["app_role"]
+          user_email?: string | null
           user_id: string
         }
         Update: {
           assigned_at?: string | null
           created_at?: string
           id?: string
+          is_active?: boolean | null
           municipality_id?: string | null
           organization_id?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          user_email?: string | null
           user_id?: string
         }
         Relationships: []
