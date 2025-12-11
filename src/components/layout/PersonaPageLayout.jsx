@@ -162,15 +162,9 @@ export function PageHeader({
       <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
           {Icon && (
-            typeof Icon === 'function' ? (
-              <div className={`p-3 rounded-xl bg-background/80 backdrop-blur-sm shadow-sm ${iconColor}`}>
-                <Icon className="h-7 w-7" />
-              </div>
-            ) : (
-              <div className={`p-3 rounded-xl bg-background/80 backdrop-blur-sm shadow-sm ${iconColor}`}>
-                {Icon}
-              </div>
-            )
+            <div className={`p-3 rounded-xl bg-background/80 backdrop-blur-sm shadow-sm ${iconColor}`}>
+              {typeof Icon === 'function' || (Icon && Icon.$$typeof) ? <Icon className="h-7 w-7" /> : null}
+            </div>
           )}
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">{resolvedTitle}</h1>
