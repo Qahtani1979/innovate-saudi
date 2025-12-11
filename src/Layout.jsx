@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { Button } from "@/components/ui/button";
@@ -42,18 +42,18 @@ import { useAuth } from '@/lib/AuthContext';
 import OnboardingWizard from './components/onboarding/OnboardingWizard';
 
 function LayoutContent({ children, currentPageName }) {
-  const [sidebarOpen, setSidebarOpen] = React.useState(true);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [searchResults, setSearchResults] = React.useState([]);
-  const [searchOpen, setSearchOpen] = React.useState(false);
-  const [showOnboarding, setShowOnboarding] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { language, isRTL, toggleLanguage } = useLanguage();
   const { user, hasPermission, hasAnyPermission, isAdmin, isDeputyship, isMunicipality } = usePermissions();
   const { persona, menuVisibility, defaultDashboard } = usePersonaRouting();
   const { isAuthenticated, userProfile, checkAuth, logout } = useAuth();
 
   // Show onboarding wizard for new users who haven't completed it
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated && userProfile) {
       if (userProfile.onboarding_completed === true) {
         setShowOnboarding(false);
