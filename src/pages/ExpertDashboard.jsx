@@ -18,6 +18,7 @@ import {
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
 import ProfileCompletenessCoach from '../components/onboarding/ProfileCompletenessCoach';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 function ExpertDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -120,29 +121,25 @@ function ExpertDashboard() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <div className="p-2 bg-amber-100 rounded-xl">
-              <GraduationCap className="h-8 w-8 text-amber-600" />
-            </div>
-            {t({ en: 'Expert Dashboard', ar: 'لوحة الخبير' })}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t({ en: 'Manage your evaluations and track your performance', ar: 'إدارة تقييماتك وتتبع أدائك' })}
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <PageLayout>
+      <PageHeader
+        icon={GraduationCap}
+        title={t({ en: 'Expert Dashboard', ar: 'لوحة الخبير' })}
+        description={t({ en: 'Manage your evaluations and track your performance', ar: 'إدارة تقييماتك وتتبع أدائك' })}
+        stats={[
+          { icon: Clock, value: pendingAssignments.length, label: t({ en: 'Pending', ar: 'معلق' }) },
+          { icon: CheckCircle2, value: completedAssignments.length, label: t({ en: 'Completed', ar: 'مكتمل' }) },
+          { icon: TrendingUp, value: `${completionRate}%`, label: t({ en: 'Completion Rate', ar: 'معدل الإنجاز' }) },
+        ]}
+        action={
           <Link to={createPageUrl('EvaluationPanel')}>
-            <Button className="bg-amber-600 hover:bg-amber-700">
+            <PersonaButton>
               <ClipboardCheck className="h-4 w-4 mr-2" />
               {t({ en: 'Start Evaluation', ar: 'بدء التقييم' })}
-            </Button>
+            </PersonaButton>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Onboarding Helpers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -445,7 +442,7 @@ function ExpertDashboard() {
           </Card>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

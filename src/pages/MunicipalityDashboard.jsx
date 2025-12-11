@@ -24,6 +24,7 @@ import MunicipalPolicyTracker from '../components/policy/MunicipalPolicyTracker'
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 function MunicipalityDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -279,23 +280,23 @@ Provide:
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">
-            {t({ en: 'Municipality Hub', ar: 'مركز البلدية' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Manage your innovation initiatives', ar: 'إدارة مبادرات الابتكار' })}
-          </p>
-        </div>
-        <div className="flex gap-3">
+    <PageLayout>
+      <PageHeader
+        icon={Building2}
+        title={t({ en: 'Municipality Hub', ar: 'مركز البلدية' })}
+        description={t({ en: 'Manage your innovation initiatives', ar: 'إدارة مبادرات الابتكار' })}
+        stats={[
+          { icon: AlertCircle, value: challenges.length, label: t({ en: 'Challenges', ar: 'التحديات' }) },
+          { icon: TestTube, value: pilots.length, label: t({ en: 'Pilots', ar: 'التجارب' }) },
+          { icon: TrendingUp, value: myMunicipality?.mii_score?.toFixed(1) || '—', label: t({ en: 'MII Score', ar: 'مؤشر MII' }) },
+        ]}
+        action={
           <Button onClick={handleAIInsights} variant="outline" className="gap-2">
             <Sparkles className="h-4 w-4" />
             {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Alert Banners */}
       {escalatedChallenges.length > 0 && (
@@ -1197,7 +1198,7 @@ Provide:
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

@@ -28,6 +28,7 @@ import {
   Clock, BarChart3, Zap, Building2, Mail
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 function StartupDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -135,20 +136,17 @@ function StartupDashboard() {
   });
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">
-            {t({ en: 'Startup & Provider Portal', ar: 'بوابة الشركات الناشئة والمزودين' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Discover opportunities, submit proposals, and grow your impact', ar: 'اكتشف الفرص، قدم المقترحات، وزد تأثيرك' })}
-          </p>
-        </div>
-        <div className="p-3 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl shadow-lg">
-          <Rocket className="h-6 w-6 text-white" />
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Rocket}
+        title={t({ en: 'Startup & Provider Portal', ar: 'بوابة الشركات الناشئة والمزودين' })}
+        description={t({ en: 'Discover opportunities, submit proposals, and grow your impact', ar: 'اكتشف الفرص، قدم المقترحات، وزد تأثيرك' })}
+        stats={[
+          { icon: Target, value: openChallenges.length, label: t({ en: 'Open Challenges', ar: 'تحديات مفتوحة' }) },
+          { icon: Lightbulb, value: mySolutions.length, label: t({ en: 'My Solutions', ar: 'حلولي' }) },
+          { icon: Calendar, value: openPrograms.length, label: t({ en: 'Open Programs', ar: 'برامج مفتوحة' }) },
+        ]}
+      />
 
       {/* Matchmaker Status Banner */}
       {myMatchmakerApp && (
@@ -646,7 +644,7 @@ function StartupDashboard() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 
