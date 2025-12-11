@@ -37,8 +37,7 @@ export default function PersonaSidebar({ isOpen, onClose }) {
           isRTL ? "right-0 border-l border-r-0" : "left-0",
           isOpen 
             ? "translate-x-0" 
-            : isRTL ? "translate-x-full" : "-translate-x-full",
-          "lg:translate-x-0"
+            : isRTL ? "translate-x-full" : "-translate-x-full"
         )}
       >
         {/* Persona Badge */}
