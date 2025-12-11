@@ -98,9 +98,27 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/public-idea-submission" element={<PublicIdeaSubmission />} />
-      <Route path="/citizen-challenges-browser" element={<CitizenChallengesBrowser />} />
-      <Route path="/citizen-solutions-browser" element={<CitizenSolutionsBrowser />} />
-      <Route path="/citizen-living-labs-browser" element={<CitizenLivingLabsBrowser />} />
+      <Route path="/citizen-challenges-browser" element={
+        isAuthenticated ? (
+          <LayoutWrapper currentPageName="CitizenChallengesBrowser">
+            <CitizenChallengesBrowser />
+          </LayoutWrapper>
+        ) : <Navigate to="/auth" replace />
+      } />
+      <Route path="/citizen-solutions-browser" element={
+        isAuthenticated ? (
+          <LayoutWrapper currentPageName="CitizenSolutionsBrowser">
+            <CitizenSolutionsBrowser />
+          </LayoutWrapper>
+        ) : <Navigate to="/auth" replace />
+      } />
+      <Route path="/citizen-living-labs-browser" element={
+        isAuthenticated ? (
+          <LayoutWrapper currentPageName="CitizenLivingLabsBrowser">
+            <CitizenLivingLabsBrowser />
+          </LayoutWrapper>
+        ) : <Navigate to="/auth" replace />
+      } />
       
       {/* All other pages */}
       {Object.entries(Pages).map(([pageName, Page]) => {
