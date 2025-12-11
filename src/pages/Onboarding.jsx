@@ -67,7 +67,7 @@ export default function Onboarding() {
       }
       // Expert
       else if (role === 'expert' || role === 'evaluator' || persona === 'expert') {
-        navigate('/expert-registry');
+        navigate('/expert-dashboard');
       }
       // Researcher / academic
       else if (role === 'researcher' || persona === 'researcher') {

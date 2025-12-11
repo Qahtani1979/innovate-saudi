@@ -352,6 +352,7 @@ import TaxonomyCoverageReport from './pages/TaxonomyCoverageReport';
 import GeographyCoverageReport from './pages/GeographyCoverageReport';
 import ExpertCoverageReport from './pages/ExpertCoverageReport';
 import ExpertRegistry from './pages/ExpertRegistry';
+import ExpertDashboard from './pages/ExpertDashboard';
 import ExpertAssignmentQueue from './pages/ExpertAssignmentQueue';
 import ExpertDetail from './pages/ExpertDetail';
 import ExpertOnboarding from './pages/ExpertOnboarding';
@@ -827,6 +828,7 @@ export const PAGES = {
     "GeographyCoverageReport": GeographyCoverageReport,
     "ExpertCoverageReport": ExpertCoverageReport,
     "ExpertRegistry": ExpertRegistry,
+    "ExpertDashboard": ExpertDashboard,
     "ExpertAssignmentQueue": ExpertAssignmentQueue,
     "ExpertDetail": ExpertDetail,
     "ExpertOnboarding": ExpertOnboarding,

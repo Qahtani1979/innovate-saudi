@@ -77,7 +77,7 @@ export function usePersonaRouting() {
         roles.some(r => r.includes('expert') || r.includes('evaluator'))) {
       return {
         persona: 'expert',
-        defaultDashboard: '/expert-registry',
+        defaultDashboard: '/expert-dashboard',
         dashboardLabel: { en: 'Expert Dashboard', ar: 'لوحة الخبير' },
         onboardingWizard: 'ExpertOnboarding',
         portalType: 'expert',
