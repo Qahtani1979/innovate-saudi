@@ -48,6 +48,7 @@ import RealTimeMarketIntelligence from '../components/solutions/RealTimeMarketIn
 import TRLAssessmentTool from '../components/solutions/TRLAssessmentTool';
 import SolutionRDCollaborationProposal from '../components/solutions/SolutionRDCollaborationProposal';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SolutionDetailPage() {
@@ -190,7 +191,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
   const MaturityIcon = maturityInfo.icon;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Workflow Modals */}
       {showVerification && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1317,7 +1318,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

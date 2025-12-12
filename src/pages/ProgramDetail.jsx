@@ -48,6 +48,7 @@ import ResourceLibrary from '../components/programs/ResourceLibrary';
 import AlumniSuccessStoryGenerator from '../components/programs/AlumniSuccessStoryGenerator';
 import MunicipalImpactCalculator from '../components/programs/MunicipalImpactCalculator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProgramDetail() {
@@ -187,7 +188,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
   const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Workflow Modals */}
       {showLaunch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1209,6 +1210,6 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }

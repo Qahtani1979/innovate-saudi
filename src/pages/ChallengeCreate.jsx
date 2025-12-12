@@ -20,6 +20,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ChallengeCreatePage() {
   const { hasPermission } = usePermissions();
@@ -586,16 +587,12 @@ Return actual IDs from the lists provided.`;
     : cities;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'Create New Challenge', ar: 'إنشاء تحدي جديد' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'AI-powered challenge submission for Saudi municipalities', ar: 'تقديم تحدي بدعم ذكي للبلديات السعودية' })}
-        </p>
-      </div>
+    <PageLayout className="max-w-5xl mx-auto">
+      <PageHeader
+        icon={Target}
+        title={{ en: 'Create New Challenge', ar: 'إنشاء تحدي جديد' }}
+        description={{ en: 'AI-powered challenge submission for Saudi municipalities', ar: 'تقديم تحدي بدعم ذكي للبلديات السعودية' }}
+      />
 
       {/* Progress */}
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
@@ -1638,7 +1635,7 @@ Return actual IDs from the lists provided.`;
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

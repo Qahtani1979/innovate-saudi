@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles, X, Eye, EyeOff } from 'lucide-react';
+import { Save, Loader2, Sparkles, X, Eye, EyeOff, Target } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import CollaborativeEditing from '../components/CollaborativeEditing';
 import { createNotification } from '../components/AutoNotification';
@@ -19,6 +19,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { FileText } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ChallengeEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -422,16 +423,18 @@ function ChallengeEdit() {
   const sectorOptions = ['urban_design', 'transport', 'environment', 'digital_services', 'health', 'education', 'safety'];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout className="max-w-4xl mx-auto">
+      <PageHeader
+        icon={Target}
+        title={{ en: 'Edit Challenge', ar: 'تعديل التحدي' }}
+        description={formData.code}
+        action={
+          <Button onClick={() => setPreviewMode(!previewMode)} variant="outline" className="gap-2">
+            {previewMode ? <><EyeOff className="h-4 w-4" />{t({ en: 'Exit Preview', ar: 'إنهاء المعاينة' })}</> : <><Eye className="h-4 w-4" />{t({ en: 'Preview', ar: 'معاينة' })}</>}
+          </Button>
+        }
+      />
       <CollaborativeEditing entityId={challengeId} entityType="Challenge" />
-      
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Edit Challenge', ar: 'تعديل التحدي' })}
-          </h1>
-          <p className="text-slate-600 mt-1">{formData.code}</p>
-        </div>
         <Button
           onClick={() => setPreviewMode(!previewMode)}
           variant="outline"
@@ -1218,7 +1221,7 @@ function ChallengeEdit() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

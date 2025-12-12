@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles, Plus, X, AlertTriangle, Eye } from 'lucide-react';
+import { Save, Loader2, Sparkles, Plus, X, AlertTriangle, Eye, TestTube } from 'lucide-react';
 import { createNotification } from '../components/AutoNotification';
 import CollaborativeEditing from '../components/CollaborativeEditing';
 import FileUploader from '../components/FileUploader';
@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function PilotEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -505,9 +506,13 @@ function PilotEditPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout className="max-w-4xl mx-auto">
+      <PageHeader
+        icon={TestTube}
+        title={{ en: 'Edit Pilot', ar: 'تعديل التجربة' }}
+        description={formData?.code}
+      />
       <CollaborativeEditing entityId={pilotId} entityType="Pilot" />
-      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
@@ -2886,7 +2891,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

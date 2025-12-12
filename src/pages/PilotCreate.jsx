@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, ArrowRight, ArrowLeft, Save, Loader2, Plus, X, MapPin, Shield } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, Save, Loader2, Plus, X, MapPin, Shield, TestTube } from 'lucide-react';
 import { toast } from 'sonner';
 import TemplateLibrary from '../components/TemplateLibrary';
 import FileUploader from '../components/FileUploader';
@@ -25,6 +25,7 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import SolutionReadinessGate from '../components/solutions/SolutionReadinessGate';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function PilotCreatePage() {
   const { hasPermission } = usePermissions();
@@ -646,32 +647,29 @@ function PilotCreatePage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-            Create New Pilot
-          </h1>
-          <p className="text-slate-600 mt-2">Design and launch a pilot project</p>
-          <p className="text-slate-600 text-sm" dir="rtl">تصميم وإطلاق مشروع تجريبي</p>
-        </div>
-        <TemplateLibrary 
-          entityType="Pilot" 
-          onUseTemplate={(template) => {
-            setFormData({
-              ...formData,
-              title_en: template.title_en,
-              title_ar: template.title_ar,
-              sector: template.sector,
-              duration_weeks: template.duration_weeks,
-              trl_start: template.trl_start,
-              budget: template.budget,
-              kpis: template.kpis || []
-            });
-          }}
-        />
-      </div>
+    <PageLayout className="max-w-5xl mx-auto">
+      <PageHeader
+        icon={TestTube}
+        title={{ en: 'Create New Pilot', ar: 'إنشاء تجربة جديدة' }}
+        description={{ en: 'Design and launch a pilot project', ar: 'تصميم وإطلاق مشروع تجريبي' }}
+        action={
+          <TemplateLibrary 
+            entityType="Pilot" 
+            onUseTemplate={(template) => {
+              setFormData({
+                ...formData,
+                title_en: template.title_en,
+                title_ar: template.title_ar,
+                sector: template.sector,
+                duration_weeks: template.duration_weeks,
+                trl_start: template.trl_start,
+                budget: template.budget,
+                kpis: template.kpis || []
+              });
+            }}
+          />
+        }
+      />
 
       {/* Progress Stepper */}
       <Card className="bg-gradient-to-r from-blue-50 to-teal-50">
@@ -2880,7 +2878,7 @@ Ensure total equals ${formData.budget}. Return JSON array with: category, amount
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
