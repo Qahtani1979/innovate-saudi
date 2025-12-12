@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,28 @@ function MIIPage() {
     queryFn: () => base44.entities.Municipality.list('-mii_score')
   });
 
+  // Fetch latest MII results with dimension scores for comparison
+  const { data: miiResults = [] } = useQuery({
+    queryKey: ['all-mii-results-latest'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('mii_results')
+        .select('municipality_id, overall_score, dimension_scores, assessment_year')
+        .eq('is_published', true)
+        .order('assessment_year', { ascending: false });
+      if (error) throw error;
+      
+      // Get only the latest result per municipality
+      const latestByMunicipality = {};
+      data?.forEach(r => {
+        if (!latestByMunicipality[r.municipality_id]) {
+          latestByMunicipality[r.municipality_id] = r;
+        }
+      });
+      return Object.values(latestByMunicipality);
+    }
+  });
+
   const filteredMunicipalities = municipalities.filter(m => 
     selectedRegion === 'all' || m.region === selectedRegion
   );
@@ -64,13 +87,29 @@ function MIIPage() {
     activePilots: municipalities.reduce((sum, m) => sum + (m.active_pilots || 0), 0)
   };
 
-  const getRadarData = (muni) => [
-    { indicator: 'Innovation', value: muni.mii_score || 50 },
-    { indicator: 'Digital', value: Math.min(100, (muni.mii_score || 50) * 0.9) },
-    { indicator: 'Pilots', value: Math.min(100, (muni.active_pilots || 0) * 10) },
-    { indicator: 'Challenges', value: Math.min(100, (muni.active_challenges || 0) * 8) },
-    { indicator: 'Partnerships', value: Math.min(100, (muni.completed_pilots || 0) * 7) },
-  ];
+  // Get real radar data from mii_results or fallback to derived data
+  const getRadarData = (muni) => {
+    const result = miiResults.find(r => r.municipality_id === muni.id);
+    if (result?.dimension_scores) {
+      return [
+        { indicator: 'Leadership', value: result.dimension_scores.LEADERSHIP?.score || 0 },
+        { indicator: 'Strategy', value: result.dimension_scores.STRATEGY?.score || 0 },
+        { indicator: 'Culture', value: result.dimension_scores.CULTURE?.score || 0 },
+        { indicator: 'Partnerships', value: result.dimension_scores.PARTNERSHIPS?.score || 0 },
+        { indicator: 'Capabilities', value: result.dimension_scores.CAPABILITIES?.score || 0 },
+        { indicator: 'Impact', value: result.dimension_scores.IMPACT?.score || 0 }
+      ];
+    }
+    // Fallback to derived data if no real MII results
+    return [
+      { indicator: 'Leadership', value: muni.mii_score || 50 },
+      { indicator: 'Strategy', value: Math.min(100, (muni.mii_score || 50) * 0.9) },
+      { indicator: 'Culture', value: Math.min(100, (muni.active_pilots || 0) * 10) },
+      { indicator: 'Partnerships', value: Math.min(100, (muni.completed_pilots || 0) * 7) },
+      { indicator: 'Capabilities', value: Math.min(100, (muni.active_challenges || 0) * 8) },
+      { indicator: 'Impact', value: Math.min(100, (muni.mii_score || 50) * 0.85) }
+    ];
+  };
 
   const toggleMunicipalityCompare = (muni) => {
     if (selectedMunicipalities.find(m => m.id === muni.id)) {
