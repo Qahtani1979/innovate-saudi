@@ -20,13 +20,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 
 const DEFAULT_TEMPLATES = [
   {
@@ -312,6 +305,6 @@ Generate:
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }
