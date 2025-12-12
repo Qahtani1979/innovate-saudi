@@ -260,7 +260,7 @@ Suggest:
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>{t({ en: 'My Active Teams', ar: 'فرقي النشطة' })}</CardTitle>
-            <Link to={createPageUrl('TeamManagement')}>
+            <Link to={createPageUrl('UserManagementHub')}>
               <Button variant="outline" size="sm">
                 {t({ en: 'Manage Teams', ar: 'إدارة الفرق' })}
               </Button>

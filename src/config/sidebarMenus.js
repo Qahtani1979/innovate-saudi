@@ -197,7 +197,7 @@ export const SIDEBAR_MENUS = {
       // Reports
       { name: 'ReportsBuilder', icon: FileBarChart, label: { en: 'Reports', ar: 'التقارير' }, permission: 'reports_view' },
       // Team & Settings
-      { name: 'TeamManagement', icon: Users, label: { en: 'Team', ar: 'الفريق' }, permission: 'team_manage' },
+      { name: 'UserManagementHub', icon: Users, label: { en: 'Team', ar: 'الفريق' }, permission: 'team_manage' },
       { name: 'MunicipalityEdit', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' }, permission: 'settings_manage', useMyMunicipality: true },
     ]
   },
@@ -212,7 +212,7 @@ export const SIDEBAR_MENUS = {
       { name: 'SolutionCreate', icon: Lightbulb, label: { en: 'Create Solution', ar: 'إنشاء حل' } },
       { name: 'ProviderPortfolioDashboard', icon: FolderKanban, label: { en: 'My Solutions', ar: 'حلولي' } },
       { name: 'StartupProfile', icon: Building2, label: { en: 'Company Profile', ar: 'ملف الشركة' } },
-      { name: 'TeamManagement', icon: Users, label: { en: 'Team Members', ar: 'أعضاء الفريق' } },
+      { name: 'UserManagementHub', icon: Users, label: { en: 'Team Members', ar: 'أعضاء الفريق' } },
       { name: 'FinancialsDashboard', icon: DollarSign, label: { en: 'Financials', ar: 'المالية' } },
       { name: 'OpportunityFeed', icon: Sparkles, label: { en: 'Opportunities', ar: 'الفرص' } },
       { name: 'MyChallengeTracker', icon: Target, label: { en: 'Challenge Tracker', ar: 'متتبع التحديات' } },

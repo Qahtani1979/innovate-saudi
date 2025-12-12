@@ -161,9 +161,7 @@ import ProfilesIdentityCoverageReport from './pages/ProfilesIdentityCoverageRepo
 import UserSettingsCoverageReport from './pages/UserSettingsCoverageReport';
 import PlatformSettingsCoverageReport from './pages/PlatformSettingsCoverageReport';
 import UserAccessManagementCoverageReport from './pages/UserAccessManagementCoverageReport';
-import UserInvitationManager from './pages/UserInvitationManager';
-import RoleManager from './pages/RoleManager';
-import TeamManagement from './pages/TeamManagement';
+// UserInvitationManager, RoleManager, TeamManagement - DELETED (migrated to UserManagementHub)
 import UserActivityDashboard from './pages/UserActivityDashboard';
 import SessionDeviceManager from './pages/SessionDeviceManager';
 import TeamWorkspace from './pages/TeamWorkspace';
@@ -248,10 +246,9 @@ import StakeholderAlignmentDashboard from './pages/StakeholderAlignmentDashboard
 import MidYearReviewDashboard from './pages/MidYearReviewDashboard';
 import AnnualPlanningWizard from './pages/AnnualPlanningWizard';
 import StrategicCommunicationsHub from './pages/StrategicCommunicationsHub';
-import DataQualityDashboard from './pages/DataQualityDashboard';
+// DataQualityDashboard, MasterDataGovernance - DELETED (migrated to DataManagementHub)
 import DataImportExportManager from './pages/DataImportExportManager';
 import ValidationRulesEngine from './pages/ValidationRulesEngine';
-import MasterDataGovernance from './pages/MasterDataGovernance';
 import APIManagementConsole from './pages/APIManagementConsole';
 import ErrorLogsConsole from './pages/ErrorLogsConsole';
 import ScheduledJobsManager from './pages/ScheduledJobsManager';
@@ -281,7 +278,7 @@ import DataManagementHub from './pages/DataManagementHub';
 import UserManagementHub from './pages/UserManagementHub';
 import TeamOverview from './pages/TeamOverview';
 import UserExperienceProgress from './pages/UserExperienceProgress';
-import UserDirectory from './pages/UserDirectory';
+// UserDirectory - DELETED (migrated to UserManagementHub)
 import UserGamification from './pages/UserGamification';
 import NotificationPreferences from './pages/NotificationPreferences';
 import DelegationManager from './pages/DelegationManager';
@@ -641,9 +638,11 @@ export const PAGES = {
     "UserSettingsCoverageReport": UserSettingsCoverageReport,
     "PlatformSettingsCoverageReport": PlatformSettingsCoverageReport,
     "UserAccessManagementCoverageReport": UserAccessManagementCoverageReport,
-    "UserInvitationManager": UserInvitationManager,
-    "RoleManager": RoleManager,
-    "TeamManagement": TeamManagement,
+    // UserInvitationManager - DELETED (migrated to UserManagementHub)
+    "UserInvitationManager": UserManagementHub,
+    // RoleManager, TeamManagement - DELETED (migrated to UserManagementHub)
+    "RoleManager": UserManagementHub,
+    "TeamManagement": UserManagementHub,
     "UserActivityDashboard": UserActivityDashboard,
     "SessionDeviceManager": SessionDeviceManager,
     "TeamWorkspace": TeamWorkspace,
@@ -727,10 +726,11 @@ export const PAGES = {
     "MidYearReviewDashboard": MidYearReviewDashboard,
     "AnnualPlanningWizard": AnnualPlanningWizard,
     "StrategicCommunicationsHub": StrategicCommunicationsHub,
-    "DataQualityDashboard": DataQualityDashboard,
+    // DataQualityDashboard, MasterDataGovernance - DELETED (migrated to DataManagementHub)
+    "DataQualityDashboard": DataManagementHub,
     "DataImportExportManager": DataImportExportManager,
     "ValidationRulesEngine": ValidationRulesEngine,
-    "MasterDataGovernance": MasterDataGovernance,
+    "MasterDataGovernance": DataManagementHub,
     "APIManagementConsole": APIManagementConsole,
     "ErrorLogsConsole": ErrorLogsConsole,
     "ScheduledJobsManager": ScheduledJobsManager,
@@ -760,7 +760,8 @@ export const PAGES = {
     "UserManagementHub": UserManagementHub,
     "TeamOverview": TeamOverview,
     "UserExperienceProgress": UserExperienceProgress,
-    "UserDirectory": UserDirectory,
+    // UserDirectory - DELETED (migrated to UserManagementHub)
+    "UserDirectory": UserManagementHub,
     "UserGamification": UserGamification,
     "NotificationPreferences": NotificationPreferences,
     "DelegationManager": DelegationManager,

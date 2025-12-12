@@ -35,7 +35,7 @@ function UserAccessManagementCoverageReport() {
 
     // 3. CRUD OPERATIONS
     crud: {
-      create: { implemented: true, page: 'UserInvitationManager, RoleManager, TeamManagement', wizard: true },
+      create: { implemented: true, page: 'UserManagementHub (Invitations, Roles, Teams tabs)', wizard: true },
       read: { implemented: true, page: 'UserManagement, UserActivityDashboard, all new pages' },
       update: { implemented: true, page: 'All management pages with edit dialogs' },
       delete: { implemented: true, page: 'All management pages' },
@@ -44,24 +44,24 @@ function UserAccessManagementCoverageReport() {
 
     // 4. AI FEATURES
     aiFeatures: {
-      roleRecommendation: { implemented: true, bilingual: true, component: 'RoleManager - AI Permission Suggester' },
+      roleRecommendation: { implemented: true, bilingual: true, component: 'UserManagementHub - AI Permission Suggester' },
       accessAnomalyDetection: { implemented: true, bilingual: true, component: 'UserActivityDashboard - AI Anomaly Detection' },
-      teamCompositionAI: { implemented: true, bilingual: true, component: 'TeamManagement - AI Team Composer' },
-      permissionOptimizer: { implemented: true, bilingual: true, component: 'RoleManager - AI permission recommendations' },
+      teamCompositionAI: { implemented: true, bilingual: true, component: 'UserManagementHub - AI Team Composer' },
+      permissionOptimizer: { implemented: true, bilingual: true, component: 'UserManagementHub - AI permission recommendations' },
       userActivityInsights: { implemented: true, bilingual: true, component: 'UserActivityDashboard - AI engagement insights' },
       coverage: 100 // 5/5 implemented
     },
 
     // 5. USER ADMIN CAPABILITIES
     userAdminCapabilities: {
-      userList: { implemented: true, component: 'UserManagement page', coverage: 80 },
-      userInvitation: { implemented: true, component: 'UserInvitationManager page - single + bulk', coverage: 90 },
-      roleAssignment: { implemented: true, component: 'RoleManager page with AI suggester', coverage: 90 },
-      bulkOperations: { implemented: true, component: 'UserInvitationManager bulk invite', coverage: 70 },
+      userList: { implemented: true, component: 'UserManagementHub page', coverage: 80 },
+      userInvitation: { implemented: true, component: 'UserManagementHub Invitations tab - single + bulk', coverage: 90 },
+      roleAssignment: { implemented: true, component: 'UserManagementHub Roles tab with AI suggester', coverage: 90 },
+      bulkOperations: { implemented: true, component: 'UserManagementHub bulk invite', coverage: 70 },
       userImpersonation: { implemented: true, component: 'UserImpersonation component', coverage: 70 },
-      accessControl: { implemented: true, component: 'RoleManager permissions matrix', coverage: 85 },
+      accessControl: { implemented: true, component: 'UserManagementHub permissions matrix', coverage: 85 },
       auditTrail: { implemented: true, component: 'AuditTrail + AccessLog entity + UserActivityDashboard', coverage: 85 },
-      teamManagement: { implemented: true, component: 'TeamManagement page with AI composer', coverage: 85 },
+      teamManagement: { implemented: true, component: 'UserManagementHub Teams tab', coverage: 85 },
       coverage: 82
     }
   };
@@ -78,28 +78,28 @@ function UserAccessManagementCoverageReport() {
       { 
         name: 'User Invitation & Onboarding', 
         coverage: 100, 
-        components: ['UserInvitationManager page', 'Single invite form', 'Bulk invite dialog', 'Invitation tracking table', 'Status badges', 'Resend/cancel actions', 'Expiry management', 'WelcomeEmailCustomizer component', 'OnboardingWizard component'], 
+        components: ['UserManagementHub Invitations tab', 'Single invite form', 'Bulk invite dialog', 'Invitation tracking table', 'Status badges', 'Resend/cancel actions', 'Expiry management', 'WelcomeEmailCustomizer component', 'OnboardingWizard component'], 
         missing: [],
         ai: 0
       },
       { 
         name: 'Role Definition & Management', 
         coverage: 100, 
-        components: ['RoleManager page', 'Custom role creation', 'Role CRUD', 'Permissions matrix editor', 'System vs custom roles', 'AI permission suggester', 'User count tracking', 'RoleHierarchyBuilder component', 'RoleTemplateLibrary component', 'PermissionTestingTool', 'ConditionalAccessRules'], 
+        components: ['UserManagementHub Roles tab', 'Custom role creation', 'Role CRUD', 'Permissions matrix editor', 'System vs custom roles', 'AI permission suggester', 'User count tracking', 'RoleHierarchyBuilder component', 'RoleTemplateLibrary component', 'PermissionTestingTool', 'ConditionalAccessRules'], 
         missing: [],
         ai: 1
       },
       { 
         name: 'Permission & Access Control', 
         coverage: 100, 
-        components: ['RoleManager permissions matrix', 'Entity-level permissions', 'CRUD operations per entity', 'Permission checkboxes', 'AI permission optimizer', 'FieldLevelPermissions component', 'ConditionalAccessRules component', 'PermissionTestingTool component'], 
+        components: ['UserManagementHub permissions matrix', 'Entity-level permissions', 'CRUD operations per entity', 'Permission checkboxes', 'AI permission optimizer', 'FieldLevelPermissions component', 'ConditionalAccessRules component', 'PermissionTestingTool component'], 
         missing: [],
         ai: 1
       },
       { 
         name: 'Team & Group Management', 
         coverage: 100, 
-        components: ['TeamManagement page', 'Team CRUD', 'Member management', 'Team types', 'Team leader assignment', 'AI team composer', 'Member roles', 'TeamWorkspace page', 'TeamPerformanceAnalytics component', 'CrossTeamCollaboration component'], 
+        components: ['UserManagementHub Teams tab', 'Team CRUD', 'Member management', 'Team types', 'Team leader assignment', 'AI team composer', 'Member roles', 'TeamWorkspace page', 'TeamPerformanceAnalytics component', 'CrossTeamCollaboration component'], 
         missing: [],
         ai: 1
       },
