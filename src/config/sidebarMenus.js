@@ -85,7 +85,6 @@ export const SIDEBAR_MENUS = {
       { name: 'BulkDataOperations', icon: Layers, label: { en: 'Bulk Operations', ar: 'العمليات الجماعية' } },
       { name: 'ExpertRegistry', icon: GraduationCap, label: { en: 'Expert Registry', ar: 'سجل الخبراء' } },
       
-      { name: 'ValidationDashboard', icon: ClipboardList, label: { en: 'Journey Analysis', ar: 'تحليل الرحلة' } },
       { name: 'MediaLibrary', icon: Image, label: { en: 'Media Library', ar: 'مكتبة الوسائط' } },
       { name: 'BrandingSettings', icon: Palette, label: { en: 'Branding Settings', ar: 'إعدادات العلامة' } },
       { name: 'TaxonomyBuilder', icon: Tags, label: { en: 'Taxonomy Builder', ar: 'منشئ التصنيف' } },
