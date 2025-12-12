@@ -4,30 +4,27 @@ import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
 /**
- * Hook for fetching programs with visibility rules applied.
+ * Hook for fetching knowledge documents with visibility rules applied.
  * 
  * Visibility:
- * - Admin / Full Visibility Users: All programs
- * - National Deputyship: All programs in their sector(s)
- * - Municipality Staff: Own + national programs
- * - Provider: Programs they've applied to
- * - Others: Published/active programs only
+ * - Admin / Full Visibility Users: All documents
+ * - National Deputyship: All documents in their sector(s)
+ * - Municipality Staff: Own + national + published documents
+ * - Others: Published documents only
  */
-export function useProgramsWithVisibility(options = {}) {
+export function useKnowledgeWithVisibility(options = {}) {
   const { 
-    status,
-    programType,
+    documentType,
     sectorId,
     limit = 100,
     includeDeleted = false
   } = options;
 
-  const { isAdmin, hasRole, userId, profile } = usePermissions();
+  const { isAdmin, hasRole, userId } = usePermissions();
   const { 
     isNational, 
     sectorIds, 
     userMunicipalityId, 
-    nationalRegionId,
     nationalMunicipalityIds,
     hasFullVisibility,
     isLoading: visibilityLoading 
@@ -39,27 +36,26 @@ export function useProgramsWithVisibility(options = {}) {
                       hasRole('deputyship_admin');
 
   return useQuery({
-    queryKey: ['programs-with-visibility', {
+    queryKey: ['knowledge-with-visibility', {
       userId,
       isAdmin,
       hasFullVisibility,
       isNational,
       sectorIds,
       userMunicipalityId,
-      status,
-      programType,
+      documentType,
       sectorId,
       limit
     }],
     queryFn: async () => {
-      let baseSelect = `
+      const baseSelect = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar, code)
       `;
 
       let query = supabase
-        .from('programs')
+        .from('knowledge_documents')
         .select(baseSelect)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -69,14 +65,9 @@ export function useProgramsWithVisibility(options = {}) {
         query = query.eq('is_deleted', false);
       }
 
-      // Apply status filter if provided
-      if (status) {
-        query = query.eq('status', status);
-      }
-
-      // Apply program type filter if provided
-      if (programType) {
-        query = query.eq('program_type', programType);
+      // Apply document type filter if provided
+      if (documentType) {
+        query = query.eq('document_type', documentType);
       }
 
       // Apply sector filter if provided
@@ -91,9 +82,9 @@ export function useProgramsWithVisibility(options = {}) {
         return data || [];
       }
 
-      // Non-staff users only see active programs
+      // Non-staff users only see published documents
       if (!isStaffUser) {
-        query = query.in('status', ['active', 'open', 'completed']);
+        query = query.eq('is_published', true);
         const { data, error } = await query;
         if (error) throw error;
         return data || [];
@@ -107,11 +98,11 @@ export function useProgramsWithVisibility(options = {}) {
         return data || [];
       }
 
-      // Geographic municipality: Own + national
+      // Geographic municipality: Own + national + published
       if (userMunicipalityId) {
-        // Get own municipality programs
-        const { data: ownPrograms, error: ownError } = await supabase
-          .from('programs')
+        // Get own municipality documents
+        const { data: ownDocs, error: ownError } = await supabase
+          .from('knowledge_documents')
           .select(baseSelect)
           .eq('municipality_id', userMunicipalityId)
           .eq('is_deleted', false)
@@ -119,41 +110,51 @@ export function useProgramsWithVisibility(options = {}) {
 
         if (ownError) throw ownError;
 
-        // Get national programs
-        let nationalPrograms = [];
+        // Get national documents
+        let nationalDocs = [];
         if (nationalMunicipalityIds?.length > 0) {
-          const { data: natPrograms, error: natError } = await supabase
-            .from('programs')
+          const { data: natDocs, error: natError } = await supabase
+            .from('knowledge_documents')
             .select(baseSelect)
             .in('municipality_id', nationalMunicipalityIds)
             .eq('is_deleted', false)
             .order('created_at', { ascending: false });
 
           if (!natError) {
-            nationalPrograms = natPrograms || [];
+            nationalDocs = natDocs || [];
           }
         }
 
+        // Get all published documents
+        const { data: publishedDocs, error: publishedError } = await supabase
+          .from('knowledge_documents')
+          .select(baseSelect)
+          .eq('is_published', true)
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false });
+
+        if (publishedError) throw publishedError;
+
         // Combine and deduplicate
-        const allPrograms = [...(ownPrograms || []), ...nationalPrograms];
-        const uniquePrograms = allPrograms.filter((program, index, self) =>
-          index === self.findIndex(p => p.id === program.id)
+        const allDocs = [...(ownDocs || []), ...nationalDocs, ...(publishedDocs || [])];
+        const uniqueDocs = allDocs.filter((doc, index, self) =>
+          index === self.findIndex(d => d.id === doc.id)
         );
 
         // Apply additional filters
-        let filtered = uniquePrograms;
-        if (status) {
-          filtered = filtered.filter(p => p.status === status);
+        let filtered = uniqueDocs;
+        if (documentType) {
+          filtered = filtered.filter(d => d.document_type === documentType);
         }
-        if (programType) {
-          filtered = filtered.filter(p => p.program_type === programType);
+        if (sectorId) {
+          filtered = filtered.filter(d => d.sector_id === sectorId);
         }
 
         return filtered.slice(0, limit);
       }
 
-      // Fallback: active only
-      query = query.in('status', ['active', 'open', 'completed']);
+      // Fallback: published only
+      query = query.eq('is_published', true);
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
@@ -163,4 +164,4 @@ export function useProgramsWithVisibility(options = {}) {
   });
 }
 
-export default useProgramsWithVisibility;
+export default useKnowledgeWithVisibility;

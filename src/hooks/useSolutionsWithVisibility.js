@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEntityVisibility } from './useEntityVisibility';
+import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
 /**
@@ -26,10 +26,10 @@ export function useSolutionsWithVisibility(options = {}) {
     isNational, 
     sectorIds, 
     userMunicipalityId, 
-    nationalRegionId,
+    nationalMunicipalityIds,
     hasFullVisibility,
     isLoading: visibilityLoading 
-  } = useEntityVisibility();
+  } = useVisibilitySystem();
 
   const isStaffUser = hasRole('municipality_staff') || 
                       hasRole('municipality_admin') || 
