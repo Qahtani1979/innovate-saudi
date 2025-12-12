@@ -14,6 +14,7 @@ import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 function CommandCenterPage() {
   const { language, isRTL, t } = useLanguage();
@@ -94,21 +95,24 @@ Provide:
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">
-            {t({ en: 'Command Center', ar: 'مركز القيادة' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Mission control for national innovation pipeline', ar: 'مركز التحكم لخط الابتكار الوطني' })}
-          </p>
-        </div>
-        <Button onClick={generateAIRecommendations} disabled={aiLoading || !isAvailable} className="bg-purple-600">
-          {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {t({ en: 'AI Strategy', ar: 'استراتيجية ذكية' })}
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Shield}
+        title={{ en: 'Command Center', ar: 'مركز القيادة' }}
+        description={{ en: 'Mission control for national innovation pipeline', ar: 'مركز التحكم لخط الابتكار الوطني' }}
+        stats={[
+          { icon: Target, value: challenges.length, label: { en: 'Challenges', ar: 'تحديات' } },
+          { icon: Activity, value: activeOperations.length, label: { en: 'Active Pilots', ar: 'تجارب نشطة' } },
+          { icon: Clock, value: pendingApprovals.length, label: { en: 'Pending', ar: 'معلق' } },
+          { icon: AlertTriangle, value: criticalItems.length, label: { en: 'Critical', ar: 'حرج' } }
+        ]}
+        action={
+          <PersonaButton onClick={generateAIRecommendations} disabled={aiLoading || !isAvailable}>
+            {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {t({ en: 'AI Strategy', ar: 'استراتيجية ذكية' })}
+          </PersonaButton>
+        }
+      />
 
       <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
 
@@ -366,7 +370,7 @@ Provide:
           </Card>
         </Link>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

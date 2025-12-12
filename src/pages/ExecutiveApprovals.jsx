@@ -12,6 +12,7 @@ import { CheckCircle2, X, FileText, AlertCircle, DollarSign, Sparkles, Loader2 }
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function ExecutiveApprovals() {
   const { language, isRTL, t } = useLanguage();
@@ -123,16 +124,15 @@ Provide strategic analysis and recommendation.`;
   ];
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold">{t({ en: 'Executive Approvals', ar: 'موافقات القيادة' })}</h1>
-          <p className="text-slate-600 mt-2">{t({ en: 'Strategic decisions queue', ar: 'قائمة القرارات الاستراتيجية' })}</p>
-        </div>
-        <Badge className="text-lg px-4 py-2 bg-red-100 text-red-700">
-          {allPendingItems.length} {t({ en: 'Pending', ar: 'معلق' })}
-        </Badge>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={CheckCircle2}
+        title={{ en: 'Executive Approvals', ar: 'موافقات القيادة' }}
+        description={{ en: 'Strategic decisions queue', ar: 'قائمة القرارات الاستراتيجية' }}
+        stats={[
+          { icon: FileText, value: allPendingItems.length, label: { en: 'Pending', ar: 'معلق' } }
+        ]}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
@@ -331,6 +331,6 @@ Provide strategic analysis and recommendation.`;
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

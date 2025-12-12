@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 function ExecutiveBriefGenerator() {
   const { language, isRTL, t } = useLanguage();
@@ -107,33 +108,30 @@ Make it concise, data-driven, bilingual-ready.`,
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Executive Brief Generator', ar: 'مولد الموجز التنفيذي' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'One-click generation of strategic summary with bilingual PDF export', ar: 'توليد بنقرة واحدة للملخص الاستراتيجي مع تصدير PDF ثنائي اللغة' })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={generateBrief} disabled={generating || !isAvailable} className="bg-gradient-to-r from-blue-600 to-purple-600">
-            {generating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
+    <PageLayout>
+      <PageHeader
+        icon={FileText}
+        title={{ en: 'Executive Brief Generator', ar: 'مولد الموجز التنفيذي' }}
+        description={{ en: 'One-click generation of strategic summary with bilingual PDF export', ar: 'توليد بنقرة واحدة للملخص الاستراتيجي مع تصدير PDF ثنائي اللغة' }}
+        action={
+          <div className="flex gap-2">
+            <PersonaButton onClick={generateBrief} disabled={generating || !isAvailable}>
+              {generating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              {t({ en: 'Generate Brief', ar: 'إنشاء موجز' })}
+            </PersonaButton>
+            {brief && (
+              <PersonaButton onClick={exportPDF} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                {t({ en: 'Export PDF', ar: 'تصدير PDF' })}
+              </PersonaButton>
             )}
-            {t({ en: 'Generate Brief', ar: 'إنشاء موجز' })}
-          </Button>
-          {brief && (
-            <Button onClick={exportPDF} variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              {t({ en: 'Export PDF', ar: 'تصدير PDF' })}
-            </Button>
-          )}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
@@ -271,7 +269,7 @@ Make it concise, data-driven, bilingual-ready.`,
           </Card>
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }
 
