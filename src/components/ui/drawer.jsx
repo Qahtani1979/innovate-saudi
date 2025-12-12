@@ -32,22 +32,18 @@ const DrawerOverlay = React.forwardRef(({ className, ...props }, ref) => (
 ))
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
 
-const DrawerContent = React.forwardRef(({ className, children, showHandle = true, ...props }, ref) => (
+const DrawerContent = React.forwardRef(({ className, children, showHandle = true, direction, ...props }, ref) => (
   <DrawerPortal>
     <DrawerOverlay />
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
         "fixed z-50 flex h-auto flex-col border bg-background",
-        "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:rounded-t-[10px]",
-        "data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:max-w-lg data-[vaul-drawer-direction=right]:rounded-l-[10px]",
-        "data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-full data-[vaul-drawer-direction=left]:max-w-lg data-[vaul-drawer-direction=left]:rounded-r-[10px]",
-        "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:rounded-b-[10px]",
         className
       )}
       {...props}>
-      {showHandle && (
-        <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted data-[vaul-drawer-direction=right]:hidden data-[vaul-drawer-direction=left]:hidden" />
+      {showHandle && direction !== "right" && direction !== "left" && (
+        <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
       )}
       {children}
     </DrawerPrimitive.Content>
