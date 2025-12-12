@@ -23,7 +23,7 @@ export function usePersonaRouting() {
     if (isAdmin || roles.includes('admin')) {
       return {
         persona: 'admin',
-        defaultDashboard: '/home',
+        defaultDashboard: '/admin-portal',
         dashboardLabel: { en: 'Admin Dashboard', ar: 'لوحة المدير' },
         onboardingWizard: null, // Admins don't need onboarding
         portalType: 'admin',
@@ -131,10 +131,10 @@ export function usePersonaRouting() {
       };
     }
 
-    // Default fallback for authenticated users without roles - treat as citizen
+    // Default fallback for authenticated users without roles - use /home as fallback
     return {
       persona: 'user',
-      defaultDashboard: '/citizen-dashboard',
+      defaultDashboard: '/home',
       dashboardLabel: { en: 'Dashboard', ar: 'لوحة التحكم' },
       onboardingWizard: 'Onboarding',
       portalType: 'citizen',
