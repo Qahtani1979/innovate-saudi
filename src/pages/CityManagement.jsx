@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +11,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { Building2, Plus, Edit2, Trash2, Save, X, MapPin, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function CityManagement() {
   const { language, isRTL, t } = useLanguage();
@@ -70,21 +70,22 @@ function CityManagement() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">
-            {t({ en: 'City Management', ar: 'إدارة المدن' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Manage cities and their administrative regions', ar: 'إدارة المدن ومناطقها الإدارية' })}
-          </p>
-        </div>
-        <Button onClick={() => setNewCity({ region_id: '', name_en: '', name_ar: '', population: 0, is_municipality: true })}>
-          <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {t({ en: 'Add City', ar: 'إضافة مدينة' })}
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Building2}
+        title={{ en: 'City Management', ar: 'إدارة المدن' }}
+        subtitle={{ en: 'Manage cities and their administrative regions', ar: 'إدارة المدن ومناطقها الإدارية' }}
+        stats={[
+          { icon: Building2, value: cities.length, label: { en: 'Total Cities', ar: 'إجمالي المدن' } },
+          { icon: MapPin, value: cities.filter(c => c.is_municipality).length, label: { en: 'Municipalities', ar: 'البلديات' } },
+        ]}
+        action={
+          <Button onClick={() => setNewCity({ region_id: '', name_en: '', name_ar: '', population: 0, is_municipality: true })}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t({ en: 'Add City', ar: 'إضافة مدينة' })}
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
@@ -345,7 +346,7 @@ function CityManagement() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

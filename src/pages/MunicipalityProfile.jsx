@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MunicipalityProfile() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -155,7 +156,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Hero Section */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 p-8 text-white">
         <div className="relative z-10">
@@ -566,7 +567,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </Card>
         </div>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
 

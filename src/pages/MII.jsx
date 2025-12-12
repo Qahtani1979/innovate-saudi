@@ -32,6 +32,7 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MIIPage() {
   const { language, isRTL, t } = useLanguage();
@@ -135,28 +136,29 @@ Provide bilingual insights (each item should have both English and Arabic versio
   }
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Municipal Innovation Index', ar: 'مؤشر الابتكار البلدي' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'MII scores and rankings across municipalities', ar: 'نتائج وتصنيفات مؤشر الابتكار' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => setCompareMode(!compareMode)}>
-            <BarChart3 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {compareMode ? t({ en: 'Exit Compare', ar: 'إنهاء المقارنة' }) : t({ en: 'Compare', ar: 'مقارنة' })}
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
-            <Sparkles className="h-4 w-4" />
-            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-          </Button>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={BarChart3}
+        title={{ en: 'Municipal Innovation Index', ar: 'مؤشر الابتكار البلدي' }}
+        subtitle={{ en: 'MII scores and rankings across municipalities', ar: 'نتائج وتصنيفات مؤشر الابتكار' }}
+        stats={[
+          { icon: Award, value: stats.avgScore, label: { en: 'Avg Score', ar: 'متوسط الدرجة' } },
+          { icon: TrendingUp, value: stats.improving, label: { en: 'High Performers', ar: 'الأداء العالي' } },
+          { icon: MapPin, value: stats.totalCities, label: { en: 'Municipalities', ar: 'البلديات' } },
+        ]}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setCompareMode(!compareMode)}>
+              <BarChart3 className="h-4 w-4 mr-2" />
+              {compareMode ? t({ en: 'Exit Compare', ar: 'إنهاء المقارنة' }) : t({ en: 'Compare', ar: 'مقارنة' })}
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
+              <Sparkles className="h-4 w-4" />
+              {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+            </Button>
+          </div>
+        }
+      />
 
       {/* AI Insights Modal */}
       {showAIInsights && (
@@ -447,7 +449,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 
