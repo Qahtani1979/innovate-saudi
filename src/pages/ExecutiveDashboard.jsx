@@ -17,36 +17,19 @@ import ExecutiveBriefingGenerator from '../components/executive/ExecutiveBriefin
 import PolicyPipelineWidget from '../components/executive/PolicyPipelineWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 
 function ExecutiveDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [showMap, setShowMap] = useState(false);
   const { user } = useAuth();
 
-  // RLS: Executive sees ALL data but prioritizes strategic/high-impact items
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-executive'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('challenges')
-        .select('*')
-        .order('overall_score', { ascending: false, nullsFirst: false })
-        .limit(200);
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-executive'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .order('success_probability', { ascending: false, nullsFirst: false })
-        .limit(100);
-      return data || [];
-    }
-  });
+  // Use visibility-aware hooks - Executive sees all data based on their permissions
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 200 });
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 100 });
+  const { data: programs = [] } = useProgramsWithVisibility({ limit: 100 });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-executive'],
@@ -56,35 +39,45 @@ function ExecutiveDashboard() {
     }
   });
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-executive'],
-    queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*');
-      return data || [];
-    }
-  });
-
   const { data: insights = [] } = useQuery({
     queryKey: ['executive-insights'],
     queryFn: async () => {
-      const all = await base44.entities.PlatformInsight.list('-created_date');
-      return all.filter(i => i.visibility === 'executive' && i.is_active);
+      const { data } = await supabase
+        .from('platform_insights')
+        .select('*')
+        .eq('visibility', 'executive')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      return data || [];
     }
   });
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-exec'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('strategic_plans').select('*');
+      return data || [];
+    }
   });
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects-executive'],
-    queryFn: () => base44.entities.RDProject.list('-trl_current', 100)
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .order('trl_current', { ascending: false })
+        .limit(100);
+      return data || [];
+    }
   });
 
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['rd-calls-executive'],
-    queryFn: () => base44.entities.RDCall.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('rd_calls').select('*');
+      return data || [];
+    }
   });
 
   // Strategic filters - Tier 1 & 2 priorities
