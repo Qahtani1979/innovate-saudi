@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Handshake, MapPin, Users, Network, TrendingUp, CheckCircle2, Plus } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MultiCityCoordination() {
   const { t } = useLanguage();
@@ -39,21 +40,23 @@ function MultiCityCoordination() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Multi-City Coordination', ar: 'التنسيق بين المدن' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Cross-municipality pilot collaborations and knowledge sharing', ar: 'تعاونات التجارب بين البلديات ومشاركة المعرفة' })}
-          </p>
-        </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          {t({ en: 'New Collaboration', ar: 'تعاون جديد' })}
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Handshake}
+        title={{ en: 'Multi-City Coordination', ar: 'التنسيق بين المدن' }}
+        subtitle={{ en: 'Cross-municipality pilot collaborations and knowledge sharing', ar: 'تعاونات التجارب بين البلديات ومشاركة المعرفة' }}
+        stats={[
+          { icon: Handshake, value: stats.total, label: { en: 'Total Collaborations', ar: 'إجمالي التعاونات' } },
+          { icon: TrendingUp, value: stats.active, label: { en: 'Active', ar: 'نشط' } },
+          { icon: MapPin, value: stats.cities_involved, label: { en: 'Cities', ar: 'مدن' } },
+        ]}
+        action={
+          <Button className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 mr-2" />
+            {t({ en: 'New Collaboration', ar: 'تعاون جديد' })}
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -152,7 +155,7 @@ function MultiCityCoordination() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

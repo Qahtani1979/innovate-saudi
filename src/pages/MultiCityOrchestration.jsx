@@ -8,6 +8,7 @@ import { Building2, Network, Activity, Target, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MultiCityOrchestration() {
   const { language, isRTL, t } = useLanguage();
@@ -33,15 +34,17 @@ function MultiCityOrchestration() {
   );
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'Multi-City Orchestration', ar: 'التنسيق متعدد المدن' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Coordinate innovation across municipalities', ar: 'تنسيق الابتكار عبر البلديات' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Network}
+        title={{ en: 'Multi-City Orchestration', ar: 'التنسيق متعدد المدن' }}
+        subtitle={{ en: 'Coordinate innovation across municipalities', ar: 'تنسيق الابتكار عبر البلديات' }}
+        stats={[
+          { icon: Building2, value: activeMunicipalities.length, label: { en: 'Active Cities', ar: 'مدن نشطة' } },
+          { icon: Network, value: multiCityPilots.length, label: { en: 'Multi-City Pilots', ar: 'تجارب متعددة المدن' } },
+          { icon: Activity, value: pilots.length, label: { en: 'Total Pilots', ar: 'إجمالي التجارب' } },
+        ]}
+      />
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -158,7 +161,7 @@ function MultiCityOrchestration() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

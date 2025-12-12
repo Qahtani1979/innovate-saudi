@@ -65,9 +65,10 @@ The persona layout system provides tailored UI experiences based on user roles. 
 
 | Category | Using Layout | Total Pages | Coverage |
 |----------|-------------|-------------|----------|
-| **All Pages** | 29 | ~567 | 5.1% |
+| **All Pages** | 39 | ~567 | 6.9% |
 | **Dashboards** | 7 | 11 | 64% |
 | **Citizen Pages** | 8 | 8 | 100% ✅ |
+| **Municipality Pages** | 14 | 14 | 100% ✅ |
 | **Core Entity Lists** | 7 | 7 | 100% ✅ |
 
 ---

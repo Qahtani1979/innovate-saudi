@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function CrossCityLearningHub() {
   const { t, language } = useLanguage();
@@ -71,15 +72,16 @@ function CrossCityLearningHub() {
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: '🤝 Cross-City Learning Hub', ar: '🤝 مركز التعلم بين المدن' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Share and learn from peer municipalities', ar: 'شارك وتعلم من البلديات النظيرة' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Users}
+        title={{ en: 'Cross-City Learning Hub', ar: 'مركز التعلم بين المدن' }}
+        subtitle={{ en: 'Share and learn from peer municipalities', ar: 'شارك وتعلم من البلديات النظيرة' }}
+        stats={[
+          { icon: Building2, value: peerMunicipalities.length, label: { en: 'Peer Municipalities', ar: 'البلديات النظيرة' } },
+          { icon: Award, value: peerSuccesses.length, label: { en: 'Success Stories', ar: 'قصص النجاح' } },
+        ]}
+      />
 
       {/* My Peers */}
       <Card className="border-2 border-blue-300">
@@ -235,7 +237,7 @@ function CrossCityLearningHub() {
           </Card>
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

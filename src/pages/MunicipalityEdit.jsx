@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, ArrowLeft, Sparkles, Loader2, X } from 'lucide-react';
+import { Save, ArrowLeft, Sparkles, Loader2, X, Building2 } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { useLanguage } from '../components/LanguageContext';
@@ -16,6 +16,7 @@ import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MunicipalityEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -96,18 +97,18 @@ Create bilingual content highlighting the municipality's characteristics and inn
   }
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t({ en: 'Back', ar: 'رجوع' })}
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Edit Municipality', ar: 'تعديل البلدية' })}
-          </h1>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Building2}
+        title={{ en: 'Edit Municipality', ar: 'تعديل البلدية' }}
+        subtitle={{ en: 'Update municipality information', ar: 'تحديث معلومات البلدية' }}
+        action={
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t({ en: 'Back', ar: 'رجوع' })}
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -334,7 +335,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

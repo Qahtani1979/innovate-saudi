@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Award, TrendingUp, AlertCircle, TestTube, Target, Building2, Users, Zap } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function MIIDrillDown() {
   const { language, isRTL, t } = useLanguage();
@@ -92,7 +93,7 @@ export default function MIIDrillDown() {
   const avgScore = allMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / (allMunicipalities.length || 1);
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Hero */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 to-teal-600 p-8 text-white">
         <div>
@@ -285,6 +286,6 @@ export default function MIIDrillDown() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }

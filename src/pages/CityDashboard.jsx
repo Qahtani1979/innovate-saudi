@@ -9,6 +9,7 @@ import {
   BarChart3, MapPin, DollarSign, Briefcase, Activity
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function CityDashboard() {
   const { t, isRTL } = useLanguage();
@@ -70,22 +71,22 @@ function CityDashboard() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">
-            {city.name_en} {city.name_ar && `/ ${city.name_ar}`}
-          </h1>
-          <p className="text-slate-600 mt-2 flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            {t({ en: 'City Analytics Dashboard', ar: 'لوحة تحليلات المدينة' })}
-          </p>
-        </div>
-        <Badge className="text-lg px-4 py-2">
-          {city.is_municipality ? t({ en: 'Has Municipality', ar: 'لها بلدية' }) : t({ en: 'No Municipality', ar: 'بدون بلدية' })}
-        </Badge>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={MapPin}
+        title={city.name_en + (city.name_ar ? ` / ${city.name_ar}` : '')}
+        subtitle={{ en: 'City Analytics Dashboard', ar: 'لوحة تحليلات المدينة' }}
+        stats={[
+          { icon: Users, value: stats.population.toLocaleString(), label: { en: 'Population', ar: 'السكان' } },
+          { icon: Building2, value: stats.municipalities, label: { en: 'Municipalities', ar: 'البلديات' } },
+          { icon: AlertCircle, value: stats.challenges, label: { en: 'Challenges', ar: 'التحديات' } },
+        ]}
+        action={
+          <Badge className="text-lg px-4 py-2">
+            {city.is_municipality ? t({ en: 'Has Municipality', ar: 'لها بلدية' }) : t({ en: 'No Municipality', ar: 'بدون بلدية' })}
+          </Badge>
+        }
+      />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -197,7 +198,7 @@ function CityDashboard() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 
