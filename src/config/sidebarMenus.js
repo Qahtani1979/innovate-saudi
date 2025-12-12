@@ -76,7 +76,7 @@ export const SIDEBAR_MENUS = {
     color: 'from-red-600 to-rose-500',
     items: [
       HOME_LINK,
-      { name: 'Home', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'AdminPortal', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'UserManagementHub', icon: Users, label: { en: 'Users', ar: 'المستخدمين' } },
       { name: 'RolePermissionManager', icon: UserCheck, label: { en: 'Roles & Permissions', ar: 'الأدوار والصلاحيات' } },
       { name: 'RBACHub', icon: Shield, label: { en: 'RBAC Dashboard', ar: 'لوحة الصلاحيات' } },
