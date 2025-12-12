@@ -21,7 +21,8 @@ import {
   Award,
   LayoutGrid,
   List,
-  Eye
+  Eye,
+  FlaskConical
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -37,6 +38,7 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function RDProjectsPage() {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
@@ -140,55 +142,57 @@ Return each insight with both _en and _ar versions.`,
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
+      <PageLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        </div>
+      </PageLayout>
     );
   }
 
-  return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'R&D Projects', ar: 'مشاريع البحث والتطوير' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Research and development initiatives', ar: 'مبادرات البحث والتطوير والابتكار' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
-            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-          </Button>
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-          {hasPermission('rd_project_create') && (
-            <Link to={createPageUrl('RDProjectCreate')}>
-              <Button className="bg-gradient-to-r from-blue-600 to-teal-600 gap-2">
-                <Plus className="h-5 w-5" />
-                {t({ en: 'New Project', ar: 'مشروع جديد' })}
-              </Button>
-            </Link>
-          )}
-        </div>
+  const headerActions = (
+    <div className="flex items-center gap-3">
+      <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+        {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+        {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+      </Button>
+      <div className="flex items-center gap-1 border rounded-lg p-1">
+        <Button
+          variant={viewMode === 'grid' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('grid')}
+        >
+          <LayoutGrid className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={viewMode === 'table' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('table')}
+        >
+          <List className="h-4 w-4" />
+        </Button>
       </div>
+      {hasPermission('rd_project_create') && (
+        <Link to={createPageUrl('RDProjectCreate')}>
+          <Button className="bg-gradient-to-r from-blue-600 to-teal-600 gap-2">
+            <Plus className="h-5 w-5" />
+            {t({ en: 'New Project', ar: 'مشروع جديد' })}
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+
+  return (
+    <PageLayout>
+      <PageHeader
+        icon={FlaskConical}
+        title={{ en: 'R&D Projects', ar: 'مشاريع البحث والتطوير' }}
+        description={{ en: 'Research and development initiatives', ar: 'مبادرات البحث والتطوير والابتكار' }}
+        actions={headerActions}
+      />
+
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* AI Insights Modal */}
       {showAIInsights && (
@@ -511,7 +515,8 @@ Return each insight with both _en and _ar versions.`,
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </PageLayout>
   );
 }
 

@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useKnowledgeWithVisibility } from '@/hooks/useKnowledgeWithVisibility';
 import { useCaseStudiesWithVisibility } from '@/hooks/useCaseStudiesWithVisibility';
 import { usePermissions } from '@/components/permissions/usePermissions';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function KnowledgePage() {
   const { language, isRTL, t } = useLanguage();
@@ -174,41 +175,42 @@ Provide bilingual insights (each item should have both English and Arabic versio
     }
   };
 
+  const headerActions = (
+    <div className="flex items-center gap-3">
+      <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+        {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+        {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+      </Button>
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+      {isAdmin && (
+        <>
+          <Link to={createPageUrl('KnowledgeDocumentCreate')}>
+            <Button className="bg-gradient-to-r from-blue-600 to-teal-600">
+              <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              {t({ en: 'Add Document', ar: 'إضافة مستند' })}
+            </Button>
+          </Link>
+          <Link to={createPageUrl('CaseStudyCreate')}>
+            <Button variant="outline">
+              <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              {t({ en: 'Add Case Study', ar: 'إضافة دراسة حالة' })}
+            </Button>
+          </Link>
+        </>
+      )}
+    </div>
+  );
+
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Knowledge Base', ar: 'قاعدة المعرفة' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Resources, guides, and best practices', ar: 'الموارد والأدلة وأفضل الممارسات' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
-            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-          </Button>
-          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-          {isAdmin && (
-            <>
-              <Link to={createPageUrl('KnowledgeDocumentCreate')}>
-                <Button className="bg-gradient-to-r from-blue-600 to-teal-600">
-                  <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t({ en: 'Add Document', ar: 'إضافة مستند' })}
-                </Button>
-              </Link>
-              <Link to={createPageUrl('CaseStudyCreate')}>
-                <Button variant="outline">
-                  <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t({ en: 'Add Case Study', ar: 'إضافة دراسة حالة' })}
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={BookOpen}
+        title={{ en: 'Knowledge Base', ar: 'قاعدة المعرفة' }}
+        description={{ en: 'Resources, guides, and best practices', ar: 'الموارد والأدلة وأفضل الممارسات' }}
+        actions={headerActions}
+      />
+
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* AI Insights Modal */}
       {showAIInsights && (
@@ -640,7 +642,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </PageLayout>
   );
 }
 
