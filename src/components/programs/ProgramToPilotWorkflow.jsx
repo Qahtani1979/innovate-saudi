@@ -12,9 +12,10 @@ import { TestTube, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
-import { useQuery } from '@tanstack/react-query';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function ProgramToPilotWorkflow({ program, graduateApplication }) {
   const { t } = useLanguage();
@@ -24,21 +25,9 @@ export default function ProgramToPilotWorkflow({ program, graduateApplication })
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { user } = useAuth();
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
-      return data || [];
-    }
-  });
+  // Use visibility-aware hooks
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ includeNational: true });
+  const { data: challenges = [] } = useChallengesWithVisibility({ status: 'approved' });
 
   const [formData, setFormData] = useState({
     title_en: '',

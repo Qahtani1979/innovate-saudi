@@ -107,6 +107,7 @@ The visibility system provides consistent access control across all entity types
 |--------|-------|------|--------|
 | Users | `user_profiles` | `useUsersWithVisibility` | ✅ Implemented |
 | Municipalities | `municipalities` | `useMunicipalitiesWithVisibility` | ✅ Implemented |
+| Organizations | `organizations` | `useOrganizationsWithVisibility` | ✅ Implemented |
 
 ### Utility Hooks
 
@@ -260,6 +261,25 @@ Each persona has a dedicated menu with permission-controlled items:
 | `RBACDashboardContent` | `PermissionGate` (admin only) | ✅ |
 | `PeerBenchmarkingTool` | `useMunicipalitiesWithVisibility`, `useChallengesWithVisibility`, `usePilotsWithVisibility` | ✅ |
 
+### Workflow Components ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `ProgramToPilotWorkflow` | `useMunicipalitiesWithVisibility`, `useChallengesWithVisibility` | ✅ |
+| `LabRoutingHub` | `useLivingLabsWithVisibility` | ✅ |
+
+### Academia/Research Components ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `CollaborationHub` | `useRDProjectsWithVisibility`, `useOrganizationsWithVisibility` | ✅ |
+
+### RBAC Components ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `MenuRBACContent` | `PermissionGate` (admin only) | ✅ |
+
 ### Form/Selection Components ✅
 
 | Component | Hook/Protection | Status |
@@ -282,6 +302,8 @@ Each persona has a dedicated menu with permission-controlled items:
 | `ProviderNotificationPreferences` | User's own preferences | ✅ Correct |
 | `ProposalSubmissionForm` | User's own solutions | ✅ Correct |
 | `SolutionReviewsTab` | User's own reviews | ✅ Correct |
+| `MyWorkPrioritizer` | User's own work items | ✅ Correct |
+| `MyWeekAhead` | User's own schedule | ✅ Correct |
 
 ### Lookup/Reference Data (Public - No Changes Needed)
 
@@ -607,10 +629,15 @@ RETURNS boolean
 - [x] PeerBenchmarkingTool → Visibility hooks
 - [x] RBACDashboardContent → `PermissionGate`
 - [x] ChallengeOwnershipTransfer → `useUsersWithVisibility`
+- [x] ProgramToPilotWorkflow → `useMunicipalitiesWithVisibility`, `useChallengesWithVisibility`
+- [x] LabRoutingHub → `useLivingLabsWithVisibility`
+- [x] CollaborationHub → `useRDProjectsWithVisibility`, `useOrganizationsWithVisibility`
+- [x] MenuRBACContent → `PermissionGate`
 
 ### Phase 6: Supporting Hooks ✅ Complete
 - [x] `useUsersWithVisibility`
 - [x] `useMunicipalitiesWithVisibility`
+- [x] `useOrganizationsWithVisibility`
 - [x] `useVisibilityAwareSearch`
 
 ---
@@ -679,9 +706,10 @@ src/hooks/
 ├── useCaseStudiesWithVisibility.js
 ├── useBudgetsWithVisibility.js
 ├── useProposalsWithVisibility.js
-├── useUsersWithVisibility.js       # NEW
-├── useMunicipalitiesWithVisibility.js  # NEW
-├── useVisibilityAwareSearch.js     # NEW
+├── useUsersWithVisibility.js
+├── useMunicipalitiesWithVisibility.js
+├── useOrganizationsWithVisibility.js
+├── useVisibilityAwareSearch.js
 ├── useEntityAccessCheck.js
 └── useEntityVisibility.js
 
@@ -700,10 +728,10 @@ The visibility system is now **fully implemented** across:
 
 | Category | Coverage |
 |----------|----------|
-| Entity Hooks | 14 hooks (11 core + 3 supporting) |
-| Pages | 25+ pages with visibility |
+| Entity Hooks | 15 hooks (11 core + 4 supporting) |
+| Pages | 26+ pages with visibility |
 | Detail Pages | 7 pages with access checks |
-| Components | 5+ components updated |
+| Components | 9+ components updated |
 | Sidebar | Full permission-based filtering |
 | Search | Visibility-aware cross-entity search |
 
