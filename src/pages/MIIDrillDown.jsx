@@ -8,10 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { Link, Navigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Award, TrendingUp, AlertCircle, TestTube, Target, Building2, Users, Zap, ShieldAlert } from 'lucide-react';
+import { Award, TrendingUp, AlertCircle, TestTube, Target, Building2, Users, Zap, ShieldAlert, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { usePermissions } from '@/components/permissions/usePermissions';
+import { useMIIData } from '@/hooks/useMIIData';
 
 export default function MIIDrillDown() {
   const { language, isRTL, t } = useLanguage();
@@ -74,8 +75,21 @@ export default function MIIDrillDown() {
   const { data: allMunicipalities = [] } = useQuery({
     queryKey: ['all-municipalities'],
     queryFn: () => base44.entities.Municipality.list(),
-    enabled: hasOversightAccess // Only load all municipalities for oversight users
+    enabled: hasOversightAccess
   });
+
+  // Use centralized MII data hook for real data
+  const { 
+    radarData: miiRadarData, 
+    trendData: miiTrendData, 
+    yoyGrowth, 
+    rankChange, 
+    trend,
+    strengths,
+    improvementAreas,
+    nationalStats,
+    hasData: hasMIIData 
+  } = useMIIData(municipalityId);
 
   // Check permissions
   if (permissionsLoading) {
@@ -110,25 +124,31 @@ export default function MIIDrillDown() {
     return <div className="text-center py-12">{t({ en: 'Loading...', ar: 'جاري التحميل...' })}</div>;
   }
 
-  // MII dimensions (mock data - in real system from MIIResult)
-  const radarData = [
-    { dimension: 'Leadership', score: municipality.mii_score || 75 },
-    { dimension: 'Strategy', score: (municipality.mii_score || 75) - 5 },
-    { dimension: 'Innovation', score: (municipality.mii_score || 75) + 3 },
-    { dimension: 'Partnerships', score: (municipality.mii_score || 75) - 10 },
-    { dimension: 'Impact', score: (municipality.mii_score || 75) + 5 },
-    { dimension: 'Sustainability', score: (municipality.mii_score || 75) - 2 }
+  // Use real data from useMIIData hook, fallback to calculated values if no data
+  const radarData = miiRadarData.length > 0 ? miiRadarData : [
+    { dimension: 'Leadership', value: municipality.mii_score || 75 },
+    { dimension: 'Strategy', value: (municipality.mii_score || 75) - 5 },
+    { dimension: 'Culture', value: (municipality.mii_score || 75) - 8 },
+    { dimension: 'Partnerships', value: (municipality.mii_score || 75) - 10 },
+    { dimension: 'Capabilities', value: (municipality.mii_score || 75) + 2 },
+    { dimension: 'Impact', value: (municipality.mii_score || 75) + 5 }
   ];
 
-  // Historical trend (mock - would come from MIIResult time series)
-  const trendData = [
-    { year: '2022', score: (municipality.mii_score || 75) - 15 },
-    { year: '2023', score: (municipality.mii_score || 75) - 8 },
-    { year: '2024', score: (municipality.mii_score || 75) - 3 },
-    { year: '2025', score: municipality.mii_score || 75 }
+  // Use real historical data, fallback to mock
+  const trendData = miiTrendData.length > 0 ? miiTrendData : [
+    { year: 2023, score: (municipality.mii_score || 75) - 15 },
+    { year: 2024, score: (municipality.mii_score || 75) - 8 },
+    { year: 2025, score: municipality.mii_score || 75 }
   ];
 
-  const avgScore = allMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / (allMunicipalities.length || 1);
+  const avgScore = nationalStats?.averageScore || (allMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / (allMunicipalities.length || 1));
+  
+  // Calculate display YoY growth
+  const displayYoYGrowth = yoyGrowth !== null ? yoyGrowth : (trendData.length >= 2 ? trendData[trendData.length - 1].score - trendData[trendData.length - 2].score : 0);
+
+  // Trend icon
+  const TrendIcon = trend === 'up' ? ArrowUp : trend === 'down' ? ArrowDown : Minus;
+  const trendColor = trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-amber-600';
 
   return (
     <PageLayout>
@@ -194,8 +214,10 @@ export default function MIIDrillDown() {
         </Card>
         <Card className="bg-gradient-to-br from-amber-50 to-white">
           <CardContent className="pt-6 text-center">
-            <TrendingUp className="h-8 w-8 text-amber-600 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-amber-600">+{((municipality.mii_score || 0) - trendData[0].score).toFixed(0)}</div>
+            <TrendIcon className={`h-8 w-8 mx-auto mb-2 ${trendColor}`} />
+            <div className={`text-3xl font-bold ${trendColor}`}>
+              {displayYoYGrowth > 0 ? '+' : ''}{displayYoYGrowth.toFixed(0)}
+            </div>
             <div className="text-sm text-slate-600">{t({ en: 'YoY Growth', ar: 'النمو السنوي' })}</div>
           </CardContent>
         </Card>
@@ -213,7 +235,8 @@ export default function MIIDrillDown() {
                 <PolarGrid />
                 <PolarAngleAxis dataKey="dimension" />
                 <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                <Radar name="Score" dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                <Radar name="Score" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                {nationalStats && <Radar name="National Avg" dataKey="nationalAvg" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.2} />}
               </RadarChart>
             </ResponsiveContainer>
           </CardContent>
