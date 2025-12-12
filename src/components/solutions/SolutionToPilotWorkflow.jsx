@@ -48,6 +48,32 @@ export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }
         description: `Provider proposed pilot: ${pilot.title_en}`
       });
 
+      // Send pilot created email notification
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const recipientEmail = data.pilot_manager_email || solution.contact_email;
+        if (recipientEmail) {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              template_key: 'pilot_created',
+              recipient_email: recipientEmail,
+              variables: {
+                pilotTitle: data.title_en || data.title_ar,
+                pilotCode: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
+                startDate: data.start_date || new Date().toISOString().split('T')[0],
+                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
+              },
+              language: language,
+              entity_type: 'pilot',
+              entity_id: pilot.id,
+              triggered_by: 'system'
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send pilot created email:', emailError);
+      }
+
       return pilot;
     },
     onSuccess: (pilot) => {

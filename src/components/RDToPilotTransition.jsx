@@ -30,6 +30,33 @@ export default function RDToPilotTransition({ project, onClose }) {
   const createPilotMutation = useMutation({
     mutationFn: async (data) => {
       const pilot = await base44.entities.Pilot.create(data);
+
+      // Send pilot created email notification
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const recipientEmail = data.pilot_manager_email || project.principal_investigator?.email;
+        if (recipientEmail) {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              template_key: 'pilot_created',
+              recipient_email: recipientEmail,
+              variables: {
+                pilotTitle: data.title_en || data.title_ar,
+                pilotCode: pilot.code || `PLT-RD-${pilot.id?.substring(0, 8)}`,
+                startDate: data.start_date || new Date().toISOString().split('T')[0],
+                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
+              },
+              language: language,
+              entity_type: 'pilot',
+              entity_id: pilot.id,
+              triggered_by: 'system'
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send pilot created email:', emailError);
+      }
+
       return pilot;
     },
     onSuccess: (pilot) => {
