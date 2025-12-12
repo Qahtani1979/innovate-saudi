@@ -1,208 +1,134 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { useLanguage } from '../components/LanguageContext';
-import { Image, Video, FileText, Upload, Search, Trash2, Download, Grid, List, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useLanguage } from '@/components/LanguageContext';
+import { 
+  Upload, Search, Grid, List, Loader2, RefreshCw, Trash2, Download,
+  Image, Video, FileText, File, SlidersHorizontal
+} from 'lucide-react';
+import { useMediaLibrary } from '@/hooks/useMediaLibrary';
+import MediaFilters from '@/components/media/MediaFilters';
+import MediaGrid from '@/components/media/MediaGrid';
+import MediaDetails from '@/components/media/MediaDetails';
+import MediaUploadDialog from '@/components/media/MediaUploadDialog';
+import {
+  Sheet,
+  SheetContent,
+} from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function MediaLibrary() {
   const { language, isRTL, t } = useLanguage();
-  const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
-  const [selectedType, setSelectedType] = useState('all');
-  const [uploading, setUploading] = useState(false);
-  const queryClient = useQueryClient();
+  const [showFilters, setShowFilters] = useState(true);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  // Fetch files from Supabase storage
-  const { data: media = [], isLoading } = useQuery({
-    queryKey: ['media-library'],
-    queryFn: async () => {
-      const { data, error } = await supabase.storage
-        .from('uploads')
-        .list('public', {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' }
-        });
-      
-      if (error) {
-        console.error('Error fetching media:', error);
-        return [];
-      }
-      
-      // Get public URLs and metadata for each file
-      const filesWithUrls = await Promise.all(
-        (data || []).map(async (file) => {
-          const { data: urlData } = supabase.storage
-            .from('uploads')
-            .getPublicUrl(`public/${file.name}`);
-          
-          const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
-          let type = 'document';
-          if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExt)) type = 'image';
-          if (['mp4', 'webm', 'mov', 'avi'].includes(fileExt)) type = 'video';
-          
-          return {
-            id: file.id,
-            name: file.name,
-            type,
-            size: formatFileSize(file.metadata?.size || 0),
-            url: urlData.publicUrl,
-            uploaded_date: file.created_at ? new Date(file.created_at).toLocaleDateString() : 'Unknown',
-            used_in: [] // Would need separate tracking table
-          };
-        })
-      );
-      
-      return filesWithUrls;
-    }
-  });
+  const {
+    media,
+    stats,
+    isLoading,
+    selectedBuckets,
+    setSelectedBuckets,
+    searchTerm,
+    setSearchTerm,
+    selectedType,
+    setSelectedType,
+    upload,
+    isUploading,
+    delete: deleteFile,
+    updateMetadata,
+    isUpdating,
+    trackDownload,
+    refetch,
+    formatFileSize,
+  } = useMediaLibrary();
 
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  const handleView = (file) => {
+    setSelectedFile(file);
   };
 
-  const uploadMutation = useMutation({
-    mutationFn: async (file) => {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `public/${fileName}`;
-      
-      const { data, error } = await supabase.storage
-        .from('uploads')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['media-library']);
-      toast.success(t({ en: 'File uploaded successfully', ar: 'تم رفع الملف بنجاح' }));
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Upload failed', ar: 'فشل الرفع' }));
-      console.error('Upload error:', error);
+  const handleDownload = (file) => {
+    if (file.public_url) {
+      trackDownload(file.id);
+      window.open(file.public_url, '_blank');
     }
-  });
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: async (fileName) => {
-      const { error } = await supabase.storage
-        .from('uploads')
-        .remove([`public/${fileName}`]);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['media-library']);
-      toast.success(t({ en: 'File deleted', ar: 'تم حذف الملف' }));
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Delete failed', ar: 'فشل الحذف' }));
-      console.error('Delete error:', error);
+  const handleDelete = (file) => {
+    setDeleteConfirm(file);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm) {
+      deleteFile({
+        id: deleteConfirm.id,
+        bucketId: deleteConfirm.bucket_id,
+        storagePath: deleteConfirm.storage_path,
+        source: deleteConfirm.source,
+      });
+      setDeleteConfirm(null);
+      setSelectedFile(null);
     }
-  });
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setUploading(true);
-    await uploadMutation.mutateAsync(file);
-    setUploading(false);
-    e.target.value = '';
   };
 
   const fileTypes = [
-    { value: 'all', label: { en: 'All Files', ar: 'جميع الملفات' }, icon: FileText },
-    { value: 'image', label: { en: 'Images', ar: 'الصور' }, icon: Image },
-    { value: 'video', label: { en: 'Videos', ar: 'الفيديو' }, icon: Video },
-    { value: 'document', label: { en: 'Documents', ar: 'المستندات' }, icon: FileText }
+    { value: 'all', label: { en: 'All', ar: 'الكل' }, icon: File },
+    { value: 'image', label: { en: 'Images', ar: 'صور' }, icon: Image },
+    { value: 'video', label: { en: 'Videos', ar: 'فيديو' }, icon: Video },
+    { value: 'document', label: { en: 'Docs', ar: 'مستندات' }, icon: FileText },
   ];
 
-  const filteredMedia = media.filter(file =>
-    (selectedType === 'all' || file.type === selectedType) &&
-    file.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalSize = media.reduce((sum, file) => {
-    const size = parseFloat(file.size) || 0;
-    return sum + size;
-  }, 0);
-
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
+    <div className="h-full flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-purple-600 bg-clip-text text-transparent">
-            {t({ en: 'Media Library', ar: 'مكتبة الوسائط' })}
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            {t({ en: 'Content Management Hub', ar: 'مركز إدارة المحتوى' })}
           </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Centralized file and media management', ar: 'إدارة مركزية للملفات والوسائط' })}
+          <p className="text-muted-foreground mt-1">
+            {t({ en: 'Centralized media and file management', ar: 'إدارة مركزية للوسائط والملفات' })}
           </p>
         </div>
-        <label>
-          <input
-            type="file"
-            className="hidden"
-            onChange={handleFileUpload}
-            disabled={uploading}
-          />
-          <Button 
-            className="bg-gradient-to-r from-blue-600 to-purple-600 cursor-pointer"
-            disabled={uploading}
-            asChild
-          >
-            <span>
-              {uploading ? (
-                <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
-              ) : (
-                <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-              )}
-              {t({ en: 'Upload Files', ar: 'رفع ملفات' })}
-            </span>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={refetch}>
+            <RefreshCw className="h-4 w-4" />
           </Button>
-        </label>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {fileTypes.map(type => {
-          const Icon = type.icon;
-          const count = type.value === 'all' ? media.length : media.filter(f => f.type === type.value).length;
-          return (
-            <Card key={type.value}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-600">{type.label[language]}</p>
-                    <p className="text-2xl font-bold text-blue-600 mt-1">{count}</p>
-                  </div>
-                  <Icon className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+          <Button onClick={() => setShowUploadDialog(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            {t({ en: 'Upload', ar: 'رفع' })}
+          </Button>
+        </div>
       </div>
 
       {/* Toolbar */}
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="mb-4">
+        <CardContent className="py-3">
           <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <SlidersHorizontal className="h-4 w-4 mr-1" />
+              {t({ en: 'Filters', ar: 'فلاتر' })}
+            </Button>
+            
+            <div className="relative flex-1 max-w-md">
+              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
               <Input
                 placeholder={t({ en: 'Search files...', ar: 'ابحث عن ملفات...' })}
                 value={searchTerm}
@@ -210,29 +136,32 @@ export default function MediaLibrary() {
                 className={isRTL ? 'pr-10' : 'pl-10'}
               />
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex gap-1">
               {fileTypes.map(type => (
                 <Button
                   key={type.value}
-                  variant={selectedType === type.value ? 'default' : 'outline'}
+                  variant={selectedType === type.value ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setSelectedType(type.value)}
                 >
+                  <type.icon className="h-4 w-4 mr-1" />
                   {type.label[language]}
                 </Button>
               ))}
             </div>
-            <div className="flex gap-1">
+
+            <div className="flex gap-1 ml-auto">
               <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                size="sm"
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="icon"
                 onClick={() => setViewMode('grid')}
               >
                 <Grid className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
-                size="sm"
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="icon"
                 onClick={() => setViewMode('list')}
               >
                 <List className="h-4 w-4" />
@@ -242,126 +171,92 @@ export default function MediaLibrary() {
         </CardContent>
       </Card>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!isLoading && filteredMedia.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <FileText className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500">
-              {t({ en: 'No files found. Upload your first file!', ar: 'لم يتم العثور على ملفات. ارفع أول ملف!' })}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Media Grid */}
-      {!isLoading && filteredMedia.length > 0 && viewMode === 'grid' && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {filteredMedia.map(file => {
-            const Icon = file.type === 'image' ? Image : file.type === 'video' ? Video : FileText;
-            return (
-              <Card key={file.id} className="hover:shadow-lg transition-all">
-                <CardContent className="pt-6">
-                  {file.type === 'image' && (
-                    <img src={file.url} alt={file.name} className="w-full h-32 object-cover rounded-lg mb-3" />
-                  )}
-                  {file.type !== 'image' && (
-                    <div className="w-full h-32 bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
-                      <Icon className="h-12 w-12 text-slate-400" />
-                    </div>
-                  )}
-                  <p className="text-sm font-medium text-slate-900 truncate">{file.name}</p>
-                  <p className="text-xs text-slate-500 mt-1">{file.size}</p>
-                  <div className="flex gap-2 mt-3">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => window.open(file.url, '_blank')}
-                    >
-                      <Download className="h-3 w-3" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => deleteMutation.mutate(file.name)}
-                    >
-                      <Trash2 className="h-3 w-3 text-red-600" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Media List */}
-      {!isLoading && filteredMedia.length > 0 && viewMode === 'list' && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              {filteredMedia.map(file => {
-                const Icon = file.type === 'image' ? Image : file.type === 'video' ? Video : FileText;
-                return (
-                  <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50">
-                    <div className="flex items-center gap-3 flex-1">
-                      <Icon className="h-5 w-5 text-slate-400" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-900">{file.name}</p>
-                        <p className="text-xs text-slate-500">{file.uploaded_date} • {file.size}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => window.open(file.url, '_blank')}
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => deleteMutation.mutate(file.name)}
-                      >
-                        <Trash2 className="h-3 w-3 text-red-600" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Storage Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t({ en: 'Storage Usage', ar: 'استخدام التخزين' })}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">{t({ en: 'Total Files', ar: 'إجمالي الملفات' })}</p>
-              <p className="text-2xl font-bold text-blue-600">{media.length}</p>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">{t({ en: 'Total Size', ar: 'الحجم الإجمالي' })}</p>
-              <p className="text-2xl font-bold text-green-600">{totalSize.toFixed(1)} MB</p>
-            </div>
+      {/* Main Content */}
+      <div className="flex-1 flex gap-4 min-h-0">
+        {/* Filters Sidebar */}
+        {showFilters && (
+          <div className="w-64 flex-shrink-0">
+            <MediaFilters
+              selectedBuckets={selectedBuckets}
+              onBucketsChange={setSelectedBuckets}
+              selectedType={selectedType}
+              onTypeChange={setSelectedType}
+              stats={stats}
+            />
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {/* File Grid */}
+        <div className="flex-1 overflow-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : media.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <File className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  {t({ en: 'No files found. Upload your first file!', ar: 'لم يتم العثور على ملفات.' })}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <MediaGrid
+              files={media}
+              onView={handleView}
+              onDelete={handleDelete}
+              onDownload={handleDownload}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+            />
+          )}
+        </div>
+
+        {/* Details Panel */}
+        <Sheet open={!!selectedFile} onOpenChange={() => setSelectedFile(null)}>
+          <SheetContent side={isRTL ? 'left' : 'right'} className="w-[400px] p-0">
+            <MediaDetails
+              file={selectedFile}
+              onClose={() => setSelectedFile(null)}
+              onDelete={handleDelete}
+              onDownload={handleDownload}
+              onUpdate={updateMetadata}
+              isUpdating={isUpdating}
+            />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Upload Dialog */}
+      <MediaUploadDialog
+        open={showUploadDialog}
+        onOpenChange={setShowUploadDialog}
+        onUpload={upload}
+        isUploading={isUploading}
+      />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t({ en: 'Delete File?', ar: 'حذف الملف؟' })}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t({ 
+                en: `Are you sure you want to delete "${deleteConfirm?.original_filename}"? This action cannot be undone.`,
+                ar: `هل أنت متأكد من حذف "${deleteConfirm?.original_filename}"؟`
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t({ en: 'Cancel', ar: 'إلغاء' })}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              <Trash2 className="h-4 w-4 mr-2" />
+              {t({ en: 'Delete', ar: 'حذف' })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
