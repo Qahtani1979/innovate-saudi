@@ -51,7 +51,7 @@ import MobileOptimizationPanel from '@/components/mobile/MobileOptimizationPanel
 import NativeMobileApp from '@/components/mobile/NativeMobileApp';
 import AdvancedAnalyticsDashboard from '@/components/analytics/AdvancedAnalyticsDashboard';
 import WidgetLibrary from '@/components/dashboards/WidgetLibrary';
-import VoiceAssistant from '@/components/voice/VoiceAssistant';
+import { VoiceAssistant } from '@/components/voice/VoiceAssistant';
 
 export default function SystemHealthDashboard() {
   const { language, t } = useLanguage();
