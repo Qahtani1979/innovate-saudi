@@ -12,6 +12,7 @@ import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles } from '
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function ChallengeImport() {
   const { language, isRTL, t } = useLanguage();
@@ -270,15 +271,12 @@ Generate:
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'Import Challenges', ar: 'استيراد التحديات' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Bulk import challenges from CSV/TXT file', ar: 'استيراد جماعي للتحديات من ملف CSV/TXT' })}
-        </p>
-      </div>
+    <PageLayout className="max-w-5xl mx-auto">
+      <PageHeader
+        icon={Upload}
+        title={{ en: 'Import Challenges', ar: 'استيراد التحديات' }}
+        description={{ en: 'Bulk import challenges from CSV/TXT file', ar: 'استيراد جماعي للتحديات من ملف CSV/TXT' }}
+      />
 
       <Card>
         <CardHeader>
@@ -530,6 +528,6 @@ Generate:
           )}
         </>
       )}
-    </div>
+    </PageLayout>
   );
 }

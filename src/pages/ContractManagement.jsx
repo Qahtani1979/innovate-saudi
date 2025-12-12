@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useContractsWithVisibility } from '@/hooks/useContractsWithVisibility';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ContractManagement() {
   const { t } = useLanguage();
@@ -73,16 +74,20 @@ function ContractManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Contract Management', ar: 'إدارة العقود' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Manage agreements, MOUs, and formal contracts', ar: 'إدارة الاتفاقيات والعقود الرسمية' })}
-          </p>
+    <PageLayout>
+      <PageHeader
+        icon={FileText}
+        title={{ en: 'Contract Management', ar: 'إدارة العقود' }}
+        description={{ en: 'Manage agreements, MOUs, and formal contracts', ar: 'إدارة الاتفاقيات والعقود الرسمية' }}
+        action={
+          <Link to={createPageUrl('ContractDetail') + '?mode=create'}>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              {t({ en: 'New Contract', ar: 'عقد جديد' })}
+            </Button>
+          </Link>
+        }
+      />
         </div>
         <Link to={createPageUrl('ContractDetail') + '?mode=create'}>
           <Button className="bg-blue-600 hover:bg-blue-700">
@@ -247,7 +252,7 @@ function ContractManagement() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

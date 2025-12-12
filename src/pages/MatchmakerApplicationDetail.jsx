@@ -20,6 +20,7 @@ import MatchmakerEngagementHub from '../components/matchmaker/MatchmakerEngageme
 import ProviderPerformanceScorecard from '../components/matchmaker/ProviderPerformanceScorecard';
 import EnhancedMatchingEngine from '../components/matchmaker/EnhancedMatchingEngine';
 import PilotConversionWizard from '../components/matchmaker/PilotConversionWizard';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function MatchmakerApplicationDetail() {
   const { language, isRTL, t } = useLanguage();
@@ -118,28 +119,26 @@ export default function MatchmakerApplicationDetail() {
   }
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold" dir={language === 'ar' && application.organization_name_ar ? 'rtl' : 'ltr'}>
-            {language === 'ar' && application.organization_name_ar ? application.organization_name_ar : application.organization_name_en}
-          </h1>
-          <p className="text-slate-600 mt-1 font-mono">{application.application_code}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">{application.stage?.replace(/_/g, ' ')}</Badge>
-          {application.classification && (
-            <Badge className={
-              application.classification === 'fast_pass' ? 'bg-purple-600' :
-              application.classification === 'strong_qualified' ? 'bg-green-600' :
-              application.classification === 'conditional' ? 'bg-amber-600' : 'bg-red-600'
-            }>
-              {application.classification.replace(/_/g, ' ')}
-            </Badge>
-          )}
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Building2}
+        title={language === 'ar' && application.organization_name_ar ? application.organization_name_ar : application.organization_name_en}
+        description={application.application_code}
+        action={
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{application.stage?.replace(/_/g, ' ')}</Badge>
+            {application.classification && (
+              <Badge className={
+                application.classification === 'fast_pass' ? 'bg-purple-600' :
+                application.classification === 'strong_qualified' ? 'bg-green-600' :
+                application.classification === 'conditional' ? 'bg-amber-600' : 'bg-red-600'
+              }>
+                {application.classification.replace(/_/g, ' ')}
+              </Badge>
+            )}
+          </div>
+        }
+      />
 
       {/* Classification Dashboard (if evaluated) */}
       {application.evaluation_score && (
@@ -444,6 +443,6 @@ export default function MatchmakerApplicationDetail() {
           />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }

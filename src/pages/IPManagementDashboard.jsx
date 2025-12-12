@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Award, Shield, DollarSign, TrendingUp, Building2, Search, Calendar, FileText } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function IPManagementDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -54,15 +55,12 @@ function IPManagementDashboard() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Intellectual Property Management', ar: 'إدارة الملكية الفكرية' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Track patents, licenses, and commercialization from R&D projects', ar: 'تتبع البراءات والتراخيص والتسويق من مشاريع البحث' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Award}
+        title={{ en: 'Intellectual Property Management', ar: 'إدارة الملكية الفكرية' }}
+        description={{ en: 'Track patents, licenses, and commercialization from R&D projects', ar: 'تتبع البراءات والتراخيص والتسويق من مشاريع البحث' }}
+      />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -247,7 +245,7 @@ function IPManagementDashboard() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 
