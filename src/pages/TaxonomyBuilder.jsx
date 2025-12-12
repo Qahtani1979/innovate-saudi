@@ -485,7 +485,7 @@ Focus on Vision 2030, smart cities, and municipal service excellence.`,
           <TaxonomyGapDetector sectors={sectors} subsectors={subsectors} services={services} />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
 
