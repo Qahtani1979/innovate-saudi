@@ -11,7 +11,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { Mail, Eye, Save, Sparkles, Loader2, Send, Plus, Trash2, Copy, Settings, RefreshCw, Check, X, FileText, Brain, AlertTriangle, Lightbulb, TrendingUp, CheckCircle2, History } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
@@ -944,18 +944,18 @@ Provide a comprehensive analysis covering:
         </DialogContent>
       </Dialog>
 
-      {/* AI Analysis Drawer - Side panel that stays open while taking actions */}
-      <Drawer open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog} direction="right">
-        <DrawerContent direction="right" showHandle={false} className="inset-y-0 right-0 h-full w-full max-w-lg rounded-l-[10px]" dir={isRTL ? 'rtl' : 'ltr'}>
-          <DrawerHeader className="border-b">
-            <DrawerTitle className="flex items-center gap-2">
+      {/* AI Analysis Sheet - Side panel that stays open while taking actions */}
+      <Sheet open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog}>
+        <SheetContent side="right" className="w-full max-w-lg p-0" dir={isRTL ? 'rtl' : 'ltr'}>
+          <SheetHeader className="border-b p-4">
+            <SheetTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-blue-600" />
               {t({ en: 'Email Template Analysis', ar: 'تحليل قوالب البريد' })}
-            </DrawerTitle>
+            </SheetTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              {t({ en: 'Click any item to take action - drawer stays open', ar: 'انقر على أي عنصر لاتخاذ إجراء - اللوحة تبقى مفتوحة' })}
+              {t({ en: 'Click any item to take action - panel stays open', ar: 'انقر على أي عنصر لاتخاذ إجراء - اللوحة تبقى مفتوحة' })}
             </p>
-          </DrawerHeader>
+          </SheetHeader>
           
           <ScrollArea className="flex-1 h-[calc(100vh-140px)] p-4">
             {aiLoading && !analysisResult ? (
@@ -1146,7 +1146,7 @@ Provide a comprehensive analysis covering:
             )}
           </ScrollArea>
           
-          <DrawerFooter className="border-t flex-row gap-2">
+          <SheetFooter className="border-t flex-row gap-2 p-4">
             <Button variant="outline" onClick={() => setShowAnalysisDialog(false)} className="flex-1">
               {t({ en: 'Close', ar: 'إغلاق' })}
             </Button>
@@ -1156,9 +1156,9 @@ Provide a comprehensive analysis covering:
                 {t({ en: 'Re-analyze', ar: 'إعادة التحليل' })}
               </Button>
             )}
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </PageLayout>
   );
 }
