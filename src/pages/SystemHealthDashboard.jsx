@@ -10,8 +10,8 @@ import SecurityHeadersConfig from '@/components/security/SecurityHeadersConfig';
 import RateLimitingConfig from '@/components/api/RateLimitingConfig';
 import TestingDashboard from '@/components/testing/TestingDashboard';
 import BackupScheduler from '@/components/admin/BackupScheduler';
-import RedisCacheConfig from '@/components/infrastructure/RedisCacheConfig';
-import APIKeyManagement from '@/components/infrastructure/APIKeyManagement';
+import RedisDeploymentPanel from '@/components/infrastructure/RedisDeploymentPanel';
+import APMIntegrationPanel from '@/components/infrastructure/APMIntegrationPanel';
 import BackendSecurityAudit from '@/components/security/BackendSecurityAudit';
 import CSRFProtection from '@/components/security/CSRFProtection';
 import InputValidationMiddleware from '@/components/security/InputValidationMiddleware';
@@ -19,7 +19,7 @@ import SessionTokenSecurity from '@/components/security/SessionTokenSecurity';
 import DataEncryptionConfig from '@/components/security/DataEncryptionConfig';
 import ThreatDetectionSystem from '@/components/security/ThreatDetectionSystem';
 import DatabaseIndexing from '@/components/infrastructure/DatabaseIndexing';
-import QueryOptimizationPanel from '@/components/infrastructure/QueryOptimizationPanel';
+import DatabaseIndexStrategy from '@/components/infrastructure/DatabaseIndexStrategy';
 import ConnectionPoolingConfig from '@/components/infrastructure/ConnectionPoolingConfig';
 import PerformanceMetrics from '@/components/monitoring/PerformanceMetrics';
 import PerformanceProfiler from '@/components/monitoring/PerformanceProfiler';
@@ -191,8 +191,8 @@ export default function SystemHealthDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <RedisCacheConfig />
-        <APIKeyManagement />
+          <RedisDeploymentPanel />
+          <APMIntegrationPanel />
       </div>
 
       <div className="mt-6">
@@ -211,7 +211,7 @@ export default function SystemHealthDashboard() {
         <h3 className="text-lg font-semibold mb-4">{t({ en: 'Infrastructure & Performance', ar: 'البنية التحتية والأداء' })}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DatabaseIndexing />
-          <QueryOptimizationPanel />
+          <DatabaseIndexStrategy />
           <ConnectionPoolingConfig />
           <PerformanceMetrics />
           <PerformanceProfiler />
