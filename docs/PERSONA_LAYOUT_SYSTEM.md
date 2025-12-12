@@ -551,6 +551,18 @@ Focus on Detail/Create/Edit pages for main entities:
 
 ---
 
+## New Components (Planned)
+
+See [LAYOUT_SYSTEM_IMPLEMENTATION_PLAN.md](./LAYOUT_SYSTEM_IMPLEMENTATION_PLAN.md) for full details.
+
+| Component | Path | Purpose | Status |
+|-----------|------|---------|--------|
+| `EntityDetailHeader` | `src/components/layout/EntityDetailHeader.jsx` | Unified detail page headers | 🔜 Planned |
+| `EntityFormLayout` | `src/components/layout/EntityFormLayout.jsx` | Consistent form layouts | 🔜 Planned |
+| `EntityStatusBadge` | `src/components/layout/EntityStatusBadge.jsx` | Unified status badges | 🔜 Planned |
+
+---
+
 ## Changelog
 
 | Date | Changes |
@@ -561,3 +573,6 @@ Focus on Detail/Create/Edit pages for main entities:
 | Dec 2024 | Added ResearcherDashboard |
 | Dec 2024 | Added ViewerDashboard |
 | Dec 2024 | All 10 dashboards complete |
+| Dec 2024 | Created LAYOUT_SYSTEM_IMPLEMENTATION_PLAN.md |
+| Dec 2024 | Deleted 4 orphaned empty files |
+| Dec 2024 | Implemented MyResearcherProfileEditor |
