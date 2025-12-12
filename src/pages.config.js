@@ -168,7 +168,6 @@ import UserActivityDashboard from './pages/UserActivityDashboard';
 import SessionDeviceManager from './pages/SessionDeviceManager';
 import TeamWorkspace from './pages/TeamWorkspace';
 import BrandingSettings from './pages/BrandingSettings';
-import IntegrationManager from './pages/IntegrationManager';
 import SystemDefaultsConfig from './pages/SystemDefaultsConfig';
 import SecurityPolicyManager from './pages/SecurityPolicyManager';
 import DataRetentionConfig from './pages/DataRetentionConfig';
@@ -649,7 +648,6 @@ export const PAGES = {
     "SessionDeviceManager": SessionDeviceManager,
     "TeamWorkspace": TeamWorkspace,
     "BrandingSettings": BrandingSettings,
-    "IntegrationManager": IntegrationManager,
     "SystemDefaultsConfig": SystemDefaultsConfig,
     "SecurityPolicyManager": SecurityPolicyManager,
     "DataRetentionConfig": DataRetentionConfig,

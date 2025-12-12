@@ -89,7 +89,6 @@ export const SIDEBAR_MENUS = {
       { name: 'BrandingSettings', icon: Palette, label: { en: 'Branding Settings', ar: 'إعدادات العلامة' } },
       { name: 'TaxonomyBuilder', icon: Tags, label: { en: 'Taxonomy Builder', ar: 'منشئ التصنيف' } },
       { name: 'FeatureFlagsDashboard', icon: ToggleLeft, label: { en: 'Feature Flags', ar: 'أعلام الميزات' } },
-      { name: 'IntegrationManager', icon: Link2, label: { en: 'Integration Manager', ar: 'مدير التكامل' } },
       { name: 'EmailTemplateEditor', icon: Mail, label: { en: 'Email Templates', ar: 'قوالب البريد' } },
       { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' } },
       { name: 'Pilots', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
