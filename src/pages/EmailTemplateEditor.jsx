@@ -289,7 +289,11 @@ For a Saudi municipal innovation platform. Include:
         toast.success(t({ en: `Test email sent to ${recipientEmail}`, ar: `تم إرسال البريد التجريبي إلى ${recipientEmail}` }));
         setShowTestDialog(false);
       } else {
-        toast.error(data.error || data.message || 'Failed to send email');
+        // Handle error object from Resend API
+        const errorMessage = typeof data.error === 'object' 
+          ? data.error?.message || JSON.stringify(data.error) 
+          : data.error || data.message || 'Failed to send email';
+        toast.error(errorMessage, { duration: 8000 });
       }
     } catch (err) {
       console.error('Error sending test email:', err);
