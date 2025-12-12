@@ -199,8 +199,7 @@ export const SIDEBAR_MENUS = {
       { name: 'ContractManagement', icon: ScrollText, label: { en: 'Contracts', ar: 'العقود' }, permission: 'contract_view' },
       { name: 'BudgetManagement', icon: Wallet, label: { en: 'Budget', ar: 'الميزانية' }, permission: 'budget_view' },
       { name: 'BudgetAllocationTool', icon: DollarSign, label: { en: 'Manage Budget', ar: 'إدارة الميزانية' }, permission: 'budget_manage' },
-      // Analytics & Reports
-      { name: 'RegionalAnalyticsDashboard', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, permission: 'analytics_view' },
+      // Reports
       { name: 'ReportsBuilder', icon: FileBarChart, label: { en: 'Reports', ar: 'التقارير' }, permission: 'reports_view' },
       // Team & Settings
       { name: 'TeamManagement', icon: Users, label: { en: 'Team', ar: 'الفريق' }, permission: 'team_manage' },

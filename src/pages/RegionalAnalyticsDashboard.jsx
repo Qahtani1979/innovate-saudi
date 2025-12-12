@@ -120,4 +120,7 @@ function RegionalAnalyticsDashboard() {
   );
 }
 
-export default ProtectedPage(RegionalAnalyticsDashboard, { requiredPermission: 'analytics_view' });
+export default ProtectedPage(RegionalAnalyticsDashboard, { 
+  requiredPermission: 'analytics_view',
+  requiredRoles: ['admin', 'executive', 'deputyship_admin', 'deputyship_staff']
+});
