@@ -8,33 +8,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Globe, Menu, Sparkles, LayoutDashboard } from 'lucide-react';
 import UserAvatarMenu from '@/components/shared/UserAvatarMenu';
 
-// Safe hook wrapper for persona routing to avoid hook errors on public pages
-function usePublicPersonaRouting(isAuthenticated) {
-  const [config, setConfig] = useState({
-    defaultDashboard: '/citizen-dashboard',
-    dashboardLabel: { en: 'Dashboard', ar: 'لوحة التحكم' }
-  });
-
-  // Only import and use persona routing when authenticated
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      import('@/hooks/usePersonaRouting').then(module => {
-        // This is a workaround - we'll use localStorage or a simpler approach
-        // For now, just use defaults since the hook can't be called conditionally
-      });
-    }
-  }, [isAuthenticated]);
-
-  return config;
-}
-
 export default function PublicHeader() {
   const { language, isRTL, toggleLanguage, t } = useLanguage();
   const { isAuthenticated, user } = useAuth();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   
-  // Use safe defaults for public header - no hook dependency on auth state
+  // Use safe defaults for public header
   const defaultDashboard = '/citizen-dashboard';
   const dashboardLabel = { en: 'Dashboard', ar: 'لوحة التحكم' };
 
