@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,29 +6,17 @@ import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Users, Search, Mail, Building2, Microscope } from 'lucide-react';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useOrganizationsWithVisibility } from '@/hooks/useOrganizationsWithVisibility';
 
 export default function CollaborationHub() {
   const { language, isRTL, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuth();
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-all'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('rd_projects').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('organizations').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use visibility-aware hooks
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
+  const { data: organizations = [] } = useOrganizationsWithVisibility();
 
   // Find potential collaborators based on sectors/themes
   const myProjects = rdProjects.filter(p => p.created_by === user?.email);

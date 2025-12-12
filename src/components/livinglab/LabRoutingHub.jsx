@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { ArrowRight, Beaker, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
 
 export default function LabRoutingHub({ entity, entityType }) {
   const { t, language } = useLanguage();
@@ -17,13 +18,8 @@ export default function LabRoutingHub({ entity, entityType }) {
   const [routing, setRouting] = useState(false);
   const { user } = useAuth();
 
-  const { data: livingLabs = [] } = useQuery({
-    queryKey: ['living-labs-routing'],
-    queryFn: async () => {
-      const { data } = await supabase.from('living_labs').select('*');
-      return data || [];
-    }
-  });
+  // Use visibility-aware hook
+  const { data: livingLabs = [] } = useLivingLabsWithVisibility();
 
   const routeToLabMutation = useMutation({
     mutationFn: async () => {

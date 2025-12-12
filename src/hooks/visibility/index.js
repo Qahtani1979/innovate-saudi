@@ -26,6 +26,7 @@ export { useProposalsWithVisibility } from '@/hooks/useProposalsWithVisibility';
 // Additional visibility-aware hooks
 export { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
 export { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+export { useOrganizationsWithVisibility } from '@/hooks/useOrganizationsWithVisibility';
 export { useVisibilityAwareSearch } from '@/hooks/useVisibilityAwareSearch';
 
 // Re-export permissions hook

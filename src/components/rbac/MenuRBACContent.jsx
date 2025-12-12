@@ -11,6 +11,7 @@ import {
   Users, Eye, Filter
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import PermissionGate from '@/components/permissions/PermissionGate';
 
 // Menu items with their RBAC configuration
 const menuItems = [
@@ -51,7 +52,7 @@ const menuItems = [
   { path: '/data-management-hub', name: 'Data Management', isPublic: false, requiredPermission: 'data_manage', requireAdmin: true },
 ];
 
-export default function MenuRBACContent() {
+function MenuRBACContentInner() {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -275,5 +276,28 @@ export default function MenuRBACContent() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Wrap with PermissionGate for admin-only access
+export default function MenuRBACContent() {
+  const { t } = useLanguage();
+  
+  return (
+    <PermissionGate 
+      requireAdmin 
+      fallback={
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6 text-center">
+            <Shield className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <p className="text-red-600 font-medium">
+              {t({ en: 'Admin access required', ar: 'يتطلب صلاحيات المسؤول' })}
+            </p>
+          </CardContent>
+        </Card>
+      }
+    >
+      <MenuRBACContentInner />
+    </PermissionGate>
   );
 }
