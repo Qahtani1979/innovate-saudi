@@ -12,9 +12,14 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import PermissionInheritanceVisualizer from '@/components/access/PermissionInheritanceVisualizer';
 import RolePermissionMatrix from '@/components/access/RolePermissionMatrix';
+import PermissionGate from '@/components/permissions/PermissionGate';
+import { usePermissions } from '@/components/permissions/usePermissions';
 
 export default function RBACDashboardContent() {
   const { t } = useLanguage();
+  const { isAdmin, hasPermission } = usePermissions();
+
+  // RBAC Dashboard is admin-only - all queries are protected by this component's permission gate
 
   const { data: users = [] } = useQuery({
     queryKey: ['rbac-users'],
@@ -131,7 +136,21 @@ export default function RBACDashboardContent() {
   // Inactive roles for alert
   const inactiveRoles = roleUsageData.filter(r => r.users === 0);
 
+  // Wrap entire dashboard in admin permission gate
   return (
+    <PermissionGate requireAdmin fallback={
+      <Card className="border-2 border-red-300 bg-red-50">
+        <CardContent className="pt-6 text-center">
+          <Shield className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <p className="text-lg font-semibold text-red-900">
+            {t({ en: 'Access Denied', ar: 'الوصول مرفوض' })}
+          </p>
+          <p className="text-sm text-red-700">
+            {t({ en: 'You need administrator privileges to view this dashboard.', ar: 'تحتاج صلاحيات المسؤول لعرض هذه اللوحة.' })}
+          </p>
+        </CardContent>
+      </Card>
+    }>
     <div className="space-y-6">
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -334,5 +353,6 @@ export default function RBACDashboardContent() {
         </Link>
       </div>
     </div>
+    </PermissionGate>
   );
 }
