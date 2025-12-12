@@ -273,18 +273,21 @@ Each persona has a dedicated menu with permission-controlled items:
 | Component | Hook/Protection | Status |
 |-----------|-----------------|--------|
 | `CollaborationHub` | `useRDProjectsWithVisibility`, `useOrganizationsWithVisibility` | ✅ |
+| `RDProposalReviewGate` | `PermissionGate` (expert permissions) | ✅ |
 
 ### RBAC Components ✅
 
 | Component | Hook/Protection | Status |
 |-----------|-----------------|--------|
 | `MenuRBACContent` | `PermissionGate` (admin only) | ✅ |
+| `RBACDashboardContent` | `PermissionGate` (admin only) | ✅ |
 
 ### Form/Selection Components ✅
 
 | Component | Hook/Protection | Status |
 |-----------|-----------------|--------|
 | `ChallengeOwnershipTransfer` | `useUsersWithVisibility` | ✅ |
+| `ProgramCreateWizard` | `useMunicipalitiesWithVisibility`, `useOrganizationsWithVisibility` | ✅ |
 
 ### Filter Components
 
@@ -304,14 +307,19 @@ Each persona has a dedicated menu with permission-controlled items:
 | `SolutionReviewsTab` | User's own reviews | ✅ Correct |
 | `MyWorkPrioritizer` | User's own work items | ✅ Correct |
 | `MyWeekAhead` | User's own schedule | ✅ Correct |
+| `MultiStakeholderApprovalPanel` | Entity-scoped evaluations | ✅ Correct |
+| `SessionScheduler` | Single entity by ID | ✅ Correct |
 
 ### Lookup/Reference Data (Public - No Changes Needed)
 
 | Component | Data Type | Status |
 |-----------|-----------|--------|
 | Sector dropdowns | Reference data | ✅ Public OK |
+| Subsector dropdowns | Reference data | ✅ Public OK |
 | Service dropdowns | Reference data | ✅ Public OK |
 | Region dropdowns | Reference data | ✅ Public OK |
+| City dropdowns | Reference data | ✅ Public OK |
+| Strategic Plans | Reference data | ✅ Public OK |
 
 ---
 
@@ -731,8 +739,27 @@ The visibility system is now **fully implemented** across:
 | Entity Hooks | 15 hooks (11 core + 4 supporting) |
 | Pages | 26+ pages with visibility |
 | Detail Pages | 7 pages with access checks |
-| Components | 9+ components updated |
+| Components | 12+ components updated |
 | Sidebar | Full permission-based filtering |
 | Search | Visibility-aware cross-entity search |
+
+### Recently Updated Components (Latest)
+
+| Component | Change | Date |
+|-----------|--------|------|
+| `ProgramCreateWizard` | Added `useMunicipalitiesWithVisibility`, `useOrganizationsWithVisibility` | Latest |
+| `RDProposalReviewGate` | Added `PermissionGate` for expert permissions | Latest |
+| `RBACDashboardContent` | Already protected with `PermissionGate` | Previous |
+| `MenuRBACContent` | Already protected with `PermissionGate` | Previous |
+
+### Components Confirmed Correct (No Changes Needed)
+
+| Component | Reason |
+|-----------|--------|
+| `ProposalSubmissionForm` | User-scoped (own solutions) |
+| `MyWorkPrioritizer` | User-scoped (own work) |
+| `MultiStakeholderApprovalPanel` | Entity-scoped (sandbox evaluations) |
+| `SessionScheduler` | Single entity by ID |
+| Reference data dropdowns | Public lookup data |
 
 All user personas are supported with appropriate visibility levels, and the system is designed to be extensible for future entity types.
