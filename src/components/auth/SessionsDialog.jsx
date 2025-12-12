@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 
 export default function SessionsDialog({ open, onOpenChange }) {
   const { t, isRTL } = useLanguage();
-  const { session } = useAuth();
+  const { session, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   // Get device info from user agent
@@ -40,14 +40,21 @@ export default function SessionsDialog({ open, onOpenChange }) {
   const handleSignOutAllDevices = async () => {
     setIsLoading(true);
     try {
+      // First try global signout for all devices
       await supabase.auth.signOut({ scope: 'global' });
       toast.success(t({ en: 'Signed out from all devices', ar: 'تم تسجيل الخروج من جميع الأجهزة' }));
-      window.location.href = '/Auth';
     } catch (error) {
-      console.error('Sign out error:', error);
-      toast.error(t({ en: 'Failed to sign out', ar: 'فشل في تسجيل الخروج' }));
+      // If session_not_found, that's fine - session was already invalidated
+      if (error?.message?.includes('session_not_found')) {
+        toast.success(t({ en: 'Signed out from all devices', ar: 'تم تسجيل الخروج من جميع الأجهزة' }));
+      } else {
+        console.error('Sign out error:', error);
+        toast.error(t({ en: 'Failed to sign out', ar: 'فشل في تسجيل الخروج' }));
+      }
     } finally {
       setIsLoading(false);
+      // Always redirect to auth page
+      window.location.href = '/Auth';
     }
   };
 

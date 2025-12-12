@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -25,10 +26,26 @@ import NationalMap from '../components/NationalMap';
 import PersonaDashboardWidget from '../components/PersonaDashboardWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import RoleRequestStatusBanner from '../components/profile/RoleRequestStatusBanner';
+import { usePersonaRouting } from '@/hooks/usePersonaRouting';
 
 function Home() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoadingAuth } = useAuth();
   const { language, isRTL, t } = useLanguage();
+  const navigate = useNavigate();
+  const personaRouting = usePersonaRouting();
+
+  // Redirect to persona-specific dashboard if not /home
+  useEffect(() => {
+    // Wait for auth to load and ensure we have persona data
+    if (!isLoadingAuth && isAuthenticated && personaRouting?.persona) {
+      const targetDashboard = personaRouting.defaultDashboard;
+      // Only redirect if the target is NOT /home (to avoid infinite loop)
+      // and persona is not 'user' (which defaults to /home)
+      if (targetDashboard && targetDashboard !== '/home' && personaRouting.persona !== 'user') {
+        navigate(targetDashboard, { replace: true });
+      }
+    }
+  }, [isLoadingAuth, isAuthenticated, personaRouting, navigate]);
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],

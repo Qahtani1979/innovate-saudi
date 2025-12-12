@@ -336,34 +336,30 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async (shouldRedirect = true) => {
+    // Clear local state first - this ensures UI updates immediately
+    setUser(null);
+    setSession(null);
+    setUserProfile(null);
+    setUserRoles([]);
+    setIsAuthenticated(false);
+    setNeedsOnboarding(false);
+    
     try {
-      // Clear local state first
-      setUser(null);
-      setSession(null);
-      setUserProfile(null);
-      setUserRoles([]);
-      setIsAuthenticated(false);
-      setNeedsOnboarding(false);
+      // Try to sign out from Supabase - but don't fail if session is already gone
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Signout error:', error);
-      }
-      
-      if (shouldRedirect) {
-        // Use a small delay to ensure state is cleared before redirect
-        setTimeout(() => {
-          window.location.href = '/Auth';
-        }, 100);
+      // session_not_found is expected if server session was already invalidated
+      if (error && error.message !== 'Session from session_id claim in JWT does not exist') {
+        console.warn('Signout warning:', error.message);
       }
     } catch (error) {
-      console.error('Logout error:', error);
-      // Still redirect even on error
-      if (shouldRedirect) {
-        setTimeout(() => {
-          window.location.href = '/Auth';
-        }, 100);
-      }
+      // Silently handle - local state is already cleared which is the main goal
+      console.debug('Logout cleanup:', error?.message);
+    }
+    
+    if (shouldRedirect) {
+      // Immediate redirect since state is already cleared
+      window.location.href = '/Auth';
     }
   };
 
