@@ -20,14 +20,9 @@ import {
 } from "@/components/ui/select";
 import { Upload, X, FileText, Image, Video, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
-import { STORAGE_BUCKETS } from '@/hooks/useMediaLibrary';
+import { STORAGE_BUCKETS, FILE_CATEGORIES } from '@/config/mediaConfig';
 
-const CATEGORIES = [
-  { value: 'primary', label: { en: 'Primary/Hero', ar: 'رئيسي' } },
-  { value: 'gallery', label: { en: 'Gallery', ar: 'معرض' } },
-  { value: 'document', label: { en: 'Document', ar: 'مستند' } },
-  { value: 'attachment', label: { en: 'Attachment', ar: 'مرفق' } },
-];
+const CATEGORIES = FILE_CATEGORIES;
 
 const formatFileSize = (bytes) => {
   if (!bytes || bytes === 0) return '0 B';
