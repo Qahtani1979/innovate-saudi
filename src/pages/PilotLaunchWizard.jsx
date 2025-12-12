@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import PreFlightRiskSimulator from '../components/pilots/PreFlightRiskSimulator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function PilotLaunchWizard() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -175,22 +176,12 @@ Return as JSON object with boolean flags for each item.`,
   const readinessScore = (Object.values(checklist).filter(v => v).length / Object.values(checklist).length) * 100;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 p-8 text-white">
-        <div className="relative z-10">
-          <Badge variant="outline" className="bg-white/20 text-white border-white/40 mb-3">
-            {pilot.stage === 'approved' ? t({ en: 'Ready to Prepare', ar: 'جاهز للإعداد' }) : t({ en: 'Preparation Phase', ar: 'مرحلة الإعداد' })}
-          </Badge>
-          <h1 className="text-4xl font-bold mb-2">{t({ en: 'Pilot Launch Wizard', ar: 'معالج إطلاق التجربة' })}</h1>
-          <p className="text-xl text-white/90">{pilot.title_en}</p>
-          <div className="flex items-center gap-3 mt-3 text-sm">
-            <span>{pilot.code}</span>
-            <span>•</span>
-            <span>{pilot.sector?.replace(/_/g, ' ')}</span>
-          </div>
-        </div>
-      </div>
+    <PageLayout className="max-w-4xl mx-auto">
+      <PageHeader
+        icon={Rocket}
+        title={{ en: 'Pilot Launch Wizard', ar: 'معالج إطلاق التجربة' }}
+        description={pilot.title_en}
+      />
 
       {/* Readiness Score */}
       <Card className={`border-2 ${
@@ -353,6 +344,6 @@ Return as JSON object with boolean flags for each item.`,
           )}
         </Button>
       </div>
-    </div>
+    </PageLayout>
   );
 }

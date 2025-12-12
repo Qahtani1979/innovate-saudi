@@ -10,10 +10,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer
 } from 'recharts';
-import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle2, Lightbulb } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function IdeasAnalytics() {
   const { language, isRTL, t } = useLanguage();
@@ -90,28 +91,26 @@ Provide:
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-pink-700 bg-clip-text text-transparent">
-            {t({ en: 'Ideas Analytics', ar: 'تحليلات الأفكار' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Insights from citizen engagement', ar: 'رؤى من مشاركة المواطنين' })}
-          </p>
-        </div>
-        <Button
-          onClick={generateInsights}
-          disabled={generatingInsights || !isAvailable}
-          className="bg-gradient-to-r from-purple-600 to-pink-600"
-        >
-          {generatingInsights ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Sparkles className="h-4 w-4 mr-2" />
-          )}
-          {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-        </Button>
+    <PageLayout>
+      <PageHeader
+        icon={Lightbulb}
+        title={{ en: 'Ideas Analytics', ar: 'تحليلات الأفكار' }}
+        description={{ en: 'Insights from citizen engagement', ar: 'رؤى من مشاركة المواطنين' }}
+        action={
+          <Button
+            onClick={generateInsights}
+            disabled={generatingInsights || !isAvailable}
+            className="bg-gradient-to-r from-purple-600 to-pink-600"
+          >
+            {generatingInsights ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+          </Button>
+        }
+      />
       </div>
 
       <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
@@ -249,7 +248,7 @@ Provide:
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
