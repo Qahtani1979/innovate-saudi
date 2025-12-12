@@ -239,37 +239,38 @@ For a Saudi municipal innovation platform. Include:
 
     setIsSending(true);
     try {
-      // Build comprehensive test variables for all templates
+      // Build comprehensive test variables - language-aware based on preview language
+      const isArabic = previewLanguage === 'ar';
       const testVariables = {
-        userName: currentUser?.user_metadata?.full_name || 'Test User',
+        userName: currentUser?.user_metadata?.full_name || (isArabic ? 'مستخدم تجريبي' : 'Test User'),
         userEmail: currentUser?.email || 'test@example.com',
-        sentAt: new Date().toLocaleString(),
+        sentAt: new Date().toLocaleString(isArabic ? 'ar-SA' : 'en-US'),
         loginUrl: window.location.origin,
         dashboardUrl: window.location.origin,
         detailUrl: window.location.origin,
         trackingUrl: window.location.origin,
         taskUrl: window.location.origin,
         // Role-related variables
-        roleName: 'Municipality Staff',
-        requestedRole: 'Municipality Staff',
-        rejectionReason: 'Sample rejection reason for testing',
+        roleName: isArabic ? 'موظف بلدية' : 'Municipality Staff',
+        requestedRole: isArabic ? 'موظف بلدية' : 'Municipality Staff',
+        rejectionReason: isArabic ? 'سبب الرفض التجريبي' : 'Sample rejection reason for testing',
         // Entity-related variables
-        challengeTitle: 'Sample Challenge Title',
-        solutionTitle: 'Sample Solution Title',
-        pilotTitle: 'Sample Pilot Title',
-        proposalTitle: 'Sample Proposal Title',
-        ideaTitle: 'Sample Idea Title',
-        taskName: 'Sample Task Name',
+        challengeTitle: isArabic ? 'عنوان التحدي التجريبي' : 'Sample Challenge Title',
+        solutionTitle: isArabic ? 'عنوان الحل التجريبي' : 'Sample Solution Title',
+        pilotTitle: isArabic ? 'عنوان التجربة التجريبية' : 'Sample Pilot Title',
+        proposalTitle: isArabic ? 'عنوان المقترح التجريبي' : 'Sample Proposal Title',
+        ideaTitle: isArabic ? 'عنوان الفكرة التجريبية' : 'Sample Idea Title',
+        taskName: isArabic ? 'اسم المهمة التجريبية' : 'Sample Task Name',
         // Status and counts
-        newStatus: 'approved',
+        newStatus: isArabic ? 'تمت الموافقة' : 'approved',
         score: '85',
         totalItems: '5',
         // Time-related
-        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US'),
+        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US'),
         // Organization
-        organizationName: 'Sample Organization',
-        municipalityName: 'Sample Municipality',
+        organizationName: isArabic ? 'المنظمة التجريبية' : 'Sample Organization',
+        municipalityName: isArabic ? 'البلدية التجريبية' : 'Sample Municipality',
       };
 
       // Use the current template if saved, otherwise send direct content for preview
