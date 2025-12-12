@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import PageLayout from '@/components/PageLayout.jsx';
-import PageHeader from '@/components/PageHeader.jsx';
+import { base44 } from '@/api/base44Client';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 import { 
@@ -18,7 +17,7 @@ import {
   History, Settings, Wand2
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
-import ProtectedPage from '@/components/ProtectedPage';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
 
 const EXPORTABLE_ENTITIES = [
   { value: 'challenges', label: 'Challenges', table: 'challenges' },
@@ -44,14 +43,13 @@ const IMPORTABLE_ENTITIES = [
 ];
 
 function ImportExportHub() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('export');
   
   // Export state
   const [exportEntity, setExportEntity] = useState('');
   const [exportFormat, setExportFormat] = useState('csv');
-  const [exportFields, setExportFields] = useState([]);
   const [exporting, setExporting] = useState(false);
   
   // Import state
@@ -59,6 +57,7 @@ function ImportExportHub() {
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importPreview, setImportPreview] = useState(null);
+  const [useAIExtraction, setUseAIExtraction] = useState(false);
   
   // Export history
   const { data: exportHistory = [] } = useQuery({
@@ -173,9 +172,67 @@ function ImportExportHub() {
     }
   };
 
+  // AI-powered import using base44
+  const aiImportMutation = useMutation({
+    mutationFn: async (file) => {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      
+      const entitySchemas = {
+        challenges: {
+          type: 'object',
+          properties: {
+            title_en: { type: 'string' },
+            title_ar: { type: 'string' },
+            description_en: { type: 'string' },
+            sector: { type: 'string' },
+            municipality_id: { type: 'string' }
+          }
+        },
+        solutions: {
+          type: 'object',
+          properties: {
+            name_en: { type: 'string' },
+            provider_name: { type: 'string' },
+            provider_type: { type: 'string' },
+            sectors: { type: 'array', items: { type: 'string' } }
+          }
+        }
+      };
+
+      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        json_schema: entitySchemas[importEntity] || entitySchemas.challenges
+      });
+
+      if (extracted.status === 'success' && extracted.output) {
+        const data = Array.isArray(extracted.output) ? extracted.output : [extracted.output];
+        const entity = IMPORTABLE_ENTITIES.find(e => e.value === importEntity);
+        const { error } = await supabase.from(entity.table).insert(data);
+        if (error) throw error;
+        return { success: true, count: data.length };
+      }
+      throw new Error(extracted.details || 'AI extraction failed');
+    },
+    onSuccess: (data) => {
+      toast.success(t({ en: `${data.count} records imported with AI`, ar: `تم استيراد ${data.count} سجل بالذكاء الاصطناعي` }));
+      queryClient.invalidateQueries([importEntity]);
+      setImportFile(null);
+      setImportPreview(null);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    }
+  });
+
   const handleImport = async () => {
     if (!importEntity || !importFile) {
       toast.error('Please select entity and file');
+      return;
+    }
+
+    // Use AI extraction for PDF/Excel files or when explicitly enabled
+    if (useAIExtraction || importFile.name.endsWith('.pdf') || importFile.name.endsWith('.xlsx')) {
+      aiImportMutation.mutate(importFile);
       return;
     }
 
@@ -236,14 +293,15 @@ function ImportExportHub() {
     toast.success('Template downloaded');
   };
 
+  const isImportPending = importing || aiImportMutation.isPending;
+
   return (
-    <ProtectedPage requiredPermissions={['data.import', 'data.export', 'admin']}>
-      <PageLayout>
-        <PageHeader 
-          title={t({ en: "Import & Export Hub", ar: "مركز الاستيراد والتصدير" })}
-          description={t({ en: "Centralized data import and export management", ar: "إدارة مركزية لاستيراد وتصدير البيانات" })}
-          icon={<Database className="h-6 w-6" />}
-        />
+    <PageLayout>
+      <PageHeader 
+        title={{ en: "Import & Export Hub", ar: "مركز الاستيراد والتصدير" }}
+        subtitle={{ en: "Centralized data import and export management", ar: "إدارة مركزية لاستيراد وتصدير البيانات" }}
+        icon={Database}
+      />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-3">
@@ -391,7 +449,7 @@ function ImportExportHub() {
                     <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
                       <Input
                         type="file"
-                        accept=".csv,.json"
+                        accept=".csv,.json,.xlsx,.pdf"
                         onChange={handleFileChange}
                         className="hidden"
                         id="import-file"
@@ -399,11 +457,27 @@ function ImportExportHub() {
                       <label htmlFor="import-file" className="cursor-pointer">
                         <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground">
-                          {importFile ? importFile.name : t({ en: "Click to upload CSV or JSON", ar: "انقر لرفع CSV أو JSON" })}
+                          {importFile ? importFile.name : t({ en: "Click to upload CSV, JSON, Excel or PDF", ar: "انقر لرفع CSV أو JSON أو Excel أو PDF" })}
                         </p>
                       </label>
                     </div>
                   </div>
+
+                  {importFile && (importFile.name.endsWith('.csv') || importFile.name.endsWith('.json')) && (
+                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                      <Wand2 className="h-4 w-4 text-primary" />
+                      <Label htmlFor="ai-extraction" className="text-sm cursor-pointer flex-1">
+                        {t({ en: "Use AI extraction for better field mapping", ar: "استخدم الذكاء الاصطناعي لتخطيط أفضل للحقول" })}
+                      </Label>
+                      <Button
+                        variant={useAIExtraction ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setUseAIExtraction(!useAIExtraction)}
+                      >
+                        {useAIExtraction ? t({ en: "On", ar: "مفعل" }) : t({ en: "Off", ar: "معطل" })}
+                      </Button>
+                    </div>
+                  )}
 
                   {importPreview && (
                     <div className="p-3 bg-muted rounded-lg text-sm">
@@ -418,15 +492,19 @@ function ImportExportHub() {
 
                   <Button 
                     onClick={handleImport} 
-                    disabled={!importEntity || !importFile || importing}
+                    disabled={!importEntity || !importFile || isImportPending}
                     className="w-full"
                   >
-                    {importing ? (
+                    {isImportPending ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : useAIExtraction || importFile?.name.endsWith('.pdf') || importFile?.name.endsWith('.xlsx') ? (
+                      <Wand2 className="h-4 w-4 mr-2" />
                     ) : (
                       <Upload className="h-4 w-4 mr-2" />
                     )}
-                    {t({ en: "Import Data", ar: "استيراد البيانات" })}
+                    {useAIExtraction || importFile?.name.endsWith('.pdf') || importFile?.name.endsWith('.xlsx')
+                      ? t({ en: "Import with AI", ar: "استيراد بالذكاء الاصطناعي" })
+                      : t({ en: "Import Data", ar: "استيراد البيانات" })}
                   </Button>
                 </CardContent>
               </Card>
@@ -495,8 +573,7 @@ function ImportExportHub() {
           </TabsContent>
         </Tabs>
       </PageLayout>
-    </ProtectedPage>
   );
 }
 
-export default ImportExportHub;
+export default ProtectedPage(ImportExportHub, { requiredPermissions: ['data.import', 'data.export', 'admin'] });
