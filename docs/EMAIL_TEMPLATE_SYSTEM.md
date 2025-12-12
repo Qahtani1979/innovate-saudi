@@ -8,6 +8,10 @@ A comprehensive bilingual (EN/AR) email template system for the Saudi Innovates 
 
 **Last Updated**: 2025-12-12
 
+---
+
+## Quick Reference
+
 ### Implementation Progress
 
 | Phase | Description | Status |
@@ -17,7 +21,7 @@ A comprehensive bilingual (EN/AR) email template system for the Saudi Innovates 
 | Phase 3 | Admin UI (template editor, preview, test send) | ✅ Complete |
 | Phase 4 | Integration (connect all triggers) | ✅ Complete |
 
-### Connected Email Triggers
+### Connected Email Triggers (10 Active)
 
 | Template Key | Trigger Location | Status |
 |--------------|------------------|--------|
@@ -26,17 +30,41 @@ A comprehensive bilingual (EN/AR) email template system for the Saudi Innovates 
 | `role_request_rejected` | `src/components/access/RoleRequestApprovalQueue.jsx` | ✅ Connected |
 | `challenge_submitted` | `src/components/ChallengeSubmissionWizard.jsx` | ✅ Connected |
 | `challenge_approved` | `src/components/ChallengeReviewWorkflow.jsx` | ✅ Connected |
-| `pilot_created` | Multiple: `ProgramToPilotWorkflow`, `SolutionToPilotWorkflow`, `RDToPilotTransition` | ✅ Connected |
-| `task_assigned` | Task assignment workflows | ⚠️ Template ready |
-| `password_reset` | Supabase Auth | ⚠️ Needs webhook |
-| `test_email` | Email Template Editor | ✅ Working |
+| `pilot_created` | `src/components/programs/ProgramToPilotWorkflow.jsx` | ✅ Connected |
+| `pilot_created` | `src/components/solutions/SolutionToPilotWorkflow.jsx` | ✅ Connected |
+| `pilot_created` | `src/components/RDToPilotTransition.jsx` | ✅ Connected |
+| `rd_proposal_submitted` | `src/components/rd/RDProposalAwardWorkflow.jsx` | ✅ Connected |
+| `idea_submitted` | `src/components/citizen/PublicIdeaSubmission.jsx` | ✅ Connected |
+| `test_email` | `src/pages/EmailTemplateEditor.jsx` | ✅ Working |
 
-### Test Send Feature
-- Sends to current logged-in user's email by default
-- If template is saved: uses template with variable interpolation
-- If template is new/unsaved: builds HTML preview directly
-- Supports both English and Arabic previews
-- **Language-aware test variables**: Variables match preview language
+### Pending Triggers (Low Priority)
+
+| Template Key | Notes | Status |
+|--------------|-------|--------|
+| `task_assigned` | Template ready, needs trigger in TaskAssignment components | ⏳ Template Ready |
+| `password_reset` | Requires Supabase Auth webhook configuration | ⏳ Needs Webhook |
+
+### Database Tables
+
+| Table | Purpose | Record Count |
+|-------|---------|--------------|
+| `email_settings` | Global configuration (logo, colors, footer) | ~12 settings |
+| `email_templates` | Template storage with bilingual support | 10 templates |
+| `email_logs` | Email send tracking and analytics | Dynamic |
+
+### Key Features
+
+- ✅ Bilingual support (English/Arabic) with RTL
+- ✅ Template-based or direct content emails
+- ✅ User preference checking (with bypass for critical emails)
+- ✅ HTML email builder with header/footer injection
+- ✅ Variable interpolation with `{{variable}}` syntax
+- ✅ Text-based logo fallback (when no logo URL configured)
+- ✅ Email logging with status tracking
+- ✅ Admin UI for template management
+- ✅ Live preview with language toggle
+- ✅ Test send to current user
+- ✅ Language-aware test variables (EN/AR match preview)
 
 ### Database Tables Created
 - `email_settings` - Global email configuration
