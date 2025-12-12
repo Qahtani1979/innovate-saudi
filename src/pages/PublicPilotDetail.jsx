@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 
 function PublicPilotDetail() {
   const { language, isRTL, t } = useLanguage();
@@ -25,6 +26,7 @@ function PublicPilotDetail() {
 
   const [feedback, setFeedback] = useState('');
 
+  // Fetch pilot with visibility check (public only)
   const { data: pilot, isLoading } = useQuery({
     queryKey: ['pilot-public', pilotId],
     queryFn: async () => {
@@ -34,13 +36,17 @@ function PublicPilotDetail() {
     enabled: !!pilotId
   });
 
-  const { data: municipality } = useQuery({
-    queryKey: ['municipality', pilot?.municipality_id],
+  // Use visibility-aware municipalities hook
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ includeNational: true });
+  const municipality = municipalities.find(m => m.id === pilot?.municipality_id);
+
+  const { data: enrollment } = useQuery({
+    queryKey: ['enrollment-check', pilotId, user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*').eq('id', pilot?.municipality_id).single();
+      const { data } = await supabase.from('citizen_pilot_enrollments').select('*').eq('pilot_id', pilotId).eq('user_email', user?.email).single();
       return data;
     },
-    enabled: !!pilot?.municipality_id
+    enabled: !!(pilotId && user?.email)
   });
 
   const { data: enrollment } = useQuery({

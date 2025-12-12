@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,9 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 function CrossCityLearningHub() {
   const { t, language } = useLanguage();
@@ -23,42 +25,13 @@ function CrossCityLearningHub() {
   const [shareDialog, setShareDialog] = useState(null);
   const [learningNote, setLearningNote] = useState('');
 
-  const { data: myMunicipality } = useQuery({
-    queryKey: ['my-municipality-learning', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('municipalities')
-        .select('*')
-        .eq('contact_email', user?.email)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!user?.email
-  });
+  // Use visibility-aware hooks for municipalities, pilots, and challenges
+  const { data: allMunicipalities = [] } = useMunicipalitiesWithVisibility({ includeNational: true });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
 
-  const { data: allMunicipalities = [] } = useQuery({
-    queryKey: ['all-municipalities-learning'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-learning'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-learning'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
-      return data || [];
-    }
-  });
+  // Find current user's municipality from the list
+  const myMunicipality = allMunicipalities.find(m => m.contact_email === user?.email);
 
   const shareLearningMutation = useMutation({
     mutationFn: async (data) => {

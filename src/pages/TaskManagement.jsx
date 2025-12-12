@@ -13,6 +13,7 @@ import { createPageUrl } from '../utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { usePermissions } from '@/components/permissions/usePermissions';
 
 function TaskManagement() {
   const { language, isRTL, t } = useLanguage();
@@ -21,14 +22,24 @@ function TaskManagement() {
   const [filter, setFilter] = useState('all');
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { isAdmin } = usePermissions();
 
+  // Filter tasks: admin sees all, others see only their own
   const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['tasks', isAdmin, user?.email],
     queryFn: async () => {
-      const { data, error } = await supabase.from('tasks').select('*');
+      let query = supabase.from('tasks').select('*');
+      
+      // Non-admins only see their own tasks
+      if (!isAdmin && user?.email) {
+        query = query.eq('assigned_to', user.email);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!user
   });
 
   const { data: expertAssignments = [] } = useQuery({
