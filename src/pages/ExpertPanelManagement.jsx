@@ -24,9 +24,11 @@ import {
   Clock,
   AlertCircle,
   X,
-  Eye
+  Eye,
+  UsersRound
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 export default function ExpertPanelManagement() {
   const [showCreate, setShowCreate] = useState(false);
@@ -120,79 +122,23 @@ export default function ExpertPanelManagement() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent">
-            {t({ en: 'Expert Panel Management', ar: 'إدارة لجان الخبراء' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Create and manage multi-expert evaluation panels', ar: 'إنشاء وإدارة لجان التقييم متعددة الخبراء' })}
-          </p>
-        </div>
-        <Button onClick={() => setShowCreate(true)} className="bg-gradient-to-r from-purple-600 to-blue-600">
-          <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {t({ en: 'Create Panel', ar: 'إنشاء لجنة' })}
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Total Panels', ar: 'إجمالي اللجان' })}</p>
-                <p className="text-3xl font-bold text-purple-600">{panels.length}</p>
-              </div>
-              <Users className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Active', ar: 'نشطة' })}</p>
-                <p className="text-3xl font-bold text-blue-600">
-                  {panels.filter(p => ['forming', 'reviewing', 'discussion'].includes(p.status)).length}
-                </p>
-              </div>
-              <Clock className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Completed', ar: 'مكتملة' })}</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {panels.filter(p => p.status === 'completed').length}
-                </p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Avg. Size', ar: 'متوسط الحجم' })}</p>
-                <p className="text-3xl font-bold text-teal-600">
-                  {panels.length > 0 ? Math.round(panels.reduce((sum, p) => sum + (p.panel_members?.length || 0), 0) / panels.length) : 0}
-                </p>
-              </div>
-              <Shield className="h-8 w-8 text-teal-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={UsersRound}
+        title={t({ en: 'Expert Panel Management', ar: 'إدارة لجان الخبراء' })}
+        description={t({ en: 'Create and manage multi-expert evaluation panels', ar: 'إنشاء وإدارة لجان التقييم متعددة الخبراء' })}
+        stats={[
+          { icon: Users, value: panels.length, label: t({ en: 'Total Panels', ar: 'إجمالي اللجان' }) },
+          { icon: Clock, value: panels.filter(p => ['forming', 'reviewing', 'discussion'].includes(p.status)).length, label: t({ en: 'Active', ar: 'نشطة' }) },
+          { icon: CheckCircle2, value: panels.filter(p => p.status === 'completed').length, label: t({ en: 'Completed', ar: 'مكتملة' }) },
+        ]}
+        action={
+          <PersonaButton onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t({ en: 'Create Panel', ar: 'إنشاء لجنة' })}
+          </PersonaButton>
+        }
+      />
 
       {/* Create Panel Modal */}
       {showCreate && (
@@ -379,6 +325,6 @@ export default function ExpertPanelManagement() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }

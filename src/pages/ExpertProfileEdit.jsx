@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, X, Loader2, Sparkles } from 'lucide-react';
+import { Save, X, Loader2, Sparkles, UserCog } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 function ExpertProfileEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -51,16 +52,18 @@ function ExpertProfileEdit() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'Edit Expert Profile', ar: 'تعديل ملف الخبير' })}
-        </h1>
-        <Button variant="outline" onClick={() => navigate(createPageUrl(`ExpertDetail?id=${expertId}`))}>
-          <X className="h-4 w-4 mr-2" />
-          {t({ en: 'Cancel', ar: 'إلغاء' })}
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={UserCog}
+        title={t({ en: 'Edit Expert Profile', ar: 'تعديل ملف الخبير' })}
+        description={t({ en: 'Update your expert profile information', ar: 'تحديث معلومات ملف الخبير' })}
+        action={
+          <Button variant="outline" onClick={() => navigate(createPageUrl(`ExpertDetail?id=${expertId}`))}>
+            <X className="h-4 w-4 mr-2" />
+            {t({ en: 'Cancel', ar: 'إلغاء' })}
+          </Button>
+        }
+      />
 
       <Card>
         <CardContent className="pt-6 space-y-6">
@@ -172,7 +175,7 @@ function ExpertProfileEdit() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

@@ -23,8 +23,10 @@ import {
   Calendar,
   TrendingUp,
   Users,
-  Target
+  Target,
+  UserCircle
 } from 'lucide-react';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 export default function ExpertDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -74,66 +76,28 @@ export default function ExpertDetail() {
     : 0;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 via-blue-600 to-teal-600 p-8 text-white">
-        <div className="relative z-10">
-          <div className="flex items-start gap-6 mb-6">
-            <Avatar className="h-24 w-24 border-4 border-white shadow-lg">
-              <AvatarFallback className="bg-white text-purple-600 text-3xl font-bold">
-                {expert.user_email?.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-4xl font-bold">
-                  {expert.title} {expert.user_email?.split('@')[0]}
-                </h1>
-                {expert.is_verified && (
-                  <CheckCircle2 className="h-6 w-6 text-green-300" />
-                )}
-              </div>
-              {expert.position && (
-                <div className="flex items-center gap-2 text-white/90 mb-2">
-                  <Briefcase className="h-4 w-4" />
-                  <span className="text-lg">{language === 'en' ? expert.position : (expert.position_ar || expert.position)}</span>
-                </div>
-              )}
-              {expert.expert_rating > 0 && (
-                <div className="flex items-center gap-2 text-yellow-300">
-                  <Star className="h-5 w-5 fill-current" />
-                  <span className="text-xl font-semibold">{expert.expert_rating.toFixed(1)}</span>
-                  <span className="text-white/80">({expert.evaluation_count} {t({ en: 'evaluations', ar: 'تقييم' })})</span>
-                </div>
-              )}
-            </div>
-            <Link to={createPageUrl(`ExpertProfileEdit?id=${expertId}`)}>
-              <Button variant="outline" className="bg-white/20 border-white/40 text-white hover:bg-white/30">
-                {t({ en: 'Edit Profile', ar: 'تعديل الملف' })}
-              </Button>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="p-4 bg-white/10 rounded-lg backdrop-blur-sm">
-              <div className="text-2xl font-bold">{completedAssignments}</div>
-              <div className="text-sm text-white/80">{t({ en: 'Completed', ar: 'مكتمل' })}</div>
-            </div>
-            <div className="p-4 bg-white/10 rounded-lg backdrop-blur-sm">
-              <div className="text-2xl font-bold">{avgEvaluationScore}</div>
-              <div className="text-sm text-white/80">{t({ en: 'Avg Score', ar: 'متوسط النقاط' })}</div>
-            </div>
-            <div className="p-4 bg-white/10 rounded-lg backdrop-blur-sm">
-              <div className="text-2xl font-bold">{expert.years_of_experience || 0}</div>
-              <div className="text-sm text-white/80">{t({ en: 'Years Exp.', ar: 'سنوات خبرة' })}</div>
-            </div>
-            <div className="p-4 bg-white/10 rounded-lg backdrop-blur-sm">
-              <div className="text-2xl font-bold">{expert.publications?.length || 0}</div>
-              <div className="text-sm text-white/80">{t({ en: 'Publications', ar: 'منشورات' })}</div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={UserCircle}
+        title={`${expert.title || ''} ${expert.user_email?.split('@')[0] || ''}`}
+        description={language === 'en' ? expert.position : (expert.position_ar || expert.position)}
+        stats={[
+          { icon: CheckCircle2, value: completedAssignments, label: t({ en: 'Completed', ar: 'مكتمل' }) },
+          { icon: Star, value: avgEvaluationScore, label: t({ en: 'Avg Score', ar: 'متوسط النقاط' }) },
+          { icon: Briefcase, value: expert.years_of_experience || 0, label: t({ en: 'Years Exp.', ar: 'سنوات خبرة' }) },
+        ]}
+        badges={[
+          expert.is_verified && <Badge key="verified" className="bg-green-100 text-green-700"><CheckCircle2 className="h-3 w-3 mr-1" />{t({ en: 'Verified', ar: 'موثق' })}</Badge>,
+          expert.expert_rating > 0 && <Badge key="rating" className="bg-amber-100 text-amber-700"><Star className="h-3 w-3 mr-1 fill-current" />{expert.expert_rating.toFixed(1)}</Badge>
+        ].filter(Boolean)}
+        action={
+          <Link to={createPageUrl(`ExpertProfileEdit?id=${expertId}`)}>
+            <PersonaButton variant="outline">
+              {t({ en: 'Edit Profile', ar: 'تعديل الملف' })}
+            </PersonaButton>
+          </Link>
+        }
+      />
 
       {/* Main Content */}
       <Tabs defaultValue="profile" className="space-y-6">
@@ -510,6 +474,6 @@ export default function ExpertDetail() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }

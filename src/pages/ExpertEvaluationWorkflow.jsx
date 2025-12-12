@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Loader2, X, Eye, Sparkles, AlertCircle } from 'lucide-react';
+import { Loader2, X, Eye, Sparkles, AlertCircle, ClipboardCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function ExpertEvaluationWorkflow() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -113,22 +114,18 @@ export default function ExpertEvaluationWorkflow() {
   const initialData = savedDraft ? JSON.parse(savedDraft) : null;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Expert Evaluation', ar: 'تقييم الخبير' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {assignment.entity_type.replace(/_/g, ' ')} • {assignment.assignment_type}
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => navigate(createPageUrl('ExpertAssignmentQueue'))}>
-          <X className="h-4 w-4 mr-2" />
-          {t({ en: 'Cancel', ar: 'إلغاء' })}
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={ClipboardCheck}
+        title={t({ en: 'Expert Evaluation', ar: 'تقييم الخبير' })}
+        description={`${assignment.entity_type.replace(/_/g, ' ')} • ${assignment.assignment_type}`}
+        action={
+          <Button variant="outline" onClick={() => navigate(createPageUrl('ExpertAssignmentQueue'))}>
+            <X className="h-4 w-4 mr-2" />
+            {t({ en: 'Cancel', ar: 'إلغاء' })}
+          </Button>
+        }
+      />
 
       {/* Entity Overview */}
       {entity && (
@@ -190,6 +187,6 @@ export default function ExpertEvaluationWorkflow() {
         onSaveDraft={handleSaveDraft}
         initialData={initialData}
       />
-    </div>
+    </PageLayout>
   );
 }

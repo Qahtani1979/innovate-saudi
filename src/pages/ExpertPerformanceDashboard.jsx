@@ -22,8 +22,10 @@ import {
   CheckCircle2,
   Award,
   AlertTriangle,
-  Users
+  Users,
+  BarChart3
 } from 'lucide-react';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function ExpertPerformanceDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -67,16 +69,17 @@ export default function ExpertPerformanceDashboard() {
   }).sort((a, b) => (b.expert_rating || 0) - (a.expert_rating || 0));
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent">
-          {t({ en: 'Expert Performance Dashboard', ar: 'لوحة أداء الخبراء' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Monitor expert quality, workload, and performance', ar: 'مراقبة جودة الخبراء، العبء، والأداء' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={BarChart3}
+        title={t({ en: 'Expert Performance Dashboard', ar: 'لوحة أداء الخبراء' })}
+        description={t({ en: 'Monitor expert quality, workload, and performance', ar: 'مراقبة جودة الخبراء، العبء، والأداء' })}
+        stats={[
+          { icon: Users, value: activeExperts.length, label: t({ en: 'Active Experts', ar: 'خبراء نشطون' }) },
+          { icon: Star, value: avgRating, label: t({ en: 'Avg. Rating', ar: 'متوسط التقييم' }) },
+          { icon: CheckCircle2, value: totalEvaluations, label: t({ en: 'Evaluations', ar: 'التقييمات' }) },
+        ]}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -213,6 +216,6 @@ export default function ExpertPerformanceDashboard() {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
