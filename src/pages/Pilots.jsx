@@ -37,7 +37,8 @@ import {
   Sparkles,
   TrendingUp,
   AlertTriangle,
-  Archive
+  Archive,
+  TestTube2
 } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -48,6 +49,7 @@ import PilotsAIInsights from '../components/pilots/PilotsAIInsights';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function PilotsPage() {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
@@ -155,28 +157,30 @@ function PilotsPage() {
     { key: 'completed', label: 'Completed' }
   ];
 
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <ExportData data={filteredPilots} filename="pilots" entityType="Pilot" />
+      {hasPermission('pilot_create') && (
+        <Link to={createPageUrl('PilotCreate')}>
+          <Button className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-lg">
+            <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {t({ en: 'Create Pilot', ar: 'إنشاء تجربة' })}
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-            {t({ en: 'Pilot Console', ar: 'وحدة التحكم بالتجارب' })}
-          </h1>
-          <p className="text-slate-600 mt-2">{t({ en: 'Manage and monitor pilot projects across municipalities', ar: 'إدارة ومراقبة المشاريع التجريبية عبر البلديات' })}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ExportData data={filteredPilots} filename="pilots" entityType="Pilot" />
-          {hasPermission('pilot_create') && (
-            <Link to={createPageUrl('PilotCreate')}>
-              <Button className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-lg">
-                <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {t({ en: 'Create Pilot', ar: 'إنشاء تجربة' })}
-              </Button>
-            </Link>
-          )}
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={TestTube2}
+        title={{ en: 'Pilot Console', ar: 'وحدة التحكم بالتجارب' }}
+        description={{ en: 'Manage and monitor pilot projects across municipalities', ar: 'إدارة ومراقبة المشاريع التجريبية عبر البلديات' }}
+        actions={headerActions}
+      />
+
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* AI Insights */}
       <PilotsAIInsights pilots={pilots} challenges={challenges} municipalities={municipalities} />
@@ -498,7 +502,8 @@ function PilotsPage() {
           })}
         </div>
       )}
-    </div>
+      </div>
+    </PageLayout>
   );
 }
 

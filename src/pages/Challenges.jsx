@@ -41,7 +41,8 @@ import {
   LayoutGrid,
   List,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Target
 } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from 'sonner';
@@ -53,6 +54,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function Challenges() {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
@@ -323,28 +325,30 @@ Use Saudi municipal context and data-driven insights.`;
     tier_4: 'bg-green-100 text-green-700 border-green-300'
   };
 
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <ExportData data={filteredChallenges} filename="challenges" entityType="Challenge" />
+      {hasPermission('challenge_create') && (
+        <Link to={createPageUrl('ChallengeCreate')}>
+          <Button className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-lg">
+            <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {t({ en: 'Add Challenge', ar: 'إضافة تحدي' })}
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-            {t({ en: 'Challenge Bank', ar: 'بنك التحديات' })}
-          </h1>
-          <p className="text-slate-600 mt-2">{t({ en: 'National repository of municipal challenges', ar: 'المستودع الوطني للتحديات البلدية' })}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ExportData data={filteredChallenges} filename="challenges" entityType="Challenge" />
-          {hasPermission('challenge_create') && (
-            <Link to={createPageUrl('ChallengeCreate')}>
-              <Button className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-lg">
-                <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {t({ en: 'Add Challenge', ar: 'إضافة تحدي' })}
-              </Button>
-            </Link>
-          )}
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Target}
+        title={{ en: 'Challenge Bank', ar: 'بنك التحديات' }}
+        description={{ en: 'National repository of municipal challenges', ar: 'المستودع الوطني للتحديات البلدية' }}
+        actions={headerActions}
+      />
+
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* AI Insights Banner */}
       <Card className="p-4 bg-gradient-to-r from-blue-50 to-teal-50 border-blue-200">
@@ -802,7 +806,8 @@ Use Saudi municipal context and data-driven insights.`;
           />
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </PageLayout>
   );
 }
 

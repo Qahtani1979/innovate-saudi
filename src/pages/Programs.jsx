@@ -23,7 +23,8 @@ import {
   LayoutGrid,
   List,
   CalendarDays,
-  Eye
+  Eye,
+  Layers
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -39,6 +40,7 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ProgramsPage() {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
@@ -165,62 +167,64 @@ Provide bilingual insights (each item should have both English and Arabic versio
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
+      <PageLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        </div>
+      </PageLayout>
     );
   }
 
-  return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Programs & Events', ar: 'البرامج والفعاليات' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Innovation programs, matchmakers, and capacity building', ar: 'برامج الابتكار والتدريب وبناء القدرات' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
-            <Sparkles className="h-4 w-4" />
-            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-          </Button>
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('calendar')}
-            >
-              <CalendarDays className="h-4 w-4" />
-            </Button>
-          </div>
-          {hasPermission('program_create') && (
-            <Link to={createPageUrl('ProgramCreate')}>
-              <Button className="bg-gradient-to-r from-blue-600 to-teal-600 gap-2">
-                <Plus className="h-5 w-5" />
-                {t({ en: 'New Program', ar: 'برنامج جديد' })}
-              </Button>
-            </Link>
-          )}
-        </div>
+  const headerActions = (
+    <div className="flex items-center gap-3">
+      <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
+        <Sparkles className="h-4 w-4" />
+        {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+      </Button>
+      <div className="flex items-center gap-1 border rounded-lg p-1">
+        <Button
+          variant={viewMode === 'grid' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('grid')}
+        >
+          <LayoutGrid className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={viewMode === 'table' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('table')}
+        >
+          <List className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('calendar')}
+        >
+          <CalendarDays className="h-4 w-4" />
+        </Button>
       </div>
+      {hasPermission('program_create') && (
+        <Link to={createPageUrl('ProgramCreate')}>
+          <Button className="bg-gradient-to-r from-blue-600 to-teal-600 gap-2">
+            <Plus className="h-5 w-5" />
+            {t({ en: 'New Program', ar: 'برنامج جديد' })}
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+
+  return (
+    <PageLayout>
+      <PageHeader
+        icon={Layers}
+        title={{ en: 'Programs & Events', ar: 'البرامج والفعاليات' }}
+        description={{ en: 'Innovation programs, matchmakers, and capacity building', ar: 'برامج الابتكار والتدريب وبناء القدرات' }}
+        actions={headerActions}
+      />
+
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* AI Insights Modal */}
       {showAIInsights && (
@@ -680,7 +684,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </PageLayout>
   );
 }
 
