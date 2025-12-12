@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import AICurriculumGenerator from './AICurriculumGenerator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useMunicipalitiesWithVisibility, useOrganizationsWithVisibility } from '@/hooks/visibility';
 
 export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
   const { language, isRTL, t } = useLanguage();
@@ -50,14 +51,11 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
     ...initialData
   });
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const { data } = await supabase.from('organizations').select('*');
-      return data || [];
-    }
-  });
+  // Use visibility-aware hooks for organizations and municipalities
+  const { data: organizations = [] } = useOrganizationsWithVisibility();
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
 
+  // Reference data (public - no visibility needed)
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
     queryFn: async () => {
@@ -78,14 +76,6 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
     queryKey: ['services'],
     queryFn: async () => {
       const { data } = await supabase.from('services').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
       return data || [];
     }
   });
