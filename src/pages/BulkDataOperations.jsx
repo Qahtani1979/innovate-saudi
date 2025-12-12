@@ -125,6 +125,6 @@ export default function BulkDataOperations() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }
