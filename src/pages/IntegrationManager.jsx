@@ -130,8 +130,6 @@ export default function IntegrationManager() {
         </CardContent>
       </Card>
 
-      {/* OAuth Connectors */}
-      <OAuthConnectorPanel />
     </PageLayout>
   );
 }
