@@ -8,15 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
-import { Mail, Eye, Save, Sparkles, Loader2, Send, Plus, Trash2, Copy, Settings, RefreshCw, Check, X, FileText, Brain, AlertTriangle, Lightbulb, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Mail, Eye, Save, Sparkles, Loader2, Send, Plus, Trash2, Copy, Settings, RefreshCw, Check, X, FileText, Brain, AlertTriangle, Lightbulb, TrendingUp, CheckCircle2, History } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 const CATEGORIES = [
   { value: 'auth', label: { en: 'Authentication', ar: 'المصادقة' } },
@@ -347,12 +349,12 @@ Provide a comprehensive analysis covering:
     }
   };
 
-  // Actionable handlers for AI Analysis
+  // Actionable handlers for AI Analysis - keep drawer open for continued actions
   const handleSelectTemplateByKey = (templateKey) => {
     const found = templates.find(t => t.template_key === templateKey);
     if (found) {
       setSelectedTemplateId(found.id);
-      setShowAnalysisDialog(false);
+      // Don't close drawer - allow user to continue taking actions
       toast.success(t({ en: `Selected: ${found.name_en}`, ar: `تم تحديد: ${found.name_en}` }));
     } else {
       toast.error(t({ en: 'Template not found', ar: 'القالب غير موجود' }));
@@ -380,7 +382,7 @@ Provide a comprehensive analysis covering:
     const catValue = catMap[category.toLowerCase()] || category.toLowerCase();
     if (CATEGORIES.some(c => c.value === catValue)) {
       setFilterCategory(catValue);
-      setShowAnalysisDialog(false);
+      // Don't close drawer - allow user to continue taking actions
       toast.success(t({ en: `Filtered by: ${category}`, ar: `تمت التصفية حسب: ${category}` }));
     }
   };
@@ -411,7 +413,7 @@ Provide a comprehensive analysis covering:
       is_system: false,
       is_critical: false,
     });
-    setShowAnalysisDialog(false);
+    // Don't close drawer - allow user to continue taking actions
     toast.success(t({ en: `Created draft: ${suggested.name}. Use AI Generate to fill content.`, ar: `تم إنشاء مسودة: ${suggested.name}. استخدم التوليد الذكي لملء المحتوى.` }));
   };
 
@@ -545,22 +547,32 @@ Provide a comprehensive analysis covering:
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 p-8 text-white">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-10"></div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <Mail className="h-10 w-10" />
-            <h1 className="text-4xl font-bold">
-              {t({ en: 'Email Template Manager', ar: 'مدير قوالب البريد' })}
-            </h1>
+    <PageLayout>
+      {/* Header with PageHeader component */}
+      <PageHeader
+        icon={Mail}
+        title={{ en: 'Email Template Manager', ar: 'مدير قوالب البريد' }}
+        description={{ en: 'Create, customize, and test bilingual email templates for all platform communications', ar: 'إنشاء وتخصيص واختبار قوالب البريد ثنائية اللغة لجميع اتصالات المنصة' }}
+        stats={[
+          { icon: FileText, value: templates.length, label: { en: 'Templates', ar: 'قوالب' } },
+          { icon: CheckCircle2, value: templates.filter(t => t.is_active).length, label: { en: 'Active', ar: 'نشط' } },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            {analysisResult && (
+              <Button variant="outline" onClick={() => setShowAnalysisDialog(true)} className="gap-2">
+                <History className="h-4 w-4" />
+                {t({ en: 'View Analysis', ar: 'عرض التحليل' })}
+                <Badge variant="secondary" className="ml-1">{analysisResult.overall_score}/100</Badge>
+              </Button>
+            )}
+            <Button onClick={handleAIAnalysis} disabled={aiLoading || templates.length === 0} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+              <Brain className="h-4 w-4" />
+              {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
+            </Button>
           </div>
-          <p className="text-lg text-white/90 max-w-2xl">
-            {t({ en: 'Create, customize, and test bilingual email templates for all platform communications', ar: 'إنشاء وتخصيص واختبار قوالب البريد ثنائية اللغة لجميع اتصالات المنصة' })}
-          </p>
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-12 gap-6">
         {/* Template List Sidebar */}
@@ -932,68 +944,71 @@ Provide a comprehensive analysis covering:
         </DialogContent>
       </Dialog>
 
-      {/* AI Analysis Dialog */}
-      <Dialog open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* AI Analysis Drawer - Side panel that stays open while taking actions */}
+      <Drawer open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog} direction="right">
+        <DrawerContent showHandle={false} dir={isRTL ? 'rtl' : 'ltr'}>
+          <DrawerHeader className="border-b">
+            <DrawerTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-blue-600" />
               {t({ en: 'Email Template Analysis', ar: 'تحليل قوالب البريد' })}
-            </DialogTitle>
-          </DialogHeader>
+            </DrawerTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t({ en: 'Click any item to take action - drawer stays open', ar: 'انقر على أي عنصر لاتخاذ إجراء - اللوحة تبقى مفتوحة' })}
+            </p>
+          </DrawerHeader>
           
-          <ScrollArea className="max-h-[70vh] pr-4">
+          <ScrollArea className="flex-1 h-[calc(100vh-140px)] p-4">
             {aiLoading && !analysisResult ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
                 <p className="text-muted-foreground">{t({ en: 'Analyzing templates...', ar: 'جاري تحليل القوالب...' })}</p>
               </div>
             ) : analysisResult ? (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Overall Score */}
-                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
-                  <div className={`text-4xl font-bold ${
+                <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className={`text-3xl font-bold ${
                     analysisResult.overall_score >= 80 ? 'text-green-600' : 
                     analysisResult.overall_score >= 60 ? 'text-yellow-600' : 'text-red-600'
                   }`}>
                     {analysisResult.overall_score}/100
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold">{t({ en: 'Health Score', ar: 'نقاط الصحة' })}</p>
-                    <p className="text-sm text-muted-foreground">{analysisResult.health_summary}</p>
+                    <p className="font-semibold text-sm">{t({ en: 'Health Score', ar: 'نقاط الصحة' })}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{analysisResult.health_summary}</p>
                   </div>
                 </div>
 
                 {/* Coverage Gaps */}
                 {analysisResult.coverage_gaps?.length > 0 && (
                   <div>
-                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                    <h3 className="font-semibold flex items-center gap-2 mb-2 text-sm">
                       <AlertTriangle className="h-4 w-4 text-orange-500" />
-                      {t({ en: 'Coverage Gaps', ar: 'فجوات التغطية' })}
+                      {t({ en: 'Coverage Gaps', ar: 'فجوات التغطية' })} ({analysisResult.coverage_gaps.length})
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {analysisResult.coverage_gaps.map((gap, i) => (
-                        <div key={i} className="p-3 bg-orange-50 border border-orange-200 rounded-lg group hover:border-orange-400 transition-colors">
-                          <div className="flex items-start justify-between">
-                            <p className="font-medium text-sm">{gap.gap}</p>
-                            <Badge variant={gap.priority === 'high' ? 'destructive' : gap.priority === 'medium' ? 'warning' : 'secondary'}>
+                        <div key={i} className="p-2 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg group hover:border-orange-400 transition-colors">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-medium text-xs flex-1">{gap.gap}</p>
+                            <Badge variant={gap.priority === 'high' ? 'destructive' : gap.priority === 'medium' ? 'warning' : 'secondary'} className="text-[10px] h-5">
                               {gap.priority}
                             </Badge>
                           </div>
                           {gap.suggested_template && (
-                            <div className="flex items-center justify-between mt-2">
-                              <p className="text-xs text-muted-foreground">💡 {gap.suggested_template}</p>
+                            <div className="flex items-center justify-between mt-1.5">
+                              <p className="text-[10px] text-muted-foreground">💡 {gap.suggested_template}</p>
                               <Button 
                                 size="sm" 
                                 variant="ghost" 
-                                className="h-6 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="h-5 text-[10px] px-2"
                                 onClick={() => handleCreateSuggestedTemplate({ 
                                   template_key: gap.suggested_template.toLowerCase().replace(/\s+/g, '_'),
                                   name: gap.suggested_template,
                                   category: 'system'
                                 })}
                               >
-                                <Plus className="h-3 w-3 mr-1" />
+                                <Plus className="h-3 w-3 mr-0.5" />
                                 {t({ en: 'Create', ar: 'إنشاء' })}
                               </Button>
                             </div>
@@ -1007,31 +1022,34 @@ Provide a comprehensive analysis covering:
                 {/* Consistency Issues */}
                 {analysisResult.consistency_issues?.length > 0 && (
                   <div>
-                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                    <h3 className="font-semibold flex items-center gap-2 mb-2 text-sm">
                       <X className="h-4 w-4 text-red-500" />
-                      {t({ en: 'Consistency Issues', ar: 'مشاكل الاتساق' })}
+                      {t({ en: 'Consistency Issues', ar: 'مشاكل الاتساق' })} ({analysisResult.consistency_issues.length})
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {analysisResult.consistency_issues.map((issue, i) => (
-                        <div key={i} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="font-medium text-sm">{issue.issue}</p>
+                        <div key={i} className="p-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                          <p className="font-medium text-xs">{issue.issue}</p>
                           {issue.affected_templates?.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {issue.affected_templates.map((templateKey, j) => (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {issue.affected_templates.slice(0, 5).map((templateKey, j) => (
                                 <Badge 
                                   key={j} 
                                   variant="outline" 
-                                  className="text-xs font-mono cursor-pointer hover:bg-red-100 hover:border-red-400 transition-colors"
+                                  className="text-[10px] font-mono cursor-pointer hover:bg-red-100 dark:hover:bg-red-900 hover:border-red-400 transition-colors"
                                   onClick={() => handleSelectTemplateByKey(templateKey)}
                                 >
                                   {templateKey}
-                                  <Eye className="h-3 w-3 ml-1" />
+                                  <Eye className="h-2.5 w-2.5 ml-0.5" />
                                 </Badge>
                               ))}
+                              {issue.affected_templates.length > 5 && (
+                                <Badge variant="outline" className="text-[10px]">+{issue.affected_templates.length - 5}</Badge>
+                              )}
                             </div>
                           )}
                           {issue.fix && (
-                            <p className="text-xs text-green-700 mt-2">✓ {issue.fix}</p>
+                            <p className="text-[10px] text-green-700 dark:text-green-400 mt-1">✓ {issue.fix}</p>
                           )}
                         </div>
                       ))}
@@ -1042,11 +1060,11 @@ Provide a comprehensive analysis covering:
                 {/* Category Analysis */}
                 {analysisResult.category_analysis?.length > 0 && (
                   <div>
-                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                    <h3 className="font-semibold flex items-center gap-2 mb-2 text-sm">
                       <TrendingUp className="h-4 w-4 text-blue-500" />
                       {t({ en: 'Category Analysis', ar: 'تحليل الفئات' })}
                     </h3>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {analysisResult.category_analysis.map((cat, i) => (
                         <div 
                           key={i} 
@@ -1054,15 +1072,12 @@ Provide a comprehensive analysis covering:
                           onClick={() => handleFilterByCategory(cat.category)}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-medium text-sm">{cat.category}</span>
-                            <div className="flex items-center gap-1">
-                              <Badge variant={cat.status === 'good' ? 'default' : cat.status === 'low' ? 'warning' : 'secondary'}>
-                                {cat.status}
-                              </Badge>
-                              <Eye className="h-3 w-3 text-muted-foreground" />
-                            </div>
+                            <span className="font-medium text-xs">{cat.category}</span>
+                            <Badge variant={cat.status === 'good' ? 'default' : cat.status === 'low' ? 'warning' : 'secondary'} className="text-[10px] h-4">
+                              {cat.status}
+                            </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">{cat.recommendation}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{cat.recommendation}</p>
                         </div>
                       ))}
                     </div>
@@ -1072,20 +1087,20 @@ Provide a comprehensive analysis covering:
                 {/* Recommendations */}
                 {analysisResult.recommendations?.length > 0 && (
                   <div>
-                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                    <h3 className="font-semibold flex items-center gap-2 mb-2 text-sm">
                       <Lightbulb className="h-4 w-4 text-yellow-500" />
-                      {t({ en: 'Recommendations', ar: 'التوصيات' })}
+                      {t({ en: 'Recommendations', ar: 'التوصيات' })} ({analysisResult.recommendations.length})
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {analysisResult.recommendations.map((rec, i) => (
-                        <div key={i} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <div className="flex items-start justify-between">
-                            <p className="font-medium text-sm">{rec.title}</p>
-                            <Badge variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'warning' : 'secondary'}>
+                        <div key={i} className="p-2 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-medium text-xs">{rec.title}</p>
+                            <Badge variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'warning' : 'secondary'} className="text-[10px] h-5">
                               {rec.priority}
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">{rec.description}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{rec.description}</p>
                         </div>
                       ))}
                     </div>
@@ -1095,32 +1110,28 @@ Provide a comprehensive analysis covering:
                 {/* Suggested Templates */}
                 {analysisResult.suggested_templates?.length > 0 && (
                   <div>
-                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                    <h3 className="font-semibold flex items-center gap-2 mb-2 text-sm">
                       <Plus className="h-4 w-4 text-green-500" />
-                      {t({ en: 'Suggested New Templates', ar: 'قوالب جديدة مقترحة' })}
+                      {t({ en: 'Suggested Templates', ar: 'قوالب مقترحة' })} ({analysisResult.suggested_templates.length})
                     </h3>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="space-y-1.5">
                       {analysisResult.suggested_templates.map((tmpl, i) => (
                         <div 
                           key={i} 
-                          className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start justify-between group hover:border-green-400 transition-colors"
+                          className="p-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg flex items-start justify-between gap-2 hover:border-green-400 transition-colors"
                         >
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{tmpl.name}</p>
-                            <p className="text-xs text-muted-foreground font-mono">{tmpl.template_key}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{tmpl.description}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-xs truncate">{tmpl.name}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono truncate">{tmpl.template_key}</p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">{tmpl.category}</Badge>
-                            <Button 
-                              size="sm" 
-                              className="h-7 bg-green-600 hover:bg-green-700"
-                              onClick={() => handleCreateSuggestedTemplate(tmpl)}
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              {t({ en: 'Create', ar: 'إنشاء' })}
-                            </Button>
-                          </div>
+                          <Button 
+                            size="sm" 
+                            className="h-6 text-[10px] px-2 bg-green-600 hover:bg-green-700"
+                            onClick={() => handleCreateSuggestedTemplate(tmpl)}
+                          >
+                            <Plus className="h-3 w-3 mr-0.5" />
+                            {t({ en: 'Create', ar: 'إنشاء' })}
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -1130,25 +1141,25 @@ Provide a comprehensive analysis covering:
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Brain className="h-12 w-12 mb-4 opacity-50" />
-                <p>{t({ en: 'Analysis will appear here', ar: 'سيظهر التحليل هنا' })}</p>
+                <p className="text-sm">{t({ en: 'Analysis will appear here', ar: 'سيظهر التحليل هنا' })}</p>
               </div>
             )}
           </ScrollArea>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAnalysisDialog(false)}>
+          <DrawerFooter className="border-t flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowAnalysisDialog(false)} className="flex-1">
               {t({ en: 'Close', ar: 'إغلاق' })}
             </Button>
             {analysisResult && (
-              <Button onClick={handleAIAnalysis} disabled={aiLoading} variant="outline">
+              <Button onClick={handleAIAnalysis} disabled={aiLoading} variant="outline" className="flex-1">
                 <RefreshCw className={`h-4 w-4 mr-2 ${aiLoading ? 'animate-spin' : ''}`} />
                 {t({ en: 'Re-analyze', ar: 'إعادة التحليل' })}
               </Button>
             )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    </PageLayout>
   );
 }
 
