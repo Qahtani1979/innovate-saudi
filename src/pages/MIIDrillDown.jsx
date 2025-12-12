@@ -6,35 +6,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Award, TrendingUp, AlertCircle, TestTube, Target, Building2, Users, Zap } from 'lucide-react';
+import { Award, TrendingUp, AlertCircle, TestTube, Target, Building2, Users, Zap, ShieldAlert } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { usePermissions } from '@/components/permissions/usePermissions';
 
 export default function MIIDrillDown() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const urlMunicipalityId = urlParams.get('id');
+  
+  const { 
+    isAdmin, 
+    isDeputyship, 
+    hasPermission, 
+    profile,
+    isLoading: permissionsLoading 
+  } = usePermissions();
 
-  // Get user's municipality from auth context if no ID provided
-  const { data: userProfile } = useQuery({
-    queryKey: ['current-user-profile-for-mii'],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return null;
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('municipality_id')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !urlMunicipalityId
-  });
+  // Determine if user has oversight role (can view any municipality)
+  const hasOversightAccess = isAdmin || isDeputyship || hasPermission('analytics_view_all');
+  
+  // Get user's municipality ID
+  const userMunicipalityId = profile?.municipality_id;
 
-  // Use URL param if provided, otherwise fallback to user's municipality
-  const municipalityId = urlMunicipalityId || userProfile?.municipality_id;
+  // Determine which municipality to show
+  // - If URL has id param and user has oversight access, use URL param
+  // - Otherwise, use user's own municipality
+  const municipalityId = (urlMunicipalityId && hasOversightAccess) 
+    ? urlMunicipalityId 
+    : (urlMunicipalityId === userMunicipalityId ? urlMunicipalityId : userMunicipalityId);
+
+  // Check if user is trying to access another municipality without permission
+  const isUnauthorizedAccess = urlMunicipalityId && 
+    urlMunicipalityId !== userMunicipalityId && 
+    !hasOversightAccess;
 
   const { data: municipality } = useQuery({
     queryKey: ['municipality', municipalityId],
@@ -42,7 +50,7 @@ export default function MIIDrillDown() {
       const muns = await base44.entities.Municipality.list();
       return muns.find(m => m.id === municipalityId);
     },
-    enabled: !!municipalityId
+    enabled: !!municipalityId && !isUnauthorizedAccess
   });
 
   const { data: challenges = [] } = useQuery({
@@ -51,7 +59,7 @@ export default function MIIDrillDown() {
       const all = await base44.entities.Challenge.list();
       return all.filter(c => c.municipality_id === municipalityId);
     },
-    enabled: !!municipalityId
+    enabled: !!municipalityId && !isUnauthorizedAccess
   });
 
   const { data: pilots = [] } = useQuery({
@@ -60,13 +68,43 @@ export default function MIIDrillDown() {
       const all = await base44.entities.Pilot.list();
       return all.filter(p => p.municipality_id === municipalityId);
     },
-    enabled: !!municipalityId
+    enabled: !!municipalityId && !isUnauthorizedAccess
   });
 
   const { data: allMunicipalities = [] } = useQuery({
     queryKey: ['all-municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: () => base44.entities.Municipality.list(),
+    enabled: hasOversightAccess // Only load all municipalities for oversight users
   });
+
+  // Check permissions
+  if (permissionsLoading) {
+    return <div className="text-center py-12">{t({ en: 'Loading...', ar: 'جاري التحميل...' })}</div>;
+  }
+
+  // Check if user has analytics_view permission
+  if (!hasPermission('analytics_view') && !isAdmin) {
+    return (
+      <PageLayout>
+        <Card className="border-destructive bg-destructive/10">
+          <CardContent className="pt-6 text-center">
+            <ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-destructive mb-2">
+              {t({ en: 'Access Denied', ar: 'تم رفض الوصول' })}
+            </h2>
+            <p className="text-muted-foreground">
+              {t({ en: 'You do not have permission to view MII analytics.', ar: 'ليس لديك إذن لعرض تحليلات المؤشر.' })}
+            </p>
+          </CardContent>
+        </Card>
+      </PageLayout>
+    );
+  }
+
+  // Redirect unauthorized access to own municipality
+  if (isUnauthorizedAccess && userMunicipalityId) {
+    return <Navigate to={`/mii-drill-down?id=${userMunicipalityId}`} replace />;
+  }
 
   if (!municipality) {
     return <div className="text-center py-12">{t({ en: 'Loading...', ar: 'جاري التحميل...' })}</div>;
