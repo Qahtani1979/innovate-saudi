@@ -2254,6 +2254,215 @@ export type Database = {
           },
         ]
       }
+      email_logs: {
+        Row: {
+          body_preview: string | null
+          bounced_at: string | null
+          clicked_at: string | null
+          created_at: string | null
+          delivered_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          error_message: string | null
+          id: string
+          language: string | null
+          opened_at: string | null
+          recipient_email: string
+          recipient_user_id: string | null
+          retry_count: number | null
+          sent_at: string | null
+          status: string | null
+          subject: string
+          template_id: string | null
+          template_key: string | null
+          triggered_by: string | null
+          variables_used: Json | null
+        }
+        Insert: {
+          body_preview?: string | null
+          bounced_at?: string | null
+          clicked_at?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          id?: string
+          language?: string | null
+          opened_at?: string | null
+          recipient_email: string
+          recipient_user_id?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          template_id?: string | null
+          template_key?: string | null
+          triggered_by?: string | null
+          variables_used?: Json | null
+        }
+        Update: {
+          body_preview?: string | null
+          bounced_at?: string | null
+          clicked_at?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          id?: string
+          language?: string | null
+          opened_at?: string | null
+          recipient_email?: string
+          recipient_user_id?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          template_id?: string | null
+          template_key?: string | null
+          triggered_by?: string | null
+          variables_used?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          body_ar: string | null
+          body_en: string
+          category: string
+          created_at: string | null
+          created_by: string | null
+          cta_text_ar: string | null
+          cta_text_en: string | null
+          cta_url_variable: string | null
+          description: string | null
+          header_gradient_end: string | null
+          header_gradient_start: string | null
+          header_icon: string | null
+          header_title_ar: string | null
+          header_title_en: string | null
+          id: string
+          is_active: boolean | null
+          is_critical: boolean | null
+          is_html: boolean | null
+          is_system: boolean | null
+          name_ar: string | null
+          name_en: string
+          preference_category: string | null
+          subject_ar: string | null
+          subject_en: string
+          template_key: string
+          updated_at: string | null
+          updated_by: string | null
+          use_footer: boolean | null
+          use_header: boolean | null
+          variables: Json | null
+          version: number | null
+        }
+        Insert: {
+          body_ar?: string | null
+          body_en: string
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          cta_text_ar?: string | null
+          cta_text_en?: string | null
+          cta_url_variable?: string | null
+          description?: string | null
+          header_gradient_end?: string | null
+          header_gradient_start?: string | null
+          header_icon?: string | null
+          header_title_ar?: string | null
+          header_title_en?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_critical?: boolean | null
+          is_html?: boolean | null
+          is_system?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          preference_category?: string | null
+          subject_ar?: string | null
+          subject_en: string
+          template_key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          use_footer?: boolean | null
+          use_header?: boolean | null
+          variables?: Json | null
+          version?: number | null
+        }
+        Update: {
+          body_ar?: string | null
+          body_en?: string
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          cta_text_ar?: string | null
+          cta_text_en?: string | null
+          cta_url_variable?: string | null
+          description?: string | null
+          header_gradient_end?: string | null
+          header_gradient_start?: string | null
+          header_icon?: string | null
+          header_title_ar?: string | null
+          header_title_en?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_critical?: boolean | null
+          is_html?: boolean | null
+          is_system?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          preference_category?: string | null
+          subject_ar?: string | null
+          subject_en?: string
+          template_key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          use_footer?: boolean | null
+          use_header?: boolean | null
+          variables?: Json | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       evaluation_templates: {
         Row: {
           created_at: string | null
@@ -9660,6 +9869,7 @@ export type Database = {
       user_notification_preferences: {
         Row: {
           created_at: string | null
+          email_categories: Json | null
           email_notifications: boolean | null
           id: string
           notification_types: Json | null
@@ -9671,6 +9881,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          email_categories?: Json | null
           email_notifications?: boolean | null
           id?: string
           notification_types?: Json | null
@@ -9682,6 +9893,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          email_categories?: Json | null
           email_notifications?: boolean | null
           id?: string
           notification_types?: Json | null
