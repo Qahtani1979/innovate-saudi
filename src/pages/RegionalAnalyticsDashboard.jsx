@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { MapPin, TrendingUp, Building2 } from 'lucide-react';
+import { MapPin, TrendingUp, Building2, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { Link } from 'react-router-dom';
 
 function RegionalAnalyticsDashboard() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const { data: regions = [] } = useQuery({
     queryKey: ['regions'],
@@ -34,8 +35,11 @@ function RegionalAnalyticsDashboard() {
     const avgMII = regionMunis.reduce((sum, m) => sum + (m.mii_score || 0), 0) / (regionMunis.length || 1);
 
     return {
+      id: region.id,
       name: region.name_en,
-      municipalities: regionMunis.length,
+      name_ar: region.name_ar,
+      municipalities: regionMunis,
+      municipalityCount: regionMunis.length,
       pilots: regionPilots.length,
       avgMII: Math.round(avgMII),
       population: region.population || 0
@@ -56,7 +60,7 @@ function RegionalAnalyticsDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Pilots by Region</CardTitle>
+            <CardTitle className="text-sm">{t({ en: 'Pilots by Region', ar: 'التجارب حسب المنطقة' })}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -72,7 +76,7 @@ function RegionalAnalyticsDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Average MII by Region</CardTitle>
+            <CardTitle className="text-sm">{t({ en: 'Average MII by Region', ar: 'متوسط المؤشر حسب المنطقة' })}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -88,30 +92,61 @@ function RegionalAnalyticsDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {regionalData.map((region, idx) => (
-          <Card key={idx}>
+        {regionalData.map((region) => (
+          <Card key={region.id}>
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-purple-600" />
-                {region.name}
+                {language === 'ar' && region.name_ar ? region.name_ar : region.name}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span>Municipalities:</span>
-                <Badge>{region.municipalities}</Badge>
+                <span>{t({ en: 'Municipalities', ar: 'البلديات' })}:</span>
+                <Badge>{region.municipalityCount}</Badge>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Active Pilots:</span>
+                <span>{t({ en: 'Active Pilots', ar: 'التجارب النشطة' })}:</span>
                 <Badge className="bg-purple-600">{region.pilots}</Badge>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Avg MII:</span>
+                <span>{t({ en: 'Avg MII', ar: 'متوسط المؤشر' })}:</span>
                 <Badge className={region.avgMII > 50 ? 'bg-green-600' : 'bg-amber-600'}>
                   {region.avgMII}
                 </Badge>
               </div>
               <Progress value={region.avgMII} className="mt-2" />
+              
+              {/* Municipality Links */}
+              {region.municipalities.length > 0 && (
+                <div className="pt-3 border-t">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    {t({ en: 'Municipalities', ar: 'البلديات' })}
+                  </p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {region.municipalities.map((muni) => (
+                      <Link
+                        key={muni.id}
+                        to={`/mii-drill-down?id=${muni.id}`}
+                        className="flex items-center justify-between p-2 text-sm rounded-md hover:bg-muted transition-colors group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-3 w-3 text-muted-foreground" />
+                          <span className="truncate">
+                            {language === 'ar' && muni.name_ar ? muni.name_ar : muni.name_en}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {muni.mii_score || 0}
+                          </Badge>
+                          <ChevronRight className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
