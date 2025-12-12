@@ -320,17 +320,6 @@ Find 5 best-matching challenges from the platform that align with their capabili
           </CardContent>
         </Card>
       </div>
-
-      {editMode && (
-        <Dialog open={editMode} onOpenChange={setEditMode}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t({ en: 'Edit Startup Profile', ar: 'تحرير ملف الشركة' })}</DialogTitle>
-            </DialogHeader>
-            {/* Full edit form would go here */}
-          </DialogContent>
-        </Dialog>
-      )}
     </PageLayout>
   );
 }
