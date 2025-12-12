@@ -14,6 +14,7 @@ import StartupCredentialBadges from '../components/startup/StartupCredentialBadg
 import { ContactSection, BioSection, SkillsBadges } from '../components/profile/BilingualProfileDisplay';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function StartupProfile() {
   const { language, isRTL, t } = useLanguage();
@@ -86,7 +87,17 @@ Find 5 best-matching challenges from the platform that align with their capabili
   const s = startup[0];
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
+      <PageHeader
+        icon={Rocket}
+        title={language === 'ar' ? (s?.name_ar || s?.name_en || t({ en: 'Startup Profile', ar: 'ملف الشركة' })) : (s?.name_en || t({ en: 'Startup Profile', ar: 'ملف الشركة' }))}
+        description={language === 'ar' ? (s?.tagline_ar || s?.tagline_en) : (s?.tagline_en || s?.tagline_ar)}
+        stats={[
+          { icon: Lightbulb, value: solutions.length, label: t({ en: 'Solutions', ar: 'حلول' }) },
+          { icon: Target, value: pilots.length, label: t({ en: 'Pilots', ar: 'تجارب' }) },
+          { icon: Users, value: s?.team_size || '-', label: t({ en: 'Team Size', ar: 'حجم الفريق' }) },
+        ]}
+      />
       {/* Header */}
       <Card>
         <CardContent className="pt-6">
@@ -320,7 +331,7 @@ Find 5 best-matching challenges from the platform that align with their capabili
           </DialogContent>
         </Dialog>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

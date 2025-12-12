@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function StartupVerificationQueue() {
   const { language, isRTL, t } = useLanguage();
@@ -97,16 +98,17 @@ function StartupVerificationQueue() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold flex items-center gap-3">
-          <Shield className="h-10 w-10 text-blue-600" />
-          {t({ en: 'Startup Verification Queue', ar: 'قائمة التحقق من الشركات' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Verify startup credentials, legal status, and capabilities', ar: 'التحقق من بيانات الشركة والوضع القانوني والقدرات' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Shield}
+        title={t({ en: 'Startup Verification Queue', ar: 'قائمة التحقق من الشركات' })}
+        description={t({ en: 'Verify startup credentials, legal status, and capabilities', ar: 'التحقق من بيانات الشركة والوضع القانوني والقدرات' })}
+        stats={[
+          { icon: Clock, value: pendingStartups.length, label: t({ en: 'Pending', ar: 'معلق' }) },
+          { icon: CheckCircle2, value: startups.filter(s => s.is_verified).length, label: t({ en: 'Verified', ar: 'معتمدة' }) },
+          { icon: Building2, value: startups.length, label: t({ en: 'Total', ar: 'الإجمالي' }) },
+        ]}
+      />
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
@@ -283,7 +285,7 @@ function StartupVerificationQueue() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 
