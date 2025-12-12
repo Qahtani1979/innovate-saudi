@@ -681,7 +681,6 @@ export const PAGES = {
     "PredictiveForecastingDashboard": PredictiveForecastingDashboard,
     "CollaborationHub": CollaborationHub,
     "NetworkIntelligence": NetworkIntelligence,
-    "Collaboration Hub": collaborationHub,
     "StrategicAdvisorChat": StrategicAdvisorChat,
     "PatternRecognition": PatternRecognition,
     "ExecutiveBriefGenerator": ExecutiveBriefGenerator,
