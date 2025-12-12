@@ -22,8 +22,9 @@ function AuthenticatedUserMenu({ showDashboardLink, showName, variant, user, log
   const dashboardLabel = { en: 'Dashboard', ar: 'لوحة التحكم' };
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/');
+    // Just call logout - it handles the redirect internally
+    await logout(true);
+    // Don't navigate here - logout() handles redirect to /Auth
   };
 
   const getUserInitials = () => {

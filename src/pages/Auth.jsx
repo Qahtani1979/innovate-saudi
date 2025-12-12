@@ -32,17 +32,17 @@ export default function Auth() {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
 
-  // Redirect if already authenticated - to role-based dashboard
+  // Redirect if already authenticated - let persona routing handle destination
   useEffect(() => {
     if (isAuthenticated && !isLoadingAuth) {
       // If there's a specific page they were trying to access, go there
       const from = location.state?.from?.pathname;
-      if (from && from !== '/' && from !== '/auth') {
+      if (from && from !== '/' && from !== '/auth' && from !== '/Auth') {
         navigate(from, { replace: true });
         return;
       }
-      // Otherwise, redirect to citizen dashboard (default for new users)
-      navigate('/citizen-dashboard', { replace: true });
+      // Otherwise, redirect to /home - the persona routing will handle the correct dashboard
+      navigate('/home', { replace: true });
     }
   }, [isAuthenticated, isLoadingAuth, navigate, location]);
 
@@ -80,12 +80,12 @@ export default function Auth() {
         title: t({ en: 'Welcome back!', ar: 'مرحباً بعودتك!' }),
         description: t({ en: 'You have successfully logged in.', ar: 'لقد قمت بتسجيل الدخول بنجاح.' }),
       });
-      // Redirect to intended page or citizen dashboard
+      // Redirect to intended page or let persona routing handle it
       const from = location.state?.from?.pathname;
-      if (from && from !== '/' && from !== '/auth') {
+      if (from && from !== '/' && from !== '/auth' && from !== '/Auth') {
         navigate(from, { replace: true });
       } else {
-        navigate('/citizen-dashboard', { replace: true });
+        navigate('/home', { replace: true });
       }
     } catch (error) {
       toast({
@@ -135,8 +135,8 @@ export default function Auth() {
         title: t({ en: 'Account created!', ar: 'تم إنشاء الحساب!' }),
         description: t({ en: 'You have successfully signed up.', ar: 'لقد قمت بالتسجيل بنجاح.' }),
       });
-      // Redirect to citizen dashboard
-      navigate('/citizen-dashboard', { replace: true });
+      // Redirect to home - persona routing will handle the correct dashboard
+      navigate('/home', { replace: true });
     } catch (error) {
       let errorMessage = error.message || t({ en: 'Failed to create account', ar: 'فشل إنشاء الحساب' });
       if (error.message?.includes('already registered')) {
