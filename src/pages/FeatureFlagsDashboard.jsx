@@ -136,7 +136,7 @@ Suggest:
           ))}
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 
