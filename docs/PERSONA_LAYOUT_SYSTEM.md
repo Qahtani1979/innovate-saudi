@@ -39,34 +39,13 @@ The persona layout system provides tailored UI experiences based on user roles. 
 
 ## Core Components
 
-### 1. Layout.jsx
-**Path:** `src/components/Layout.jsx`
-**Status:** ✅ Complete
-
-### 2. PersonaSidebar.jsx
-**Path:** `src/components/layout/PersonaSidebar.jsx`
-**Status:** ✅ Complete
-
-### 3. PersonaPageLayout.jsx
-**Path:** `src/components/layout/PersonaPageLayout.jsx`
-**Status:** ✅ Complete
-
-Exports:
-- `PageLayout` - Main page wrapper with header
-- `PageHeader` - Standalone header component
-- `PersonaButton` - Styled action button
-
-### 4. CitizenPageLayout.jsx
-**Path:** `src/components/citizen/CitizenPageLayout.jsx`
-**Status:** ✅ Complete
-
-### 5. PersonaHeader.jsx
-**Path:** `src/components/layout/PersonaHeader.jsx`
-**Status:** ✅ Complete
-
-### 6. sidebarMenus.js
-**Path:** `src/components/layout/sidebarMenus.js`
-**Status:** ✅ Complete
+| Component | Path | Status |
+|-----------|------|--------|
+| Layout.jsx | `src/components/Layout.jsx` | ✅ Complete |
+| PersonaSidebar.jsx | `src/components/layout/PersonaSidebar.jsx` | ✅ Complete |
+| PersonaPageLayout.jsx | `src/components/layout/PersonaPageLayout.jsx` | ✅ Complete |
+| CitizenPageLayout.jsx | `src/components/citizen/CitizenPageLayout.jsx` | ✅ Complete |
+| PersonaHeader.jsx | `src/components/layout/PersonaHeader.jsx` | ✅ Complete |
 
 ---
 
@@ -80,414 +59,539 @@ Exports:
 
 ---
 
-## Persona Definitions
-
-| Persona | Dashboard Path | Portal Type |
-|---------|---------------|-------------|
-| **Admin** | `/admin-dashboard` | admin |
-| **Executive** | `/executive-dashboard` | executive |
-| **Deputyship** | `/deputyship-dashboard` | deputyship |
-| **Municipality** | `/municipality-dashboard` | municipality |
-| **Provider** | `/provider-dashboard` | provider |
-| **Expert** | `/expert-dashboard` | expert |
-| **Researcher** | `/researcher-dashboard` | researcher |
-| **Citizen** | `/citizen-dashboard` | citizen |
-| **Viewer** | `/viewer-dashboard` | viewer |
-| **Academia** | `/academia-dashboard` | academia |
-| **Startup** | `/startup-dashboard` | startup |
-
----
-
-## Page Implementation Status
+## Persona-by-Persona Status
 
 ### Summary Statistics
 
-| Category | Using Layout | Total | Coverage |
-|----------|-------------|-------|----------|
-| **Total Pages** | 29 | ~567 | 5.1% |
-| Dashboards | 11 | 11 | 100% ✅ |
-| Citizen Pages | 8 | 8 | 100% ✅ |
-| Core Entity Lists | 7 | 7 | 100% ✅ |
-| Other Pages | 3 | ~541 | <1% |
+| Category | Using Layout | Total Pages | Coverage |
+|----------|-------------|-------------|----------|
+| **All Pages** | 29 | ~567 | 5.1% |
+| **Dashboards** | 7 | 11 | 64% |
+| **Citizen Pages** | 8 | 8 | 100% ✅ |
+| **Core Entity Lists** | 7 | 7 | 100% ✅ |
 
 ---
 
-## ✅ Pages Using PersonaPageLayout (29 pages)
+## 1. ADMIN Persona
 
-### Dashboards (11 pages - 100% Complete)
+**Route Config (usePersonaRouting.js):**
+- `persona`: 'admin'
+- `defaultDashboard`: '/home'
+- `portalType`: 'admin'
+- `onboardingWizard`: null
 
-| Page | File | Layout |
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Admin Portal | `AdminPortal.jsx` | ✅ Yes |
+
+**Related Pages (NOT using PageLayout):**
+| Page | File | Status |
 |------|------|--------|
-| Admin Dashboard | `AdminDashboard.jsx` | `PageLayout` |
-| Executive Dashboard | `ExecutiveDashboard.jsx` | `PageLayout` |
-| Deputyship Dashboard | `DeputyshipDashboard.jsx` | `PageLayout` |
-| Municipality Dashboard | `MunicipalityDashboard.jsx` | `PageLayout` |
-| Provider Dashboard | `ProviderDashboard.jsx` | `PageLayout` |
-| Expert Dashboard | `ExpertDashboard.jsx` | `PageLayout` |
-| Researcher Dashboard | `ResearcherDashboard.jsx` | `PageLayout` |
-| Citizen Dashboard | `CitizenDashboard.jsx` | `CitizenPageLayout` |
-| Viewer Dashboard | `ViewerDashboard.jsx` | `PageLayout` |
-| Academia Dashboard | `AcademiaDashboard.jsx` | `PageLayout` |
-| Startup Dashboard | `StartupDashboard.jsx` | `PageLayout` |
+| User Management | `UserManagement.jsx` | ❌ Missing |
+| Role Management | `RoleManagement.jsx` | ❌ Missing |
+| Audit Registry | `AuditRegistry.jsx` | ❌ Missing |
+| Audit Trail | `AuditTrail.jsx` | ❌ Missing |
+| Data Management Hub | `DataManagementHub.jsx` | ❌ Missing |
+| Integration Manager | `IntegrationManager.jsx` | ❌ Missing |
+| Settings | `Settings.jsx` | ❌ Missing |
+| Backup Recovery Manager | `BackupRecoveryManager.jsx` | ❌ Missing |
+| Error Logs Console | `ErrorLogsConsole.jsx` | ❌ Missing |
+| Feature Flags Dashboard | `FeatureFlagsDashboard.jsx` | ❌ Missing |
+| Email Template Manager | `EmailTemplateManager.jsx` | ❌ Missing |
 
-### Citizen Portal Pages (8 pages - 100% Complete)
+---
 
-| Page | File | Layout |
+## 2. EXECUTIVE Persona
+
+**Route Config (usePersonaRouting.js):**
+- `persona`: 'executive'
+- `defaultDashboard`: '/executive-dashboard'
+- `portalType`: 'executive'
+- `onboardingWizard`: 'DeputyshipOnboarding'
+
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Executive Dashboard | `ExecutiveDashboard.jsx` | ✅ Yes |
+
+**Related Pages (NOT using PageLayout):**
+| Page | File | Status |
 |------|------|--------|
-| Citizen Dashboard | `CitizenDashboard.jsx` | `CitizenPageLayout` |
-| Citizen Challenges Browser | `CitizenChallengesBrowser.jsx` | `CitizenPageLayout` |
-| Citizen Solutions Browser | `CitizenSolutionsBrowser.jsx` | `CitizenPageLayout` |
-| Citizen Living Labs Browser | `CitizenLivingLabsBrowser.jsx` | `CitizenPageLayout` |
-| Citizen Idea Submission | `CitizenIdeaSubmission.jsx` | `CitizenPageLayout` |
-| Citizen Leaderboard | `CitizenLeaderboard.jsx` | `CitizenPageLayout` |
-| Citizen Pilot Enrollment | `CitizenPilotEnrollment.jsx` | `CitizenPageLayout` |
-| Citizen Lab Participation | `CitizenLabParticipation.jsx` | `CitizenPageLayout` |
+| Executive Approvals | `ExecutiveApprovals.jsx` | ❌ Missing |
+| Executive Brief Generator | `ExecutiveBriefGenerator.jsx` | ❌ Missing |
+| Executive Strategic Challenge Queue | `ExecutiveStrategicChallengeQueue.jsx` | ❌ Missing |
+| Command Center | `CommandCenter.jsx` | ❌ Missing |
+| National Innovation Map | `NationalInnovationMap.jsx` | ❌ Missing |
+| National Map | `NationalMap.jsx` | ❌ Missing |
+| Strategic Plan Builder | (if exists) | ❌ Missing |
 
-### Core Entity List Pages (7 pages - 100% Complete)
+---
 
-| Page | File | Layout |
+## 3. DEPUTYSHIP Persona
+
+**Route Config (usePersonaRouting.js):**
+- `persona`: 'deputyship'
+- `defaultDashboard`: '/executive-dashboard' (shares with Executive)
+- `portalType`: 'deputyship'
+- `onboardingWizard`: 'DeputyshipOnboarding'
+
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| No dedicated dashboard | Uses ExecutiveDashboard | N/A |
+
+**Related Pages (NOT using PageLayout):**
+| Page | File | Status |
 |------|------|--------|
-| Challenges | `Challenges.jsx` | `PageLayout` |
-| Pilots | `Pilots.jsx` | `PageLayout` |
-| Programs | `Programs.jsx` | `PageLayout` |
-| R&D Projects | `RDProjects.jsx` | `PageLayout` |
-| Knowledge | `Knowledge.jsx` | `PageLayout` |
-| Solutions | `Solutions.jsx` | `PageLayout` |
-| Living Labs | `LivingLabs.jsx` | `PageLayout` |
+| Deputyship Onboarding | `DeputyshipOnboarding.jsx` | ❌ Missing (wizard) |
+| Policy Hub | `PolicyHub.jsx` | ❌ Missing |
+| Policy Library | `PolicyLibrary.jsx` | ❌ Missing |
+| Policy Create | `PolicyCreate.jsx` | ❌ Missing |
+| Policy Edit | `PolicyEdit.jsx` | ❌ Missing |
+| Policy Detail | `PolicyDetail.jsx` | ❌ Missing |
+| Multi City Coordination | `MultiCityCoordination.jsx` | ❌ Missing |
+| Multi City Orchestration | `MultiCityOrchestration.jsx` | ❌ Missing |
 
-### Other Pages Using Layout (3 pages)
+---
 
-| Page | File | Layout |
+## 4. MUNICIPALITY Persona
+
+**Route Config (usePersonaRouting.js):**
+- `persona`: 'municipality'
+- `defaultDashboard`: '/municipality-dashboard'
+- `portalType`: 'municipality'
+- `onboardingWizard`: 'MunicipalityStaffOnboarding'
+
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Municipality Dashboard | `MunicipalityDashboard.jsx` | ✅ Yes |
+
+**Related Pages Using PageLayout:**
+| Page | File | Status |
 |------|------|--------|
-| Expert Registry | `ExpertRegistry.jsx` | `PageLayout` |
-| My Bookmarks | `MyBookmarks.jsx` | `PageLayout` |
-| My Applications | `MyApplications.jsx` | `PageLayout` |
-| My Programs | `MyPrograms.jsx` | `PageLayout` |
-| My Pilots | `MyPilots.jsx` | `PageLayout` |
-| Municipal Proposal Inbox | `MunicipalProposalInbox.jsx` | `PageLayout` |
-| Citizen Engagement Dashboard | `CitizenEngagementDashboard.jsx` | `PageLayout` |
-| Provider Proposal Wizard | `ProviderProposalWizard.jsx` | `CitizenPageLayout` |
-| Municipality Peer Matcher | `MunicipalityPeerMatcher.jsx` | `PageLayout` |
-| Admin Portal | `AdminPortal.jsx` | `PageLayout` |
+| Municipal Proposal Inbox | `MunicipalProposalInbox.jsx` | ✅ Yes |
+| Municipality Peer Matcher | `MunicipalityPeerMatcher.jsx` | ✅ Yes |
+
+**Related Pages (NOT using PageLayout):**
+| Page | File | Status |
+|------|------|--------|
+| Municipality Profile | `MunicipalityProfile.jsx` | ❌ Missing |
+| Municipality Create | `MunicipalityCreate.jsx` | ❌ Missing |
+| Municipality Edit | `MunicipalityEdit.jsx` | ❌ Missing |
+| Municipality Ideas View | `MunicipalityIdeasView.jsx` | ❌ Missing |
+| Municipality Staff Onboarding | `MunicipalityStaffOnboarding.jsx` | ❌ Missing (wizard) |
+| City Management | `CityManagement.jsx` | ❌ Missing |
+| City Dashboard | `CityDashboard.jsx` | ❌ Missing |
+| MII | `MII.jsx` | ❌ Missing |
+| MII Drill Down | `MIIDrillDown.jsx` | ❌ Missing |
 
 ---
 
-## ⏳ Pages NOT Using PersonaPageLayout (~538 pages)
+## 5. PROVIDER/STARTUP Persona
 
-### HIGH PRIORITY (~50 pages)
+**Route Config (usePersonaRouting.js):**
+- `persona`: 'provider'
+- `defaultDashboard`: '/startup-dashboard'
+- `portalType`: 'provider'
+- `onboardingWizard`: 'StartupOnboarding'
 
-#### Detail Pages (Need PageLayout)
-| Page | File | Priority |
-|------|------|----------|
-| Challenge Detail | `ChallengeDetail.jsx` | 🔴 High |
-| Pilot Detail | `PilotDetail.jsx` | 🔴 High |
-| Program Detail | `ProgramDetail.jsx` | 🔴 High |
-| Solution Detail | `SolutionDetail.jsx` | 🔴 High |
-| Living Lab Detail | `LivingLabDetail.jsx` | 🔴 High |
-| R&D Project Detail | `RDProjectDetail.jsx` | 🔴 High |
-| Organization Detail | `OrganizationDetail.jsx` | 🔴 High |
-| Contract Detail | `ContractDetail.jsx` | 🔴 High |
-| Budget Detail | `BudgetDetail.jsx` | 🔴 High |
-| Expert Detail | `ExpertDetail.jsx` | 🔴 High |
-| Policy Detail | `PolicyDetail.jsx` | 🔴 High |
-| Idea Detail | `IdeaDetail.jsx` | 🔴 High |
-| Event Detail | `EventDetail.jsx` | 🔴 High |
-| Audit Detail | `AuditDetail.jsx` | 🔴 High |
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Startup Dashboard | `StartupDashboard.jsx` | ✅ Yes |
 
-#### Create/Edit Pages (Need PageLayout)
-| Page | File | Priority |
-|------|------|----------|
-| Challenge Create | `ChallengeCreate.jsx` | 🔴 High |
-| Challenge Edit | `ChallengeEdit.jsx` | 🔴 High |
-| Pilot Create | `PilotCreate.jsx` | 🔴 High |
-| Pilot Edit | `PilotEdit.jsx` | 🔴 High |
-| Program Create | `ProgramCreate.jsx` | 🔴 High |
-| Program Edit | `ProgramEdit.jsx` | 🔴 High |
-| Solution Create | `SolutionCreate.jsx` | 🔴 High |
-| Solution Edit | `SolutionEdit.jsx` | 🔴 High |
-| Living Lab Create | `LivingLabCreate.jsx` | 🔴 High |
-| Living Lab Edit | `LivingLabEdit.jsx` | 🔴 High |
-| Organization Create | `OrganizationCreate.jsx` | 🔴 High |
-| Organization Edit | `OrganizationEdit.jsx` | 🔴 High |
-| Policy Create | `PolicyCreate.jsx` | 🔴 High |
-| Policy Edit | `PolicyEdit.jsx` | 🔴 High |
-| Municipality Create | `MunicipalityCreate.jsx` | 🔴 High |
-| Municipality Edit | `MunicipalityEdit.jsx` | 🔴 High |
+**Related Pages Using PageLayout:**
+| Page | File | Status |
+|------|------|--------|
+| Provider Proposal Wizard | `ProviderProposalWizard.jsx` | ✅ Yes (CitizenPageLayout) |
 
-#### Management Pages (Need PageLayout)
-| Page | File | Priority |
-|------|------|----------|
-| Contract Management | `ContractManagement.jsx` | 🔴 High |
-| Budget Management | `BudgetManagement.jsx` | 🔴 High |
-| User Management | `UserManagement.jsx` | 🔴 High |
-| Organizations | `Organizations.jsx` | 🔴 High |
-| Approval Center | `ApprovalCenter.jsx` | 🔴 High |
-| Role Management | `RoleManagement.jsx` | 🔴 High |
-| Audit Registry | `AuditRegistry.jsx` | 🔴 High |
-| Invoice Management | `InvoiceManagement.jsx` | 🔴 High |
-| Ideas Management | `IdeasManagement.jsx` | 🔴 High |
-| Settings | `Settings.jsx` | 🔴 High |
-
-#### Review/Approval Pages (Need PageLayout)
-| Page | File | Priority |
-|------|------|----------|
-| Challenge Review Queue | `ChallengeReviewQueue.jsx` | 🔴 High |
-| Application Review Hub | `ApplicationReviewHub.jsx` | 🔴 High |
-| Idea Evaluation Queue | `IdeaEvaluationQueue.jsx` | 🔴 High |
-| Expert Assignment Queue | `ExpertAssignmentQueue.jsx` | 🔴 High |
-| Matching Queue | `MatchingQueue.jsx` | 🔴 High |
-| Organization Verification Queue | `OrganizationVerificationQueue.jsx` | 🔴 High |
+**Related Pages (NOT using PageLayout):**
+| Page | File | Status |
+|------|------|--------|
+| Solution Create | `SolutionCreate.jsx` | ❌ Missing |
+| Solution Edit | `SolutionEdit.jsx` | ❌ Missing |
+| Solution Detail | `SolutionDetail.jsx` | ❌ Missing |
+| Browse Startups | `BrowseStartups.jsx` | ❌ Missing |
+| Startup Onboarding | `StartupOnboarding.jsx` | ❌ Missing (wizard) |
+| Matchmaker Journey | `MatchmakerJourney.jsx` | ❌ Missing |
+| Matchmaker Applications | `MatchmakerApplications.jsx` | ❌ Missing |
+| Matchmaker Application Create | `MatchmakerApplicationCreate.jsx` | ❌ Missing |
+| Matchmaker Application Detail | `MatchmakerApplicationDetail.jsx` | ❌ Missing |
+| Opportunity Feed | `OpportunityFeed.jsx` | ❌ Missing |
+| My Startup Profile Editor | `MyStartupProfileEditor.jsx` | ❌ Missing |
 
 ---
 
-### MEDIUM PRIORITY (~100 pages)
+## 6. EXPERT Persona
 
-#### My* Pages (User Personal Pages)
-| Page | File |
-|------|------|
-| My Challenges | `MyChallenges.jsx` |
-| My R&D Projects | `MyRDProjects.jsx` |
-| My Performance | `MyPerformance.jsx` |
-| My Deadlines | `MyDeadlines.jsx` |
-| My Connections | `MyConnections.jsx` |
-| My Following | `MyFollowing.jsx` |
-| My Approvals | `MyApprovals.jsx` |
-| My Delegation | `MyDelegation.jsx` |
-| My Impact Dashboard | `MyImpactDashboard.jsx` |
-| My Learning | `MyLearning.jsx` |
-| My Partnerships | `MyPartnerships.jsx` |
-| My Activity Timeline | `MyActivityTimeline.jsx` |
-| My Workload Dashboard | `MyWorkloadDashboard.jsx` |
-| My Profile Analytics | `MyProfileAnalytics.jsx` |
-| My Profiles Hub | `MyProfilesHub.jsx` |
-| My Evaluator Profile | `MyEvaluatorProfile.jsx` |
-| My Municipality Staff Profile | `MyMunicipalityStaffProfile.jsx` |
-| My Researcher Profile Editor | `MyResearcherProfileEditor.jsx` |
-| My Startup Profile Editor | `MyStartupProfileEditor.jsx` |
-| My Challenge Tracker | `MyChallengeTracker.jsx` |
-| My Program Dashboard | `MyProgramDashboard.jsx` |
+**Route Config (usePersonaRouting.js):**
+- `persona`: 'expert'
+- `defaultDashboard`: '/expert-dashboard'
+- `portalType`: 'expert'
+- `onboardingWizard`: 'ExpertOnboarding'
 
-#### Analytics/Dashboard Pages
-| Page | File |
-|------|------|
-| Challenge Analytics Dashboard | `ChallengeAnalyticsDashboard.jsx` |
-| Pilot Monitoring Dashboard | `PilotMonitoringDashboard.jsx` |
-| Evaluation Analytics Dashboard | `EvaluationAnalyticsDashboard.jsx` |
-| Program Impact Dashboard | `ProgramImpactDashboard.jsx` |
-| Program ROI Dashboard | `ProgramROIDashboard.jsx` |
-| Expert Performance Dashboard | `ExpertPerformanceDashboard.jsx` |
-| Data Quality Dashboard | `DataQualityDashboard.jsx` |
-| Compliance Dashboard | `ComplianceDashboard.jsx` |
-| IP Management Dashboard | `IPManagementDashboard.jsx` |
-| Pipeline Health Dashboard | `PipelineHealthDashboard.jsx` |
-| Predictive Forecasting Dashboard | `PredictiveForecastingDashboard.jsx` |
-| Competitive Intelligence Dashboard | `CompetitiveIntelligenceDashboard.jsx` |
-| Failure Analysis Dashboard | `FailureAnalysisDashboard.jsx` |
-| Mid Year Review Dashboard | `MidYearReviewDashboard.jsx` |
-| Institution R&D Dashboard | `InstitutionRDDashboard.jsx` |
-| City Dashboard | `CityDashboard.jsx` |
-| Mentor Dashboard | `MentorDashboard.jsx` |
-| Participant Dashboard | `ParticipantDashboard.jsx` |
-| Personalized Dashboard | `PersonalizedDashboard.jsx` |
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Expert Dashboard | `ExpertDashboard.jsx` | ✅ Yes |
 
-#### Expert/Evaluation Pages
-| Page | File |
-|------|------|
-| Expert Panel Management | `ExpertPanelManagement.jsx` |
-| Expert Panel Detail | `ExpertPanelDetail.jsx` |
-| Expert Matching Engine | `ExpertMatchingEngine.jsx` |
-| Expert Evaluation Workflow | `ExpertEvaluationWorkflow.jsx` |
-| Evaluation Panel | `EvaluationPanel.jsx` |
-| Evaluation Rubric Builder | `EvaluationRubricBuilder.jsx` |
-| Evaluation Template Manager | `EvaluationTemplateManager.jsx` |
+**Related Pages Using PageLayout:**
+| Page | File | Status |
+|------|------|--------|
+| Expert Registry | `ExpertRegistry.jsx` | ✅ Yes |
 
-#### Matching/Conversion Pages
-| Page | File |
-|------|------|
-| Challenge Solution Matching | `ChallengeSolutionMatching.jsx` |
-| Challenge RD Call Matcher | `ChallengeRDCallMatcher.jsx` |
-| Program Challenge Matcher | `ProgramChallengeMatcher.jsx` |
-| Pilot Scaling Matcher | `PilotScalingMatcher.jsx` |
-| Living Lab Project Matcher | `LivingLabProjectMatcher.jsx` |
-| Conversion Hub | `ConversionHub.jsx` |
-| Conversion Funnel | `ConversionFunnel.jsx` |
-
-#### Program/Pilot Operations
-| Page | File |
-|------|------|
-| Program Operator Portal | `ProgramOperatorPortal.jsx` |
-| Program Application Wizard | `ProgramApplicationWizard.jsx` |
-| Program Application Detail | `ProgramApplicationDetail.jsx` |
-| Program Cohort Management | `ProgramCohortManagement.jsx` |
-| Program Launch Wizard | `ProgramLaunchWizard.jsx` |
-| Program Portfolio Planner | `ProgramPortfolioPlanner.jsx` |
-| Pilot Launch Wizard | `PilotLaunchWizard.jsx` |
-| Pilot Management Panel | `PilotManagementPanel.jsx` |
-| Pilot Evaluations | `PilotEvaluations.jsx` |
-| Pilot Gates Overview | `PilotGatesOverview.jsx` |
-| Pilot Success Patterns | `PilotSuccessPatterns.jsx` |
-| Pilot Workflow Guide | `PilotWorkflowGuide.jsx` |
-
-#### R&D Pages
-| Page | File |
-|------|------|
-| R&D Project Detail | `RDProjectDetail.jsx` |
-| R&D Project Create | `RDProjectCreate.jsx` |
-| R&D Project Edit | `RDProjectEdit.jsx` |
-| R&D Call Create | `RDCallCreate.jsx` |
-| R&D Call Detail | `RDCallDetail.jsx` |
-| R&D Proposal Create | `RDProposalCreate.jsx` |
-| R&D Proposal Detail | `RDProposalDetail.jsx` |
-| R&D Proposal Edit | `RDProposalEdit.jsx` |
-
-#### Partnership/Collaboration Pages
-| Page | File |
-|------|------|
-| Partnership Registry | `PartnershipRegistry.jsx` |
-| Partnership Network | `PartnershipNetwork.jsx` |
-| Partnership Performance | `PartnershipPerformance.jsx` |
-| Partnership MOU Tracker | `PartnershipMOUTracker.jsx` |
-| Collaboration Hub | `CollaborationHub.jsx` |
-| Collaborative Pilots | `CollaborativePilots.jsx` |
+**Related Pages (NOT using PageLayout):**
+| Page | File | Status |
+|------|------|--------|
+| Expert Detail | `ExpertDetail.jsx` | ❌ Missing |
+| Expert Profile Edit | `ExpertProfileEdit.jsx` | ❌ Missing |
+| Expert Panel Management | `ExpertPanelManagement.jsx` | ❌ Missing |
+| Expert Panel Detail | `ExpertPanelDetail.jsx` | ❌ Missing |
+| Expert Assignment Queue | `ExpertAssignmentQueue.jsx` | ❌ Missing |
+| Expert Evaluation Workflow | `ExpertEvaluationWorkflow.jsx` | ❌ Missing |
+| Expert Matching Engine | `ExpertMatchingEngine.jsx` | ❌ Missing |
+| Expert Performance Dashboard | `ExpertPerformanceDashboard.jsx` | ❌ Missing |
+| Expert Onboarding | `ExpertOnboarding.jsx` | ❌ Missing (wizard) |
+| Browse Experts | `BrowseExperts.jsx` | ❌ Missing |
+| My Evaluator Profile | `MyEvaluatorProfile.jsx` | ❌ Missing |
+| Evaluation Panel | `EvaluationPanel.jsx` | ❌ Missing |
+| Evaluation Rubric Builder | `EvaluationRubricBuilder.jsx` | ❌ Missing |
+| Evaluation Template Manager | `EvaluationTemplateManager.jsx` | ❌ Missing |
+| Evaluation Analytics Dashboard | `EvaluationAnalyticsDashboard.jsx` | ❌ Missing |
 
 ---
 
-### LOW PRIORITY (~350+ pages)
+## 7. RESEARCHER Persona
 
-#### Coverage Report Pages (~80 files)
-These are internal development/audit tools:
-- `*CoverageReport.jsx` files
-- `*Audit.jsx` files
-- `*Assessment.jsx` files
+**Route Config (usePersonaRouting.js):**
+- `persona`: 'researcher'
+- `defaultDashboard`: '/researcher-dashboard'
+- `portalType`: 'researcher'
+- `onboardingWizard`: 'ResearcherOnboarding'
 
-#### Configuration/Settings Pages
-| Page | File |
-|------|------|
-| Branding Settings | `BrandingSettings.jsx` |
-| Notification Preferences | `NotificationPreferences.jsx` |
-| Data Retention Config | `DataRetentionConfig.jsx` |
-| Conditional Access Rules | `ConditionalAccessRules.jsx` |
-| Feature Flags Dashboard | `FeatureFlagsDashboard.jsx` |
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Researcher Dashboard | `ResearcherDashboard.jsx` | ❌ **MISSING** |
 
-#### Onboarding/Wizard Pages
-| Page | File |
-|------|------|
-| Onboarding | `Onboarding.jsx` |
-| Getting Started | `GettingStarted.jsx` |
-| Citizen Onboarding | `CitizenOnboarding.jsx` |
-| Expert Onboarding | `ExpertOnboarding.jsx` |
-| Deputyship Onboarding | `DeputyshipOnboarding.jsx` |
-| Municipality Staff Onboarding | `MunicipalityStaffOnboarding.jsx` |
-
-#### Public Pages (No Auth - N/A)
-| Page | File |
-|------|------|
-| Home | `Home.jsx` |
-| About | `public/About.jsx` |
-| Contact | `public/Contact.jsx` |
-| FAQ | `public/FAQ.jsx` |
-| Privacy | `public/Privacy.jsx` |
-| Terms | `public/Terms.jsx` |
-| Public Challenges | `public/PublicChallenges.jsx` |
-| Public Solutions | `public/PublicSolutions.jsx` |
-| For Municipalities | `public/ForMunicipalities.jsx` |
-| For Providers | `public/ForProviders.jsx` |
-| For Researchers | `public/ForResearchers.jsx` |
-| For Innovators | `public/ForInnovators.jsx` |
-
-#### Auth Pages (No Sidebar - N/A)
-| Page | File |
-|------|------|
-| Auth | `Auth.jsx` |
-| Reset Password | `ResetPassword.jsx` |
-| Unauthorized | `Unauthorized.jsx` |
-| Not Found | `NotFound.jsx` |
+**Related Pages (NOT using PageLayout):**
+| Page | File | Status |
+|------|------|--------|
+| R&D Projects | `RDProjects.jsx` | ✅ Yes |
+| R&D Project Create | `RDProjectCreate.jsx` | ❌ Missing |
+| R&D Project Edit | `RDProjectEdit.jsx` | ❌ Missing |
+| R&D Project Detail | `RDProjectDetail.jsx` | ❌ Missing |
+| R&D Call Create | `RDCallCreate.jsx` | ❌ Missing |
+| R&D Call Detail | `RDCallDetail.jsx` | ❌ Missing |
+| R&D Proposal Create | `RDProposalCreate.jsx` | ❌ Missing |
+| R&D Proposal Detail | `RDProposalDetail.jsx` | ❌ Missing |
+| R&D Proposal Edit | `RDProposalEdit.jsx` | ❌ Missing |
+| Institution R&D Dashboard | `InstitutionRDDashboard.jsx` | ❌ Missing |
+| My Researcher Profile Editor | `MyResearcherProfileEditor.jsx` | ❌ Missing |
+| My R&D Projects | `MyRDProjects.jsx` | ❌ Missing |
+| Researcher Onboarding | `ResearcherOnboarding.jsx` | ❌ Missing (wizard) |
 
 ---
 
-## Widget & Filter Components
+## 8. CITIZEN Persona
 
-### Components Needing Persona Integration
+**Route Config (usePersonaRouting.js):**
+- `persona`: 'citizen'
+- `defaultDashboard`: '/citizen-dashboard'
+- `portalType`: 'citizen'
+- `onboardingWizard`: 'CitizenOnboarding'
 
-| Component | Location | Status |
-|-----------|----------|--------|
-| DashboardSharing | `src/components/dashboard/` | ⚠️ Review needed |
-| WidgetLibrary | `src/components/dashboard/` | ⚠️ Review needed |
-| AdvancedFilters | `src/components/search/` | ⚠️ Review needed |
-| AdvancedSearchPanel | `src/components/search/` | ⚠️ Review needed |
-| SearchAnalytics | `src/components/search/` | ⚠️ Review needed |
-| PersonaDashboardWidget | `src/components/` | ✅ Already persona-aware |
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Citizen Dashboard | `CitizenDashboard.jsx` | ✅ Yes (CitizenPageLayout) |
+
+**Related Pages Using PageLayout (8 pages - 100% Complete):**
+| Page | File | Status |
+|------|------|--------|
+| Citizen Challenges Browser | `CitizenChallengesBrowser.jsx` | ✅ Yes |
+| Citizen Solutions Browser | `CitizenSolutionsBrowser.jsx` | ✅ Yes |
+| Citizen Living Labs Browser | `CitizenLivingLabsBrowser.jsx` | ✅ Yes |
+| Citizen Idea Submission | `CitizenIdeaSubmission.jsx` | ✅ Yes |
+| Citizen Leaderboard | `CitizenLeaderboard.jsx` | ✅ Yes |
+| Citizen Pilot Enrollment | `CitizenPilotEnrollment.jsx` | ✅ Yes |
+| Citizen Lab Participation | `CitizenLabParticipation.jsx` | ✅ Yes |
+| Citizen Engagement Dashboard | `CitizenEngagementDashboard.jsx` | ✅ Yes |
+
+**Related Pages (NOT using PageLayout):**
+| Page | File | Status |
+|------|------|--------|
+| Citizen Onboarding | `CitizenOnboarding.jsx` | ❌ Missing (wizard) |
+| Public Ideas Board | `PublicIdeasBoard.jsx` | ❌ Missing |
+| Event Calendar | `EventCalendar.jsx` | ❌ Missing |
+| Event Detail | `EventDetail.jsx` | ❌ Missing |
+| Event Registration | `EventRegistration.jsx` | ❌ Missing |
 
 ---
 
-## Implementation Pattern
+## 9. VIEWER Persona
 
-### Standard Page Template
+**Route Config (usePersonaRouting.js):**
+- `persona`: 'viewer'
+- `defaultDashboard`: '/viewer-dashboard'
+- `portalType`: 'viewer'
+- `onboardingWizard`: null
 
-```jsx
-import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
-import { Target } from 'lucide-react';
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Viewer Dashboard | `ViewerDashboard.jsx` | ❌ **MISSING** |
 
-export default function EntityListPage() {
-  const { t, isRTL } = useLanguage();
+**Notes:** Viewer is a browse-only role. Limited related pages.
 
-  const headerActions = (
-    <div className="flex items-center gap-2">
-      <ExportData data={data} filename="export" />
-      {hasPermission('entity_create') && (
-        <Link to={createPageUrl('EntityCreate')}>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            {t({ en: 'Create', ar: 'إنشاء' })}
-          </Button>
-        </Link>
-      )}
-    </div>
-  );
+---
 
-  return (
-    <PageLayout>
-      <PageHeader
-        icon={Target}
-        title={{ en: 'Entities', ar: 'الكيانات' }}
-        description={{ en: 'Manage entities', ar: 'إدارة الكيانات' }}
-        actions={headerActions}
-      />
-      
-      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-        {/* Page content */}
-      </div>
-    </PageLayout>
-  );
-}
-```
+## 10. ACADEMIA Persona (Bonus)
+
+**Dashboard Page:**
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Academia Dashboard | `AcademiaDashboard.jsx` | ✅ Yes |
+
+**Related Pages (NOT using PageLayout):**
+| Page | File | Status |
+|------|------|--------|
+| Alumni Showcase | `AlumniShowcase.jsx` | ❌ Missing |
+| Institution R&D Dashboard | `InstitutionRDDashboard.jsx` | ❌ Missing |
+
+---
+
+## Core Entity List Pages (Shared Across Personas)
+
+All 7 core entity list pages have PageLayout ✅
+
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| Challenges | `Challenges.jsx` | ✅ Yes |
+| Pilots | `Pilots.jsx` | ✅ Yes |
+| Programs | `Programs.jsx` | ✅ Yes |
+| R&D Projects | `RDProjects.jsx` | ✅ Yes |
+| Knowledge | `Knowledge.jsx` | ✅ Yes |
+| Solutions | `Solutions.jsx` | ✅ Yes |
+| Living Labs | `LivingLabs.jsx` | ✅ Yes |
+
+---
+
+## Detail/Create/Edit Pages (Missing PageLayout)
+
+### Challenge Entity
+| Page | File | Status |
+|------|------|--------|
+| Challenge Detail | `ChallengeDetail.jsx` | ❌ Missing |
+| Challenge Create | `ChallengeCreate.jsx` | ❌ Missing |
+| Challenge Edit | `ChallengeEdit.jsx` | ❌ Missing |
+| Challenge Import | `ChallengeImport.jsx` | ❌ Missing |
+| Challenge Proposal Detail | `ChallengeProposalDetail.jsx` | ❌ Missing |
+| Challenge Proposal Review | `ChallengeProposalReview.jsx` | ❌ Missing |
+| Challenge Review Queue | `ChallengeReviewQueue.jsx` | ❌ Missing |
+| Challenge Solution Matching | `ChallengeSolutionMatching.jsx` | ❌ Missing |
+| Challenge Analytics Dashboard | `ChallengeAnalyticsDashboard.jsx` | ❌ Missing |
+| Challenge Resolution Tracker | `ChallengeResolutionTracker.jsx` | ❌ Missing |
+| Challenge Idea Response | `ChallengeIdeaResponse.jsx` | ❌ Missing |
+
+### Pilot Entity
+| Page | File | Status |
+|------|------|--------|
+| Pilot Detail | `PilotDetail.jsx` | ❌ Missing |
+| Pilot Create | `PilotCreate.jsx` | ❌ Missing |
+| Pilot Edit | `PilotEdit.jsx` | ❌ Missing |
+| Pilot Launch Wizard | `PilotLaunchWizard.jsx` | ❌ Missing |
+| Pilot Management Panel | `PilotManagementPanel.jsx` | ❌ Missing |
+| Pilot Monitoring Dashboard | `PilotMonitoringDashboard.jsx` | ❌ Missing |
+| Pilot Evaluations | `PilotEvaluations.jsx` | ❌ Missing |
+| Pilot Gates Overview | `PilotGatesOverview.jsx` | ❌ Missing |
+| Pilot Success Patterns | `PilotSuccessPatterns.jsx` | ❌ Missing |
+| Pilot Scaling Matcher | `PilotScalingMatcher.jsx` | ❌ Missing |
+| Pilot Workflow Guide | `PilotWorkflowGuide.jsx` | ❌ Missing |
+
+### Program Entity
+| Page | File | Status |
+|------|------|--------|
+| Program Detail | `ProgramDetail.jsx` | ❌ Missing |
+| Program Create | `ProgramCreate.jsx` | ❌ Missing |
+| Program Edit | `ProgramEdit.jsx` | ❌ Missing |
+| Program Launch Wizard | `ProgramLaunchWizard.jsx` | ❌ Missing |
+| Program Operator Portal | `ProgramOperatorPortal.jsx` | ❌ Missing |
+| Program Application Wizard | `ProgramApplicationWizard.jsx` | ❌ Missing |
+| Program Application Detail | `ProgramApplicationDetail.jsx` | ❌ Missing |
+| Program Cohort Management | `ProgramCohortManagement.jsx` | ❌ Missing |
+| Program Impact Dashboard | `ProgramImpactDashboard.jsx` | ❌ Missing |
+| Program ROI Dashboard | `ProgramROIDashboard.jsx` | ❌ Missing |
+| Program Portfolio Planner | `ProgramPortfolioPlanner.jsx` | ❌ Missing |
+
+### Solution Entity
+| Page | File | Status |
+|------|------|--------|
+| Solution Detail | `SolutionDetail.jsx` | ❌ Missing |
+| Solution Create | `SolutionCreate.jsx` | ❌ Missing |
+| Solution Edit | `SolutionEdit.jsx` | ❌ Missing |
+
+### Living Lab Entity
+| Page | File | Status |
+|------|------|--------|
+| Living Lab Detail | `LivingLabDetail.jsx` | ❌ Missing |
+| Living Lab Create | `LivingLabCreate.jsx` | ❌ Missing |
+| Living Lab Edit | `LivingLabEdit.jsx` | ❌ Missing |
+| Living Lab Operator Portal | `LivingLabOperatorPortal.jsx` | ❌ Missing |
+| Living Lab Project Matcher | `LivingLabProjectMatcher.jsx` | ❌ Missing |
+| Living Labs Program Integration | `LivingLabsProgramIntegration.jsx` | ❌ Missing |
+
+### Organization Entity
+| Page | File | Status |
+|------|------|--------|
+| Organizations | `Organizations.jsx` | ❌ Missing |
+| Organization Detail | `OrganizationDetail.jsx` | ❌ Missing |
+| Organization Create | `OrganizationCreate.jsx` | ❌ Missing |
+| Organization Edit | `OrganizationEdit.jsx` | ❌ Missing |
+| Organization Verification Queue | `OrganizationVerificationQueue.jsx` | ❌ Missing |
+| Organization Portfolio Analytics | `OrganizationPortfolioAnalytics.jsx` | ❌ Missing |
+
+### Contract/Budget Entity
+| Page | File | Status |
+|------|------|--------|
+| Contract Management | `ContractManagement.jsx` | ❌ Missing |
+| Contract Detail | `ContractDetail.jsx` | ❌ Missing |
+| Contract Approval | `ContractApproval.jsx` | ❌ Missing |
+| Budget Management | `BudgetManagement.jsx` | ❌ Missing |
+| Budget Detail | `BudgetDetail.jsx` | ❌ Missing |
+| Budget Allocation Tool | `BudgetAllocationTool.jsx` | ❌ Missing |
+| Invoice Management | `InvoiceManagement.jsx` | ❌ Missing |
+| Invoice Approval | `InvoiceApproval.jsx` | ❌ Missing |
+
+### Knowledge Entity
+| Page | File | Status |
+|------|------|--------|
+| Knowledge Document Create | `KnowledgeDocumentCreate.jsx` | ❌ Missing |
+| Knowledge Document Edit | `KnowledgeDocumentEdit.jsx` | ❌ Missing |
+| Knowledge Graph | `KnowledgeGraph.jsx` | ❌ Missing |
+| Lessons Learned Repository | `LessonsLearnedRepository.jsx` | ❌ Missing |
+| Case Study Create | `CaseStudyCreate.jsx` | ❌ Missing |
+| Case Study Edit | `CaseStudyEdit.jsx` | ❌ Missing |
+
+---
+
+## My* Pages (Personal/Profile)
+
+| Page | File | Has PageLayout |
+|------|------|----------------|
+| My Applications | `MyApplications.jsx` | ✅ Yes |
+| My Bookmarks | `MyBookmarks.jsx` | ✅ Yes |
+| My Programs | `MyPrograms.jsx` | ✅ Yes |
+| My Pilots | `MyPilots.jsx` | ✅ Yes |
+| My Challenges | `MyChallenges.jsx` | ❌ Missing |
+| My R&D Projects | `MyRDProjects.jsx` | ❌ Missing |
+| My Performance | `MyPerformance.jsx` | ❌ Missing |
+| My Deadlines | `MyDeadlines.jsx` | ❌ Missing |
+| My Connections | `MyConnections.jsx` | ❌ Missing |
+| My Following | `MyFollowing.jsx` | ❌ Missing |
+| My Approvals | `MyApprovals.jsx` | ❌ Missing |
+| My Delegation | `MyDelegation.jsx` | ❌ Missing |
+| My Impact Dashboard | `MyImpactDashboard.jsx` | ❌ Missing |
+| My Learning | `MyLearning.jsx` | ❌ Missing |
+| My Partnerships | `MyPartnerships.jsx` | ❌ Missing |
+| My Activity Timeline | `MyActivityTimeline.jsx` | ❌ Missing |
+| My Workload Dashboard | `MyWorkloadDashboard.jsx` | ❌ Missing |
+| My Profile Analytics | `MyProfileAnalytics.jsx` | ❌ Missing |
+| My Profiles Hub | `MyProfilesHub.jsx` | ❌ Missing |
+| My Evaluator Profile | `MyEvaluatorProfile.jsx` | ❌ Missing |
+| My Municipality Staff Profile | `MyMunicipalityStaffProfile.jsx` | ❌ Missing |
+| My Researcher Profile Editor | `MyResearcherProfileEditor.jsx` | ❌ Missing |
+| My Startup Profile Editor | `MyStartupProfileEditor.jsx` | ❌ Missing |
+| My Challenge Tracker | `MyChallengeTracker.jsx` | ❌ Missing |
+| My Program Dashboard | `MyProgramDashboard.jsx` | ❌ Missing |
+
+---
+
+## Approval/Review Pages
+
+| Page | File | Status |
+|------|------|--------|
+| Approval Center | `ApprovalCenter.jsx` | ❌ Missing |
+| Approvals | `Approvals.jsx` | ❌ Missing |
+| Application Review Hub | `ApplicationReviewHub.jsx` | ❌ Missing |
+| Idea Evaluation Queue | `IdeaEvaluationQueue.jsx` | ❌ Missing |
+| Matching Queue | `MatchingQueue.jsx` | ❌ Missing |
+
+---
+
+## Public Pages (No Layout Needed)
+
+| Page | File | Notes |
+|------|------|-------|
+| Home | `Home.jsx` | Public landing |
+| About | `public/About.jsx` | Public info |
+| Contact | `public/Contact.jsx` | Public info |
+| FAQ | `public/FAQ.jsx` | Public info |
+| Privacy | `public/Privacy.jsx` | Legal |
+| Terms | `public/Terms.jsx` | Legal |
+| Public Challenges | `public/PublicChallenges.jsx` | Public browse |
+| Public Solutions | `public/PublicSolutions.jsx` | Public browse |
+| For Municipalities | `public/ForMunicipalities.jsx` | Marketing |
+| For Providers | `public/ForProviders.jsx` | Marketing |
+| For Researchers | `public/ForResearchers.jsx` | Marketing |
+| For Innovators | `public/ForInnovators.jsx` | Marketing |
+
+---
+
+## Auth Pages (No Layout Needed)
+
+| Page | File | Notes |
+|------|------|-------|
+| Auth | `Auth.jsx` | Login/Register |
+| Reset Password | `ResetPassword.jsx` | Password reset |
+| Unauthorized | `Unauthorized.jsx` | Error page |
+| Not Found | `NotFound.jsx` | 404 page |
+
+---
+
+## Coverage Reports/Audit Pages (Low Priority - Internal Tools)
+
+~80 files ending in `*CoverageReport.jsx`, `*Audit.jsx`, `*Assessment.jsx`
+
+These are internal development/audit tools and have lowest priority.
+
+---
+
+## Summary by Priority
+
+### CRITICAL (Dashboard Missing PageLayout)
+| Dashboard | Persona | Status |
+|-----------|---------|--------|
+| ResearcherDashboard | researcher | ❌ MISSING |
+| ViewerDashboard | viewer | ❌ MISSING |
+
+### HIGH PRIORITY (50+ pages)
+- Detail pages: ~20 pages
+- Create/Edit pages: ~25 pages
+- Management pages: ~10 pages
+
+### MEDIUM PRIORITY (100+ pages)
+- My* pages: ~25 pages
+- Analytics dashboards: ~20 pages
+- Approval/Review pages: ~10 pages
+- Operator portals: ~10 pages
+
+### LOW PRIORITY (350+ pages)
+- Coverage reports
+- Audit pages
+- Configuration pages
 
 ---
 
 ## Recommendations
 
-### Phase 1 - HIGH PRIORITY (50 pages)
-1. Detail pages (14 pages) - Most user-facing
-2. Create/Edit pages (16 pages) - Critical workflows  
-3. Management pages (10 pages) - Admin functionality
-4. Review/Approval pages (6 pages) - Workflow pages
-
-### Phase 2 - MEDIUM PRIORITY (100 pages)
-1. My* pages (21 pages) - Personal dashboards
-2. Analytics dashboards (19 pages) - Data views
-3. Expert/Evaluation pages (7 pages)
-4. Program/Pilot operations (12 pages)
-5. Partnership pages (6 pages)
-
-### Phase 3 - LOW PRIORITY (350+ pages)
-1. Coverage reports (internal tools)
-2. Configuration pages
-3. Audit/assessment pages
-
-### NOT APPLICABLE
-- Public pages (no auth required)
-- Auth pages (no sidebar)
-- Onboarding wizards (special flow)
+1. **IMMEDIATE**: Add PageLayout to ResearcherDashboard and ViewerDashboard
+2. **Phase 1**: Detail/Create/Edit pages for core entities
+3. **Phase 2**: My* pages and approval workflows
+4. **Phase 3**: Analytics dashboards and operator portals
+5. **Skip**: Coverage reports, audit pages (internal tools)
 
 ---
 
@@ -495,9 +599,7 @@ export default function EntityListPage() {
 
 | Date | Change |
 |------|--------|
-| Dec 2024 | Initial documentation created |
-| Dec 2024 | All 11 dashboards using PersonaPageLayout |
-| Dec 2024 | All 8 citizen pages complete |
-| Dec 2024 | 7 core entity list pages updated |
-| Dec 2024 | **Complete audit**: 29/567 pages (5.1%) using layout |
-| Dec 2024 | Identified 50 high-priority, 100 medium-priority pages |
+| Dec 2024 | Initial documentation |
+| Dec 2024 | Complete persona-by-persona audit |
+| Dec 2024 | Identified 2 dashboards missing PageLayout |
+| Dec 2024 | Documented 29/567 pages (5.1%) coverage |
