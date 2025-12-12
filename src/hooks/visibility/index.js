@@ -6,7 +6,8 @@ export { useVisibilitySystem } from './useVisibilitySystem';
 export { createVisibilityHook } from './createVisibilityHook';
 
 // Single entity access check
-export { useEntityAccessCheck, withEntityAccess } from '@/hooks/useEntityAccessCheck';
+export { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
+export { withEntityAccess } from '@/components/permissions/withEntityAccess';
 
 // Entity-specific hooks (from parent hooks folder)
 export { useEntityVisibility } from '@/hooks/useEntityVisibility';
