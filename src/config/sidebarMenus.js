@@ -175,15 +175,15 @@ export const SIDEBAR_MENUS = {
       // Challenges
       { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' }, permission: 'challenge_view' },
       { name: 'ChallengeCreate', icon: AlertCircle, label: { en: 'Create Challenge', ar: 'إنشاء تحدي' }, permission: 'challenge_create' },
-      { name: 'MyChallenges', icon: AlertCircle, label: { en: 'Edit Challenges', ar: 'تعديل التحديات' }, permission: 'challenge_edit' },
+      { name: 'MyChallengesEdit', icon: AlertCircle, label: { en: 'Edit Challenges', ar: 'تعديل التحديات' }, permission: 'challenge_edit', path: '/my-challenges' },
       // Pilots
       { name: 'Pilots', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' }, permission: 'pilot_view' },
       { name: 'PilotCreate', icon: TestTube, label: { en: 'Create Pilot', ar: 'إنشاء تجربة' }, permission: 'pilot_create' },
-      { name: 'MyPilots', icon: TestTube, label: { en: 'Edit Pilots', ar: 'تعديل التجارب' }, permission: 'pilot_edit' },
+      { name: 'MyPilotsEdit', icon: TestTube, label: { en: 'Edit Pilots', ar: 'تعديل التجارب' }, permission: 'pilot_edit', path: '/my-pilots' },
       { name: 'PilotMonitoringDashboard', icon: TestTube, label: { en: 'Support Pilots', ar: 'دعم التجارب' }, permission: 'pilot_support' },
       // My Work
-      { name: 'MyChallenges', icon: Target, label: { en: 'My Challenges', ar: 'تحدياتي' }, permission: 'challenge_view', path: '/my-challenges' },
-      { name: 'MyPilots', icon: Rocket, label: { en: 'My Pilots', ar: 'تجاربي' }, permission: 'pilot_view', path: '/my-pilots' },
+      { name: 'MyChallenges', icon: Target, label: { en: 'My Challenges', ar: 'تحدياتي' }, permission: 'challenge_view' },
+      { name: 'MyPilots', icon: Rocket, label: { en: 'My Pilots', ar: 'تجاربي' }, permission: 'pilot_view' },
       // Programs & Labs
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' }, permission: 'program_view' },
       { name: 'LivingLabs', icon: FlaskConical, label: { en: 'Living Labs', ar: 'المختبرات الحية' }, permission: 'living_lab_view' },
@@ -200,8 +200,8 @@ export const SIDEBAR_MENUS = {
       { name: 'BudgetManagement', icon: Wallet, label: { en: 'Budget', ar: 'الميزانية' }, permission: 'budget_view' },
       { name: 'BudgetAllocationTool', icon: DollarSign, label: { en: 'Manage Budget', ar: 'إدارة الميزانية' }, permission: 'budget_manage' },
       // Analytics & Reports
-      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, permission: 'analytics_view' },
-      { name: 'CustomReportBuilder', icon: FileBarChart, label: { en: 'Reports', ar: 'التقارير' }, permission: 'reports_view' },
+      { name: 'MunicipalityAnalytics', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, permission: 'analytics_view', path: '/municipality-dashboard', useMyMunicipality: true },
+      { name: 'ReportsBuilder', icon: FileBarChart, label: { en: 'Reports', ar: 'التقارير' }, permission: 'reports_view' },
       // Team & Settings
       { name: 'TeamManagement', icon: Users, label: { en: 'Team', ar: 'الفريق' }, permission: 'team_manage' },
       { name: 'MunicipalityEdit', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' }, permission: 'settings_manage', useMyMunicipality: true },
