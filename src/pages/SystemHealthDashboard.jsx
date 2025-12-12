@@ -24,6 +24,34 @@ import ConnectionPoolingConfig from '@/components/performance/ConnectionPoolingC
 import PerformanceMetrics from '@/components/performance/PerformanceMetrics';
 import PerformanceProfiler from '@/components/monitoring/PerformanceProfiler';
 import APIGatewayConfig from '@/components/infrastructure/APIGatewayConfig';
+import LoadBalancerConfig from '@/components/infrastructure/LoadBalancerConfig';
+import MonitoringDashboard from '@/components/infrastructure/MonitoringDashboard';
+import LoggingConfig from '@/components/infrastructure/LoggingConfig';
+import AlertingSystem from '@/components/infrastructure/AlertingSystem';
+import AlertManagementSystem from '@/components/monitoring/AlertManagementSystem';
+import AutomatedBackupSystem from '@/components/backup/AutomatedBackupSystem';
+import DeploymentPipeline from '@/components/deployment/DeploymentPipeline';
+import TestAutomationDashboard from '@/components/testing/TestAutomationDashboard';
+import UnitTestCoverage from '@/components/testing/UnitTestCoverage';
+import IntegrationTestRunner from '@/components/testing/IntegrationTestRunner';
+import E2ETestRunner from '@/components/testing/E2ETestRunner';
+import ErrorBoundarySystem from '@/components/errors/ErrorBoundarySystem';
+import QueryOptimizationPanel from '@/components/security/QueryOptimizationPanel';
+import VotingSystemBackend from '@/components/citizen/VotingSystemBackend';
+import IdeaToChallengeConverter from '@/components/citizen/IdeaToChallengeConverter';
+import NewsPublishingWorkflow from '@/components/news/NewsPublishingWorkflow';
+import OpenDataAPIDocumentation from '@/components/opendata/OpenDataAPIDocumentation';
+import E2ETestingSuite from '@/components/testing/E2ETestingSuite';
+import CICDPipeline from '@/components/cicd/CICDPipeline';
+import WebSocketServer from '@/components/integration/WebSocketServer';
+import PushNotificationConfig from '@/components/integration/PushNotificationConfig';
+import WebhookBuilder from '@/components/webhooks/WebhookBuilder';
+import ImageCDNConfig from '@/components/cdn/ImageCDNConfig';
+import MobileOptimizationPanel from '@/components/mobile/MobileOptimizationPanel';
+import NativeMobileApp from '@/components/mobile/NativeMobileApp';
+import AdvancedAnalyticsDashboard from '@/components/analytics/AdvancedAnalyticsDashboard';
+import WidgetLibrary from '@/components/dashboards/WidgetLibrary';
+import VoiceAssistant from '@/components/voice/VoiceAssistant';
 
 export default function SystemHealthDashboard() {
   const { language, t } = useLanguage();
@@ -247,7 +275,7 @@ export default function SystemHealthDashboard() {
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-4">{t({ en: 'Database & Queries', ar: 'قاعدة البيانات والاستعلامات' })}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <QueryMonitoringPanel />
+          <QueryOptimizationPanel />
           <ConnectionPoolingConfig />
           <DatabaseIndexing />
         </div>
@@ -289,7 +317,7 @@ export default function SystemHealthDashboard() {
           <NativeMobileApp />
           <AdvancedAnalyticsDashboard />
           <WidgetLibrary />
-          <VoiceNLUPanel />
+          <VoiceAssistant />
         </div>
       </div>
     </PageLayout>
