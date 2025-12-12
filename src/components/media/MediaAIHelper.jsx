@@ -24,59 +24,114 @@ export default function MediaAIHelper({ files = [], stats = {}, onAction }) {
   const analyzeMedia = async () => {
     if (!files || files.length === 0) return;
 
-    // Prepare summary data for AI analysis
+    // Prepare comprehensive summary data for AI analysis
+    const now = Date.now();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+    const threeMonthsAgo = now - 90 * 24 * 60 * 60 * 1000;
+
     const mediaSummary = {
+      // Basic stats
       totalFiles: files.length,
       totalSize: files.reduce((acc, f) => acc + (f.file_size || 0), 0),
+      
+      // Type distribution
       byType: {},
       byBucket: {},
-      recentUploads: files.filter(f => {
-        const uploadDate = new Date(f.created_at);
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        return uploadDate > weekAgo;
+      byCategory: {},
+      
+      // Temporal analysis
+      recentUploads: files.filter(f => new Date(f.created_at).getTime() > weekAgo).length,
+      monthOld: files.filter(f => {
+        const t = new Date(f.created_at).getTime();
+        return t < monthAgo && t > threeMonthsAgo;
       }).length,
-      lowEngagement: files.filter(f => (f.view_count || 0) === 0 && (f.download_count || 0) === 0).length,
+      staleFiles: files.filter(f => new Date(f.created_at).getTime() < threeMonthsAgo).length,
+      
+      // Engagement metrics
+      noEngagement: files.filter(f => (f.view_count || 0) === 0 && (f.download_count || 0) === 0).length,
+      lowEngagement: files.filter(f => {
+        const total = (f.view_count || 0) + (f.download_count || 0);
+        return total > 0 && total < 5;
+      }).length,
       highEngagement: files.filter(f => (f.view_count || 0) > 10 || (f.download_count || 0) > 5).length,
-      oldFiles: files.filter(f => {
-        const uploadDate = new Date(f.created_at);
-        const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        return uploadDate < monthAgo;
-      }).length,
+      totalViews: files.reduce((acc, f) => acc + (f.view_count || 0), 0),
+      totalDownloads: files.reduce((acc, f) => acc + (f.download_count || 0), 0),
+      
+      // Entity associations
+      linkedToEntities: files.filter(f => f.entity_id).length,
+      orphanedFiles: files.filter(f => !f.entity_id).length,
+      entityTypes: {},
+      
+      // Content quality
+      withDescription: files.filter(f => f.description || f.ai_description).length,
+      withTags: files.filter(f => (f.tags?.length || 0) > 0 || (f.ai_tags?.length || 0) > 0).length,
+      withAltText: files.filter(f => f.alt_text).length,
+      
+      // Storage optimization
       duplicateCandidates: findPotentialDuplicates(files),
-      largeFiles: files.filter(f => (f.file_size || 0) > 10 * 1024 * 1024).map(f => ({
-        name: f.original_filename,
-        size: f.file_size,
-        type: f.file_type
-      })),
+      largeFiles: files.filter(f => (f.file_size || 0) > 10 * 1024 * 1024),
+      veryLargeFiles: files.filter(f => (f.file_size || 0) > 50 * 1024 * 1024),
+      
+      // User activity
+      uploaders: [...new Set(files.map(f => f.uploaded_by_email).filter(Boolean))].length,
+      topUploaders: getTopUploaders(files, 3),
     };
 
-    // Count by type
+    // Count distributions
     files.forEach(f => {
       const type = f.file_type || 'other';
-      mediaSummary.byType[type] = (mediaSummary.byType[type] || 0) + 1;
-    });
-
-    // Count by bucket
-    files.forEach(f => {
       const bucket = f.bucket_id || 'unknown';
+      const category = f.category || 'uncategorized';
+      const entityType = f.entity_type || 'none';
+      
+      mediaSummary.byType[type] = (mediaSummary.byType[type] || 0) + 1;
       mediaSummary.byBucket[bucket] = (mediaSummary.byBucket[bucket] || 0) + 1;
+      mediaSummary.byCategory[category] = (mediaSummary.byCategory[category] || 0) + 1;
+      mediaSummary.entityTypes[entityType] = (mediaSummary.entityTypes[entityType] || 0) + 1;
     });
 
-    const prompt = `Analyze this media library data and provide actionable recommendations:
+    const prompt = `Analyze this comprehensive media library data and provide actionable recommendations:
 
-Media Library Summary:
+LIBRARY OVERVIEW:
 - Total Files: ${mediaSummary.totalFiles}
 - Total Size: ${formatBytes(mediaSummary.totalSize)}
-- Files by Type: ${JSON.stringify(mediaSummary.byType)}
-- Files by Bucket: ${JSON.stringify(mediaSummary.byBucket)}
-- Recent Uploads (7 days): ${mediaSummary.recentUploads}
-- Files with No Views/Downloads: ${mediaSummary.lowEngagement}
-- High Engagement Files (10+ views or 5+ downloads): ${mediaSummary.highEngagement}
-- Files older than 30 days: ${mediaSummary.oldFiles}
-- Potential Duplicate Files: ${mediaSummary.duplicateCandidates.length}
-- Large Files (>10MB): ${mediaSummary.largeFiles.length}
+- Unique Uploaders: ${mediaSummary.uploaders}
 
-Provide insights in ${language === 'ar' ? 'Arabic' : 'English'}.`;
+FILE DISTRIBUTION:
+- By Type: ${JSON.stringify(mediaSummary.byType)}
+- By Storage Bucket: ${JSON.stringify(mediaSummary.byBucket)}
+- By Category: ${JSON.stringify(mediaSummary.byCategory)}
+
+ENTITY ASSOCIATIONS:
+- Linked to Entities: ${mediaSummary.linkedToEntities} (${Math.round(mediaSummary.linkedToEntities / mediaSummary.totalFiles * 100)}%)
+- Orphaned Files: ${mediaSummary.orphanedFiles}
+- Entity Types: ${JSON.stringify(mediaSummary.entityTypes)}
+
+ENGAGEMENT METRICS:
+- Total Views: ${mediaSummary.totalViews}
+- Total Downloads: ${mediaSummary.totalDownloads}
+- High Engagement (10+ views or 5+ downloads): ${mediaSummary.highEngagement}
+- Low Engagement: ${mediaSummary.lowEngagement}
+- Zero Engagement: ${mediaSummary.noEngagement}
+
+TEMPORAL ANALYSIS:
+- Recent Uploads (7 days): ${mediaSummary.recentUploads}
+- 1-3 Months Old: ${mediaSummary.monthOld}
+- Stale (3+ months, consider archiving): ${mediaSummary.staleFiles}
+
+CONTENT QUALITY:
+- With Descriptions: ${mediaSummary.withDescription} (${Math.round(mediaSummary.withDescription / mediaSummary.totalFiles * 100)}%)
+- With Tags: ${mediaSummary.withTags} (${Math.round(mediaSummary.withTags / mediaSummary.totalFiles * 100)}%)
+- With Alt Text: ${mediaSummary.withAltText} (${Math.round(mediaSummary.withAltText / mediaSummary.totalFiles * 100)}%)
+
+STORAGE OPTIMIZATION:
+- Potential Duplicates: ${mediaSummary.duplicateCandidates.length}
+- Large Files (>10MB): ${mediaSummary.largeFiles.length}
+- Very Large Files (>50MB): ${mediaSummary.veryLargeFiles.length}
+
+Provide insights in ${language === 'ar' ? 'Arabic' : 'English'}.
+Focus on actionable recommendations with specific file counts and potential impact.`;
 
     const result = await invokeAI({
       prompt,
@@ -332,4 +387,17 @@ function findPotentialDuplicates(files) {
     sizeMap[key].push(f);
   });
   return Object.values(sizeMap).filter(group => group.length > 1).flat();
+}
+
+function getTopUploaders(files, count) {
+  const uploaderCounts = {};
+  files.forEach(f => {
+    if (f.uploaded_by_email) {
+      uploaderCounts[f.uploaded_by_email] = (uploaderCounts[f.uploaded_by_email] || 0) + 1;
+    }
+  });
+  return Object.entries(uploaderCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, count)
+    .map(([email, count]) => ({ email, count }));
 }

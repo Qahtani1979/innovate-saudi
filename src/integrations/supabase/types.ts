@@ -4031,6 +4031,50 @@ export type Database = {
           },
         ]
       }
+      media_usages: {
+        Row: {
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          field_name: string
+          id: string
+          is_primary: boolean | null
+          media_file_id: string | null
+          updated_at: string | null
+          usage_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          field_name: string
+          id?: string
+          is_primary?: boolean | null
+          media_file_id?: string | null
+          updated_at?: string | null
+          usage_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          field_name?: string
+          id?: string
+          is_primary?: boolean | null
+          media_file_id?: string | null
+          updated_at?: string | null
+          usage_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_usages_media_file_id_fkey"
+            columns: ["media_file_id"]
+            isOneToOne: false
+            referencedRelation: "media_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_versions: {
         Row: {
           change_reason: string | null
@@ -10144,6 +10188,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_delete_media: { Args: { p_media_file_id: string }; Returns: Json }
       can_view_entity: {
         Args: {
           p_entity_municipality_id: string
@@ -10160,6 +10205,14 @@ export type Database = {
           p_user_type?: string
         }
         Returns: Json
+      }
+      delete_media_with_cascade: {
+        Args: { p_cascade_action?: string; p_media_file_id: string }
+        Returns: Json
+      }
+      get_media_usage_count: {
+        Args: { p_media_file_id: string }
+        Returns: number
       }
       get_user_functional_roles: {
         Args: { _user_id: string }

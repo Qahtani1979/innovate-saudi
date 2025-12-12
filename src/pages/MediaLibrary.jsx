@@ -19,6 +19,7 @@ import MediaListView from '@/components/media/MediaListView';
 import MediaDetails from '@/components/media/MediaDetails';
 import MediaUploadDialog from '@/components/media/MediaUploadDialog';
 import MediaAIHelper from '@/components/media/MediaAIHelper';
+import MediaDeleteDialog from '@/components/media/MediaDeleteDialog';
 import {
   Sheet,
   SheetContent,
@@ -454,27 +455,25 @@ export default function MediaLibrary() {
         isUploading={isUploading}
       />
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t({ en: 'Delete File?', ar: 'حذف الملف؟' })}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t({ 
-                en: `Are you sure you want to delete "${deleteConfirm?.original_filename}"? This action cannot be undone.`,
-                ar: `هل أنت متأكد من حذف "${deleteConfirm?.original_filename}"؟`
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t({ en: 'Cancel', ar: 'إلغاء' })}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
-              <Trash2 className="h-4 w-4 mr-2" />
-              {t({ en: 'Delete', ar: 'حذف' })}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Safe Delete Dialog with Dependency Check */}
+      <MediaDeleteDialog
+        file={deleteConfirm}
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        onConfirm={confirmDelete}
+        onSuccess={(result) => {
+          toast.success(t({ 
+            en: result.affectedEntities > 0 
+              ? `File deleted. ${result.affectedEntities} entity reference(s) updated.`
+              : 'File deleted successfully.',
+            ar: result.affectedEntities > 0 
+              ? `تم حذف الملف. تم تحديث ${result.affectedEntities} مرجع(ات).`
+              : 'تم حذف الملف بنجاح.'
+          }));
+          refetch();
+          setSelectedFile(null);
+        }}
+      />
     </PageLayout>
   );
 }
