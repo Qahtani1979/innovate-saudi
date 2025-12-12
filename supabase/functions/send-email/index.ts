@@ -60,7 +60,7 @@ function buildHtmlEmail(
   const buttonColor = settings.primary_button_color || '#006C35';
   const headerTitle = isRTL ? template.header_title_ar : template.header_title_en;
   const ctaText = isRTL ? template.cta_text_ar : template.cta_text_en;
-  const logoUrl = settings.logo_url || 'https://saudiinnovates.sa/logo.png';
+  const logoUrl = settings.logo_url as string || '';
   const contactEmail = settings.footer_contact_email || 'support@saudiinnovates.sa';
   const address = settings.footer_address || 'Riyadh, Saudi Arabia';
   
@@ -77,6 +77,7 @@ function buildHtmlEmail(
     .header { background: linear-gradient(135deg, ${gradientStart}, ${gradientEnd}); padding: 32px; text-align: center; }
     .header img { height: 48px; margin-bottom: 16px; }
     .header h1 { color: white; margin: 0; font-size: 24px; font-weight: 600; }
+    .logo-text { color: white; font-size: 20px; font-weight: 700; margin-bottom: 12px; letter-spacing: 1px; }
     .body { padding: 32px; background: #ffffff; line-height: 1.6; color: #333333; }
     .body p { margin: 0 0 16px 0; }
     .body ul { margin: 0 0 16px 0; padding-${isRTL ? 'right' : 'left'}: 24px; }
@@ -93,9 +94,12 @@ function buildHtmlEmail(
 
   // Header
   if (template.use_header !== false) {
+    const logoHtml = logoUrl && logoUrl.startsWith('http') 
+      ? `<img src="${logoUrl}" alt="Saudi Innovates" style="height: 48px; margin-bottom: 16px;">` 
+      : `<div class="logo-text">🚀 ${isRTL ? 'ابتكر السعودية' : 'Saudi Innovates'}</div>`;
     html += `
     <div class="header">
-      <img src="${logoUrl}" alt="Saudi Innovates">
+      ${logoHtml}
       ${headerTitle ? `<h1>${headerTitle}</h1>` : ''}
     </div>`;
   }
