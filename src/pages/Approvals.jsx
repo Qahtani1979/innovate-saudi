@@ -370,6 +370,6 @@ Provide: approval recommendation, budget assessment, risk analysis, readiness sc
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
