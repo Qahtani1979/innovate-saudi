@@ -10,6 +10,7 @@ import { useLanguage } from '../LanguageContext';
 import { Users, MessageSquare, Send, TrendingUp, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 
 export default function StakeholderHub({ pilot }) {
   const { language, t } = useLanguage();
@@ -18,12 +19,21 @@ export default function StakeholderHub({ pilot }) {
   const [feedback, setFeedback] = useState('');
   const [satisfaction, setSatisfaction] = useState(5);
 
+  // Check if user has access to this pilot
+  const accessCheck = useEntityAccessCheck(pilot, {
+    municipalityColumn: 'municipality_id',
+    sectorColumn: 'sector_id',
+    ownerColumn: 'created_by'
+  });
+
+  // Fetch stakeholder feedback for this specific pilot
   const { data: stakeholderFeedback = [] } = useQuery({
     queryKey: ['stakeholder-feedback', pilot.id],
     queryFn: async () => {
       const { data } = await supabase.from('stakeholder_feedback').select('*').eq('pilot_id', pilot.id);
       return data || [];
     },
+    enabled: !!pilot?.id && accessCheck.canAccess,
     initialData: []
   });
 

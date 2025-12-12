@@ -303,6 +303,27 @@ Each persona has a dedicated menu with permission-controlled items:
 |------|------------|--------|
 | `ChallengeDetail` | `useEntityAccessCheck`, `useSolutionsWithVisibility`, `usePilotsWithVisibility`, `useContractsWithVisibility` | ✅ |
 
+### Cross-City/Learning Components ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `CrossCityLearningHub` | `useMunicipalitiesWithVisibility`, `usePilotsWithVisibility`, `useChallengesWithVisibility` | ✅ |
+| `PublicPilotDetail` | `useMunicipalitiesWithVisibility` | ✅ |
+
+### Citizen Engagement Components ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `PublicIdeaBoard` | `useVisibilitySystem` (municipality filtering) | ✅ |
+| `IdeaVotingBoard` | `useVisibilitySystem` (municipality filtering) | ✅ |
+| `StakeholderHub` | `useEntityAccessCheck` (pilot access) | ✅ |
+
+### Task Management ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `TaskManagement` | `usePermissions` (admin sees all, others see own) | ✅ |
+
 ### Filter Components
 
 | Component | Pattern | Status |
@@ -315,7 +336,6 @@ Each persona has a dedicated menu with permission-controlled items:
 | Component | Pattern | Status |
 |-----------|---------|--------|
 | `ChallengeFollowButton` | User's own follows | ✅ Correct |
-| `StakeholderHub` | Pilot-specific feedback | ✅ Correct |
 | `ProviderNotificationPreferences` | User's own preferences | ✅ Correct |
 | `ProposalSubmissionForm` | User's own solutions | ✅ Correct |
 | `SolutionReviewsTab` | User's own reviews | ✅ Correct |

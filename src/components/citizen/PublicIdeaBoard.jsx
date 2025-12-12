@@ -8,18 +8,27 @@ import { ThumbsUp, MessageSquare, MapPin, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
+import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
 
 export default function PublicIdeaBoard({ municipalityId }) {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('trending');
+  const { userMunicipalityId, hasFullVisibility, isNational } = useVisibilitySystem();
 
+  // Apply visibility filtering to citizen ideas
   const { data: ideas = [] } = useQuery({
-    queryKey: ['citizen-ideas', municipalityId, filter],
+    queryKey: ['citizen-ideas', municipalityId, filter, userMunicipalityId, hasFullVisibility],
     queryFn: async () => {
-      let query = supabase.from('citizen_ideas').select('*');
+      let query = supabase.from('citizen_ideas').select('*').eq('is_published', true);
+      
+      // Filter by municipality based on visibility
       if (municipalityId) {
         query = query.eq('municipality_id', municipalityId);
+      } else if (!hasFullVisibility && !isNational && userMunicipalityId) {
+        // Non-admin users see their municipality's ideas only
+        query = query.eq('municipality_id', userMunicipalityId);
       }
+      
       if (filter === 'trending') {
         query = query.order('votes_count', { ascending: false });
       } else if (filter === 'recent') {

@@ -6,14 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { ThumbsUp, ThumbsDown, TrendingUp, MapPin } from 'lucide-react';
+import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
 
 export default function IdeaVotingBoard() {
   const { language, t } = useLanguage();
+  const { userMunicipalityId, hasFullVisibility, isNational } = useVisibilitySystem();
 
+  // Apply visibility filtering to citizen feedback
   const { data: ideas = [] } = useQuery({
-    queryKey: ['citizen-ideas'],
+    queryKey: ['citizen-ideas-voting', userMunicipalityId, hasFullVisibility],
     queryFn: async () => {
-      const { data } = await supabase.from('citizen_feedback').select('*').eq('feedback_type', 'suggestion').order('rating', { ascending: false });
+      let query = supabase.from('citizen_feedback')
+        .select('*')
+        .eq('feedback_type', 'suggestion')
+        .eq('is_published', true);
+      
+      // Filter by municipality based on visibility (non-admins see local only)
+      if (!hasFullVisibility && !isNational && userMunicipalityId) {
+        query = query.eq('entity_id', userMunicipalityId);
+      }
+      
+      const { data } = await query.order('rating', { ascending: false });
       return data || [];
     }
   });
