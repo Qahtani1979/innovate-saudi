@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
 
 function LivingLabsPage() {
   const { hasPermission } = usePermissions();
@@ -46,12 +47,21 @@ function LivingLabsPage() {
   const [viewMode, setViewMode] = useState('grid');
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: labs = [] } = useQuery({
-    queryKey: ['living-labs'],
-    queryFn: () => base44.entities.LivingLab.list()
+  // Use visibility-aware hook
+  const { data: labs = [], isLoading: labsLoading } = useLivingLabsWithVisibility({
+    status: statusFilter !== 'all' ? statusFilter : undefined
   });
 
-  const handleAIInsights = async () => {
+  const { data: bookings = [] } = useQuery({
+    queryKey: ['lab-bookings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('living_lab_bookings')
+        .select('*');
+      if (error) return [];
+      return data || [];
+    }
+  });
     setShowAIInsights(true);
     const typeDist = Object.entries(labs.reduce((acc, l) => { acc[l.type] = (acc[l.type] || 0) + 1; return acc; }, {}))
       .map(([type, count]) => `- ${type}: ${count}`).join('\n');
@@ -96,8 +106,14 @@ Provide:
   });
 
   const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryKey: ['pilots-for-labs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('id, living_lab_id');
+      if (error) return [];
+      return data || [];
+    }
   });
 
   const filteredLabs = labs.filter(lab => {

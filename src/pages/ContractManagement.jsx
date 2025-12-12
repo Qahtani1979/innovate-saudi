@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { FileText, Search, Plus, Calendar, DollarSign, AlertCircle, CheckCircle2
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useContractsWithVisibility } from '@/hooks/useContractsWithVisibility';
 
 function ContractManagement() {
   const { t } = useLanguage();
@@ -17,14 +18,20 @@ function ContractManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const queryClient = useQueryClient();
 
-  const { data: contracts = [], isLoading } = useQuery({
-    queryKey: ['contracts'],
-    queryFn: () => base44.entities.Contract.list('-created_date')
+  // Use visibility-aware hook
+  const { data: contracts = [], isLoading } = useContractsWithVisibility({
+    status: statusFilter !== 'all' ? statusFilter : undefined
   });
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('id, name_en, name_ar');
+      if (error) return [];
+      return data || [];
+    }
   });
 
   const filteredContracts = contracts.filter(c => {

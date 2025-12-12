@@ -15,6 +15,9 @@ export { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility
 export { useContractsWithVisibility } from '@/hooks/useContractsWithVisibility';
 export { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
 export { useKnowledgeWithVisibility } from '@/hooks/useKnowledgeWithVisibility';
+export { useCaseStudiesWithVisibility } from '@/hooks/useCaseStudiesWithVisibility';
+export { useBudgetsWithVisibility } from '@/hooks/useBudgetsWithVisibility';
+export { useProposalsWithVisibility } from '@/hooks/useProposalsWithVisibility';
 
 // Re-export permissions hook
 export { usePermissions } from '@/components/permissions/usePermissions';

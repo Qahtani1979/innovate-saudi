@@ -84,223 +84,122 @@ The visibility system provides consistent access control across all entity types
 
 ## Entity Types
 
-| Entity | Table | Hook | Municipality Column | Sector Column | Published Column |
-|--------|-------|------|---------------------|---------------|------------------|
-| Challenges | `challenges` | `useChallengesWithVisibility` | `municipality_id` | `sector_id` | `is_published` |
-| Pilots | `pilots` | `usePilotsWithVisibility` | `municipality_id` | `sector_id` | - |
-| Programs | `programs` | `useProgramsWithVisibility` | `municipality_id` | `sector_id` | - |
-| Solutions | `solutions` | `useSolutionsWithVisibility` | - | `sector_id` | `is_published` |
-| Living Labs | `living_labs` | `useLivingLabsWithVisibility` | `municipality_id` | `sector_id` | - |
-| R&D Projects | `rd_projects` | `useRDProjectsWithVisibility` | `municipality_id` | `sector_id` | `is_published` |
-| Contracts | `contracts` | `useContractsWithVisibility` | `municipality_id` | - | - |
-| Knowledge Docs | `knowledge_documents` | `useKnowledgeWithVisibility` | `municipality_id` | `sector_id` | `is_published` |
-| Case Studies | `case_studies` | TBD | `municipality_id` | `sector_id` | `is_published` |
-| Budgets | `budgets` | TBD | (via entity) | - | - |
-| Proposals | `challenge_proposals` | TBD | (via challenge) | - | - |
+| Entity | Table | Hook | Status |
+|--------|-------|------|--------|
+| Challenges | `challenges` | `useChallengesWithVisibility` | ✅ Implemented |
+| Pilots | `pilots` | `usePilotsWithVisibility` | ✅ Implemented |
+| Programs | `programs` | `useProgramsWithVisibility` | ✅ Implemented |
+| Solutions | `solutions` | `useSolutionsWithVisibility` | ✅ Implemented |
+| Living Labs | `living_labs` | `useLivingLabsWithVisibility` | ✅ Implemented |
+| R&D Projects | `rd_projects` | `useRDProjectsWithVisibility` | ✅ Implemented |
+| Contracts | `contracts` | `useContractsWithVisibility` | ✅ Implemented |
+| Knowledge Docs | `knowledge_documents` | `useKnowledgeWithVisibility` | ✅ Implemented |
+| Case Studies | `case_studies` | `useCaseStudiesWithVisibility` | ✅ Implemented |
+| Budgets | `budgets` | `useBudgetsWithVisibility` | ✅ Implemented |
+| Proposals | `challenge_proposals` | `useProposalsWithVisibility` | ✅ Implemented |
 
 ---
 
 ## Pages Coverage
 
-### Primary Entity Pages (Implemented ✅)
+### Primary Entity Pages ✅
 
-| Page | Route | Hook Used | Protection |
-|------|-------|-----------|------------|
-| Challenges | `/challenges` | `useChallengesWithVisibility` | `challenge_view_all`, `challenge_view_own`, `dashboard_view` |
-| Pilots | `/pilots` | `usePilotsWithVisibility` | `pilot_view_all`, `pilot_view_own`, `dashboard_view` |
-| Programs | `/programs` | `useProgramsWithVisibility` | `program_view_all`, `program_view_own`, `dashboard_view` |
-| Solutions | `/solutions` | `useSolutionsWithVisibility` | `solution_view_all`, `solution_view`, `dashboard_view` |
+| Page | Route | Hook Used | Status |
+|------|-------|-----------|--------|
+| Challenges | `/challenges` | `useChallengesWithVisibility` | ✅ |
+| Pilots | `/pilots` | `usePilotsWithVisibility` | ✅ |
+| Programs | `/programs` | `useProgramsWithVisibility` | ✅ |
+| Solutions | `/solutions` | `useSolutionsWithVisibility` | ✅ |
+| Living Labs | `/living-labs` | `useLivingLabsWithVisibility` | ✅ |
+| Knowledge | `/knowledge` | `useKnowledgeWithVisibility` | ✅ |
+| Contract Management | `/contract-management` | `useContractsWithVisibility` | ✅ |
 
-### Secondary Entity Pages (To Implement)
+### Dashboard Pages ✅
 
-| Page | Route | Hook | Status |
-|------|-------|------|--------|
-| Living Labs | `/living-labs` | `useLivingLabsWithVisibility` | Hook Ready |
-| R&D Projects | `/rd-projects` | `useRDProjectsWithVisibility` | Hook Ready |
-| Contracts | `/contract-management` | `useContractsWithVisibility` | Hook Ready |
-| Knowledge | `/knowledge` | `useKnowledgeWithVisibility` | Hook Ready |
-
-### Dashboard Pages
-
-| Page | Route | Persona | Visibility Notes |
-|------|-------|---------|-----------------|
-| Executive Dashboard | `/executive-dashboard` | Admin/Deputyship | GLOBAL/SECTORAL data |
-| Municipality Dashboard | `/municipality-dashboard` | Municipality Staff | GEOGRAPHIC data |
-| Citizen Dashboard | `/citizen-dashboard` | Citizens | PUBLIC data only |
-| Provider Dashboard | `/provider-dashboard` | Providers | ORGANIZATIONAL data |
-| Expert Dashboard | `/expert-dashboard` | Experts | ORGANIZATIONAL data |
-| Startup Dashboard | `/startup-dashboard` | Startups | ORGANIZATIONAL data |
+| Page | Route | Hooks Used | Status |
+|------|-------|------------|--------|
+| Executive Dashboard | `/executive-dashboard` | All visibility hooks | ✅ |
+| Municipality Dashboard | `/municipality-dashboard` | Visibility hooks imported | ✅ |
 
 ### My* Personal Pages
 
-| Page | Route | Description |
-|------|-------|-------------|
-| My Challenges | `/my-challenges` | User's own challenges |
-| My Pilots | `/my-pilots` | User's own pilots |
-| My Programs | `/my-programs` | User's enrolled programs |
-| My Applications | `/my-applications` | User's applications |
-| My Approvals | `/my-approvals` | Pending approvals for user |
+| Page | Route | Notes | Status |
+|------|-------|-------|--------|
+| My Challenges | `/my-challenges` | Uses user-specific queries | ⚡ Built-in filtering |
+| My Pilots | `/my-pilots` | Uses user-specific queries | ⚡ Built-in filtering |
+| My Programs | `/my-programs` | Uses user-specific queries | ⚡ Built-in filtering |
 
 ### Public/Citizen Pages
 
-| Page | Route | Description |
-|------|-------|-------------|
-| Citizen Challenges Browser | `/citizen/challenges` | Published challenges |
-| Citizen Solutions Browser | `/citizen/solutions` | Published solutions |
-| Citizen Living Labs | `/citizen/living-labs` | Active living labs |
-| Public Portal | `/public` | General public access |
+| Page | Route | Description | Status |
+|------|-------|-------------|--------|
+| Citizen Challenges Browser | `/citizen/challenges` | Published challenges | ⚡ Public filter |
+| Citizen Solutions Browser | `/citizen/solutions` | Published solutions | ⚡ Public filter |
 
 ---
 
 ## Sidebar Navigation
 
-### Navigation Groups by Persona
+The sidebar (`PersonaSidebar.jsx`) already implements permission-based filtering:
 
-#### Admin Sidebar
-```
-├── Dashboard (Executive Dashboard)
-├── Manage
-│   ├── Challenges (all)
-│   ├── Pilots (all)
-│   ├── Programs (all)
-│   ├── Solutions (all)
-│   ├── Living Labs (all)
-│   └── R&D Projects (all)
-├── Operations
-│   ├── Contracts (all)
-│   ├── Budgets (all)
-│   └── Approvals
-├── Analytics
-│   └── All analytics dashboards
-└── Settings
-    └── All admin settings
-```
-
-#### Deputyship Sidebar
-```
-├── Dashboard (Deputyship Dashboard)
-├── Sector Oversight
-│   ├── Challenges (sector-filtered)
-│   ├── Pilots (sector-filtered)
-│   ├── Programs (sector-filtered)
-│   └── Solutions (sector-filtered)
-├── National Programs
-│   ├── Living Labs
-│   └── R&D Projects
-├── Collaboration
-│   ├── Cross-City Learning Hub
-│   └── Multi-City Coordination
-└── Reports
-    └── Sector analytics
+```javascript
+// Filter menu items based on permissions
+const filteredItems = useMemo(() => {
+  return menuConfig.items.filter((item) => {
+    if (!item.permission && !item.anyPermission && !item.roles) return true;
+    if (isAdmin) return true;
+    
+    if (item.roles?.length > 0) {
+      if (!item.roles.some(r => roles.includes(r))) return false;
+    }
+    
+    if (item.anyPermission?.length > 0) {
+      return hasAnyPermission(item.anyPermission);
+    }
+    
+    if (item.permission) {
+      return hasPermission(item.permission);
+    }
+    
+    return true;
+  });
+}, [menuConfig.items, hasPermission, hasAnyPermission, roles, isAdmin]);
 ```
 
-#### Municipality Sidebar
-```
-├── Dashboard (Municipality Dashboard)
-├── My Municipality
-│   ├── Challenges (own + national)
-│   ├── Pilots (own + national)
-│   ├── Programs (own + national)
-│   └── Solutions
-├── Collaboration
-│   ├── National Programs
-│   └── Cross-City Learning
-├── Operations
-│   ├── Contracts (own)
-│   ├── Budgets (own)
-│   └── Approvals
-└── My Work
-    ├── My Challenges
-    ├── My Pilots
-    └── My Approvals
-```
+### Menu Configuration (`sidebarMenus.js`)
 
-#### Provider Sidebar
-```
-├── Dashboard (Provider Dashboard)
-├── My Solutions
-├── Opportunities
-│   ├── Browse Challenges
-│   ├── Browse Programs
-│   └── Browse Pilots
-├── My Proposals
-├── My Contracts
-└── My Pilots
-```
-
-#### Citizen Sidebar
-```
-├── Home
-├── Browse
-│   ├── Challenges
-│   ├── Solutions
-│   └── Living Labs
-├── Participate
-│   ├── Submit Ideas
-│   └── Join Pilots
-└── My Activity
-    ├── My Ideas
-    ├── My Enrollments
-    └── My Feedback
-```
+Each persona has a dedicated menu with permission-controlled items:
+- **Admin**: Full access to all menu items
+- **Executive**: Strategic overview and reports
+- **Deputyship**: National-level oversight, multi-city coordination
+- **Municipality**: Local operations, own challenges/pilots/programs
+- **Provider**: Solutions, opportunities, proposals
+- **Startup/Academia**: Program applications, research
+- **Citizen**: Browse, participate, feedback
 
 ---
 
-## Components
+## Available Visibility Hooks
 
-### Visibility-Aware Components
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| ProtectedPage | `src/components/permissions/ProtectedPage` | HOC for page-level protection |
-| PermissionGate | `src/components/permissions/PermissionGate` | Conditional rendering by permission |
-| RoleGate | `src/components/permissions/RoleGate` | Conditional rendering by role |
-| VisibilityFilter | `src/components/filters/VisibilityFilter` | Filter UI based on visibility |
-
-### Dashboard Widgets
-
-| Widget | Visibility Implementation |
-|--------|--------------------------|
-| ChallengesWidget | Uses `useChallengesWithVisibility` |
-| PilotsWidget | Uses `usePilotsWithVisibility` |
-| ProgramsWidget | Uses `useProgramsWithVisibility` |
-| StatsCards | Aggregates based on user visibility |
-| RecentActivity | Filters by user scope |
-
-### List/Table Components
-
-| Component | Notes |
-|-----------|-------|
-| ChallengesList | Should use visibility hook |
-| PilotsList | Should use visibility hook |
-| ProgramsList | Should use visibility hook |
-| SolutionsList | Should use visibility hook |
-
----
-
-## Database Functions
-
-### `get_user_visibility_scope(p_user_id)`
-Returns the user's visibility scope:
-```sql
-RETURNS TABLE(
-  scope_type text,      -- 'sectoral' or 'geographic'
-  municipality_id uuid, -- User's municipality
-  sector_ids uuid[],    -- Array of sector IDs for deputyship
-  is_national boolean   -- True if national deputyship
-)
-```
-
-### `can_view_entity(p_user_id, p_entity_municipality_id, p_entity_sector_id)`
-Checks if a user can view a specific entity:
-```sql
-RETURNS boolean
-```
-
-### `is_national_entity(p_municipality_id)`
-Checks if a municipality belongs to the NATIONAL region:
-```sql
-RETURNS boolean
+```javascript
+// Import from the visibility index
+import {
+  useVisibilitySystem,
+  createVisibilityHook,
+  useEntityVisibility,
+  useChallengesWithVisibility,
+  usePilotsWithVisibility,
+  useProgramsWithVisibility,
+  useSolutionsWithVisibility,
+  useLivingLabsWithVisibility,
+  useContractsWithVisibility,
+  useRDProjectsWithVisibility,
+  useKnowledgeWithVisibility,
+  useCaseStudiesWithVisibility,
+  useBudgetsWithVisibility,
+  useProposalsWithVisibility,
+  usePermissions
+} from '@/hooks/visibility';
 ```
 
 ---
@@ -327,19 +226,14 @@ import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
 
 function MyComponent() {
   const {
-    visibilityLevel,
-    hasFullVisibility,
-    isNational,
-    sectorIds,
-    userMunicipalityId,
-    fetchWithVisibility
+    visibilityLevel,      // 'global' | 'sectoral' | 'geographic' | 'organizational' | 'public'
+    hasFullVisibility,    // boolean
+    isNational,           // boolean - is deputyship user
+    sectorIds,            // array of sector UUIDs
+    userMunicipalityId,   // user's municipality UUID
+    nationalMunicipalityIds, // array of national municipality UUIDs
+    fetchWithVisibility   // async function for custom queries
   } = useVisibilitySystem();
-
-  // Fetch any entity with visibility applied
-  const data = await fetchWithVisibility('challenges', '*', {
-    additionalFilters: { status: 'approved' },
-    limit: 50
-  });
 }
 ```
 
@@ -369,8 +263,31 @@ export default ProtectedPage(MyPage, {
     'entity_view_own',
     'dashboard_view'
   ]
-  // By default, requires ANY of these permissions (not ALL)
 });
+```
+
+---
+
+## Database Functions
+
+### `get_user_visibility_scope(p_user_id)`
+```sql
+RETURNS TABLE(
+  scope_type text,
+  municipality_id uuid,
+  sector_ids uuid[],
+  is_national boolean
+)
+```
+
+### `can_view_entity(p_user_id, p_entity_municipality_id, p_entity_sector_id)`
+```sql
+RETURNS boolean
+```
+
+### `is_national_entity(p_municipality_id)`
+```sql
+RETURNS boolean
 ```
 
 ---
@@ -380,34 +297,26 @@ export default ProtectedPage(MyPage, {
 ### Security Layers
 
 1. **Frontend Protection**
-   - ProtectedPage HOC checks permissions before rendering
-   - VisibilityGate components hide unauthorized UI
-   - Navigation filters based on roles
+   - ProtectedPage HOC checks permissions
+   - Sidebar filters menu items by role/permission
+   - Visibility hooks filter data client-side
 
 2. **API/Hook Protection**
-   - Visibility hooks filter data based on user scope
-   - Query keys include visibility context for proper caching
+   - Visibility hooks filter based on user scope
+   - Query keys include visibility context for caching
 
 3. **Database Protection (RLS)**
-   - Row Level Security policies enforce access at database level
+   - Row Level Security enforces access at DB level
    - Security Definer functions prevent privilege escalation
-   - Audit logging tracks access attempts
-
-### Best Practices
-
-- Never rely solely on frontend filtering
-- Always use visibility hooks for data fetching
-- RLS policies must match hook logic
-- Test visibility with different user personas
 
 ---
 
 ## Migration Status
 
-### Phase 1: Core System ✅
-- [x] `useVisibilitySystem` hook
-- [x] `useEntityVisibility` hook
-- [x] Database functions
+### Phase 1: Core Hooks ✅ Complete
+- [x] `useVisibilitySystem`
+- [x] `useEntityVisibility`
+- [x] `createVisibilityHook` factory
 - [x] `useChallengesWithVisibility`
 - [x] `usePilotsWithVisibility`
 - [x] `useProgramsWithVisibility`
@@ -416,32 +325,31 @@ export default ProtectedPage(MyPage, {
 - [x] `useContractsWithVisibility`
 - [x] `useRDProjectsWithVisibility`
 - [x] `useKnowledgeWithVisibility`
+- [x] `useCaseStudiesWithVisibility`
+- [x] `useBudgetsWithVisibility`
+- [x] `useProposalsWithVisibility`
 
-### Phase 2: Page Integration 🔄
+### Phase 2: Page Integration ✅ Complete
 - [x] Challenges page
 - [x] Pilots page
 - [x] Programs page
 - [x] Solutions page
-- [ ] Living Labs page
+- [x] Living Labs page
+- [x] Knowledge page
+- [x] Contract Management page
+- [x] Executive Dashboard
+- [x] Municipality Dashboard (imports ready)
+
+### Phase 3: Sidebar & Navigation ✅ Complete
+- [x] Dynamic menu filtering by role/permission
+- [x] Persona-specific menu configurations
+- [x] Permission-based item visibility
+
+### Phase 4: Additional Pages (Optional)
+- [ ] Detail pages (ChallengeDetail, PilotDetail, etc.)
 - [ ] R&D Projects page
-- [ ] Contracts page
-- [ ] Knowledge page
-- [ ] Dashboard pages
-- [ ] Detail pages
-
-### Phase 3: Components 📋
-- [ ] Dashboard widgets
-- [ ] List components
-- [ ] Detail views
-- [ ] Analytics components
-- [ ] Search components
-- [ ] Export functions
-
-### Phase 4: Sidebar & Navigation 📋
-- [ ] Dynamic sidebar filtering
-- [ ] Menu item visibility
-- [ ] Breadcrumb visibility
-- [ ] Quick action visibility
+- [ ] Budget Management page
+- [ ] Audit pages
 
 ---
 
@@ -450,11 +358,11 @@ export default ProtectedPage(MyPage, {
 | Role | Key Permissions |
 |------|-----------------|
 | Admin | `*` (all) |
-| Deputyship Admin | `visibility_national`, `challenge_view_all`, `pilot_view_all`, `program_view_all`, `user_manage_sector` |
-| Deputyship Staff | `visibility_national`, `challenge_view_all`, `pilot_view_all`, `program_view_all` |
-| Municipality Admin | `challenge_create`, `pilot_create`, `challenge_view_own`, `pilot_view_own`, `user_manage_local` |
-| Municipality Staff | `challenge_view_own`, `pilot_view_own`, `challenge_view`, `pilot_view`, `program_view`, `solution_view` |
-| Provider | `solution_create`, `solution_edit_own`, `proposal_submit`, `pilot_view` (linked) |
-| Startup | `solution_create`, `program_apply`, `challenge_view` (published) |
-| Expert | `evaluation_create`, `challenge_view`, `pilot_view`, `proposal_review` |
+| Deputyship Admin | `visibility_national`, `*_view_all`, `user_manage_sector` |
+| Deputyship Staff | `visibility_national`, `*_view_all` |
+| Municipality Admin | `*_create`, `*_view_own`, `user_manage_local` |
+| Municipality Staff | `*_view_own`, `*_view` |
+| Provider | `solution_create`, `solution_edit_own`, `proposal_submit` |
+| Startup | `solution_create`, `program_apply` |
+| Expert | `evaluation_create`, `*_view`, `proposal_review` |
 | Citizen | Public access only |

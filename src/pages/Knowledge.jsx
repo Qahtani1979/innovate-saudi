@@ -16,6 +16,9 @@ import PolicyLibraryWidget from '../components/knowledge/PolicyLibraryWidget';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { useKnowledgeWithVisibility } from '@/hooks/useKnowledgeWithVisibility';
+import { useCaseStudiesWithVisibility } from '@/hooks/useCaseStudiesWithVisibility';
+import { usePermissions } from '@/components/permissions/usePermissions';
 
 function KnowledgePage() {
   const { language, isRTL, t } = useLanguage();
@@ -26,34 +29,15 @@ function KnowledgePage() {
   const [viewMode, setViewMode] = useState('grid');
   const [activeTab, setActiveTab] = useState('all');
   const { user } = useAuth();
+  const { isAdmin, hasPermission } = usePermissions();
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const queryClient = useQueryClient();
 
-  const { data: knowledgeDocs = [] } = useQuery({
-    queryKey: ['knowledge-docs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('knowledge_documents')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: caseStudies = [] } = useQuery({
-    queryKey: ['case-studies'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('case_studies')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use visibility-aware hooks
+  const { data: knowledgeDocs = [] } = useKnowledgeWithVisibility();
+  const { data: caseStudies = [] } = useCaseStudiesWithVisibility();
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
@@ -61,7 +45,7 @@ function KnowledgePage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge-docs'] });
+      queryClient.invalidateQueries({ queryKey: ['knowledge-with-visibility'] });
       toast.success(t({ en: 'Document deleted', ar: 'تم حذف المستند' }));
     }
   });
@@ -72,7 +56,7 @@ function KnowledgePage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['case-studies'] });
+      queryClient.invalidateQueries({ queryKey: ['case-studies-with-visibility'] });
       toast.success(t({ en: 'Case study deleted', ar: 'تم حذف دراسة الحالة' }));
     }
   });
