@@ -946,7 +946,7 @@ Provide a comprehensive analysis covering:
 
       {/* AI Analysis Drawer - Side panel that stays open while taking actions */}
       <Drawer open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog} direction="right">
-        <DrawerContent showHandle={false} dir={isRTL ? 'rtl' : 'ltr'}>
+        <DrawerContent direction="right" showHandle={false} className="inset-y-0 right-0 h-full w-full max-w-lg rounded-l-[10px]" dir={isRTL ? 'rtl' : 'ltr'}>
           <DrawerHeader className="border-b">
             <DrawerTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-blue-600" />
