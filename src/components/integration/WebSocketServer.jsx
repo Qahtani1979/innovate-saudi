@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Wifi, Activity, AlertCircle } from 'lucide-react';
+import { Wifi, Activity, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function WebSocketServer() {
   const { t } = useLanguage();
