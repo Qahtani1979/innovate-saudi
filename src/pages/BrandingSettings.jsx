@@ -164,7 +164,7 @@ Provide bilingual recommendations for:
         <Save className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
         {t({ en: 'Save Branding Settings', ar: 'حفظ إعدادات العلامة التجارية' })}
       </Button>
-    </div>
+    </PageLayout>
   );
 }
 
