@@ -39,6 +39,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
+import { useSolutionsWithVisibility, usePilotsWithVisibility, useContractsWithVisibility } from '@/hooks/visibility';
 
 export default function ChallengeDetail() {
   const { hasPermission, isAdmin } = usePermissions();
@@ -76,22 +77,16 @@ export default function ChallengeDetail() {
     publicStatuses: ['approved', 'published', 'active', 'completed']
   });
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*');
-      return data || [];
-    }
-  });
+  // Use visibility-aware hooks for related entities
+  const { data: allSolutions = [] } = useSolutionsWithVisibility();
+  const solutions = allSolutions; // Alias for backward compatibility
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-challenge', challengeId],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('challenge_id', challengeId);
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
+  // Pilots related to this challenge (filtered from visibility-aware data)
+  const { data: allPilots = [] } = usePilotsWithVisibility();
+  const pilots = allPilots.filter(p => p.challenge_id === challengeId);
+
+  // Contracts with visibility
+  const { data: allContracts = [] } = useContractsWithVisibility();
 
   const { data: comments = [] } = useQuery({
     queryKey: ['challenge-comments', challengeId],
@@ -160,14 +155,8 @@ export default function ChallengeDetail() {
     enabled: !!challengeId
   });
 
-  const { data: contracts = [] } = useQuery({
-    queryKey: ['challenge-contracts', challengeId],
-    queryFn: async () => {
-      const { data } = await supabase.from('contracts').select('*');
-      return data?.filter(c => c.challenge_id === challengeId) || [];
-    },
-    enabled: !!challengeId
-  });
+  // Contracts filtered from visibility-aware data
+  const contracts = allContracts.filter(c => c.challenge_id === challengeId);
 
   const { data: events = [] } = useQuery({
     queryKey: ['challenge-events', challengeId],

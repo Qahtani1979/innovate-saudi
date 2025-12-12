@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import AutomatedAuditScheduler from '@/components/access/AutomatedAuditScheduler';
+import PermissionGate from '@/components/permissions/PermissionGate';
 import { 
   RefreshCw, Users, Key, AlertTriangle, CheckCircle, CheckCircle2,
   XCircle, Clock, Activity, FileWarning, UserX, KeyRound,
@@ -15,6 +16,32 @@ import {
 } from 'lucide-react';
 
 export default function RBACAuditContent() {
+  const { t, language } = useLanguage();
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
+
+  // Wrap entire component in admin permission gate - all queries are admin-only
+  return (
+    <PermissionGate requireAdmin fallback={
+      <Card className="border-2 border-red-300 bg-red-50">
+        <CardContent className="pt-6 text-center">
+          <Shield className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <p className="text-lg font-semibold text-red-900">
+            {t({ en: 'Access Denied', ar: 'الوصول مرفوض' })}
+          </p>
+          <p className="text-sm text-red-700">
+            {t({ en: 'You need administrator privileges to view RBAC audit data.', ar: 'تحتاج صلاحيات المسؤول لعرض بيانات تدقيق النظام.' })}
+          </p>
+        </CardContent>
+      </Card>
+    }>
+      <RBACAuditContentInner />
+    </PermissionGate>
+  );
+}
+
+function RBACAuditContentInner() {
   const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);

@@ -281,6 +281,8 @@ Each persona has a dedicated menu with permission-controlled items:
 |-----------|-----------------|--------|
 | `MenuRBACContent` | `PermissionGate` (admin only) | ✅ |
 | `RBACDashboardContent` | `PermissionGate` (admin only) | ✅ |
+| `RBACAuditContent` | `PermissionGate` (admin only) | ✅ |
+| `RolePermissionManager` | `PermissionGate` (admin only) + `ProtectedPage` | ✅ |
 
 ### Form/Selection Components ✅
 
@@ -288,6 +290,18 @@ Each persona has a dedicated menu with permission-controlled items:
 |-----------|-----------------|--------|
 | `ChallengeOwnershipTransfer` | `useUsersWithVisibility` | ✅ |
 | `ProgramCreateWizard` | `useMunicipalitiesWithVisibility`, `useOrganizationsWithVisibility` | ✅ |
+
+### AI/Analytics Components ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `AIScalingReadinessPredictor` | `useMunicipalitiesWithVisibility` | ✅ |
+
+### Detail Pages ✅
+
+| Page | Hooks Used | Status |
+|------|------------|--------|
+| `ChallengeDetail` | `useEntityAccessCheck`, `useSolutionsWithVisibility`, `usePilotsWithVisibility`, `useContractsWithVisibility` | ✅ |
 
 ### Filter Components
 
@@ -309,6 +323,7 @@ Each persona has a dedicated menu with permission-controlled items:
 | `MyWeekAhead` | User's own schedule | ✅ Correct |
 | `MultiStakeholderApprovalPanel` | Entity-scoped evaluations | ✅ Correct |
 | `SessionScheduler` | Single entity by ID | ✅ Correct |
+| `ResourceLibrary` | Single program by ID | ✅ Correct |
 
 ### Lookup/Reference Data (Public - No Changes Needed)
 
@@ -747,10 +762,12 @@ The visibility system is now **fully implemented** across:
 
 | Component | Change | Date |
 |-----------|--------|------|
-| `ProgramCreateWizard` | Added `useMunicipalitiesWithVisibility`, `useOrganizationsWithVisibility` | Latest |
-| `RDProposalReviewGate` | Added `PermissionGate` for expert permissions | Latest |
-| `RBACDashboardContent` | Already protected with `PermissionGate` | Previous |
-| `MenuRBACContent` | Already protected with `PermissionGate` | Previous |
+| `ChallengeDetail` | Added `useSolutionsWithVisibility`, `usePilotsWithVisibility`, `useContractsWithVisibility` | Latest |
+| `RBACAuditContent` | Added `PermissionGate` (admin only) | Latest |
+| `AIScalingReadinessPredictor` | Added `useMunicipalitiesWithVisibility` | Latest |
+| `RolePermissionManager` | Added `PermissionGate` (admin only) | Latest |
+| `ProgramCreateWizard` | Added `useMunicipalitiesWithVisibility`, `useOrganizationsWithVisibility` | Previous |
+| `RDProposalReviewGate` | Added `PermissionGate` for expert permissions | Previous |
 
 ### Components Confirmed Correct (No Changes Needed)
 
@@ -760,6 +777,20 @@ The visibility system is now **fully implemented** across:
 | `MyWorkPrioritizer` | User-scoped (own work) |
 | `MultiStakeholderApprovalPanel` | Entity-scoped (sandbox evaluations) |
 | `SessionScheduler` | Single entity by ID |
+| `ResourceLibrary` | Single program by ID |
+| `SolutionReviewsTab` | User + entity scoped |
 | Reference data dropdowns | Public lookup data |
+
+### Coverage Summary
+
+| Category | Count |
+|----------|-------|
+| Entity Hooks | 15 hooks |
+| Pages with Visibility | 26+ pages |
+| Detail Pages with Access Checks | 7+ pages |
+| Components Updated | 16+ components |
+| Admin-Protected Components | 5 components |
+| Sidebar | Full permission filtering |
+| Search | Visibility-aware |
 
 All user personas are supported with appropriate visibility levels, and the system is designed to be extensible for future entity types.
