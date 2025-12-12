@@ -36,9 +36,10 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
 
 function RDProjectsPage() {
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
   const { language, isRTL, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -48,9 +49,10 @@ function RDProjectsPage() {
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const queryClient = useQueryClient();
 
-  const { data: projects = [], isLoading } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list('-created_date')
+  // Use visibility-aware hook for R&D projects
+  const { data: projects = [], isLoading } = useRDProjectsWithVisibility({
+    status: filterStatus !== 'all' ? filterStatus : undefined,
+    limit: 100
   });
 
   const deleteMutation = useMutation({
