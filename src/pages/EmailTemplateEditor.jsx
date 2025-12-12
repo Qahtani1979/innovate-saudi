@@ -239,15 +239,37 @@ For a Saudi municipal innovation platform. Include:
 
     setIsSending(true);
     try {
-      // Build test variables
+      // Build comprehensive test variables for all templates
       const testVariables = {
         userName: currentUser?.user_metadata?.full_name || 'Test User',
+        userEmail: currentUser?.email || 'test@example.com',
         sentAt: new Date().toLocaleString(),
         loginUrl: window.location.origin,
         dashboardUrl: window.location.origin,
         detailUrl: window.location.origin,
         trackingUrl: window.location.origin,
         taskUrl: window.location.origin,
+        // Role-related variables
+        roleName: 'Municipality Staff',
+        requestedRole: 'Municipality Staff',
+        rejectionReason: 'Sample rejection reason for testing',
+        // Entity-related variables
+        challengeTitle: 'Sample Challenge Title',
+        solutionTitle: 'Sample Solution Title',
+        pilotTitle: 'Sample Pilot Title',
+        proposalTitle: 'Sample Proposal Title',
+        ideaTitle: 'Sample Idea Title',
+        taskName: 'Sample Task Name',
+        // Status and counts
+        newStatus: 'approved',
+        score: '85',
+        totalItems: '5',
+        // Time-related
+        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        // Organization
+        organizationName: 'Sample Organization',
+        municipalityName: 'Sample Municipality',
       };
 
       // Use the current template if saved, otherwise send direct content for preview
