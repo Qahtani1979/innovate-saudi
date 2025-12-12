@@ -120,4 +120,4 @@ function RegionalAnalyticsDashboard() {
   );
 }
 
-export default ProtectedPage(RegionalAnalyticsDashboard, { requireAdmin: true });
+export default ProtectedPage(RegionalAnalyticsDashboard, { requiredPermission: 'analytics_view' });
