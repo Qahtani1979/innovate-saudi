@@ -30,6 +30,8 @@ import LivingLabPublicationSubmission from '../components/LivingLabPublicationSu
 import LivingLabInfrastructureWizard from '../components/livinglabs/LivingLabInfrastructureWizard';
 import AICapacityOptimizer from '../components/livinglabs/AICapacityOptimizer';
 import LabSolutionCertificationWorkflow from '../components/livinglab/LabSolutionCertificationWorkflow';
+import { usePermissions } from '@/components/permissions/usePermissions';
+import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 
 export default function LivingLabDetail() {
   const urlParams = new URLSearchParams(window.location.search);

@@ -9,12 +9,13 @@ The visibility system provides consistent access control across all entity types
 2. [User Personas](#user-personas)
 3. [Entity Types](#entity-types)
 4. [Pages Coverage](#pages-coverage)
-5. [Sidebar Navigation](#sidebar-navigation)
-6. [Components](#components)
-7. [Database Functions](#database-functions)
-8. [Implementation Guide](#implementation-guide)
-9. [Security](#security)
-10. [Migration Status](#migration-status)
+5. [Detail Pages](#detail-pages)
+6. [Sidebar Navigation](#sidebar-navigation)
+7. [Components](#components)
+8. [Database Functions](#database-functions)
+9. [Implementation Guide](#implementation-guide)
+10. [Security](#security)
+11. [Migration Status](#migration-status)
 
 ---
 
@@ -143,9 +144,50 @@ The visibility system provides consistent access control across all entity types
 
 ---
 
+## Detail Pages ✅
+
+Detail pages now include visibility access checks using `useEntityAccessCheck`:
+
+| Page | Route | Access Check | Status |
+|------|-------|--------------|--------|
+| Challenge Detail | `/challenge-detail` | `useEntityAccessCheck` | ✅ |
+| Pilot Detail | `/pilot-detail` | `useEntityAccessCheck` | ✅ |
+| Program Detail | `/program-detail` | `useEntityAccessCheck` | ✅ |
+| Solution Detail | `/solution-detail` | `useEntityAccessCheck` | ✅ |
+| Living Lab Detail | `/living-lab-detail` | `useEntityAccessCheck` | ✅ |
+| R&D Project Detail | `/rd-project-detail` | `useEntityAccessCheck` | ✅ |
+| Contract Detail | `/contract-detail` | `useEntityAccessCheck` | ✅ |
+
+### Using Entity Access Check
+
+```javascript
+import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
+
+function ChallengeDetail() {
+  const { data: challenge } = useQuery({...});
+  
+  // Check access after entity is loaded
+  const accessCheck = useEntityAccessCheck(challenge, {
+    municipalityColumn: 'municipality_id',
+    sectorColumn: 'sector_id',
+    ownerColumn: 'created_by',
+    publishedColumn: 'is_published',
+    statusColumn: 'status',
+    publicStatuses: ['approved', 'published', 'active']
+  });
+
+  if (accessCheck.isLoading) return <Loading />;
+  if (!accessCheck.canAccess) return <AccessDenied />;
+  
+  return <DetailContent />;
+}
+```
+
+---
+
 ## Sidebar Navigation
 
-The sidebar (`PersonaSidebar.jsx`) already implements permission-based filtering:
+The sidebar (`PersonaSidebar.jsx`) implements permission-based filtering:
 
 ```javascript
 // Filter menu items based on permissions
@@ -189,8 +231,15 @@ Each persona has a dedicated menu with permission-controlled items:
 ```javascript
 // Import from the visibility index
 import {
+  // Core system
   useVisibilitySystem,
   createVisibilityHook,
+  
+  // Single entity access
+  useEntityAccessCheck,
+  withEntityAccess,
+  
+  // Entity-specific list hooks
   useEntityVisibility,
   useChallengesWithVisibility,
   usePilotsWithVisibility,
@@ -203,6 +252,8 @@ import {
   useCaseStudiesWithVisibility,
   useBudgetsWithVisibility,
   useProposalsWithVisibility,
+  
+  // Permissions
   usePermissions
 } from '@/hooks/visibility';
 ```
@@ -211,10 +262,10 @@ import {
 
 ## Implementation Guide
 
-### Using Visibility Hooks
+### Using Visibility Hooks for Lists
 
 ```javascript
-// For Challenges
+// For Challenges list
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 const { data: challenges, isLoading } = useChallengesWithVisibility({
@@ -222,6 +273,23 @@ const { data: challenges, isLoading } = useChallengesWithVisibility({
   sectorId: selectedSector,
   limit: 50
 });
+```
+
+### Using Entity Access Check for Detail Pages
+
+```javascript
+import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
+
+function EntityDetail({ entity }) {
+  const accessCheck = useEntityAccessCheck(entity, {
+    municipalityColumn: 'municipality_id',
+    sectorColumn: 'sector_id'
+  });
+
+  // accessCheck.canAccess - boolean
+  // accessCheck.reason - 'admin_access', 'sectoral_access', 'municipality_access', etc.
+  // accessCheck.visibilityLevel - 'global', 'sectoral', 'geographic', 'public'
+}
 ```
 
 ### Using the Core Visibility System
@@ -297,6 +365,18 @@ All visibility hooks accept these common options:
 | `useContractsWithVisibility` | `contractType` |
 | `useBudgetsWithVisibility` | `entityType`, `fiscalYear` |
 
+### Entity Access Check Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `municipalityColumn` | string | `'municipality_id'` | Column name for municipality |
+| `sectorColumn` | string | `'sector_id'` | Column name for sector |
+| `ownerColumn` | string | `'created_by'` | Column name for owner/creator |
+| `publishedColumn` | string | `'is_published'` | Column name for published status |
+| `statusColumn` | string | `'status'` | Column name for status |
+| `publicStatuses` | array | `['published', 'active', 'completed']` | Status values considered public |
+| `providerColumn` | string | `'provider_id'` | Column name for provider |
+
 ---
 
 ## Database Functions
@@ -332,6 +412,9 @@ RETURNS boolean
 ### List Components
 - Entity list pages (Challenges, Pilots, etc.) - Use respective hooks
 
+### Detail Components
+- All detail pages - Use `useEntityAccessCheck` for single entity access
+
 ### Filter Components
 - Sector filter - Respects user's sector access
 - Municipality filter - Only shows accessible municipalities
@@ -346,6 +429,7 @@ RETURNS boolean
    - ProtectedPage HOC checks permissions
    - Sidebar filters menu items by role/permission
    - Visibility hooks filter data client-side
+   - Entity access check for detail pages
 
 2. **API/Hook Protection**
    - Visibility hooks filter based on user scope
@@ -364,6 +448,7 @@ RETURNS boolean
 - [x] `useEntityVisibility`
 - [x] `createVisibilityHook` factory
 - [x] All 11 entity visibility hooks
+- [x] `useEntityAccessCheck` for detail pages
 
 ### Phase 2: Page Integration ✅ Complete
 - [x] Challenges page
@@ -379,16 +464,19 @@ RETURNS boolean
 - [x] Executive Dashboard
 - [x] Municipality Dashboard
 
-### Phase 3: Sidebar & Navigation ✅ Complete
+### Phase 3: Detail Pages ✅ Complete
+- [x] ChallengeDetail
+- [x] PilotDetail
+- [x] ProgramDetail
+- [x] SolutionDetail
+- [x] LivingLabDetail
+- [x] RDProjectDetail
+- [x] ContractDetail
+
+### Phase 4: Sidebar & Navigation ✅ Complete
 - [x] Dynamic menu filtering by role/permission
 - [x] Persona-specific menu configurations
 - [x] Permission-based item visibility
-
-### Phase 4: Detail Pages (Optional)
-- [ ] ChallengeDetail - single entity visibility
-- [ ] PilotDetail - single entity visibility
-- [ ] ProgramDetail - single entity visibility
-- [ ] Other detail pages
 
 ---
 
@@ -415,10 +503,17 @@ RETURNS boolean
 1. **Data not loading**: Check if `visibilityLoading` is blocking the query
 2. **Empty results**: Verify user has appropriate role/municipality assignment
 3. **Cache stale**: Query keys include visibility context for proper invalidation
+4. **Access denied on detail page**: Check if entity has correct municipality_id/sector_id
 
 ### Debug Mode
 
 ```javascript
+// For list visibility
 const { visibilityLevel, hasFullVisibility, sectorIds } = useVisibilitySystem();
 console.log('Visibility:', { visibilityLevel, hasFullVisibility, sectorIds });
+
+// For detail page access
+const accessCheck = useEntityAccessCheck(entity);
+console.log('Access:', accessCheck);
+// { canAccess: true/false, reason: 'admin_access'|'sectoral_access'|..., visibilityLevel: '...' }
 ```
