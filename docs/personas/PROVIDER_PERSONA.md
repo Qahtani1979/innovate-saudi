@@ -24,12 +24,17 @@ Solution Providers are technology companies, startups, and service providers who
 | `ProviderLeaderboard.jsx` | ✅ Complete | Leaderboard rankings |
 | `OpportunityFeed.jsx` | ✅ Complete | Opportunity discovery |
 | `StartupEcosystemDashboard.jsx` | ✅ Complete | Ecosystem metrics (Admin view) |
+| `StartupProfile.jsx` | ✅ Complete | Public startup profile view |
+| `StartupVerificationQueue.jsx` | ✅ Complete | Admin verification queue |
+| `ProviderNotificationPreferences.jsx` | ✅ Complete | Notification settings |
 
 ### ⏭️ Excluded from PageLayout (by design)
 | Page | Reason |
 |------|--------|
 | `StartupOnboarding.jsx` | Wizard-based flow |
 | `ProviderProposalWizard.jsx` | Multi-step wizard |
+| `StartupShowcase.jsx` | Public showcase component wrapper |
+| `StartupCoverageReport.jsx` | Admin coverage report (2000+ lines) |
 
 ### ❌ Empty/Placeholder Pages
 | Page | Status |
