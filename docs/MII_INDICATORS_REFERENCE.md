@@ -1,8 +1,9 @@
 # MII (Municipal Innovation Index) - Indicators Reference
 
-> **Document Version**: 1.0  
+> **Document Version**: 2.0  
 > **Last Updated**: 2024-12-12  
 > **Maintainer**: System Auto-generated  
+> **Status**: ✅ All Indicators Connected to Real Data
 
 ---
 
@@ -353,13 +354,28 @@ Bottom 2 dimensions by score are identified for improvement:
 
 ### 6.1 Trigger Mechanisms
 
-| Trigger Type | Method | When |
-|--------------|--------|------|
-| On-Demand | API call to `calculate-mii` edge function | Admin clicks "Recalculate MII" |
-| Scheduled | Cron job (future) | Daily/Weekly |
-| Data Change | Database trigger (future) | When pilots/challenges updated |
+| Trigger Type | Method | When | Status |
+|--------------|--------|------|--------|
+| On-Demand | API call to `calculate-mii` edge function | Admin clicks "Recalculate MII" | ✅ Active |
+| Scheduled | pg_cron job at 2 AM daily | Automatic daily refresh | ✅ Active |
+| Data Change | Database triggers on challenges/pilots/partnerships | On entity changes | ✅ Active |
 
-### 6.2 Calculation Flow
+### 6.2 Scheduled Cron Job
+
+```sql
+-- Daily MII recalculation at 2 AM
+cron.schedule('daily-mii-recalculation', '0 2 * * *', ...)
+```
+
+### 6.3 Data-Change Triggers
+
+| Trigger Name | Table | Fires On |
+|--------------|-------|----------|
+| `trigger_mii_on_challenge_change` | challenges | INSERT, UPDATE, DELETE |
+| `trigger_mii_on_pilot_change` | pilots | INSERT, UPDATE, DELETE |
+| `trigger_mii_on_partnership_change` | partnerships | INSERT, UPDATE, DELETE |
+
+### 6.4 Calculation Flow
 
 ```
 1. Fetch municipality data
@@ -383,7 +399,7 @@ Bottom 2 dimensions by score are identified for improvement:
 10. Update municipalities.mii_score and mii_rank
 ```
 
-### 6.3 Database Trigger: sync_municipality_mii
+### 6.5 Database Trigger: sync_municipality_mii
 
 ```sql
 -- Automatically fires when mii_results is inserted/updated
@@ -397,13 +413,13 @@ ACTION: UPDATE municipalities SET
         WHERE id = NEW.municipality_id
 ```
 
-### 6.4 Refresh Frequency
+### 6.6 Refresh Frequency
 
 | Scenario | Frequency | Method |
 |----------|-----------|--------|
-| Production | Weekly (recommended) | Scheduled cron |
-| Development | On-demand | Manual trigger |
-| Real-time (future) | On entity change | Database trigger |
+| Production | Daily at 2 AM | pg_cron scheduled job |
+| On-demand | Anytime | Admin button or API call |
+| Data-triggered | On entity change | Database triggers update timestamp |
 
 ---
 
@@ -470,7 +486,54 @@ ACTION: UPDATE municipalities SET
 
 ---
 
-## 9. FUTURE ENHANCEMENTS
+## 9. PAGES & COMPONENTS DISPLAYING MII INDICATORS
+
+### 9.1 Pages Using MII Data
+
+| Page | File | Indicators Displayed | Data Source | Status |
+|------|------|---------------------|-------------|--------|
+| MII Drill Down | `src/pages/MIIDrillDown.jsx` | All dimensions, trends, YoY, rank | `useMIIData` hook | ✅ Connected |
+| Municipality Profile | `src/pages/MunicipalityProfile.jsx` | Score, rank, radar, history | `useMIIData` hook | ✅ Connected |
+| MII Rankings | `src/pages/MII.jsx` | Score, rank, comparison | `municipalities` table | ✅ Connected |
+| City Dashboard | `src/pages/CityDashboard.jsx` | mii_score display | `municipalities` table | ✅ Connected |
+
+### 9.2 Components Using MII Data
+
+| Component | File | Indicators Displayed | Data Source | Status |
+|-----------|------|---------------------|-------------|--------|
+| MIIImprovementAI | `src/components/municipalities/MIIImprovementAI.jsx` | mii_score, mii_rank | `municipality` prop | ✅ Connected |
+| PeerBenchmarkingTool | `src/components/municipalities/PeerBenchmarkingTool.jsx` | mii_score comparison | `municipalities` table | ✅ Connected |
+| AutomatedMIICalculator | `src/components/strategy/AutomatedMIICalculator.jsx` | All dimensions, trends | `useMIIData` hook + Edge Function | ✅ Connected |
+| DimensionTrendChart | `src/components/charts/DimensionTrendChart.jsx` | Historical dimension trends | `useMIIData` hook | ✅ Connected |
+| CrossCitySolutionSharing | `src/components/challenges/CrossCitySolutionSharing.jsx` | mii_score for matching | `municipalities` table | ✅ Connected |
+| DataQualityTracker | `src/components/geography/DataQualityTracker.jsx` | mii_score completeness | `municipalities` table | ✅ Connected |
+| ExecutiveBriefingGenerator | `src/components/executive/ExecutiveBriefingGenerator.jsx` | Average MII calculation | `municipalities` table | ✅ Connected |
+
+### 9.3 Centralized Data Hook
+
+All MII-related pages and components should use the `useMIIData` hook for consistent data:
+
+```javascript
+import { useMIIData } from '@/hooks/useMIIData';
+
+const { 
+  radarData,        // Dimension scores for radar chart
+  trendData,        // Historical scores for line chart
+  yoyGrowth,        // Year-over-year change
+  rankChange,       // Rank improvement/decline
+  trend,            // 'up' | 'down' | 'stable'
+  strengths,        // Top 2 dimensions
+  improvementAreas, // Bottom 2 dimensions
+  nationalStats,    // National averages
+  latestResult,     // Full latest mii_results record
+  hasData,          // Boolean for conditional rendering
+  isLoading         // Loading state
+} = useMIIData(municipalityId);
+```
+
+---
+
+## 10. FUTURE ENHANCEMENTS
 
 | Feature | Description | Priority |
 |---------|-------------|----------|
@@ -478,12 +541,11 @@ ACTION: UPDATE municipalities SET
 | Solution Metrics | Track solution adoption rates | Medium |
 | Budget Utilization | Factor in budget efficiency | Medium |
 | Staff Capacity | Include team size metrics | Low |
-| Real-time Triggers | Auto-calculate on data changes | Medium |
 | AI-Powered Recommendations | ML-based improvement suggestions | High |
 
 ---
 
-## 10. RELATED DOCUMENTS
+## 11. RELATED DOCUMENTS
 
 | Document | Path | Description |
 |----------|------|-------------|
