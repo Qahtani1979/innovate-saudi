@@ -515,6 +515,86 @@ These emails bypass preference checks:
 - `security_alert`
 - `login_new_device`
 
+### 5.4 Usage Examples
+
+#### From Frontend (React)
+
+```typescript
+import { supabase } from '@/integrations/supabase/client';
+
+// Send a template-based email
+const sendWelcomeEmail = async (userEmail: string, userName: string) => {
+  const { data, error } = await supabase.functions.invoke('send-email', {
+    body: {
+      template_key: 'welcome_new_user',
+      recipient_email: userEmail,
+      variables: {
+        userName: userName,
+        loginUrl: window.location.origin
+      },
+      language: 'en'
+    }
+  });
+  
+  if (error) throw error;
+  return data;
+};
+
+// Send with preference bypass (critical)
+const sendPasswordReset = async (userEmail: string, resetUrl: string) => {
+  const { data, error } = await supabase.functions.invoke('send-email', {
+    body: {
+      template_key: 'password_reset',
+      recipient_email: userEmail,
+      variables: {
+        userName: 'User',
+        resetUrl: resetUrl,
+        expiresIn: '1 hour'
+      },
+      force_send: true
+    }
+  });
+  
+  return data;
+};
+```
+
+#### From Edge Functions
+
+```typescript
+// In another edge function
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+);
+
+// Trigger email via function invoke
+await supabase.functions.invoke('send-email', {
+  body: {
+    template_key: 'challenge_approved',
+    recipient_email: challenge.challenge_owner_email,
+    variables: {
+      challengeTitle: challenge.title_en,
+      challengeCode: challenge.code,
+      detailUrl: `https://saudiinnovates.sa/challenges/${challenge.id}`
+    }
+  }
+});
+```
+
+#### Direct Content (Backward Compatible)
+
+```typescript
+// Send without template (legacy support)
+const { data } = await supabase.functions.invoke('send-email', {
+  body: {
+    to: 'user@example.com',
+    subject: 'Custom Email',
+    html: '<p>Hello World</p>'
+  }
+});
+```
+
 ---
 
 ## 6. Admin UI Features
