@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEntityVisibility } from './useEntityVisibility';
+import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
 /**
@@ -28,9 +28,10 @@ export function usePilotsWithVisibility(options = {}) {
     sectorIds, 
     userMunicipalityId, 
     nationalRegionId,
+    nationalMunicipalityIds,
     hasFullVisibility,
     isLoading: visibilityLoading 
-  } = useEntityVisibility();
+  } = useVisibilitySystem();
 
   const isStaffUser = hasRole('municipality_staff') || 
                       hasRole('municipality_admin') || 
@@ -140,24 +141,16 @@ export function usePilotsWithVisibility(options = {}) {
 
         // Then get national pilots
         let nationalPilots = [];
-        if (nationalRegionId) {
-          const { data: nationalMunicipalities } = await supabase
-            .from('municipalities')
-            .select('id')
-            .eq('region_id', nationalRegionId);
+        if (nationalMunicipalityIds?.length > 0) {
+          const { data: natPilots, error: natError } = await supabase
+            .from('pilots')
+            .select(baseSelect)
+            .in('municipality_id', nationalMunicipalityIds)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false });
 
-          if (nationalMunicipalities?.length > 0) {
-            const nationalMunicipalityIds = nationalMunicipalities.map(m => m.id);
-            const { data: natPilots, error: natError } = await supabase
-              .from('pilots')
-              .select(baseSelect)
-              .in('municipality_id', nationalMunicipalityIds)
-              .eq('is_deleted', false)
-              .order('created_at', { ascending: false });
-
-            if (!natError) {
-              nationalPilots = natPilots || [];
-            }
+          if (!natError) {
+            nationalPilots = natPilots || [];
           }
         }
 

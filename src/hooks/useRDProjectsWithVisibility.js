@@ -4,20 +4,20 @@ import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
 /**
- * Hook for fetching programs with visibility rules applied.
+ * Hook for fetching R&D projects with visibility rules applied.
  * 
  * Visibility:
- * - Admin / Full Visibility Users: All programs
- * - National Deputyship: All programs in their sector(s)
- * - Municipality Staff: Own + national programs
- * - Provider: Programs they've applied to
- * - Others: Published/active programs only
+ * - Admin / Full Visibility Users: All R&D projects
+ * - National Deputyship: All R&D projects in their sector(s)
+ * - Municipality Staff: Own + national R&D projects
+ * - Academia/Researcher: Projects they are involved in
+ * - Others: Published projects only
  */
-export function useProgramsWithVisibility(options = {}) {
+export function useRDProjectsWithVisibility(options = {}) {
   const { 
     status,
-    programType,
     sectorId,
+    projectType,
     limit = 100,
     includeDeleted = false
   } = options;
@@ -27,7 +27,6 @@ export function useProgramsWithVisibility(options = {}) {
     isNational, 
     sectorIds, 
     userMunicipalityId, 
-    nationalRegionId,
     nationalMunicipalityIds,
     hasFullVisibility,
     isLoading: visibilityLoading 
@@ -38,8 +37,10 @@ export function useProgramsWithVisibility(options = {}) {
                       hasRole('deputyship_staff') || 
                       hasRole('deputyship_admin');
 
+  const isResearcher = hasRole('academia') || hasRole('researcher');
+
   return useQuery({
-    queryKey: ['programs-with-visibility', {
+    queryKey: ['rd-projects-with-visibility', {
       userId,
       isAdmin,
       hasFullVisibility,
@@ -47,19 +48,20 @@ export function useProgramsWithVisibility(options = {}) {
       sectorIds,
       userMunicipalityId,
       status,
-      programType,
       sectorId,
+      projectType,
       limit
     }],
     queryFn: async () => {
-      let baseSelect = `
+      const baseSelect = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
-        sector:sectors(id, name_en, name_ar, code)
+        municipality:municipalities(id, name_en, name_ar, region_id),
+        sector:sectors(id, name_en, name_ar, code),
+        institution:institutions(id, name_en, name_ar)
       `;
 
       let query = supabase
-        .from('programs')
+        .from('rd_projects')
         .select(baseSelect)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -74,14 +76,14 @@ export function useProgramsWithVisibility(options = {}) {
         query = query.eq('status', status);
       }
 
-      // Apply program type filter if provided
-      if (programType) {
-        query = query.eq('program_type', programType);
-      }
-
       // Apply sector filter if provided
       if (sectorId) {
         query = query.eq('sector_id', sectorId);
+      }
+
+      // Apply project type filter if provided
+      if (projectType) {
+        query = query.eq('project_type', projectType);
       }
 
       // Admin or full visibility users see everything
@@ -91,9 +93,9 @@ export function useProgramsWithVisibility(options = {}) {
         return data || [];
       }
 
-      // Non-staff users only see active programs
-      if (!isStaffUser) {
-        query = query.in('status', ['active', 'open', 'completed']);
+      // Non-staff users only see published projects
+      if (!isStaffUser && !isResearcher) {
+        query = query.eq('is_published', true);
         const { data, error } = await query;
         if (error) throw error;
         return data || [];
@@ -109,9 +111,9 @@ export function useProgramsWithVisibility(options = {}) {
 
       // Geographic municipality: Own + national
       if (userMunicipalityId) {
-        // Get own municipality programs
-        const { data: ownPrograms, error: ownError } = await supabase
-          .from('programs')
+        // Get own municipality R&D projects
+        const { data: ownProjects, error: ownError } = await supabase
+          .from('rd_projects')
           .select(baseSelect)
           .eq('municipality_id', userMunicipalityId)
           .eq('is_deleted', false)
@@ -119,41 +121,41 @@ export function useProgramsWithVisibility(options = {}) {
 
         if (ownError) throw ownError;
 
-        // Get national programs
-        let nationalPrograms = [];
+        // Get national R&D projects
+        let nationalProjects = [];
         if (nationalMunicipalityIds?.length > 0) {
-          const { data: natPrograms, error: natError } = await supabase
-            .from('programs')
+          const { data: natProjects, error: natError } = await supabase
+            .from('rd_projects')
             .select(baseSelect)
             .in('municipality_id', nationalMunicipalityIds)
             .eq('is_deleted', false)
             .order('created_at', { ascending: false });
 
           if (!natError) {
-            nationalPrograms = natPrograms || [];
+            nationalProjects = natProjects || [];
           }
         }
 
         // Combine and deduplicate
-        const allPrograms = [...(ownPrograms || []), ...nationalPrograms];
-        const uniquePrograms = allPrograms.filter((program, index, self) =>
-          index === self.findIndex(p => p.id === program.id)
+        const allProjects = [...(ownProjects || []), ...nationalProjects];
+        const uniqueProjects = allProjects.filter((project, index, self) =>
+          index === self.findIndex(p => p.id === project.id)
         );
 
         // Apply additional filters
-        let filtered = uniquePrograms;
+        let filtered = uniqueProjects;
         if (status) {
           filtered = filtered.filter(p => p.status === status);
         }
-        if (programType) {
-          filtered = filtered.filter(p => p.program_type === programType);
+        if (sectorId) {
+          filtered = filtered.filter(p => p.sector_id === sectorId);
         }
 
         return filtered.slice(0, limit);
       }
 
-      // Fallback: active only
-      query = query.in('status', ['active', 'open', 'completed']);
+      // Fallback: published only
+      query = query.eq('is_published', true);
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
@@ -163,4 +165,4 @@ export function useProgramsWithVisibility(options = {}) {
   });
 }
 
-export default useProgramsWithVisibility;
+export default useRDProjectsWithVisibility;

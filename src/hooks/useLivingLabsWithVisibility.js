@@ -4,30 +4,27 @@ import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
 /**
- * Hook for fetching programs with visibility rules applied.
+ * Hook for fetching living labs with visibility rules applied.
  * 
  * Visibility:
- * - Admin / Full Visibility Users: All programs
- * - National Deputyship: All programs in their sector(s)
- * - Municipality Staff: Own + national programs
- * - Provider: Programs they've applied to
- * - Others: Published/active programs only
+ * - Admin / Full Visibility Users: All living labs
+ * - National Deputyship: All living labs in their sector(s)
+ * - Municipality Staff: Own + national living labs
+ * - Others: Published/active living labs only
  */
-export function useProgramsWithVisibility(options = {}) {
+export function useLivingLabsWithVisibility(options = {}) {
   const { 
     status,
-    programType,
     sectorId,
     limit = 100,
     includeDeleted = false
   } = options;
 
-  const { isAdmin, hasRole, userId, profile } = usePermissions();
+  const { isAdmin, hasRole, userId } = usePermissions();
   const { 
     isNational, 
     sectorIds, 
     userMunicipalityId, 
-    nationalRegionId,
     nationalMunicipalityIds,
     hasFullVisibility,
     isLoading: visibilityLoading 
@@ -39,7 +36,7 @@ export function useProgramsWithVisibility(options = {}) {
                       hasRole('deputyship_admin');
 
   return useQuery({
-    queryKey: ['programs-with-visibility', {
+    queryKey: ['living-labs-with-visibility', {
       userId,
       isAdmin,
       hasFullVisibility,
@@ -47,19 +44,18 @@ export function useProgramsWithVisibility(options = {}) {
       sectorIds,
       userMunicipalityId,
       status,
-      programType,
       sectorId,
       limit
     }],
     queryFn: async () => {
-      let baseSelect = `
+      const baseSelect = `
         *,
         municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
         sector:sectors(id, name_en, name_ar, code)
       `;
 
       let query = supabase
-        .from('programs')
+        .from('living_labs')
         .select(baseSelect)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -74,11 +70,6 @@ export function useProgramsWithVisibility(options = {}) {
         query = query.eq('status', status);
       }
 
-      // Apply program type filter if provided
-      if (programType) {
-        query = query.eq('program_type', programType);
-      }
-
       // Apply sector filter if provided
       if (sectorId) {
         query = query.eq('sector_id', sectorId);
@@ -91,9 +82,9 @@ export function useProgramsWithVisibility(options = {}) {
         return data || [];
       }
 
-      // Non-staff users only see active programs
+      // Non-staff users only see active living labs
       if (!isStaffUser) {
-        query = query.in('status', ['active', 'open', 'completed']);
+        query = query.in('status', ['active', 'operational']);
         const { data, error } = await query;
         if (error) throw error;
         return data || [];
@@ -109,9 +100,9 @@ export function useProgramsWithVisibility(options = {}) {
 
       // Geographic municipality: Own + national
       if (userMunicipalityId) {
-        // Get own municipality programs
-        const { data: ownPrograms, error: ownError } = await supabase
-          .from('programs')
+        // Get own municipality living labs
+        const { data: ownLabs, error: ownError } = await supabase
+          .from('living_labs')
           .select(baseSelect)
           .eq('municipality_id', userMunicipalityId)
           .eq('is_deleted', false)
@@ -119,41 +110,41 @@ export function useProgramsWithVisibility(options = {}) {
 
         if (ownError) throw ownError;
 
-        // Get national programs
-        let nationalPrograms = [];
+        // Get national living labs
+        let nationalLabs = [];
         if (nationalMunicipalityIds?.length > 0) {
-          const { data: natPrograms, error: natError } = await supabase
-            .from('programs')
+          const { data: natLabs, error: natError } = await supabase
+            .from('living_labs')
             .select(baseSelect)
             .in('municipality_id', nationalMunicipalityIds)
             .eq('is_deleted', false)
             .order('created_at', { ascending: false });
 
           if (!natError) {
-            nationalPrograms = natPrograms || [];
+            nationalLabs = natLabs || [];
           }
         }
 
         // Combine and deduplicate
-        const allPrograms = [...(ownPrograms || []), ...nationalPrograms];
-        const uniquePrograms = allPrograms.filter((program, index, self) =>
-          index === self.findIndex(p => p.id === program.id)
+        const allLabs = [...(ownLabs || []), ...nationalLabs];
+        const uniqueLabs = allLabs.filter((lab, index, self) =>
+          index === self.findIndex(l => l.id === lab.id)
         );
 
         // Apply additional filters
-        let filtered = uniquePrograms;
+        let filtered = uniqueLabs;
         if (status) {
-          filtered = filtered.filter(p => p.status === status);
+          filtered = filtered.filter(l => l.status === status);
         }
-        if (programType) {
-          filtered = filtered.filter(p => p.program_type === programType);
+        if (sectorId) {
+          filtered = filtered.filter(l => l.sector_id === sectorId);
         }
 
         return filtered.slice(0, limit);
       }
 
       // Fallback: active only
-      query = query.in('status', ['active', 'open', 'completed']);
+      query = query.in('status', ['active', 'operational']);
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
@@ -163,4 +154,4 @@ export function useProgramsWithVisibility(options = {}) {
   });
 }
 
-export default useProgramsWithVisibility;
+export default useLivingLabsWithVisibility;

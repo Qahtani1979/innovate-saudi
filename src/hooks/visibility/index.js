@@ -11,6 +11,10 @@ export { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility
 export { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 export { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 export { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+export { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
+export { useContractsWithVisibility } from '@/hooks/useContractsWithVisibility';
+export { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+export { useKnowledgeWithVisibility } from '@/hooks/useKnowledgeWithVisibility';
 
 // Re-export permissions hook
 export { usePermissions } from '@/components/permissions/usePermissions';

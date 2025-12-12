@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEntityVisibility } from './useEntityVisibility';
+import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
 /**
@@ -26,10 +26,10 @@ export function useChallengesWithVisibility(options = {}) {
     isNational, 
     sectorIds, 
     userMunicipalityId, 
-    nationalRegionId,
+    nationalMunicipalityIds,
     hasFullVisibility,
     isLoading: visibilityLoading 
-  } = useEntityVisibility();
+  } = useVisibilitySystem();
 
   const isStaffUser = hasRole('municipality_staff') || 
                       hasRole('municipality_admin') || 
@@ -116,28 +116,20 @@ export function useChallengesWithVisibility(options = {}) {
 
         // Then get national challenges (from national region)
         let nationalChallenges = [];
-        if (nationalRegionId) {
-          const { data: nationalMunicipalities } = await supabase
-            .from('municipalities')
-            .select('id')
-            .eq('region_id', nationalRegionId);
+        if (nationalMunicipalityIds?.length > 0) {
+          const { data: natChallenges, error: natError } = await supabase
+            .from('challenges')
+            .select(`
+              *,
+              municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+              sector:sectors(id, name_en, name_ar, code)
+            `)
+            .in('municipality_id', nationalMunicipalityIds)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false });
 
-          if (nationalMunicipalities?.length > 0) {
-            const nationalMunicipalityIds = nationalMunicipalities.map(m => m.id);
-            const { data: natChallenges, error: natError } = await supabase
-              .from('challenges')
-              .select(`
-                *,
-                municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
-                sector:sectors(id, name_en, name_ar, code)
-              `)
-              .in('municipality_id', nationalMunicipalityIds)
-              .eq('is_deleted', false)
-              .order('created_at', { ascending: false });
-
-            if (!natError) {
-              nationalChallenges = natChallenges || [];
-            }
+          if (!natError) {
+            nationalChallenges = natChallenges || [];
           }
         }
 
