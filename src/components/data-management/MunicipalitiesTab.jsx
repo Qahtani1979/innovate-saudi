@@ -33,7 +33,7 @@ export function MunicipalitiesTab({ regions, onEdit, onDelete, onAdd }) {
       label: { en: 'Name (EN)', ar: 'الاسم (EN)' },
       render: (item) => (
         <Link 
-          to={createPageUrl(`MunicipalityDashboard?id=${item.id}`)} 
+          to={createPageUrl(`MunicipalityProfile?id=${item.id}`)} 
           className="text-blue-600 hover:underline font-medium"
         >
           {item.name_en}
