@@ -9,7 +9,7 @@ import {
 import { 
   Upload, Search, Grid, List, Loader2, RefreshCw, Trash2, Download,
   Image, Video, FileText, File, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown,
-  Calendar, HardDrive, Eye, FolderOpen
+  Calendar, HardDrive, Eye, FolderOpen, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import MediaFilters from '@/components/media/MediaFilters';
@@ -67,6 +67,7 @@ export default function MediaLibrary() {
 
   const {
     media,
+    totalMedia,
     stats,
     isLoading,
     selectedBuckets,
@@ -79,6 +80,11 @@ export default function MediaLibrary() {
     setSortBy,
     sortOrder,
     setSortOrder,
+    page,
+    setPage,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
     upload,
     isUploading,
     delete: deleteFile,
@@ -317,6 +323,63 @@ export default function MediaLibrary() {
               }}
             />
           )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                {t({ 
+                  en: `Showing ${(page - 1) * 50 + 1}-${Math.min(page * 50, totalMedia)} of ${totalMedia} files`,
+                  ar: `عرض ${(page - 1) * 50 + 1}-${Math.min(page * 50, totalMedia)} من ${totalMedia} ملف`
+                })}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(page - 1)}
+                  disabled={!hasPrevPage}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  {t({ en: 'Previous', ar: 'السابق' })}
+                </Button>
+                <div className="flex items-center gap-1 px-2">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={page === pageNum ? 'default' : 'ghost'}
+                        size="sm"
+                        className="w-8 h-8 p-0"
+                        onClick={() => setPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(page + 1)}
+                  disabled={!hasNextPage}
+                >
+                  {t({ en: 'Next', ar: 'التالي' })}
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Details Panel */}
@@ -365,7 +428,6 @@ export default function MediaLibrary() {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
       </AlertDialog>
     </PageLayout>
   );
