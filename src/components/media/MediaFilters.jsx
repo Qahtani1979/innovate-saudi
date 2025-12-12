@@ -10,7 +10,7 @@ import {
   HardDrive, Calendar, Clock
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
-import { STORAGE_BUCKETS } from '@/hooks/useMediaLibrary';
+import { STORAGE_BUCKETS } from '@/config/mediaConfig';
 
 const FILE_TYPE_OPTIONS = [
   { value: 'all', label: { en: 'All Files', ar: 'جميع الملفات' }, icon: File },
