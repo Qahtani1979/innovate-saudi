@@ -803,4 +803,4 @@ Use Saudi municipal context and data-driven insights.`;
   );
 }
 
-export default ProtectedPage(Challenges, { requiredPermissions: ['challenge_view_all'] });
+export default ProtectedPage(Challenges, { requiredPermissions: ['challenge_view_all', 'challenge_view_own', 'challenge_view', 'challenge_create'] });

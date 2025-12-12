@@ -13,6 +13,7 @@ export default function ProtectedPage(Component, options = {}) {
     requiredPermissions = [],
     requiredRoles = [],
     requireAdmin = false,
+    requireAllPermissions = false, // New option: if true, requires ALL permissions; if false, requires ANY
     fallback = null
   } = options;
 
@@ -53,9 +54,11 @@ export default function ProtectedPage(Component, options = {}) {
       }
     }
 
-    // Permission check
+    // Permission check - use hasAnyPermission by default for flexibility
     if (requiredPermissions.length > 0) {
-      const hasAccess = requiredPermissions.every(perm => hasPermission(perm));
+      const hasAccess = requireAllPermissions 
+        ? requiredPermissions.every(perm => hasPermission(perm))
+        : hasAnyPermission(requiredPermissions);
       
       if (!hasAccess) {
         return fallback || (

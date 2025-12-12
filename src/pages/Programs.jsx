@@ -681,4 +681,4 @@ Provide bilingual insights (each item should have both English and Arabic versio
   );
 }
 
-export default ProtectedPage(ProgramsPage, { requiredPermissions: ['program_view_all'] });
+export default ProtectedPage(ProgramsPage, { requiredPermissions: ['program_view_all', 'program_view', 'program_participate', 'dashboard_view'] });

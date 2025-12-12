@@ -492,4 +492,4 @@ Provide bilingual insights (each item should have both English and Arabic versio
   );
 }
 
-export default ProtectedPage(SolutionsPage, { requiredPermissions: ['solution_view_all'] });
+export default ProtectedPage(SolutionsPage, { requiredPermissions: ['solution_view_all', 'solution_view', 'dashboard_view'] });

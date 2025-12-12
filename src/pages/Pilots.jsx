@@ -507,4 +507,4 @@ function PilotsPage() {
   );
 }
 
-export default ProtectedPage(PilotsPage, { requiredPermissions: ['pilot_view_all'] });
+export default ProtectedPage(PilotsPage, { requiredPermissions: ['pilot_view_all', 'pilot_view_own', 'pilot_view', 'pilot_create', 'pilot_support'] });
