@@ -584,7 +584,7 @@ Using web search:
       </div>
 
       <Tabs defaultValue="regions" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="regions">
             <MapPin className="h-4 w-4 mr-2" />
             {t({ en: 'Regions', ar: 'المناطق' })}
@@ -604,6 +604,10 @@ Using web search:
           <TabsTrigger value="lookups">
             <Briefcase className="h-4 w-4 mr-2" />
             {t({ en: 'Lookups', ar: 'القوائم' })}
+          </TabsTrigger>
+          <TabsTrigger value="quality">
+            <Globe className="h-4 w-4 mr-2" />
+            {t({ en: 'Quality', ar: 'الجودة' })}
           </TabsTrigger>
           <TabsTrigger value="embeddings">
             <Sparkles className="h-4 w-4 mr-2" />
@@ -655,6 +659,86 @@ Using web search:
 
         <TabsContent value="lookups">
           <LookupDataManager />
+        </TabsContent>
+
+        {/* Quality Tab - Migrated from DataQualityDashboard */}
+        <TabsContent value="quality">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-blue-600" />
+                {t({ en: 'Data Quality Dashboard', ar: 'لوحة جودة البيانات' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Quality Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(() => {
+                  const challengeCompleteness = challenges.length > 0 
+                    ? Math.round((challenges.filter(c => c.title_en && c.description_en && c.sector && c.municipality_id).length / challenges.length) * 100) 
+                    : 0;
+                  const solutionCompleteness = solutions.length > 0
+                    ? Math.round((solutions.filter(s => s.title_en && s.description_en && s.provider_id).length / solutions.length) * 100)
+                    : 0;
+                  
+                  const metrics = [
+                    { label: { en: 'Challenge Data Quality', ar: 'جودة بيانات التحديات' }, value: challengeCompleteness, total: challenges.length },
+                    { label: { en: 'Solution Data Quality', ar: 'جودة بيانات الحلول' }, value: solutionCompleteness, total: solutions.length },
+                  ];
+                  
+                  return metrics.map((metric, i) => {
+                    const color = metric.value >= 80 ? 'green' : metric.value >= 50 ? 'yellow' : 'red';
+                    return (
+                      <Card key={i} className={`border-2 ${color === 'green' ? 'border-green-200 bg-green-50' : color === 'yellow' ? 'border-yellow-200 bg-yellow-50' : 'border-red-200 bg-red-50'}`}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <Database className={`h-8 w-8 text-${color}-600`} />
+                            <span className={`text-2xl font-bold ${color === 'green' ? 'text-green-600' : color === 'yellow' ? 'text-yellow-600' : 'text-red-600'}`}>
+                              {metric.value}%
+                            </span>
+                          </div>
+                          <p className="font-medium text-slate-900">{metric.label[language]}</p>
+                          <p className="text-sm text-slate-600 mt-1">
+                            {t({ en: `${metric.total} records analyzed`, ar: `${metric.total} سجل محلل` })}
+                          </p>
+                          <div className="w-full bg-white rounded-full h-2 mt-3">
+                            <div 
+                              className={`h-2 rounded-full transition-all ${color === 'green' ? 'bg-green-600' : color === 'yellow' ? 'bg-yellow-600' : 'bg-red-600'}`}
+                              style={{ width: `${metric.value}%` }}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  });
+                })()}
+              </div>
+              
+              {/* Quality Issues */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">{t({ en: 'Data Quality Issues', ar: 'مشاكل جودة البيانات' })}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                    <p className="text-sm font-medium text-red-900">
+                      {challenges.filter(c => !c.title_en).length} {t({ en: 'challenges missing title', ar: 'تحدي بدون عنوان' })}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm font-medium text-yellow-900">
+                      {challenges.filter(c => !c.municipality_id).length} {t({ en: 'challenges not linked to municipality', ar: 'تحدي غير مرتبط ببلدية' })}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm font-medium text-yellow-900">
+                      {solutions.filter(s => !s.provider_id).length} {t({ en: 'solutions missing provider', ar: 'حلول بدون مزود' })}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="embeddings">
