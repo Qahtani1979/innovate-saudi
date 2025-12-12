@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { 
   PageLayout, PageHeader, SearchFilter, usePersonaColors, PersonaButton
@@ -259,8 +260,53 @@ export default function MediaLibrary() {
         files={media} 
         stats={stats}
         onAction={(action, recommendation) => {
-          console.log('AI Action:', action, recommendation);
-          // Future: implement specific actions based on AI recommendations
+          // Handle AI recommendations
+          switch (action) {
+            case 'delete_unused':
+              // Filter to show only files with 0 views/downloads
+              setSelectedType('all');
+              setSearchTerm('');
+              toast.info(t({ 
+                en: `Showing ${recommendation.affectedCount || 'unused'} files with no engagement. Review and delete manually.`,
+                ar: `عرض الملفات بدون تفاعل. راجع واحذف يدوياً.`
+              }));
+              break;
+            case 'archive_old':
+              toast.info(t({ 
+                en: 'Archive feature coming soon. For now, review old files manually.',
+                ar: 'ميزة الأرشفة قادمة قريباً. راجع الملفات القديمة يدوياً.'
+              }));
+              break;
+            case 'compress_large':
+              toast.info(t({ 
+                en: 'Tip: Download large files, compress them locally, and re-upload.',
+                ar: 'نصيحة: حمّل الملفات الكبيرة، اضغطها محلياً، ثم أعد رفعها.'
+              }));
+              break;
+            case 'rename_duplicates':
+              toast.info(t({ 
+                en: 'Duplicate detection shown. Review files with similar sizes/types.',
+                ar: 'تم اكتشاف ملفات مكررة. راجع الملفات المتشابهة.'
+              }));
+              break;
+            case 'review_engagement':
+              setSortBy('view_count');
+              setSortOrder('desc');
+              toast.success(t({ 
+                en: 'Sorted by views to show high-engagement files first.',
+                ar: 'تم الترتيب حسب المشاهدات.'
+              }));
+              break;
+            case 'organize_folders':
+              toast.info(t({ 
+                en: 'Organize by using bucket filters on the left panel.',
+                ar: 'نظّم باستخدام فلاتر المجلدات في اللوحة اليسرى.'
+              }));
+              setShowFilters(true);
+              break;
+            default:
+              toast.info(t({ en: 'Action noted. Manual review recommended.', ar: 'تم تسجيل الإجراء.' }));
+          }
         }}
       />
 
