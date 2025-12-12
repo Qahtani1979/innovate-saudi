@@ -132,6 +132,6 @@ export default function IntegrationManager() {
 
       {/* OAuth Connectors */}
       <OAuthConnectorPanel />
-    </div>
+    </PageLayout>
   );
 }
