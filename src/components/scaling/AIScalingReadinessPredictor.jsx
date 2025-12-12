@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,7 @@ import { useLanguage } from '../LanguageContext';
 import { Building2, Sparkles, Loader2, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
+import { useMunicipalitiesWithVisibility } from '@/hooks/visibility';
 
 export default function AIScalingReadinessPredictor({ municipalityId, solution }) {
   const { t } = useLanguage();
@@ -17,10 +17,12 @@ export default function AIScalingReadinessPredictor({ municipalityId, solution }
     fallbackData: null
   });
 
+  // Use visibility-aware municipalities hook
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
+
   const analyzeMunicipality = async () => {
     try {
-      const { data: municipalities } = await supabase.from('municipalities').select('*');
-      const muni = (municipalities || []).find(m => m.id === municipalityId);
+      const muni = municipalities.find(m => m.id === municipalityId);
 
       const { success, data } = await invokeAI({
         prompt: `Assess municipality readiness for scaling solution:

@@ -17,6 +17,7 @@ import FieldSecurityRulesEditor from '../components/access/FieldSecurityRulesEdi
 import PermissionTestingTool from '../components/access/PermissionTestingTool';
 import BulkRoleActions from '../components/access/BulkRoleActions';
 import RoleAuditDialog from '../components/access/RoleAuditDialog';
+import PermissionGate from '../components/permissions/PermissionGate';
 import {
   Shield, Plus, Pencil, Trash2, Users, Lock, CheckCircle, Copy, TrendingUp, UserCheck, TestTube, Zap, BarChart3
 } from 'lucide-react';
@@ -183,7 +184,7 @@ const PERMISSION_CATEGORIES = {
   }
 };
 
-function RolePermissionManager() {
+function RolePermissionManagerContent() {
   const { language, isRTL, t } = useLanguage();
   const { isAdmin, hasPermission } = usePermissions();
   const queryClient = useQueryClient();
@@ -736,6 +737,29 @@ function RolePermissionManager() {
         onOpenChange={(open) => !open && setAuditRoleId(null)} 
       />
     </div>
+  );
+}
+
+// Wrapper component with admin permission gate
+function RolePermissionManager() {
+  const { t } = useLanguage();
+  
+  return (
+    <PermissionGate requireAdmin fallback={
+      <Card className="border-2 border-red-300 bg-red-50 max-w-lg mx-auto mt-8">
+        <CardContent className="pt-6 text-center">
+          <Shield className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <p className="text-lg font-semibold text-red-900">
+            {t({ en: 'Access Denied', ar: 'الوصول مرفوض' })}
+          </p>
+          <p className="text-sm text-red-700">
+            {t({ en: 'You need administrator privileges to manage roles and permissions.', ar: 'تحتاج صلاحيات المسؤول لإدارة الأدوار والصلاحيات.' })}
+          </p>
+        </CardContent>
+      </Card>
+    }>
+      <RolePermissionManagerContent />
+    </PermissionGate>
   );
 }
 
