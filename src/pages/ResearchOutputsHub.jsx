@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { BookOpen, FileText, Award, ExternalLink, Microscope } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ResearchOutputsHub() {
   const { language, isRTL, t } = useLanguage();
@@ -27,15 +28,12 @@ function ResearchOutputsHub() {
   );
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Research Outputs & Publications', ar: 'المخرجات البحثية والمنشورات' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Publications, patents, and research outcomes', ar: 'المنشورات وبراءات الاختراع والنتائج البحثية' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={BookOpen}
+        title={t({ en: 'Research Outputs & Publications', ar: 'المخرجات البحثية والمنشورات' })}
+        description={t({ en: 'Publications, patents, and research outcomes', ar: 'المنشورات وبراءات الاختراع والنتائج البحثية' })}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
@@ -163,7 +161,7 @@ function ResearchOutputsHub() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

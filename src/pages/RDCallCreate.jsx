@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles } from 'lucide-react';
+import { Save, Loader2, Sparkles, Megaphone } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function RDCallCreate() {
   const { language, isRTL, t } = useLanguage();
@@ -186,15 +187,12 @@ Make the content specific to Saudi Arabia's municipal innovation context and Vis
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Create R&D Call', ar: 'إنشاء دعوة بحث وتطوير' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Launch a new research funding call', ar: 'إطلاق دعوة تمويل بحثية جديدة' })}
-        </p>
-      </div>
+    <PageLayout maxWidth="4xl">
+      <PageHeader
+        icon={Megaphone}
+        title={t({ en: 'Create R&D Call', ar: 'إنشاء دعوة بحث وتطوير' })}
+        description={t({ en: 'Launch a new research funding call', ar: 'إطلاق دعوة تمويل بحثية جديدة' })}
+      />
 
       <Card>
         <CardHeader>
@@ -466,7 +464,7 @@ Make the content specific to Saudi Arabia's municipal innovation context and Vis
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

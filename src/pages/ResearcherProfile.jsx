@@ -11,6 +11,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { ContactSection, BioSection, SkillsBadges, ProfessionalSection } from '../components/profile/BilingualProfileDisplay';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ResearcherProfile() {
   const { language, isRTL, t } = useLanguage();
@@ -62,7 +63,7 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
   const r = researcher;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Header */}
       <Card>
         <CardContent className="pt-6">
@@ -292,7 +293,7 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
