@@ -122,7 +122,7 @@ import MatchersCoverageReport from './pages/MatchersCoverageReport';
 import ScalingCoverageReport from './pages/ScalingCoverageReport';
 import MatchmakerCoverageReport from './pages/MatchmakerCoverageReport';
 import StrategicPlanningCoverageReport from './pages/StrategicPlanningCoverageReport';
-import Organizations from './pages/Organizations';
+
 import MatchmakerApplications from './pages/MatchmakerApplications';
 import MatchmakerApplicationCreate from './pages/MatchmakerApplicationCreate';
 import MatchmakerApplicationDetail from './pages/MatchmakerApplicationDetail';
@@ -603,7 +603,7 @@ export const PAGES = {
     "ScalingCoverageReport": ScalingCoverageReport,
     "MatchmakerCoverageReport": MatchmakerCoverageReport,
     "StrategicPlanningCoverageReport": StrategicPlanningCoverageReport,
-    "Organizations": Organizations,
+    
     "MatchmakerApplications": MatchmakerApplications,
     "MatchmakerApplicationCreate": MatchmakerApplicationCreate,
     "MatchmakerApplicationDetail": MatchmakerApplicationDetail,
