@@ -208,7 +208,6 @@ export default function PublicSolutions() {
           </Link>
         </div>
       </section>
-      </section>
     </>
   );
 }
