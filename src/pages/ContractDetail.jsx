@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { FileText, Calendar, DollarSign, CheckCircle2, AlertCircle, Download } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { usePermissions } from '@/components/permissions/usePermissions';
+import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 
 function ContractDetail() {
   const { t } = useLanguage();

@@ -30,6 +30,7 @@ import RDToPolicyConverter from '../components/rd/RDToPolicyConverter';
 import TRLAssessmentWorkflow from '../components/rd/TRLAssessmentWorkflow';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { usePermissions } from '../components/permissions/usePermissions';
+import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import RDProjectFinalEvaluationPanel from '../components/rd/RDProjectFinalEvaluationPanel';
 import IPManagementWidget from '../components/rd/IPManagementWidget';
 import TRLVisualization from '../components/rd/TRLVisualization';

@@ -29,6 +29,7 @@ import PolicyTabWidget from '../components/policy/PolicyTabWidget';
 import ProgramActivityLog from '../components/programs/ProgramActivityLog';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { usePermissions } from '../components/permissions/usePermissions';
+import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { Shield, Workflow } from 'lucide-react';
 import AIProgramSuccessPredictor from '../components/programs/AIProgramSuccessPredictor';
 import AICohortOptimizerWidget from '../components/programs/AICohortOptimizerWidget';

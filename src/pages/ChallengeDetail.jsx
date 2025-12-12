@@ -37,8 +37,11 @@ import PolicyRecommendationManager from '../components/challenges/PolicyRecommen
 import ChallengeActivityLog from '../components/challenges/ChallengeActivityLog';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { usePermissions } from '@/components/permissions/usePermissions';
+import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 
 export default function ChallengeDetail() {
+  const { hasPermission, isAdmin } = usePermissions();
   const [comment, setComment] = useState('');
   const [freshAiInsights, setFreshAiInsights] = useState(null);
   const [showSubmission, setShowSubmission] = useState(false);
@@ -61,6 +64,16 @@ export default function ChallengeDetail() {
       return data;
     },
     enabled: !!challengeId
+  });
+
+  // Visibility access check for the challenge
+  const accessCheck = useEntityAccessCheck(challenge, {
+    municipalityColumn: 'municipality_id',
+    sectorColumn: 'sector_id',
+    ownerColumn: 'created_by',
+    publishedColumn: 'is_published',
+    statusColumn: 'status',
+    publicStatuses: ['approved', 'published', 'active', 'completed']
   });
 
   const { data: solutions = [] } = useQuery({

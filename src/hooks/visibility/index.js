@@ -5,6 +5,9 @@
 export { useVisibilitySystem } from './useVisibilitySystem';
 export { createVisibilityHook } from './createVisibilityHook';
 
+// Single entity access check
+export { useEntityAccessCheck, withEntityAccess } from '@/hooks/useEntityAccessCheck';
+
 // Entity-specific hooks (from parent hooks folder)
 export { useEntityVisibility } from '@/hooks/useEntityVisibility';
 export { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
