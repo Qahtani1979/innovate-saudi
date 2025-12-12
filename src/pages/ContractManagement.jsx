@@ -88,14 +88,6 @@ function ContractManagement() {
           </Link>
         }
       />
-        </div>
-        <Link to={createPageUrl('ContractDetail') + '?mode=create'}>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            {t({ en: 'New Contract', ar: 'عقد جديد' })}
-          </Button>
-        </Link>
-      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
