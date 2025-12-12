@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
-import { Mail, Eye, Save, Sparkles, Loader2, Send, Plus, Trash2, Copy, Settings, RefreshCw, Check, X, FileText } from 'lucide-react';
+import { Mail, Eye, Save, Sparkles, Loader2, Send, Plus, Trash2, Copy, Settings, RefreshCw, Check, X, FileText, Brain, AlertTriangle, Lightbulb, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -41,6 +42,8 @@ function EmailTemplateEditor() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [showPreview, setShowPreview] = useState(false);
   const [showTestDialog, setShowTestDialog] = useState(false);
+  const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
   const [testEmail, setTestEmail] = useState('');
   const [previewLanguage, setPreviewLanguage] = useState('en');
   const [isSending, setIsSending] = useState(false);
@@ -227,6 +230,120 @@ For a Saudi municipal innovation platform. Include:
         cta_text_ar: result.data.cta_text_ar || prev.cta_text_ar,
       }));
       toast.success(t({ en: 'AI template generated', ar: 'تم توليد القالب الذكي' }));
+    }
+  };
+
+  const handleAIAnalysis = async () => {
+    setShowAnalysisDialog(true);
+    setAnalysisResult(null);
+    
+    // Prepare template summary for analysis
+    const templateSummary = templates.map(t => ({
+      key: t.template_key,
+      category: t.category,
+      name: t.name_en,
+      hasArabic: !!t.body_ar,
+      hasHeader: t.use_header,
+      hasFooter: t.use_footer,
+      hasCTA: !!t.cta_text_en,
+      variableCount: t.variables?.length || 0,
+      isActive: t.is_active,
+      isSystem: t.is_system,
+      isCritical: t.is_critical
+    }));
+    
+    const categoryCounts = CATEGORIES.map(c => ({
+      category: c.value,
+      label: c.label.en,
+      count: templates.filter(t => t.category === c.value).length
+    }));
+    
+    const result = await invokeAI({
+      prompt: `Analyze this email template database for a Saudi municipal innovation platform (bilingual EN/AR).
+
+TEMPLATES (${templates.length} total):
+${JSON.stringify(templateSummary, null, 2)}
+
+CATEGORY DISTRIBUTION:
+${JSON.stringify(categoryCounts, null, 2)}
+
+Provide a comprehensive analysis covering:
+1. Overall health assessment (score 1-100)
+2. Coverage gaps (missing templates for common workflows)
+3. Consistency issues (templates missing Arabic, headers, CTAs)
+4. Category balance (over/under represented categories)
+5. Specific recommendations for improvement
+6. Best practices compliance
+7. Suggested new templates to add`,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          overall_score: { type: 'number' },
+          health_summary: { type: 'string' },
+          coverage_gaps: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                gap: { type: 'string' },
+                priority: { type: 'string' },
+                suggested_template: { type: 'string' }
+              }
+            }
+          },
+          consistency_issues: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                issue: { type: 'string' },
+                affected_templates: { type: 'array', items: { type: 'string' } },
+                fix: { type: 'string' }
+              }
+            }
+          },
+          category_analysis: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                category: { type: 'string' },
+                status: { type: 'string' },
+                recommendation: { type: 'string' }
+              }
+            }
+          },
+          recommendations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                description: { type: 'string' },
+                priority: { type: 'string' }
+              }
+            }
+          },
+          suggested_templates: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                template_key: { type: 'string' },
+                category: { type: 'string' },
+                name: { type: 'string' },
+                description: { type: 'string' }
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    if (result.success) {
+      setAnalysisResult(result.data);
+    } else {
+      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
     }
   };
 
@@ -461,6 +578,10 @@ For a Saudi municipal innovation platform. Include:
             <Button onClick={() => { setTestEmail(currentUser?.email || ''); setShowTestDialog(true); }} variant="outline">
               <Send className="h-4 w-4 mr-2" />
               {t({ en: 'Test Send', ar: 'إرسال تجريبي' })}
+            </Button>
+            <Button onClick={handleAIAnalysis} disabled={aiLoading || !isAvailable || templates.length === 0} variant="outline" className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-200">
+              {aiLoading && showAnalysisDialog ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Brain className="h-4 w-4 mr-2 text-blue-600" />}
+              {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
             </Button>
             <div className="flex-1" />
             {selectedTemplateId && !template.is_system && (
@@ -739,6 +860,180 @@ For a Saudi municipal innovation platform. Include:
               {isSending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
               {t({ en: 'Send Test', ar: 'إرسال تجريبي' })}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Analysis Dialog */}
+      <Dialog open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-blue-600" />
+              {t({ en: 'Email Template Analysis', ar: 'تحليل قوالب البريد' })}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[70vh] pr-4">
+            {aiLoading && !analysisResult ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+                <p className="text-muted-foreground">{t({ en: 'Analyzing templates...', ar: 'جاري تحليل القوالب...' })}</p>
+              </div>
+            ) : analysisResult ? (
+              <div className="space-y-6">
+                {/* Overall Score */}
+                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+                  <div className={`text-4xl font-bold ${
+                    analysisResult.overall_score >= 80 ? 'text-green-600' : 
+                    analysisResult.overall_score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
+                    {analysisResult.overall_score}/100
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold">{t({ en: 'Health Score', ar: 'نقاط الصحة' })}</p>
+                    <p className="text-sm text-muted-foreground">{analysisResult.health_summary}</p>
+                  </div>
+                </div>
+
+                {/* Coverage Gaps */}
+                {analysisResult.coverage_gaps?.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                      <AlertTriangle className="h-4 w-4 text-orange-500" />
+                      {t({ en: 'Coverage Gaps', ar: 'فجوات التغطية' })}
+                    </h3>
+                    <div className="space-y-2">
+                      {analysisResult.coverage_gaps.map((gap, i) => (
+                        <div key={i} className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <p className="font-medium text-sm">{gap.gap}</p>
+                            <Badge variant={gap.priority === 'high' ? 'destructive' : gap.priority === 'medium' ? 'warning' : 'secondary'}>
+                              {gap.priority}
+                            </Badge>
+                          </div>
+                          {gap.suggested_template && (
+                            <p className="text-xs text-muted-foreground mt-1">💡 {gap.suggested_template}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Consistency Issues */}
+                {analysisResult.consistency_issues?.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                      <X className="h-4 w-4 text-red-500" />
+                      {t({ en: 'Consistency Issues', ar: 'مشاكل الاتساق' })}
+                    </h3>
+                    <div className="space-y-2">
+                      {analysisResult.consistency_issues.map((issue, i) => (
+                        <div key={i} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="font-medium text-sm">{issue.issue}</p>
+                          {issue.affected_templates?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {issue.affected_templates.map((t, j) => (
+                                <Badge key={j} variant="outline" className="text-xs font-mono">{t}</Badge>
+                              ))}
+                            </div>
+                          )}
+                          {issue.fix && (
+                            <p className="text-xs text-green-700 mt-2">✓ {issue.fix}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Category Analysis */}
+                {analysisResult.category_analysis?.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                      <TrendingUp className="h-4 w-4 text-blue-500" />
+                      {t({ en: 'Category Analysis', ar: 'تحليل الفئات' })}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {analysisResult.category_analysis.map((cat, i) => (
+                        <div key={i} className="p-2 border rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">{cat.category}</span>
+                            <Badge variant={cat.status === 'good' ? 'default' : cat.status === 'low' ? 'warning' : 'secondary'}>
+                              {cat.status}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{cat.recommendation}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {analysisResult.recommendations?.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                      <Lightbulb className="h-4 w-4 text-yellow-500" />
+                      {t({ en: 'Recommendations', ar: 'التوصيات' })}
+                    </h3>
+                    <div className="space-y-2">
+                      {analysisResult.recommendations.map((rec, i) => (
+                        <div key={i} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <p className="font-medium text-sm">{rec.title}</p>
+                            <Badge variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'warning' : 'secondary'}>
+                              {rec.priority}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{rec.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Suggested Templates */}
+                {analysisResult.suggested_templates?.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2 mb-3">
+                      <Plus className="h-4 w-4 text-green-500" />
+                      {t({ en: 'Suggested New Templates', ar: 'قوالب جديدة مقترحة' })}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {analysisResult.suggested_templates.map((tmpl, i) => (
+                        <div key={i} className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{tmpl.name}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{tmpl.template_key}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{tmpl.description}</p>
+                          </div>
+                          <Badge variant="outline">{tmpl.category}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Brain className="h-12 w-12 mb-4 opacity-50" />
+                <p>{t({ en: 'Analysis will appear here', ar: 'سيظهر التحليل هنا' })}</p>
+              </div>
+            )}
+          </ScrollArea>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAnalysisDialog(false)}>
+              {t({ en: 'Close', ar: 'إغلاق' })}
+            </Button>
+            {analysisResult && (
+              <Button onClick={handleAIAnalysis} disabled={aiLoading} variant="outline">
+                <RefreshCw className={`h-4 w-4 mr-2 ${aiLoading ? 'animate-spin' : ''}`} />
+                {t({ en: 'Re-analyze', ar: 'إعادة التحليل' })}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
