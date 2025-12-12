@@ -5,16 +5,20 @@ import { Input } from "@/components/ui/input";
 import { useLanguage } from '@/components/LanguageContext';
 import { 
   Upload, Search, Grid, List, Loader2, RefreshCw, Trash2, Download,
-  Image, Video, FileText, File, SlidersHorizontal
+  Image, Video, FileText, File, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown,
+  Calendar, HardDrive, Eye
 } from 'lucide-react';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import MediaFilters from '@/components/media/MediaFilters';
 import MediaGrid from '@/components/media/MediaGrid';
+import MediaListView from '@/components/media/MediaListView';
 import MediaDetails from '@/components/media/MediaDetails';
 import MediaUploadDialog from '@/components/media/MediaUploadDialog';
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import {
   AlertDialog,
@@ -26,6 +30,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const fileTypes = [
+  { value: 'all', label: { en: 'All', ar: 'الكل' }, icon: File },
+  { value: 'image', label: { en: 'Images', ar: 'صور' }, icon: Image },
+  { value: 'video', label: { en: 'Videos', ar: 'فيديو' }, icon: Video },
+  { value: 'document', label: { en: 'Docs', ar: 'مستندات' }, icon: FileText },
+];
+
+const sortOptions = [
+  { value: 'created_at', label: { en: 'Date Uploaded', ar: 'تاريخ الرفع' }, icon: Calendar },
+  { value: 'original_filename', label: { en: 'Name', ar: 'الاسم' }, icon: FileText },
+  { value: 'file_size', label: { en: 'Size', ar: 'الحجم' }, icon: HardDrive },
+  { value: 'view_count', label: { en: 'Views', ar: 'المشاهدات' }, icon: Eye },
+  { value: 'download_count', label: { en: 'Downloads', ar: 'التحميلات' }, icon: Download },
+];
 
 export default function MediaLibrary() {
   const { language, isRTL, t } = useLanguage();
@@ -46,6 +71,10 @@ export default function MediaLibrary() {
     setSearchTerm,
     selectedType,
     setSelectedType,
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
     upload,
     isUploading,
     delete: deleteFile,
@@ -55,6 +84,12 @@ export default function MediaLibrary() {
     refetch,
     formatFileSize,
   } = useMediaLibrary();
+
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+  const currentSortLabel = sortOptions.find(opt => opt.value === sortBy)?.label || sortOptions[0].label;
 
   const handleView = (file) => {
     setSelectedFile(file);
@@ -83,13 +118,6 @@ export default function MediaLibrary() {
       setSelectedFile(null);
     }
   };
-
-  const fileTypes = [
-    { value: 'all', label: { en: 'All', ar: 'الكل' }, icon: File },
-    { value: 'image', label: { en: 'Images', ar: 'صور' }, icon: Image },
-    { value: 'video', label: { en: 'Videos', ar: 'فيديو' }, icon: Video },
-    { value: 'document', label: { en: 'Docs', ar: 'مستندات' }, icon: FileText },
-  ];
 
   return (
     <div className="h-full flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -151,7 +179,40 @@ export default function MediaLibrary() {
               ))}
             </div>
 
-            <div className="flex gap-1 ml-auto">
+            {/* Sort Controls */}
+            <div className="flex items-center gap-2 ml-auto">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <ArrowUpDown className="h-3 w-3" />
+                    {currentSortLabel[language]}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
+                  {sortOptions.map(option => (
+                    <DropdownMenuItem 
+                      key={option.value} 
+                      onClick={() => setSortBy(option.value)}
+                      className={sortBy === option.value ? 'bg-accent' : ''}
+                    >
+                      <option.icon className="h-4 w-4 mr-2" />
+                      {option.label[language]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSortOrder}
+                title={sortOrder === 'asc' ? t({ en: 'Ascending', ar: 'تصاعدي' }) : t({ en: 'Descending', ar: 'تنازلي' })}
+              >
+                {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+              </Button>
+
+              <div className="h-4 w-px bg-border mx-1" />
+
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="icon"
@@ -186,7 +247,7 @@ export default function MediaLibrary() {
           </div>
         )}
 
-        {/* File Grid */}
+        {/* File Grid/List */}
         <div className="flex-1 overflow-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -201,7 +262,7 @@ export default function MediaLibrary() {
                 </p>
               </CardContent>
             </Card>
-          ) : (
+          ) : viewMode === 'grid' ? (
             <MediaGrid
               files={media}
               onView={handleView}
@@ -210,12 +271,34 @@ export default function MediaLibrary() {
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
             />
+          ) : (
+            <MediaListView
+              files={media}
+              onView={handleView}
+              onDelete={handleDelete}
+              onDownload={handleDownload}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSortChange={(field) => {
+                if (sortBy === field) {
+                  toggleSortOrder();
+                } else {
+                  setSortBy(field);
+                  setSortOrder('desc');
+                }
+              }}
+            />
           )}
         </div>
 
         {/* Details Panel */}
         <Sheet open={!!selectedFile} onOpenChange={() => setSelectedFile(null)}>
           <SheetContent side={isRTL ? 'left' : 'right'} className="w-[400px] p-0">
+            <SheetHeader className="sr-only">
+              <SheetTitle>{selectedFile?.display_name || selectedFile?.original_filename || t({ en: 'File Details', ar: 'تفاصيل الملف' })}</SheetTitle>
+            </SheetHeader>
             <MediaDetails
               file={selectedFile}
               onClose={() => setSelectedFile(null)}
