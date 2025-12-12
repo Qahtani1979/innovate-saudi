@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import React, { useMemo } from 'react';
+import { usePermissions } from '@/components/permissions/usePermissions.jsx';
 
 /**
  * Hook to determine the appropriate dashboard and navigation for a user based on their persona/role
