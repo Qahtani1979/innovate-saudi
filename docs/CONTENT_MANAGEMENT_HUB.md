@@ -219,44 +219,53 @@ CREATE TABLE public.media_folders (
 
 ## 5. Component Architecture
 
-### 5.1 Core Components
+### 5.1 Core Components (Implemented ✓)
 
 ```
-src/components/media/
-├── MediaLibrary/
-│   ├── MediaLibrary.jsx           # Main hub page
-│   ├── MediaGrid.jsx              # Grid view of files
-│   ├── MediaList.jsx              # List view of files
-│   ├── MediaFilters.jsx           # Filter sidebar
-│   ├── MediaSearch.jsx            # Search bar with suggestions
-│   ├── MediaDetails.jsx           # File detail panel
-│   ├── MediaPreview.jsx           # Preview modal
-│   └── MediaActions.jsx           # Bulk action toolbar
+src/
+├── pages/
+│   └── MediaLibrary.jsx           # Main hub page ✓
 │
-├── MediaUploader/
-│   ├── UnifiedMediaUploader.jsx   # Main uploader component
-│   ├── UploadDropzone.jsx         # Drag & drop zone
-│   ├── UploadQueue.jsx            # Upload queue display
-│   ├── UploadProgress.jsx         # Progress indicators
-│   └── MediaMetadataForm.jsx      # Metadata input form
+├── components/media/
+│   ├── MediaGrid.jsx              # Grid view of files ✓
+│   ├── MediaListView.jsx          # List/table view with sortable columns ✓
+│   ├── MediaFilters.jsx           # Filter sidebar (buckets, types, stats) ✓
+│   ├── MediaDetails.jsx           # File detail panel with tabs ✓
+│   └── MediaUploadDialog.jsx      # Upload dialog with bucket selection ✓
 │
-├── MediaSelector/
-│   ├── MediaPickerDialog.jsx      # Dialog for selecting media
-│   ├── MediaPickerGrid.jsx        # Selection grid
-│   └── MediaPickerRecent.jsx      # Recently uploaded
+├── uploads/
+│   └── SupabaseFileUploader.jsx   # Reusable file uploader component ✓
 │
-├── MediaDisplay/
-│   ├── MediaImage.jsx             # Optimized image display
-│   ├── MediaGallery.jsx           # Gallery component
-│   ├── MediaDocument.jsx          # Document preview
-│   └── MediaVideo.jsx             # Video player
+├── config/
+│   └── mediaConfig.js             # Storage buckets, file types, utilities ✓
 │
 └── hooks/
-    ├── useMediaUpload.js          # Upload logic
-    ├── useMediaLibrary.js         # Library operations
-    ├── useMediaSearch.js          # Search functionality
-    └── useMediaAnalytics.js       # Analytics tracking
+    └── useMediaLibrary.js         # Complete library hook ✓
+        - Fetches from media_files table + storage buckets
+        - Filtering by type, bucket, search term
+        - Sorting by date, name, size, views, downloads
+        - Upload, delete, metadata update mutations
+        - View/download tracking
+        - Statistics calculation
 ```
+
+### 5.2 Features Implemented
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Grid View | ✓ | Responsive grid with image previews |
+| List View | ✓ | Table view with sortable columns |
+| Bucket Filters | ✓ | Multi-select storage bucket filtering |
+| File Type Filters | ✓ | All/Images/Videos/Documents filtering |
+| Search | ✓ | Search by filename, display name, description, tags |
+| Sorting | ✓ | Date, name, size, views, downloads (asc/desc) |
+| File Details | ✓ | Side panel with preview, metadata, analytics, usage |
+| Metadata Editing | ✓ | Edit display name, description, alt text, tags |
+| Upload | ✓ | Multi-file upload with bucket/entity context |
+| Delete | ✓ | Soft delete with confirmation dialog |
+| Download Tracking | ✓ | Increment download count on download |
+| Storage Stats | ✓ | Total files, total size, by-bucket counts |
+| RTL Support | ✓ | Full Arabic/English bilingual support |
 
 ### 5.2 Component Relationships
 
@@ -284,41 +293,43 @@ src/components/media/
 
 ---
 
-## 6. UI/UX Design
+## 6. UI/UX Design (Implemented)
 
-### 6.1 Media Library Layout
+### 6.1 Media Library Layout (Current Implementation)
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Content Management Hub                                    [👤] [⚙] │
-├─────────────────────────────────────────────────────────────────────┤
-│ [📁 All] [🖼 Images] [📄 Documents] [🎬 Videos] [📦 Other]  [+ Upload]│
-├──────────────┬──────────────────────────────────────────────────────┤
-│              │  🔍 Search files...          [Grid ▣] [List ≡]       │
-│   FILTERS    ├──────────────────────────────────────────────────────┤
-│              │                                                       │
-│  📁 Buckets  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐        │
-│  ☑ All       │  │  📷    │ │  📷    │ │  📄    │ │  📷    │        │
-│  ☐ challenges│  │ img1   │ │ img2   │ │ doc1   │ │ img3   │        │
-│  ☐ solutions │  │ 2.3MB  │ │ 1.1MB  │ │ 450KB  │ │ 3.2MB  │        │
-│  ☐ pilots    │  │ ☐      │ │ ☐      │ │ ☐      │ │ ☐      │        │
-│  ☐ users     │  └────────┘ └────────┘ └────────┘ └────────┘        │
-│              │                                                       │
-│  🏷 Tags     │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐        │
-│  ☐ banner    │  │  🎬    │ │  📷    │ │  📄    │ │  📷    │        │
-│  ☐ logo      │  │ video1 │ │ img4   │ │ doc2   │ │ img5   │        │
-│  ☐ document  │  │ 25MB   │ │ 890KB  │ │ 1.2MB  │ │ 2.1MB  │        │
-│              │  │ ☐      │ │ ☐      │ │ ☐      │ │ ☐      │        │
-│  📅 Date     │  └────────┘ └────────┘ └────────┘ └────────┘        │
-│  ○ All time  │                                                       │
-│  ○ Today     │                                                       │
-│  ○ This week │  Showing 1-12 of 156 files        [< 1 2 3 ... 13 >] │
-│  ○ Custom    │                                                       │
-│              ├──────────────────────────────────────────────────────┤
-│  📊 Stats    │  STORAGE: ████████░░ 2.4GB / 5GB                     │
-│  156 files   │  By Type: 🖼 89 📄 45 🎬 12 📦 10                     │
-│  2.4 GB used │                                                       │
-└──────────────┴──────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Content Management Hub                              [🔄 Refresh] [+ Upload] │
+│  Centralized media and file management                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ [🔧 Filters] 🔍 Search files...  [All][Images][Videos][Docs]                 │
+│                                  [Sort: Date ▼] [↑↓] | [Grid ▣] [List ≡]    │
+├──────────────┬──────────────────────────────────────────────────────────────┤
+│   FILTERS    │                                                               │
+│              │  GRID VIEW:                                                   │
+│  📁 File Type│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐     │
+│  ● All Files │  │  📷    │ │  📷    │ │  📄    │ │  📷    │ │  🎬    │     │
+│  ○ Images    │  │ [img]  │ │ [img]  │ │  icon  │ │ [img]  │ │  icon  │     │
+│  ○ Videos    │  │ img1   │ │ img2   │ │ doc1   │ │ img3   │ │ video  │     │
+│  ○ Documents │  │ bucket │ │ bucket │ │ bucket │ │ bucket │ │ bucket │     │
+│  ○ Other     │  │ 2.3MB  │ │ 1.1MB  │ │ 450KB  │ │ 3.2MB  │ │ 25MB   │     │
+│              │  │ user@  │ │ user@  │ │ user@  │ │ user@  │ │ user@  │     │
+│  ───────────│  │ 2d ago │ │ 1d ago │ │ today  │ │ 3d ago │ │ 1w ago │     │
+│              │  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘     │
+│  📦 Buckets  │                                                               │
+│  ☑ uploads   │  LIST VIEW:                                                   │
+│  ☑ challenges│  ┌──────────────────────────────────────────────────────────┐│
+│  ☑ solutions │  │ ☐ | 📷 | Name ↓        | Bucket  | Size  | Uploaded     ││
+│  ☑ pilots    │  │───|────|───────────────|─────────|───────|──────────────││
+│  ☑ programs  │  │ ☐ | 🖼 | banner.jpg    | uploads | 2.3MB | 2 days ago   ││
+│  [Select All]│  │ ☐ | 📄 | report.pdf    | pilots  | 450KB | today        ││
+│              │  │ ☐ | 🎬 | demo.mp4      | solutions| 25MB | 1 week ago   ││
+│  ───────────│  └──────────────────────────────────────────────────────────┘│
+│              │                                                               │
+│  📊 Storage  │  Sort Options: Date Uploaded, Name, Size, Views, Downloads   │
+│  Total: 156  │                                                               │
+│  Size: 2.4GB │                                                               │
+└──────────────┴──────────────────────────────────────────────────────────────┘
 ```
 
 ### 6.2 File Detail Panel
@@ -706,5 +717,32 @@ CREATE INDEX idx_media_files_accessed ON media_files(last_accessed_at DESC);
 
 ---
 
-*Document Version: 1.0*
+## 14. Implementation Status
+
+### Completed (v1.0)
+- [x] Media Library page with grid/list views
+- [x] Sortable columns (date, name, size, views, downloads)
+- [x] Filter by file type and storage bucket
+- [x] Search functionality
+- [x] File detail panel with metadata editing
+- [x] Upload dialog with bucket selection
+- [x] Soft delete with confirmation
+- [x] View/download tracking
+- [x] Storage statistics
+- [x] RTL/bilingual support
+
+### Pending
+- [ ] Bulk operations (multi-select delete, download, tag)
+- [ ] Date range filtering
+- [ ] Tag-based filtering
+- [ ] Virtual folders
+- [ ] Media usage tracking (where files are used)
+- [ ] Version history
+- [ ] AI-powered auto-tagging
+- [ ] Image transformations
+- [ ] Pagination for large libraries
+
+---
+
+*Document Version: 1.1*
 *Last Updated: December 12, 2024*
