@@ -39,9 +39,11 @@ export function useEntityAccessCheck(entity, options = {}) {
     sectorIds,
     userMunicipalityId,
     nationalMunicipalityIds,
-    visibilityLevel,
-    userProviderId
+    visibilityLevel
   } = useVisibilitySystem();
+  
+  // Get provider ID from user roles
+  const userProviderId = null; // Provider ID comes from organization linkage if needed
 
   const accessCheck = useMemo(() => {
     // Still loading visibility data
