@@ -85,6 +85,8 @@ The visibility system provides consistent access control across all entity types
 
 ## Entity Types
 
+### Core Entity Hooks
+
 | Entity | Table | Hook | Status |
 |--------|-------|------|--------|
 | Challenges | `challenges` | `useChallengesWithVisibility` | ✅ Implemented |
@@ -98,6 +100,20 @@ The visibility system provides consistent access control across all entity types
 | Case Studies | `case_studies` | `useCaseStudiesWithVisibility` | ✅ Implemented |
 | Budgets | `budgets` | `useBudgetsWithVisibility` | ✅ Implemented |
 | Proposals | `challenge_proposals` | `useProposalsWithVisibility` | ✅ Implemented |
+
+### Supporting Entity Hooks
+
+| Entity | Table | Hook | Status |
+|--------|-------|------|--------|
+| Users | `user_profiles` | `useUsersWithVisibility` | ✅ Implemented |
+| Municipalities | `municipalities` | `useMunicipalitiesWithVisibility` | ✅ Implemented |
+
+### Utility Hooks
+
+| Hook | Purpose | Status |
+|------|---------|--------|
+| `useVisibilityAwareSearch` | Cross-entity search with visibility | ✅ Implemented |
+| `useEntityAccessCheck` | Single entity access validation | ✅ Implemented |
 
 ---
 
@@ -124,6 +140,7 @@ The visibility system provides consistent access control across all entity types
 |------|-------|------------|--------|
 | Executive Dashboard | `/executive-dashboard` | All visibility hooks | ✅ |
 | Municipality Dashboard | `/municipality-dashboard` | Visibility hooks imported | ✅ |
+| RBAC Dashboard | `/rbac-dashboard` | Admin PermissionGate | ✅ |
 
 ### My* Personal Pages
 
@@ -226,6 +243,56 @@ Each persona has a dedicated menu with permission-controlled items:
 
 ---
 
+## Components Using Visibility
+
+### Search Components ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `SemanticSearch` | `useVisibilityAwareSearch` | ✅ Implemented |
+
+### Dashboard Widgets ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `ExecutiveDashboard` | All visibility hooks | ✅ |
+| `MunicipalityDashboard` | Geographic visibility | ✅ |
+| `RBACDashboardContent` | `PermissionGate` (admin only) | ✅ |
+| `PeerBenchmarkingTool` | `useMunicipalitiesWithVisibility`, `useChallengesWithVisibility`, `usePilotsWithVisibility` | ✅ |
+
+### Form/Selection Components ✅
+
+| Component | Hook/Protection | Status |
+|-----------|-----------------|--------|
+| `ChallengeOwnershipTransfer` | `useUsersWithVisibility` | ✅ |
+
+### Filter Components
+
+| Component | Pattern | Status |
+|-----------|---------|--------|
+| Sector filter | Respects user's sector access | ✅ |
+| Municipality filter | Only shows accessible municipalities | ✅ |
+
+### User-Scoped Components (No Changes Needed)
+
+| Component | Pattern | Status |
+|-----------|---------|--------|
+| `ChallengeFollowButton` | User's own follows | ✅ Correct |
+| `StakeholderHub` | Pilot-specific feedback | ✅ Correct |
+| `ProviderNotificationPreferences` | User's own preferences | ✅ Correct |
+| `ProposalSubmissionForm` | User's own solutions | ✅ Correct |
+| `SolutionReviewsTab` | User's own reviews | ✅ Correct |
+
+### Lookup/Reference Data (Public - No Changes Needed)
+
+| Component | Data Type | Status |
+|-----------|-----------|--------|
+| Sector dropdowns | Reference data | ✅ Public OK |
+| Service dropdowns | Reference data | ✅ Public OK |
+| Region dropdowns | Reference data | ✅ Public OK |
+
+---
+
 ## Available Visibility Hooks
 
 ```javascript
@@ -252,6 +319,13 @@ import {
   useCaseStudiesWithVisibility,
   useBudgetsWithVisibility,
   useProposalsWithVisibility,
+  
+  // Supporting entity hooks
+  useUsersWithVisibility,
+  useMunicipalitiesWithVisibility,
+  
+  // Utility hooks
+  useVisibilityAwareSearch,
   
   // Permissions
   usePermissions
@@ -289,6 +363,55 @@ function EntityDetail({ entity }) {
   // accessCheck.canAccess - boolean
   // accessCheck.reason - 'admin_access', 'sectoral_access', 'municipality_access', etc.
   // accessCheck.visibilityLevel - 'global', 'sectoral', 'geographic', 'public'
+}
+```
+
+### Using Visibility-Aware Search
+
+```javascript
+import { useVisibilityAwareSearch } from '@/hooks/useVisibilityAwareSearch';
+
+function SearchComponent() {
+  const { search, results, searching } = useVisibilityAwareSearch();
+  
+  const handleSearch = async (query) => {
+    await search(query, {
+      entityTypes: ['challenges', 'pilots', 'solutions'],
+      limit: 10
+    });
+  };
+  
+  // Results are automatically filtered by user's visibility level
+}
+```
+
+### Using Users With Visibility
+
+```javascript
+import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
+
+function UserSelector() {
+  const { data: users } = useUsersWithVisibility();
+  
+  // Admin: sees all users
+  // Deputyship: sees users across all municipalities
+  // Municipality: sees only users in same municipality
+  // Provider: sees only users in same organization
+}
+```
+
+### Using Municipalities With Visibility
+
+```javascript
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+
+function MunicipalitySelector() {
+  const { data: municipalities } = useMunicipalitiesWithVisibility({
+    includeNational: true
+  });
+  
+  // Admin/Deputyship: sees all municipalities
+  // Municipality staff: sees own + national municipalities
 }
 ```
 
@@ -339,6 +462,23 @@ export default ProtectedPage(MyPage, {
 });
 ```
 
+### Component Protection with PermissionGate
+
+```javascript
+import PermissionGate from '@/components/permissions/PermissionGate';
+
+function AdminOnlySection() {
+  return (
+    <PermissionGate 
+      requireAdmin 
+      fallback={<AccessDeniedMessage />}
+    >
+      <AdminContent />
+    </PermissionGate>
+  );
+}
+```
+
 ---
 
 ## Hook Options Reference
@@ -364,6 +504,7 @@ All visibility hooks accept these common options:
 | `useRDProjectsWithVisibility` | `projectType` |
 | `useContractsWithVisibility` | `contractType` |
 | `useBudgetsWithVisibility` | `entityType`, `fiscalYear` |
+| `useMunicipalitiesWithVisibility` | `includeNational` |
 
 ### Entity Access Check Options
 
@@ -403,30 +544,13 @@ RETURNS boolean
 
 ---
 
-## Components Using Visibility
-
-### Dashboard Components
-- `ExecutiveDashboard` - Uses all visibility hooks for aggregated stats
-- `MunicipalityDashboard` - Uses geographic visibility for local stats
-
-### List Components
-- Entity list pages (Challenges, Pilots, etc.) - Use respective hooks
-
-### Detail Components
-- All detail pages - Use `useEntityAccessCheck` for single entity access
-
-### Filter Components
-- Sector filter - Respects user's sector access
-- Municipality filter - Only shows accessible municipalities
-
----
-
 ## Security
 
 ### Security Layers
 
 1. **Frontend Protection**
    - ProtectedPage HOC checks permissions
+   - PermissionGate component for inline protection
    - Sidebar filters menu items by role/permission
    - Visibility hooks filter data client-side
    - Entity access check for detail pages
@@ -478,6 +602,17 @@ RETURNS boolean
 - [x] Persona-specific menu configurations
 - [x] Permission-based item visibility
 
+### Phase 5: Components ✅ Complete
+- [x] SemanticSearch → `useVisibilityAwareSearch`
+- [x] PeerBenchmarkingTool → Visibility hooks
+- [x] RBACDashboardContent → `PermissionGate`
+- [x] ChallengeOwnershipTransfer → `useUsersWithVisibility`
+
+### Phase 6: Supporting Hooks ✅ Complete
+- [x] `useUsersWithVisibility`
+- [x] `useMunicipalitiesWithVisibility`
+- [x] `useVisibilityAwareSearch`
+
 ---
 
 ## Role-Permission Mapping
@@ -504,6 +639,7 @@ RETURNS boolean
 2. **Empty results**: Verify user has appropriate role/municipality assignment
 3. **Cache stale**: Query keys include visibility context for proper invalidation
 4. **Access denied on detail page**: Check if entity has correct municipality_id/sector_id
+5. **Search returning too many results**: Ensure `useVisibilityAwareSearch` is being used
 
 ### Debug Mode
 
@@ -516,4 +652,59 @@ console.log('Visibility:', { visibilityLevel, hasFullVisibility, sectorIds });
 const accessCheck = useEntityAccessCheck(entity);
 console.log('Access:', accessCheck);
 // { canAccess: true/false, reason: 'admin_access'|'sectoral_access'|..., visibilityLevel: '...' }
+
+// For search
+const { search, results } = useVisibilityAwareSearch();
+console.log('Search results (filtered):', results);
 ```
+
+---
+
+## File Structure
+
+```
+src/hooks/
+├── visibility/
+│   ├── index.js                    # Central exports
+│   ├── useVisibilitySystem.js      # Core visibility logic
+│   └── createVisibilityHook.js     # Hook factory
+├── useChallengesWithVisibility.js
+├── usePilotsWithVisibility.js
+├── useProgramsWithVisibility.js
+├── useSolutionsWithVisibility.js
+├── useLivingLabsWithVisibility.js
+├── useContractsWithVisibility.js
+├── useRDProjectsWithVisibility.js
+├── useKnowledgeWithVisibility.js
+├── useCaseStudiesWithVisibility.js
+├── useBudgetsWithVisibility.js
+├── useProposalsWithVisibility.js
+├── useUsersWithVisibility.js       # NEW
+├── useMunicipalitiesWithVisibility.js  # NEW
+├── useVisibilityAwareSearch.js     # NEW
+├── useEntityAccessCheck.js
+└── useEntityVisibility.js
+
+src/components/permissions/
+├── PermissionGate.jsx
+├── ProtectedPage.jsx
+├── usePermissions.jsx
+└── withEntityAccess.jsx
+```
+
+---
+
+## Summary
+
+The visibility system is now **fully implemented** across:
+
+| Category | Coverage |
+|----------|----------|
+| Entity Hooks | 14 hooks (11 core + 3 supporting) |
+| Pages | 25+ pages with visibility |
+| Detail Pages | 7 pages with access checks |
+| Components | 5+ components updated |
+| Sidebar | Full permission-based filtering |
+| Search | Visibility-aware cross-entity search |
+
+All user personas are supported with appropriate visibility levels, and the system is designed to be extensible for future entity types.

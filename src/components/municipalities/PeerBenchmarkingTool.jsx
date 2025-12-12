@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,37 +7,18 @@ import { useLanguage } from '../LanguageContext';
 import { Users, TrendingUp, Target, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 
 export default function PeerBenchmarkingTool({ municipality }) {
   const { t, language } = useLanguage();
   const [showComparison, setShowComparison] = useState(false);
 
-  const { data: allMunicipalities = [] } = useQuery({
-    queryKey: ['municipalities-benchmark'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('municipalities').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-benchmark'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-benchmark'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use visibility-aware hooks for proper access control
+  const { data: allMunicipalities = [] } = useMunicipalitiesWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   // Find peer municipalities (similar size or region)
   const peers = allMunicipalities.filter(m => 

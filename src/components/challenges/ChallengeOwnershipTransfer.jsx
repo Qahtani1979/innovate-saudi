@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserPlus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
 
 export default function ChallengeOwnershipTransfer({ challenge, onTransferComplete }) {
   const queryClient = useQueryClient();
@@ -15,14 +16,8 @@ export default function ChallengeOwnershipTransfer({ challenge, onTransferComple
   const [newOwnerEmail, setNewOwnerEmail] = useState('');
   const [transferReason, setTransferReason] = useState('');
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['users-for-transfer'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('user_profiles').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use visibility-aware users hook - only shows users the current user can see
+  const { data: users = [], isLoading: usersLoading } = useUsersWithVisibility();
 
   const transferMutation = useMutation({
     mutationFn: async () => {
