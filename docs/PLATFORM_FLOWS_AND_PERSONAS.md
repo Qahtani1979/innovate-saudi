@@ -59,8 +59,7 @@ This document traces all user flows, personas, and scenarios in the Saudi Innova
 **Key Pages:**
 - ProviderDashboard, OpportunityFeed, Solutions
 - SolutionCreate, SolutionEdit, SolutionDetail
-- MyStartupProfileEditor, MyApplications
-- ChallengeSolutionMatching, ProposalWizard
+- MyApplications, ChallengeSolutionMatching, ProposalWizard
 
 ---
 
