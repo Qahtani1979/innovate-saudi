@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,9 +38,10 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 
 function ProgramsPage() {
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
   const { language, isRTL, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -54,9 +55,11 @@ function ProgramsPage() {
   
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: programs = [], isLoading } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list('-created_date')
+  // Use visibility-aware hook for programs
+  const { data: programs = [], isLoading } = useProgramsWithVisibility({
+    status: filterStatus !== 'all' ? filterStatus : undefined,
+    programType: filterType !== 'all' ? filterType : undefined,
+    sectorId: filterSector !== 'all' ? filterSector : undefined
   });
 
   const { data: sectors = [] } = useQuery({
