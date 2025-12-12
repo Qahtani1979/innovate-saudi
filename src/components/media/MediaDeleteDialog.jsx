@@ -1,3 +1,4 @@
+/* @refresh reset */
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useMediaDependencies } from '@/hooks/useMediaDependencies';
