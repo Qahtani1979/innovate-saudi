@@ -13,6 +13,7 @@ import {
   Clock, Target, Users, MapPin, BarChart3, Zap, AlertCircle
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function PilotMonitoringDashboard() {
@@ -66,7 +67,30 @@ function PilotMonitoringDashboard() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
+      <PageHeader
+        icon={Activity}
+        title={{ en: 'Pilot Monitoring Command Center', ar: 'مركز قيادة مراقبة التجارب' }}
+        subtitle={{ en: 'Track active pilots in real-time', ar: 'تتبع التجارب النشطة في الوقت الفعلي' }}
+        stats={[
+          { icon: Activity, value: stats.total, label: { en: 'Active', ar: 'نشط' } },
+          { icon: CheckCircle2, value: stats.on_track, label: { en: 'On Track', ar: 'على المسار' } },
+          { icon: AlertTriangle, value: stats.at_risk, label: { en: 'At Risk', ar: 'في خطر' } },
+          { icon: AlertCircle, value: stats.off_track, label: { en: 'Off Track', ar: 'خارج المسار' } },
+        ]}
+        action={
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="bg-white/20 text-white border-white/40">
+              {t({ en: 'Real-Time Monitoring', ar: 'المراقبة الفورية' })}
+            </Badge>
+            <Badge className="bg-green-500 text-white animate-pulse">
+              <Zap className="h-3 w-3 mr-1" />
+              {t({ en: 'Live', ar: 'مباشر' })}
+            </Badge>
+          </div>
+        }
+      />
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Hero */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 via-teal-600 to-cyan-600 p-8 text-white">
         <div className="relative z-10">
@@ -351,7 +375,7 @@ function PilotMonitoringDashboard() {
           </div>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

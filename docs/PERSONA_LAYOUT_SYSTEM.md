@@ -174,19 +174,22 @@ The persona layout system provides tailored UI experiences based on user roles. 
 |------|------|--------|
 | Municipal Proposal Inbox | `MunicipalProposalInbox.jsx` | ✅ Yes |
 | Municipality Peer Matcher | `MunicipalityPeerMatcher.jsx` | ✅ Yes |
+| Municipality Ideas View | `MunicipalityIdeasView.jsx` | ✅ Yes |
+| Municipality Profile | `MunicipalityProfile.jsx` | ✅ Yes |
+| Municipality Create | `MunicipalityCreate.jsx` | ✅ Yes |
+| Municipality Edit | `MunicipalityEdit.jsx` | ✅ Yes |
+| City Management | `CityManagement.jsx` | ✅ Yes |
+| City Dashboard | `CityDashboard.jsx` | ✅ Yes |
+| MII | `MII.jsx` | ✅ Yes |
+| MII Drill Down | `MIIDrillDown.jsx` | ✅ Yes |
+| Cross City Learning Hub | `CrossCityLearningHub.jsx` | ✅ Yes |
+| Multi City Coordination | `MultiCityCoordination.jsx` | ✅ Yes |
+| Multi City Orchestration | `MultiCityOrchestration.jsx` | ✅ Yes |
 
-**Related Pages (NOT using PageLayout):**
-| Page | File | Status |
+**Excluded (wizard/special):**
+| Page | File | Reason |
 |------|------|--------|
-| Municipality Profile | `MunicipalityProfile.jsx` | ❌ Missing |
-| Municipality Create | `MunicipalityCreate.jsx` | ❌ Missing |
-| Municipality Edit | `MunicipalityEdit.jsx` | ❌ Missing |
-| Municipality Ideas View | `MunicipalityIdeasView.jsx` | ❌ Missing |
-| Municipality Staff Onboarding | `MunicipalityStaffOnboarding.jsx` | ❌ Missing (wizard) |
-| City Management | `CityManagement.jsx` | ❌ Missing |
-| City Dashboard | `CityDashboard.jsx` | ❌ Missing |
-| MII | `MII.jsx` | ❌ Missing |
-| MII Drill Down | `MIIDrillDown.jsx` | ❌ Missing |
+| Municipality Staff Onboarding | `MunicipalityStaffOnboarding.jsx` | Onboarding wizard - custom UX |
 
 ---
 
@@ -405,7 +408,7 @@ All 7 core entity list pages have PageLayout ✅
 | Pilot Edit | `PilotEdit.jsx` | ❌ Missing |
 | Pilot Launch Wizard | `PilotLaunchWizard.jsx` | ❌ Missing |
 | Pilot Management Panel | `PilotManagementPanel.jsx` | ❌ Missing |
-| Pilot Monitoring Dashboard | `PilotMonitoringDashboard.jsx` | ❌ Missing |
+| Pilot Monitoring Dashboard | `PilotMonitoringDashboard.jsx` | ✅ Has PageLayout |
 | Pilot Evaluations | `PilotEvaluations.jsx` | ❌ Missing |
 | Pilot Gates Overview | `PilotGatesOverview.jsx` | ❌ Missing |
 | Pilot Success Patterns | `PilotSuccessPatterns.jsx` | ❌ Missing |
