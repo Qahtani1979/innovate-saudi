@@ -90,27 +90,6 @@ function PilotMonitoringDashboard() {
           </div>
         }
       />
-      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Hero */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 via-teal-600 to-cyan-600 p-8 text-white">
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-              {t({ en: 'Real-Time Monitoring', ar: 'المراقبة الفورية' })}
-            </Badge>
-            <Badge className="bg-green-500 text-white animate-pulse">
-              <Zap className="h-3 w-3 mr-1" />
-              {t({ en: 'Live', ar: 'مباشر' })}
-            </Badge>
-          </div>
-          <h1 className="text-5xl font-bold mb-2">
-            {t({ en: 'Pilot Monitoring Command Center', ar: 'مركز قيادة مراقبة التجارب' })}
-          </h1>
-          <p className="text-xl text-white/90">
-            {t({ en: 'Track active pilots in real-time', ar: 'تتبع التجارب النشطة في الوقت الفعلي' })}
-          </p>
-        </div>
-      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
