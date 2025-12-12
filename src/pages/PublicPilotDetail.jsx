@@ -49,15 +49,6 @@ function PublicPilotDetail() {
     enabled: !!(pilotId && user?.email)
   });
 
-  const { data: enrollment } = useQuery({
-    queryKey: ['enrollment-check', pilotId, user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('citizen_pilot_enrollments').select('*').eq('pilot_id', pilotId).eq('user_email', user?.email).single();
-      return data;
-    },
-    enabled: !!(pilotId && user?.email)
-  });
-
   const feedbackMutation = useMutation({
     mutationFn: async (data) => {
       const { error } = await supabase.from('citizen_feedback').insert(data);
