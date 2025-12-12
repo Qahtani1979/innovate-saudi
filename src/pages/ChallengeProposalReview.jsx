@@ -12,34 +12,25 @@ import { createPageUrl } from '../utils';
 import { CheckCircle2, XCircle, FileText, DollarSign, Clock, Loader2, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import ProposalToPilotConverter from '../components/challenges/ProposalToPilotConverter';
+import { usePermissions } from '../components/permissions/usePermissions';
+import { useProposalsWithVisibility } from '@/hooks/useProposalsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function ChallengeProposalReview() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { hasPermission, isAdmin, isStaffUser } = usePermissions();
   const [reviewNotes, setReviewNotes] = useState({});
   const [convertingProposal, setConvertingProposal] = useState(null);
 
-  const { data: proposals = [] } = useQuery({
-    queryKey: ['challenge-proposals'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenge_proposals')
-        .select('*')
-        .order('submitted_at', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data || [];
-    }
+  // Use visibility-aware hooks
+  const { data: proposals = [] } = useProposalsWithVisibility({
+    limit: 100
   });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*');
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    limit: 200
   });
 
   const reviewMutation = useMutation({

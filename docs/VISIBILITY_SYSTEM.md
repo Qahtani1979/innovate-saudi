@@ -111,8 +111,11 @@ The visibility system provides consistent access control across all entity types
 | Programs | `/programs` | `useProgramsWithVisibility` | ✅ |
 | Solutions | `/solutions` | `useSolutionsWithVisibility` | ✅ |
 | Living Labs | `/living-labs` | `useLivingLabsWithVisibility` | ✅ |
+| R&D Projects | `/rd-projects` | `useRDProjectsWithVisibility` | ✅ |
 | Knowledge | `/knowledge` | `useKnowledgeWithVisibility` | ✅ |
 | Contract Management | `/contract-management` | `useContractsWithVisibility` | ✅ |
+| Budget Management | `/budget-management` | `useBudgetsWithVisibility` | ✅ |
+| Proposal Review | `/challenge-proposal-review` | `useProposalsWithVisibility` | ✅ |
 
 ### Dashboard Pages ✅
 
@@ -128,6 +131,7 @@ The visibility system provides consistent access control across all entity types
 | My Challenges | `/my-challenges` | Uses user-specific queries | ⚡ Built-in filtering |
 | My Pilots | `/my-pilots` | Uses user-specific queries | ⚡ Built-in filtering |
 | My Programs | `/my-programs` | Uses user-specific queries | ⚡ Built-in filtering |
+| My R&D Projects | `/my-rd-projects` | Uses user-specific queries | ⚡ Built-in filtering |
 
 ### Public/Citizen Pages
 
@@ -135,6 +139,7 @@ The visibility system provides consistent access control across all entity types
 |------|-------|-------------|--------|
 | Citizen Challenges Browser | `/citizen/challenges` | Published challenges | ⚡ Public filter |
 | Citizen Solutions Browser | `/citizen/solutions` | Published solutions | ⚡ Public filter |
+| Citizen Living Labs | `/citizen/living-labs` | Published labs | ⚡ Public filter |
 
 ---
 
@@ -268,6 +273,32 @@ export default ProtectedPage(MyPage, {
 
 ---
 
+## Hook Options Reference
+
+All visibility hooks accept these common options:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `status` | string | Filter by status field |
+| `sectorId` | string | Filter by sector UUID |
+| `limit` | number | Max records to return (default: 100) |
+| `includeDeleted` | boolean | Include soft-deleted records |
+| `publishedOnly` | boolean | Only return published records |
+
+### Hook-Specific Options
+
+| Hook | Additional Options |
+|------|-------------------|
+| `usePilotsWithVisibility` | `providerId` |
+| `useProgramsWithVisibility` | `programType` |
+| `useSolutionsWithVisibility` | `maturityLevel` |
+| `useKnowledgeWithVisibility` | `documentType` |
+| `useRDProjectsWithVisibility` | `projectType` |
+| `useContractsWithVisibility` | `contractType` |
+| `useBudgetsWithVisibility` | `entityType`, `fiscalYear` |
+
+---
+
 ## Database Functions
 
 ### `get_user_visibility_scope(p_user_id)`
@@ -289,6 +320,21 @@ RETURNS boolean
 ```sql
 RETURNS boolean
 ```
+
+---
+
+## Components Using Visibility
+
+### Dashboard Components
+- `ExecutiveDashboard` - Uses all visibility hooks for aggregated stats
+- `MunicipalityDashboard` - Uses geographic visibility for local stats
+
+### List Components
+- Entity list pages (Challenges, Pilots, etc.) - Use respective hooks
+
+### Filter Components
+- Sector filter - Respects user's sector access
+- Municipality filter - Only shows accessible municipalities
 
 ---
 
@@ -317,17 +363,7 @@ RETURNS boolean
 - [x] `useVisibilitySystem`
 - [x] `useEntityVisibility`
 - [x] `createVisibilityHook` factory
-- [x] `useChallengesWithVisibility`
-- [x] `usePilotsWithVisibility`
-- [x] `useProgramsWithVisibility`
-- [x] `useSolutionsWithVisibility`
-- [x] `useLivingLabsWithVisibility`
-- [x] `useContractsWithVisibility`
-- [x] `useRDProjectsWithVisibility`
-- [x] `useKnowledgeWithVisibility`
-- [x] `useCaseStudiesWithVisibility`
-- [x] `useBudgetsWithVisibility`
-- [x] `useProposalsWithVisibility`
+- [x] All 11 entity visibility hooks
 
 ### Phase 2: Page Integration ✅ Complete
 - [x] Challenges page
@@ -335,21 +371,24 @@ RETURNS boolean
 - [x] Programs page
 - [x] Solutions page
 - [x] Living Labs page
+- [x] R&D Projects page
 - [x] Knowledge page
 - [x] Contract Management page
+- [x] Budget Management page
+- [x] Proposal Review page
 - [x] Executive Dashboard
-- [x] Municipality Dashboard (imports ready)
+- [x] Municipality Dashboard
 
 ### Phase 3: Sidebar & Navigation ✅ Complete
 - [x] Dynamic menu filtering by role/permission
 - [x] Persona-specific menu configurations
 - [x] Permission-based item visibility
 
-### Phase 4: Additional Pages (Optional)
-- [ ] Detail pages (ChallengeDetail, PilotDetail, etc.)
-- [ ] R&D Projects page
-- [ ] Budget Management page
-- [ ] Audit pages
+### Phase 4: Detail Pages (Optional)
+- [ ] ChallengeDetail - single entity visibility
+- [ ] PilotDetail - single entity visibility
+- [ ] ProgramDetail - single entity visibility
+- [ ] Other detail pages
 
 ---
 
@@ -366,3 +405,20 @@ RETURNS boolean
 | Startup | `solution_create`, `program_apply` |
 | Expert | `evaluation_create`, `*_view`, `proposal_review` |
 | Citizen | Public access only |
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Data not loading**: Check if `visibilityLoading` is blocking the query
+2. **Empty results**: Verify user has appropriate role/municipality assignment
+3. **Cache stale**: Query keys include visibility context for proper invalidation
+
+### Debug Mode
+
+```javascript
+const { visibilityLevel, hasFullVisibility, sectorIds } = useVisibilitySystem();
+console.log('Visibility:', { visibilityLevel, hasFullVisibility, sectorIds });
+```

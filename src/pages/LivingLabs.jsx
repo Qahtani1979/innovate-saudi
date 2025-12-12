@@ -62,6 +62,8 @@ function LivingLabsPage() {
       return data || [];
     }
   });
+
+  const handleAIInsights = async () => {
     setShowAIInsights(true);
     const typeDist = Object.entries(labs.reduce((acc, l) => { acc[l.type] = (acc[l.type] || 0) + 1; return acc; }, {}))
       .map(([type, count]) => `- ${type}: ${count}`).join('\n');
@@ -99,11 +101,6 @@ Provide:
       toast.error(t({ en: 'Failed to generate insights', ar: 'فشل توليد الرؤى' }));
     }
   };
-
-  const { data: bookings = [] } = useQuery({
-    queryKey: ['lab-bookings'],
-    queryFn: () => base44.entities.LivingLabBooking.list()
-  });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-for-labs'],

@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,15 +10,18 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { usePermissions } from '../components/permissions/usePermissions';
+import { useBudgetsWithVisibility } from '@/hooks/useBudgetsWithVisibility';
 
 function BudgetManagement() {
   const { t } = useLanguage();
+  const { hasPermission, isAdmin, isStaffUser } = usePermissions();
   const [search, setSearch] = useState('');
   const [entityFilter, setEntityFilter] = useState('all');
 
-  const { data: budgets = [], isLoading } = useQuery({
-    queryKey: ['budgets'],
-    queryFn: () => base44.entities.Budget.list('-created_date')
+  // Use visibility-aware hook for budgets
+  const { data: budgets = [], isLoading } = useBudgetsWithVisibility({
+    limit: 100
   });
 
   const filteredBudgets = budgets.filter(b => {
