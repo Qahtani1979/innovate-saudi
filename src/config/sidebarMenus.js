@@ -82,7 +82,7 @@ export const SIDEBAR_MENUS = {
       { name: 'RBACHub', icon: Shield, label: { en: 'RBAC Dashboard', ar: 'لوحة الصلاحيات' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
       { name: 'DataManagementHub', icon: Database, label: { en: 'Data Management', ar: 'إدارة البيانات' } },
-      { name: 'BulkDataOperations', icon: Layers, label: { en: 'Bulk Operations', ar: 'العمليات الجماعية' } },
+      { name: 'ImportExportHub', icon: Layers, label: { en: 'Import & Export', ar: 'الاستيراد والتصدير' } },
       { name: 'ExpertRegistry', icon: GraduationCap, label: { en: 'Expert Registry', ar: 'سجل الخبراء' } },
       
       { name: 'MediaLibrary', icon: Image, label: { en: 'Media Library', ar: 'مكتبة الوسائط' } },

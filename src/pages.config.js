@@ -248,6 +248,7 @@ import AnnualPlanningWizard from './pages/AnnualPlanningWizard';
 import StrategicCommunicationsHub from './pages/StrategicCommunicationsHub';
 // DataQualityDashboard, MasterDataGovernance - DELETED (migrated to DataManagementHub)
 // DataImportExportManager, AdvancedUserFilters, BulkUserActions - DELETED (migrated to hubs)
+import ImportExportHub from './pages/ImportExportHub';
 import ValidationRulesEngine from './pages/ValidationRulesEngine';
 import APIManagementConsole from './pages/APIManagementConsole';
 import ErrorLogsConsole from './pages/ErrorLogsConsole';
@@ -724,11 +725,15 @@ export const PAGES = {
     "MidYearReviewDashboard": MidYearReviewDashboard,
     "AnnualPlanningWizard": AnnualPlanningWizard,
     "StrategicCommunicationsHub": StrategicCommunicationsHub,
-    // DataQualityDashboard, MasterDataGovernance, DataImportExportManager - DELETED (migrated to DataManagementHub)
+    // DataQualityDashboard, MasterDataGovernance - DELETED (migrated to DataManagementHub)
     "DataQualityDashboard": DataManagementHub,
-    "DataImportExportManager": DataManagementHub,
-    "ValidationRulesEngine": ValidationRulesEngine,
     "MasterDataGovernance": DataManagementHub,
+    // ImportExportHub - new consolidated import/export page
+    "ImportExportHub": ImportExportHub,
+    "DataImportExportManager": ImportExportHub,
+    "BulkDataOperations": ImportExportHub,
+    "BulkImport": ImportExportHub,
+    "ValidationRulesEngine": ValidationRulesEngine,
     "APIManagementConsole": APIManagementConsole,
     "ErrorLogsConsole": ErrorLogsConsole,
     "ScheduledJobsManager": ScheduledJobsManager,
