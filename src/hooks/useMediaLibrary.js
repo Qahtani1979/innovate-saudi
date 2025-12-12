@@ -8,6 +8,8 @@ import { STORAGE_BUCKETS, formatFileSize, getFileType, getMimeCategory } from '@
 // Re-export for backward compatibility
 export { STORAGE_BUCKETS, formatFileSize, getFileType };
 
+const PAGE_SIZE = 50;
+
 export function useMediaLibrary(options = {}) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -16,6 +18,7 @@ export function useMediaLibrary(options = {}) {
   const [selectedType, setSelectedType] = useState('all');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [page, setPage] = useState(1);
 
   // Fetch media files from database (media_files table)
   const { data: dbMediaFiles = [], isLoading: isLoadingDb } = useQuery({
@@ -179,6 +182,20 @@ export function useMediaLibrary(options = {}) {
 
     return result;
   }, [allMedia, selectedType, searchTerm, selectedBuckets, sortBy, sortOrder]);
+
+  // Paginated media
+  const paginatedMedia = useMemo(() => {
+    const startIndex = (page - 1) * PAGE_SIZE;
+    return filteredMedia.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredMedia, page]);
+
+  const totalPages = Math.ceil(filteredMedia.length / PAGE_SIZE);
+
+  // Reset page when filters change
+  const handleFilterChange = useCallback((setter) => (value) => {
+    setPage(1);
+    setter(value);
+  }, []);
 
   // Statistics
   const stats = useMemo(() => {
@@ -375,22 +392,31 @@ export function useMediaLibrary(options = {}) {
 
   return {
     // Data
-    media: filteredMedia,
-    allMedia,
+    media: paginatedMedia,
+    allMedia: filteredMedia,
+    totalMedia: filteredMedia.length,
     stats,
+    
+    // Pagination
+    page,
+    setPage,
+    totalPages,
+    pageSize: PAGE_SIZE,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1,
     
     // Loading states
     isLoading: isLoadingDb || isLoadingStorage,
     
-    // Filters
+    // Filters (with auto page reset)
     selectedBuckets,
-    setSelectedBuckets,
+    setSelectedBuckets: handleFilterChange(setSelectedBuckets),
     searchTerm,
-    setSearchTerm,
+    setSearchTerm: handleFilterChange(setSearchTerm),
     selectedType,
-    setSelectedType,
+    setSelectedType: handleFilterChange(setSelectedType),
     sortBy,
-    setSortBy,
+    setSortBy: handleFilterChange(setSortBy),
     sortOrder,
     setSortOrder,
     
