@@ -168,7 +168,6 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const request: EmailRequest = await req.json();
-    const resend = new Resend(RESEND_API_KEY);
     
     // Initialize Supabase client for template fetching
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
@@ -297,15 +296,26 @@ serve(async (req: Request): Promise<Response> => {
     
     console.log("Sending email to:", toAddresses, "Subject:", subject);
 
-    // Send email via Resend
-    const response = await resend.emails.send({
-      from: "Saudi Innovates <onboarding@resend.dev>",
-      to: toAddresses,
-      subject: subject,
-      html: htmlContent,
+    // Send email via Resend API
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Saudi Innovates <onboarding@resend.dev>",
+        to: toAddresses,
+        subject: subject,
+        html: htmlContent,
+      }),
     });
 
-    console.log("Resend response:", response);
+    const resendResult = await resendResponse.json();
+    console.log("Resend response:", resendResult);
+
+    const emailSuccess = resendResponse.ok;
+    const emailError = !emailSuccess ? resendResult : null;
     
     // Log the email
     if (request.template_key) {
@@ -318,26 +328,26 @@ serve(async (req: Request): Promise<Response> => {
         body_preview: htmlContent.substring(0, 500),
         language: language,
         variables_used: request.variables,
-        status: response.error ? 'failed' : 'sent',
-        sent_at: response.error ? null : new Date().toISOString(),
-        error_message: response.error?.message,
+        status: emailSuccess ? 'sent' : 'failed',
+        sent_at: emailSuccess ? new Date().toISOString() : null,
+        error_message: emailError?.message || emailError?.error,
         entity_type: request.entity_type,
         entity_id: request.entity_id,
         triggered_by: request.triggered_by || 'system'
       });
     }
 
-    if (response.error) {
-      console.error("Resend API error:", response.error);
+    if (!emailSuccess) {
+      console.error("Resend API error:", resendResult);
       return new Response(
-        JSON.stringify({ success: false, error: response.error }),
+        JSON.stringify({ success: false, error: resendResult }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Email sent successfully:", response.data);
+    console.log("Email sent successfully:", resendResult);
     return new Response(
-      JSON.stringify({ success: true, id: response.data?.id }),
+      JSON.stringify({ success: true, id: resendResult?.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
