@@ -650,6 +650,7 @@ Provide bilingual enhancements:
                 {t({ en: 'Create Living Lab', ar: 'إنشاء المختبر' })}
               </Button>
             )}
+          </div>
         </CardContent>
       </Card>
     </PageLayout>
