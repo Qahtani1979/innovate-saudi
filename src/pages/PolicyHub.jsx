@@ -649,7 +649,7 @@ function PolicyHub() {
           })}
         </div>
       ) : null}
-    </div>
+    </PageLayout>
   );
 }
 
