@@ -28,11 +28,13 @@ import {
   AlertCircle,
   Calendar,
   DollarSign,
-  Clock
+  Clock,
+  Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ExpertMatchingEnginePage() {
   const [entityType, setEntityType] = useState('challenge');
@@ -287,16 +289,16 @@ Include match scores (0-100) and reasons.`;
   const entities = getEntitiesByType();
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent">
-          {t({ en: 'Expert Matching Engine', ar: 'محرك مطابقة الخبراء' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'AI-powered expert assignment with workload balancing', ar: 'تعيين الخبراء بالذكاء الاصطناعي مع توازن الأعباء' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Zap}
+        title={t({ en: 'Expert Matching Engine', ar: 'محرك مطابقة الخبراء' })}
+        description={t({ en: 'AI-powered expert assignment with workload balancing', ar: 'تعيين الخبراء بالذكاء الاصطناعي مع توازن الأعباء' })}
+        stats={[
+          { icon: Users, value: experts.filter(e => e.is_verified).length, label: t({ en: 'Verified Experts', ar: 'خبراء موثقين' }) },
+          { icon: Target, value: matches.length, label: t({ en: 'Matches Found', ar: 'مطابقات' }) },
+        ]}
+      />
 
       {/* Selection Panel */}
       <Card>
@@ -537,7 +539,7 @@ Include match scores (0-100) and reasons.`;
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

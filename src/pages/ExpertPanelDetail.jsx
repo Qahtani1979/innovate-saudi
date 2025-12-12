@@ -12,11 +12,12 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   Users, CheckCircle2, XCircle, Clock, Target, Award, 
-  MessageSquare, Vote, Eye, Sparkles, TrendingUp
+  MessageSquare, Vote, Eye, Sparkles, TrendingUp, UsersRound
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import EvaluationConsensusPanel from '../components/evaluation/EvaluationConsensusPanel';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ExpertPanelDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -108,55 +109,27 @@ function ExpertPanelDetail() {
   const isChair = panel.panel_chair_email === user?.email;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">{panel.panel_name}</h1>
-        <div className="flex items-center gap-3 mt-2">
-          <Badge className={
+    <PageLayout>
+      <PageHeader
+        icon={UsersRound}
+        title={panel.panel_name}
+        description={t({ en: 'Expert panel review and consensus building', ar: 'مراجعة لجنة الخبراء وبناء الإجماع' })}
+        stats={[
+          { icon: Users, value: panel.panel_members?.length || 0, label: t({ en: 'Members', ar: 'أعضاء' }) },
+          { icon: Vote, value: voteCount, label: t({ en: 'Votes', ar: 'أصوات' }) },
+          { icon: Target, value: `${panel.consensus_threshold}%`, label: t({ en: 'Threshold', ar: 'العتبة' }) },
+        ]}
+        badges={[
+          <Badge key="status" className={
             panel.status === 'forming' ? 'bg-yellow-100 text-yellow-700' :
             panel.status === 'reviewing' ? 'bg-blue-100 text-blue-700' :
             panel.status === 'discussion' ? 'bg-purple-100 text-purple-700' :
             panel.status === 'consensus' ? 'bg-green-100 text-green-700' :
             'bg-teal-100 text-teal-700'
-          }>
-            {panel.status}
-          </Badge>
-          <Badge variant="outline">{panel.entity_type}</Badge>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <Users className="h-8 w-8 text-purple-600 mb-2" />
-            <p className="text-3xl font-bold text-purple-600">{panel.panel_members?.length || 0}</p>
-            <p className="text-sm text-slate-600">Panel Members</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <Vote className="h-8 w-8 text-blue-600 mb-2" />
-            <p className="text-3xl font-bold text-blue-600">{voteCount}</p>
-            <p className="text-sm text-slate-600">Votes Recorded</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <Target className="h-8 w-8 text-amber-600 mb-2" />
-            <p className="text-3xl font-bold text-amber-600">{panel.consensus_threshold}%</p>
-            <p className="text-sm text-slate-600">Consensus Threshold</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <TrendingUp className="h-8 w-8 text-green-600 mb-2" />
-            <p className="text-3xl font-bold text-green-600">
-              {voteCount > 0 ? Math.round((approveVotes / voteCount) * 100) : 0}%
-            </p>
-            <p className="text-sm text-slate-600">Approval Rate</p>
-          </CardContent>
-        </Card>
-      </div>
+          }>{panel.status}</Badge>,
+          <Badge key="type" variant="outline">{panel.entity_type}</Badge>
+        ]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -371,7 +344,7 @@ function ExpertPanelDetail() {
           </Card>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

@@ -16,11 +16,13 @@ import {
   Calendar,
   Target,
   FileText,
-  Loader2
+  Loader2,
+  ClipboardList
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ExpertAssignmentQueue() {
   const { language, isRTL, t } = useLanguage();
@@ -137,16 +139,17 @@ function ExpertAssignmentQueue() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent">
-          {t({ en: 'My Expert Assignments', ar: 'مهامي كخبير' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Manage your evaluation and advisory assignments', ar: 'إدارة مهام التقييم والاستشارة' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={ClipboardList}
+        title={t({ en: 'My Expert Assignments', ar: 'مهامي كخبير' })}
+        description={t({ en: 'Manage your evaluation and advisory assignments', ar: 'إدارة مهام التقييم والاستشارة' })}
+        stats={[
+          { icon: AlertCircle, value: pendingAssignments.length, label: t({ en: 'Pending', ar: 'معلقة' }) },
+          { icon: Clock, value: activeAssignments.length, label: t({ en: 'Active', ar: 'نشطة' }) },
+          { icon: CheckCircle2, value: completedAssignments.length, label: t({ en: 'Completed', ar: 'مكتملة' }) },
+        ]}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -381,7 +384,7 @@ function ExpertAssignmentQueue() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
 
