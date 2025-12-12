@@ -250,11 +250,33 @@ For a Saudi municipal innovation platform. Include:
         taskUrl: window.location.origin,
       };
 
+      // Use the current template if saved, otherwise send direct content for preview
+      const templateExists = selectedTemplateId && template.template_key;
+      
       const { data, error } = await supabase.functions.invoke('send-email', {
-        body: {
-          template_key: template.template_key || 'test_email',
+        body: templateExists ? {
+          template_key: template.template_key,
           recipient_email: recipientEmail,
           variables: testVariables,
+          language: previewLanguage,
+          force_send: true,
+          triggered_by: currentUser?.email
+        } : {
+          recipient_email: recipientEmail,
+          subject: previewLanguage === 'ar' ? template.subject_ar || template.subject_en : template.subject_en,
+          html: `
+            <div style="font-family: ${previewLanguage === 'ar' ? "'Noto Sans Arabic', sans-serif" : 'Arial, sans-serif'}; direction: ${previewLanguage === 'ar' ? 'rtl' : 'ltr'}; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background: linear-gradient(135deg, ${template.header_gradient_start || '#006C35'}, ${template.header_gradient_end || '#00A651'}); padding: 24px; text-align: center; color: white; border-radius: 8px 8px 0 0;">
+                <h1 style="margin: 0;">${previewLanguage === 'ar' ? template.header_title_ar || template.header_title_en : template.header_title_en || 'Test Email'}</h1>
+              </div>
+              <div style="padding: 24px; background: #fff; border: 1px solid #eee; border-top: none;">
+                ${previewLanguage === 'ar' ? template.body_ar || template.body_en : template.body_en}
+              </div>
+              <div style="padding: 16px; background: #f5f5f5; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 8px 8px;">
+                <p>© ${new Date().getFullYear()} Saudi Innovates. ${previewLanguage === 'ar' ? 'جميع الحقوق محفوظة' : 'All rights reserved'}.</p>
+              </div>
+            </div>
+          `,
           language: previewLanguage,
           force_send: true,
           triggered_by: currentUser?.email
