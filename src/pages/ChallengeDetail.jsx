@@ -40,6 +40,7 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { useSolutionsWithVisibility, usePilotsWithVisibility, useContractsWithVisibility } from '@/hooks/visibility';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 export default function ChallengeDetail() {
   const { hasPermission, isAdmin } = usePermissions();
@@ -372,7 +373,7 @@ Provide BILINGUAL (AR+EN) analysis:
   const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Workflow Modals */}
       {showSubmission && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -3043,6 +3044,6 @@ Provide specific, actionable intelligence.`,
         open={relationManagerOpen}
         onClose={() => setRelationManagerOpen(false)}
       />
-    </div>
+    </PageLayout>
   );
 }

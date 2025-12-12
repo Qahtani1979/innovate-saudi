@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles, X } from 'lucide-react';
+import { Save, Loader2, Sparkles, X, Lightbulb } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import AIProfileEnhancer from '../components/solutions/AIProfileEnhancer';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function SolutionEditPage() {
   const { user } = usePermissions();
@@ -259,37 +260,28 @@ function SolutionEditPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Edit Solution', ar: 'تعديل الحل' })}
-          </h1>
-          <p className="text-slate-600 mt-1">{formData.name_en}</p>
-          <div className="flex items-center gap-3 mt-2 text-sm">
+    <PageLayout className="max-w-4xl mx-auto">
+      <PageHeader
+        icon={Lightbulb}
+        title={{ en: 'Edit Solution', ar: 'تعديل الحل' }}
+        description={formData.name_en}
+        action={
+          <div className="flex gap-2">
             {changedFields.size > 0 && (
               <Badge variant="outline" className="bg-amber-50 text-amber-700">
                 {changedFields.size} {t({ en: 'fields modified', ar: 'حقول معدلة' })}
               </Badge>
             )}
-            {lastSaved && (
-              <span className="text-xs text-slate-500">
-                {t({ en: 'Auto-saved', ar: 'حفظ تلقائي' })}: {lastSaved.toLocaleTimeString()}
-              </span>
-            )}
-            <Badge variant="outline">v{solution?.version_number || 1}</Badge>
+            <Button
+              variant={previewMode ? 'default' : 'outline'}
+              onClick={() => setPreviewMode(!previewMode)}
+              size="sm"
+            >
+              {previewMode ? t({ en: 'Edit', ar: 'تعديل' }) : t({ en: 'Preview', ar: 'معاينة' })}
+            </Button>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={previewMode ? 'default' : 'outline'}
-            onClick={() => setPreviewMode(!previewMode)}
-            size="sm"
-          >
-            {previewMode ? t({ en: '✏️ Edit', ar: '✏️ تعديل' }) : t({ en: '👁️ Preview', ar: '👁️ معاينة' })}
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* AI Profile Enhancer - Integrated */}
       {!previewMode && formData && (
@@ -702,7 +694,7 @@ function SolutionEditPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

@@ -58,6 +58,7 @@ import MultiStepApproval from '../components/MultiStepApproval';
 import FinancialTracker from '../components/FinancialTracker';
 import RegulatoryCompliance from '../components/RegulatoryCompliance';
 import AnomalyDetector from '../components/AnomalyDetector';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import MilestoneTracker from '../components/MilestoneTracker';
@@ -344,7 +345,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
   const StageIcon = stageInfo.icon;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Workflow Modals */}
       {showSubmissionWizard && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -2060,7 +2061,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
             </Card>
             </div>
             </div>
-            </div>
+    </PageLayout>
             );
             }
 

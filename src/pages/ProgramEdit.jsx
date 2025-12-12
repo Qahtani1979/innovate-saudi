@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles, Plus, X, Clock, Eye, History, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Save, Loader2, Sparkles, Plus, X, Clock, Eye, History, AlertCircle, CheckCircle2, Rocket } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -20,6 +20,7 @@ import AICurriculumGenerator from '../components/programs/AICurriculumGenerator'
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ProgramEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -211,48 +212,31 @@ Generate comprehensive bilingual (English + Arabic) content:
   const changeCount = Object.keys(changedFields).length;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Edit Program', ar: 'تعديل البرنامج' })}
-          </h1>
-          <p className="text-slate-600 mt-1">{formData.name_en}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {draftRecovered && (
-            <Badge variant="outline" className="bg-blue-50 text-blue-700">
-              <History className="h-3 w-3 mr-1" />
-              {t({ en: 'Draft Recovered', ar: 'مسودة مستردة' })}
-            </Badge>
-          )}
-          {changeCount > 0 && (
-            <Badge className="bg-orange-100 text-orange-700">
-              {changeCount} {t({ en: 'changes', ar: 'تغيير' })}
-            </Badge>
-          )}
-          {autoSaveStatus === 'saving' && (
-            <Badge variant="outline" className="animate-pulse">
-              <Clock className="h-3 w-3 mr-1" />
-              {t({ en: 'Auto-saving...', ar: 'حفظ تلقائي...' })}
-            </Badge>
-          )}
-          {autoSaveStatus === 'saved' && changeCount > 0 && (
-            <Badge variant="outline" className="bg-green-50 text-green-700">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              {t({ en: 'Draft saved', ar: 'المسودة محفوظة' })}
-            </Badge>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPreviewMode(!previewMode)}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            {previewMode ? t({ en: 'Edit', ar: 'تعديل' }) : t({ en: 'Preview', ar: 'معاينة' })}
-          </Button>
-        </div>
-      </div>
+    <PageLayout className="max-w-4xl mx-auto">
+      <PageHeader
+        icon={Rocket}
+        title={{ en: 'Edit Program', ar: 'تعديل البرنامج' }}
+        description={formData.name_en}
+        action={
+          <div className="flex items-center gap-3">
+            {draftRecovered && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                <History className="h-3 w-3 mr-1" />
+                {t({ en: 'Draft Recovered', ar: 'مسودة مستردة' })}
+              </Badge>
+            )}
+            {changeCount > 0 && (
+              <Badge className="bg-orange-100 text-orange-700">
+                {changeCount} {t({ en: 'changes', ar: 'تغيير' })}
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
+              <Eye className="h-4 w-4 mr-2" />
+              {previewMode ? t({ en: 'Edit', ar: 'تعديل' }) : t({ en: 'Preview', ar: 'معاينة' })}
+            </Button>
+          </div>
+        }
+      />
 
       {changeCount > 0 && (
         <Alert>
@@ -599,7 +583,7 @@ Generate comprehensive bilingual (English + Arabic) content:
           </CardContent>
           </Card>
           )}
-          </div>
+    </PageLayout>
           );
           }
 
