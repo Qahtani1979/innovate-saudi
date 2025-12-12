@@ -96,6 +96,30 @@ Generate pilot proposal:`,
         metadata: { pilot_id: pilot.id }
       });
 
+      // Send pilot created email notification to stakeholders
+      if (formData.pilot_manager_email || user?.email) {
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              template_key: 'pilot_created',
+              recipient_email: formData.pilot_manager_email || user?.email,
+              variables: {
+                pilotTitle: formData.title_en || formData.title_ar,
+                pilotCode: pilot.code || `PLT-${pilot.id.substring(0, 8)}`,
+                startDate: formData.start_date || new Date().toISOString().split('T')[0],
+                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
+              },
+              language: language,
+              entity_type: 'pilot',
+              entity_id: pilot.id,
+              triggered_by: user?.email
+            }
+          });
+        } catch (emailError) {
+          console.error('Failed to send pilot created email:', emailError);
+        }
+      }
+
       toast.success(t({ en: 'Pilot created', ar: 'تم إنشاء التجربة' }));
       navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
     } catch (error) {

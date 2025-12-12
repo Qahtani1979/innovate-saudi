@@ -54,7 +54,7 @@ export default function RoleRequestApprovalQueue() {
 
   // Approve mutation
   const approveMutation = useMutation({
-    mutationFn: async ({ requestId, requestedRole, userEmail }) => {
+    mutationFn: async ({ requestId, requestedRole, userEmail, userName }) => {
       // Update request status
       const { error: updateError } = await supabase
         .from('role_requests')
@@ -74,7 +74,7 @@ export default function RoleRequestApprovalQueue() {
         // Assign functional role to user via user_functional_roles table
         const { data: targetUser } = await supabase
           .from('user_profiles')
-          .select('user_id')
+          .select('user_id, preferred_language')
           .eq('user_email', userEmail)
           .maybeSingle();
 
@@ -93,6 +93,28 @@ export default function RoleRequestApprovalQueue() {
           
           if (roleError) {
             console.error('Error assigning role:', roleError);
+          }
+
+          // Send approval email notification
+          try {
+            await supabase.functions.invoke('send-email', {
+              body: {
+                template_key: 'role_request_approved',
+                recipient_email: userEmail,
+                recipient_user_id: targetUser.user_id,
+                variables: {
+                  userName: userName || userEmail.split('@')[0],
+                  roleName: role.name || requestedRole,
+                  dashboardUrl: window.location.origin + '/dashboard'
+                },
+                language: targetUser.preferred_language || 'en',
+                entity_type: 'role_request',
+                entity_id: requestId,
+                triggered_by: user?.email
+              }
+            });
+          } catch (emailError) {
+            console.error('Failed to send approval email:', emailError);
           }
         }
       }
@@ -114,7 +136,7 @@ export default function RoleRequestApprovalQueue() {
 
   // Reject mutation
   const rejectMutation = useMutation({
-    mutationFn: async ({ requestId }) => {
+    mutationFn: async ({ requestId, requestedRole, userEmail, userName }) => {
       const { error } = await supabase
         .from('role_requests')
         .update({
@@ -126,6 +148,39 @@ export default function RoleRequestApprovalQueue() {
         .eq('id', requestId);
       
       if (error) throw error;
+
+      // Get user info for email
+      const { data: targetUser } = await supabase
+        .from('user_profiles')
+        .select('user_id, preferred_language')
+        .eq('user_email', userEmail)
+        .maybeSingle();
+
+      // Send rejection email notification
+      if (targetUser) {
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              template_key: 'role_request_rejected',
+              recipient_email: userEmail,
+              recipient_user_id: targetUser.user_id,
+              variables: {
+                userName: userName || userEmail.split('@')[0],
+                roleName: requestedRole,
+                rejectionReason: reviewNotes || 'No specific reason provided',
+                dashboardUrl: window.location.origin + '/dashboard'
+              },
+              language: targetUser.preferred_language || 'en',
+              entity_type: 'role_request',
+              entity_id: requestId,
+              triggered_by: user?.email
+            }
+          });
+        } catch (emailError) {
+          console.error('Failed to send rejection email:', emailError);
+        }
+      }
+
       return { success: true };
     },
     onSuccess: () => {
@@ -144,12 +199,18 @@ export default function RoleRequestApprovalQueue() {
     approveMutation.mutate({
       requestId: reviewDialog.id,
       requestedRole: reviewDialog.requested_role,
-      userEmail: reviewDialog.user_email
+      userEmail: reviewDialog.user_email,
+      userName: reviewDialog.user_name || reviewDialog.user_email?.split('@')[0]
     });
   };
 
   const handleReject = () => {
-    rejectMutation.mutate({ requestId: reviewDialog.id });
+    rejectMutation.mutate({
+      requestId: reviewDialog.id,
+      requestedRole: reviewDialog.requested_role,
+      userEmail: reviewDialog.user_email,
+      userName: reviewDialog.user_name || reviewDialog.user_email?.split('@')[0]
+    });
   };
 
   const getRoleName = (requestedRole) => {

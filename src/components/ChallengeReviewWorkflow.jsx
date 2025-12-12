@@ -58,6 +58,30 @@ export default function ChallengeReviewWorkflow({ challenge, onClose }) {
         description: `Challenge reviewed: ${decision}`,
         details: { decision, review_notes: reviewNotes }
       });
+
+      // Send email notification on approval
+      if (decision === 'approve' && challenge.challenge_owner_email) {
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          await supabase.functions.invoke('send-email', {
+            body: {
+              template_key: 'challenge_approved',
+              recipient_email: challenge.challenge_owner_email,
+              variables: {
+                challengeTitle: language === 'ar' ? (challenge.title_ar || challenge.title_en) : challenge.title_en,
+                challengeCode: challenge.code || challenge.id.substring(0, 8),
+                detailUrl: window.location.origin + '/challenges/' + challenge.id
+              },
+              language: language,
+              entity_type: 'challenge',
+              entity_id: challenge.id,
+              triggered_by: 'reviewer'
+            }
+          });
+        } catch (emailError) {
+          console.error('Failed to send challenge approval email:', emailError);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['challenge']);

@@ -46,6 +46,31 @@ export default function ChallengeSubmissionWizard({ challenge, onClose }) {
         description: `Challenge ${challenge.code} submitted for review`,
         metadata: { submission_notes: submissionNotes, ai_brief: aiBrief }
       });
+
+      // Send confirmation email to challenge owner
+      if (challenge.challenge_owner_email) {
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          await supabase.functions.invoke('send-email', {
+            body: {
+              template_key: 'challenge_submitted',
+              recipient_email: challenge.challenge_owner_email,
+              variables: {
+                userName: challenge.challenge_owner || challenge.challenge_owner_email.split('@')[0],
+                challengeTitle: language === 'ar' ? (challenge.title_ar || challenge.title_en) : challenge.title_en,
+                challengeCode: challenge.code || challenge.id.substring(0, 8),
+                trackingUrl: window.location.origin + '/challenges/' + challenge.id
+              },
+              language: language,
+              entity_type: 'challenge',
+              entity_id: challenge.id,
+              triggered_by: challenge.challenge_owner_email
+            }
+          });
+        } catch (emailError) {
+          console.error('Failed to send challenge submission email:', emailError);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['challenge']);

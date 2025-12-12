@@ -271,6 +271,27 @@ export const AuthProvider = ({ children }) => {
         if (profileError) {
           console.error('Error creating profile:', profileError);
         }
+
+        // Send welcome email to new user
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              template_key: 'welcome_new_user',
+              recipient_email: email,
+              recipient_user_id: data.user.id,
+              variables: {
+                userName: metadata.full_name || metadata.name || email.split('@')[0],
+                loginUrl: window.location.origin + '/auth'
+              },
+              language: 'en',
+              entity_type: 'user',
+              entity_id: data.user.id,
+              triggered_by: 'system'
+            }
+          });
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError);
+        }
       }
       
       return data;
