@@ -66,6 +66,7 @@ export default function MediaLibrary() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [aiFilter, setAiFilter] = useState(null);
 
   const {
     media,
@@ -145,6 +146,48 @@ export default function MediaLibrary() {
     { icon: HardDrive, value: formatTotalSize(totalSize), label: t({ en: 'Total Size', ar: 'الحجم الكلي' }) },
     { icon: Eye, value: media.reduce((acc, f) => acc + (f.view_count || 0), 0), label: t({ en: 'Views', ar: 'مشاهدات' }) },
   ];
+
+  const applyAiFilter = (files) => {
+    if (!aiFilter) return files;
+
+    const now = Date.now();
+    const threeMonthsMs = 90 * 24 * 60 * 60 * 1000;
+
+    switch (aiFilter) {
+      case 'unused':
+        return files.filter(f => (f.view_count || 0) === 0 && (f.download_count || 0) === 0);
+      case 'stale':
+        return files.filter(f => {
+          if (!f.created_at) return false;
+          const created = new Date(f.created_at).getTime();
+          if (Number.isNaN(created)) return false;
+          return now - created > threeMonthsMs;
+        });
+      case 'large':
+        return files.filter(f => (f.file_size || 0) > 10 * 1024 * 1024);
+      case 'duplicates': {
+        const groups = {};
+        files.forEach(f => {
+          const key = `${f.file_size || 0}-${f.file_type || 'unknown'}`;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(f);
+        });
+        const duplicateIds = new Set();
+        Object.values(groups).forEach(group => {
+          if (group.length > 1) {
+            group.forEach(f => {
+              if (f.id) duplicateIds.add(f.id);
+            });
+          }
+        });
+        return files.filter(f => duplicateIds.has(f.id));
+      }
+      default:
+        return files;
+    }
+  };
+
+  const filteredMedia = applyAiFilter(media);
 
   return (
     <PageLayout>
@@ -267,51 +310,72 @@ export default function MediaLibrary() {
               // Filter to show only files with 0 views/downloads
               setSelectedType('all');
               setSearchTerm('');
+              setAiFilter('unused');
               toast.info(t({ 
-                en: `Showing ${recommendation.affectedCount || 'unused'} files with no engagement. Review and delete manually.`,
-                ar: `عرض الملفات بدون تفاعل. راجع واحذف يدوياً.`
+                en: 'Filtered to files with no views or downloads. Review and delete manually.',
+                ar: 'تم عرض الملفات بدون مشاهدات أو تحميلات. راجع واحذف يدوياً.'
               }));
               break;
             case 'archive_old':
+              setAiFilter('stale');
               toast.info(t({ 
-                en: 'Archive feature coming soon. For now, review old files manually.',
-                ar: 'ميزة الأرشفة قادمة قريباً. راجع الملفات القديمة يدوياً.'
+                en: 'Filtered to older files (3+ months). Review for archiving.',
+                ar: 'تم عرض الملفات الأقدم من 3 أشهر. راجعها للأرشفة.'
               }));
               break;
             case 'compress_large':
+              setAiFilter('large');
               toast.info(t({ 
-                en: 'Tip: Download large files, compress them locally, and re-upload.',
-                ar: 'نصيحة: حمّل الملفات الكبيرة، اضغطها محلياً، ثم أعد رفعها.'
+                en: 'Filtered to large files (>10MB). Consider compressing them.',
+                ar: 'تم عرض الملفات الكبيرة (>10MB). يُفضل ضغطها.'
               }));
               break;
             case 'rename_duplicates':
+              setAiFilter('duplicates');
               toast.info(t({ 
-                en: 'Duplicate detection shown. Review files with similar sizes/types.',
-                ar: 'تم اكتشاف ملفات مكررة. راجع الملفات المتشابهة.'
+                en: 'Filtered to potential duplicate files based on size and type.',
+                ar: 'تم عرض الملفات المحتمل تكرارها حسب الحجم والنوع.'
               }));
               break;
             case 'review_engagement':
+              setAiFilter(null);
               setSortBy('view_count');
               setSortOrder('desc');
               toast.success(t({ 
                 en: 'Sorted by views to show high-engagement files first.',
-                ar: 'تم الترتيب حسب المشاهدات.'
+                ar: 'تم الترتيب حسب المشاهدات لإظهار الملفات الأكثر تفاعلاً.'
               }));
               break;
             case 'organize_folders':
+              setAiFilter(null);
               toast.info(t({ 
-                en: 'Organize by using bucket filters on the left panel.',
-                ar: 'نظّم باستخدام فلاتر المجلدات في اللوحة اليسرى.'
+                en: 'Use the folder and bucket filters on the left to organize files.',
+                ar: 'استخدم فلاتر المجلدات والمسارات في اللوحة اليسرى لتنظيم الملفات.'
               }));
               setShowFilters(true);
               break;
             default:
-              toast.info(t({ en: 'Action noted. Manual review recommended.', ar: 'تم تسجيل الإجراء.' }));
+              toast.info(t({ en: 'Action noted. Manual review recommended.', ar: 'تم تسجيل الإجراء. يُنصح بالمراجعة اليدوية.' }));
           }
         }}
       />
 
-      {/* Main Content */}
+      {aiFilter && (
+        <div className="mt-3 mb-2 flex items-center justify-between text-sm">
+          <p className="text-muted-foreground">
+            {t({ en: 'AI filter applied:', ar: 'تم تطبيق فلتر ذكي:' })}{' '}
+            {aiFilter === 'unused' && t({ en: 'Files with no engagement', ar: 'ملفات بدون تفاعل' })}
+            {aiFilter === 'stale' && t({ en: 'Old files (3+ months)', ar: 'ملفات أقدم من 3 أشهر' })}
+            {aiFilter === 'large' && t({ en: 'Large files (>10MB)', ar: 'ملفات كبيرة (>10MB)' })}
+            {aiFilter === 'duplicates' && t({ en: 'Potential duplicates', ar: 'ملفات مكررة محتملة' })}
+          </p>
+          <Button variant="ghost" size="sm" onClick={() => setAiFilter(null)}>
+            {t({ en: 'Clear filter', ar: 'إزالة الفلتر' })}
+          </Button>
+        </div>
+      )}
+
+       {/* Main Content */}
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Filters Sidebar */}
         {showFilters && (
@@ -332,7 +396,7 @@ export default function MediaLibrary() {
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : media.length === 0 ? (
+          ) : filteredMedia.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <File className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -343,7 +407,7 @@ export default function MediaLibrary() {
             </Card>
           ) : viewMode === 'grid' ? (
             <MediaGrid
-              files={media}
+              files={filteredMedia}
               onView={handleView}
               onDelete={handleDelete}
               onDownload={handleDownload}
@@ -352,7 +416,7 @@ export default function MediaLibrary() {
             />
           ) : (
             <MediaListView
-              files={media}
+              files={filteredMedia}
               onView={handleView}
               onDelete={handleDelete}
               onDownload={handleDownload}
