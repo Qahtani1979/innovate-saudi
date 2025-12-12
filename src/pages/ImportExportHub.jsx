@@ -16,8 +16,9 @@ import { toast } from 'sonner';
 import { 
   Upload, Download, FileSpreadsheet, FileText, Database, 
   Loader2, CheckCircle, AlertCircle, FileUp, RefreshCw,
-  History, Settings, Wand2, Filter, Calendar, XCircle
+  History, Settings, Wand2, Filter, Calendar, XCircle, Sparkles
 } from 'lucide-react';
+import AIDataUploader from '@/components/ai-uploader/AIDataUploader';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 
@@ -495,7 +496,7 @@ const IMPORTABLE_ENTITIES = Object.entries(ENTITY_DEFINITIONS)
 function ImportExportHub() {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('export');
+  const [activeTab, setActiveTab] = useState('ai-uploader');
   
   // Export state
   const [exportEntity, setExportEntity] = useState('');
@@ -967,6 +968,10 @@ function ImportExportHub() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsTrigger value="ai-uploader" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            {t({ en: "AI Uploader", ar: "الرافع الذكي" })}
+          </TabsTrigger>
           <TabsTrigger value="export" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             {t({ en: "Export", ar: "تصدير" })}
@@ -980,6 +985,15 @@ function ImportExportHub() {
             {t({ en: "History", ar: "السجل" })}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="ai-uploader" className="space-y-6">
+          <AIDataUploader 
+            onComplete={(results) => {
+              queryClient.invalidateQueries();
+              toast.success(`Successfully imported ${results?.inserted || 0} records`);
+            }}
+          />
+        </TabsContent>
 
         <TabsContent value="export" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
