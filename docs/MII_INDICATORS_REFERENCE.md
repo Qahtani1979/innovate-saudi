@@ -533,7 +533,32 @@ const {
 
 ---
 
-## 10. FUTURE ENHANCEMENTS
+## 10. ADMIN HUB
+
+### 10.1 MII Admin Hub Page
+
+A dedicated admin page (`/mii-admin-hub`) provides centralized management:
+
+| Tab | Features |
+|-----|----------|
+| **Overview** | Quick stats, pending recalculations, quick actions |
+| **Dimensions** | Enable/disable dimensions, view weights |
+| **Calculator** | Embedded AutomatedMIICalculator component |
+| **Schedule** | View cron job status, data trigger status |
+| **Monitoring** | Data inputs, output targets, refresh rates |
+
+### 10.2 Admin Capabilities
+
+| Capability | Method | Access |
+|------------|--------|--------|
+| Recalculate All | Button → Edge Function | Admin only |
+| Toggle Dimensions | Switch UI → DB update | Admin only |
+| View Pending | Query municipalities | Admin only |
+| Monitor Status | Dashboard widgets | Admin only |
+
+---
+
+## 11. FUTURE ENHANCEMENTS
 
 | Feature | Description | Priority |
 |---------|-------------|----------|
@@ -545,7 +570,7 @@ const {
 
 ---
 
-## 11. RELATED DOCUMENTS
+## 12. RELATED DOCUMENTS
 
 | Document | Path | Description |
 |----------|------|-------------|

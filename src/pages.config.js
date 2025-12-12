@@ -190,6 +190,7 @@ import StrategicPlanningProgress from './pages/StrategicPlanningProgress';
 import TemplateLibrary from './pages/TemplateLibrary';
 import WhatIfSimulatorPage from './pages/WhatIfSimulatorPage';
 import MIICoverageReport from './pages/MIICoverageReport';
+import MIIAdminHub from './pages/MIIAdminHub';
 import PartnershipCoverageReport from './pages/PartnershipCoverageReport';
 import CommunicationsCoverageReport from './pages/CommunicationsCoverageReport';
 import DataManagementCoverageReport from './pages/DataManagementCoverageReport';
@@ -670,6 +671,7 @@ export const PAGES = {
     "TemplateLibrary": TemplateLibrary,
     "WhatIfSimulatorPage": WhatIfSimulatorPage,
     "MIICoverageReport": MIICoverageReport,
+    "MIIAdminHub": MIIAdminHub,
     "PartnershipCoverageReport": PartnershipCoverageReport,
     "CommunicationsCoverageReport": CommunicationsCoverageReport,
     "DataManagementCoverageReport": DataManagementCoverageReport,
