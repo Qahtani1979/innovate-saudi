@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { usePersonaRouting } from '@/hooks/usePersonaRouting';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -15,17 +14,12 @@ import {
 import { User, LogOut, LayoutDashboard, Settings, ChevronDown } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
-export default function UserAvatarMenu({ 
-  showDashboardLink = true, 
-  showName = true,
-  variant = 'default' // 'default' | 'compact'
-}) {
+function AuthenticatedUserMenu({ showDashboardLink, showName, variant, user, logout }) {
   const { language, isRTL, t } = useLanguage();
-  const { isAuthenticated, user, logout } = useAuth();
-  const { defaultDashboard, dashboardLabel } = usePersonaRouting();
   const navigate = useNavigate();
-
-  if (!isAuthenticated) return null;
+  
+  const defaultDashboard = '/dashboard';
+  const dashboardLabel = { en: 'Dashboard', ar: 'لوحة التحكم' };
 
   const handleLogout = async () => {
     await logout();
@@ -68,14 +62,12 @@ export default function UserAvatarMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56 bg-background">
-        {/* User Info Header */}
         <div className="px-2 py-1.5">
           <p className="text-sm font-medium">{getUserName()}</p>
           <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
         </div>
         <DropdownMenuSeparator />
 
-        {/* Dashboard Link - optional based on context */}
         {showDashboardLink && (
           <DropdownMenuItem asChild>
             <Link to={defaultDashboard} className="cursor-pointer">
@@ -85,7 +77,6 @@ export default function UserAvatarMenu({
           </DropdownMenuItem>
         )}
 
-        {/* Profile Link */}
         <DropdownMenuItem asChild>
           <Link to={createPageUrl('UserProfile')} className="cursor-pointer">
             <User className={`h-4 w-4 ${iconMargin}`} />
@@ -93,7 +84,6 @@ export default function UserAvatarMenu({
           </Link>
         </DropdownMenuItem>
 
-        {/* Settings Link */}
         <DropdownMenuItem asChild>
           <Link to={createPageUrl('Settings')} className="cursor-pointer">
             <Settings className={`h-4 w-4 ${iconMargin}`} />
@@ -103,12 +93,31 @@ export default function UserAvatarMenu({
 
         <DropdownMenuSeparator />
 
-        {/* Logout */}
         <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
           <LogOut className={`h-4 w-4 ${iconMargin}`} />
           {t({ en: 'Sign Out', ar: 'تسجيل الخروج' })}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+export default function UserAvatarMenu({ 
+  showDashboardLink = true, 
+  showName = true,
+  variant = 'default'
+}) {
+  const { isAuthenticated, user, logout } = useAuth();
+
+  if (!isAuthenticated) return null;
+
+  return (
+    <AuthenticatedUserMenu 
+      showDashboardLink={showDashboardLink}
+      showName={showName}
+      variant={variant}
+      user={user}
+      logout={logout}
+    />
   );
 }
