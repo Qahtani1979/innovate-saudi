@@ -140,3 +140,6 @@ verify_jwt = false
 
 [functions.weekly-ideas-report]
 verify_jwt = false
+
+[functions.calculate-mii]
+verify_jwt = false

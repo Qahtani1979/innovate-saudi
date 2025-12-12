@@ -184,98 +184,157 @@ Municipality Profile currently uses these keys in `dimension_scores`:
 
 ---
 
-## Data Sync Mechanism
+## Automated MII Calculation System
 
-### How Data Gets Updated Automatically
+### Overview
 
-#### 1. Manual Assessment Entry (Primary Source)
-```
-Assessor → Admin Dashboard → mii_results table
-         ↓ (trigger fires)
-municipalities.mii_score + mii_rank updated
-```
+MII scores are **automatically calculated** based on real data in the system - NOT manually entered by admins. The calculation runs via an Edge Function that can be triggered:
 
-#### 2. Database Trigger (Automatic Sync)
-When a new `mii_results` record is inserted or updated with `is_published = true`:
+1. **On-demand** - When admin clicks "Recalculate" button
+2. **Scheduled** - Daily/weekly cron job (can be set up)
+3. **On data change** - After challenges/pilots are created/updated (future enhancement)
 
-```sql
-CREATE OR REPLACE FUNCTION sync_municipality_mii()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Update the municipality's score from latest published result
-  UPDATE municipalities
-  SET 
-    mii_score = NEW.overall_score,
-    mii_rank = NEW.rank,
-    updated_at = now()
-  WHERE id = NEW.municipality_id;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+### Edge Function: `calculate-mii`
 
-CREATE TRIGGER after_mii_result_publish
-AFTER INSERT OR UPDATE ON mii_results
-FOR EACH ROW
-WHEN (NEW.is_published = true)
-EXECUTE FUNCTION sync_municipality_mii();
+**Location:** `supabase/functions/calculate-mii/index.ts`
+
+**Endpoint:** `POST /functions/v1/calculate-mii`
+
+**Payload:**
+```json
+{
+  "municipality_id": "uuid-here",  // Single municipality
+  "calculate_all": true             // Or recalculate all
+}
 ```
 
-#### 3. Rank Recalculation (When Any Score Changes)
-```sql
-CREATE OR REPLACE FUNCTION recalculate_mii_ranks()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Recalculate ranks for all municipalities based on latest scores
-  WITH ranked AS (
-    SELECT 
-      municipality_id,
-      ROW_NUMBER() OVER (ORDER BY overall_score DESC NULLS LAST) as new_rank
-    FROM mii_results
-    WHERE assessment_year = (SELECT MAX(assessment_year) FROM mii_results WHERE is_published = true)
-      AND is_published = true
-  )
-  UPDATE municipalities m
-  SET mii_rank = r.new_rank
-  FROM ranked r
-  WHERE m.id = r.municipality_id;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+### Calculation Formula
+
+```
+OVERALL MII SCORE = Σ (Dimension Score × Weight)
 ```
 
-#### 4. Data Flow Diagram
+| Dimension | Weight | Data Sources | Calculation Logic |
+|-----------|--------|--------------|-------------------|
+| **LEADERSHIP** | 20% | municipalities, challenges, pilots | Profile completeness + Active engagement + Strategic alignment |
+| **STRATEGY** | 15% | municipalities, challenges | Strategic plan linked + Challenge-to-pilot conversion + Strategic goal alignment |
+| **CULTURE** | 15% | pilots | Experimentation rate (per capita) + Risk tolerance (stage variety) + Learning mindset |
+| **PARTNERSHIPS** | 15% | partnerships | Active count + Type diversity + Collaboration score |
+| **CAPABILITIES** | 15% | municipalities, pilots, challenges | Digital infrastructure + Execution capacity + Challenge management |
+| **IMPACT** | 20% | pilots, case_studies | Completed pilots + Success rate + Knowledge sharing (case studies) |
+
+### Detailed Calculation Logic
+
+#### LEADERSHIP (20%)
+```javascript
+profile_completeness = (filled_fields / 4) × 100  // contact, email, website, strategic_plan
+active_engagement = min(100, challenges × 10 + pilots × 15)
+strategic_alignment = strategic_plan_id ? 80 : 30
+
+LEADERSHIP = profile_completeness × 0.3 + active_engagement × 0.4 + strategic_alignment × 0.3
+```
+
+#### STRATEGY (15%)
+```javascript
+strategic_planning = strategic_plan_id ? 85 : 40
+challenge_to_pilot = min(100, (pilots / challenges) × 100 × 2)
+strategic_alignment = (challenges_with_goal / challenges) × 100
+
+STRATEGY = strategic_planning × 0.4 + challenge_to_pilot × 0.35 + strategic_alignment × 0.25
+```
+
+#### CULTURE (15%)
+```javascript
+pilots_per_capita = (pilots / population) × 100000
+experimentation_rate = min(100, pilots_per_capita × 20)
+risk_tolerance = min(100, unique_pilot_stages × 20)
+learning_mindset = (pilots_with_lessons / pilots) × 100
+
+CULTURE = experimentation_rate × 0.4 + risk_tolerance × 0.3 + learning_mindset × 0.3
+```
+
+#### PARTNERSHIPS (15%)
+```javascript
+partnership_count_score = min(100, partnerships × 15)
+partnership_diversity = min(100, unique_types × 25)
+collaboration_score = partnerships > 0 ? 70 : 30
+
+PARTNERSHIPS = partnership_count_score × 0.4 + partnership_diversity × 0.3 + collaboration_score × 0.3
+```
+
+#### CAPABILITIES (15%)
+```javascript
+digital_infrastructure = website ? 75 : 40
+execution_capacity = min(100, active_pilots × 25)
+challenge_management = min(100, challenges × 12)
+
+CAPABILITIES = digital_infrastructure × 0.3 + execution_capacity × 0.4 + challenge_management × 0.3
+```
+
+#### IMPACT (20%)
+```javascript
+completed_pilots_score = min(100, completed_pilots × 20)
+success_rate = avg(completed_pilots.success_probability) or 50
+knowledge_sharing = min(100, published_case_studies × 25)
+
+IMPACT = completed_pilots_score × 0.4 + success_rate × 0.35 + knowledge_sharing × 0.25
+```
+
+### Data Flow (Automated)
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    DATA ENTRY POINTS                             │
+│                    DATA CHANGES                                  │
 ├──────────────────────────────────────────────────────────────────┤
-│  1. Admin Dashboard (manual entry)                               │
-│  2. Bulk Import (Excel/CSV)                                      │
-│  3. API Integration (external systems)                           │
+│  • New challenge created                                         │
+│  • Pilot completed                                               │
+│  • Partnership added                                             │
+│  • Case study published                                          │
 └────────────────────────────────┬─────────────────────────────────┘
                                  │
-                                 ▼
+                                 ▼ (Trigger or Scheduled)
 ┌─────────────────────────────────────────────────────────────────┐
-│                      mii_results table                           │
+│              Edge Function: calculate-mii                        │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │ INSERT/UPDATE with is_published = true                   │    │
+│  │ 1. Fetch all related data (challenges, pilots, etc.)    │    │
+│  │ 2. Calculate each dimension score                        │    │
+│  │ 3. Apply weights → Overall score                         │    │
+│  │ 4. Determine strengths & improvement areas               │    │
+│  │ 5. Calculate trend (up/down/stable)                      │    │
 │  └───────────────────────────┬─────────────────────────────┘    │
 └──────────────────────────────┼───────────────────────────────────┘
                                │
-                               ▼ TRIGGER: sync_municipality_mii()
+                               ▼ (Writes)
+┌─────────────────────────────────────────────────────────────────┐
+│                    mii_results table                             │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ overall_score, dimension_scores, rank, strengths, etc.   │    │
+│  └───────────────────────────┬─────────────────────────────┘    │
+└──────────────────────────────┼───────────────────────────────────┘
+                               │
+                               ▼ (Trigger: sync_municipality_mii)
 ┌─────────────────────────────────────────────────────────────────┐
 │                    municipalities table                          │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │ mii_score = NEW.overall_score                            │    │
-│  │ mii_rank = NEW.rank                                      │    │
+│  │ mii_score = overall_score, mii_rank = calculated rank    │    │
 │  └─────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼ TRIGGER: recalculate_mii_ranks()
-┌─────────────────────────────────────────────────────────────────┐
-│              ALL municipalities ranks updated                    │
-└─────────────────────────────────────────────────────────────────┘
+```
+
+### How to Trigger Recalculation
+
+1. **From Admin UI**: Add a "Recalculate MII" button that calls the edge function
+2. **API Call**:
+```javascript
+const { data } = await supabase.functions.invoke('calculate-mii', {
+  body: { municipality_id: 'uuid-here' }
+});
+```
+3. **For All Municipalities**:
+```javascript
+const { data } = await supabase.functions.invoke('calculate-mii', {
+  body: { calculate_all: true }
+});
 ```
 
 ---

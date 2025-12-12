@@ -1,21 +1,27 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Link, Navigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Award, TrendingUp, AlertCircle, TestTube, Target, Building2, Users, Zap, ShieldAlert, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { Award, TrendingUp, AlertCircle, TestTube, Target, Building2, Users, Zap, ShieldAlert, ArrowUp, ArrowDown, Minus, RefreshCw, CheckCircle2, Loader2 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useMIIData } from '@/hooks/useMIIData';
+import MIIImprovementAI from '@/components/municipalities/MIIImprovementAI';
+import PeerBenchmarkingTool from '@/components/municipalities/PeerBenchmarkingTool';
+import { toast } from 'sonner';
 
 export default function MIIDrillDown() {
   const { language, isRTL, t } = useLanguage();
+  const queryClient = useQueryClient();
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const urlParams = new URLSearchParams(window.location.search);
   const urlMunicipalityId = urlParams.get('id');
   
@@ -149,6 +155,33 @@ export default function MIIDrillDown() {
   // Trend icon
   const TrendIcon = trend === 'up' ? ArrowUp : trend === 'down' ? ArrowDown : Minus;
   const trendColor = trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-amber-600';
+
+  // Recalculate MII function
+  const handleRecalculateMII = async () => {
+    setIsRecalculating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('calculate-mii', {
+        body: { municipality_id: municipalityId }
+      });
+      
+      if (error) throw error;
+      
+      toast.success(t({ 
+        en: `MII recalculated: ${data.results?.[0]?.overall_score || 'N/A'} points`, 
+        ar: `تم إعادة حساب المؤشر: ${data.results?.[0]?.overall_score || 'N/A'} نقطة` 
+      }));
+      
+      // Refresh data
+      queryClient.invalidateQueries(['municipality', municipalityId]);
+      queryClient.invalidateQueries(['mii-latest-result', municipalityId]);
+      queryClient.invalidateQueries(['mii-history', municipalityId]);
+    } catch (error) {
+      console.error('Recalculation failed:', error);
+      toast.error(t({ en: 'Recalculation failed', ar: 'فشلت إعادة الحساب' }));
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
 
   return (
     <PageLayout>
@@ -326,27 +359,97 @@ export default function MIIDrillDown() {
         </CardContent>
       </Card>
 
-      {/* AI Recommendations */}
-      <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-purple-900">
-            <Zap className="h-5 w-5" />
-            {t({ en: 'AI Improvement Recommendations', ar: 'توصيات التحسين الذكية' })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="p-4 bg-white rounded-lg">
-              <p className="font-semibold text-purple-900 mb-2">💡 {t({ en: 'Focus Area: Partnerships', ar: 'مجال التركيز: الشراكات' })}</p>
-              <p className="text-sm text-slate-700">{t({ en: 'Score below national average. Recommend engaging with universities and private sector.', ar: 'الدرجة أقل من المتوسط الوطني. يوصى بالتعامل مع الجامعات والقطاع الخاص.' })}</p>
+      {/* Strengths & Improvement Areas */}
+      {(strengths.length > 0 || improvementAreas.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {strengths.length > 0 && (
+            <Card className="border-green-200 bg-gradient-to-br from-green-50 to-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-700">
+                  <CheckCircle2 className="h-5 w-5" />
+                  {t({ en: 'Strengths', ar: 'نقاط القوة' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {strengths.map((strength, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-green-800">
+                      <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600" />
+                      {strength}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+          
+          {improvementAreas.length > 0 && (
+            <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-amber-700">
+                  <TrendingUp className="h-5 w-5" />
+                  {t({ en: 'Areas for Improvement', ar: 'مجالات التحسين' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {improvementAreas.map((area, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-amber-800">
+                      <Target className="h-4 w-4 mt-0.5 text-amber-600" />
+                      {area}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* AI Improvement Plan & Peer Benchmarking */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MIIImprovementAI municipality={municipality} />
+        <PeerBenchmarkingTool municipality={municipality} />
+      </div>
+
+      {/* Admin: Recalculate MII Button */}
+      {isAdmin && (
+        <Card className="border-dashed border-2 border-slate-300">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-semibold text-slate-900">
+                  {t({ en: 'MII Calculation', ar: 'حساب المؤشر' })}
+                </h4>
+                <p className="text-sm text-slate-600">
+                  {t({ 
+                    en: 'Recalculate MII score based on current data (challenges, pilots, partnerships)', 
+                    ar: 'إعادة حساب درجة المؤشر بناءً على البيانات الحالية' 
+                  })}
+                </p>
+              </div>
+              <Button 
+                onClick={handleRecalculateMII} 
+                disabled={isRecalculating}
+                variant="outline"
+                className="gap-2"
+              >
+                {isRecalculating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t({ en: 'Calculating...', ar: 'جاري الحساب...' })}
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
+                    {t({ en: 'Recalculate MII', ar: 'إعادة حساب المؤشر' })}
+                  </>
+                )}
+              </Button>
             </div>
-            <div className="p-4 bg-white rounded-lg">
-              <p className="font-semibold text-blue-900 mb-2">📊 {t({ en: 'Quick Win: Complete 2 pilots', ar: 'نجاح سريع: أكمل تجربتين' })}</p>
-              <p className="text-sm text-slate-700">{t({ en: 'Would boost Impact score by ~5 points.', ar: 'سيعزز درجة التأثير بحوالي 5 نقاط.' })}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </PageLayout>
   );
 }
