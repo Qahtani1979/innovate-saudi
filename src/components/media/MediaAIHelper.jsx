@@ -184,6 +184,7 @@ Focus on actionable recommendations with specific file counts and potential impa
   };
 
   const handleAction = (action, recommendation) => {
+    console.log('[MediaAIHelper] Take Action clicked', action, recommendation);
     if (onAction) {
       onAction(action, recommendation);
     }

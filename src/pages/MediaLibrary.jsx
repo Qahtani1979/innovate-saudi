@@ -70,6 +70,7 @@ export default function MediaLibrary() {
 
   const {
     media,
+    allMedia,
     totalMedia,
     stats,
     isLoading,
@@ -86,6 +87,7 @@ export default function MediaLibrary() {
     page,
     setPage,
     totalPages,
+    pageSize,
     hasNextPage,
     hasPrevPage,
     upload,
@@ -147,6 +149,8 @@ export default function MediaLibrary() {
     { icon: Eye, value: media.reduce((acc, f) => acc + (f.view_count || 0), 0), label: t({ en: 'Views', ar: 'مشاهدات' }) },
   ];
 
+  const effectivePageSize = pageSize || 50;
+
   const applyAiFilter = (files) => {
     if (!aiFilter) return files;
 
@@ -187,7 +191,10 @@ export default function MediaLibrary() {
     }
   };
 
-  const filteredMedia = applyAiFilter(media);
+  const aiFilteredAll = applyAiFilter(allMedia);
+  const filteredMedia = aiFilter
+    ? aiFilteredAll.slice((page - 1) * effectivePageSize, page * effectivePageSize)
+    : media;
 
   return (
     <PageLayout>
@@ -301,7 +308,7 @@ export default function MediaLibrary() {
 
       {/* AI Media Helper */}
       <MediaAIHelper 
-        files={media} 
+        files={allMedia} 
         stats={stats}
         onAction={(action, recommendation) => {
           // Handle AI recommendations
