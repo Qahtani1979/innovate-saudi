@@ -1094,6 +1094,6 @@ export default function MenuSidebarComparison() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
