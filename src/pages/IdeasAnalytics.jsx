@@ -111,7 +111,6 @@ Provide:
           </Button>
         }
       />
-      </div>
 
       <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
