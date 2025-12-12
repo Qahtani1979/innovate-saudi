@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export const usePermissions = () => {
+export function usePermissions() {
   // Get current user
   const { data: session } = useQuery({
     queryKey: ['session'],

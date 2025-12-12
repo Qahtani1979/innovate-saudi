@@ -5,15 +5,18 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * Hook to determine the appropriate dashboard and navigation for a user based on their persona/role
  */
 export function usePersonaRouting() {
+  const permissionsData = usePermissions();
+  
+  // Safely destructure with defaults for when permissions are loading or unavailable
   const { 
-    isAdmin, 
-    roles, 
-    hasPermission,
-    isDeputyship,
-    isMunicipality,
-    isNationalEntity,
-    hasAnyPermission
-  } = usePermissions();
+    isAdmin = false, 
+    roles = [], 
+    hasPermission = () => false,
+    isDeputyship = false,
+    isMunicipality = false,
+    isNationalEntity = false,
+    hasAnyPermission = () => false
+  } = permissionsData || {};
 
   const personaConfig = useMemo(() => {
     // Platform Admin
@@ -177,10 +180,46 @@ export function usePersonaRouting() {
   return {
     ...personaConfig,
     menuVisibility,
-    isAdmin,
-    isDeputyship,
-    isMunicipality,
-    isNationalEntity,
+    isAdmin: isAdmin || false,
+    isDeputyship: isDeputyship || false,
+    isMunicipality: isMunicipality || false,
+    isNationalEntity: isNationalEntity || false,
+  };
+}
+
+// Default config for unauthenticated or error states
+function getDefaultConfig() {
+  return {
+    persona: 'guest',
+    defaultDashboard: '/citizen-dashboard',
+    dashboardLabel: { en: 'Dashboard', ar: 'لوحة التحكم' },
+    onboardingWizard: null,
+    portalType: 'public',
+    menuVisibility: {
+      showAdminTools: false,
+      showCoverageReports: false,
+      showExecutiveAnalytics: false,
+      showNationalOversight: false,
+      showBenchmarking: false,
+      showPolicyManagement: false,
+      showMunicipalityTools: false,
+      showLocalChallenges: false,
+      showLocalPilots: false,
+      showProviderTools: false,
+      showSolutionManagement: false,
+      showOpportunities: false,
+      showExpertTools: false,
+      showEvaluationQueue: false,
+      showCitizenTools: false,
+      showIdeaSubmission: false,
+      showInnovationPipeline: false,
+      showPrograms: true,
+      showRDSection: false,
+    },
+    isAdmin: false,
+    isDeputyship: false,
+    isMunicipality: false,
+    isNationalEntity: false,
   };
 }
 
