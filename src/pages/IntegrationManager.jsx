@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Plug, Plus, Key, Webhook, Globe, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function IntegrationManager() {
   const { language, isRTL, t } = useLanguage();
@@ -20,15 +21,12 @@ export default function IntegrationManager() {
   ]);
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-8 text-white">
-        <h1 className="text-5xl font-bold mb-2">
-          {t({ en: '🔌 Integration & API Management', ar: '🔌 إدارة التكاملات وواجهة البرمجة' })}
-        </h1>
-        <p className="text-xl text-white/90">
-          {t({ en: 'Configure API keys, webhooks, OAuth apps, and external integrations', ar: 'تكوين مفاتيح API، الخطافات، تطبيقات OAuth، والتكاملات الخارجية' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Plug}
+        title={t({ en: 'Integration & API Management', ar: 'إدارة التكاملات وواجهة البرمجة' })}
+        description={t({ en: 'Configure API keys, webhooks, OAuth apps, and external integrations', ar: 'تكوين مفاتيح API، الخطافات، تطبيقات OAuth، والتكاملات الخارجية' })}
+      />
 
       {/* API Keys */}
       <Card>

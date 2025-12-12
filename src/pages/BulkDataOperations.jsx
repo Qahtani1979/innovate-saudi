@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Upload, Download, Database, FileText } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function BulkDataOperations() {
   const { language, t } = useLanguage();
@@ -63,16 +64,12 @@ export default function BulkDataOperations() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-          <Database className="h-8 w-8 text-blue-600" />
-          {t({ en: 'Bulk Data Operations', ar: 'عمليات البيانات الجماعية' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Import and export data in bulk', ar: 'استيراد وتصدير البيانات بشكل جماعي' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Database}
+        title={t({ en: 'Bulk Data Operations', ar: 'عمليات البيانات الجماعية' })}
+        description={t({ en: 'Import and export data in bulk', ar: 'استيراد وتصدير البيانات بشكل جماعي' })}
+      />
 
       <Card>
         <CardHeader>

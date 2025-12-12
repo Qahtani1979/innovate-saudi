@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function FeatureFlagsDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -52,16 +53,18 @@ Suggest:
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
+      <PageHeader
+        icon={Flag}
+        title={t({ en: 'Feature Flags & Experimentation', ar: 'أعلام الميزات والتجريب' })}
+        description={t({ en: 'Control feature rollouts, run A/B tests, and manage gradual deployments', ar: 'التحكم في طرح الميزات، إجراء اختبارات A/B، وإدارة النشر التدريجي' })}
+        stats={[
+          { icon: Flag, value: flags.filter(f => f.enabled).length, label: t({ en: 'Active Flags', ar: 'أعلام نشطة' }) },
+          { icon: Users, value: flags.reduce((sum, f) => sum + f.users, 0), label: t({ en: 'Users in Tests', ar: 'مستخدمون في التجارب' }) },
+          { icon: TrendingUp, value: flags.reduce((sum, f) => sum + f.experiments, 0), label: t({ en: 'Running Experiments', ar: 'تجارب جارية' }) },
+        ]}
+      />
       <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-amber-600 via-orange-600 to-red-600 p-8 text-white">
-        <h1 className="text-5xl font-bold mb-2">
-          {t({ en: '🚩 Feature Flags & Experimentation', ar: '🚩 أعلام الميزات والتجريب' })}
-        </h1>
-        <p className="text-xl text-white/90">
-          {t({ en: 'Control feature rollouts, run A/B tests, and manage gradual deployments', ar: 'التحكم في طرح الميزات، إجراء اختبارات A/B، وإدارة النشر التدريجي' })}
-        </p>
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-green-50 to-white">

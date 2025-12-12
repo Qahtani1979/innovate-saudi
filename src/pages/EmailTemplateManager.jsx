@@ -12,6 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { Mail, Plus, Pencil, Trash2, Eye, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Dialog,
   DialogContent,
@@ -143,15 +151,18 @@ Generate:
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-purple-700 bg-clip-text text-transparent">
-          {t({ en: 'Email Template Manager', ar: 'إدارة قوالب البريد' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Manage citizen communication templates', ar: 'إدارة قوالب التواصل مع المواطنين' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Mail}
+        title={t({ en: 'Email Template Manager', ar: 'إدارة قوالب البريد' })}
+        description={t({ en: 'Manage citizen communication templates', ar: 'إدارة قوالب التواصل مع المواطنين' })}
+        action={
+          <Button onClick={() => { setEditingTemplate(null); setFormData({ name: '', key: '', subject_en: '', subject_ar: '', body_en: '', body_ar: '', variables: [] }); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t({ en: 'New Template', ar: 'قالب جديد' })}
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
