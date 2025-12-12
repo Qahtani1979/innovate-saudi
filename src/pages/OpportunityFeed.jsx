@@ -10,6 +10,7 @@ import { Sparkles, Target, Lightbulb, TestTube, Calendar, Search, Filter } from 
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function OpportunityFeed() {
   const { language, isRTL, t } = useLanguage();
@@ -52,17 +53,17 @@ function OpportunityFeed() {
   });
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Opportunity Feed', ar: 'فرص الابتكار' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Discover challenges, programs, and R&D calls you can engage with', ar: 'اكتشف التحديات والبرامج ودعوات البحث التي يمكنك المشاركة فيها' })}
-          </p>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Sparkles}
+        title={t({ en: 'Opportunity Feed', ar: 'فرص الابتكار' })}
+        description={t({ en: 'Discover challenges, programs, and R&D calls you can engage with', ar: 'اكتشف التحديات والبرامج ودعوات البحث التي يمكنك المشاركة فيها' })}
+        stats={[
+          { icon: Target, value: challenges.length, label: t({ en: 'Challenges', ar: 'تحديات' }) },
+          { icon: Calendar, value: programs.length, label: t({ en: 'Programs', ar: 'برامج' }) },
+          { icon: Lightbulb, value: rdCalls.length, label: t({ en: 'R&D Calls', ar: 'دعوات بحث' }) },
+        ]}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setFilterType('all')}>
@@ -174,7 +175,7 @@ function OpportunityFeed() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

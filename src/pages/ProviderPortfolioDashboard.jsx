@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   Lightbulb, TrendingUp, Star, TestTube, Edit, Eye, XCircle,
-  Activity, DollarSign, CheckCircle2, AlertCircle, BarChart3
+  Activity, DollarSign, CheckCircle2, AlertCircle, BarChart3, Briefcase
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProviderSolutionCard from '../components/solutions/ProviderSolutionCard';
@@ -19,6 +19,7 @@ import MultiCityOperationsManager from '../components/startup/MultiCityOperation
 import ProviderCollaborationNetwork from '../components/solutions/ProviderCollaborationNetwork';
 import ContractPipelineTracker from '../components/startup/ContractPipelineTracker';
 import ClientTestimonialsShowcase from '../components/solutions/ClientTestimonialsShowcase';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function ProviderPortfolioDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -113,23 +114,26 @@ export default function ProviderPortfolioDashboard() {
   }
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">
-            {t({ en: 'My Solutions Portfolio', ar: 'محفظة حلولي' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Manage all your solutions and track performance', ar: 'إدارة جميع حلولك وتتبع الأداء' })}
-          </p>
-        </div>
-        <Link to={createPageUrl('SolutionCreate')}>
-          <Button className="bg-blue-600">
-            <Lightbulb className="h-4 w-4 mr-2" />
-            {t({ en: 'Add Solution', ar: 'إضافة حل' })}
-          </Button>
-        </Link>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Briefcase}
+        title={t({ en: 'My Solutions Portfolio', ar: 'محفظة حلولي' })}
+        description={t({ en: 'Manage all your solutions and track performance', ar: 'إدارة جميع حلولك وتتبع الأداء' })}
+        stats={[
+          { icon: Lightbulb, value: portfolioStats.total, label: t({ en: 'Total Solutions', ar: 'إجمالي الحلول' }) },
+          { icon: CheckCircle2, value: portfolioStats.verified, label: t({ en: 'Verified', ar: 'معتمدة' }) },
+          { icon: TestTube, value: portfolioStats.inPilots, label: t({ en: 'In Pilots', ar: 'في تجارب' }) },
+          { icon: Star, value: portfolioStats.avgRating, label: t({ en: 'Avg Rating', ar: 'متوسط التقييم' }) },
+        ]}
+        actions={
+          <Link to={createPageUrl('SolutionCreate')}>
+            <Button className="bg-blue-600">
+              <Lightbulb className="h-4 w-4 mr-2" />
+              {t({ en: 'Add Solution', ar: 'إضافة حل' })}
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Portfolio Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -274,6 +278,6 @@ export default function ProviderPortfolioDashboard() {
           })}
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }

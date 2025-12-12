@@ -14,6 +14,31 @@ Solution Providers are technology companies, startups, and service providers who
 | **Primary Dashboard** | `StartupDashboard` (Note: Code references `ProviderDashboard` which routes to `StartupDashboard`) |
 | **Onboarding Flow** | `StartupOnboarding.jsx` + `StartupOnboardingWizard.jsx` |
 
+## Layout System Coverage
+
+### ✅ Pages with PageLayout + PageHeader
+| Page | Status | Notes |
+|------|--------|-------|
+| `StartupDashboard.jsx` | ✅ Complete | Main dashboard with full PageHeader stats |
+| `ProviderPortfolioDashboard.jsx` | ✅ Complete | Portfolio management |
+| `ProviderLeaderboard.jsx` | ✅ Complete | Leaderboard rankings |
+| `OpportunityFeed.jsx` | ✅ Complete | Opportunity discovery |
+| `StartupEcosystemDashboard.jsx` | ✅ Complete | Ecosystem metrics (Admin view) |
+
+### ⏭️ Excluded from PageLayout (by design)
+| Page | Reason |
+|------|--------|
+| `StartupOnboarding.jsx` | Wizard-based flow |
+| `ProviderProposalWizard.jsx` | Multi-step wizard |
+
+### ❌ Empty/Placeholder Pages
+| Page | Status |
+|------|--------|
+| `StartupGapsImplementationTracker.jsx` | Empty - needs implementation |
+| `ResearcherProviderNetwork.jsx` | Empty - needs implementation |
+| `BrowseStartups.jsx` | Empty - needs implementation |
+| `MyStartupProfileEditor.jsx` | Empty - needs implementation |
+
 ## User Journey (2-Phase Onboarding)
 
 ```mermaid
@@ -72,45 +97,6 @@ WHERE provider_id = user.organization_id
    OR created_by = user.email
 ```
 
-## Dashboard Features
-
-### StartupDashboard.jsx (659 lines)
-
-#### Key Sections
-1. **Matchmaker Status Banner**
-   - Current matchmaker program status
-   - AI-matched challenges count
-   - Program stage
-
-2. **Statistics Cards**
-   - Open challenges count
-   - AI matches count
-   - My solutions count
-   - Open programs count
-   - Applications count
-
-3. **Profile Completeness**
-   - `ProfileCompletenessCoach` component
-   - `FirstActionRecommender` component
-   - `ProgressiveProfilingPrompt` component
-
-4. **Opportunity Pipeline**
-   - `OpportunityPipelineDashboard` - Track pursuit funnel
-   - `ProposalWorkflowTracker` - Proposal status tracking
-
-5. **Market Intelligence**
-   - `MarketIntelligenceFeed` - Sector trends
-   - `ProviderPerformanceDashboard` - Performance metrics
-
-6. **Ecosystem Features**
-   - `StartupJourneyAnalytics` - Journey tracking
-   - `EcosystemContributionScore` - Contribution metrics
-   - `MultiMunicipalityExpansionTracker` - Expansion tracking
-   - `StartupCollaborationHub` - Partner connections
-   - `StartupReferralProgram` - Referral system
-   - `StartupMentorshipMatcher` - Mentorship matching
-   - `StartupChurnPredictor` - Engagement prediction
-
 ## Key Pages
 
 | Page | Purpose | Permission Required |
@@ -124,6 +110,16 @@ WHERE provider_id = user.organization_id
 | `ProgramApplicationWizard` | Apply to programs | Authenticated |
 | `MyApplications` | Track all applications | Authenticated |
 
+## Dashboard Components
+
+### StartupDashboard.jsx Key Sections
+1. **Matchmaker Status Banner** - Current matchmaker program status
+2. **Statistics Cards** - Open challenges, AI matches, solutions, programs, applications
+3. **Profile Completeness** - `ProfileCompletenessCoach`, `FirstActionRecommender`, `ProgressiveProfilingPrompt`
+4. **Opportunity Pipeline** - `OpportunityPipelineDashboard`, `ProposalWorkflowTracker`
+5. **Market Intelligence** - `MarketIntelligenceFeed`, `ProviderPerformanceDashboard`
+6. **Ecosystem Features** - Journey analytics, contribution score, expansion tracker, collaboration hub
+
 ## Data Access
 
 ### Entities Accessed
@@ -136,42 +132,11 @@ WHERE provider_id = user.organization_id
 - `Program` (published, open programs)
 - `ProgramApplication` (own applications)
 
-### Queries
-```javascript
-// Published challenges only (RLS: no access to drafts/internal)
-const { data: openChallenges } = useQuery({
-  queryKey: ['published-challenges'],
-  queryFn: async () => {
-    const all = await base44.entities.Challenge.list();
-    return all.filter(c => 
-      c.is_published && 
-      ['approved', 'in_treatment'].includes(c.status)
-    );
-  }
-});
-
-// Own solutions
-const { data: mySolutions } = useQuery({
-  queryKey: ['my-solutions'],
-  queryFn: async () => {
-    return all.filter(s => 
-      s.provider_id === myOrganization?.id || 
-      s.created_by === user?.email
-    );
-  }
-});
-```
-
 ## Workflows
 
 ### Solution Registration Flow
 1. Navigate to `SolutionCreate`
-2. Complete multi-step wizard:
-   - Basic info (name, description)
-   - Technical specs (TRL, categories)
-   - Deployment history
-   - Case studies
-   - Pricing tiers
+2. Complete multi-step wizard
 3. Submit for verification
 4. Admin/expert review
 5. Solution verified and published
@@ -183,13 +148,6 @@ const { data: mySolutions } = useQuery({
 4. Municipality reviews proposal
 5. If accepted → Pilot negotiation
 
-### Matchmaker Program
-1. Apply via `MatchmakerApplicationCreate`
-2. Admin classification (pre-classified, classified, advanced)
-3. AI matches challenges based on capabilities
-4. Receive matched opportunities
-5. Track success rate
-
 ## AI Features
 
 | Feature | Component | Description |
@@ -199,24 +157,17 @@ const { data: mySolutions } = useQuery({
 | Churn Prediction | `StartupChurnPredictor` | Engagement risk alerts |
 | Mentorship Matching | `StartupMentorshipMatcher` | AI mentor recommendations |
 
-## Integration Points
-
-- **Matchmaker Program**: Primary challenge discovery
-- **Pilot Participation**: Deploy solutions in pilots
-- **Program Applications**: Apply to accelerators/incubators
-- **Expert Evaluations**: Solutions evaluated by experts
-- **Municipality Connections**: Direct relationship building
-
 ## Onboarding Specifics
 
-### StartupOnboardingWizard.jsx
+### StartupOnboardingWizard.jsx Steps
 1. Company profile (name, website, founding)
 2. Solution categories
 3. Sector focus areas
 4. Team size and stage
 5. Previous experience
 
-### Profile Fields (Organization)
+### Profile Fields
+**Organization:**
 - `name_en`, `name_ar` - Company name
 - `organization_type` - `solution_provider` or `startup`
 - `sectors` - Focus sectors
@@ -225,7 +176,7 @@ const { data: mySolutions } = useQuery({
 - `stage` - Company stage (seed, series_a, etc.)
 - `is_verified` - Verification status
 
-### Profile Fields (StartupProfile)
+**StartupProfile:**
 - `user_email` - User reference
 - `company_name` - Company name
 - `stage` - Current stage

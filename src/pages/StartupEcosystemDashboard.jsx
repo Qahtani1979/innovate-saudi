@@ -10,6 +10,7 @@ import {
   DollarSign, Users, Lightbulb, BarChart3, Activity
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function StartupEcosystemDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -62,16 +63,18 @@ function StartupEcosystemDashboard() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold flex items-center gap-3">
-          <Rocket className="h-10 w-10 text-blue-600" />
-          {t({ en: 'Startup Ecosystem Health', ar: 'صحة نظام الشركات الناشئة' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Platform-wide startup engagement and deployment success metrics', ar: 'مقاييس مشاركة الشركات الناشئة ونجاح النشر على مستوى المنصة' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Rocket}
+        title={t({ en: 'Startup Ecosystem Health', ar: 'صحة نظام الشركات الناشئة' })}
+        description={t({ en: 'Platform-wide startup engagement and deployment success metrics', ar: 'مقاييس مشاركة الشركات الناشئة ونجاح النشر على مستوى المنصة' })}
+        stats={[
+          { icon: Building2, value: stats.totalStartups, label: t({ en: 'Startups', ar: 'شركات' }) },
+          { icon: Lightbulb, value: stats.totalSolutions, label: t({ en: 'Solutions', ar: 'حلول' }) },
+          { icon: TestTube, value: stats.pilotsWon, label: t({ en: 'Pilots Won', ar: 'تجارب فائزة' }) },
+          { icon: Activity, value: `${stats.avgSuccessRate}%`, label: t({ en: 'Success Rate', ar: 'معدل النجاح' }) },
+        ]}
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
@@ -169,7 +172,7 @@ function StartupEcosystemDashboard() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 
