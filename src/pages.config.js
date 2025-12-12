@@ -201,7 +201,7 @@ import DecisionSimulator from './pages/DecisionSimulator';
 import PredictiveForecastingDashboard from './pages/PredictiveForecastingDashboard';
 import CollaborationHub from './pages/CollaborationHub';
 import NetworkIntelligence from './pages/NetworkIntelligence';
-import collaborationHub from './pages/Collaboration Hub';
+// Note: 'Collaboration Hub.jsx' with space removed, using CollaborationHub.jsx instead
 import StrategicAdvisorChat from './pages/StrategicAdvisorChat';
 import PatternRecognition from './pages/PatternRecognition';
 import ExecutiveBriefGenerator from './pages/ExecutiveBriefGenerator';
