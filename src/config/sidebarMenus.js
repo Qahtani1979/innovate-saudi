@@ -97,6 +97,7 @@ export const SIDEBAR_MENUS = {
       { name: 'Solutions', icon: Lightbulb, label: { en: 'Solutions', ar: 'الحلول' } },
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'Municipalities', icon: Building2, label: { en: 'Municipalities', ar: 'البلديات' } },
+      { name: 'MIIAdminHub', icon: PieChart, label: { en: 'MII Admin', ar: 'إدارة المؤشر' } },
       { name: 'Organizations', icon: Briefcase, label: { en: 'Organizations', ar: 'المنظمات' } },
       { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
       { name: 'AuditTrail', icon: History, label: { en: 'Audit Logs', ar: 'سجلات التدقيق' } },
