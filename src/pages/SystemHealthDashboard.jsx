@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Activity, CheckCircle, AlertCircle, TrendingUp, Database, Zap, Clock, Users } from 'lucide-react';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function SystemHealthDashboard() {
   const { language, t } = useLanguage();
@@ -74,16 +75,17 @@ export default function SystemHealthDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-          <Activity className="h-8 w-8 text-green-600" />
-          {t({ en: 'System Health', ar: 'صحة النظام' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Monitor platform performance and status', ar: 'مراقبة أداء وحالة المنصة' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Activity}
+        title={t({ en: 'System Health', ar: 'صحة النظام' })}
+        description={t({ en: 'Monitor platform performance and status', ar: 'مراقبة أداء وحالة المنصة' })}
+        stats={[
+          { icon: CheckCircle, value: '99.9%', label: t({ en: 'Uptime', ar: 'وقت التشغيل' }) },
+          { icon: Database, value: healthMetrics[1]?.value, label: t({ en: 'Data Records', ar: 'سجلات البيانات' }) },
+          { icon: Zap, value: '< 200ms', label: t({ en: 'Response Time', ar: 'زمن الاستجابة' }) },
+        ]}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {healthMetrics.map((metric, i) => {

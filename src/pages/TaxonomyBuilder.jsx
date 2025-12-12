@@ -16,6 +16,7 @@ import TaxonomyGapDetector from '../components/taxonomy/TaxonomyGapDetector';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function TaxonomyBuilder() {
   const { language, isRTL, t } = useLanguage();
@@ -147,35 +148,24 @@ Focus on Vision 2030, smart cities, and municipal service excellence.`,
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-teal-600 via-blue-600 to-purple-600 p-8 text-white">
-        <h1 className="text-5xl font-bold mb-2">
-          {t({ en: '🏷️ Domain Taxonomy Builder', ar: '🏷️ بناء تصنيف المجالات' })}
-        </h1>
-        <p className="text-xl text-white/90">
-          {t({ en: 'Manage sectors, subsectors, services with AI-powered insights', ar: 'إدارة القطاعات والخدمات مع رؤى ذكية' })}
-        </p>
-        <div className="mt-4 flex items-center gap-3">
-          <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-            {sectors.length} {t({ en: 'sectors', ar: 'قطاعات' })}
-          </Badge>
-          <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-            {subsectors.length} {t({ en: 'subsectors', ar: 'قطاعات فرعية' })}
-          </Badge>
-          <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-            {services.length} {t({ en: 'services', ar: 'خدمات' })}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex items-center gap-3">
-        <Button onClick={generateAISuggestions} disabled={aiLoading} variant="outline">
-          {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {t({ en: 'AI Suggestions', ar: 'اقتراحات ذكية' })}
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Tags}
+        title={t({ en: 'Domain Taxonomy Builder', ar: 'بناء تصنيف المجالات' })}
+        description={t({ en: 'Manage sectors, subsectors, services with AI-powered insights', ar: 'إدارة القطاعات والخدمات مع رؤى ذكية' })}
+        stats={[
+          { icon: Layers, value: sectors.length, label: t({ en: 'Sectors', ar: 'قطاعات' }) },
+          { icon: TreePine, value: subsectors.length, label: t({ en: 'Subsectors', ar: 'قطاعات فرعية' }) },
+          { icon: Tags, value: services.length, label: t({ en: 'Services', ar: 'خدمات' }) },
+        ]}
+        action={
+          <Button onClick={generateAISuggestions} disabled={aiLoading} variant="default">
+            {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {t({ en: 'AI Suggestions', ar: 'اقتراحات ذكية' })}
+          </Button>
+        }
+      />
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">

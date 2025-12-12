@@ -11,6 +11,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function MenuSidebarComparison() {
   const { t, isRTL } = useLanguage();
@@ -464,19 +465,12 @@ export default function MenuSidebarComparison() {
   const personas = Object.keys(newSidebarMenus);
 
   return (
-    <div className="p-6 space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Menu className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">
-            {t({ en: 'Menu vs Sidebar Comparison', ar: 'مقارنة القائمة والشريط الجانبي' })}
-          </h1>
-          <p className="text-muted-foreground">
-            {t({ en: 'Comparing old menu structure with new persona-based sidebar', ar: 'مقارنة بنية القائمة القديمة مع الشريط الجانبي الجديد' })}
-          </p>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Menu}
+        title={t({ en: 'Menu vs Sidebar Comparison', ar: 'مقارنة القائمة والشريط الجانبي' })}
+        description={t({ en: 'Comparing old menu structure with new persona-based sidebar', ar: 'مقارنة بنية القائمة القديمة مع الشريط الجانبي الجديد' })}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

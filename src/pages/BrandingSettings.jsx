@@ -10,6 +10,7 @@ import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function BrandingSettings() {
   const { language, isRTL, t } = useLanguage();
@@ -56,15 +57,18 @@ Provide bilingual recommendations for:
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 via-pink-600 to-rose-600 p-8 text-white">
-        <h1 className="text-5xl font-bold mb-2">
-          {t({ en: '🎨 Branding & Identity', ar: '🎨 العلامة التجارية والهوية' })}
-        </h1>
-        <p className="text-xl text-white/90">
-          {t({ en: 'Customize platform appearance, logos, colors, and white-label settings', ar: 'تخصيص مظهر المنصة والشعارات والألوان وإعدادات العلامة البيضاء' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Palette}
+        title={t({ en: 'Branding & Identity', ar: 'العلامة التجارية والهوية' })}
+        description={t({ en: 'Customize platform appearance, logos, colors, and white-label settings', ar: 'تخصيص مظهر المنصة والشعارات والألوان وإعدادات العلامة البيضاء' })}
+        action={
+          <Button onClick={handleAIOptimize} disabled={aiLoading || !isAvailable}>
+            {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            {t({ en: 'AI Branding Optimizer', ar: 'محسن العلامة التجارية الذكي' })}
+          </Button>
+        }
+      />
 
       <div className="space-y-2">
         <Button onClick={handleAIOptimize} disabled={aiLoading || !isAvailable} className="bg-gradient-to-r from-purple-600 to-pink-600">

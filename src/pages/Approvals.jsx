@@ -13,6 +13,7 @@ import { CheckCircle2, XCircle, Clock, AlertCircle, TestTube, Microscope, Sparkl
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function Approvals() {
   const { language, isRTL, t } = useLanguage();
@@ -109,16 +110,20 @@ Provide: approval recommendation, budget assessment, risk analysis, readiness sc
     setCurrentBriefId(null);
   };
 
+  const totalPending = challenges.length + pilots.length;
+
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'Approvals & Reviews', ar: 'الموافقات والمراجعات' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Review and approve pending submissions', ar: 'مراجعة والموافقة على الطلبات المعلقة' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Clock}
+        title={t({ en: 'Approvals & Reviews', ar: 'الموافقات والمراجعات' })}
+        description={t({ en: 'Review and approve pending submissions', ar: 'مراجعة والموافقة على الطلبات المعلقة' })}
+        stats={[
+          { icon: Clock, value: totalPending, label: t({ en: 'Pending', ar: 'معلق' }) },
+          { icon: TestTube, value: challenges.length, label: t({ en: 'Challenges', ar: 'تحديات' }) },
+          { icon: Microscope, value: pilots.length, label: t({ en: 'Pilots', ar: 'تجارب' }) },
+        ]}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-yellow-50 to-white">
