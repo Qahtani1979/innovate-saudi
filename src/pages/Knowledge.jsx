@@ -130,8 +130,6 @@ function KnowledgePage() {
     return <Icon className="h-4 w-4" />;
   };
 
-  const isAdmin = user?.role === 'admin';
-
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     const contentSummary = {
