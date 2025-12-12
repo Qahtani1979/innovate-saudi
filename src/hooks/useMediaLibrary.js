@@ -1,7 +1,6 @@
 /* @refresh reset */
-/* Cache bust: v2 */
-import { useState, useCallback, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+/* Cache bust: v3 */
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -16,7 +15,13 @@ export function useMediaLibrary(options = {}) {
   const languageContext = useLanguage();
   const t = languageContext?.t || ((text) => typeof text === 'string' ? text : text?.en || '');
   
-  const queryClient = useQueryClient();
+  const [dbMediaFiles, setDbMediaFiles] = useState([]);
+  const [storageFiles, setStorageFiles] = useState([]);
+  const [isLoadingDb, setIsLoadingDb] = useState(true);
+  const [isLoadingStorage, setIsLoadingStorage] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [selectedBuckets, setSelectedBuckets] = useState(options.defaultBuckets || ['uploads', 'challenges', 'solutions', 'pilots', 'programs']);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
@@ -24,10 +29,10 @@ export function useMediaLibrary(options = {}) {
   const [sortOrder, setSortOrder] = useState('desc');
   const [page, setPage] = useState(1);
 
-  // Fetch media files from database (media_files table)
-  const { data: dbMediaFiles = [], isLoading: isLoadingDb } = useQuery({
-    queryKey: ['media-files-db'],
-    queryFn: async () => {
+  // Fetch media files from database
+  const fetchDbFiles = useCallback(async () => {
+    setIsLoadingDb(true);
+    try {
       const { data, error } = await supabase
         .from('media_files')
         .select('*')
@@ -37,16 +42,22 @@ export function useMediaLibrary(options = {}) {
 
       if (error) {
         console.error('Error fetching media files from DB:', error);
-        return [];
+        setDbMediaFiles([]);
+      } else {
+        setDbMediaFiles(data || []);
       }
-      return data || [];
+    } catch (err) {
+      console.error('Failed to fetch DB files:', err);
+      setDbMediaFiles([]);
+    } finally {
+      setIsLoadingDb(false);
     }
-  });
+  }, []);
 
-  // Fetch files from storage buckets directly (for legacy/untracked files)
-  const { data: storageFiles = [], isLoading: isLoadingStorage } = useQuery({
-    queryKey: ['media-library-storage', selectedBuckets],
-    queryFn: async () => {
+  // Fetch files from storage buckets
+  const fetchStorageFiles = useCallback(async () => {
+    setIsLoadingStorage(true);
+    try {
       const allFiles = [];
 
       for (const bucketId of selectedBuckets) {
@@ -63,7 +74,6 @@ export function useMediaLibrary(options = {}) {
             continue;
           }
 
-          // Also fetch from public folder if exists
           const { data: publicFiles } = await supabase.storage
             .from(bucketId)
             .list('public', {
@@ -116,10 +126,23 @@ export function useMediaLibrary(options = {}) {
         }
       }
 
-      return allFiles;
-    },
-    staleTime: 30000
-  });
+      setStorageFiles(allFiles);
+    } catch (err) {
+      console.error('Failed to fetch storage files:', err);
+      setStorageFiles([]);
+    } finally {
+      setIsLoadingStorage(false);
+    }
+  }, [selectedBuckets]);
+
+  // Initial load
+  useEffect(() => {
+    fetchDbFiles();
+  }, [fetchDbFiles]);
+
+  useEffect(() => {
+    fetchStorageFiles();
+  }, [fetchStorageFiles]);
 
   // Merge database and storage files
   const allMedia = useMemo(() => {
@@ -227,9 +250,10 @@ export function useMediaLibrary(options = {}) {
     };
   }, [allMedia, selectedBuckets]);
 
-  // Upload mutation
-  const uploadMutation = useMutation({
-    mutationFn: async ({ file, bucket, entityType, entityId, category, metadata = {} }) => {
+  // Upload function
+  const upload = useCallback(async ({ file, bucket, entityType, entityId, category, metadata = {} }) => {
+    setIsUploading(true);
+    try {
       const user = (await supabase.auth.getUser()).data.user;
       
       const fileExt = file.name.split('.').pop();
@@ -237,13 +261,11 @@ export function useMediaLibrary(options = {}) {
       const randomId = Math.random().toString(36).substring(7);
       const fileName = `${timestamp}-${randomId}.${fileExt}`;
       
-      // Build storage path
       let storagePath = fileName;
       if (entityId) {
         storagePath = `${entityId}/${category || 'attachments'}/${fileName}`;
       }
 
-      // Upload to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(storagePath, file, {
@@ -253,7 +275,6 @@ export function useMediaLibrary(options = {}) {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       let publicUrl = '';
       if (STORAGE_BUCKETS[bucket]?.public) {
         const { data: urlData } = supabase.storage
@@ -262,7 +283,6 @@ export function useMediaLibrary(options = {}) {
         publicUrl = urlData?.publicUrl || '';
       }
 
-      // Create media_files record
       const { data: mediaRecord, error: dbError } = await supabase
         .from('media_files')
         .insert({
@@ -290,26 +310,25 @@ export function useMediaLibrary(options = {}) {
 
       if (dbError) {
         console.error('Error creating media record:', dbError);
-        // Still return success since file was uploaded
       }
 
-      return { uploadData, mediaRecord, publicUrl };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['media-files-db']);
-      queryClient.invalidateQueries(['media-library-storage']);
       toast.success(t({ en: 'File uploaded successfully', ar: 'تم رفع الملف بنجاح' }));
-    },
-    onError: (error) => {
+      fetchDbFiles();
+      fetchStorageFiles();
+      return { uploadData, mediaRecord, publicUrl };
+    } catch (error) {
       toast.error(t({ en: 'Upload failed', ar: 'فشل الرفع' }));
       console.error('Upload error:', error);
+      throw error;
+    } finally {
+      setIsUploading(false);
     }
-  });
+  }, [t, fetchDbFiles, fetchStorageFiles]);
 
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async ({ id, bucketId, storagePath, source }) => {
-      // Delete from storage
+  // Delete function
+  const deleteFile = useCallback(async ({ id, bucketId, storagePath, source }) => {
+    setIsDeleting(true);
+    try {
       const { error: storageError } = await supabase.storage
         .from(bucketId)
         .remove([storagePath]);
@@ -318,7 +337,6 @@ export function useMediaLibrary(options = {}) {
         console.warn('Storage delete error:', storageError);
       }
 
-      // Soft delete from database if tracked
       if (source === 'database' && id) {
         const user = (await supabase.auth.getUser()).data.user;
         const { error: dbError } = await supabase
@@ -335,22 +353,23 @@ export function useMediaLibrary(options = {}) {
         }
       }
 
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['media-files-db']);
-      queryClient.invalidateQueries(['media-library-storage']);
       toast.success(t({ en: 'File deleted', ar: 'تم حذف الملف' }));
-    },
-    onError: (error) => {
+      fetchDbFiles();
+      fetchStorageFiles();
+      return { success: true };
+    } catch (error) {
       toast.error(t({ en: 'Delete failed', ar: 'فشل الحذف' }));
       console.error('Delete error:', error);
+      throw error;
+    } finally {
+      setIsDeleting(false);
     }
-  });
+  }, [t, fetchDbFiles, fetchStorageFiles]);
 
-  // Update metadata mutation
-  const updateMetadataMutation = useMutation({
-    mutationFn: async ({ id, updates }) => {
+  // Update metadata function
+  const updateMetadata = useCallback(async ({ id, updates }) => {
+    setIsUpdating(true);
+    try {
       const { data, error } = await supabase
         .from('media_files')
         .update({
@@ -362,17 +381,18 @@ export function useMediaLibrary(options = {}) {
         .single();
 
       if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['media-files-db']);
+      
       toast.success(t({ en: 'File updated', ar: 'تم تحديث الملف' }));
-    },
-    onError: (error) => {
+      fetchDbFiles();
+      return data;
+    } catch (error) {
       toast.error(t({ en: 'Update failed', ar: 'فشل التحديث' }));
       console.error('Update error:', error);
+      throw error;
+    } finally {
+      setIsUpdating(false);
     }
-  });
+  }, [t, fetchDbFiles]);
 
   // Track view
   const trackView = useCallback(async (mediaId) => {
@@ -425,12 +445,12 @@ export function useMediaLibrary(options = {}) {
     setSortOrder,
     
     // Actions
-    upload: uploadMutation.mutateAsync,
-    isUploading: uploadMutation.isPending,
-    delete: deleteMutation.mutate,
-    isDeleting: deleteMutation.isPending,
-    updateMetadata: updateMetadataMutation.mutate,
-    isUpdating: updateMetadataMutation.isPending,
+    upload,
+    isUploading,
+    delete: deleteFile,
+    isDeleting,
+    updateMetadata,
+    isUpdating,
     trackView,
     trackDownload,
     
@@ -438,8 +458,8 @@ export function useMediaLibrary(options = {}) {
     formatFileSize,
     getFileType,
     refetch: () => {
-      queryClient.invalidateQueries(['media-files-db']);
-      queryClient.invalidateQueries(['media-library-storage']);
+      fetchDbFiles();
+      fetchStorageFiles();
     }
   };
 }
