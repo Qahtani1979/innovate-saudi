@@ -3876,11 +3876,14 @@ export type Database = {
           created_at: string | null
           dimension_scores: Json | null
           id: string
+          improvement_areas: Json | null
           is_published: boolean | null
           municipality_id: string | null
           overall_score: number | null
           previous_rank: number | null
           rank: number | null
+          strengths: Json | null
+          trend: string | null
           updated_at: string | null
         }
         Insert: {
@@ -3890,11 +3893,14 @@ export type Database = {
           created_at?: string | null
           dimension_scores?: Json | null
           id?: string
+          improvement_areas?: Json | null
           is_published?: boolean | null
           municipality_id?: string | null
           overall_score?: number | null
           previous_rank?: number | null
           rank?: number | null
+          strengths?: Json | null
+          trend?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -3904,11 +3910,14 @@ export type Database = {
           created_at?: string | null
           dimension_scores?: Json | null
           id?: string
+          improvement_areas?: Json | null
           is_published?: boolean | null
           municipality_id?: string | null
           overall_score?: number | null
           previous_rank?: number | null
           rank?: number | null
+          strengths?: Json | null
+          trend?: string | null
           updated_at?: string | null
         }
         Relationships: [
