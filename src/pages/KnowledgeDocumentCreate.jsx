@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function KnowledgeDocumentCreate() {
   const { language, isRTL, t } = useLanguage();
@@ -56,15 +57,12 @@ function KnowledgeDocumentCreate() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Add Knowledge Document', ar: 'إضافة مستند معرفي' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Add a new resource to the knowledge base', ar: 'أضف مورداً جديداً إلى قاعدة المعرفة' })}
-        </p>
-      </div>
+    <PageLayout className="max-w-4xl mx-auto">
+      <PageHeader
+        icon={BookOpen}
+        title={{ en: 'Add Knowledge Document', ar: 'إضافة مستند معرفي' }}
+        description={{ en: 'Add a new resource to the knowledge base', ar: 'أضف مورداً جديداً إلى قاعدة المعرفة' }}
+      />
 
       <Card>
         <CardHeader>
@@ -263,7 +261,7 @@ function KnowledgeDocumentCreate() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

@@ -32,6 +32,7 @@ import AICapacityOptimizer from '../components/livinglabs/AICapacityOptimizer';
 import LabSolutionCertificationWorkflow from '../components/livinglab/LabSolutionCertificationWorkflow';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function LivingLabDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -106,7 +107,7 @@ export default function LivingLabDetail() {
   const utilizationPercent = ((lab.current_projects || 0) / (lab.capacity || 1)) * 100;
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Workflow Modals */}
       {showInfrastructure && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1184,6 +1185,6 @@ export default function LivingLabDetail() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }

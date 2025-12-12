@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
 import { FileText, Search, Filter, User, Calendar, Activity, Edit2, Trash2, Plus, Eye } from 'lucide-react';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function AuditTrail() {
   const { language, isRTL, t } = useLanguage();
@@ -89,21 +90,12 @@ export default function AuditTrail() {
   });
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-purple-600 bg-clip-text text-transparent">
-            {t({ en: 'Audit Trail', ar: 'سجل التدقيق' })}
-          </h1>
-          <p className="text-slate-600 mt-2">
-            {t({ en: 'Complete activity log of all platform changes and actions', ar: 'سجل كامل لجميع التغييرات والإجراءات على المنصة' })}
-          </p>
-        </div>
-        <div className="p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
-          <FileText className="h-6 w-6 text-white" />
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={FileText}
+        title={{ en: 'Audit Trail', ar: 'سجل التدقيق' }}
+        description={{ en: 'Complete activity log of all platform changes and actions', ar: 'سجل كامل لجميع التغييرات والإجراءات على المنصة' }}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -256,6 +248,6 @@ export default function AuditTrail() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }

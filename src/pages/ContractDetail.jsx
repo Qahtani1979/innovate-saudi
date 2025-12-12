@@ -9,6 +9,7 @@ import { FileText, Calendar, DollarSign, CheckCircle2, AlertCircle, Download } f
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 function ContractDetail() {
   const { t } = useLanguage();
@@ -42,7 +43,7 @@ function ContractDetail() {
   };
 
   return (
-    <div className="space-y-6">
+    <PageLayout className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
@@ -154,7 +155,7 @@ function ContractDetail() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

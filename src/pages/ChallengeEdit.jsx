@@ -435,24 +435,6 @@ function ChallengeEdit() {
         }
       />
       <CollaborativeEditing entityId={challengeId} entityType="Challenge" />
-        <Button
-          onClick={() => setPreviewMode(!previewMode)}
-          variant="outline"
-          className="gap-2"
-        >
-          {previewMode ? (
-            <>
-              <EyeOff className="h-4 w-4" />
-              {t({ en: 'Exit Preview', ar: 'إنهاء المعاينة' })}
-            </>
-          ) : (
-            <>
-              <Eye className="h-4 w-4" />
-              {t({ en: 'Preview', ar: 'معاينة' })}
-            </>
-          )}
-        </Button>
-      </div>
 
       {previewMode ? (
         <Card>
