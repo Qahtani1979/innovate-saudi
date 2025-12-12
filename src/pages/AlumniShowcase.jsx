@@ -12,6 +12,7 @@ import {
   Award, Search, Lightbulb, TestTube, Building2, TrendingUp,
   Calendar, Users, Sparkles, MapPin, Briefcase
 } from 'lucide-react';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function AlumniShowcase() {
   const { language, isRTL, t } = useLanguage();
@@ -64,15 +65,16 @@ export default function AlumniShowcase() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: '🎓 Alumni Showcase', ar: '🎓 واجهة الخريجين' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Celebrating graduates and their impact', ar: 'احتفاء بالخريجين وتأثيرهم' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Award}
+        title={{ en: '🎓 Alumni Showcase', ar: '🎓 واجهة الخريجين' }}
+        description={{ en: 'Celebrating graduates and their impact', ar: 'احتفاء بالخريجين وتأثيرهم' }}
+        stats={[
+          { icon: Award, value: applications.length, label: { en: 'Total Alumni', ar: 'إجمالي الخريجين' } },
+          { icon: Lightbulb, value: solutions.filter(s => applications.some(a => a.applicant_email === s.created_by)).length, label: { en: 'Solutions', ar: 'الحلول' } }
+        ]}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -210,6 +212,6 @@ export default function AlumniShowcase() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }

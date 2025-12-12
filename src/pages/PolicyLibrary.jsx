@@ -10,6 +10,7 @@ import { BookOpen, Search, Plus, FileText, ExternalLink, Calendar } from 'lucide
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 function PolicyLibrary() {
   const { t } = useLanguage();
@@ -62,24 +63,24 @@ function PolicyLibrary() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Policy Library', ar: 'مكتبة السياسات' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Regulatory policies, laws, and compliance documents', ar: 'السياسات التنظيمية والقوانين ومستندات الامتثال' })}
-          </p>
-        </div>
-        <Link to={createPageUrl('PolicyDetail') + '?mode=create'}>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            {t({ en: 'Add Policy', ar: 'إضافة سياسة' })}
-          </Button>
-        </Link>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={BookOpen}
+        title={{ en: 'Policy Library', ar: 'مكتبة السياسات' }}
+        description={{ en: 'Regulatory policies, laws, and compliance documents', ar: 'السياسات التنظيمية والقوانين ومستندات الامتثال' }}
+        stats={[
+          { icon: FileText, value: stats.total, label: { en: 'Total', ar: 'الإجمالي' } },
+          { icon: BookOpen, value: stats.active, label: { en: 'Active', ar: 'نشط' } }
+        ]}
+        action={
+          <Link to={createPageUrl('PolicyDetail') + '?mode=create'}>
+            <PersonaButton>
+              <Plus className="h-4 w-4 mr-2" />
+              {t({ en: 'Add Policy', ar: 'إضافة سياسة' })}
+            </PersonaButton>
+          </Link>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -213,7 +214,7 @@ function PolicyLibrary() {
           ))
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

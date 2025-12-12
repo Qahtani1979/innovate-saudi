@@ -38,6 +38,7 @@ import PolicyTimelineView from '../components/policy/PolicyTimelineView';
 import PolicyReportTemplates from '../components/policy/PolicyReportTemplates';
 import PolicySemanticSearch from '../components/policy/PolicySemanticSearch';
 import PolicyTemplateLibrary from '../components/policy/PolicyTemplateLibrary';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 function PolicyHub() {
   const { language, isRTL, t } = useLanguage();
@@ -203,75 +204,76 @@ function PolicyHub() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            {t({ en: 'Policy Hub', ar: 'مركز السياسات' })}
-          </h1>
-          <p className="text-slate-600">
-            {t({ en: 'Manage policy recommendations across the platform', ar: 'إدارة التوصيات السياسية عبر المنصة' })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+    <PageLayout>
+      <PageHeader
+        icon={Shield}
+        title={{ en: 'Policy Hub', ar: 'مركز السياسات' }}
+        description={{ en: 'Manage policy recommendations across the platform', ar: 'إدارة التوصيات السياسية عبر المنصة' }}
+        stats={[
+          { icon: Shield, value: stats.total, label: { en: 'Total', ar: 'الإجمالي' } },
+          { icon: Clock, value: stats.under_review, label: { en: 'Review', ar: 'مراجعة' } },
+          { icon: CheckCircle2, value: stats.approved, label: { en: 'Approved', ar: 'موافق' } }
+        ]}
+        action={
+          <div className="flex gap-2">
+            <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+              <Button
+                size="sm"
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('list')}
+                className="h-8 w-8 p-0"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('kanban')}
+                className="h-8 w-8 p-0"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === 'timeline' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('timeline')}
+                className="h-8 w-8 p-0"
+              >
+                <Calendar className="h-4 w-4" />
+              </Button>
+            </div>
             <Button
               size="sm"
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('list')}
-              className="h-8 w-8 p-0"
+              variant="outline"
+              onClick={() => setShowReports(!showReports)}
             >
-              <List className="h-4 w-4" />
+              <Download className="h-4 w-4" />
             </Button>
             <Button
-              size="sm"
-              variant={viewMode === 'kanban' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('kanban')}
-              className="h-8 w-8 p-0"
+              onClick={() => setShowSemanticSearch(!showSemanticSearch)}
+              variant="outline"
+              className="gap-2"
             >
-              <LayoutGrid className="h-4 w-4" />
+              <Sparkles className="h-4 w-4" />
+              {t({ en: 'Semantic Search', ar: 'بحث دلالي' })}
             </Button>
             <Button
-              size="sm"
-              variant={viewMode === 'timeline' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('timeline')}
-              className="h-8 w-8 p-0"
+              onClick={() => setShowTemplates(!showTemplates)}
+              variant="outline"
+              className="gap-2"
             >
-              <Calendar className="h-4 w-4" />
+              <FileText className="h-4 w-4" />
+              {t({ en: 'Templates', ar: 'القوالب' })}
             </Button>
+            <Link to={createPageUrl('PolicyCreate')}>
+              <PersonaButton className="gap-2">
+                <Plus className="h-4 w-4" />
+                {t({ en: 'New Policy', ar: 'سياسة جديدة' })}
+              </PersonaButton>
+            </Link>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowReports(!showReports)}
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button
-            onClick={() => setShowSemanticSearch(!showSemanticSearch)}
-            variant="outline"
-            className="gap-2"
-          >
-            <Sparkles className="h-4 w-4" />
-            {t({ en: 'Semantic Search', ar: 'بحث دلالي' })}
-          </Button>
-          <Button
-            onClick={() => setShowTemplates(!showTemplates)}
-            variant="outline"
-            className="gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            {t({ en: 'Templates', ar: 'القوالب' })}
-          </Button>
-          <Link to={createPageUrl('PolicyCreate')}>
-            <Button className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600">
-              <Plus className="h-4 w-4" />
-              {t({ en: 'New Policy', ar: 'سياسة جديدة' })}
-            </Button>
-          </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">

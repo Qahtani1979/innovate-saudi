@@ -10,6 +10,7 @@ import { createPageUrl } from '../utils';
 import { Target, Zap, AlertTriangle, TrendingUp, Sparkles, CheckCircle2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { toast } from 'sonner';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ExecutiveStrategicChallengeQueue() {
   const { language, isRTL, t } = useLanguage();
@@ -46,15 +47,17 @@ function ExecutiveStrategicChallengeQueue() {
   );
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent">
-          {t({ en: 'Executive Strategic Challenge Queue', ar: 'قائمة التحديات الاستراتيجية التنفيذية' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'High-priority challenges aligned with national strategic objectives', ar: 'التحديات عالية الأولوية المتوافقة مع الأهداف الاستراتيجية الوطنية' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Target}
+        title={{ en: 'Executive Strategic Challenge Queue', ar: 'قائمة التحديات الاستراتيجية التنفيذية' }}
+        description={{ en: 'High-priority challenges aligned with national strategic objectives', ar: 'التحديات عالية الأولوية المتوافقة مع الأهداف الاستراتيجية الوطنية' }}
+        stats={[
+          { icon: Target, value: strategicChallenges.length, label: { en: 'Strategic', ar: 'استراتيجي' } },
+          { icon: AlertTriangle, value: needingAttention.length, label: { en: 'Need Attention', ar: 'تحتاج اهتمام' } },
+          { icon: TrendingUp, value: highImpact.length, label: { en: 'High Impact', ar: 'تأثير عالي' } }
+        ]}
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -176,7 +179,7 @@ function ExecutiveStrategicChallengeQueue() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

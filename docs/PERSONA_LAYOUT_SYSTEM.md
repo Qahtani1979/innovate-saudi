@@ -80,15 +80,15 @@ import {
 | Persona | Dashboard | Related Pages | Total Using Layout |
 |---------|-----------|---------------|-------------------|
 | Admin | ✅ AdminPortal | 0 of 11 | 1 |
-| Executive | ✅ ExecutiveDashboard | 0 of 7 | 1 |
-| Deputyship | (shares Executive) | 0 of 8 | 0 |
+| Executive | ✅ ExecutiveDashboard | 4 of 6 | 5 ✅ |
+| Deputyship | (shares Executive) | 3 of 6 | 3 |
 | Municipality | ✅ MunicipalityDashboard | 13 of 13 | 14 ✅ |
 | Provider/Startup | ✅ StartupDashboard | 1 of 11 | 2 |
 | Expert | ✅ ExpertDashboard | 1 of 15 | 2 |
 | Researcher | ✅ ResearcherDashboard | 1 of 12 | 2 |
 | Citizen | ✅ CitizenDashboard | 7 of 7 | 8 ✅ |
 | Viewer | ✅ ViewerDashboard | 0 of 0 | 1 |
-| Academia | ✅ AcademiaDashboard | 0 of 2 | 1 |
+| Academia | ✅ AcademiaDashboard | 2 of 2 | 3 ✅ |
 
 **All Dashboard Pages: 10/10 ✅ Complete**
 
@@ -126,7 +126,7 @@ import {
 
 ---
 
-## 2. EXECUTIVE Persona
+## 2. EXECUTIVE Persona ✅ COMPLETE
 
 **Route Config (usePersonaRouting.js):**
 - `persona`: 'executive'
@@ -139,17 +139,17 @@ import {
 | Page | File |
 |------|------|
 | Executive Dashboard | `ExecutiveDashboard.jsx` |
+| Executive Approvals | `ExecutiveApprovals.jsx` |
+| Executive Brief Generator | `ExecutiveBriefGenerator.jsx` |
+| Executive Strategic Challenge Queue | `ExecutiveStrategicChallengeQueue.jsx` |
+| Command Center | `CommandCenter.jsx` |
 
 ### Pages NOT Using PageLayout
 
 | Page | File | Priority |
 |------|------|----------|
-| Executive Approvals | `ExecutiveApprovals.jsx` | High |
-| Executive Brief Generator | `ExecutiveBriefGenerator.jsx` | Medium |
-| Executive Strategic Challenge Queue | `ExecutiveStrategicChallengeQueue.jsx` | Medium |
-| Command Center | `CommandCenter.jsx` | Medium |
-| National Innovation Map | `NationalInnovationMap.jsx` | Low |
-| National Map | `NationalMap.jsx` | Low |
+| National Innovation Map | `NationalInnovationMap.jsx` | Low (Map view) |
+| National Map | `NationalMap.jsx` | Low (Map view) |
 
 ---
 
@@ -161,18 +161,23 @@ import {
 - `portalType`: 'deputyship'
 - `onboardingWizard`: 'DeputyshipOnboarding'
 
+### Pages Using PageLayout ✅
+
+| Page | File |
+|------|------|
+| Policy Hub | `PolicyHub.jsx` |
+| Policy Library | `PolicyLibrary.jsx` |
+| Multi City Coordination | `MultiCityCoordination.jsx` |
+| Multi City Orchestration | `MultiCityOrchestration.jsx` |
+
 ### Pages NOT Using PageLayout
 
 | Page | File | Priority |
 |------|------|----------|
-| Deputyship Onboarding | `DeputyshipOnboarding.jsx` | Wizard |
-| Policy Hub | `PolicyHub.jsx` | High |
-| Policy Library | `PolicyLibrary.jsx` | High |
-| Policy Create | `PolicyCreate.jsx` | Medium |
-| Policy Edit | `PolicyEdit.jsx` | Medium |
-| Policy Detail | `PolicyDetail.jsx` | Medium |
-| Multi City Coordination | `MultiCityCoordination.jsx` | ✅ Done |
-| Multi City Orchestration | `MultiCityOrchestration.jsx` | ✅ Done |
+| Policy Create | `PolicyCreate.jsx` | Form wizard |
+| Policy Edit | `PolicyEdit.jsx` | Form wizard |
+| Policy Detail | `PolicyDetail.jsx` | Detail view |
+| Deputyship Onboarding | `DeputyshipOnboarding.jsx` | Onboarding wizard |
 
 ---
 
@@ -363,20 +368,15 @@ import {
 
 ---
 
-## 10. ACADEMIA Persona
+## 10. ACADEMIA Persona ✅ COMPLETE
 
 ### Pages Using PageLayout ✅
 
 | Page | File |
 |------|------|
 | Academia Dashboard | `AcademiaDashboard.jsx` |
-
-### Pages NOT Using PageLayout
-
-| Page | File | Priority |
-|------|------|----------|
-| Alumni Showcase | `AlumniShowcase.jsx` | Medium |
-| Institution R&D Dashboard | `InstitutionRDDashboard.jsx` | Medium |
+| Alumni Showcase | `AlumniShowcase.jsx` |
+| Institution R&D Dashboard | `InstitutionRDDashboard.jsx` |
 
 ---
 

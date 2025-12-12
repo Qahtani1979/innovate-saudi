@@ -11,6 +11,7 @@ import { Microscope, TrendingUp, Award, BookOpen, DollarSign, Users, Target } fr
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function InstitutionRDDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -53,15 +54,17 @@ function InstitutionRDDashboard() {
   }));
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'Institution R&D Dashboard', ar: 'لوحة البحث والتطوير المؤسسي' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Research portfolio and performance analytics', ar: 'محفظة البحث وتحليلات الأداء' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Microscope}
+        title={{ en: 'Institution R&D Dashboard', ar: 'لوحة البحث والتطوير المؤسسي' }}
+        description={{ en: 'Research portfolio and performance analytics', ar: 'محفظة البحث وتحليلات الأداء' }}
+        stats={[
+          { icon: Microscope, value: rdProjects.length, label: { en: 'Projects', ar: 'المشاريع' } },
+          { icon: Target, value: activeProjects.length, label: { en: 'Active', ar: 'نشط' } },
+          { icon: TrendingUp, value: avgTRL, label: { en: 'Avg TRL', ar: 'متوسط النضج' } }
+        ]}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
@@ -177,7 +180,7 @@ function InstitutionRDDashboard() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 
