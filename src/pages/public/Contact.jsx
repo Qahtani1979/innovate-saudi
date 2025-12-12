@@ -6,8 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import PublicHeader from '@/components/public/PublicHeader';
-import PublicFooter from '@/components/public/PublicFooter';
 import { toast } from 'sonner';
 import { Mail, Phone, MapPin, Send, Building2, Clock, MessageSquare } from 'lucide-react';
 
@@ -77,8 +75,7 @@ export default function Contact() {
   ];
 
   return (
-    <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+    <>
       
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-primary/5 via-background to-muted/30">
@@ -240,8 +237,6 @@ export default function Contact() {
           </Button>
         </div>
       </section>
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }

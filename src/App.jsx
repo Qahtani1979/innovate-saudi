@@ -10,6 +10,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/components/LanguageContext';
 import LanguagePersistence from '@/components/ui/LanguagePersistence';
+import PublicLayout from '@/components/layout/PublicLayout';
 import PublicPortal from './pages/PublicPortal';
 
 // Public pages imports
@@ -77,19 +78,19 @@ const AuthenticatedApp = () => {
       {/* Root path: Always show PublicPortal - accessible to everyone */}
       <Route path="/" element={<PublicPortal />} />
       
-      {/* Public pages with PublicHeader/Footer */}
-      <Route path="/about" element={<PublicAbout />} />
-      <Route path="/contact" element={<PublicContact />} />
-      <Route path="/faq" element={<PublicFAQ />} />
-      <Route path="/for-municipalities" element={<PublicForMunicipalities />} />
-      <Route path="/for-providers" element={<PublicForProviders />} />
-      <Route path="/for-innovators" element={<PublicForInnovators />} />
-      <Route path="/for-researchers" element={<PublicForResearchers />} />
-      <Route path="/public-challenges" element={<PublicChallenges />} />
-      <Route path="/public-solutions" element={<PublicSolutions />} />
-      <Route path="/privacy" element={<Privacy />} />
-      <Route path="/terms" element={<Terms />} />
-      <Route path="/public-idea-submission" element={<PublicIdeaSubmission />} />
+      {/* Public pages wrapped with PublicLayout */}
+      <Route path="/about" element={<PublicLayout><PublicAbout /></PublicLayout>} />
+      <Route path="/contact" element={<PublicLayout><PublicContact /></PublicLayout>} />
+      <Route path="/faq" element={<PublicLayout><PublicFAQ /></PublicLayout>} />
+      <Route path="/for-municipalities" element={<PublicLayout><PublicForMunicipalities /></PublicLayout>} />
+      <Route path="/for-providers" element={<PublicLayout><PublicForProviders /></PublicLayout>} />
+      <Route path="/for-innovators" element={<PublicLayout><PublicForInnovators /></PublicLayout>} />
+      <Route path="/for-researchers" element={<PublicLayout><PublicForResearchers /></PublicLayout>} />
+      <Route path="/public-challenges" element={<PublicLayout><PublicChallenges /></PublicLayout>} />
+      <Route path="/public-solutions" element={<PublicLayout><PublicSolutions /></PublicLayout>} />
+      <Route path="/privacy" element={<PublicLayout><Privacy /></PublicLayout>} />
+      <Route path="/terms" element={<PublicLayout><Terms /></PublicLayout>} />
+      <Route path="/public-idea-submission" element={<PublicLayout><PublicIdeaSubmission /></PublicLayout>} />
       <Route path="/citizen-challenges-browser" element={
         isAuthenticated ? (
           <LayoutWrapper currentPageName="CitizenChallengesBrowser">

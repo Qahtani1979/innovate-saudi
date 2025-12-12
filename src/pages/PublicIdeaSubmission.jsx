@@ -13,8 +13,6 @@ import {
   Loader2, Globe, Star, Users, Trophy, Heart, Rocket
 } from 'lucide-react';
 import { toast } from 'sonner';
-import PublicHeader from '@/components/public/PublicHeader';
-import PublicFooter from '@/components/public/PublicFooter';
 
 // Rate limiting helper
 const RATE_LIMIT_KEY = 'public_idea_submissions';

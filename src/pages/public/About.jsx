@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import PublicHeader from '@/components/public/PublicHeader';
-import PublicFooter from '@/components/public/PublicFooter';
 import { 
   Target, Users, Building2, Globe, Award, Lightbulb, 
   Handshake, TrendingUp, CheckCircle2, ArrowRight 
@@ -62,8 +60,7 @@ export default function About() {
   ];
 
   return (
-    <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+    <>
       
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-primary/5 via-background to-muted/30">
@@ -211,8 +208,6 @@ export default function About() {
           </div>
         </div>
       </section>
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }
