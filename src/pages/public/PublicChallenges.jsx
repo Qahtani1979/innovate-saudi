@@ -199,7 +199,6 @@ export default function PublicChallenges() {
           </Link>
         </div>
       </section>
-      </section>
     </>
   );
 }
