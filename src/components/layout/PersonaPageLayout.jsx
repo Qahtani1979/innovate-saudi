@@ -163,7 +163,8 @@ export function PageHeader({
         <div className="flex items-center gap-4">
           {Icon && (
             <div className={`p-3 rounded-xl bg-background/80 backdrop-blur-sm shadow-sm ${iconColor}`}>
-              {typeof Icon === 'function' || (Icon && Icon.$$typeof) ? <Icon className="h-7 w-7" /> : null}
+              {/* Handle both component functions and pre-rendered JSX elements */}
+              {typeof Icon === 'function' ? <Icon className="h-7 w-7" /> : React.isValidElement(Icon) ? Icon : null}
             </div>
           )}
           <div>
