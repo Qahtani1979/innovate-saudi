@@ -24,16 +24,20 @@ import {
   FileText,
   Sparkles,
   Loader2,
-  X
+  X,
+  ArrowUp,
+  ArrowDown,
+  Minus
 } from 'lucide-react';
 import MIIImprovementAI from '../components/municipalities/MIIImprovementAI';
 import PeerBenchmarkingTool from '../components/municipalities/PeerBenchmarkingTool';
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useMIIData } from '@/hooks/useMIIData';
 
 function MunicipalityProfile() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -90,14 +94,21 @@ function MunicipalityProfile() {
     enabled: !!municipalityId
   });
 
-  const { data: miiResults = [] } = useQuery({
-    queryKey: ['mii-results', municipalityId],
-    queryFn: async () => {
-      const all = await base44.entities.MIIResult.list();
-      return all.filter(r => r.city_id === municipalityId);
-    },
-    enabled: !!municipalityId
-  });
+  // Use centralized useMIIData hook for all MII data
+  const { 
+    radarData: miiRadarData, 
+    trendData: miiTrendData,
+    yoyGrowth,
+    rankChange,
+    trend,
+    strengths,
+    improvementAreas,
+    nationalStats,
+    latestResult,
+    history,
+    hasData: hasMIIData,
+    isLoading: miiLoading
+  } = useMIIData(municipalityId);
 
   if (isLoading || !municipality) {
     return (
@@ -107,15 +118,13 @@ function MunicipalityProfile() {
     );
   }
 
-  const latestMII = miiResults.sort((a, b) => b.period.localeCompare(a.period))[0];
-
-  const radarData = latestMII?.dimension_scores ? [
-    { dimension: 'Challenges', value: latestMII.dimension_scores.challenges_score || 0 },
-    { dimension: 'Pilots', value: latestMII.dimension_scores.pilots_score || 0 },
-    { dimension: 'Capacity', value: latestMII.dimension_scores.innovation_capacity_score || 0 },
-    { dimension: 'Partners', value: latestMII.dimension_scores.partnership_score || 0 },
-    { dimension: 'Digital', value: latestMII.dimension_scores.digital_maturity_score || 0 }
-  ] : [];
+  // Use real MII data from hook with fallback
+  const radarData = miiRadarData.length > 0 ? miiRadarData : [];
+  const trendData = miiTrendData.length > 0 ? miiTrendData : [];
+  
+  // Trend icon
+  const TrendIcon = trend === 'up' ? ArrowUp : trend === 'down' ? ArrowDown : Minus;
+  const trendColor = trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-amber-600';
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
@@ -336,11 +345,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
               <div>
                 <p className="text-sm text-slate-600">MII Trend</p>
                 <p className="text-sm text-slate-600" dir="rtl">اتجاه المؤشر</p>
-                <p className="text-3xl font-bold text-purple-600 mt-1">
-                  {latestMII?.trend === 'up' ? '↑' : latestMII?.trend === 'down' ? '↓' : '→'}
+                <p className={`text-3xl font-bold mt-1 ${trendColor}`}>
+                  {yoyGrowth !== null ? (yoyGrowth > 0 ? `+${yoyGrowth}` : yoyGrowth) : '—'}
                 </p>
               </div>
-              <TrendingUp className="h-8 w-8 text-purple-600" />
+              <TrendIcon className={`h-8 w-8 ${trendColor}`} />
             </div>
           </CardContent>
         </Card>
@@ -402,46 +411,79 @@ Provide bilingual insights (each item should have both English and Arabic versio
               <MIIImprovementAI municipality={municipality} />
               <PeerBenchmarkingTool municipality={municipality} />
               
-              {latestMII ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'MII Dimension Breakdown', ar: 'تفصيل أبعاد المؤشر' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={350}>
-                      <RadarChart data={radarData}>
-                        <PolarGrid />
-                        <PolarAngleAxis dataKey="dimension" />
-                        <PolarRadiusAxis domain={[0, 100]} />
-                        <Radar dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.5} />
-                      </RadarChart>
-                    </ResponsiveContainer>
+              {hasMIIData ? (
+                <>
+                  {/* Radar Chart */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t({ en: 'MII Dimension Breakdown', ar: 'تفصيل أبعاد المؤشر' })}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={350}>
+                        <RadarChart data={radarData}>
+                          <PolarGrid />
+                          <PolarAngleAxis dataKey="dimension" />
+                          <PolarRadiusAxis domain={[0, 100]} />
+                          <Radar name="Score" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.5} />
+                          {nationalStats && (
+                            <Radar name="National Avg" dataKey="nationalAvg" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.2} />
+                          )}
+                        </RadarChart>
+                      </ResponsiveContainer>
 
-                    {latestMII.strengths && latestMII.strengths.length > 0 && (
-                      <div className="mt-6 space-y-3">
-                        <h4 className="font-semibold text-slate-900">{t({ en: 'Strengths', ar: 'نقاط القوة' })}</h4>
-                        {latestMII.strengths.map((strength, i) => (
-                          <div key={i} className="flex items-center gap-2 text-sm text-green-700">
-                            <Award className="h-4 w-4" />
-                            <span>{strength}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                      {strengths.length > 0 && (
+                        <div className="mt-6 space-y-3">
+                          <h4 className="font-semibold text-slate-900">{t({ en: 'Strengths', ar: 'نقاط القوة' })}</h4>
+                          {strengths.map((strength, i) => (
+                            <div key={i} className="flex items-center gap-2 text-sm text-green-700">
+                              <Award className="h-4 w-4" />
+                              <span>{strength}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                    {latestMII.improvement_areas && latestMII.improvement_areas.length > 0 && (
-                      <div className="mt-4 space-y-3">
-                        <h4 className="font-semibold text-slate-900">{t({ en: 'Improvement Areas', ar: 'مجالات التحسين' })}</h4>
-                        {latestMII.improvement_areas.map((area, i) => (
-                          <div key={i} className="flex items-center gap-2 text-sm text-amber-700">
-                            <TrendingUp className="h-4 w-4" />
-                            <span>{area}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                      {improvementAreas.length > 0 && (
+                        <div className="mt-4 space-y-3">
+                          <h4 className="font-semibold text-slate-900">{t({ en: 'Improvement Areas', ar: 'مجالات التحسين' })}</h4>
+                          {improvementAreas.map((area, i) => (
+                            <div key={i} className="flex items-center gap-2 text-sm text-amber-700">
+                              <TrendingUp className="h-4 w-4" />
+                              <span>{area}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Historical Trend Chart */}
+                  {trendData.length >= 2 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>{t({ en: 'MII Score History', ar: 'تاريخ درجة المؤشر' })}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <LineChart data={trendData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="year" />
+                            <YAxis domain={[0, 100]} />
+                            <Tooltip />
+                            <Legend />
+                            <Line 
+                              type="monotone" 
+                              dataKey="score" 
+                              stroke="#10b981" 
+                              strokeWidth={3} 
+                              name={language === 'ar' ? 'درجة المؤشر' : 'MII Score'} 
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
               ) : (
                 <div className="text-center py-12">
                   <BarChart3 className="h-12 w-12 text-slate-300 mx-auto mb-3" />

@@ -4048,7 +4048,9 @@ export type Database = {
           is_deleted: boolean | null
           is_verified: boolean | null
           logo_url: string | null
+          mii_last_calculated_at: string | null
           mii_rank: number | null
+          mii_recalc_pending: boolean | null
           mii_score: number | null
           ministry_id: string | null
           name_ar: string
@@ -4086,7 +4088,9 @@ export type Database = {
           is_deleted?: boolean | null
           is_verified?: boolean | null
           logo_url?: string | null
+          mii_last_calculated_at?: string | null
           mii_rank?: number | null
+          mii_recalc_pending?: boolean | null
           mii_score?: number | null
           ministry_id?: string | null
           name_ar: string
@@ -4124,7 +4128,9 @@ export type Database = {
           is_deleted?: boolean | null
           is_verified?: boolean | null
           logo_url?: string | null
+          mii_last_calculated_at?: string | null
           mii_rank?: number | null
+          mii_recalc_pending?: boolean | null
           mii_score?: number | null
           ministry_id?: string | null
           name_ar?: string
