@@ -6,6 +6,24 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Activity, CheckCircle, AlertCircle, TrendingUp, Database, Zap, Clock, Users } from 'lucide-react';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import SecurityHeadersConfig from '@/components/security/SecurityHeadersConfig';
+import RateLimitingConfig from '@/components/security/RateLimitingConfig';
+import TestingDashboard from '@/components/testing/TestingDashboard';
+import BackupScheduler from '@/components/admin/BackupScheduler';
+import RedisCacheConfig from '@/components/infrastructure/RedisCacheConfig';
+import APIKeyManagement from '@/components/infrastructure/APIKeyManagement';
+import BackendSecurityAudit from '@/components/security/BackendSecurityAudit';
+import CSRFProtection from '@/components/security/CSRFProtection';
+import InputValidationMiddleware from '@/components/security/InputValidationMiddleware';
+import SessionTokenSecurity from '@/components/security/SessionTokenSecurity';
+import DataEncryptionConfig from '@/components/security/DataEncryptionConfig';
+import ThreatDetectionSystem from '@/components/security/ThreatDetectionSystem';
+import DatabaseIndexing from '@/components/infrastructure/DatabaseIndexing';
+import QueryOptimizationPanel from '@/components/infrastructure/QueryOptimizationPanel';
+import ConnectionPoolingConfig from '@/components/infrastructure/ConnectionPoolingConfig';
+import PerformanceMetrics from '@/components/monitoring/PerformanceMetrics';
+import PerformanceProfiler from '@/components/monitoring/PerformanceProfiler';
+import APIGatewayConfig from '@/components/infrastructure/APIGatewayConfig';
 
 export default function SystemHealthDashboard() {
   const { language, t } = useLanguage();
