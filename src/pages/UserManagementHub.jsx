@@ -55,11 +55,27 @@ function UserManagementHub() {
   const [searchTerm, setSearchTerm] = useState('');
   const [skillFilter, setSkillFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   
   // Bulk invite state
   const [bulkEmails, setBulkEmails] = useState('');
   const [showBulkDialog, setShowBulkDialog] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: '', full_name: '', role: 'user', custom_message: '' });
+  const [showEmailCustomizer, setShowEmailCustomizer] = useState(false);
+  const [emailTemplate, setEmailTemplate] = useState({ subject: '', body: '' });
+  
+  // Permission matrix state for Role dialog
+  const [permissionMatrix, setPermissionMatrix] = useState({
+    challenges: { create: false, read: true, update: false, delete: false },
+    pilots: { create: false, read: true, update: false, delete: false },
+    solutions: { create: false, read: true, update: false, delete: false },
+    programs: { create: false, read: true, update: false, delete: false },
+    municipalities: { create: false, read: true, update: false, delete: false },
+    organizations: { create: false, read: true, update: false, delete: false }
+  });
+  const [inviteForm, setInviteForm] = useState({ 
+    email: '', full_name: '', role: 'user', custom_message: '',
+    organization_id: '', municipality_id: ''
+  });
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
@@ -81,6 +97,22 @@ function UserManagementHub() {
     queryKey: ['invitations'],
     queryFn: async () => {
       const { data } = await supabase.from('user_invitations').select('*');
+      return data || [];
+    }
+  });
+
+  const { data: organizations = [] } = useQuery({
+    queryKey: ['organizations-invite'],
+    queryFn: async () => {
+      const { data } = await supabase.from('organizations').select('id, name_en');
+      return data || [];
+    }
+  });
+
+  const { data: municipalitiesData = [] } = useQuery({
+    queryKey: ['municipalities-invite'],
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('id, name_en');
       return data || [];
     }
   });
@@ -196,8 +228,9 @@ function UserManagementHub() {
   // Derived data for directory filters (migrated from UserDirectory)
   const allSkills = [...new Set(users.flatMap(u => u.skills || []))];
   const allDepartments = [...new Set(users.map(u => u.department).filter(Boolean))];
+  const allRoles = [...new Set(users.map(u => u.role).filter(Boolean))];
 
-  // Filter users for directory view
+  // Filter users for directory view - now includes role filter
   const filteredDirectoryUsers = users.filter(user => {
     const searchMatch = !searchTerm || 
       user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -205,8 +238,28 @@ function UserManagementHub() {
       user.job_title?.toLowerCase().includes(searchTerm.toLowerCase());
     const skillMatch = !skillFilter || user.skills?.includes(skillFilter);
     const deptMatch = !departmentFilter || user.department === departmentFilter;
-    return searchMatch && skillMatch && deptMatch;
+    const roleMatch = !roleFilter || user.role === roleFilter;
+    return searchMatch && skillMatch && deptMatch && roleMatch;
   });
+
+  // Permission matrix entities and operations for Role dialog
+  const permissionEntities = ['challenges', 'pilots', 'solutions', 'programs', 'municipalities', 'organizations'];
+  const permissionOperations = ['create', 'read', 'update', 'delete'];
+
+  const toggleMatrixPermission = (entity, operation) => {
+    setPermissionMatrix(prev => ({
+      ...prev,
+      [entity]: { ...prev[entity], [operation]: !prev[entity][operation] }
+    }));
+  };
+
+  const selectAllInCategory = (entity) => {
+    const allSelected = permissionOperations.every(op => permissionMatrix[entity][op]);
+    setPermissionMatrix(prev => ({
+      ...prev,
+      [entity]: permissionOperations.reduce((acc, op) => ({ ...acc, [op]: !allSelected }), {})
+    }));
+  };
 
   // AI permission suggester (migrated from RoleManager)
   const handleAISuggestPermissions = async () => {
@@ -556,8 +609,8 @@ Return a list of permission codes this role should have.`,
                 </Card>
               </div>
 
-              {/* Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Filters - now includes role filter */}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="relative">
                   <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
                   <Input
@@ -578,6 +631,17 @@ Return a list of permission codes this role should have.`,
                     ))}
                   </SelectContent>
                 </Select>
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t({ en: 'Filter by role', ar: 'تصفية بالدور' })} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Roles</SelectItem>
+                    {allRoles.map(role => (
+                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder={t({ en: 'Filter by department', ar: 'تصفية بالإدارة' })} />
@@ -589,7 +653,7 @@ Return a list of permission codes this role should have.`,
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" onClick={() => { setSearchTerm(''); setSkillFilter(''); setDepartmentFilter(''); }}>
+                <Button variant="outline" onClick={() => { setSearchTerm(''); setSkillFilter(''); setDepartmentFilter(''); setRoleFilter(''); }}>
                   {t({ en: 'Clear Filters', ar: 'مسح الفلاتر' })}
                 </Button>
               </div>
@@ -887,26 +951,70 @@ Return a list of permission codes this role should have.`,
           <div className="space-y-4 py-4">
             {selectedEntity?.entity === 'UserInvitation' && (
               <>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Email</label>
-                  <Input type="email" value={formData.email || ''} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Email</label>
+                    <Input type="email" value={formData.email || ''} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Full Name</label>
+                    <Input value={formData.full_name || ''} onChange={(e) => setFormData({...formData, full_name: e.target.value})} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Role</label>
+                    <Select value={formData.role || ''} onValueChange={(val) => setFormData({...formData, role: val})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="municipality_admin">Municipality Admin</SelectItem>
+                        <SelectItem value="startup_user">Startup User</SelectItem>
+                        <SelectItem value="researcher">Researcher</SelectItem>
+                        <SelectItem value="program_operator">Program Operator</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">{t({ en: 'Organization', ar: 'المنظمة' })}</label>
+                    <Select value={formData.organization_id || ''} onValueChange={(val) => setFormData({...formData, organization_id: val})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t({ en: 'Select organization...', ar: 'اختر منظمة...' })} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {organizations.map(org => (
+                          <SelectItem key={org.id} value={org.id}>{org.name_en}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">{t({ en: 'Municipality', ar: 'البلدية' })}</label>
+                    <Select value={formData.municipality_id || ''} onValueChange={(val) => setFormData({...formData, municipality_id: val})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t({ en: 'Select municipality...', ar: 'اختر بلدية...' })} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {municipalitiesData.map(mun => (
+                          <SelectItem key={mun.id} value={mun.id}>{mun.name_en}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Full Name</label>
-                  <Input value={formData.full_name || ''} onChange={(e) => setFormData({...formData, full_name: e.target.value})} />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Role</label>
-                  <Select value={formData.role || ''} onValueChange={(val) => setFormData({...formData, role: val})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="viewer">Viewer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <label className="text-sm font-medium mb-2 block">{t({ en: 'Custom Message (Optional)', ar: 'رسالة مخصصة' })}</label>
+                  <Textarea 
+                    value={formData.custom_message || ''} 
+                    onChange={(e) => setFormData({...formData, custom_message: e.target.value})} 
+                    rows={3}
+                    placeholder={t({ en: 'Add a personal message to the invitation email...', ar: 'أضف رسالة شخصية لبريد الدعوة...' })}
+                  />
                 </div>
               </>
             )}
@@ -981,13 +1089,24 @@ Return a list of permission codes this role should have.`,
             )}
             {selectedEntity?.entity === 'Role' && (
               <>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Role Name</label>
-                  <Input value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Role Name</label>
+                    <Input value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Role Code</label>
+                    <Input 
+                      value={formData.code || ''} 
+                      onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})} 
+                      placeholder="e.g., MUN_REVIEWER"
+                      className="font-mono"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Description</label>
-                  <Textarea value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={3} />
+                  <Textarea value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} />
                 </div>
                 
                 {/* AI Permission Suggester - Migrated from RoleManager */}
@@ -999,6 +1118,50 @@ Return a list of permission codes this role should have.`,
                   <Button size="sm" onClick={handleAISuggestPermissions} disabled={!formData.name || aiLoading || !isAvailable} className="bg-purple-600">
                     {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   </Button>
+                </div>
+
+                {/* Permission Matrix - Migrated from RoleManager */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">{t({ en: 'Permission Matrix', ar: 'مصفوفة الصلاحيات' })}</label>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50">
+                          <TableHead className="font-semibold">{t({ en: 'Entity', ar: 'الكيان' })}</TableHead>
+                          <TableHead className="text-center w-20">{t({ en: 'Create', ar: 'إنشاء' })}</TableHead>
+                          <TableHead className="text-center w-20">{t({ en: 'Read', ar: 'قراءة' })}</TableHead>
+                          <TableHead className="text-center w-20">{t({ en: 'Update', ar: 'تحديث' })}</TableHead>
+                          <TableHead className="text-center w-20">{t({ en: 'Delete', ar: 'حذف' })}</TableHead>
+                          <TableHead className="text-center w-20">{t({ en: 'All', ar: 'الكل' })}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {permissionEntities.map((entity) => (
+                          <TableRow key={entity}>
+                            <TableCell className="font-medium capitalize">{entity.replace(/_/g, ' ')}</TableCell>
+                            {permissionOperations.map((op) => (
+                              <TableCell key={op} className="text-center">
+                                <Checkbox
+                                  checked={permissionMatrix[entity]?.[op] || false}
+                                  onCheckedChange={() => toggleMatrixPermission(entity, op)}
+                                />
+                              </TableCell>
+                            ))}
+                            <TableCell className="text-center">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => selectAllInCategory(entity)}
+                                className="text-xs h-6 px-2"
+                              >
+                                {permissionOperations.every(op => permissionMatrix[entity]?.[op]) ? '−' : '+'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
                 
                 <PermissionSelector 
