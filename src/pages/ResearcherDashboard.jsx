@@ -16,6 +16,7 @@ import {
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
 import ProfileCompletenessCoach from '../components/onboarding/ProfileCompletenessCoach';
+import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 function ResearcherDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -88,34 +89,37 @@ function ResearcherDashboard() {
     draft: 'bg-slate-100 text-slate-700'
   };
 
+  const activeProjects = rdProjects.filter(p => p.status === 'active').length;
+
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-            <FlaskConical className="h-8 w-8 text-green-600" />
-            {t({ en: 'Researcher Dashboard', ar: 'لوحة الباحث' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Collaborate with municipalities on impactful research', ar: 'تعاون مع البلديات في البحوث المؤثرة' })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link to={createPageUrl('RDCalls')}>
-            <Button variant="outline">
-              <BookOpen className="h-4 w-4 mr-2" />
-              {t({ en: 'Browse R&D Calls', ar: 'تصفح نداءات البحث' })}
-            </Button>
-          </Link>
-          <Link to={createPageUrl('MyResearcherProfileEditor')}>
-            <Button className="bg-gradient-to-r from-green-600 to-teal-600">
-              <GraduationCap className="h-4 w-4 mr-2" />
-              {t({ en: 'Edit Profile', ar: 'تعديل الملف' })}
-            </Button>
-          </Link>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={FlaskConical}
+        title={t({ en: 'Researcher Dashboard', ar: 'لوحة الباحث' })}
+        description={t({ en: 'Collaborate with municipalities on impactful research', ar: 'تعاون مع البلديات في البحوث المؤثرة' })}
+        stats={[
+          { icon: FlaskConical, value: activeProjects, label: t({ en: 'Active Projects', ar: 'مشاريع نشطة' }) },
+          { icon: BookOpen, value: rdCalls.length, label: t({ en: 'Open Calls', ar: 'نداءات مفتوحة' }) },
+          { icon: Target, value: livingLabs.length, label: t({ en: 'Living Labs', ar: 'مختبرات حية' }) },
+          { icon: Users, value: researcherProfile?.collaboration_interests?.length || 0, label: t({ en: 'Collaborations', ar: 'تعاونات' }) },
+        ]}
+        action={
+          <div className="flex gap-2">
+            <Link to={createPageUrl('RDCalls')}>
+              <Button variant="outline">
+                <BookOpen className="h-4 w-4 mr-2" />
+                {t({ en: 'Browse R&D Calls', ar: 'تصفح نداءات البحث' })}
+              </Button>
+            </Link>
+            <Link to={createPageUrl('MyResearcherProfileEditor')}>
+              <PersonaButton>
+                <GraduationCap className="h-4 w-4 mr-2" />
+                {t({ en: 'Edit Profile', ar: 'تعديل الملف' })}
+              </PersonaButton>
+            </Link>
+          </div>
+        }
+      />
 
       {/* Profile Summary & Coach */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -386,7 +390,7 @@ function ResearcherDashboard() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
 
