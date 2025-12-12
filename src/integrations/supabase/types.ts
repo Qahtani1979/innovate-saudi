@@ -3781,6 +3781,303 @@ export type Database = {
           },
         ]
       }
+      media_files: {
+        Row: {
+          ai_description: string | null
+          ai_tags: string[] | null
+          alt_text: string | null
+          archived_at: string | null
+          archived_by: string | null
+          bucket_id: string
+          category: string | null
+          checksum: string | null
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          display_name: string | null
+          download_count: number | null
+          duration_seconds: number | null
+          entity_field: string | null
+          entity_id: string | null
+          entity_type: string | null
+          expires_at: string | null
+          file_extension: string | null
+          file_size: number | null
+          folder_path: string | null
+          height: number | null
+          id: string
+          is_deleted: boolean | null
+          is_processed: boolean | null
+          is_public: boolean | null
+          last_accessed_at: string | null
+          mime_type: string | null
+          original_filename: string
+          processing_metadata: Json | null
+          public_url: string | null
+          status: string | null
+          storage_path: string
+          tags: string[] | null
+          updated_at: string | null
+          upload_context: Json | null
+          upload_source: string | null
+          uploaded_by_email: string | null
+          uploaded_by_user_id: string | null
+          view_count: number | null
+          width: number | null
+        }
+        Insert: {
+          ai_description?: string | null
+          ai_tags?: string[] | null
+          alt_text?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          bucket_id: string
+          category?: string | null
+          checksum?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          display_name?: string | null
+          download_count?: number | null
+          duration_seconds?: number | null
+          entity_field?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          file_extension?: string | null
+          file_size?: number | null
+          folder_path?: string | null
+          height?: number | null
+          id?: string
+          is_deleted?: boolean | null
+          is_processed?: boolean | null
+          is_public?: boolean | null
+          last_accessed_at?: string | null
+          mime_type?: string | null
+          original_filename: string
+          processing_metadata?: Json | null
+          public_url?: string | null
+          status?: string | null
+          storage_path: string
+          tags?: string[] | null
+          updated_at?: string | null
+          upload_context?: Json | null
+          upload_source?: string | null
+          uploaded_by_email?: string | null
+          uploaded_by_user_id?: string | null
+          view_count?: number | null
+          width?: number | null
+        }
+        Update: {
+          ai_description?: string | null
+          ai_tags?: string[] | null
+          alt_text?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          bucket_id?: string
+          category?: string | null
+          checksum?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          display_name?: string | null
+          download_count?: number | null
+          duration_seconds?: number | null
+          entity_field?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          file_extension?: string | null
+          file_size?: number | null
+          folder_path?: string | null
+          height?: number | null
+          id?: string
+          is_deleted?: boolean | null
+          is_processed?: boolean | null
+          is_public?: boolean | null
+          last_accessed_at?: string | null
+          mime_type?: string | null
+          original_filename?: string
+          processing_metadata?: Json | null
+          public_url?: string | null
+          status?: string | null
+          storage_path?: string
+          tags?: string[] | null
+          updated_at?: string | null
+          upload_context?: Json | null
+          upload_source?: string | null
+          uploaded_by_email?: string | null
+          uploaded_by_user_id?: string | null
+          view_count?: number | null
+          width?: number | null
+        }
+        Relationships: []
+      }
+      media_folders: {
+        Row: {
+          bucket_id: string | null
+          color: string | null
+          created_at: string | null
+          depth: number | null
+          description: string | null
+          entity_type: string | null
+          icon: string | null
+          id: string
+          is_shared: boolean | null
+          name_ar: string | null
+          name_en: string
+          owner_email: string | null
+          owner_user_id: string | null
+          parent_folder_id: string | null
+          path: string
+          shared_with: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          bucket_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          depth?: number | null
+          description?: string | null
+          entity_type?: string | null
+          icon?: string | null
+          id?: string
+          is_shared?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          owner_email?: string | null
+          owner_user_id?: string | null
+          parent_folder_id?: string | null
+          path: string
+          shared_with?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          bucket_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          depth?: number | null
+          description?: string | null
+          entity_type?: string | null
+          icon?: string | null
+          id?: string
+          is_shared?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          owner_email?: string | null
+          owner_user_id?: string | null
+          parent_folder_id?: string | null
+          path?: string
+          shared_with?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "media_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_usage: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          display_order: number | null
+          entity_id: string
+          entity_type: string
+          field_name: string
+          id: string
+          media_file_id: string | null
+          removed_at: string | null
+          usage_type: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          display_order?: number | null
+          entity_id: string
+          entity_type: string
+          field_name: string
+          id?: string
+          media_file_id?: string | null
+          removed_at?: string | null
+          usage_type?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          display_order?: number | null
+          entity_id?: string
+          entity_type?: string
+          field_name?: string
+          id?: string
+          media_file_id?: string | null
+          removed_at?: string | null
+          usage_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_usage_media_file_id_fkey"
+            columns: ["media_file_id"]
+            isOneToOne: false
+            referencedRelation: "media_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_versions: {
+        Row: {
+          change_reason: string | null
+          change_type: string | null
+          changed_by: string | null
+          created_at: string | null
+          id: string
+          media_file_id: string | null
+          previous_checksum: string | null
+          previous_file_size: number | null
+          previous_storage_path: string | null
+          version_number: number
+        }
+        Insert: {
+          change_reason?: string | null
+          change_type?: string | null
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          media_file_id?: string | null
+          previous_checksum?: string | null
+          previous_file_size?: number | null
+          previous_storage_path?: string | null
+          version_number: number
+        }
+        Update: {
+          change_reason?: string | null
+          change_type?: string | null
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          media_file_id?: string | null
+          previous_checksum?: string | null
+          previous_file_size?: number | null
+          previous_storage_path?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_versions_media_file_id_fkey"
+            columns: ["media_file_id"]
+            isOneToOne: false
+            referencedRelation: "media_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           body: string | null
@@ -9893,6 +10190,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_media_download: {
+        Args: { p_media_id: string }
+        Returns: undefined
+      }
+      increment_media_view: { Args: { p_media_id: string }; Returns: undefined }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_national_entity: {
         Args: { p_municipality_id: string }
