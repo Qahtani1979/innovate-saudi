@@ -18,7 +18,7 @@ export default function UserFeatureAudit() {
         { name: 'UserProfile', status: 'complete', issues: ['Added visibility controls'], priority: 'low' },
         { name: 'UserManagementHub', status: 'complete', issues: [], priority: 'none' },
         { name: 'Settings', status: 'complete', issues: [], priority: 'none' },
-        { name: 'UserDirectory', status: 'complete', issues: [], priority: 'none' },
+        { name: 'UserDirectory (migrated to Hub)', status: 'complete', issues: [], priority: 'none' },
         { name: 'PersonalizedDashboard', status: 'complete', issues: [], priority: 'none' },
       ]
     },
