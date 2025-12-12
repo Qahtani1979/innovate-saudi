@@ -12,6 +12,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { useBudgetsWithVisibility } from '@/hooks/useBudgetsWithVisibility';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function BudgetManagement() {
   const { t } = useLanguage();
@@ -66,24 +67,20 @@ function BudgetManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Budget Management', ar: 'إدارة الميزانية' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Track budgets across pilots, programs, and R&D projects', ar: 'تتبع الميزانيات عبر التجارب والبرامج ومشاريع البحث' })}
-          </p>
-        </div>
-        <Link to={createPageUrl('BudgetDetail') + '?mode=create'}>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            {t({ en: 'New Budget', ar: 'ميزانية جديدة' })}
-          </Button>
-        </Link>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={DollarSign}
+        title={{ en: 'Budget Management', ar: 'إدارة الميزانية' }}
+        description={{ en: 'Track budgets across pilots, programs, and R&D projects', ar: 'تتبع الميزانيات عبر التجارب والبرامج ومشاريع البحث' }}
+        action={
+          <Link to={createPageUrl('BudgetDetail') + '?mode=create'}>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              {t({ en: 'New Budget', ar: 'ميزانية جديدة' })}
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -276,7 +273,7 @@ function BudgetManagement() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

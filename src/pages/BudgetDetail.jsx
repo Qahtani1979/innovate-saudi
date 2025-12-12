@@ -8,6 +8,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { TrendingUp, AlertCircle, CheckCircle2, DollarSign } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 function BudgetDetail() {
   const { t } = useLanguage();
@@ -55,7 +56,7 @@ function BudgetDetail() {
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   return (
-    <div className="space-y-6">
+    <PageLayout className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
@@ -200,7 +201,7 @@ function BudgetDetail() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles } from 'lucide-react';
+import { Save, Loader2, Sparkles, Beaker } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function LivingLabEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -91,13 +92,12 @@ Provide bilingual improvements:
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Edit Living Lab', ar: 'تعديل المختبر الحي' })}
-        </h1>
-        <p className="text-slate-600 mt-1">{formData.name_en}</p>
-      </div>
+    <PageLayout className="max-w-4xl mx-auto">
+      <PageHeader
+        icon={Beaker}
+        title={{ en: 'Edit Living Lab', ar: 'تعديل المختبر الحي' }}
+        description={formData.name_en}
+      />
 
       <Card>
         <CardHeader>
@@ -334,7 +334,7 @@ Provide bilingual improvements:
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

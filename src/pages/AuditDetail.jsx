@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Shield, AlertCircle, CheckCircle2, FileText, TrendingUp } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 function AuditDetail() {
   const { t } = useLanguage();
@@ -44,7 +45,7 @@ function AuditDetail() {
   };
 
   return (
-    <div className="space-y-6">
+    <PageLayout className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
@@ -210,7 +211,7 @@ function AuditDetail() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 
