@@ -52,7 +52,7 @@
  * - is_national_entity(p_municipality_id) - Check if municipality is in NATIONAL region
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
@@ -79,59 +79,146 @@ export function useVisibilitySystem() {
   // Full visibility if admin or has full visibility permissions
   const hasFullVisibility = isAdmin || hasFullMunicipalityVisibility || hasFullSectorVisibility;
 
-  // Get user's visibility scope from database
-  const { data: visibilityScope, isLoading: scopeLoading } = useQuery({
-    queryKey: ['visibility-scope', userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      
-      const { data, error } = await supabase
-        .rpc('get_user_visibility_scope', { p_user_id: userId });
-      
-      if (error) {
-        console.error('Error fetching visibility scope:', error);
-        return null;
+  // User's visibility scope from database
+  const [visibilityScope, setVisibilityScope] = useState(null);
+  const [scopeLoading, setScopeLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadScope = async () => {
+      if (!userId) {
+        if (isMounted) {
+          setVisibilityScope(null);
+          setScopeLoading(false);
+        }
+        return;
       }
-      
-      return data?.[0] || null;
-    },
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
 
-  // Get the National region ID for queries
-  const { data: nationalRegion, isLoading: regionLoading } = useQuery({
-    queryKey: ['national-region-id'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('regions')
-        .select('id')
-        .eq('code', 'NATIONAL')
-        .single();
-      
-      if (error) return null;
-      return data;
-    },
-    staleTime: 1000 * 60 * 30, // 30 minutes
-  });
+      setScopeLoading(true);
+      try {
+        const { data, error } = await supabase
+          .rpc('get_user_visibility_scope', { p_user_id: userId });
 
-  // Get national municipalities for filtering
-  const { data: nationalMunicipalities = [] } = useQuery({
-    queryKey: ['national-municipalities', nationalRegion?.id],
-    queryFn: async () => {
-      if (!nationalRegion?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('id')
-        .eq('region_id', nationalRegion.id);
-      
-      if (error) return [];
-      return data || [];
-    },
-    enabled: !!nationalRegion?.id,
-    staleTime: 1000 * 60 * 30, // 30 minutes
-  });
+        if (!isMounted) return;
+
+        if (error) {
+          console.error('Error fetching visibility scope:', error);
+          setVisibilityScope(null);
+        } else {
+          setVisibilityScope(data?.[0] || null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching visibility scope:', err);
+          setVisibilityScope(null);
+        }
+      } finally {
+        if (isMounted) {
+          setScopeLoading(false);
+        }
+      }
+    };
+
+    loadScope();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
+
+  // National region ID for queries
+  const [nationalRegion, setNationalRegion] = useState(null);
+  const [regionLoading, setRegionLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRegion = async () => {
+      setRegionLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('regions')
+          .select('id')
+          .eq('code', 'NATIONAL')
+          .maybeSingle();
+
+        if (!isMounted) return;
+
+        if (error) {
+          console.error('Error fetching national region:', error);
+          setNationalRegion(null);
+        } else {
+          setNationalRegion(data || null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching national region:', err);
+          setNationalRegion(null);
+        }
+      } finally {
+        if (isMounted) {
+          setRegionLoading(false);
+        }
+      }
+    };
+
+    loadRegion();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // National municipalities for filtering
+  const [nationalMunicipalities, setNationalMunicipalities] = useState([]);
+  const [nationalMunicipalitiesLoading, setNationalMunicipalitiesLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMunicipalities = async () => {
+      if (!nationalRegion?.id) {
+        if (isMounted) {
+          setNationalMunicipalities([]);
+          setNationalMunicipalitiesLoading(false);
+        }
+        return;
+      }
+
+      setNationalMunicipalitiesLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('municipalities')
+          .select('id')
+          .eq('region_id', nationalRegion.id);
+
+        if (!isMounted) return;
+
+        if (error) {
+          console.error('Error fetching national municipalities:', error);
+          setNationalMunicipalities([]);
+        } else {
+          setNationalMunicipalities(data || []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching national municipalities:', err);
+          setNationalMunicipalities([]);
+        }
+      } finally {
+        if (isMounted) {
+          setNationalMunicipalitiesLoading(false);
+        }
+      }
+    };
+
+    loadMunicipalities();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [nationalRegion?.id]);
 
   const nationalMunicipalityIds = nationalMunicipalities.map(m => m.id);
 
@@ -143,7 +230,7 @@ export function useVisibilitySystem() {
                     isNational ? 'sectoral' : 
                     userMunicipalityId ? 'geographic' : 'public';
 
-  const isLoading = scopeLoading || regionLoading;
+  const isLoading = scopeLoading || regionLoading || nationalMunicipalitiesLoading;
 
   /**
    * Determine visibility level for current user
