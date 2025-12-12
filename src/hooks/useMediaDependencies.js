@@ -1,3 +1,5 @@
+/* @refresh reset */
+/* Cache bust: v2 */
 import { supabase } from '@/integrations/supabase/client';
 
 /**
