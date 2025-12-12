@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLanguage } from '../components/LanguageContext';
 import { toast } from 'sonner';
 import PermissionSelector from '../components/permissions/PermissionSelector';
@@ -17,8 +19,10 @@ import { createPageUrl } from '../utils';
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import {
-  Users, Shield, UserPlus, Plus, Pencil, Trash2, Search, Loader2, Mail, Settings
+  Users, Shield, UserPlus, Plus, Pencil, Trash2, Search, Loader2, Mail, Settings,
+  Award, Briefcase, Filter, User, Sparkles, RefreshCw, X, Send, Clock, CheckCircle2, AlertCircle, Upload
 } from 'lucide-react';
 import {
   Dialog,
@@ -26,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -44,6 +49,17 @@ function UserManagementHub() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showChecklist, setShowChecklist] = useState(true);
   const { user: currentUser } = useAuth();
+  const { invokeAI, isLoading: aiLoading, isAvailable } = useAIWithFallback();
+  
+  // Directory filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [skillFilter, setSkillFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  
+  // Bulk invite state
+  const [bulkEmails, setBulkEmails] = useState('');
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: '', full_name: '', role: 'user', custom_message: '' });
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
@@ -128,6 +144,94 @@ function UserManagementHub() {
       toast.success(t({ en: 'Deleted successfully', ar: 'تم الحذف بنجاح' }));
     }
   });
+
+  // Bulk invite mutation (migrated from UserInvitationManager)
+  const bulkInviteMutation = useMutation({
+    mutationFn: async ({ emails, role, message }) => {
+      const emailList = emails.split('\n').map(e => e.trim()).filter(e => e);
+      const invites = emailList.map(email => ({
+        email,
+        role,
+        custom_message: message,
+        invited_by: currentUser?.email || 'admin',
+        invitation_token: Math.random().toString(36).substring(7),
+        expires_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      }));
+      const { error } = await supabase.from('user_invitations').insert(invites);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['invitations']);
+      setBulkEmails('');
+      setShowBulkDialog(false);
+      toast.success(t({ en: 'Bulk invitations sent', ar: 'تم إرسال الدعوات الجماعية' }));
+    }
+  });
+
+  const resendInviteMutation = useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('user_invitations').update({ 
+        status: 'pending',
+        expires_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['invitations']);
+      toast.success(t({ en: 'Invitation resent', ar: 'تم إعادة إرسال الدعوة' }));
+    }
+  });
+
+  const cancelInviteMutation = useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('user_invitations').update({ status: 'cancelled' }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['invitations']);
+      toast.success(t({ en: 'Invitation cancelled', ar: 'تم إلغاء الدعوة' }));
+    }
+  });
+
+  // Derived data for directory filters (migrated from UserDirectory)
+  const allSkills = [...new Set(users.flatMap(u => u.skills || []))];
+  const allDepartments = [...new Set(users.map(u => u.department).filter(Boolean))];
+
+  // Filter users for directory view
+  const filteredDirectoryUsers = users.filter(user => {
+    const searchMatch = !searchTerm || 
+      user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.job_title?.toLowerCase().includes(searchTerm.toLowerCase());
+    const skillMatch = !skillFilter || user.skills?.includes(skillFilter);
+    const deptMatch = !departmentFilter || user.department === departmentFilter;
+    return searchMatch && skillMatch && deptMatch;
+  });
+
+  // AI permission suggester (migrated from RoleManager)
+  const handleAISuggestPermissions = async () => {
+    if (!formData.name) {
+      toast.error(t({ en: 'Please enter role name first', ar: 'يرجى إدخال اسم الدور أولاً' }));
+      return;
+    }
+    const response = await invokeAI({
+      prompt: `Based on this role: "${formData.name}" (${formData.description || ''}), suggest appropriate permissions for a Saudi municipal innovation platform.
+        
+Common permissions: challenge_create, challenge_edit, challenge_view_all, pilot_create, pilot_edit, pilot_view_all, solution_create, solution_view_all, program_view_all, reports_view, analytics_view, user_invite, role_manage, team_manage.
+
+Return a list of permission codes this role should have.`,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          permissions: { type: 'array', items: { type: 'string' } }
+        }
+      }
+    });
+    if (response.success && response.data?.permissions) {
+      setFormData({ ...formData, permissions: response.data.permissions });
+      toast.success(t({ en: 'AI suggestions applied', ar: 'تم تطبيق اقتراحات الذكاء' }));
+    }
+  };
 
   const handleCreate = (entity) => {
     setSelectedEntity({ entity, mode: 'create' });
@@ -339,10 +443,14 @@ function UserManagementHub() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="users">
             <Users className="h-4 w-4 mr-2" />
             {t({ en: 'Users', ar: 'المستخدمون' })}
+          </TabsTrigger>
+          <TabsTrigger value="directory">
+            <User className="h-4 w-4 mr-2" />
+            {t({ en: 'Directory', ar: 'الدليل' })}
           </TabsTrigger>
           <TabsTrigger value="invitations">
             <UserPlus className="h-4 w-4 mr-2" />
@@ -406,56 +514,264 @@ function UserManagementHub() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="invitations">
+        {/* Directory Tab - Migrated from UserDirectory */}
+        <TabsContent value="directory">
           <Card>
             <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5 text-purple-600" />
+                {t({ en: 'User Directory', ar: 'دليل المستخدمين' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="bg-gradient-to-br from-blue-50 to-white">
+                  <CardContent className="pt-4 text-center">
+                    <Users className="h-6 w-6 text-blue-600 mx-auto mb-1" />
+                    <p className="text-2xl font-bold text-blue-600">{users.length}</p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Total Users', ar: 'إجمالي المستخدمين' })}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-green-50 to-white">
+                  <CardContent className="pt-4 text-center">
+                    <Award className="h-6 w-6 text-green-600 mx-auto mb-1" />
+                    <p className="text-2xl font-bold text-green-600">{allSkills.length}</p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Unique Skills', ar: 'مهارات فريدة' })}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-purple-50 to-white">
+                  <CardContent className="pt-4 text-center">
+                    <Briefcase className="h-6 w-6 text-purple-600 mx-auto mb-1" />
+                    <p className="text-2xl font-bold text-purple-600">{allDepartments.length}</p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Departments', ar: 'الإدارات' })}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-orange-50 to-white">
+                  <CardContent className="pt-4 text-center">
+                    <Filter className="h-6 w-6 text-orange-600 mx-auto mb-1" />
+                    <p className="text-2xl font-bold text-orange-600">{filteredDirectoryUsers.length}</p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Filtered', ar: 'مفلتر' })}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="relative">
+                  <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
+                  <Input
+                    placeholder={t({ en: 'Search by name, email, title...', ar: 'ابحث بالاسم، البريد، المسمى...' })}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={isRTL ? 'pr-10' : 'pl-10'}
+                  />
+                </div>
+                <Select value={skillFilter} onValueChange={setSkillFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t({ en: 'Filter by skill', ar: 'تصفية بالمهارة' })} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Skills</SelectItem>
+                    {allSkills.sort().map(skill => (
+                      <SelectItem key={skill} value={skill}>{skill}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t({ en: 'Filter by department', ar: 'تصفية بالإدارة' })} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Departments</SelectItem>
+                    {allDepartments.sort().map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={() => { setSearchTerm(''); setSkillFilter(''); setDepartmentFilter(''); }}>
+                  {t({ en: 'Clear Filters', ar: 'مسح الفلاتر' })}
+                </Button>
+              </div>
+
+              {/* User Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredDirectoryUsers.slice(0, 30).map((user) => (
+                  <Card key={user.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start gap-3">
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+                          <User className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-slate-900 truncate">{user.full_name}</h3>
+                          <p className="text-sm text-slate-600 truncate">{user.job_title || user.role}</p>
+                          {user.department && <p className="text-xs text-slate-500 truncate">{user.department}</p>}
+                        </div>
+                      </div>
+                      {user.skills?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {user.skills.slice(0, 3).map((skill, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">{skill}</Badge>
+                          ))}
+                          {user.skills.length > 3 && <Badge variant="outline" className="text-xs">+{user.skills.length - 3}</Badge>}
+                        </div>
+                      )}
+                      <div className="flex gap-2 mt-3 pt-3 border-t">
+                        <Button size="sm" variant="outline" className="flex-1" asChild>
+                          <Link to={createPageUrl(`UserProfile?email=${user.email}`)}>
+                            {t({ en: 'View', ar: 'عرض' })}
+                          </Link>
+                        </Button>
+                        <Button size="sm" variant="outline" asChild>
+                          <a href={`mailto:${user.email}`}><Mail className="h-4 w-4" /></a>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invitations">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-amber-600" />
                 {t({ en: 'User Invitations', ar: 'دعوات المستخدمين' })}
               </CardTitle>
+              <Dialog open={showBulkDialog} onOpenChange={setShowBulkDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Upload className="h-4 w-4 mr-2" />
+                    {t({ en: 'Bulk Invite', ar: 'دعوة جماعية' })}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>{t({ en: 'Bulk User Invitation', ar: 'دعوة مستخدمين جماعية' })}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        {t({ en: 'Email Addresses (one per line)', ar: 'عناوين البريد (واحد لكل سطر)' })}
+                      </label>
+                      <Textarea
+                        value={bulkEmails}
+                        onChange={(e) => setBulkEmails(e.target.value)}
+                        placeholder="user1@example.com&#10;user2@example.com&#10;user3@example.com"
+                        rows={8}
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        {bulkEmails.split('\n').filter(e => e.trim()).length} {t({ en: 'emails', ar: 'بريد' })}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => bulkInviteMutation.mutate({ emails: bulkEmails, role: 'user', message: '' })}
+                      disabled={!bulkEmails || bulkInviteMutation.isPending}
+                      className="w-full bg-purple-600"
+                    >
+                      {bulkInviteMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      {t({ en: 'Send Bulk Invitations', ar: 'إرسال دعوات جماعية' })}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardHeader>
             <CardContent>
-              <EntityTable
-                data={invitations}
-                entity="UserInvitation"
-                columns={[
-                  { key: 'email', label: { en: 'Email', ar: 'البريد' } },
-                  { key: 'full_name', label: { en: 'Name', ar: 'الاسم' } },
-                  { key: 'role', label: { en: 'Role', ar: 'الدور' } },
-                  { 
-                    key: 'status', 
-                    label: { en: 'Status', ar: 'الحالة' },
-                    render: (item) => <Badge>{item.status || 'pending'}</Badge>
-                  },
-                  { 
-                    key: 'created_date', 
-                    label: { en: 'Date', ar: 'التاريخ' }, 
-                    render: (item) => new Date(item.created_date).toLocaleDateString() 
-                  },
-                ]}
-                filters={[
-                  { 
-                    key: 'role', 
-                    label: { en: 'Role', ar: 'الدور' },
-                    options: [
-                      { value: 'admin', label: 'Admin' },
-                      { value: 'user', label: 'User' },
-                      { value: 'viewer', label: 'Viewer' }
-                    ]
-                  },
-                  { 
-                    key: 'status', 
-                    label: { en: 'Status', ar: 'الحالة' },
-                    options: [
-                      { value: 'pending', label: 'Pending' },
-                      { value: 'accepted', label: 'Accepted' },
-                      { value: 'expired', label: 'Expired' }
-                    ]
-                  }
-                ]}
-                onEdit={handleEdit}
-                onDelete={(entity, id) => deleteMutation.mutate({ entity, id })}
-              />
+              {/* Invitation Stats */}
+              <div className="grid grid-cols-4 gap-4 mb-4">
+                <Card className="bg-blue-50">
+                  <CardContent className="pt-4 text-center">
+                    <Clock className="h-5 w-5 text-blue-600 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-blue-600">{invitations.filter(i => i.status === 'pending').length}</p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Pending', ar: 'معلقة' })}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-green-50">
+                  <CardContent className="pt-4 text-center">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-green-600">{invitations.filter(i => i.status === 'accepted').length}</p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Accepted', ar: 'مقبولة' })}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-red-50">
+                  <CardContent className="pt-4 text-center">
+                    <AlertCircle className="h-5 w-5 text-red-600 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-red-600">{invitations.filter(i => i.status === 'expired').length}</p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Expired', ar: 'منتهية' })}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-50">
+                  <CardContent className="pt-4 text-center">
+                    <UserPlus className="h-5 w-5 text-purple-600 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-purple-600">
+                      {invitations.length > 0 ? Math.round((invitations.filter(i => i.status === 'accepted').length / invitations.length) * 100) : 0}%
+                    </p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Rate', ar: 'معدل' })}</p>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {/* Invitations Table with Resend/Cancel Actions */}
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead>{t({ en: 'Email', ar: 'البريد' })}</TableHead>
+                    <TableHead>{t({ en: 'Name', ar: 'الاسم' })}</TableHead>
+                    <TableHead>{t({ en: 'Role', ar: 'الدور' })}</TableHead>
+                    <TableHead>{t({ en: 'Status', ar: 'الحالة' })}</TableHead>
+                    <TableHead>{t({ en: 'Date', ar: 'التاريخ' })}</TableHead>
+                    <TableHead className="text-right">{t({ en: 'Actions', ar: 'الإجراءات' })}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invitations.map((inv) => (
+                    <TableRow key={inv.id} className="hover:bg-slate-50">
+                      <TableCell className="font-medium">{inv.email}</TableCell>
+                      <TableCell>{inv.full_name || '-'}</TableCell>
+                      <TableCell><Badge variant="outline">{inv.role}</Badge></TableCell>
+                      <TableCell>
+                        <Badge className={
+                          inv.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                          inv.status === 'expired' ? 'bg-red-100 text-red-700' :
+                          inv.status === 'cancelled' ? 'bg-slate-100 text-slate-700' :
+                          'bg-blue-100 text-blue-700'
+                        }>
+                          {inv.status || 'pending'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-600">
+                        {inv.created_date ? new Date(inv.created_date).toLocaleDateString() : '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {inv.status === 'pending' && (
+                            <>
+                              <Button size="sm" variant="ghost" onClick={() => resendInviteMutation.mutate(inv.id)} className="hover:bg-blue-50">
+                                <RefreshCw className="h-4 w-4 text-blue-600" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => cancelInviteMutation.mutate(inv.id)} className="hover:bg-red-50">
+                                <X className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => deleteMutation.mutate({ entity: 'UserInvitation', id: inv.id })} className="hover:bg-red-50">
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -673,6 +989,18 @@ function UserManagementHub() {
                   <label className="text-sm font-medium mb-2 block">Description</label>
                   <Textarea value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={3} />
                 </div>
+                
+                {/* AI Permission Suggester - Migrated from RoleManager */}
+                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <div>
+                    <p className="font-medium text-purple-900 text-sm">{t({ en: 'AI Permission Suggester', ar: 'مقترح الصلاحيات الذكي' })}</p>
+                    <p className="text-xs text-slate-600">{t({ en: 'Let AI recommend permissions based on role name', ar: 'دع الذكاء يوصي بالصلاحيات' })}</p>
+                  </div>
+                  <Button size="sm" onClick={handleAISuggestPermissions} disabled={!formData.name || aiLoading || !isAvailable} className="bg-purple-600">
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  </Button>
+                </div>
+                
                 <PermissionSelector 
                   selectedPermissions={formData.permissions || []}
                   onChange={(perms) => setFormData({...formData, permissions: perms})}
