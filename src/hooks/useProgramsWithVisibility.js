@@ -17,6 +17,7 @@ export function useProgramsWithVisibility(options = {}) {
   const { 
     status,
     programType,
+    sectorId,
     limit = 100,
     includeDeleted = false
   } = options;
@@ -46,6 +47,7 @@ export function useProgramsWithVisibility(options = {}) {
       userMunicipalityId,
       status,
       programType,
+      sectorId,
       limit
     }],
     queryFn: async () => {
@@ -74,6 +76,11 @@ export function useProgramsWithVisibility(options = {}) {
       // Apply program type filter if provided
       if (programType) {
         query = query.eq('program_type', programType);
+      }
+
+      // Apply sector filter if provided
+      if (sectorId) {
+        query = query.eq('sector_id', sectorId);
       }
 
       // Admin or full visibility users see everything
