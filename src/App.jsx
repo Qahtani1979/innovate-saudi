@@ -142,19 +142,19 @@ const AuthenticatedApp = () => {
 
 function App() {
   return (
-    <LanguageProvider>
-      <LanguagePersistence />
-      <AuthProvider>
-        <QueryClientProvider client={queryClientInstance}>
+    <QueryClientProvider client={queryClientInstance}>
+      <LanguageProvider>
+        <LanguagePersistence />
+        <AuthProvider>
           <Router>
             <NavigationTracker />
             <AuthenticatedApp />
             <Toaster />
           </Router>
           <VisualEditAgent />
-        </QueryClientProvider>
-      </AuthProvider>
-    </LanguageProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
   )
 }
 
