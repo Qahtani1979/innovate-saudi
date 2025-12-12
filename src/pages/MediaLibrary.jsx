@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '@/components/LanguageContext';
 import { 
+  PageLayout, PageHeader, SearchFilter, usePersonaColors, PersonaButton
+} from '@/components/layout/PersonaPageLayout';
+import { 
   Upload, Search, Grid, List, Loader2, RefreshCw, Trash2, Download,
   Image, Video, FileText, File, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown,
-  Calendar, HardDrive, Eye
+  Calendar, HardDrive, Eye, FolderOpen
 } from 'lucide-react';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
 import MediaFilters from '@/components/media/MediaFilters';
@@ -14,6 +17,7 @@ import MediaGrid from '@/components/media/MediaGrid';
 import MediaListView from '@/components/media/MediaListView';
 import MediaDetails from '@/components/media/MediaDetails';
 import MediaUploadDialog from '@/components/media/MediaUploadDialog';
+import MediaAIHelper from '@/components/media/MediaAIHelper';
 import {
   Sheet,
   SheetContent,
@@ -119,28 +123,40 @@ export default function MediaLibrary() {
     }
   };
 
+  const totalSize = media.reduce((acc, f) => acc + (f.file_size || 0), 0);
+  const formatTotalSize = (bytes) => {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  };
+
+  const headerStats = [
+    { icon: File, value: media.length, label: t({ en: 'Files', ar: 'ملفات' }) },
+    { icon: HardDrive, value: formatTotalSize(totalSize), label: t({ en: 'Total Size', ar: 'الحجم الكلي' }) },
+    { icon: Eye, value: media.reduce((acc, f) => acc + (f.view_count || 0), 0), label: t({ en: 'Views', ar: 'مشاهدات' }) },
+  ];
+
   return (
-    <div className="h-full flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            {t({ en: 'Content Management Hub', ar: 'مركز إدارة المحتوى' })}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t({ en: 'Centralized media and file management', ar: 'إدارة مركزية للوسائط والملفات' })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={refetch}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Button onClick={() => setShowUploadDialog(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            {t({ en: 'Upload', ar: 'رفع' })}
-          </Button>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={FolderOpen}
+        title={t({ en: 'Content Management Hub', ar: 'مركز إدارة المحتوى' })}
+        description={t({ en: 'Centralized media and file management', ar: 'إدارة مركزية للوسائط والملفات' })}
+        stats={headerStats}
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" onClick={refetch}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <PersonaButton onClick={() => setShowUploadDialog(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              {t({ en: 'Upload', ar: 'رفع' })}
+            </PersonaButton>
+          </div>
+        }
+      />
 
       {/* Toolbar */}
       <Card className="mb-4">
@@ -231,6 +247,16 @@ export default function MediaLibrary() {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Media Helper */}
+      <MediaAIHelper 
+        files={media} 
+        stats={stats}
+        onAction={(action, recommendation) => {
+          console.log('AI Action:', action, recommendation);
+          // Future: implement specific actions based on AI recommendations
+        }}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex gap-4 min-h-0">
@@ -340,6 +366,7 @@ export default function MediaLibrary() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </AlertDialog>
+    </PageLayout>
   );
 }
