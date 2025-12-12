@@ -28,7 +28,7 @@ export default function MediaDeleteDialog({
   onSuccess 
 }) {
   const { t } = useLanguage();
-  const { checkDependencies, deleteWithCascade, getEntityDisplayName } = useMediaDependencies();
+  const { checkDependencies, deleteWithCascade, getEntityDisplayName } = useMediaDependencies(t);
   
   const [isChecking, setIsChecking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
