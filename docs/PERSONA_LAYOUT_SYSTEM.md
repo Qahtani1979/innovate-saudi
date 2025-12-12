@@ -238,13 +238,11 @@ import {
 | Solution Create | `SolutionCreate.jsx` | High |
 | Solution Edit | `SolutionEdit.jsx` | High |
 | Solution Detail | `SolutionDetail.jsx` | High |
-| Browse Startups | `BrowseStartups.jsx` | Medium |
 | Matchmaker Journey | `MatchmakerJourney.jsx` | Medium |
 | Matchmaker Applications | `MatchmakerApplications.jsx` | Medium |
 | Matchmaker Application Create | `MatchmakerApplicationCreate.jsx` | Low |
 | Matchmaker Application Detail | `MatchmakerApplicationDetail.jsx` | Low |
 | Opportunity Feed | `OpportunityFeed.jsx` | Medium |
-| My Startup Profile Editor | `MyStartupProfileEditor.jsx` | Medium |
 | Startup Onboarding | `StartupOnboarding.jsx` | Wizard |
 
 ---
