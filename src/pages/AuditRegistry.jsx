@@ -10,6 +10,7 @@ import { Shield, Search, Plus, AlertCircle, CheckCircle2, Clock, FileText } from
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function AuditRegistry() {
   const { t } = useLanguage();
@@ -62,24 +63,20 @@ function AuditRegistry() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Audit Registry', ar: 'سجل التدقيق' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Compliance audits and quality assurance tracking', ar: 'تدقيق الامتثال وتتبع ضمان الجودة' })}
-          </p>
-        </div>
-        <Link to={createPageUrl('AuditDetail') + '?mode=create'}>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            {t({ en: 'Schedule Audit', ar: 'جدولة تدقيق' })}
-          </Button>
-        </Link>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Shield}
+        title={{ en: 'Audit Registry', ar: 'سجل التدقيق' }}
+        description={{ en: 'Compliance audits and quality assurance tracking', ar: 'تدقيق الامتثال وتتبع ضمان الجودة' }}
+        action={
+          <Link to={createPageUrl('AuditDetail') + '?mode=create'}>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              {t({ en: 'Schedule Audit', ar: 'جدولة تدقيق' })}
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -224,7 +221,7 @@ function AuditRegistry() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

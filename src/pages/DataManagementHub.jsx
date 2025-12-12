@@ -36,6 +36,7 @@ import {
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function DataManagementHub() {
   const { language, isRTL, t } = useLanguage();
@@ -821,15 +822,12 @@ Provide specific fixes with actions (DELETE, REASSIGN, FIX_PARTNERSHIP, ENRICH_D
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 via-teal-600 to-purple-600 p-8 text-white">
-        <h1 className="text-5xl font-bold mb-2">
-          {t({ en: 'Data Management Hub', ar: 'مركز إدارة البيانات' })}
-        </h1>
-        <p className="text-xl text-white/90">
-          {t({ en: 'Unified interface with AI enrichment & integrity checking', ar: 'واجهة موحدة مع الإثراء الذكي وفحص السلامة' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Database}
+        title={{ en: 'Data Management Hub', ar: 'مركز إدارة البيانات' }}
+        description={{ en: 'Unified interface with AI enrichment & integrity checking', ar: 'واجهة موحدة مع الإثراء الذكي وفحص السلامة' }}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
@@ -1483,7 +1481,7 @@ Provide specific fixes with actions (DELETE, REASSIGN, FIX_PARTNERSHIP, ENRICH_D
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }
 

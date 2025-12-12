@@ -18,6 +18,7 @@ import PolicyTemplateLibrary from '../components/policy/PolicyTemplateLibrary';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function PolicyCreate() {
   const { language, isRTL, t } = useLanguage();
@@ -484,25 +485,20 @@ CRITICAL: All text fields must be in ARABIC. This is for Saudi government use.`,
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <PageLayout className="max-w-5xl mx-auto">
+      <PageHeader
+        icon={Shield}
+        title={{ en: 'Create Policy Recommendation', ar: 'إنشاء توصية سياسية' }}
+        description={{ en: `Step ${currentStep} of 2`, ar: `خطوة ${currentStep} من 2` }}
+        action={
           <Link to={createPageUrl('PolicyHub')}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               {t({ en: 'Back', ar: 'رجوع' })}
             </Button>
           </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              {t({ en: 'Create Policy Recommendation', ar: 'إنشاء توصية سياسية' })}
-            </h1>
-            <p className="text-sm text-slate-600 mt-1">
-              {t({ en: 'Step', ar: 'خطوة' })} {currentStep} {t({ en: 'of', ar: 'من' })} 2
-            </p>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Template Library */}
       {showTemplates && (
@@ -1030,7 +1026,7 @@ CRITICAL: All text fields must be in ARABIC. This is for Saudi government use.`,
         </CardContent>
       </Card>
       )}
-    </div>
+    </PageLayout>
   );
 }
 

@@ -42,6 +42,8 @@ import PolicyImpactMetrics from '../components/policy/PolicyImpactMetrics';
 import PolicyExecutiveSummaryGenerator from '../components/policy/PolicyExecutiveSummaryGenerator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
+import { EntityDetailHeader } from '@/components/layout/EntityDetailHeader';
 
 export default function PolicyDetail() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
@@ -282,7 +284,7 @@ YOU MUST return this EXACT structure with bilingual text:
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -753,6 +755,6 @@ YOU MUST return this EXACT structure with bilingual text:
           </Card>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

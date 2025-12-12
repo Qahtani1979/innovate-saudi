@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function OrganizationEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -111,13 +112,12 @@ Generate comprehensive bilingual (English + Arabic) content:
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Edit Organization', ar: 'تعديل الجهة' })}
-        </h1>
-        <p className="text-slate-600 mt-1">{formData.name_en}</p>
-      </div>
+    <PageLayout className="max-w-4xl mx-auto">
+      <PageHeader
+        icon={Building2}
+        title={{ en: 'Edit Organization', ar: 'تعديل الجهة' }}
+        description={formData?.name_en}
+      />
 
       <Card>
         <CardHeader>
@@ -750,7 +750,7 @@ Generate comprehensive bilingual (English + Arabic) content:
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 
