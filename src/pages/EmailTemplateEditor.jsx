@@ -347,6 +347,74 @@ Provide a comprehensive analysis covering:
     }
   };
 
+  // Actionable handlers for AI Analysis
+  const handleSelectTemplateByKey = (templateKey) => {
+    const found = templates.find(t => t.template_key === templateKey);
+    if (found) {
+      setSelectedTemplateId(found.id);
+      setShowAnalysisDialog(false);
+      toast.success(t({ en: `Selected: ${found.name_en}`, ar: `تم تحديد: ${found.name_en}` }));
+    } else {
+      toast.error(t({ en: 'Template not found', ar: 'القالب غير موجود' }));
+    }
+  };
+
+  const handleFilterByCategory = (category) => {
+    // Map category names to values
+    const catMap = {
+      'auth': 'auth', 'authentication': 'auth',
+      'role': 'role', 'role management': 'role',
+      'challenge': 'challenge', 'challenges': 'challenge',
+      'solution': 'solution', 'solutions': 'solution',
+      'pilot': 'pilot', 'pilots': 'pilot',
+      'program': 'program', 'programs': 'program',
+      'evaluation': 'evaluation', 'evaluations': 'evaluation',
+      'citizen': 'citizen', 'citizen engagement': 'citizen',
+      'task': 'task', 'tasks': 'task',
+      'event': 'event', 'events': 'event',
+      'contract': 'contract', 'contracts': 'contract',
+      'sandbox': 'sandbox', 'sandboxes': 'sandbox',
+      'system': 'system',
+      'research': 'research'
+    };
+    const catValue = catMap[category.toLowerCase()] || category.toLowerCase();
+    if (CATEGORIES.some(c => c.value === catValue)) {
+      setFilterCategory(catValue);
+      setShowAnalysisDialog(false);
+      toast.success(t({ en: `Filtered by: ${category}`, ar: `تمت التصفية حسب: ${category}` }));
+    }
+  };
+
+  const handleCreateSuggestedTemplate = (suggested) => {
+    setSelectedTemplateId(null);
+    setTemplate({
+      template_key: suggested.template_key || '',
+      category: suggested.category || 'system',
+      name_en: suggested.name || '',
+      name_ar: '',
+      subject_en: '',
+      subject_ar: '',
+      body_en: '',
+      body_ar: '',
+      is_html: true,
+      use_header: true,
+      use_footer: true,
+      header_title_en: suggested.name || '',
+      header_title_ar: '',
+      header_gradient_start: '#006C35',
+      header_gradient_end: '#00A651',
+      cta_text_en: '',
+      cta_text_ar: '',
+      cta_url_variable: '',
+      variables: [],
+      is_active: true,
+      is_system: false,
+      is_critical: false,
+    });
+    setShowAnalysisDialog(false);
+    toast.success(t({ en: `Created draft: ${suggested.name}. Use AI Generate to fill content.`, ar: `تم إنشاء مسودة: ${suggested.name}. استخدم التوليد الذكي لملء المحتوى.` }));
+  };
+
   const handleSendTest = async () => {
     const recipientEmail = testEmail || currentUser?.email;
     if (!recipientEmail) {
@@ -905,7 +973,7 @@ Provide a comprehensive analysis covering:
                     </h3>
                     <div className="space-y-2">
                       {analysisResult.coverage_gaps.map((gap, i) => (
-                        <div key={i} className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div key={i} className="p-3 bg-orange-50 border border-orange-200 rounded-lg group hover:border-orange-400 transition-colors">
                           <div className="flex items-start justify-between">
                             <p className="font-medium text-sm">{gap.gap}</p>
                             <Badge variant={gap.priority === 'high' ? 'destructive' : gap.priority === 'medium' ? 'warning' : 'secondary'}>
@@ -913,7 +981,22 @@ Provide a comprehensive analysis covering:
                             </Badge>
                           </div>
                           {gap.suggested_template && (
-                            <p className="text-xs text-muted-foreground mt-1">💡 {gap.suggested_template}</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <p className="text-xs text-muted-foreground">💡 {gap.suggested_template}</p>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-6 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleCreateSuggestedTemplate({ 
+                                  template_key: gap.suggested_template.toLowerCase().replace(/\s+/g, '_'),
+                                  name: gap.suggested_template,
+                                  category: 'system'
+                                })}
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                {t({ en: 'Create', ar: 'إنشاء' })}
+                              </Button>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -934,8 +1017,16 @@ Provide a comprehensive analysis covering:
                           <p className="font-medium text-sm">{issue.issue}</p>
                           {issue.affected_templates?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {issue.affected_templates.map((t, j) => (
-                                <Badge key={j} variant="outline" className="text-xs font-mono">{t}</Badge>
+                              {issue.affected_templates.map((templateKey, j) => (
+                                <Badge 
+                                  key={j} 
+                                  variant="outline" 
+                                  className="text-xs font-mono cursor-pointer hover:bg-red-100 hover:border-red-400 transition-colors"
+                                  onClick={() => handleSelectTemplateByKey(templateKey)}
+                                >
+                                  {templateKey}
+                                  <Eye className="h-3 w-3 ml-1" />
+                                </Badge>
                               ))}
                             </div>
                           )}
@@ -957,12 +1048,19 @@ Provide a comprehensive analysis covering:
                     </h3>
                     <div className="grid grid-cols-2 gap-2">
                       {analysisResult.category_analysis.map((cat, i) => (
-                        <div key={i} className="p-2 border rounded-lg">
+                        <div 
+                          key={i} 
+                          className="p-2 border rounded-lg cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors"
+                          onClick={() => handleFilterByCategory(cat.category)}
+                        >
                           <div className="flex items-center justify-between">
                             <span className="font-medium text-sm">{cat.category}</span>
-                            <Badge variant={cat.status === 'good' ? 'default' : cat.status === 'low' ? 'warning' : 'secondary'}>
-                              {cat.status}
-                            </Badge>
+                            <div className="flex items-center gap-1">
+                              <Badge variant={cat.status === 'good' ? 'default' : cat.status === 'low' ? 'warning' : 'secondary'}>
+                                {cat.status}
+                              </Badge>
+                              <Eye className="h-3 w-3 text-muted-foreground" />
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">{cat.recommendation}</p>
                         </div>
@@ -1003,13 +1101,26 @@ Provide a comprehensive analysis covering:
                     </h3>
                     <div className="grid grid-cols-1 gap-2">
                       {analysisResult.suggested_templates.map((tmpl, i) => (
-                        <div key={i} className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start justify-between">
-                          <div>
+                        <div 
+                          key={i} 
+                          className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start justify-between group hover:border-green-400 transition-colors"
+                        >
+                          <div className="flex-1">
                             <p className="font-medium text-sm">{tmpl.name}</p>
                             <p className="text-xs text-muted-foreground font-mono">{tmpl.template_key}</p>
                             <p className="text-xs text-muted-foreground mt-1">{tmpl.description}</p>
                           </div>
-                          <Badge variant="outline">{tmpl.category}</Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{tmpl.category}</Badge>
+                            <Button 
+                              size="sm" 
+                              className="h-7 bg-green-600 hover:bg-green-700"
+                              onClick={() => handleCreateSuggestedTemplate(tmpl)}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              {t({ en: 'Create', ar: 'إنشاء' })}
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>

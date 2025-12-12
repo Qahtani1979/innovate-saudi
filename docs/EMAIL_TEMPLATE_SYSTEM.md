@@ -71,20 +71,24 @@ A comprehensive bilingual (EN/AR) email template system for the Saudi Innovates 
 
 The Email Template Editor includes an AI-powered analysis tool that provides:
 
-| Analysis Type | Description |
-|--------------|-------------|
-| **Health Score** | Overall score (1-100) assessing template database quality |
-| **Coverage Gaps** | Missing templates for common platform workflows |
-| **Consistency Issues** | Templates missing Arabic content, headers, CTAs, etc. |
-| **Category Balance** | Identifies over/under-represented categories |
-| **Recommendations** | Specific actionable improvements prioritized by impact |
-| **Suggested Templates** | AI-recommended new templates to add |
+| Analysis Type | Description | Action |
+|--------------|-------------|--------|
+| **Health Score** | Overall score (1-100) assessing template database quality | Visual indicator |
+| **Coverage Gaps** | Missing templates for common platform workflows | Click "Create" to start new template |
+| **Consistency Issues** | Templates missing Arabic content, headers, CTAs | Click template key to select & edit |
+| **Category Balance** | Identifies over/under-represented categories | Click category to filter template list |
+| **Recommendations** | Specific actionable improvements prioritized by impact | Reference for improvements |
+| **Suggested Templates** | AI-recommended new templates to add | Click "Create" to pre-fill new template |
 
 **How to Use:**
 1. Navigate to Email Template Editor (`/email-template-editor`)
 2. Click the "AI Analysis" button in the toolbar
 3. Review the comprehensive analysis report
-4. Use recommendations to improve template coverage and quality
+4. **Take Action Directly:**
+   - Click on a template key in consistency issues → Selects that template for editing
+   - Click on a category → Filters the template list by that category
+   - Click "Create" on suggested templates → Creates new template with pre-filled fields
+   - Use "AI Generate" after creating to auto-fill content
 
 ### Database Tables Created
 - `email_settings` - Global email configuration
