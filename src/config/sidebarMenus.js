@@ -166,25 +166,45 @@ export const SIDEBAR_MENUS = {
     color: 'from-emerald-600 to-green-500',
     items: [
       HOME_LINK,
+      // Dashboard & Profile
       { name: 'MunicipalityDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' }, permission: 'dashboard_view', useMyMunicipality: true },
-      { name: 'MunicipalityProfile', icon: Building2, label: { en: 'Municipality Profile', ar: 'ملف البلدية' }, useMyMunicipality: true },
-      { name: 'MIIDrillDown', icon: PieChart, label: { en: 'MII Score Details', ar: 'تفاصيل المؤشر' }, useMyMunicipality: true },
-      { name: 'MunicipalityPeerMatcher', icon: Users, label: { en: 'Peer Benchmarking', ar: 'المقارنة المعيارية' } },
+      { name: 'MunicipalityProfile', icon: Building2, label: { en: 'Municipality Profile', ar: 'ملف البلدية' }, permission: 'dashboard_view', useMyMunicipality: true },
+      // MII & Benchmarking
+      { name: 'MIIDrillDown', icon: PieChart, label: { en: 'MII Score Details', ar: 'تفاصيل المؤشر' }, permission: 'analytics_view', useMyMunicipality: true },
+      { name: 'MunicipalityPeerMatcher', icon: Users, label: { en: 'Peer Benchmarking', ar: 'المقارنة المعيارية' }, permission: 'analytics_view' },
+      // Challenges
+      { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' }, permission: 'challenge_view' },
       { name: 'ChallengeCreate', icon: AlertCircle, label: { en: 'Create Challenge', ar: 'إنشاء تحدي' }, permission: 'challenge_create' },
-      { name: 'PilotCreate', icon: TestTube, label: { en: 'Create Pilot', ar: 'إنشاء تجربة' }, anyPermission: ['pilot_create', 'pilot_support'] },
-      { name: 'MyChallenges', icon: AlertCircle, label: { en: 'My Challenges', ar: 'تحدياتي' }, anyPermission: ['challenge_view', 'challenge_view_own'] },
-      { name: 'MyPilots', icon: TestTube, label: { en: 'My Pilots', ar: 'تجاربي' }, anyPermission: ['pilot_view', 'pilot_view_own'] },
-      { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
-      { name: 'LivingLabs', icon: FlaskConical, label: { en: 'Living Labs', ar: 'المختبرات الحية' } },
-      { name: 'MunicipalProposalInbox', icon: Inbox, label: { en: 'Proposals', ar: 'المقترحات' }, anyPermission: ['proposal_view', 'proposal_manage'] },
-      { name: 'Solutions', icon: Lightbulb, label: { en: 'Solutions', ar: 'الحلول' } },
-      { name: 'MyApprovals', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' }, anyPermission: ['approval_view', 'approval_manage'] },
-      { name: 'MunicipalityIdeasView', icon: Sparkles, label: { en: 'Citizen Ideas', ar: 'أفكار المواطنين' }, anyPermission: ['idea_manage', 'idea_view'] },
-      { name: 'Knowledge', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
-      { name: 'ContractManagement', icon: ScrollText, label: { en: 'Contracts', ar: 'العقود' }, anyPermission: ['contract_view', 'contract_manage'] },
-      { name: 'BudgetManagement', icon: Wallet, label: { en: 'Budget', ar: 'الميزانية' }, anyPermission: ['budget_view', 'budget_manage'] },
-      { name: 'TeamManagement', icon: Users, label: { en: 'Team', ar: 'الفريق' }, anyPermission: ['user_manage', 'team_manage'], roles: ['municipality_admin', 'municipality_director', 'municipality_manager'] },
-      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, anyPermission: ['reports_view', 'analytics_view', 'analytics_view_own'] },
+      { name: 'MyChallenges', icon: AlertCircle, label: { en: 'Edit Challenges', ar: 'تعديل التحديات' }, permission: 'challenge_edit' },
+      // Pilots
+      { name: 'Pilots', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' }, permission: 'pilot_view' },
+      { name: 'PilotCreate', icon: TestTube, label: { en: 'Create Pilot', ar: 'إنشاء تجربة' }, permission: 'pilot_create' },
+      { name: 'MyPilots', icon: TestTube, label: { en: 'Edit Pilots', ar: 'تعديل التجارب' }, permission: 'pilot_edit' },
+      { name: 'PilotMonitoringDashboard', icon: TestTube, label: { en: 'Support Pilots', ar: 'دعم التجارب' }, permission: 'pilot_support' },
+      // My Work
+      { name: 'MyChallenges', icon: Target, label: { en: 'My Challenges', ar: 'تحدياتي' }, permission: 'challenge_view', path: '/my-challenges' },
+      { name: 'MyPilots', icon: Rocket, label: { en: 'My Pilots', ar: 'تجاربي' }, permission: 'pilot_view', path: '/my-pilots' },
+      // Programs & Labs
+      { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' }, permission: 'program_view' },
+      { name: 'LivingLabs', icon: FlaskConical, label: { en: 'Living Labs', ar: 'المختبرات الحية' }, permission: 'living_lab_view' },
+      // Proposals & Solutions
+      { name: 'MunicipalProposalInbox', icon: Inbox, label: { en: 'Proposals', ar: 'المقترحات' }, permission: 'proposal_view' },
+      { name: 'Solutions', icon: Lightbulb, label: { en: 'Solutions', ar: 'الحلول' }, permission: 'solution_view' },
+      // Approvals & Citizen Ideas
+      { name: 'MyApprovals', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' }, permission: 'approval_view' },
+      { name: 'MunicipalityIdeasView', icon: Sparkles, label: { en: 'Citizen Ideas', ar: 'أفكار المواطنين' }, permission: 'citizen_idea_view' },
+      // Knowledge
+      { name: 'Knowledge', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' }, permission: 'knowledge_view' },
+      // Contracts & Budget
+      { name: 'ContractManagement', icon: ScrollText, label: { en: 'Contracts', ar: 'العقود' }, permission: 'contract_view' },
+      { name: 'BudgetManagement', icon: Wallet, label: { en: 'Budget', ar: 'الميزانية' }, permission: 'budget_view' },
+      { name: 'BudgetAllocationTool', icon: DollarSign, label: { en: 'Manage Budget', ar: 'إدارة الميزانية' }, permission: 'budget_manage' },
+      // Analytics & Reports
+      { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, permission: 'analytics_view' },
+      { name: 'CustomReportBuilder', icon: FileBarChart, label: { en: 'Reports', ar: 'التقارير' }, permission: 'reports_view' },
+      // Team & Settings
+      { name: 'TeamManagement', icon: Users, label: { en: 'Team', ar: 'الفريق' }, permission: 'team_manage' },
+      { name: 'MunicipalityEdit', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' }, permission: 'settings_manage', useMyMunicipality: true },
     ]
   },
 
