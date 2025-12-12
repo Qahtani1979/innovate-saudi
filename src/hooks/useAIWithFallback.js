@@ -18,7 +18,7 @@ export const AI_STATUS = {
 };
 
 // Get or create session ID for anonymous rate limiting
-const getSessionId = () => {
+function getSessionId() {
   if (typeof window === 'undefined') return null;
   let sessionId = sessionStorage.getItem('ai_session_id');
   if (!sessionId) {
@@ -26,7 +26,7 @@ const getSessionId = () => {
     sessionStorage.setItem('ai_session_id', sessionId);
   }
   return sessionId;
-};
+}
 
 export function useAIWithFallback(options = {}) {
   const {
