@@ -292,8 +292,8 @@ function LayoutContent({ children, currentPageName }) {
         </main>
       </div>
 
-      {/* Global AI Assistant */}
-      <AIAssistant context={{ page: currentPageName }} />
+      {/* Global AI Assistant - temporarily disabled */}
+      {/* <AIAssistant context={{ page: currentPageName }} /> */}
 
       {/* Onboarding Wizard for new users */}
       {showOnboarding && (
