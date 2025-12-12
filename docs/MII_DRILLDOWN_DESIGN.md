@@ -616,15 +616,42 @@ export function useMIIData(municipalityId) {
 | 2025-12-12 | Implemented useMIIData centralized hook |
 | 2025-12-12 | Integrated all components in MIIDrillDown page |
 | 2025-12-12 | Created MII_INDICATORS_REFERENCE.md with full calculation details |
-| 2025-12-12 | **IMPLEMENTATION COMPLETE** - All indicators now using real data |
+| 2025-12-12 | **ALL ENHANCEMENTS IMPLEMENTED** |
+| 2025-12-12 | ✅ MunicipalityProfile migrated to useMIIData hook |
+| 2025-12-12 | ✅ Scheduled daily MII recalculation (pg_cron at 2 AM) |
+| 2025-12-12 | ✅ Data-change triggers on challenges/pilots/partnerships |
+| 2025-12-12 | ✅ Historical Dimension Trends chart component added |
 
 ---
 
-## Optional Future Enhancements
+## All Enhancements Complete ✅
 
-| Enhancement | Description | Priority |
-|-------------|-------------|----------|
-| MunicipalityProfile Hook Alignment | Migrate MunicipalityProfile to use useMIIData hook | Low |
-| Scheduled Recalculation | Add cron job to auto-recalculate MII daily/weekly | Low |
-| Data-change Triggers | Auto-recalculate when challenges/pilots change | Medium |
-| Historical Dimension Trends | Show dimension score trends over time | Low |
+| Enhancement | Description | Status |
+|-------------|-------------|--------|
+| MunicipalityProfile Hook Alignment | Migrate MunicipalityProfile to use useMIIData hook | ✅ DONE |
+| Scheduled Recalculation | Daily cron job at 2 AM via pg_cron | ✅ DONE |
+| Data-change Triggers | DB triggers on challenges/pilots/partnerships tables | ✅ DONE |
+| Historical Dimension Trends | DimensionTrendChart component in MIIDrillDown | ✅ DONE |
+
+---
+
+## Technical Implementation Details
+
+### Scheduled Recalculation (pg_cron)
+```sql
+-- Runs daily at 2 AM
+cron.schedule('daily-mii-recalculation', '0 2 * * *', ...)
+```
+
+### Data-Change Triggers
+- `trigger_mii_on_challenge_change` - Fires on challenges INSERT/UPDATE/DELETE
+- `trigger_mii_on_pilot_change` - Fires on pilots INSERT/UPDATE/DELETE  
+- `trigger_mii_on_partnership_change` - Fires on partnerships INSERT/UPDATE/DELETE
+
+### New Components
+- `src/components/charts/DimensionTrendChart.jsx` - Historical dimension trends visualization
+- Updated `src/pages/MunicipalityProfile.jsx` - Now uses useMIIData hook
+
+### New Database Columns
+- `municipalities.mii_recalc_pending` - Flag for pending recalculation
+- `municipalities.mii_last_calculated_at` - Timestamp of last calculation

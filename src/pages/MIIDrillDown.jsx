@@ -16,6 +16,7 @@ import { usePermissions } from '@/components/permissions/usePermissions';
 import { useMIIData } from '@/hooks/useMIIData';
 import MIIImprovementAI from '@/components/municipalities/MIIImprovementAI';
 import PeerBenchmarkingTool from '@/components/municipalities/PeerBenchmarkingTool';
+import DimensionTrendChart from '@/components/charts/DimensionTrendChart';
 import { toast } from 'sonner';
 
 export default function MIIDrillDown() {
@@ -405,6 +406,9 @@ export default function MIIDrillDown() {
           )}
         </div>
       )}
+
+      {/* Dimension Trends Over Time */}
+      <DimensionTrendChart municipalityId={municipalityId} />
 
       {/* AI Improvement Plan & Peer Benchmarking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
