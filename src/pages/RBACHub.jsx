@@ -76,7 +76,7 @@ function RBACHub() {
           </TabsContent>
         </Suspense>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
 
