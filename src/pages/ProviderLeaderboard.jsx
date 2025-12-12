@@ -8,6 +8,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { Award, TrendingUp, Building2, Sparkles, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function ProviderLeaderboard() {
   const { t, language } = useLanguage();
@@ -29,17 +30,16 @@ export default function ProviderLeaderboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 text-white">
-        <div>
-          <h1 className="text-5xl font-bold mb-2">
-            {t({ en: '🏆 Provider Leaderboard', ar: '🏆 لوحة المتصدرين' })}
-          </h1>
-          <p className="text-xl text-white/90">
-            {t({ en: 'Top-performing solution providers and organizations', ar: 'أفضل مزودي الحلول والمنظمات أداءً' })}
-          </p>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Trophy}
+        title={t({ en: 'Provider Leaderboard', ar: 'لوحة المتصدرين' })}
+        description={t({ en: 'Top-performing solution providers and organizations', ar: 'أفضل مزودي الحلول والمنظمات أداءً' })}
+        stats={[
+          { icon: Building2, value: rankedOrgs.length, label: t({ en: 'Ranked Providers', ar: 'مزودون مصنفون' }) },
+          { icon: Award, value: rankedOrgs[0]?.reputation_score || 0, label: t({ en: 'Top Score', ar: 'أعلى نتيجة' }) },
+        ]}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {rankedOrgs.slice(0, 3).map((org, idx) => (
@@ -129,6 +129,6 @@ export default function ProviderLeaderboard() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
