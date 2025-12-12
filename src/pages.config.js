@@ -46,7 +46,7 @@ import PublicPortal from './pages/PublicPortal';
 import MunicipalityDashboard from './pages/MunicipalityDashboard';
 import AdminPortal from './pages/AdminPortal';
 import PortalSwitcher from './pages/PortalSwitcher';
-import BulkImport from './pages/BulkImport';
+// BulkImport - DELETED (migrated to ImportExportHub)
 import TaskManagement from './pages/TaskManagement';
 import Messaging from './pages/Messaging';
 import PredictiveAnalytics from './pages/PredictiveAnalytics';
@@ -104,7 +104,7 @@ import RegionManagement from './pages/RegionManagement';
 import CityManagement from './pages/CityManagement';
 import PilotGatesOverview from './pages/PilotGatesOverview';
 import SystemHealthDashboard from './pages/SystemHealthDashboard';
-import BulkDataOperations from './pages/BulkDataOperations';
+// BulkDataOperations - DELETED (migrated to ImportExportHub)
 import UsageAnalytics from './pages/UsageAnalytics';
 import MediaLibrary from './pages/MediaLibrary';
 import AnnouncementSystem from './pages/AnnouncementSystem';
@@ -522,7 +522,7 @@ export const PAGES = {
     "MunicipalityDashboard": MunicipalityDashboard,
     "AdminPortal": AdminPortal,
     "PortalSwitcher": PortalSwitcher,
-    "BulkImport": BulkImport,
+    "BulkImport": ImportExportHub,
     "TaskManagement": TaskManagement,
     "Messaging": Messaging,
     "PredictiveAnalytics": PredictiveAnalytics,
@@ -579,7 +579,7 @@ export const PAGES = {
     "CityManagement": CityManagement,
     "PilotGatesOverview": PilotGatesOverview,
     "SystemHealthDashboard": SystemHealthDashboard,
-    "BulkDataOperations": BulkDataOperations,
+    "BulkDataOperations": ImportExportHub,
     "UsageAnalytics": UsageAnalytics,
     "MediaLibrary": MediaLibrary,
     "AnnouncementSystem": AnnouncementSystem,
