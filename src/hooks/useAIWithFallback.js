@@ -1,6 +1,7 @@
 /**
  * Hook for AI calls with graceful degradation
  * Handles rate limits, failures, and provides fallback behavior
+ * @version 2.0.0
  */
 
 import { useState, useCallback } from 'react';
