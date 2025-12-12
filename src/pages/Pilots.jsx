@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -47,9 +47,10 @@ import { createNotification } from '../components/AutoNotification';
 import PilotsAIInsights from '../components/pilots/PilotsAIInsights';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 
 function PilotsPage() {
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [stageFilter, setStageFilter] = useState('all');
@@ -58,17 +59,11 @@ function PilotsPage() {
   const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
 
-  const { data: pilots = [], isLoading } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data || [];
-    }
+  // Use visibility-aware hook for pilots
+  const { data: pilots = [], isLoading } = usePilotsWithVisibility({
+    status: stageFilter !== 'all' ? stageFilter : undefined,
+    sectorId: sectorFilter !== 'all' ? sectorFilter : undefined,
+    limit: 100
   });
 
   const { data: challenges = [] } = useQuery({

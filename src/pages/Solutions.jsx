@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,10 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 
 function SolutionsPage() {
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [maturityFilter, setMaturityFilter] = useState('all');
@@ -50,9 +51,11 @@ function SolutionsPage() {
 
   const queryClient = useQueryClient();
 
-  const { data: solutions = [], isLoading } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list('-created_date', 100)
+  // Use visibility-aware hook for solutions
+  const { data: solutions = [], isLoading } = useSolutionsWithVisibility({
+    sectorId: sectorFilter !== 'all' ? sectorFilter : undefined,
+    maturityLevel: maturityFilter !== 'all' ? maturityFilter : undefined,
+    limit: 100
   });
 
   const deleteMutation = useMutation({

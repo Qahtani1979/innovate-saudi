@@ -4,7 +4,7 @@ import ChallengeClustering from '../components/challenges/ChallengeClustering';
 import ChallengeToProgramWorkflow from '../components/challenges/ChallengeToProgramWorkflow';
 import ChallengeMergeWorkflow from '../components/challenges/ChallengeMergeWorkflow';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -52,9 +52,10 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 function Challenges() {
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -66,9 +67,11 @@ function Challenges() {
   
   const { invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenges = [], isLoading } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list('-created_date', 100)
+  // Use visibility-aware hook for challenges
+  const { data: challenges = [], isLoading } = useChallengesWithVisibility({
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    sectorId: sectorFilter !== 'all' ? sectorFilter : undefined,
+    limit: 100
   });
 
   const deleteMutation = useMutation({
@@ -803,4 +806,4 @@ Use Saudi municipal context and data-driven insights.`;
   );
 }
 
-export default ProtectedPage(Challenges, { requiredPermissions: ['challenge_view_all', 'challenge_view_own', 'challenge_view', 'challenge_create'] });
+export default ProtectedPage(Challenges, { requiredPermissions: ['challenge_view_all', 'challenge_view_own', 'challenge_view', 'challenge_create', 'dashboard_view'] });
