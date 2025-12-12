@@ -237,7 +237,6 @@ export default function ForProviders() {
           </Link>
         </div>
       </section>
-      </section>
     </>
   );
 }
