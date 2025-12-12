@@ -1,48 +1,56 @@
-// Persona routing hook - v2
 import { useMemo } from 'react';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
- * Hook to determine the appropriate dashboard and navigation for a user based on their persona/role
+ * usePersonaRouting
+ *
+ * Lightweight persona + default-dashboard resolver that depends ONLY on AuthContext
+ * (user roles), not on the heavier permissions hook. This avoids cascading
+ * issues between public and authenticated pages while keeping behavior
+ * consistent for logged-in users.
  */
 export function usePersonaRouting() {
-  const permissionsData = usePermissions();
-  
-  // Safely destructure with defaults for when permissions are loading or unavailable
-  const { 
-    isAdmin = false, 
-    roles = [], 
-    hasPermission = () => false,
-    isDeputyship = false,
-    isMunicipality = false,
-    isNationalEntity = false,
-    hasAnyPermission = () => false
-  } = permissionsData || {};
+  const auth = useAuth?.();
+
+  // Graceful fallback if hook is ever used outside provider (should not happen)
+  if (!auth) {
+    return {
+      persona: 'guest',
+      defaultDashboard: '/citizen-dashboard',
+      dashboardLabel: { en: 'Dashboard', ar: 'لوحة التحكم' },
+      onboardingWizard: null,
+      portalType: 'public',
+      menuVisibility: {},
+      isAdmin: false,
+      isDeputyship: false,
+      isMunicipality: false,
+      isNationalEntity: false,
+    };
+  }
+
+  const { userRoles = [], isAdmin: isAdminFn } = auth;
+
+  const roles = useMemo(
+    () => (userRoles || []).map((r) => r.role).filter(Boolean),
+    [userRoles]
+  );
+
+  const isAdmin = !!(isAdminFn?.() || roles.includes('admin'));
+  const isDeputyship = roles.some((r) => r.startsWith('deputyship_'));
+  const isMunicipality = roles.some((r) => r.startsWith('municipality_'));
+  const isNationalEntity = roles.includes('national_entity');
 
   const personaConfig = useMemo(() => {
-    // Platform Admin
-    if (isAdmin || roles.includes('admin')) {
+    if (isAdmin) {
       return {
         persona: 'admin',
         defaultDashboard: '/home',
         dashboardLabel: { en: 'Admin Dashboard', ar: 'لوحة المدير' },
-        onboardingWizard: null, // Admins don't need onboarding
+        onboardingWizard: null,
         portalType: 'admin',
       };
     }
 
-    // Executive / GDISB Leadership
-    if (hasAnyPermission(['view_all_dashboards', 'approve_strategic_initiatives', 'strategy_manage'])) {
-      return {
-        persona: 'executive',
-        defaultDashboard: '/executive-dashboard',
-        dashboardLabel: { en: 'Executive Dashboard', ar: 'اللوحة التنفيذية' },
-        onboardingWizard: 'DeputyshipOnboarding',
-        portalType: 'executive',
-      };
-    }
-
-    // Deputyship (National entity with sector focus)
     if (isDeputyship || isNationalEntity) {
       return {
         persona: 'deputyship',
@@ -53,17 +61,7 @@ export function usePersonaRouting() {
       };
     }
 
-    // Municipality Staff (all municipality roles including staff)
-    if (isMunicipality || roles.some(r => 
-      r.includes('municipality') || 
-      r === 'municipality_admin' || 
-      r === 'municipality_staff' ||
-      r === 'municipality_coordinator' ||
-      r === 'municipality_manager' ||
-      r === 'municipality_director' ||
-      r === 'municipality_innovation_officer' ||
-      r === 'municipality_viewer'
-    )) {
+    if (isMunicipality) {
       return {
         persona: 'municipality',
         defaultDashboard: '/municipality-dashboard',
@@ -73,9 +71,7 @@ export function usePersonaRouting() {
       };
     }
 
-    // Provider/Startup
-    if (hasAnyPermission(['solution_create', 'solution_edit_own', 'provider_dashboard']) || 
-        roles.some(r => r.includes('provider') || r.includes('startup'))) {
+    if (roles.some((r) => r.includes('provider') || r.includes('startup'))) {
       return {
         persona: 'provider',
         defaultDashboard: '/startup-dashboard',
@@ -85,9 +81,7 @@ export function usePersonaRouting() {
       };
     }
 
-    // Expert/Evaluator
-    if (hasAnyPermission(['expert_evaluate', 'expert_view_assignments']) || 
-        roles.some(r => r.includes('expert') || r.includes('evaluator'))) {
+    if (roles.some((r) => r.includes('expert') || r.includes('evaluator'))) {
       return {
         persona: 'expert',
         defaultDashboard: '/expert-dashboard',
@@ -97,9 +91,7 @@ export function usePersonaRouting() {
       };
     }
 
-    // Researcher
-    if (hasAnyPermission(['rd_project_create', 'rd_proposal_view_all']) || 
-        roles.some(r => r.includes('researcher'))) {
+    if (roles.some((r) => r.includes('researcher'))) {
       return {
         persona: 'researcher',
         defaultDashboard: '/researcher-dashboard',
@@ -109,9 +101,7 @@ export function usePersonaRouting() {
       };
     }
 
-    // Citizen - users with citizen role
-    if (hasAnyPermission(['citizen_idea_submit', 'citizen_dashboard_view']) || 
-        roles.some(r => r === 'citizen')) {
+    if (roles.includes('citizen')) {
       return {
         persona: 'citizen',
         defaultDashboard: '/citizen-dashboard',
@@ -121,18 +111,7 @@ export function usePersonaRouting() {
       };
     }
 
-    // Viewer - users with viewer role (browse-only access)
-    if (roles.some(r => r === 'viewer')) {
-      return {
-        persona: 'viewer',
-        defaultDashboard: '/viewer-dashboard',
-        dashboardLabel: { en: 'Visitor Dashboard', ar: 'لوحة الزائر' },
-        onboardingWizard: null,
-        portalType: 'viewer',
-      };
-    }
-
-    // Default fallback for authenticated users without roles - treat as citizen
+    // Fallback for authenticated users without a specific role – treat as citizen
     return {
       persona: 'user',
       defaultDashboard: '/citizen-dashboard',
@@ -140,87 +119,40 @@ export function usePersonaRouting() {
       onboardingWizard: 'Onboarding',
       portalType: 'citizen',
     };
-  }, [isAdmin, roles, hasPermission, isDeputyship, isMunicipality, isNationalEntity, hasAnyPermission]);
+  }, [isAdmin, isDeputyship, isMunicipality, isNationalEntity, roles]);
 
-  // Get menu sections visibility based on persona
-  const menuVisibility = useMemo(() => ({
-    // Admin-only sections
-    showAdminTools: isAdmin,
-    showCoverageReports: isAdmin,
-    
-    // Executive/Deputyship sections
-    showExecutiveAnalytics: personaConfig.persona === 'executive' || personaConfig.persona === 'deputyship',
-    showNationalOversight: isDeputyship || isNationalEntity || hasPermission('visibility_all_municipalities'),
-    showBenchmarking: hasPermission('deputyship_benchmark'),
-    showPolicyManagement: hasPermission('deputyship_policy_create'),
-    
-    // Municipality sections
-    showMunicipalityTools: isMunicipality,
-    showLocalChallenges: isMunicipality,
-    showLocalPilots: isMunicipality,
-    
-    // Provider sections
-    showProviderTools: personaConfig.persona === 'provider',
-    showSolutionManagement: hasAnyPermission(['solution_create', 'solution_edit_own']),
-    showOpportunities: personaConfig.persona === 'provider',
-    
-    // Expert sections
-    showExpertTools: personaConfig.persona === 'expert',
-    showEvaluationQueue: hasPermission('expert_evaluate'),
-    
-    // Citizen sections
-    showCitizenTools: personaConfig.persona === 'citizen',
-    showIdeaSubmission: hasPermission('citizen_idea_submit'),
-    
-    // Common sections
-    showInnovationPipeline: hasAnyPermission(['challenge_view_all', 'pilot_view_all', 'challenge_view']),
-    showPrograms: true, // Programs are generally visible
-    showRDSection: hasAnyPermission(['rd_project_view_all', 'rd_project_create']),
-  }), [personaConfig, isAdmin, isDeputyship, isMunicipality, isNationalEntity, hasPermission, hasAnyPermission]);
+  // Menu visibility now depends only on persona + high-level flags.
+  const menuVisibility = useMemo(
+    () => ({
+      showAdminTools: isAdmin,
+      showCoverageReports: isAdmin,
+      showExecutiveAnalytics:
+        personaConfig.persona === 'executive' || personaConfig.persona === 'deputyship',
+      showNationalOversight: isDeputyship || isNationalEntity,
+      showBenchmarking: false,
+      showPolicyManagement: false,
+      showMunicipalityTools: personaConfig.persona === 'municipality',
+      showLocalChallenges: personaConfig.persona === 'municipality',
+      showLocalPilots: personaConfig.persona === 'municipality',
+      showProviderTools: personaConfig.persona === 'provider',
+      showSolutionManagement: personaConfig.persona === 'provider',
+      showOpportunities: personaConfig.persona === 'provider',
+      showExpertTools: personaConfig.persona === 'expert',
+      showEvaluationQueue: personaConfig.persona === 'expert',
+      showCitizenTools: personaConfig.persona === 'citizen',
+      showIdeaSubmission: personaConfig.persona === 'citizen',
+      showInnovationPipeline: true,
+      showPrograms: true,
+      showRDSection: personaConfig.persona === 'researcher',
+    }), [personaConfig, isAdmin, isDeputyship, isMunicipality, isNationalEntity]);
 
   return {
     ...personaConfig,
     menuVisibility,
-    isAdmin: isAdmin || false,
-    isDeputyship: isDeputyship || false,
-    isMunicipality: isMunicipality || false,
-    isNationalEntity: isNationalEntity || false,
-  };
-}
-
-// Default config for unauthenticated or error states
-function getDefaultConfig() {
-  return {
-    persona: 'guest',
-    defaultDashboard: '/citizen-dashboard',
-    dashboardLabel: { en: 'Dashboard', ar: 'لوحة التحكم' },
-    onboardingWizard: null,
-    portalType: 'public',
-    menuVisibility: {
-      showAdminTools: false,
-      showCoverageReports: false,
-      showExecutiveAnalytics: false,
-      showNationalOversight: false,
-      showBenchmarking: false,
-      showPolicyManagement: false,
-      showMunicipalityTools: false,
-      showLocalChallenges: false,
-      showLocalPilots: false,
-      showProviderTools: false,
-      showSolutionManagement: false,
-      showOpportunities: false,
-      showExpertTools: false,
-      showEvaluationQueue: false,
-      showCitizenTools: false,
-      showIdeaSubmission: false,
-      showInnovationPipeline: false,
-      showPrograms: true,
-      showRDSection: false,
-    },
-    isAdmin: false,
-    isDeputyship: false,
-    isMunicipality: false,
-    isNationalEntity: false,
+    isAdmin,
+    isDeputyship,
+    isMunicipality,
+    isNationalEntity,
   };
 }
 
