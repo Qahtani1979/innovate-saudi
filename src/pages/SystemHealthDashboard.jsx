@@ -274,6 +274,6 @@ export default function SystemHealthDashboard() {
           <VoiceNLUPanel />
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
