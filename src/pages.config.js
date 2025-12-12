@@ -247,7 +247,7 @@ import MidYearReviewDashboard from './pages/MidYearReviewDashboard';
 import AnnualPlanningWizard from './pages/AnnualPlanningWizard';
 import StrategicCommunicationsHub from './pages/StrategicCommunicationsHub';
 // DataQualityDashboard, MasterDataGovernance - DELETED (migrated to DataManagementHub)
-import DataImportExportManager from './pages/DataImportExportManager';
+// DataImportExportManager, AdvancedUserFilters, BulkUserActions - DELETED (migrated to hubs)
 import ValidationRulesEngine from './pages/ValidationRulesEngine';
 import APIManagementConsole from './pages/APIManagementConsole';
 import ErrorLogsConsole from './pages/ErrorLogsConsole';
@@ -258,8 +258,6 @@ import BackupRecoveryManager from './pages/BackupRecoveryManager';
 import TemplateLibraryManager from './pages/TemplateLibraryManager';
 import DocumentVersionControl from './pages/DocumentVersionControl';
 import ConditionalAccessRules from './pages/ConditionalAccessRules';
-import AdvancedUserFilters from './pages/AdvancedUserFilters';
-import BulkUserActions from './pages/BulkUserActions';
 import FeatureUsageHeatmap from './pages/FeatureUsageHeatmap';
 import MyRDProjects from './pages/MyRDProjects';
 import MyPartnershipsPage from './pages/MyPartnershipsPage';
@@ -726,9 +724,9 @@ export const PAGES = {
     "MidYearReviewDashboard": MidYearReviewDashboard,
     "AnnualPlanningWizard": AnnualPlanningWizard,
     "StrategicCommunicationsHub": StrategicCommunicationsHub,
-    // DataQualityDashboard, MasterDataGovernance - DELETED (migrated to DataManagementHub)
+    // DataQualityDashboard, MasterDataGovernance, DataImportExportManager - DELETED (migrated to DataManagementHub)
     "DataQualityDashboard": DataManagementHub,
-    "DataImportExportManager": DataImportExportManager,
+    "DataImportExportManager": DataManagementHub,
     "ValidationRulesEngine": ValidationRulesEngine,
     "MasterDataGovernance": DataManagementHub,
     "APIManagementConsole": APIManagementConsole,
@@ -740,8 +738,9 @@ export const PAGES = {
     "TemplateLibraryManager": TemplateLibraryManager,
     "DocumentVersionControl": DocumentVersionControl,
     "ConditionalAccessRules": ConditionalAccessRules,
-    "AdvancedUserFilters": AdvancedUserFilters,
-    "BulkUserActions": BulkUserActions,
+    // AdvancedUserFilters, BulkUserActions pages - DELETED (migrated to UserManagementHub)
+    "AdvancedUserFilters": UserManagementHub,
+    "BulkUserActions": UserManagementHub,
     "FeatureUsageHeatmap": FeatureUsageHeatmap,
     "MyRDProjects": MyRDProjects,
     "MyPartnershipsPage": MyPartnershipsPage,
