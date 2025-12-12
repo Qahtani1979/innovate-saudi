@@ -14,6 +14,7 @@ import AdvancedUserFilters from '../components/access/AdvancedUserFilters';
 import BulkUserActions from '../components/access/BulkUserActions';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function UserManagement() {
   const { language, isRTL, t } = useLanguage();
@@ -64,27 +65,24 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'User Management', ar: 'إدارة المستخدمين' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Manage platform users and permissions', ar: 'إدارة مستخدمي المنصة والصلاحيات' })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} variant="outline">
-            <Filter className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {t({ en: 'Advanced Filters', ar: 'تصفية متقدمة' })}
-          </Button>
-          <Button onClick={handleExport} variant="outline">
-            <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {t({ en: 'Export', ar: 'تصدير' })}
-          </Button>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={Users}
+        title={{ en: 'User Management', ar: 'إدارة المستخدمين' }}
+        description={{ en: 'Manage platform users and permissions', ar: 'إدارة مستخدمي المنصة والصلاحيات' }}
+        action={
+          <div className="flex gap-2">
+            <Button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} variant="outline">
+              <Filter className="h-4 w-4 mr-2" />
+              {t({ en: 'Advanced Filters', ar: 'تصفية متقدمة' })}
+            </Button>
+            <Button onClick={handleExport} variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              {t({ en: 'Export', ar: 'تصدير' })}
+            </Button>
+          </div>
+        }
+      />
 
       {showAdvancedFilters && (
         <AdvancedUserFilters onFilterChange={setAdvancedFilters} />
@@ -233,6 +231,6 @@ export default function UserManagement() {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }

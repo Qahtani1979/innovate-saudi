@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function OrganizationCreate() {
   const { language, isRTL, t } = useLanguage();
@@ -236,15 +237,12 @@ ${['startup', 'company', 'sme'].includes(formData.org_type) ? '8. Funding stage 
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Add Organization', ar: 'إضافة جهة' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Register a new ecosystem partner', ar: 'تسجيل شريك جديد في المنظومة' })}
-        </p>
-      </div>
+    <PageLayout className="max-w-4xl mx-auto">
+      <PageHeader
+        icon={Building2}
+        title={{ en: 'Add Organization', ar: 'إضافة جهة' }}
+        description={{ en: 'Register a new ecosystem partner', ar: 'تسجيل شريك جديد في المنظومة' }}
+      />
 
       {/* Progress */}
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
@@ -936,7 +934,7 @@ ${['startup', 'company', 'sme'].includes(formData.org_type) ? '8. Funding stage 
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

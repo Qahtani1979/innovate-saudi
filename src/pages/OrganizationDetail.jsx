@@ -19,7 +19,8 @@ import {
   TrendingUp,
   FileText,
   Target,
-  AlertCircle
+  AlertCircle,
+  Activity
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -29,6 +30,8 @@ import AINetworkAnalysis from '../components/organizations/AINetworkAnalysis';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import OrganizationWorkflowTab from '../components/organizations/OrganizationWorkflowTab';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
+import { EntityDetailHeader } from '@/components/layout/EntityDetailHeader';
 
 function OrganizationDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -84,7 +87,7 @@ function OrganizationDetail() {
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Hero Section */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-600 p-8 text-white">
         <div className="relative z-10">
@@ -658,7 +661,7 @@ function OrganizationDetail() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

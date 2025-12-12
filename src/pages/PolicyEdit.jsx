@@ -21,6 +21,7 @@ import PolicyAmendmentWizard from '../components/policy/PolicyAmendmentWizard';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function PolicyEdit() {
   const { language, isRTL, t } = useLanguage();
@@ -211,51 +212,25 @@ TASK: Provide enhanced Arabic version with formal government policy language sui
   const changedFieldsCount = Object.keys(getChangedFields()).length;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to={createPageUrl(`PolicyDetail?id=${policyId}`)}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t({ en: 'Back', ar: 'رجوع' })}
+    <PageLayout className="max-w-6xl mx-auto">
+      <PageHeader
+        icon={Shield}
+        title={{ en: 'Edit Policy', ar: 'تعديل السياسة' }}
+        description={policy?.title_ar || policy?.title_en}
+        action={
+          <div className="flex gap-2">
+            <Button onClick={() => setShowAmendmentWizard(true)} variant="outline" className="gap-2">
+              <GitBranch className="h-4 w-4" />
+              {t({ en: 'Create Amendment', ar: 'إنشاء تعديل' })}
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              {t({ en: 'Edit Policy', ar: 'تعديل السياسة' })}
-            </h1>
-            {lastSaved && (
-              <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                <CheckCircle className="h-3 w-3 text-green-600" />
-                {t({ en: 'Draft saved', ar: 'حُفظت المسودة' })} {lastSaved.toLocaleTimeString()}
-              </p>
-            )}
+            <Button onClick={handleAIAssist} disabled={isEnhancing} variant="outline" className="gap-2">
+              {isEnhancing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-purple-600" />}
+              {t({ en: 'AI Enhance', ar: 'تحسين ذكي' })}
+            </Button>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setShowAmendmentWizard(true)}
-            variant="outline"
-            className="gap-2"
-          >
-            <GitBranch className="h-4 w-4" />
-            {t({ en: 'Create Amendment', ar: 'إنشاء تعديل' })}
-          </Button>
-          <Button
-            onClick={handleAIAssist}
-            disabled={isEnhancing}
-            variant="outline"
-            className="gap-2"
-          >
-            {isEnhancing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 text-purple-600" />
-            )}
-            {t({ en: 'AI Enhance', ar: 'تحسين ذكي' })}
-          </Button>
-        </div>
-      </div>
+        }
+      />
+      <div className="space-y-6">
 
       {/* Validation Warnings */}
       {validationErrors.length > 0 && (
@@ -464,7 +439,8 @@ TASK: Provide enhanced Arabic version with formal government policy language sui
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </PageLayout>
   );
 }
 
