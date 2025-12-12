@@ -1,3 +1,4 @@
+// Persona routing hook - v2
 import { useMemo } from 'react';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
