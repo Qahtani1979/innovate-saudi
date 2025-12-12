@@ -451,7 +451,7 @@ import RegionalAnalyticsDashboard from './pages/RegionalAnalyticsDashboard';
 // RoleRequestApprovalQueue removed - functionality merged into RoleRequestCenter
 import FinalImplementationSummary from './pages/FinalImplementationSummary';
 import OrganizationVerificationQueue from './pages/OrganizationVerificationQueue';
-import RemainingGapsReport from './pages/RemainingGapsReport';
+
 import ServiceQualityDashboard from './pages/ServiceQualityDashboard';
 import SandboxParticipantDashboard from './pages/SandboxParticipantDashboard';
 import CitizenLabParticipation from './pages/CitizenLabParticipation';
@@ -931,7 +931,7 @@ export const PAGES = {
     // "RoleRequestApprovalQueue" removed - use RoleRequestCenter instead
     "FinalImplementationSummary": FinalImplementationSummary,
     "OrganizationVerificationQueue": OrganizationVerificationQueue,
-    "RemainingGapsReport": RemainingGapsReport,
+    
     "ServiceQualityDashboard": ServiceQualityDashboard,
     "SandboxParticipantDashboard": SandboxParticipantDashboard,
     "CitizenLabParticipation": CitizenLabParticipation,
