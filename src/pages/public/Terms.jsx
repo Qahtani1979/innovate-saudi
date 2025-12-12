@@ -1,7 +1,5 @@
 import React from 'react';
 import { useLanguage } from '@/components/LanguageContext';
-import PublicHeader from '@/components/public/PublicHeader';
-import PublicFooter from '@/components/public/PublicFooter';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, CheckCircle, AlertTriangle, Scale, Users, Gavel } from 'lucide-react';
 
@@ -60,8 +58,7 @@ export default function Terms() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRTL ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+    <>
       
       <main className="container mx-auto px-4 py-16">
         {/* Header */}
@@ -129,8 +126,6 @@ export default function Terms() {
           </Card>
         </div>
       </main>
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }

@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import PublicHeader from '@/components/public/PublicHeader';
-import PublicFooter from '@/components/public/PublicFooter';
 import { HelpCircle, ArrowRight } from 'lucide-react';
 
 export default function FAQ() {
@@ -118,8 +116,7 @@ export default function FAQ() {
   ];
 
   return (
-    <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+    <>
       
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-primary/5 via-background to-muted/30">
@@ -188,8 +185,6 @@ export default function FAQ() {
           </Link>
         </div>
       </section>
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }

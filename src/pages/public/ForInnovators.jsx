@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../../components/LanguageContext';
 import { Link } from 'react-router-dom';
-import PublicHeader from '../../components/public/PublicHeader';
-import PublicFooter from '../../components/public/PublicFooter';
 import { 
   Lightbulb, Rocket, Target, TestTube, FileText, CheckCircle2,
   Users, Building2, Microscope, TrendingUp, Award, ArrowRight,
@@ -125,8 +123,7 @@ export default function ForInnovators() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRTL ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+    <>
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 py-20">
@@ -379,8 +376,6 @@ export default function ForInnovators() {
           </div>
         </section>
       </div>
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }

@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../../components/LanguageContext';
 import { Link } from 'react-router-dom';
-import PublicHeader from '../../components/public/PublicHeader';
-import PublicFooter from '../../components/public/PublicFooter';
 import { 
   Microscope, BookOpen, FileText, CheckCircle2, Users, Building2,
   TrendingUp, Award, ArrowRight, Beaker, BarChart3, Database,
@@ -148,8 +146,7 @@ export default function ForResearchers() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRTL ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+    <>
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-teal-600 via-cyan-600 to-blue-600 py-20">
@@ -354,8 +351,6 @@ export default function ForResearchers() {
           </div>
         </section>
       </div>
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }

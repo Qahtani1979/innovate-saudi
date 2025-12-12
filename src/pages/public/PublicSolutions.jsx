@@ -7,8 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import PublicHeader from '@/components/public/PublicHeader';
-import PublicFooter from '@/components/public/PublicFooter';
 import { Search, Lightbulb, CheckCircle2, Star, ArrowRight, Building2 } from 'lucide-react';
 
 export default function PublicSolutions() {
@@ -57,8 +55,7 @@ export default function PublicSolutions() {
   };
 
   return (
-    <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+    <>
       
       {/* Hero Section */}
       <section className="py-16 px-4 bg-gradient-to-br from-primary/5 via-background to-muted/30">
@@ -211,8 +208,7 @@ export default function PublicSolutions() {
           </Link>
         </div>
       </section>
-
-      <PublicFooter />
-    </div>
+      </section>
+    </>
   );
 }
