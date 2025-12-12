@@ -7,7 +7,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { Activity, CheckCircle, AlertCircle, TrendingUp, Database, Zap, Clock, Users } from 'lucide-react';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import SecurityHeadersConfig from '@/components/security/SecurityHeadersConfig';
-import RateLimitingConfig from '@/components/security/RateLimitingConfig';
+import RateLimitingConfig from '@/components/api/RateLimitingConfig';
 import TestingDashboard from '@/components/testing/TestingDashboard';
 import BackupScheduler from '@/components/admin/BackupScheduler';
 import RedisCacheConfig from '@/components/infrastructure/RedisCacheConfig';
