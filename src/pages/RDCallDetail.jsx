@@ -28,6 +28,7 @@ import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowAp
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 function RDCallDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -150,7 +151,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Workflow Modals */}
       {showPublish && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1099,7 +1100,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

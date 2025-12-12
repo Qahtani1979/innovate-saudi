@@ -37,6 +37,7 @@ import TRLVisualization from '../components/rd/TRLVisualization';
 import PolicyImpactTracker from '../components/rd/PolicyImpactTracker';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 export default function RDProjectDetail() {
   const { hasPermission, user } = usePermissions();
@@ -154,7 +155,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
   };
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <PageLayout>
       {/* Workflow Modals */}
       {showKickoff && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1412,6 +1413,6 @@ Provide bilingual insights (each item should have both English and Arabic versio
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

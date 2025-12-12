@@ -36,6 +36,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function RDCallsPage() {
   const { hasPermission } = usePermissions();
@@ -142,18 +143,13 @@ Provide bilingual insights (each item should have both English and Arabic versio
   }
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'R&D Calls & Proposals', ar: 'دعوات البحث والمقترحات' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Research funding opportunities and submissions', ar: 'فرص التمويل البحثي والمقترحات' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+    <PageLayout>
+      <PageHeader
+        icon={Megaphone}
+        title={t({ en: 'R&D Calls & Proposals', ar: 'دعوات البحث والمقترحات' })}
+        description={t({ en: 'Research funding opportunities and submissions', ar: 'فرص التمويل البحثي والمقترحات' })}
+        actions={
+          <div className="flex items-center gap-3">
           <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={!isAvailable || aiLoading}>
             <Sparkles className="h-4 w-4" />
             {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
@@ -184,8 +180,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
             </Link>
           )}
         </div>
-      </div>
-
+      }
+      />
       {/* AI Insights Modal */}
       {showAIInsights && (
         <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
@@ -564,7 +560,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
 
