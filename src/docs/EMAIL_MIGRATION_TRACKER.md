@@ -35,21 +35,22 @@ This document tracks the progress of migrating legacy email sending calls to the
 | `src/components/access/BulkUserImport.jsx` | `email-trigger-hub` | ✅ | Welcome email |
 | `src/components/LivingLabExpertMatching.jsx` | `email-trigger-hub` | ✅ | Expert consultation request |
 | `src/components/matchmaker/AutomatedMatchNotifier.jsx` | `email-trigger-hub` | ✅ | Match notification |
-| `src/components/rd/RDProposalSubmissionGate.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Proposal submission |
-| `src/components/startup/StartupMentorshipMatcher.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Mentorship request |
+| `src/components/ProgramSelectionWorkflow.jsx` | `email-trigger-hub` | ✅ | Program acceptance/rejection |
+| `src/components/dashboard/DashboardSharing.jsx` | `email-trigger-hub` | ✅ | Dashboard sharing |
+| `src/components/solutions/ExpressInterestButton.jsx` | `email-trigger-hub` | ✅ | Interest notification |
+| `src/components/solutions/SolutionDeprecationWizard.jsx` | `email-trigger-hub` | ✅ | Deprecation notice |
+| `src/components/communications/AnnouncementTargeting.jsx` | `email-trigger-hub` | ✅ | Announcements |
+| `src/components/organizations/PartnershipWorkflow.jsx` | `email-trigger-hub` | ✅ | Partnership proposal |
+| `src/components/programs/WaitlistManager.jsx` | `email-trigger-hub` | ✅ | Waitlist notification |
 
-### Additional Files (found in search - remaining ~23 files)
+### Remaining Files (found in search - ~18 files)
 
 | File | Current Method | Status | Notes |
 |------|---------------|--------|-------|
-| `src/components/dashboard/DashboardSharing.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Dashboard sharing |
-| `src/components/ProgramSelectionWorkflow.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Program acceptance |
-| `src/components/solutions/ExpressInterestButton.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Interest notification |
-| `src/components/solutions/SolutionDeprecationWizard.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Deprecation notice |
-| `src/components/communications/AnnouncementTargeting.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Announcements |
-| `src/components/organizations/PartnershipWorkflow.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Partnership proposal |
-| `src/components/programs/WaitlistManager.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Waitlist notification |
-| Other files (~18) | Various methods | ❌ | Remaining files |
+| `src/components/rd/RDProposalSubmissionGate.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Proposal submission |
+| `src/components/startup/StartupMentorshipMatcher.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Mentorship request |
+| `src/pages/MasterDevelopmentPrompt.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Development prompt |
+| Other files (~15) | Various methods | ❌ | Remaining files |
 
 ---
 
@@ -58,11 +59,11 @@ This document tracks the progress of migrating legacy email sending calls to the
 | Category | Total | Migrated | In Progress | Not Started |
 |----------|-------|----------|-------------|-------------|
 | Direct Supabase calls | 5 | 4 | 0 | 0 |
-| base44 integration calls | 9 | 7 | 0 | 2 |
-| Other files | ~25 | 0 | 0 | ~25 |
-| **Total** | **~39** | **11** | **0** | **~27** |
+| base44 integration calls | 14 | 14 | 0 | 0 |
+| Other files | ~18 | 0 | 0 | ~18 |
+| **Total** | **~37** | **18** | **0** | **~18** |
 
-**Progress: ~28% Complete**
+**Progress: ~49% Complete**
 
 ---
 
@@ -156,6 +157,8 @@ await supabase.functions.invoke('email-trigger-hub', {
 - `SOLUTION_SUBMITTED`
 - `SOLUTION_APPROVED`
 - `SOLUTION_MATCHED`
+- `SOLUTION_INTEREST_EXPRESSED`
+- `SOLUTION_DEPRECATED`
 
 ### Startup Triggers
 - `STARTUP_VERIFIED`
@@ -164,11 +167,19 @@ await supabase.functions.invoke('email-trigger-hub', {
 ### Program Triggers
 - `PROGRAM_COMPLETED`
 - `PROGRAM_ACCEPTED`
-- `PROGRAM_WAITLIST`
+- `PROGRAM_REJECTED`
+- `WAITLIST_PROMOTED`
 
 ### Expert/Matching Triggers
 - `EXPERT_CONSULTATION_REQUEST`
 - `MATCHMAKER_MATCH`
+
+### Dashboard/Sharing Triggers
+- `DASHBOARD_SHARED`
+
+### Communication Triggers
+- `ANNOUNCEMENT`
+- `PARTNERSHIP_PROPOSAL`
 
 ### System Triggers
 - `CONTACT_FORM`
@@ -209,6 +220,15 @@ await supabase.functions.invoke('email-trigger-hub', {
 10. ✅ `LivingLabExpertMatching.jsx` - Expert consultation requests
 11. ✅ `AutomatedMatchNotifier.jsx` - Matchmaker notifications
 
+### Session 4 (2024-12-13)
+12. ✅ `ProgramSelectionWorkflow.jsx` - Program acceptance/rejection emails
+13. ✅ `DashboardSharing.jsx` - Dashboard sharing emails
+14. ✅ `ExpressInterestButton.jsx` - Solution interest notifications
+15. ✅ `SolutionDeprecationWizard.jsx` - Solution deprecation notices
+16. ✅ `AnnouncementTargeting.jsx` - Announcement emails
+17. ✅ `PartnershipWorkflow.jsx` - Partnership proposal emails
+18. ✅ `WaitlistManager.jsx` - Waitlist promotion emails
+
 ---
 
 ## Special Cases
@@ -229,8 +249,8 @@ await supabase.functions.invoke('email-trigger-hub', {
 
 ## Next Steps
 
-1. Continue migrating remaining files (~27 remaining)
-2. Create missing trigger configs for new triggers
+1. Continue migrating remaining files (~18 remaining)
+2. Add missing trigger configurations for new triggers
 3. Test each migration in development
 4. Update tracker after each file
 5. Final verification of all email flows

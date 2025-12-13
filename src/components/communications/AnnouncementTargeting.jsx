@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tantml:react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,10 +47,15 @@ export default function AnnouncementTargeting() {
       // Send emails if selected
       if (data.channels.includes('email')) {
         await Promise.all(targeted.slice(0, 10).map(u =>
-          base44.integrations.Core.SendEmail({
-            to: u.email,
-            subject: data.title,
-            body: data.message
+          supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'ANNOUNCEMENT',
+              recipientEmail: u.email,
+              variables: {
+                title: data.title,
+                message: data.message
+              }
+            }
           })
         ));
       }

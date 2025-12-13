@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,25 +60,19 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
       for (const appId of selected) {
         const app = applications.find(a => a.id === appId);
         if (app?.email) {
-          await base44.integrations.Core.SendEmail({
-            to: app.email,
-            subject: `Congratulations! Accepted to ${program.name_en}`,
-            body: `Dear ${app.applicant_name},
-
-We are pleased to inform you that you have been accepted to ${program.name_en}.
-
-Program Start Date: ${program.timeline?.program_start || 'TBD'}
-Duration: ${program.duration_weeks} weeks
-
-Next Steps:
-1. You will receive onboarding materials within 48 hours
-2. Complete pre-program survey
-3. Join the program kickoff session
-
-Congratulations and welcome aboard!
-
----
-Saudi Innovates Platform`
+          await supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'PROGRAM_ACCEPTED',
+              recipientEmail: app.email,
+              entityType: 'program',
+              entityId: program.id,
+              variables: {
+                userName: app.applicant_name,
+                programName: program.name_en,
+                programStartDate: program.timeline?.program_start || 'TBD',
+                durationWeeks: program.duration_weeks
+              }
+            }
           });
         }
       }
@@ -86,21 +81,18 @@ Saudi Innovates Platform`
       for (const appId of rejected) {
         const app = applications.find(a => a.id === appId);
         if (app?.email) {
-          await base44.integrations.Core.SendEmail({
-            to: app.email,
-            subject: `Update on Your Application to ${program.name_en}`,
-            body: `Dear ${app.applicant_name},
-
-Thank you for your interest in ${program.name_en}.
-
-After careful review, we regret to inform you that we are unable to offer you a place in this cohort.
-
-${rejectionMessage}
-
-We encourage you to apply to future programs and continue innovating.
-
-Best regards,
-Saudi Innovates Platform`
+          await supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'PROGRAM_REJECTED',
+              recipientEmail: app.email,
+              entityType: 'program',
+              entityId: program.id,
+              variables: {
+                userName: app.applicant_name,
+                programName: program.name_en,
+                rejectionReason: rejectionMessage
+              }
+            }
           });
         }
       }

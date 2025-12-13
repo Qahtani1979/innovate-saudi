@@ -1,5 +1,6 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,17 +32,16 @@ export default function WaitlistManager({ programId }) {
         waitlist_promoted_date: new Date().toISOString()
       });
 
-      await base44.integrations.Core.SendEmail({
-        to: app.applicant_email,
-        subject: `Great News! Accepted to Program from Waitlist`,
-        body: `Dear ${app.applicant_name},
-
-A spot has opened up and we're pleased to offer you a place in the program!
-
-Please confirm your acceptance within 48 hours.
-
-Best regards,
-Program Team`
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'WAITLIST_PROMOTED',
+          recipientEmail: app.applicant_email,
+          entityType: 'program',
+          entityId: programId,
+          variables: {
+            userName: app.applicant_name
+          }
+        }
       });
     },
     onSuccess: () => {
