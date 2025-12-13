@@ -95,6 +95,7 @@ export const SIDEBAR_MENUS = {
       { name: 'Solutions', icon: Lightbulb, label: { en: 'Solutions', ar: 'الحلول' } },
       { name: 'ProgramsEventsHub', icon: Calendar, label: { en: 'Programs & Events Hub', ar: 'مركز البرامج والفعاليات' } },
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
+      { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'MIIAdminHub', icon: PieChart, label: { en: 'MII Admin', ar: 'إدارة المؤشر' } },
       { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
       { name: 'AuditTrail', icon: History, label: { en: 'Audit Logs', ar: 'سجلات التدقيق' } },
@@ -122,6 +123,7 @@ export const SIDEBAR_MENUS = {
       { name: 'InternationalBenchmarkingSuite', icon: Compass, label: { en: 'International Benchmarking', ar: 'المقارنة الدولية' } },
       { name: 'ProgramsEventsHub', icon: Calendar, label: { en: 'Programs & Events Hub', ar: 'مركز البرامج والفعاليات' } },
       { name: 'Programs', icon: Calendar, label: { en: 'Programs Overview', ar: 'نظرة البرامج' } },
+      { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'RDProjects', icon: Rocket, label: { en: 'R&D Overview', ar: 'نظرة البحث والتطوير' } },
       { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' } },
       { name: 'Pilots', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
@@ -151,7 +153,9 @@ export const SIDEBAR_MENUS = {
       { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' } },
       { name: 'Pilots', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
       { name: 'Solutions', icon: Lightbulb, label: { en: 'Solutions', ar: 'الحلول' } },
+      { name: 'ProgramsEventsHub', icon: Calendar, label: { en: 'Programs & Events Hub', ar: 'مركز البرامج والفعاليات' } },
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
+      { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
       { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
     ]
@@ -181,8 +185,9 @@ export const SIDEBAR_MENUS = {
       // My Work
       { name: 'MyChallenges', icon: Target, label: { en: 'My Challenges', ar: 'تحدياتي' }, permission: 'challenge_view' },
       { name: 'MyPilots', icon: Rocket, label: { en: 'My Pilots', ar: 'تجاربي' }, permission: 'pilot_view' },
-      // Programs & Labs
+      // Programs, Events & Labs
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' }, permission: 'program_view' },
+      { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' }, permission: 'event_view' },
       { name: 'LivingLabs', icon: FlaskConical, label: { en: 'Living Labs', ar: 'المختبرات الحية' }, permission: 'living_lab_view' },
       // Proposals & Solutions
       { name: 'MunicipalProposalInbox', icon: Inbox, label: { en: 'Proposals', ar: 'المقترحات' }, permission: 'proposal_view' },
@@ -245,6 +250,8 @@ export const SIDEBAR_MENUS = {
       { name: 'EvaluationHistory', icon: History, label: { en: 'Evaluation History', ar: 'سجل التقييمات' } },
       { name: 'PilotEvaluations', icon: TestTube, label: { en: 'Pilot Reviews', ar: 'مراجعات التجارب' } },
       { name: 'ExpertMatchingEngine', icon: Users, label: { en: 'Expert Network', ar: 'شبكة الخبراء' } },
+      { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
+      { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'CalendarView', icon: Calendar, label: { en: 'Calendar', ar: 'التقويم' } },
       { name: 'Knowledge', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
       { name: 'MyDeadlines', icon: Clock, label: { en: 'Deadlines', ar: 'المواعيد' } },
@@ -267,6 +274,8 @@ export const SIDEBAR_MENUS = {
       { name: 'ResearcherWorkspace', icon: Microscope, label: { en: 'Workspace', ar: 'مساحة العمل' } },
       { name: 'MyRDProjects', icon: TestTube, label: { en: 'My Projects', ar: 'مشاريعي' } },
       { name: 'RDProjects', icon: Rocket, label: { en: 'R&D Hub', ar: 'مركز البحث' } },
+      { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
+      { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'CollaborationHub', icon: Users, label: { en: 'Collaboration', ar: 'التعاون' } },
       { name: 'Knowledge', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
       { name: 'MyDeadlines', icon: Clock, label: { en: 'Deadlines', ar: 'المواعيد' } },
@@ -290,6 +299,7 @@ export const SIDEBAR_MENUS = {
       { name: 'CitizenRewards', icon: Gift, label: { en: 'Rewards & Points', ar: 'المكافآت والنقاط' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
       { name: 'CitizenPilotEnrollment', icon: UserCheck, label: { en: 'Pilot Enrollment', ar: 'التسجيل في التجارب' } },
+      { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'CitizenLeaderboard', icon: Award, label: { en: 'Leaderboard', ar: 'المتصدرين' } },
@@ -311,8 +321,9 @@ export const SIDEBAR_MENUS = {
       { name: 'CitizenSolutionsBrowser', icon: Lightbulb, label: { en: 'Browse Solutions', ar: 'تصفح الحلول' } },
       { name: 'CitizenLivingLabsBrowser', icon: FlaskConical, label: { en: 'Living Labs', ar: 'المختبرات الحية' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Public Pilots', ar: 'التجارب العامة' } },
-      { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
+      { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
+      { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
     ]
   },
 
@@ -325,6 +336,7 @@ export const SIDEBAR_MENUS = {
       HOME_LINK,
       { name: 'ViewerDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
+      { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'PublicIdeasBoard', icon: Lightbulb, label: { en: 'Ideas', ar: 'الأفكار' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
