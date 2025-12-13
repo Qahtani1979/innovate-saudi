@@ -24,7 +24,7 @@
 | **Search/Discovery** | ✅ Full | ✅ Full | None |
 | **Comments System** | ✅ Full | ✅ Full | None |
 | **Bookmarks** | ✅ Full | ✅ Full | None |
-| **Realtime Updates** | ❌ Missing | ❌ Missing | Medium |
+| **Realtime Updates** | ❌ Future | ❌ Future | Low |
 
 ---
 
@@ -119,40 +119,45 @@
 | `event.cancelled` | Event cancelled | ✅ |
 | `event.approved` | Event approved in ApprovalCenter | ✅ |
 
-**Programs - Various Hooks ⚠️ PARTIAL**
+**Programs - usePrograms.js ✅ COMPLETE**
 | Trigger | When | Status |
 |---------|------|--------|
-| Application received | User applies | ✅ In ProgramApplicationWizard |
-| Application reviewed | Evaluator reviews | ✅ |
-| Program accepted | User accepted | ⚠️ Manual in some places |
-| Program rejected | User rejected | ⚠️ Manual in some places |
-| Cohort start | Cohort begins | ❌ Missing auto-trigger |
-| Deadline reminder | Before deadline | ❌ Missing scheduled trigger |
+| `program.created` | Program created | ✅ |
+| `program.submitted` | Submitted for approval | ✅ |
+| `program.updated` | Program updated | ✅ |
+| `program.launched` | Program launched | ✅ |
+| `program.completed` | Program completed | ✅ |
+| `program.cancelled` | Program cancelled | ✅ |
 
 ---
 
-## 4. IN-APP NOTIFICATIONS ⚠️ PARTIAL
+## 4. IN-APP NOTIFICATIONS ✅ COMPLETE
 
 ### Current Implementation
 - Uses `notifications` table
-- `createNotification()` helper exists
-- Used in: R&D workflows, Resource booking
+- `createNotification()` helper in AutoNotification.jsx
+- `notifyProgramEvent()` for programs
+- `notifyEventAction()` for events
 
-### Programs Integration
+### Programs Integration ✅
 | Event | Notification | Status |
 |-------|-------------|--------|
-| Application submitted | User notified | ⚠️ Not implemented |
-| Application status change | User notified | ⚠️ Not implemented |
-| Program launch | Subscribers notified | ⚠️ Not implemented |
-| Session reminder | Participants notified | ❌ Missing |
+| Program created | Admin notified | ✅ |
+| Program submitted | Reviewers notified | ✅ |
+| Program approved | Creator notified | ✅ |
+| Program launched | Broadcast | ✅ |
+| Milestone completed | Stakeholders notified | ✅ |
+| Program completed | Stakeholders notified | ✅ |
 
-### Events Integration
+### Events Integration ✅
 | Event | Notification | Status |
 |-------|-------------|--------|
-| Registration confirmed | User notified | ⚠️ Email only |
-| Event reminder | Registrants notified | ❌ Missing |
-| Event cancelled | Registrants notified | ⚠️ Email only |
-| Event updated | Registrants notified | ⚠️ Email only |
+| Event created | Admin notified | ✅ |
+| Event submitted | Reviewers notified | ✅ |
+| Event approved | Creator notified | ✅ |
+| Event published | Broadcast | ✅ |
+| Event reminder | Registrants notified | ✅ (edge function) |
+| Event cancelled | Registrants notified | ✅ |
 
 ---
 
@@ -193,72 +198,47 @@
 
 ---
 
-## 7. SYSTEMS NOT INTEGRATED
-
-### Budget Integration ⚠️ MISSING FOR EVENTS
-**Programs:** ✅ Has budget fields and tracking
-**Events:** 
-- ❌ No `budget` column in events table
-- ❌ No budget tracking for events
-- ❌ No budget approval in event workflow
-
-### Search/Discovery ⚠️ MISSING FOR EVENTS
-**Programs:** ✅ Included in `useVisibilityAwareSearch`
-**Events:**
-- ❌ Not in global search
-- ❌ No embeddings for semantic search
-- ❌ Limited to EventCalendar filters only
-
-### Comments System ⚠️ MISSING FOR EVENTS
-**Programs:** ✅ Uses `comments` table with `entity_type='program'`
-**Events:**
-- ❌ No comments on events
-- ❌ No discussion threads
-
-### Bookmarks ⚠️ MISSING FOR EVENTS
-**Programs:** ✅ Uses `bookmarks` table with `entity_type='program'`
-**Events:**
-- ❌ No event bookmarking
-- ❌ No "save event" feature
+## 7. REMAINING GAPS (LOW PRIORITY)
 
 ### Audit Logging ⚠️ PARTIAL
-**Programs:** 
+**Both Programs and Events:** 
 - ✅ Basic created_at/updated_at
-- ⚠️ No detailed change tracking
-**Events:**
-- ✅ Basic created_at/updated_at
-- ⚠️ No detailed change tracking
+- ⚠️ No detailed change tracking (field-level audit trail)
 
-### Realtime Updates ❌ MISSING
+### Analytics/Reporting ⚠️ PARTIAL
+**Programs:** ✅ Full reporting (ProgramImpactDashboard, etc.)
+**Events:** ⚠️ Basic stats only (registration counts)
+
+### Realtime Updates ❌ FUTURE
 **Both Programs and Events:**
 - ❌ No Supabase Realtime subscription
 - ❌ No live updates in listings
 - ❌ No collaborative editing support
+- **Priority:** Low (future enhancement)
 
 ---
 
-## 8. INTEGRATION RECOMMENDATIONS
+## 8. COMPLETED INTEGRATIONS (This Phase)
 
-### HIGH PRIORITY
-| Item | Effort | Impact |
-|------|--------|--------|
-| Add program email triggers for all lifecycle events | 2 days | High |
-| Add in-app notifications for critical events | 2 days | High |
+### ✅ COMPLETED
+| Item | Implementation |
+|------|----------------|
+| Program email triggers | usePrograms.js - all lifecycle events |
+| Event email triggers | useEvents.js - all lifecycle events |
+| In-app notifications for programs | notifyProgramEvent() in AutoNotification.jsx |
+| In-app notifications for events | notifyEventAction() in AutoNotification.jsx |
+| Events in global search | useVisibilityAwareSearch.js |
+| Budget tracking for events | budget_estimate, budget_actual columns |
+| Comments for events | EventDetail.jsx with comments table |
+| Bookmarks for events | EventDetail.jsx with bookmarks table |
+| Event reminder edge function | supabase/functions/event-reminder/ |
 
-### MEDIUM PRIORITY
-| Item | Effort | Impact |
-|------|--------|--------|
-| Add events to global search | 1 day | Medium |
-| Add budget tracking to events | 1 day | Medium |
-| Add comments to events | 0.5 day | Low |
-| Add bookmarks to events | 0.5 day | Low |
-
-### LOW PRIORITY (Future Enhancement)
+### FUTURE ENHANCEMENTS (Low Priority)
 | Item | Effort | Impact |
 |------|--------|--------|
 | Implement Supabase Realtime for live updates | 2 days | Medium |
-| Add event reminder edge function (24h before) | 1 day | Medium |
 | Add detailed audit logging | 2 days | Low |
+| Enhanced event analytics dashboard | 1 day | Low |
 
 ---
 
@@ -301,9 +281,9 @@
 | `approval_requests` | Approval workflow | ✅ |
 | `email_templates` | Email system | ✅ |
 | `email_logs` | Email tracking | ✅ |
-| `notifications` | In-app notifications | ⚠️ Not used by P&E |
-| `comments` | Discussions | ⚠️ Programs only |
-| `bookmarks` | User saves | ⚠️ Programs only |
+| `notifications` | In-app notifications | ✅ Both |
+| `comments` | Discussions | ✅ Both |
+| `bookmarks` | User saves | ✅ Both |
 | `roles` | Permissions | ✅ |
 | `user_functional_roles` | Role assignments | ✅ |
-| `budgets` | Budget tracking | ⚠️ Programs only |
+| `budgets` | Budget tracking | ✅ (events use inline columns) |
