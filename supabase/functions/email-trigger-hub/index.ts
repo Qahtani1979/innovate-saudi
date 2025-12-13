@@ -188,8 +188,10 @@ serve(async (req: Request): Promise<Response> => {
     const errors = [];
     
     for (const recipientEmail of recipients) {
-      // Get user ID if available
+      // Get user ID and preferences if available
       let recipientUserId = request.recipient_user_id;
+      let userFrequency = 'immediate';
+      
       if (!recipientUserId) {
         const { data: profile } = await supabase
           .from('user_profiles')
@@ -197,6 +199,49 @@ serve(async (req: Request): Promise<Response> => {
           .eq('user_email', recipientEmail)
           .single();
         recipientUserId = profile?.user_id;
+      }
+      
+      // Check user notification preferences for frequency
+      if (triggerConfig.respect_preferences && !request.skip_preferences) {
+        const { data: prefs } = await supabase
+          .from('user_notification_preferences')
+          .select('frequency, email_notifications')
+          .eq('user_email', recipientEmail)
+          .single();
+        
+        if (prefs) {
+          // Check if user has disabled email notifications
+          if (prefs.email_notifications === false) {
+            queuedEmails.push({ recipient: recipientEmail, status: 'skipped', reason: 'email_notifications_disabled' });
+            continue;
+          }
+          userFrequency = prefs.frequency || 'immediate';
+        }
+      }
+      
+      // If user prefers daily/weekly digest, queue to digest instead of sending immediately
+      if (userFrequency === 'daily' || userFrequency === 'weekly') {
+        const { error: digestQueueError } = await supabase
+          .from('email_digest_queue')
+          .insert({
+            user_email: recipientEmail,
+            user_id: recipientUserId,
+            trigger_key: request.trigger,
+            template_key: triggerConfig.template_key,
+            entity_type: request.entity_type,
+            entity_id: request.entity_id,
+            variables,
+            language: request.language || 'en',
+            priority: request.priority ?? triggerConfig.priority ?? 5,
+            digest_type: userFrequency
+          });
+        
+        if (digestQueueError) {
+          errors.push({ recipient: recipientEmail, error: digestQueueError.message });
+        } else {
+          queuedEmails.push({ recipient: recipientEmail, status: 'digest_queued', digest_type: userFrequency });
+        }
+        continue;
       }
       
       // If delay is 0, send immediately via send-email function
