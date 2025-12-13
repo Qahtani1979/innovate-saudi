@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Calendar, Users, CheckCircle2, Clock, Award, Rocket } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, Clock, Award, Rocket, CalendarDays } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { format } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -38,6 +38,26 @@ function MyPrograms() {
 
   const enrolledApps = myApplications.filter(a => ['accepted', 'enrolled'].includes(a.status));
   const programsMap = programs.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+  const enrolledProgramIds = enrolledApps.map(a => a.program_id);
+
+  // Fetch events for enrolled programs
+  const { data: myEvents = [] } = useQuery({
+    queryKey: ['my-program-events', enrolledProgramIds],
+    queryFn: async () => {
+      if (enrolledProgramIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .in('program_id', enrolledProgramIds)
+        .eq('is_deleted', false)
+        .gte('start_date', new Date().toISOString())
+        .order('start_date', { ascending: true })
+        .limit(5);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: enrolledProgramIds.length > 0
+  });
 
   const upcomingMilestones = enrolledApps.flatMap(app => {
     const program = programsMap[app.program_id];
@@ -148,6 +168,48 @@ function MyPrograms() {
                 </div>
               );
             })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* My Program Events */}
+      {myEvents.length > 0 && (
+        <Card className="border-2 border-teal-200">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5 text-teal-600" />
+                {t({ en: 'Upcoming Program Events', ar: 'فعاليات البرامج القادمة' })}
+              </CardTitle>
+              <Link to={createPageUrl('EventCalendar')}>
+                <Button size="sm" variant="outline">
+                  {t({ en: 'View All', ar: 'عرض الكل' })}
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {myEvents.map((event) => (
+              <Link key={event.id} to={createPageUrl(`EventDetail?id=${event.id}`)}>
+                <div className="p-3 bg-teal-50 rounded-lg border border-teal-200 hover:border-teal-400 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">
+                        {language === 'ar' && event.title_ar ? event.title_ar : event.title_en}
+                      </p>
+                      <p className="text-xs text-slate-600 mt-1">
+                        {format(new Date(event.start_date), 'MMM d, yyyy')} • {event.event_mode}
+                      </p>
+                    </div>
+                    <Badge className={
+                      event.event_type === 'workshop' ? 'bg-purple-100 text-purple-700' :
+                      event.event_type === 'webinar' ? 'bg-blue-100 text-blue-700' :
+                      'bg-teal-100 text-teal-700'
+                    }>{event.event_type}</Badge>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </CardContent>
         </Card>
       )}
