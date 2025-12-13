@@ -3,19 +3,156 @@
 **Project:** Programs & Events Hub  
 **Last Audit:** 2025-12-13  
 **Target Completion:** 5 Weeks  
-**Status:** 🟡 Planning (Ultra-Deep Review Complete)  
+**Status:** 🟡 Planning (Complete Inventory Verified)  
 
 ---
 
 ## Executive Summary
 
-This document tracks the implementation of the Programs & Events Hub. A comprehensive codebase audit has been completed, identifying:
-- **14 program pages** (all active)
-- **4 event pages** (2 missing critical pages)
-- **37 program components** (complete)
-- **1 event component** (critical gap)
-- **941-line ApprovalCenter** with full program integration
-- **Key related pages:** ParticipantDashboard (280 lines), MyPrograms (199 lines), ProgramOperatorPortal (396 lines), Portfolio (383 lines), GapAnalysisTool (531 lines), CampaignPlanner (699 lines), StrategicPlanBuilder (156 lines)
+This document tracks the implementation of the Programs & Events Hub. A **complete** codebase audit has been completed, identifying:
+
+| Category | Count | Status |
+|----------|-------|--------|
+| Program Pages | 25 | ✅ All Active (1 empty file) |
+| Event Pages | 4 | ⚠️ 2 Missing (EventCreate, EventEdit) |
+| Campaign/Calendar Pages | 3 | ✅ All Active |
+| Supporting Pages | 10 | ✅ All Active |
+| Program Components | 37 | ✅ All Active |
+| Event Components | 0 | ❌ Folder Missing |
+| Workflow Components | 7 | ✅ All Active |
+| AI Program Components | 6 | ✅ All Active |
+
+**Key Related Pages Analyzed:**
+- `ParticipantDashboard.jsx` (280 lines)
+- `MyPrograms.jsx` (199 lines)
+- `ProgramOperatorPortal.jsx` (396 lines)
+- `ApprovalCenter.jsx` (941 lines)
+- `Portfolio.jsx` (383 lines)
+- `GapAnalysisTool.jsx` (531 lines)
+- `CampaignPlanner.jsx` (699 lines)
+- `CalendarView.jsx` (210 lines)
+- `StrategicPlanBuilder.jsx` (156 lines)
+
+---
+
+## Complete Inventory Reference
+
+### Program Pages (25 total)
+
+| # | Page | Lines | Purpose | Status |
+|---|------|-------|---------|--------|
+| 1 | Programs.jsx | 692 | Main listing with filters, AI insights | ✅ |
+| 2 | ProgramDetail.jsx | 1215 | Full view with 16+ tabs | ✅ |
+| 3 | ProgramCreate.jsx | 11 | Wrapper for wizard | ✅ |
+| 4 | ProgramEdit.jsx | 592 | Edit with AI enhance | ✅ |
+| 5 | MyPrograms.jsx | 199 | User's program portfolio | ✅ |
+| 6 | MyProgramDashboard.jsx | 0 | Empty file | ⚠️ |
+| 7 | ParticipantDashboard.jsx | 280 | Participant progress | ✅ |
+| 8 | ProgramOperatorPortal.jsx | 396 | Operator tools | ✅ |
+| 9 | ProgramIdeaSubmission.jsx | 361 | Innovation proposals | ✅ |
+| 10 | ProgramApplicationWizard.jsx | ~400 | Application flow | ✅ |
+| 11 | ProgramApplicationDetail.jsx | ~300 | Application details | ✅ |
+| 12 | ProgramApplicationEvaluationHub.jsx | ~400 | Evaluation queue | ✅ |
+| 13 | ProgramCohortManagement.jsx | ~300 | Cohort management | ✅ |
+| 14 | ProgramOutcomesAnalytics.jsx | ~400 | Outcome metrics | ✅ |
+| 15 | ProgramImpactDashboard.jsx | ~350 | Conversion funnel | ✅ |
+| 16 | ProgramPortfolioPlanner.jsx | ~400 | Portfolio planning | ✅ |
+| 17 | ProgramROIDashboard.jsx | ~300 | ROI calculations | ✅ |
+| 18 | ProgramFinancialROI.jsx | ~350 | Financial ROI | ✅ |
+| 19 | ProgramChallengeAlignment.jsx | ~300 | Challenge alignment | ✅ |
+| 20 | ProgramChallengeMatcher.jsx | ~350 | Challenge matching | ✅ |
+| 21 | ProgramCampaignHub.jsx | ~400 | Campaign management | ✅ |
+| 22 | ProgramLaunchWizard.jsx | ~300 | Launch wizard | ✅ |
+| 23 | ProgramRDApprovalGates.jsx | ~200 | R&D approval gates | ✅ |
+| 24 | ProgramRDKnowledgeExchange.jsx | ~300 | R&D knowledge exchange | ✅ |
+| 25 | ProgramsCoverageReport.jsx | ~500 | Coverage analysis | ✅ |
+
+### Event Pages (4 total - 2 missing)
+
+| # | Page | Lines | Purpose | Status |
+|---|------|-------|---------|--------|
+| 1 | EventCalendar.jsx | 187 | Event listing (citizen-focused) | ✅ |
+| 2 | EventDetail.jsx | 194 | Single event view | ✅ |
+| 3 | EventRegistration.jsx | 221 | Registration form | ✅ |
+| 4 | EventCreate.jsx | - | Create new event | ❌ MISSING |
+| 5 | EventEdit.jsx | - | Edit event | ❌ MISSING |
+
+### Campaign/Calendar Pages (3 total)
+
+| # | Page | Lines | Purpose | Status |
+|---|------|-------|---------|--------|
+| 1 | CampaignPlanner.jsx | 699 | Campaign creation wizard | ✅ |
+| 2 | CalendarView.jsx | 210 | Unified calendar | ✅ |
+| 3 | CommunicationsHub.jsx | ~500 | Email campaign manager | ✅ |
+
+### Supporting Pages (10 total)
+
+| # | Page | Lines | Purpose | Status |
+|---|------|-------|---------|--------|
+| 1 | ApprovalCenter.jsx | 941 | Unified approval queue | ✅ |
+| 2 | Portfolio.jsx | 383 | Innovation Kanban | ✅ |
+| 3 | GapAnalysisTool.jsx | 531 | AI gap discovery | ✅ |
+| 4 | StrategicPlanBuilder.jsx | 156 | Strategic planning | ✅ |
+| 5 | ApplicationReviewHub.jsx | ~400 | Review queue | ✅ |
+| 6 | AlumniShowcase.jsx | ~300 | Alumni showcase | ✅ |
+| 7 | MentorshipHub.jsx | ~350 | Mentorship management | ✅ |
+| 8 | CrossProgramSynergy.jsx | ~400 | Cross-program analysis | ✅ |
+| 9 | ProgramGapsImplementationPlan.jsx | ~300 | Gap implementation | ✅ |
+| 10 | ProgramImplementationPlan.jsx | ~350 | Implementation planning | ✅ |
+
+### Program Components (37 in /src/components/programs/)
+
+| # | Component | AI-Powered |
+|---|-----------|------------|
+| 1 | AICurriculumGenerator.jsx | ✅ |
+| 2 | AIDropoutPredictor.jsx | ✅ |
+| 3 | AICohortOptimizerWidget.jsx | ✅ |
+| 4 | AIAlumniSuggester.jsx | ✅ |
+| 5 | AIProgramBenchmarking.jsx | ✅ |
+| 6 | AIProgramSuccessPredictor.jsx | ✅ |
+| 7 | AlumniImpactTracker.jsx | No |
+| 8 | AlumniNetworkHub.jsx | No |
+| 9 | AlumniSuccessStoryGenerator.jsx | ✅ |
+| 10 | AttendanceTracker.jsx | No |
+| 11 | AutomatedCertificateGenerator.jsx | No |
+| 12 | CohortManagement.jsx | No |
+| 13 | CohortOptimizer.jsx | No |
+| 14 | CrossProgramSynergy.jsx | No |
+| 15 | DropoutPredictor.jsx | No |
+| 16 | EnhancedProgressDashboard.jsx | No |
+| 17 | GraduationWorkflow.jsx | No |
+| 18 | ImpactStoryGenerator.jsx | No |
+| 19 | MentorMatchingEngine.jsx | No |
+| 20 | MentorScheduler.jsx | No |
+| 21 | MunicipalImpactCalculator.jsx | No |
+| 22 | OnboardingWorkflow.jsx | No |
+| 23 | ParticipantAssignmentSystem.jsx | No |
+| 24 | PeerCollaborationHub.jsx | No |
+| 25 | PeerLearningNetwork.jsx | No |
+| 26 | PostProgramFollowUp.jsx | No |
+| 27 | ProgramActivityLog.jsx | No |
+| 28 | ProgramAlumniStoryboard.jsx | No |
+| 29 | ProgramBenchmarking.jsx | No |
+| 30 | ProgramCreateWizard.jsx | No |
+| 31 | ProgramExpertEvaluation.jsx | No |
+| 32 | ProgramToPilotWorkflow.jsx | No |
+| 33 | ProgramToSolutionWorkflow.jsx | No |
+| 34 | ResourceLibrary.jsx | No |
+| 35 | SessionScheduler.jsx | No |
+| 36 | StrategicAlignmentWidget.jsx | No |
+| 37 | WaitlistManager.jsx | No |
+
+### Event Components (MISSING)
+
+| # | Component | Status |
+|---|-----------|--------|
+| - | /src/components/events/ folder | ❌ MISSING |
+| 1 | EventForm.jsx | ❌ TO CREATE |
+| 2 | EventCard.jsx | ❌ TO CREATE |
+| 3 | EventFilters.jsx | ❌ TO CREATE |
+| 4 | EventCancelDialog.jsx | ❌ TO CREATE |
+| 5 | EventAttendeeList.jsx | ❌ TO CREATE |
+| 6 | AIEventOptimizer.jsx | ❌ TO CREATE |
 
 ---
 
@@ -24,22 +161,10 @@ This document tracks the implementation of the Programs & Events Hub. A comprehe
 ### ParticipantDashboard.jsx (280 lines)
 
 **Current State:** ✅ Fully functional
-**Integration Level:** High
-
-**Data Connections:**
-| Table | Query Type | Purpose |
-|-------|------------|---------|
-| `program_applications` | Filter by `user.email` | Get user's applications |
-| `programs` | Join | Program details |
-| `program_sessions` | Count | Total sessions |
-| `session_attendance` | Count by email | Completed sessions |
-| `program_assignments` | Count | Total assignments |
-| `assignment_submissions` | Count by email | Submitted work |
-| `mentor_sessions` | Count by participant_email | Mentor meetings |
-| `peer_collaborations` | Or query | Collaborations |
+**Data Tables Used:** program_applications, programs, program_sessions, session_attendance, program_assignments, assignment_submissions, mentor_sessions, peer_collaborations
 
 **Hub Integration Needs:**
-- [ ] Add events tab showing program-linked events
+- [ ] Add events section showing program-linked events
 - [ ] Link to EventCalendar for upcoming program events
 - [ ] Add event registration quick action
 
@@ -48,12 +173,7 @@ This document tracks the implementation of the Programs & Events Hub. A comprehe
 ### MyPrograms.jsx (199 lines)
 
 **Current State:** ✅ Fully functional
-**Integration Level:** Medium
-
-**Features:**
-- Stats cards: Enrolled, Pending, Graduated
-- Active programs with progress
-- Upcoming milestones from curriculum
+**Data Tables Used:** program_applications, programs
 
 **Hub Integration Needs:**
 - [ ] Add "My Events" section
@@ -62,196 +182,85 @@ This document tracks the implementation of the Programs & Events Hub. A comprehe
 
 ---
 
-### ProgramIdeaSubmission.jsx (361 lines)
-
-**Current State:** ✅ Fully functional with AI
-**Integration Level:** High
-
-**AI Features:**
-- Title generation (EN/AR)
-- Description enhancement (EN/AR)
-- Implementation plan
-- Success metrics (5 items)
-- Timeline proposal
-- Team composition
-
-**Hub Integration Needs:**
-- [ ] Link submitted proposals to program events
-- [ ] Show related events during submission
-
----
-
-### ApprovalCenter.jsx (941 lines) ✅ EXISTS
-
-**Current State:** ✅ Comprehensive, multi-entity
-**Integration Level:** Critical
-
-**Program Entity Approvals Handled:**
-1. `program` entity - 4 gates (launch, selection, mid_review, completion_review)
-2. `program_application` - 2 gates (submission, evaluation)
-
-**Tabs Present:**
-- Challenges | Pilots | Solutions | Program Apps | Programs | R&D | Policy | Matchmaker | Citizen Ideas | Innovation Proposals
-
-**Hub Integration Needs:**
-- [ ] Add "Events" tab for event approvals
-- [ ] Wire event.created triggers to create approval requests
-- [ ] Add event workflow gates
-
----
-
 ### ProgramOperatorPortal.jsx (396 lines)
 
 **Current State:** ✅ Fully functional
-**Integration Level:** High
-
-**Data Sources:**
-| Entity | Query | Purpose |
-|--------|-------|---------|
-| `organizations` | By contact_email | Operator's org |
-| `programs` | By operator_org_id | Operated programs |
-| `program_applications` | By program_ids | Applications |
-| `pilots` | By program_ids | Conversions |
-| `matchmaker_applications` | All (if matchmaker) | Matchmaker pipeline |
-
-**Key Metrics:**
-- Active programs count
-- Application count & pending
-- Participant count
-- Pilot conversions
-- Matchmaker active engagements
+**Data Tables Used:** organizations, programs, program_applications, pilots, matchmaker_applications
 
 **Hub Integration Needs:**
-- [ ] Add program events section
+- [ ] Add program events management section
 - [ ] Show events per program with registration stats
 - [ ] Add event creation quick action
 - [ ] Link to EventCalendar filtered by operator's programs
 
 ---
 
-### StrategicPlanBuilder.jsx (156 lines)
+### ApprovalCenter.jsx (941 lines)
 
-**Current State:** ✅ Functional with AI
-**Integration Level:** Medium
-
-**Features:**
-- Title/Vision fields
-- Strategic objectives array
-- AI generation
+**Current State:** ✅ Comprehensive, handles 11 entity types
+**Entity Types:** policy_recommendation, challenge, pilot, rd_proposal, program_application, matchmaker_application, solution, program, citizen_ideas, innovation_proposal, rd_projects
 
 **Hub Integration Needs:**
-- [ ] Link strategic plans to programs
-- [ ] Show programs aligned to each plan
-- [ ] Calendar view of plan-linked program timelines
+- [ ] Add "Events" tab (12th entity type)
+- [ ] Wire event.created triggers to create approval requests
+- [ ] Add event approval workflow gates
 
 ---
 
-### Portfolio.jsx (383 lines)
+### CalendarView.jsx (210 lines)
 
-**Current State:** ✅ Fully functional
-**Integration Level:** High
+**Current State:** ⚠️ Does NOT read from events table!
+**Data Tables Used:** pilots, programs, expert_assignments
 
-**Pipeline Stages:**
-1. Discover → 2. Validate → 3. Experiment → 4. Pilot → 5. Scale → 6. Institutionalize
-
-**Features:**
-- Drag-and-drop Kanban (via @hello-pangea/dnd)
-- Matrix view
-- Timeline Gantt view
-- AI Pipeline Insights (5 categories)
+**CRITICAL GAP:** Events from `events` table not displayed!
 
 **Hub Integration Needs:**
-- [ ] Add programs to pipeline (currently challenges only)
-- [ ] Link program events to timeline
-- [ ] Show program-linked events in Gantt
-
----
-
-### GapAnalysisTool.jsx (531 lines)
-
-**Current State:** ✅ Fully functional with AI
-**Integration Level:** High
-
-**AI Gap Categories (10 total):**
-1. Underserved sectors
-2. Innovation gaps
-3. Geographic gaps
-4. Technology gaps
-5. Capacity gaps
-6. Skills & talent gaps
-7. Partnership gaps
-8. Budget gaps
-9. Timeline gaps
-10. Service quality gaps
-
-**Hub Integration Needs:**
-- [ ] Include program coverage in gap analysis
-- [ ] Suggest programs to address gaps
-- [ ] Link gap recommendations to program creation
+- [ ] Add events table query
+- [ ] Display events alongside pilots/programs
+- [ ] Color-code by event type
 
 ---
 
 ### CampaignPlanner.jsx (699 lines)
 
-**Current State:** ⚠️ Functional but NOT synced
-**Integration Level:** Critical
-
-**4-Step Wizard:**
-1. Campaign Details (name, tagline, description)
-2. Strategic Alignment (focus areas, objectives)
-3. Events & Schedule (events array - JSONB, NOT table)
-4. Target & Launch (participants, submit)
-
-**CRITICAL ISSUE:**
-```
-programs.events[] (JSONB) → NO SYNC → events table
-```
-
-Events created in CampaignPlanner are:
-- Stored in `programs.events` JSONB column
-- NOT visible in EventCalendar (which reads from `events` table)
-- NOT triggering email notifications
-- NOT creating registrations
+**Current State:** ⚠️ Functional but events NOT synced
+**CRITICAL ISSUE:** `programs.events[]` (JSONB) → NO SYNC → `events` table
 
 **Hub Integration Needs:**
-- [ ] Create `eventSyncService.js` to sync JSONB → table
+- [ ] Create eventSyncService.js
 - [ ] Wire sync on event add/edit/delete
 - [ ] Add sync status indicator
 - [ ] Link events to calendar after sync
 
 ---
 
-## Current State Summary
+## Critical Gaps Summary
 
-### What Exists ✅
+### 🔴 Critical Priority
 
-| Category | Count | Status |
-|----------|-------|--------|
-| Program Pages | 14 | Complete |
-| Event Pages | 4 | Partial (2 missing) |
-| Program Components | 37 | Complete |
-| Event Components | 1 | Critical Gap |
-| Program Workflows | 7 | Complete |
-| AI Components (Programs) | 8 | Complete |
-| Email Templates (Events) | 6 | Exist but unwired |
-| ApprovalCenter | 1 | 941 lines, comprehensive |
-| Related Strategic Pages | 4 | Complete |
+| Gap | Impact | Files Affected |
+|-----|--------|----------------|
+| EventCreate.jsx missing | Cannot create events via UI | New file needed |
+| EventEdit.jsx missing | Cannot edit events via UI | New file needed |
+| /src/components/events/ folder missing | No event UI components | Create folder + 5 components |
+| CampaignPlanner → events table sync | Events invisible in calendar | CampaignPlanner.jsx, new service |
+| CalendarView missing events query | Events not shown | CalendarView.jsx |
 
-### Critical Gaps ❌
+### 🟡 High Priority
 
-| Gap | Impact | Priority |
-|-----|--------|----------|
-| `EventCreate.jsx` missing | Cannot create events via UI | 🔴 Critical |
-| `EventEdit.jsx` missing | Cannot edit events via UI | 🔴 Critical |
-| No `/src/components/events/` folder | No event UI components | 🔴 Critical |
-| `CampaignPlanner.jsx` → `events` table sync | Events not visible in calendar | 🔴 Critical |
-| `CalendarView.jsx` doesn't read events table | Events not shown on calendar | 🟡 High |
-| Event email triggers unwired | No event.created/updated emails | 🟡 High |
-| Event permissions not in DB | Cannot control event access | 🟡 High |
-| ApprovalCenter missing Events tab | No event approval workflow | 🟡 High |
-| ParticipantDashboard missing events | Participants can't see program events | 🟡 Medium |
-| MyPrograms missing events | Users can't see their event registrations | 🟡 Medium |
-| ProgramOperatorPortal missing events | Operators can't manage program events | 🟡 Medium |
+| Gap | Impact | Files Affected |
+|-----|--------|----------------|
+| Event email triggers unwired | No notifications | EventCreate, EventEdit |
+| ApprovalCenter missing Events tab | No event approval | ApprovalCenter.jsx |
+| Event permissions missing | Cannot control access | Database migration |
+
+### 🟢 Medium Priority
+
+| Gap | Impact | Files Affected |
+|-----|--------|----------------|
+| ParticipantDashboard missing events | Hidden from participants | ParticipantDashboard.jsx |
+| MyPrograms missing events | Hidden from users | MyPrograms.jsx |
+| ProgramOperatorPortal missing events | Operators can't manage | ProgramOperatorPortal.jsx |
 
 ---
 
