@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       include: ['react', 'react-dom'],
+      force: true, // Force rebuild of deps cache
     },
     define: {
       'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || 'https://wneorgiqyvkkjmqootpe.supabase.co'),
