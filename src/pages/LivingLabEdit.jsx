@@ -10,13 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles, Beaker } from 'lucide-react';
+import { Save, Loader2, Sparkles, Beaker, Target } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 
 function LivingLabEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -249,6 +250,21 @@ Provide bilingual improvements:
                 onChange={(e) => setFormData({...formData, director_email: e.target.value})}
               />
             </div>
+          </div>
+
+          {/* Strategic Alignment Section */}
+          <div className="border-t pt-6 space-y-4">
+            <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+              <Target className="h-5 w-5 text-indigo-600" />
+              {t({ en: 'Strategic Alignment', ar: 'التوافق الاستراتيجي' })}
+            </h3>
+            <StrategicPlanSelector
+              selectedPlanIds={formData.strategic_plan_ids || []}
+              selectedObjectiveIds={formData.strategic_objective_ids || []}
+              onPlanChange={(ids) => setFormData({...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0})}
+              onObjectiveChange={(ids) => setFormData({...formData, strategic_objective_ids: ids})}
+              showObjectives={true}
+            />
           </div>
 
           <div className="border-t pt-6 space-y-4">

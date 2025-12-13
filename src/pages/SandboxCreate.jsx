@@ -11,12 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../components/LanguageContext';
 import { createPageUrl } from '../utils';
-import { Shield, ChevronLeft, ChevronRight, FileText, Building2, Wifi, DollarSign, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react';
+import { Shield, ChevronLeft, ChevronRight, FileText, Building2, Wifi, DollarSign, Image as ImageIcon, Loader2, Sparkles, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 
 function SandboxCreate() {
   const navigate = useNavigate();
@@ -59,7 +60,12 @@ function SandboxCreate() {
     manager_name: '',
     manager_email: '',
     manager_phone: '',
-    is_published: false
+    is_published: false,
+    // Strategic alignment fields
+    strategic_plan_ids: [],
+    strategic_objective_ids: [],
+    is_strategy_derived: false,
+    strategic_gaps_addressed: []
   });
 
   const { data: cities = [] } = useQuery({
@@ -273,6 +279,17 @@ Provide bilingual enhancements:
                   value={formData.description_ar}
                   onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
                   rows={4}
+                />
+              </div>
+              
+              {/* Strategic Alignment Section */}
+              <div className="border-t pt-4 mt-4">
+                <StrategicPlanSelector
+                  selectedPlanIds={formData.strategic_plan_ids}
+                  selectedObjectiveIds={formData.strategic_objective_ids}
+                  onPlanChange={(ids) => setFormData({...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0})}
+                  onObjectiveChange={(ids) => setFormData({...formData, strategic_objective_ids: ids})}
+                  showObjectives={true}
                 />
               </div>
             </>
