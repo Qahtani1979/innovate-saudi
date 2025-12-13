@@ -2379,6 +2379,57 @@ export type Database = {
           },
         ]
       }
+      email_digest_queue: {
+        Row: {
+          created_at: string
+          digest_id: string | null
+          digest_type: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          language: string | null
+          priority: number | null
+          processed_at: string | null
+          template_key: string
+          trigger_key: string
+          user_email: string
+          user_id: string | null
+          variables: Json | null
+        }
+        Insert: {
+          created_at?: string
+          digest_id?: string | null
+          digest_type?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          language?: string | null
+          priority?: number | null
+          processed_at?: string | null
+          template_key: string
+          trigger_key: string
+          user_email: string
+          user_id?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          created_at?: string
+          digest_id?: string | null
+          digest_type?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          language?: string | null
+          priority?: number | null
+          processed_at?: string | null
+          template_key?: string
+          trigger_key?: string
+          user_email?: string
+          user_id?: string | null
+          variables?: Json | null
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           body_preview: string | null
