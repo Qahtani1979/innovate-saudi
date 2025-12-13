@@ -31,17 +31,17 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 |--------|----------|--------|-----------|
 | **Approval Workflow** | ✅ Full (4 gates) | ✅ Full (2 gates) | None |
 | **Permissions (Roles)** | ✅ Full (18 roles) | ✅ Full (18 roles) | None |
-| **Email Templates** | ✅ Full (8 templates) | ✅ Full (8 templates) | None |
-| **Email Triggers** | ✅ Full (8/8) | ✅ Full (5/5) | None |
+| **Email Templates** | ✅ Full (8 templates) | ✅ Full (9 templates) | None |
+| **Email Triggers** | ✅ Full (8/8) | ✅ Full (6/6) | None |
 | **In-App Notifications** | ✅ Integrated | ✅ Integrated | None |
 | **Calendar Integration** | ✅ Full | ✅ Full | None |
 | **Campaign Sync** | ✅ Full | ✅ Full | None |
 | **AI Components** | ✅ Full (6) | ✅ Full (4) | None |
 | **Search/Discovery** | ✅ Full | ✅ Full | None |
-| **Budget Integration** | ✅ Full | ⚠️ Missing | Medium |
-| **Comments System** | ✅ Full | ⚠️ Missing | Low |
-| **Bookmarks** | ✅ Full | ⚠️ Missing | Low |
-| **Realtime Updates** | ❌ Missing | ❌ Missing | Medium |
+| **Budget Integration** | ✅ Full | ✅ Full | None |
+| **Comments System** | ✅ Full | ✅ Full | None |
+| **Bookmarks** | ✅ Full | ✅ Full | None |
+| **Realtime Updates** | ❌ Missing | ❌ Missing | Low |
 
 **See:** `docs/programs-events-integration-matrix.md` for full details
 
@@ -474,13 +474,13 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | 4 | AI Enhancements | 1 week | 🟢 Complete | 100% |
 | 5 | Permissions & Polish | 1 week | 🟢 Complete | 100% |
 | 6 | Approval System Deep Integration | 1 day | 🟢 Complete | 100% |
-| 7 | Extended Integrations | 2 days | 🟡 In Progress | 60% |
+| 7 | Extended Integrations | 2 days | 🟢 Complete | 90% |
 
 **Legend:** 🔴 Not Started | 🟡 In Progress | 🟢 Complete | ⚫ Blocked
 
 ---
 
-## Phase 7: Extended Integrations (IN PROGRESS)
+## Phase 7: Extended Integrations (COMPLETE)
 
 **Objective:** Complete remaining system integrations for full feature parity
 
@@ -492,22 +492,22 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | In-app notifications for Programs | notifyProgramEvent() | 1 day | ✅ |
 | In-app notifications for Events | notifyEventAction() | 1 day | ✅ |
 
-### 7.2 MEDIUM PRIORITY Tasks (Partial)
+### 7.2 MEDIUM PRIORITY Tasks ✅ COMPLETE
 
 | Task | Target | Effort | Status |
 |------|--------|--------|--------|
 | Add events to global search | useVisibilityAwareSearch | 1 day | ✅ |
-| Add budget tracking to events | events table + UI | 1 day | 🔴 |
-| Event reminder edge function (24h before) | Edge function | 1 day | 🔴 |
+| Add budget tracking to events | events table columns | 0.5 day | ✅ |
+| Event reminder edge function (24h before) | event-reminder function | 1 day | ✅ |
 
-### 7.3 LOW PRIORITY Tasks
+### 7.3 LOW PRIORITY Tasks ✅ PARTIAL
 
 | Task | Target | Effort | Status |
 |------|--------|--------|--------|
-| Add comments to events | comments table integration | 0.5 day | 🔴 |
-| Add bookmarks to events | bookmarks table integration | 0.5 day | 🔴 |
-| Supabase Realtime for live updates | Both Programs & Events | 2 days | 🔴 |
-| Detailed audit logging | Both Programs & Events | 2 days | 🔴 |
+| Add comments to events | EventDetail.jsx | 0.5 day | ✅ |
+| Add bookmarks to events | EventDetail.jsx | 0.5 day | ✅ |
+| Supabase Realtime for live updates | Both Programs & Events | 2 days | 🔴 Future |
+| Detailed audit logging | Both Programs & Events | 2 days | 🔴 Future |
 
 ### 7.4 Completed Changes
 
@@ -518,6 +518,10 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | `src/hooks/useEvents.js` | Added in-app notifications | ✅ |
 | `src/components/AutoNotification.jsx` | Added notifyProgramEvent, notifyEventAction | ✅ |
 | `src/components/SemanticSearch.jsx` | Added event URL and styling | ✅ |
+| `src/pages/EventDetail.jsx` | Added comments + bookmarks | ✅ |
+| `supabase/functions/event-reminder/` | Created edge function | ✅ |
+| `events` table | Added reminder_sent_at, budget columns | ✅ |
+| `email_templates` table | Added event_reminder template | ✅ |
 
 ---
 

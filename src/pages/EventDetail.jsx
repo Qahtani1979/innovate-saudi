@@ -1,21 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
-import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
+import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit, Bookmark, MessageSquare, Send, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function EventDetail() {
   const { t, language } = useLanguage();
-  const { hasAnyPermission, roles } = usePermissions();
+  const { hasAnyPermission, roles, userEmail } = usePermissions();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const eventId = urlParams.get('id');
+  
+  const [newComment, setNewComment] = useState('');
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   const canEditEvents = hasAnyPermission(['event_edit', 'event_manage', 'admin']) || 
     roles?.some(r => ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r));
@@ -28,6 +37,97 @@ function EventDetail() {
     },
     enabled: !!eventId
   });
+
+  // Fetch comments for this event
+  const { data: comments = [] } = useQuery({
+    queryKey: ['event-comments', eventId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('entity_type', 'event')
+        .eq('entity_id', eventId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+      return data || [];
+    },
+    enabled: !!eventId
+  });
+
+  // Fetch bookmark status
+  const { data: bookmarkData } = useQuery({
+    queryKey: ['event-bookmark', eventId, userEmail],
+    queryFn: async () => {
+      if (!userEmail) return null;
+      const { data } = await supabase
+        .from('bookmarks')
+        .select('id')
+        .eq('entity_type', 'event')
+        .eq('entity_id', eventId)
+        .eq('user_email', userEmail)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!eventId && !!userEmail,
+    onSuccess: (data) => setIsBookmarked(!!data)
+  });
+
+  // Add comment mutation
+  const addCommentMutation = useMutation({
+    mutationFn: async (commentText) => {
+      const { error } = await supabase.from('comments').insert({
+        entity_type: 'event',
+        entity_id: eventId,
+        comment_text: commentText,
+        user_email: userEmail,
+        user_name: user?.user_metadata?.full_name || userEmail
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['event-comments', eventId]);
+      setNewComment('');
+      toast.success(t({ en: 'Comment added', ar: 'تمت إضافة التعليق' }));
+    },
+    onError: () => {
+      toast.error(t({ en: 'Failed to add comment', ar: 'فشل في إضافة التعليق' }));
+    }
+  });
+
+  // Toggle bookmark mutation
+  const toggleBookmarkMutation = useMutation({
+    mutationFn: async () => {
+      if (isBookmarked) {
+        const { error } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('entity_type', 'event')
+          .eq('entity_id', eventId)
+          .eq('user_email', userEmail);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('bookmarks').insert({
+          entity_type: 'event',
+          entity_id: eventId,
+          user_email: userEmail
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      setIsBookmarked(!isBookmarked);
+      queryClient.invalidateQueries(['event-bookmark', eventId, userEmail]);
+      toast.success(isBookmarked 
+        ? t({ en: 'Removed from bookmarks', ar: 'تمت الإزالة من المحفوظات' })
+        : t({ en: 'Added to bookmarks', ar: 'تمت الإضافة للمحفوظات' })
+      );
+    }
+  });
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+    addCommentMutation.mutate(newComment);
+  };
 
   if (isLoading || !event) {
     return (
@@ -65,6 +165,16 @@ function EventDetail() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {userEmail && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => toggleBookmarkMutation.mutate()}
+              className={isBookmarked ? 'text-yellow-600' : 'text-slate-400'}
+            >
+              <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
+            </Button>
+          )}
           {canEditEvents && (
             <Link to={createPageUrl('EventEdit') + `?id=${eventId}`}>
               <Button variant="outline">
@@ -206,6 +316,61 @@ function EventDetail() {
           </CardContent>
         </Card>
       )}
+
+      {/* Comments Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            {t({ en: 'Comments', ar: 'التعليقات' })} ({comments.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {userEmail && (
+            <div className="flex gap-2">
+              <Textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder={t({ en: 'Add a comment...', ar: 'أضف تعليقاً...' })}
+                className="min-h-[80px]"
+              />
+              <Button 
+                onClick={handleAddComment} 
+                disabled={!newComment.trim() || addCommentMutation.isPending}
+                className="self-end"
+              >
+                {addCommentMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          )}
+
+          {comments.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">
+              {t({ en: 'No comments yet. Be the first to comment!', ar: 'لا توجد تعليقات بعد. كن أول من يعلق!' })}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {comments.map((comment) => (
+                <div key={comment.id} className="p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-sm text-slate-900">
+                      {comment.user_name || comment.user_email}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {new Date(comment.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-700">{comment.comment_text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
