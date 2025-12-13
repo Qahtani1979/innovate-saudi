@@ -26,35 +26,22 @@ export default function CitizenClosureNotification({ challenge, onSent }) {
         throw new Error('Idea creator not found');
       }
 
-      // Send email notification
-      await base44.integrations.Core.SendEmail({
-        to: idea.created_by,
-        subject: language === 'ar' 
-          ? `✅ تحديث: تم حل التحدي "${challenge.title_ar || challenge.title_en}"`
-          : `✅ Update: Challenge "${challenge.title_en}" Resolved`,
-        body: `
-${language === 'ar' ? 'عزيزي المواطن،' : 'Dear Citizen,'}
-
-${language === 'ar' 
-  ? `شكراً لك على فكرتك! نود إعلامك بأن التحدي الذي تم إنشاؤه من فكرتك قد تم حله بنجاح.`
-  : `Thank you for your idea! We're excited to inform you that the challenge created from your idea has been successfully resolved.`
-}
-
-${language === 'ar' ? 'التحدي:' : 'Challenge:'} ${language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}
-
-${message || (language === 'ar' 
-  ? 'تم معالجة التحدي بنجاح وتحقيق نتائج إيجابية للمجتمع.'
-  : 'The challenge was successfully addressed with positive outcomes for the community.'
-)}
-
-${language === 'ar' 
-  ? 'نقدر مشاركتك في تحسين خدماتنا البلدية!'
-  : 'We appreciate your contribution to improving our municipal services!'
-}
-
-${language === 'ar' ? 'مع التحية،' : 'Best regards,'}
-${language === 'ar' ? 'منصة الابتكار البلدي' : 'Saudi Innovates Platform'}
-        `
+      // Send email notification via email-trigger-hub
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'idea.converted',
+          recipient_email: idea.created_by,
+          entity_type: 'challenge',
+          entity_id: challenge.id,
+          variables: {
+            challengeTitle: language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en,
+            message: message || '',
+            ideaTitle: idea.title
+          },
+          language: language,
+          triggered_by: 'system'
+        }
       });
 
       return idea;

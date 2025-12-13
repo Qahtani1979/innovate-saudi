@@ -43,14 +43,20 @@ export default function PostProgramFollowUp({ program }) {
         }
       });
 
-      // Send follow-up email
-      await base44.integrations.Core.SendEmail({
-        to: selectedParticipant.email,
-        subject: t({ 
-          en: `Follow-up: ${program.name_en}`, 
-          ar: `متابعة: ${program.name_ar || program.name_en}` 
-        }),
-        body: `Thank you for participating in ${program.name_en}. We'd love to hear about your progress!`
+      // Send follow-up email via email-trigger-hub
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'pilot.feedback_request',
+          recipient_email: selectedParticipant.email,
+          entity_type: 'program',
+          entity_id: program.id,
+          variables: {
+            programName: program.name_en,
+            participantName: selectedParticipant.name
+          },
+          triggered_by: 'system'
+        }
       });
     },
     onSuccess: () => {
