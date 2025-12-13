@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Rocket, CheckCircle2, X, Loader2, Sparkles, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function ProgramLaunchWorkflow({ program, onClose }) {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
 
   const launchChecks = [
     { id: 'content_ready', label: { en: 'Curriculum and content finalized', ar: 'المنهج والمحتوى جاهز' }, required: true },
@@ -47,27 +49,27 @@ export default function ProgramLaunchWorkflow({ program, onClose }) {
         link: `/ProgramDetail?id=${program.id}`
       });
 
-      // Send email to all interested parties via email-trigger-hub
-      if (program.contact_email) {
-        const { supabase } = await import('@/integrations/supabase/client');
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: 'pilot.created',
-            recipient_email: program.contact_email,
-            entity_type: 'program',
-            entity_id: program.id,
-            variables: {
-              programName: program.name_en,
-              announcement: announcement
-            },
-            triggered_by: 'system'
-          }
-        });
-      }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries(['program']);
       queryClient.invalidateQueries(['notifications']);
+      
+      // Trigger program.launched email
+      try {
+        await triggerEmail('program.launched', {
+          entityType: 'program',
+          entityId: program.id,
+          variables: {
+            programName: program.name_en,
+            programType: program.program_type,
+            announcement: announcement,
+            launchDate: new Date().toISOString().split('T')[0]
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send program.launched email:', error);
+      }
+      
       toast.success(t({ en: 'Program launched successfully', ar: 'تم إطلاق البرنامج بنجاح' }));
       onClose();
     }

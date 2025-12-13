@@ -11,11 +11,13 @@ import { ShoppingCart, Sparkles, ArrowRight, Loader2, X, FileText, Shield } from
 import { Badge } from "@/components/ui/badge";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function PilotToProcurementWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { triggerEmail } = useEmailTrigger();
 
   const [formData, setFormData] = useState({
     procurement_scope: '',
@@ -84,10 +86,26 @@ Return in both English and Arabic.`,
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.Contract.create(data);
+      return await base44.entities.Contract.create(data);
     },
-    onSuccess: () => {
+    onSuccess: async (createdContract) => {
       queryClient.invalidateQueries(['contracts']);
+      
+      // Trigger contract.created email
+      try {
+        await triggerEmail('contract.created', {
+          entityType: 'contract',
+          entityId: createdContract?.id,
+          variables: {
+            contractTitle: `Procurement: ${pilot.title_en}`,
+            pilotTitle: pilot.title_en,
+            estimatedValue: formData.estimated_value
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send contract.created email:', error);
+      }
+      
       toast.success(t({ en: 'Procurement initiated', ar: 'تم بدء المشتريات' }));
       onClose();
     }
