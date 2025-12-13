@@ -2,7 +2,7 @@
 
 **Version:** 9.4  
 **Last Updated:** 2025-12-13  
-**Status:** 🟢 Phase 8 Complete | Media Management Integrated
+**Status:** 🟢 Phase 8 Complete | Phase 9 Planned (Expert & Evaluation Integration)
 
 ---
 
@@ -39,6 +39,7 @@
 | **Bookmarks** | ✅ Full | ✅ Full | None |
 | **Audit Logging** | ✅ Full | ✅ Full | None |
 | **Media Management** | ✅ Integrated | ✅ Integrated | None |
+| **Expert & Evaluation** | ✅ Full | ❌ Not Integrated | Medium |
 | **Realtime Updates** | ❌ Future | ❌ Future | Low |
 
 **Full details:** See `docs/programs-events-integration-matrix.md`
@@ -156,6 +157,29 @@
 | EventCreate integration | Low | ✅ DONE | Library picker UI (no tracking - no entity ID) |
 
 **Note:** Create forms use MediaFieldWithPicker for UI but don't track media usage because entities don't have IDs until after creation.
+
+### 🔲 Phase 9 Tasks - Expert & Evaluation Integration - PLANNED
+
+| Task | Priority | Status | Notes |
+|------|----------|--------|-------|
+| EventExpertEvaluation component | High | 🔲 Planned | Similar to ProgramExpertEvaluation |
+| expert_evaluations entity_type: 'event' | High | 🔲 Planned | Allow expert reviews for events |
+| expert_assignments entity_type: 'event' | High | 🔲 Planned | Assign experts to evaluate events |
+| EventDetail expert evaluation tab | Medium | 🔲 Planned | Add evaluation section to EventDetail |
+| EvaluationConsensusPanel for events | Medium | 🔲 Planned | Multi-expert consensus for events |
+| ExpertMatchingEngine for events | Low | 🔲 Planned | AI-powered expert matching |
+
+**Current State:**
+- Programs: ✅ Full integration (ProgramExpertEvaluation, expert_assignments, EvaluationConsensusPanel)
+- Events: ❌ No expert evaluation integration
+
+**Gap Analysis:**
+| Component | Programs | Events |
+|-----------|----------|--------|
+| Expert Evaluation Form | ✅ ProgramExpertEvaluation | 🔲 EventExpertEvaluation |
+| Expert Assignment | ✅ entity_type: 'program' | 🔲 entity_type: 'event' |
+| Evaluation Consensus | ✅ Supported | 🔲 Not Supported |
+| AI Expert Matching | ✅ ExpertMatchingEngine | 🔲 Not Supported |
 
 ---
 
