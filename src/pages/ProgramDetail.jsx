@@ -47,6 +47,8 @@ import PeerCollaborationHub from '../components/programs/PeerCollaborationHub';
 import ResourceLibrary from '../components/programs/ResourceLibrary';
 import AlumniSuccessStoryGenerator from '../components/programs/AlumniSuccessStoryGenerator';
 import MunicipalImpactCalculator from '../components/programs/MunicipalImpactCalculator';
+import ProgramOutcomeKPITracker from '../components/programs/ProgramOutcomeKPITracker';
+import ProgramLessonsToStrategy from '../components/programs/ProgramLessonsToStrategy';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
@@ -965,8 +967,10 @@ Provide bilingual insights (each item should have both English and Arabic versio
               </Card>
             </TabsContent>
 
-            <TabsContent value="strategic">
+            <TabsContent value="strategic" className="space-y-6">
               <StrategicAlignmentWidget program={program} />
+              <ProgramOutcomeKPITracker program={program} />
+              <ProgramLessonsToStrategy program={program} />
             </TabsContent>
 
             <TabsContent value="outcomes" className="space-y-6">
