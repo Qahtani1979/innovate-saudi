@@ -38,19 +38,23 @@ export default function StartupMentorshipMatcher({ startupId }) {
     mutationFn: async (mentorId) => {
       const mentor = potentialMentors.find(m => m.id === mentorId);
       
-      await base44.integrations.Core.SendEmail({
-        to: mentor.contact_email,
-        subject: `Mentorship Request from ${startup?.name_en}`,
-        body: `${startup?.name_en} would like you to mentor them!
-
-Your expertise in ${startup?.sectors?.join(', ')} would be valuable.
-
-Startup Details:
-- Stage: ${startup?.stage}
-- Team Size: ${startup?.team_size}
-- Focus: ${startup?.sectors?.join(', ')}
-
-Please respond if interested in mentoring.`
+      // Send mentorship request via email-trigger-hub
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'pilot.feedback_request',
+          recipient_email: mentor.contact_email,
+          entity_type: 'startup',
+          entity_id: startupId,
+          variables: {
+            startupName: startup?.name_en,
+            mentorName: mentor.name_en,
+            sectors: startup?.sectors?.join(', '),
+            stage: startup?.stage,
+            teamSize: startup?.team_size
+          },
+          triggered_by: 'system'
+        }
       });
 
       await base44.entities.ProgramMentorship.create({

@@ -43,7 +43,7 @@ This document tracks the progress of migrating legacy email sending calls to the
 | `src/components/organizations/PartnershipWorkflow.jsx` | `email-trigger-hub` | ✅ | Partnership proposal |
 | `src/components/programs/WaitlistManager.jsx` | `email-trigger-hub` | ✅ | Waitlist notification |
 
-### Remaining Files (found in search - ~11 files)
+### Session 5 Files (migrated)
 
 | File | Current Method | Status | Notes |
 |------|---------------|--------|-------|
@@ -54,10 +54,29 @@ This document tracks the progress of migrating legacy email sending calls to the
 | `src/components/ChallengeSubmissionWizard.jsx` | `email-trigger-hub` | ✅ | Challenge submission confirmation |
 | `src/components/solutions/SolutionToPilotWorkflow.jsx` | `email-trigger-hub` | ✅ | Pilot created from solution |
 | `src/components/rd/RDProposalAwardWorkflow.jsx` | `email-trigger-hub` | ✅ | Proposal awarded notification |
-| `src/components/rd/RDProposalSubmissionGate.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Proposal submission |
-| `src/components/startup/StartupMentorshipMatcher.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Mentorship request |
-| `src/pages/MasterDevelopmentPrompt.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Development prompt |
-| Other files (~8) | Various methods | ❌ | Remaining files |
+
+### Session 6 Files (migrated)
+
+| File | Current Method | Status | Notes |
+|------|---------------|--------|-------|
+| `src/pages/ExpertOnboarding.jsx` | `email-trigger-hub` | ✅ | Expert application notification |
+| `src/pages/ExpertMatchingEngine.jsx` | `email-trigger-hub` | ✅ | Expert assignment notification |
+| `src/components/rd/RDProposalEscalationAutomation.jsx` | `email-trigger-hub` | ✅ | Escalation notification |
+| `src/components/rd/RDProposalSubmissionGate.jsx` | `email-trigger-hub` | ✅ | Proposal submission notification |
+| `src/components/startup/StartupMentorshipMatcher.jsx` | `email-trigger-hub` | ✅ | Mentorship request |
+| `src/components/ProgramLaunchWorkflow.jsx` | `email-trigger-hub` | ✅ | Program launch notification |
+| `src/components/programs/OnboardingWorkflow.jsx` | `email-trigger-hub` | ✅ | Onboarding welcome email |
+
+### Remaining Files (~4 files)
+
+| File | Current Method | Status | Notes |
+|------|---------------|--------|-------|
+| `src/pages/MasterDevelopmentPrompt.jsx` | `base44.integrations.Core.SendEmail` | ⏭️ | Documentation only - no runtime |
+| `src/components/challenges/CrossCitySolutionSharing.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Cross-city sharing |
+| `src/components/CommitteeMeetingScheduler.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Meeting notifications |
+| `src/components/programs/MentorScheduler.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Mentor session |
+| `src/components/programs/AutomatedCertificateGenerator.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Certificate email |
+| `src/components/scaling/BudgetApprovalGate.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Budget approval |
 
 ---
 
@@ -67,10 +86,12 @@ This document tracks the progress of migrating legacy email sending calls to the
 |----------|-------|----------|-------------|-------------|
 | Direct Supabase calls | 5 | 4 | 0 | 0 |
 | base44 integration calls | 14 | 14 | 0 | 0 |
-| Other files | ~18 | 7 | 0 | ~11 |
-| **Total** | **~37** | **25** | **0** | **~11** |
+| Session 5 files | 7 | 7 | 0 | 0 |
+| Session 6 files | 7 | 7 | 0 | 0 |
+| Remaining files | ~6 | 0 | 0 | ~6 |
+| **Total** | **~39** | **32** | **0** | **~6** |
 
-**Progress: ~68% Complete**
+**Progress: ~82% Complete**
 
 ---
 
@@ -245,6 +266,15 @@ await supabase.functions.invoke('email-trigger-hub', {
 24. ✅ `SolutionToPilotWorkflow.jsx` - Pilot created from solution
 25. ✅ `RDProposalAwardWorkflow.jsx` - Proposal awarded notification
 
+### Session 6 (2024-12-13)
+26. ✅ `ExpertOnboarding.jsx` - Expert application notification
+27. ✅ `ExpertMatchingEngine.jsx` - Expert assignment notification
+28. ✅ `RDProposalEscalationAutomation.jsx` - Escalation notification
+29. ✅ `RDProposalSubmissionGate.jsx` - Proposal submission notification
+30. ✅ `StartupMentorshipMatcher.jsx` - Mentorship request
+31. ✅ `ProgramLaunchWorkflow.jsx` - Program launch notification
+32. ✅ `OnboardingWorkflow.jsx` - Onboarding welcome email
+
 ---
 
 ## Special Cases
@@ -254,6 +284,12 @@ await supabase.functions.invoke('email-trigger-hub', {
 - This component tests individual templates directly
 - Should keep using direct `send-email` for admin testing
 - Not a production email flow
+
+### MasterDevelopmentPrompt.jsx
+**Status: ⏭️ Skipped**
+- This is documentation/prompt file, not runtime code
+- Contains example code snippets for development reference
+- Not actual production email calls
 
 ### Campaign-related emails
 **Status: N/A**
@@ -265,7 +301,7 @@ await supabase.functions.invoke('email-trigger-hub', {
 
 ## Next Steps
 
-1. Continue migrating remaining files (~11 remaining)
+1. Continue migrating remaining files (~5 remaining)
 2. Add missing trigger configurations for new triggers
 3. Test each migration in development
 4. Update tracker after each file

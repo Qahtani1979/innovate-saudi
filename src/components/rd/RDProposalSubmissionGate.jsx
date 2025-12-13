@@ -59,12 +59,23 @@ export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) 
         timestamp: new Date().toISOString()
       });
 
-      // Notify call organizer
+      // Notify call organizer via email-trigger-hub
       if (rdCall?.organizer_email) {
-        await base44.integrations.Core.SendEmail({
-          to: rdCall.organizer_email,
-          subject: `New R&D Proposal Submitted: ${proposal.title_en}`,
-          body: `A new proposal has been submitted to "${rdCall.title_en}".\n\nProposal: ${proposal.title_en}\nPrincipal Investigator: ${proposal.principal_investigator?.name}\nBudget: ${proposal.budget_requested} SAR\n\nPlease review in the platform.`
+        const { supabase } = await import('@/integrations/supabase/client');
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'proposal.submitted',
+            recipient_email: rdCall.organizer_email,
+            entity_type: 'rd_proposal',
+            entity_id: proposal.id,
+            variables: {
+              proposalTitle: proposal.title_en,
+              rdCallTitle: rdCall.title_en,
+              piName: proposal.principal_investigator?.name,
+              budgetRequested: proposal.budget_requested
+            },
+            triggered_by: proposal.created_by
+          }
         });
       }
     },

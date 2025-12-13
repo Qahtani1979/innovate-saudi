@@ -30,29 +30,23 @@ export default function OnboardingWorkflow({ participant, program }) {
         onboarding_checklist: checklist
       });
 
-      await base44.integrations.Core.SendEmail({
-        to: participant.applicant_email,
-        subject: `Welcome to ${program.name_en}!`,
-        body: `Dear ${participant.applicant_name},
-
-Congratulations on your acceptance to ${program.name_en}!
-
-Your onboarding is now complete. Here's what's next:
-
-📅 Program Start: ${program.timeline?.program_start}
-⏰ Duration: ${program.duration_weeks} weeks
-👥 Cohort Size: ${program.accepted_count} participants
-
-Next Steps:
-1. Join the program kickoff session
-2. Access the curriculum and resources
-3. Connect with your mentor
-4. Collaborate with peers
-
-We're excited to have you!
-
-Best regards,
-${program.operator_organization_id || 'Program Team'}`
+      // Send welcome email via email-trigger-hub
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'pilot.enrollment_confirmed',
+          recipient_email: participant.applicant_email,
+          entity_type: 'program',
+          entity_id: program.id,
+          variables: {
+            participantName: participant.applicant_name,
+            programName: program.name_en,
+            programStart: program.timeline?.program_start,
+            durationWeeks: program.duration_weeks,
+            cohortSize: program.accepted_count
+          },
+          triggered_by: 'system'
+        }
       });
     },
     onSuccess: () => {

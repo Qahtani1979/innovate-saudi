@@ -23,12 +23,22 @@ export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
         priority: 'high'
       });
 
-      // Send email notification
+      // Send email notification via email-trigger-hub
       if (rdCall?.organizer_email) {
-        await base44.integrations.Core.SendEmail({
-          to: rdCall.organizer_email,
-          subject: `🚨 Escalation: ${proposal.title_en}`,
-          body: `The R&D proposal "${proposal.title_en}" (${proposal.proposal_code}) has been escalated to Level ${escalationData.escalation_level}.\n\nPlease review urgently.`
+        const { supabase } = await import('@/integrations/supabase/client');
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'challenge.escalated',
+            recipient_email: rdCall.organizer_email,
+            entity_type: 'rd_proposal',
+            entity_id: proposal.id,
+            variables: {
+              proposalTitle: proposal.title_en,
+              proposalCode: proposal.proposal_code,
+              escalationLevel: escalationData.escalation_level
+            },
+            triggered_by: 'system'
+          }
         });
       }
     },
