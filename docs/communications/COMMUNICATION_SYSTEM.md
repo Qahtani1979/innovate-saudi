@@ -400,8 +400,54 @@ Processes delayed emails from `email_queue` (runs via cron every 5 minutes).
 |-----|----------|---------------|
 | Queue Processor | Every 5 minutes | `queue-processor` |
 | Campaign Sender | Every 5 minutes | `campaign-sender` |
+| MII Recalculation | Daily at 2am | `calculate-mii` |
 
 ---
+
+## 🔗 User Profile Integration
+
+The communication system is fully integrated with user profiles:
+
+### Auto-Creation of Preferences
+When a new `user_profiles` record is created, a database trigger automatically creates default `user_notification_preferences`:
+- Email notifications: enabled
+- In-app notifications: enabled
+- Push notifications: enabled
+- All email categories: enabled
+- Frequency: immediate
+
+### Preference Checking Flow
+1. `email-trigger-hub` receives trigger → calls `send-email`
+2. `send-email` checks `user_notification_preferences` for:
+   - Master email switch (`email_notifications`)
+   - Category-specific settings (`email_categories`)
+   - User's language preference from `user_profiles`
+3. Critical emails (auth, security) bypass preferences
+
+### User Settings Page
+`/notification-preferences` allows users to:
+- Toggle email/in-app/push notifications
+- Set email frequency (immediate/daily/weekly)
+- Configure quiet hours
+- Enable/disable specific email categories
+
+---
+
+## 🔄 Webhook Integration (Resend)
+
+The `resend-webhook` edge function handles email delivery events:
+
+| Event | Action |
+|-------|--------|
+| `email.delivered` | Update `email_logs.delivered_at` |
+| `email.opened` | Update `email_logs.opened_at` |
+| `email.clicked` | Update `email_logs.clicked_at` |
+| `email.bounced` | Mark as bounced, log error |
+| `email.complained` | Disable marketing emails for user |
+
+**Setup Required:**
+Configure webhook URL in Resend dashboard:
+`https://wneorgiqyvkkjmqootpe.supabase.co/functions/v1/resend-webhook`
 
 ## 📊 Metrics & Analytics
 
