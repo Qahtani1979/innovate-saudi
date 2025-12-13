@@ -158,3 +158,9 @@ verify_jwt = false
 
 [functions.digest-processor]
 verify_jwt = true
+
+[functions.send-scheduled-reminders]
+verify_jwt = true
+
+[functions.unsubscribe]
+verify_jwt = false
