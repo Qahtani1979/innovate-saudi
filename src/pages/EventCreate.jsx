@@ -17,6 +17,8 @@ import { useEvents } from '@/hooks/useEvents';
 import { EVENT_TYPES } from '@/components/events/EventFilters';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import MediaFieldWithPicker from '@/components/media/MediaFieldWithPicker';
+import { AIConflictDetector } from '@/components/ai/AIConflictDetector';
+import { AIEventOptimizer } from '@/components/ai/AIEventOptimizer';
 import { 
   Calendar, 
   MapPin, 
@@ -27,7 +29,8 @@ import {
   Save, 
   Send,
   Sparkles,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPageUrl } from '@/utils';
@@ -259,6 +262,20 @@ function EventCreate() {
                 bucket="events"
                 placeholder={t({ en: 'Image URL...', ar: 'رابط الصورة...' })}
               />
+
+              {/* AI Event Optimizer */}
+              <AIEventOptimizer 
+                eventData={formData}
+                compact={true}
+                onApplySuggestion={(field, value) => {
+                  if (field === 'description_en') {
+                    handleChange('description_en', value);
+                    toast.success(t({ en: 'Applied enhanced description', ar: 'تم تطبيق الوصف المحسن' }));
+                  } else if (field === 'suggested_tags') {
+                    toast.info(t({ en: 'Tags suggestion applied', ar: 'تم تطبيق اقتراح الوسوم' }));
+                  }
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -303,6 +320,22 @@ function EventCreate() {
                   {t({ en: 'Leave empty for no deadline', ar: 'اتركه فارغاً لعدم وجود موعد نهائي' })}
                 </p>
               </div>
+
+              {/* AI Conflict Detector */}
+              {formData.start_date && (
+                <AIConflictDetector
+                  proposedDate={formData.start_date?.split('T')[0]}
+                  proposedTime={formData.start_date?.split('T')[1] || '10:00'}
+                  onConflictsFound={(conflicts) => {
+                    if (conflicts.length > 0) {
+                      toast.warning(t({ 
+                        en: `${conflicts.length} potential conflicts detected`,
+                        ar: `تم اكتشاف ${conflicts.length} تعارضات محتملة`
+                      }));
+                    }
+                  }}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

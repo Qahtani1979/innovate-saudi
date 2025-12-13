@@ -10,12 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useAuth } from '@/lib/AuthContext';
-import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit, Bookmark, MessageSquare, Send, Loader2, Award, Info } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit, Bookmark, MessageSquare, Send, Loader2, Award, Info, Sparkles, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { EventExpertEvaluation } from '@/components/events';
+import { AIEventOptimizer } from '@/components/ai/AIEventOptimizer';
+import { AIAttendancePredictor } from '@/components/ai/AIAttendancePredictor';
 
 function EventDetail() {
   const { t, language } = useLanguage();
@@ -239,12 +241,16 @@ function EventDetail() {
         </Card>
       </div>
 
-      {/* Tabs for Details, Comments, Expert Evaluation */}
+      {/* Tabs for Details, AI Insights, Comments, Expert Evaluation */}
       <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="details" className="flex items-center gap-2">
             <Info className="h-4 w-4" />
             {t({ en: 'Details', ar: 'التفاصيل' })}
+          </TabsTrigger>
+          <TabsTrigger value="ai-insights" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
           </TabsTrigger>
           <TabsTrigger value="comments" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
@@ -342,6 +348,54 @@ function EventDetail() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* AI Insights Tab */}
+        <TabsContent value="ai-insights" className="space-y-6 mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* AI Attendance Predictor */}
+            <AIAttendancePredictor 
+              event={event}
+              registrationCount={event.registration_count || 0}
+            />
+            
+            {/* AI Event Optimizer */}
+            {canEditEvents && (
+              <AIEventOptimizer 
+                eventData={event}
+                onApplySuggestion={(field, value) => {
+                  toast.info(t({ 
+                    en: `Suggestion: Update ${field} to optimize event`,
+                    ar: `اقتراح: تحديث ${field} لتحسين الفعالية`
+                  }));
+                }}
+              />
+            )}
+          </div>
+
+          {/* Link to full analytics */}
+          <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="h-8 w-8 text-purple-600" />
+                  <div>
+                    <h3 className="font-semibold text-slate-900">
+                      {t({ en: 'Event Analytics Dashboard', ar: 'لوحة تحليلات الفعالية' })}
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      {t({ en: 'View detailed attendance, engagement, and ROI metrics', ar: 'عرض مقاييس الحضور والتفاعل والعائد بالتفصيل' })}
+                    </p>
+                  </div>
+                </div>
+                <Link to={createPageUrl('EventsAnalyticsDashboard')}>
+                  <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100">
+                    {t({ en: 'View Analytics', ar: 'عرض التحليلات' })}
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Comments Tab */}

@@ -334,6 +334,7 @@ import InvoiceApproval from './pages/InvoiceApproval';
 import EventRegistration from './pages/EventRegistration';
 import EventCreate from './pages/EventCreate';
 import EventEdit from './pages/EventEdit';
+import EventsAnalyticsDashboard from './pages/EventsAnalyticsDashboard';
 import InfrastructureRoadmap from './pages/InfrastructureRoadmap';
 import { ProgramsEventsHub } from './components/hub';
 import RLSImplementationSpec from './pages/RLSImplementationSpec';
@@ -826,6 +827,7 @@ export const PAGES = {
     "EventRegistration": EventRegistration,
     "EventCreate": EventCreate,
     "EventEdit": EventEdit,
+    "EventsAnalyticsDashboard": EventsAnalyticsDashboard,
     "InfrastructureRoadmap": InfrastructureRoadmap,
     "ProgramsEventsHub": ProgramsEventsHub,
     "RLSImplementationSpec": RLSImplementationSpec,
