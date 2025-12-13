@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
-import { Mail, FileText, History, Settings, Users, Send } from 'lucide-react';
+import { Mail, FileText, History, Settings, Users, Megaphone } from 'lucide-react';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import EmailTemplateEditorContent from '@/components/communications/EmailTemplateEditorContent';
 import EmailLogsViewer from '@/components/communications/EmailLogsViewer';
 import EmailSettingsEditor from '@/components/communications/EmailSettingsEditor';
 import UserPreferencesOverview from '@/components/communications/UserPreferencesOverview';
+import CampaignManager from '@/components/communications/CampaignManager';
 
 function CommunicationsHub() {
   const { t } = useLanguage();
@@ -22,10 +23,14 @@ function CommunicationsHub() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
           <TabsTrigger value="templates" className="gap-2">
             <FileText className="h-4 w-4" />
             {t({ en: 'Templates', ar: 'القوالب' })}
+          </TabsTrigger>
+          <TabsTrigger value="campaigns" className="gap-2">
+            <Megaphone className="h-4 w-4" />
+            {t({ en: 'Campaigns', ar: 'الحملات' })}
           </TabsTrigger>
           <TabsTrigger value="logs" className="gap-2">
             <History className="h-4 w-4" />
@@ -37,7 +42,7 @@ function CommunicationsHub() {
           </TabsTrigger>
           <TabsTrigger value="preferences" className="gap-2">
             <Users className="h-4 w-4" />
-            {t({ en: 'User Prefs', ar: 'تفضيلات المستخدمين' })}
+            {t({ en: 'User Prefs', ar: 'تفضيلات' })}
           </TabsTrigger>
         </TabsList>
 
