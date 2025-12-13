@@ -173,20 +173,33 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 ## Persona & Permission Audit Summary
 
-### Permission Configurations by Page (VERIFIED 2025-12-13)
+### Programs Permission Configurations (VERIFIED 2025-12-13)
 
 | Page | ProtectedPage? | Permissions | Roles | Actual Config |
 |------|----------------|-------------|-------|---------------|
 | ProgramsControlDashboard | ✅ | `[]` (open) | - | `requiredPermissions: []` |
-| ParticipantDashboard | ❌ | - | - | No wrapper, uses `useAuth()` + data scoped by email |
+| Programs.jsx | ✅ | `[]` (open) | - | Uses `hasPermission('program_create')`, `hasPermission('program_edit')` |
+| ProgramDetail.jsx | ✅ | `[]` (open) | - | Uses `hasPermission('program_edit')`, `hasPermission('program_approve')` |
+| ProgramEdit.jsx | ✅ | `[]` (open) | - | Implicit permission via owner check |
+| ProgramOperatorPortal | ✅ | `['program_manage']` | - | `requiredPermissions: ['program_manage']` |
+| ApprovalCenter | ✅ | Multi-perm | - | `requiredPermissions: ['program_approve', ...], requireAll: false` |
 | MyPrograms | ✅ | `[]` (open) | - | `requiredPermissions: []` |
 | ProgramIdeaSubmission | ✅ | `[]` (open) | - | `requiredPermissions: []` |
-| ApprovalCenter | ✅ | Multi-perm | - | `requiredPermissions: ['challenge_approve', 'pilot_approve', 'program_approve', 'rd_proposal_approve', 'solution_approve', 'matchmaker_approve', 'event_approve'], requireAll: false` |
-| ProgramOperatorPortal | ✅ | `['program_manage']` | - | `requiredPermissions: ['program_manage']` |
-| StrategicPlanBuilder | ✅ | `[]` | Exec, Strategy | `requiredPermissions: [], requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead']` |
+| ParticipantDashboard | ❌ | - | - | No wrapper, uses `useAuth()` + data scoped by email |
+| StrategicPlanBuilder | ✅ | `[]` | Exec, Strategy | `requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead']` |
 | Portfolio | ✅ | `['portfolio_view']` | - | `requiredPermissions: ['portfolio_view']` |
-| GapAnalysisTool | ✅ | `[]` | Exec, Strategy | `requiredPermissions: [], requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead']` |
-| CampaignPlanner | ✅ | `[]` | Multiple | `requiredPermissions: [], requiredRoles: ['Executive Leadership', 'Program Director', 'Communication Manager']` |
+| GapAnalysisTool | ✅ | `[]` | Exec, Strategy | `requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead']` |
+| CampaignPlanner | ✅ | `[]` | Multiple | `requiredRoles: ['Executive Leadership', 'Program Director', 'Communication Manager']` |
+
+### Events Permission Configurations (VERIFIED 2025-12-13) ✅
+
+| Page | ProtectedPage? | Permission Checks | Actual Implementation |
+|------|----------------|-------------------|----------------------|
+| EventCalendar.jsx | ✅ | `hasAnyPermission(['event_create', 'admin'])` | Role fallback: `['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager']` |
+| EventDetail.jsx | ✅ | Edit: `hasAnyPermission(['event_edit', 'event_manage', 'admin'])` | Role fallback: `['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager']` |
+| EventDetail.jsx | ✅ | Evaluate: `hasAnyPermission(['event_evaluate', 'expert_evaluate', 'admin'])` | Role fallback: `['admin', 'super_admin', 'expert', 'evaluator', 'gdibs_internal']` |
+| EventCreate.jsx | ✅ | Uses `municipalityId` for scoping | User profile-based scoping |
+| EventEdit.jsx | ✅ | `hasAnyPermission(['event_manage', 'admin'])` | Owner check: `event?.created_by === user?.email` |
 
 ### Sidebar Programs & Events Links (VERIFIED 2025-12-13)
 
@@ -217,6 +230,10 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | Portfolio | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ | ❌ |
 | GapAnalysisTool | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ | ❌ |
 | CampaignPlanner | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **EventCalendar** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **EventDetail** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **EventCreate** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **EventEdit** | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ | ❌ |
 
 **Legend:** ✅ Full access | ⚠️ Limited/scoped | ❌ No access
 
@@ -229,6 +246,10 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | ApprovalCenter properly secured | Multi-perm + requireAll:false | ✅ Already correct | - |
 | GapAnalysisTool properly secured | Roles-based | ✅ Already correct | - |
 | CampaignPlanner properly secured | Roles-based | ✅ Already correct | - |
+| **EventCalendar** | ✅ Properly secured | `hasAnyPermission` + role fallback | ✅ Complete |
+| **EventDetail** | ✅ Properly secured | `hasAnyPermission` for edit/evaluate | ✅ Complete |
+| **EventCreate** | ✅ Properly secured | Municipality scoping | ✅ Complete |
+| **EventEdit** | ✅ Properly secured | `hasAnyPermission` + owner check | ✅ Complete |
 
 ---
 

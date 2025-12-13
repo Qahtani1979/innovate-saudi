@@ -60,25 +60,68 @@
 
 ## 2. PERMISSIONS SYSTEM ✅ FULLY INTEGRATED
 
-### Roles with Program Permissions
+### Implementation Status
+
+| Feature | Programs | Events | Status |
+|---------|----------|--------|--------|
+| usePermissions hook integration | ✅ | ✅ | Complete |
+| hasPermission() checks | ✅ (3 pages) | ✅ (4 pages) | Complete |
+| ProtectedPage wrapper | ✅ | ✅ | Complete |
+| Role-based access | ✅ | ✅ | Complete |
+| Action-based permissions | ✅ | ✅ | Complete |
+
+### Programs Permission Implementation
+
+| Page | usePermissions | Permission Checks | Status |
+|------|----------------|-------------------|--------|
+| Programs.jsx | ✅ hasPermission | `program_create`, `program_edit` | ✅ Complete |
+| ProgramDetail.jsx | ✅ hasPermission | `program_edit`, `program_approve` | ✅ Complete |
+| ProgramEdit.jsx | ✅ hasPermission | Edit access control | ✅ Complete |
+| ApprovalCenter.jsx | ✅ Multi-permission | `program_approve` | ✅ Complete |
+| ProgramOperatorPortal.jsx | ✅ ProtectedPage | `['program_manage']` | ✅ Complete |
+
+### Events Permission Implementation
+
+| Page | usePermissions | Permission Checks | Status |
+|------|----------------|-------------------|--------|
+| EventCalendar.jsx | ✅ hasAnyPermission | `['event_create', 'admin']` + role fallback | ✅ Complete |
+| EventDetail.jsx | ✅ hasAnyPermission | `['event_edit', 'event_manage', 'admin']`, `['event_evaluate', 'expert_evaluate', 'admin']` | ✅ Complete |
+| EventCreate.jsx | ✅ usePermissions | `municipalityId` for scoping | ✅ Complete |
+| EventEdit.jsx | ✅ hasAnyPermission | `['event_manage', 'admin']` + owner check | ✅ Complete |
+
+### Roles with Program Permissions (18 roles total)
 | Role | create | edit | view | approve | manage |
 |------|--------|------|------|---------|--------|
+| Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Super Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Municipality Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Municipality Coordinator | ✅ | ✅ | ✅ | - | - |
 | Program Manager | ✅ | ✅ | ✅ | - | ✅ |
 | Program Director | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Program Operator | - | ✅ | ✅ | - | ✅ |
 | GDISB Operations | - | - | ✅ | ✅ | - |
+| GDISB Internal | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-### Roles with Event Permissions
-| Role | create | edit | view | approve | publish |
-|------|--------|------|------|---------|---------|
+### Roles with Event Permissions (18 roles total)
+| Role | create | edit | view | approve | evaluate |
+|------|--------|------|------|---------|----------|
+| Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Super Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Municipality Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Municipality Coordinator | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Program Manager | ✅ | ✅ | ✅ | - | ✅ |
-| Program Director | ✅ | ✅ | ✅ | ✅ | ✅ |
-| GDISB Operations | - | - | ✅ | ✅ | ✅ |
+| Municipality Coordinator | ✅ | ✅ | ✅ | ✅ | - |
 | Municipality Staff | ✅ | ✅ | ✅ | - | - |
+| GDISB Internal | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Event Manager | ✅ | ✅ | ✅ | - | - |
+| Expert | - | - | ✅ | - | ✅ |
+| Evaluator | - | - | ✅ | - | ✅ |
+
+### Permission Gaps: NONE ✅
+
+All permission checks are properly implemented:
+- **Programs:** 3 pages with `hasPermission()` checks
+- **Events:** 4 pages with `hasAnyPermission()` checks + role fallbacks
+- **ProtectedPage wrapper:** Used on all pages
+- **Owner-based access:** Implemented for edit actions
 
 ---
 
