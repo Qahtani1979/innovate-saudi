@@ -696,6 +696,57 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_recipients: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          email_log_id: string | null
+          error_message: string | null
+          id: string
+          recipient_email: string
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          email_log_id?: string | null
+          error_message?: string | null
+          id?: string
+          recipient_email: string
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          email_log_id?: string | null
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_studies: {
         Row: {
           challenge_description: string | null
@@ -2254,6 +2305,80 @@ export type Database = {
           },
         ]
       }
+      email_campaigns: {
+        Row: {
+          audience_filter: Json | null
+          audience_type: string
+          campaign_variables: Json | null
+          clicked_count: number | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          failed_count: number | null
+          id: string
+          name: string
+          opened_count: number | null
+          recipient_count: number | null
+          scheduled_at: string | null
+          sent_count: number | null
+          started_at: string | null
+          status: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          audience_filter?: Json | null
+          audience_type?: string
+          campaign_variables?: Json | null
+          clicked_count?: number | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          failed_count?: number | null
+          id?: string
+          name: string
+          opened_count?: number | null
+          recipient_count?: number | null
+          scheduled_at?: string | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audience_filter?: Json | null
+          audience_type?: string
+          campaign_variables?: Json | null
+          clicked_count?: number | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          failed_count?: number | null
+          id?: string
+          name?: string
+          opened_count?: number | null
+          recipient_count?: number | null
+          scheduled_at?: string | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           body_preview: string | null
@@ -2333,6 +2458,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_queue: {
+        Row: {
+          attempts: number | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          error_message: string | null
+          id: string
+          language: string | null
+          last_attempt_at: string | null
+          max_attempts: number | null
+          priority: number | null
+          recipient_email: string
+          recipient_user_id: string | null
+          scheduled_for: string
+          source_id: string | null
+          source_type: string | null
+          status: string | null
+          template_key: string | null
+          triggered_by: string | null
+          variables: Json | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          id?: string
+          language?: string | null
+          last_attempt_at?: string | null
+          max_attempts?: number | null
+          priority?: number | null
+          recipient_email: string
+          recipient_user_id?: string | null
+          scheduled_for?: string
+          source_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          template_key?: string | null
+          triggered_by?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          id?: string
+          language?: string | null
+          last_attempt_at?: string | null
+          max_attempts?: number | null
+          priority?: number | null
+          recipient_email?: string
+          recipient_user_id?: string | null
+          scheduled_for?: string
+          source_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          template_key?: string | null
+          triggered_by?: string | null
+          variables?: Json | null
+        }
+        Relationships: []
       }
       email_settings: {
         Row: {
@@ -2460,6 +2651,54 @@ export type Database = {
           use_header?: boolean | null
           variables?: Json | null
           version?: number | null
+        }
+        Relationships: []
+      }
+      email_trigger_config: {
+        Row: {
+          additional_recipients_field: string | null
+          created_at: string
+          delay_seconds: number | null
+          id: string
+          is_active: boolean | null
+          priority: number | null
+          recipient_field: string | null
+          recipient_query: Json | null
+          respect_preferences: boolean | null
+          template_key: string
+          trigger_key: string
+          updated_at: string
+          variable_mapping: Json | null
+        }
+        Insert: {
+          additional_recipients_field?: string | null
+          created_at?: string
+          delay_seconds?: number | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          recipient_field?: string | null
+          recipient_query?: Json | null
+          respect_preferences?: boolean | null
+          template_key: string
+          trigger_key: string
+          updated_at?: string
+          variable_mapping?: Json | null
+        }
+        Update: {
+          additional_recipients_field?: string | null
+          created_at?: string
+          delay_seconds?: number | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          recipient_field?: string | null
+          recipient_query?: Json | null
+          respect_preferences?: boolean | null
+          template_key?: string
+          trigger_key?: string
+          updated_at?: string
+          variable_mapping?: Json | null
         }
         Relationships: []
       }
