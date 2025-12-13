@@ -26,6 +26,7 @@ import SolutionReadinessGate from '../components/solutions/SolutionReadinessGate
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 function PilotCreatePage() {
   const { hasPermission } = usePermissions();
@@ -33,6 +34,7 @@ function PilotCreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
+  const { triggerEmail } = useEmailTrigger();
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
@@ -161,13 +163,26 @@ function PilotCreatePage() {
       console.log('Creating pilot with data:', data);
       return base44.entities.Pilot.create(data);
     },
-    onSuccess: () => {
+    onSuccess: async (pilot) => {
       queryClient.invalidateQueries(['pilots']);
       // Auto-generate embedding
       base44.functions.invoke('generateEmbeddings', {
         entity_name: 'Pilot',
         mode: 'missing'
       }).catch(err => console.error('Embedding generation failed:', err));
+      
+      // Trigger email notification for pilot creation
+      await triggerEmail('pilot.created', {
+        entityType: 'pilot',
+        entityId: pilot.id,
+        variables: {
+          pilot_title: pilot.title_en,
+          pilot_code: pilot.code,
+          challenge_id: pilot.challenge_id,
+          municipality_id: pilot.municipality_id
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+      
       toast.success('Pilot created successfully!');
       navigate(createPageUrl('Pilots'));
     },

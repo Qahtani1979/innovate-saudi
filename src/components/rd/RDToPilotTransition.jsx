@@ -12,10 +12,13 @@ import { TestTube, Sparkles, Loader2, AlertCircle, Microscope } from 'lucide-rea
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
+  const { invokeAI, status: aiStatus, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { invokeAI, status: aiStatus, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
   const [pilotData, setPilotData] = useState({
@@ -126,9 +129,22 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
 
       return pilot;
     },
-    onSuccess: (pilot) => {
+    onSuccess: async (pilot) => {
       queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
       queryClient.invalidateQueries({ queryKey: ['pilots'] });
+      
+      // Trigger email notification for pilot creation from R&D
+      await triggerEmail('pilot.created', {
+        entityType: 'pilot',
+        entityId: pilot.id,
+        variables: {
+          pilot_title: pilot.title_en,
+          pilot_code: pilot.code,
+          rd_project_title: rdProject.title_en,
+          rd_project_id: rdProject.id
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+      
       toast.success(t({ en: 'Pilot created!', ar: 'تم إنشاء التجربة!' }));
       onSuccess?.(pilot);
       onClose?.();

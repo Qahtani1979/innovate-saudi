@@ -20,12 +20,14 @@ import AICurriculumGenerator from './AICurriculumGenerator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useMunicipalitiesWithVisibility, useOrganizationsWithVisibility } from '@/hooks/visibility';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+  const { triggerEmail } = useEmailTrigger();
   const { invokeAI, status: aiStatus, isLoading: aiProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
@@ -125,7 +127,18 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
 
       return program;
     },
-    onSuccess: (program) => {
+    onSuccess: async (program) => {
+      // Trigger email notification for program creation
+      await triggerEmail('program.created', {
+        entityType: 'program',
+        entityId: program.id,
+        variables: {
+          program_name: program.name_en,
+          program_type: program.program_type,
+          duration_weeks: program.duration_weeks
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+      
       toast.success(t({ en: 'Program created successfully!', ar: 'تم إنشاء البرنامج بنجاح!' }));
       if (onComplete) {
         onComplete(program);

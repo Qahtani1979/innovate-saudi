@@ -8,11 +8,13 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { Rocket, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function ProposalToPilotConverter({ proposal, challenge, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { triggerEmail } = useEmailTrigger();
 
   const { data: solution } = useQuery({
     queryKey: ['solution', proposal.solution_id],
@@ -52,10 +54,34 @@ export default function ProposalToPilotConverter({ proposal, challenge, onSucces
 
       return pilot;
     },
-    onSuccess: (pilot) => {
+    onSuccess: async (pilot) => {
       queryClient.invalidateQueries(['proposals']);
       queryClient.invalidateQueries(['pilots']);
       queryClient.invalidateQueries(['challenge']);
+      
+      // Trigger email notification for pilot creation from proposal
+      await triggerEmail('pilot.created', {
+        entityType: 'pilot',
+        entityId: pilot.id,
+        variables: {
+          pilot_title: pilot.title_en,
+          pilot_code: pilot.code,
+          challenge_id: challenge.id,
+          proposal_title: proposal.proposal_title
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+      
+      // Trigger proposal accepted notification
+      await triggerEmail('proposal.approved', {
+        entityType: 'challenge_proposal',
+        entityId: proposal.id,
+        variables: {
+          proposal_title: proposal.proposal_title,
+          challenge_title: challenge.title_en,
+          pilot_id: pilot.id
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+      
       toast.success(t({ en: 'Pilot created from proposal!', ar: 'تم إنشاء تجربة من المقترح!' }));
       navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
       if (onSuccess) onSuccess();

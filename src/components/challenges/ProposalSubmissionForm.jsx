@@ -11,11 +11,13 @@ import { useLanguage } from '../LanguageContext';
 import { Send, Loader2, FileText, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function ProposalSubmissionForm({ challenge, onSuccess, onCancel }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { triggerEmail } = useEmailTrigger();
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['my-solutions', user?.email],
@@ -40,17 +42,31 @@ export default function ProposalSubmissionForm({ challenge, onSuccess, onCancel 
 
   const submitMutation = useMutation({
     mutationFn: async (data) => {
-      const { error } = await supabase.from('challenge_proposals').insert({
+      const { data: proposal, error } = await supabase.from('challenge_proposals').insert({
         challenge_id: challenge.id,
         proposer_email: user.email,
         ...data,
         submission_date: new Date().toISOString(),
         status: 'submitted'
-      });
+      }).select().single();
       if (error) throw error;
+      return proposal;
     },
-    onSuccess: () => {
+    onSuccess: async (proposal) => {
       queryClient.invalidateQueries(['proposals']);
+      
+      // Trigger email notification for proposal submission
+      await triggerEmail('challenge.proposal_received', {
+        entityType: 'challenge_proposal',
+        entityId: proposal.id,
+        variables: {
+          proposal_title: formData.proposal_title,
+          challenge_title: challenge.title_en,
+          challenge_id: challenge.id,
+          proposer_email: user.email
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+      
       toast.success(t({ en: 'Proposal submitted successfully!', ar: 'تم إرسال المقترح بنجاح!' }));
       if (onSuccess) onSuccess();
     }
