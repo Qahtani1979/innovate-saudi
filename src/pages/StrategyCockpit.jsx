@@ -4,16 +4,21 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Target, TrendingUp, Users, Zap, AlertTriangle, CheckCircle2, Sparkles, Loader2, X } from 'lucide-react';
+import { Target, TrendingUp, Users, Zap, AlertTriangle, CheckCircle2, Sparkles, Loader2, X, ArrowRight, BookOpen } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import ResourceAllocationView from '../components/strategy/ResourceAllocationView';
 import PartnershipNetwork from '../components/strategy/PartnershipNetwork';
 import BottleneckDetector from '../components/strategy/BottleneckDetector';
+import StrategyToProgramGenerator from '../components/strategy/StrategyToProgramGenerator';
+import StrategicGapProgramRecommender from '../components/strategy/StrategicGapProgramRecommender';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useStrategicKPI } from '@/hooks/useStrategicKPI';
 
 function StrategyCockpitPage() {
   const { language, isRTL, t } = useLanguage();
