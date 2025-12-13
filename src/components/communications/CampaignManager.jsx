@@ -9,16 +9,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '@/components/LanguageContext';
 import { 
   Send, Plus, Eye, Pause, XCircle, Play, Users, Mail, Calendar, 
   Loader2, CheckCircle2, AlertCircle, Clock, Megaphone, Target,
-  BarChart3, RefreshCw, Trash2
+  BarChart3, RefreshCw, Trash2, Sparkles, ChevronDown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import CampaignAIHelpers from './CampaignAIHelpers';
 
 const STATUS_CONFIG = {
   draft: { icon: Clock, color: 'text-slate-600', bg: 'bg-slate-100', label: { en: 'Draft', ar: 'مسودة' } },
@@ -43,6 +45,7 @@ export default function CampaignManager() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [previewEmail, setPreviewEmail] = useState('');
+  const [showAIHelpers, setShowAIHelpers] = useState(false);
   
   const [newCampaign, setNewCampaign] = useState({
     name: '',
@@ -237,6 +240,22 @@ export default function CampaignManager() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Helpers Collapsible */}
+      <Collapsible open={showAIHelpers} onOpenChange={setShowAIHelpers}>
+        <CollapsibleTrigger asChild>
+          <Button variant="outline" className="w-full justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              {t({ en: 'AI Campaign Helpers', ar: 'مساعدات الحملة بالذكاء الاصطناعي' })}
+            </span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${showAIHelpers ? 'rotate-180' : ''}`} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-4">
+          <CampaignAIHelpers />
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Header */}
       <div className="flex items-center justify-between">
