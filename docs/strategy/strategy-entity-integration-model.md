@@ -2,7 +2,7 @@
 
 ## Complete Assessment Against User's Proposed Model
 
-**Assessment Date:** 2025-01-13  
+**Assessment Date:** 2025-12-13  
 **Assessed By:** Platform Architecture Review
 
 ---
@@ -13,15 +13,15 @@ Entities that SHOULD have direct `strategic_plan_ids[]` and/or `strategic_object
 
 | Entity | User Model | Current DB State | Gap Analysis |
 |--------|-----------|------------------|--------------|
-| **Programs** | ✅ Direct | ✅ Has: `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `strategic_priority_level`, `strategic_kpi_contributions` | **COMPLETE** - Full strategic fields |
+| **Programs** | ✅ Direct | ✅ Has: `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `strategic_priority_level`, `strategic_kpi_contributions` | **PARTIAL** - Missing `is_strategy_derived`, `strategy_derivation_date`, `lessons_learned` |
 | **Challenges** | ✅ Direct | ✅ Has: `strategic_plan_ids[]`, `strategic_goal` + dedicated `strategic_plan_challenge_links` table | **COMPLETE** - Full strategic fields |
 | **Partnerships** | ✅ Direct | ⚠️ Has: `is_strategic` boolean, `linked_program_ids[]`, `linked_challenge_ids[]` | **PARTIAL** - Missing explicit `strategic_plan_ids[]` |
 | **Sandboxes** | ✅ Direct | ❌ No strategic fields | **MISSING** - Needs `strategic_plan_ids[]` |
 | **Living Labs** | ✅ Direct | ❌ No strategic fields | **MISSING** - Needs `strategic_plan_ids[]` |
 
 ### Direct Integration Summary
-- **Fully Implemented:** 2/5 (Programs, Challenges)
-- **Partially Implemented:** 1/5 (Partnerships - via linked entities)
+- **Fully Implemented:** 1/5 (Challenges)
+- **Partially Implemented:** 2/5 (Programs, Partnerships - via linked entities)
 - **Not Implemented:** 2/5 (Sandboxes, Living Labs)
 
 ---
@@ -43,12 +43,14 @@ Entities that link to Strategy through their parent relationships.
 | **Solutions** | via Proposals→Challenges | `solutions.source_program_id`, `challenge_solution_matches` | ✅ Has links | **COMPLETE** |
 | **Pilots** | via Solutions→Challenges | `pilots.solution_id`, `pilots.challenge_id`, `pilots.source_program_id` | ✅ Has all links | **COMPLETE** |
 | **R&D Projects** | via R&D Calls→Challenges | `rd_projects.challenge_ids[]`, `rd_projects.solution_id` | ✅ Has `challenge_ids[]` | **COMPLETE** |
-| **Scaling Plans** | via Pilots→Challenges | `scaling_plans.pilot_id`, `scaling_plans.validated_solution_id` | ✅ Has links | **COMPLETE** |
+| **Scaling Plans** | via Pilots→Challenges | `scaling_plans.pilot_id`, `scaling_plans.validated_solution_id` | ✅ Has links | **COMPLETE** (Pilot path) |
+| **Scaling Plans** | via R&D Projects→Challenges | Missing `rd_project_id` | ❌ R&D path broken | **BROKEN** |
 
 ### Indirect Integration Summary
-- **Complete:** 9/12 entities have proper indirect paths
-- **Implicit Only:** 2/12 (Citizens, Staff - via activities)
-- **Missing Path:** 1/12 (Campaigns - no entity link)
+- **Complete:** 10/13 entities have proper indirect paths
+- **Implicit Only:** 2/13 (Citizens, Staff - via activities)
+- **Missing Path:** 1/13 (Campaigns - no entity link)
+- **Broken Path:** 1 (Scaling Plans R&D path)
 
 ---
 
@@ -94,7 +96,7 @@ These entities exist in the database but were not covered:
 STRATEGIC PLANS (Root)
 │
 ├── DIRECT INTEGRATION (explicit strategic_plan_ids[])
-│   ├── Programs ✅ COMPLETE
+│   ├── Programs ⚠️ PARTIAL (missing 3 fields)
 │   │   ├── Events ✅ (also has direct!)
 │   │   ├── Program Applications ✅
 │   │   ├── Program Mentorships ✅
@@ -129,6 +131,7 @@ STRATEGIC PLANS (Root)
 │   │   └── Pilot Approvals ✅
 │   │
 │   ├── Scaling Plans (via Pilot→Solution→Challenge/Program) ✅
+│   │   └── (Missing R&D path) ❌
 │   │
 │   ├── R&D Calls (via challenge_ids[]) ✅
 │   │   └── R&D Proposals ✅
@@ -159,25 +162,26 @@ STRATEGIC PLANS (Root)
 
 | Gap | Entity | Fix Required |
 |-----|--------|--------------|
-| 1 | `sandboxes` | Add `strategic_plan_ids UUID[]`, `strategic_objective_ids UUID[]` |
-| 2 | `living_labs` | Add `strategic_plan_ids UUID[]`, `strategic_objective_ids UUID[]` |
+| 1 | `sandboxes` | Add `strategic_plan_ids UUID[]`, `strategic_objective_ids UUID[]`, `is_strategy_derived`, `strategy_derivation_date` |
+| 2 | `living_labs` | Add `strategic_plan_ids UUID[]`, `strategic_objective_ids UUID[]`, `is_strategy_derived`, `strategy_derivation_date` |
 | 3 | `programs` | Add missing `is_strategy_derived`, `strategy_derivation_date`, `lessons_learned` |
 
 ### P1 - High (Enhance Strategy Visibility)
 
 | Gap | Entity | Fix Required |
 |-----|--------|--------------|
-| 4 | `partnerships` | Add explicit `strategic_plan_ids UUID[]` |
+| 4 | `partnerships` | Add explicit `strategic_plan_ids UUID[]`, `strategic_objective_ids UUID[]` |
 | 5 | `email_campaigns` | Add `program_id`, `challenge_id` for targeting |
-| 6 | `policy_documents` | Add `strategic_plan_ids UUID[]` |
-| 7 | `global_trends` | Add `strategic_plan_ids UUID[]` for trend-strategy mapping |
+| 6 | `scaling_plans` | Add `rd_project_id` for R&D scaling path |
+| 7 | `rd_calls` | Add `program_id` for program-driven R&D calls |
 
 ### P2 - Enhancement (Future)
 
 | Gap | Entity | Fix Required |
 |-----|--------|--------------|
-| 8 | `kpi_references` | Add `strategic_plan_id` |
-| 9 | `knowledge_documents` | Add entity links for strategy content |
+| 8 | `policy_documents` | Add `strategic_plan_ids UUID[]` |
+| 9 | `global_trends` | Add `strategic_plan_ids UUID[]` |
+| 10 | `kpi_references` | Add `strategic_plan_id` |
 
 ---
 
@@ -185,10 +189,10 @@ STRATEGIC PLANS (Root)
 
 | Category | Entities | Complete | Partial | Missing | Score |
 |----------|----------|----------|---------|---------|-------|
-| Direct Integration | 5 | 2 | 1 | 2 | 50% |
-| Indirect Integration | 12 | 9 | 2 | 1 | 83% |
+| Direct Integration | 5 | 1 | 2 | 2 | 40% |
+| Indirect Integration | 13 | 10 | 2 | 1 | 81% |
 | No Integration | 6 | 6 | 0 | 0 | 100% |
-| **Total Platform** | **23** | **17** | **3** | **3** | **78%** |
+| **Total Platform** | **24** | **17** | **4** | **3** | **67%** |
 
 ---
 
@@ -214,13 +218,19 @@ STRATEGIC PLANS (Root)
 ALTER TABLE public.sandboxes
 ADD COLUMN IF NOT EXISTS strategic_plan_ids UUID[] DEFAULT '{}',
 ADD COLUMN IF NOT EXISTS strategic_objective_ids UUID[] DEFAULT '{}',
-ADD COLUMN IF NOT EXISTS is_strategy_derived BOOLEAN DEFAULT false;
+ADD COLUMN IF NOT EXISTS is_strategy_derived BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS strategy_derivation_date TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS strategic_gaps_addressed TEXT[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS strategic_taxonomy_codes TEXT[] DEFAULT '{}';
 
 -- P0: Add strategic fields to Living Labs
 ALTER TABLE public.living_labs
 ADD COLUMN IF NOT EXISTS strategic_plan_ids UUID[] DEFAULT '{}',
 ADD COLUMN IF NOT EXISTS strategic_objective_ids UUID[] DEFAULT '{}',
-ADD COLUMN IF NOT EXISTS is_strategy_derived BOOLEAN DEFAULT false;
+ADD COLUMN IF NOT EXISTS is_strategy_derived BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS strategy_derivation_date TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS research_priorities JSONB DEFAULT '[]',
+ADD COLUMN IF NOT EXISTS strategic_taxonomy_codes TEXT[] DEFAULT '{}';
 
 -- P0: Add missing fields to Programs
 ALTER TABLE public.programs
@@ -230,16 +240,30 @@ ADD COLUMN IF NOT EXISTS lessons_learned JSONB DEFAULT '[]';
 
 -- P1: Add to Partnerships
 ALTER TABLE public.partnerships
-ADD COLUMN IF NOT EXISTS strategic_plan_ids UUID[] DEFAULT '{}';
+ADD COLUMN IF NOT EXISTS strategic_plan_ids UUID[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS strategic_objective_ids UUID[] DEFAULT '{}';
 
--- P1: Add to Policy Documents
-ALTER TABLE public.policy_documents
-ADD COLUMN IF NOT EXISTS strategic_plan_ids UUID[] DEFAULT '{}';
+-- P1: Add to Scaling Plans
+ALTER TABLE public.scaling_plans
+ADD COLUMN IF NOT EXISTS rd_project_id UUID REFERENCES public.rd_projects(id);
+
+-- P1: Add to R&D Calls
+ALTER TABLE public.rd_calls
+ADD COLUMN IF NOT EXISTS program_id UUID REFERENCES public.programs(id);
 
 -- P1: Add targeting to Campaigns
 ALTER TABLE public.email_campaigns
 ADD COLUMN IF NOT EXISTS program_id UUID REFERENCES public.programs(id),
-ADD COLUMN IF NOT EXISTS challenge_ids UUID[] DEFAULT '{}';
+ADD COLUMN IF NOT EXISTS challenge_id UUID REFERENCES public.challenges(id);
+
+-- P2: Add to Policy Documents
+ALTER TABLE public.policy_documents
+ADD COLUMN IF NOT EXISTS strategic_plan_ids UUID[] DEFAULT '{}';
+
+-- P2: Add to Global Trends
+ALTER TABLE public.global_trends
+ADD COLUMN IF NOT EXISTS strategic_plan_ids UUID[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS trend_integration_notes TEXT;
 ```
 
 ---
@@ -250,3 +274,8 @@ Your proposed model is **~85% accurate**. Key corrections:
 - Events should be DIRECT (not indirect)
 - Municipalities have strategy link
 - Several additional entities need classification (Policy Documents, Global Trends, KPI References)
+- Platform currently at **67% integration** - needs P0/P1 fixes to reach 100%
+
+---
+
+*Model assessment last updated: 2025-12-13*
