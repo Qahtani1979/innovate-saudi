@@ -16,6 +16,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function ProgramToPilotWorkflow({ program, graduateApplication }) {
   const { language, t } = useLanguage();
@@ -24,6 +25,7 @@ export default function ProgramToPilotWorkflow({ program, graduateApplication })
   const [loading, setLoading] = useState(false);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { user } = useAuth();
+  const { triggerEmail } = useEmailTrigger();
 
   // Use visibility-aware hooks
   const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ includeNational: true });
@@ -96,29 +98,17 @@ Generate pilot proposal:`,
         metadata: { pilot_id: pilot.id }
       });
 
-      // Send pilot created email notification to stakeholders via email-trigger-hub
-      if (formData.pilot_manager_email || user?.email) {
-        try {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'pilot.created',
-              recipient_email: formData.pilot_manager_email || user?.email,
-              entity_type: 'pilot',
-              entity_id: pilot.id,
-              variables: {
-                pilotTitle: formData.title_en || formData.title_ar,
-                pilotCode: pilot.code || `PLT-${pilot.id.substring(0, 8)}`,
-                startDate: formData.start_date || new Date().toISOString().split('T')[0],
-                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
-              },
-              language: language,
-              triggered_by: user?.email
-            }
-          });
-        } catch (emailError) {
-          console.error('Failed to send pilot created email:', emailError);
+      // Send pilot created email notification using hook
+      await triggerEmail('pilot.created', {
+        entityType: 'pilot',
+        entityId: pilot.id,
+        variables: {
+          pilot_title: formData.title_en || formData.title_ar,
+          pilot_code: pilot.code || `PLT-${pilot.id.substring(0, 8)}`,
+          program_name: program.name_en,
+          start_date: formData.start_date || new Date().toISOString().split('T')[0]
         }
-      }
+      }).catch(err => console.error('Email trigger failed:', err));
 
       toast.success(t({ en: 'Pilot created', ar: 'تم إنشاء التجربة' }));
       navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));

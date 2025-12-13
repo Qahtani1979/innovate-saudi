@@ -19,7 +19,6 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
   const queryClient = useQueryClient();
   const { triggerEmail } = useEmailTrigger();
   const { invokeAI, status: aiStatus, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const { invokeAI, status: aiStatus, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
   const [pilotData, setPilotData] = useState({
     title_en: '',

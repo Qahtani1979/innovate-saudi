@@ -11,12 +11,14 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function LabToPilotTransitionWizard({ rdProject }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [pilotDraft, setPilotDraft] = useState(null);
+  const { triggerEmail } = useEmailTrigger();
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
@@ -25,37 +27,22 @@ export default function LabToPilotTransitionWizard({ rdProject }) {
 
   const createPilotMutation = useMutation({
     mutationFn: async (pilotData) => {
-      const { supabase } = await import('@/integrations/supabase/client');
       const pilot = await base44.entities.Pilot.create(pilotData);
-      
-      // Send pilot created email notification via email-trigger-hub
-      try {
-        const recipientEmail = rdProject.principal_investigator?.email;
-        if (recipientEmail) {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'pilot.created',
-              recipient_email: recipientEmail,
-              entity_type: 'pilot',
-              entity_id: pilot.id,
-              variables: {
-                pilotTitle: pilotData.title_en,
-                pilotCode: pilot.code || `PLT-LAB-${pilot.id?.substring(0, 8)}`,
-                startDate: new Date().toISOString().split('T')[0],
-                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
-              },
-              language: language,
-              triggered_by: 'system'
-            }
-          });
-        }
-      } catch (emailError) {
-        console.error('Failed to send pilot created email:', emailError);
-      }
-      
       return pilot;
     },
-    onSuccess: (pilot) => {
+    onSuccess: async (pilot) => {
+      // Send pilot created email notification using hook
+      await triggerEmail('pilot.created', {
+        entityType: 'pilot',
+        entityId: pilot.id,
+        variables: {
+          pilot_title: pilot.title_en,
+          pilot_code: pilot.code || `PLT-LAB-${pilot.id?.substring(0, 8)}`,
+          rd_project_title: rdProject.title_en,
+          start_date: new Date().toISOString().split('T')[0]
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+
       queryClient.invalidateQueries(['pilots']);
       toast.success(t({ en: 'Pilot created', ar: 'أُنشئت التجربة' }));
       navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
