@@ -72,19 +72,24 @@ export default function MentorScheduler({ programId, mentorEmail }) {
         status: 'scheduled'
       });
 
-      await base44.integrations.Core.SendEmail({
-        to: mentee.applicant_email,
-        subject: `Mentorship Session Scheduled`,
-        body: `Your mentorship session has been scheduled:
-
-Date: ${data.date}
-Time: ${data.time}
-Duration: ${data.duration_minutes} minutes
-Location: ${data.location}
-
-Agenda: ${data.agenda}
-
-Looking forward to meeting you!`
+      // Send email via email-trigger-hub
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'event.invitation',
+          recipient_email: mentee.applicant_email,
+          entity_type: 'program',
+          entity_id: program.id,
+          variables: {
+            menteeName: mentee.applicant_name,
+            sessionDate: data.date,
+            sessionTime: data.time,
+            durationMinutes: data.duration_minutes,
+            location: data.location,
+            agenda: data.agenda
+          },
+          triggered_by: 'system'
+        }
       });
     },
     onSuccess: () => {

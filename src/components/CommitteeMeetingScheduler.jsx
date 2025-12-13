@@ -42,27 +42,26 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
         tags: ['committee_meeting', 'rd_evaluation', rdCall.code]
       });
 
-      // Send email notifications to attendees
+      // Send email notifications to attendees via email-trigger-hub
+      const { supabase } = await import('@/integrations/supabase/client');
       for (const attendee of data.attendees) {
-        await base44.integrations.Core.SendEmail({
-          to: attendee,
-          subject: `Committee Meeting Scheduled: ${data.title}`,
-          body: `You are invited to the following committee meeting:
-
-Title: ${data.title}
-Date: ${data.date}
-Time: ${data.time}
-Duration: ${data.duration_minutes} minutes
-Location: ${data.location}
-Meeting Link: ${data.meeting_link || 'To be provided'}
-
-Agenda:
-${data.agenda}
-
-Please confirm your attendance.
-
----
-This is an automated notification from Saudi Innovates Platform.`
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'event.invitation',
+            recipient_email: attendee,
+            entity_type: 'rd_call',
+            entity_id: rdCall.id,
+            variables: {
+              meetingTitle: data.title,
+              meetingDate: data.date,
+              meetingTime: data.time,
+              durationMinutes: data.duration_minutes,
+              location: data.location,
+              meetingLink: data.meeting_link || 'To be provided',
+              agenda: data.agenda
+            },
+            triggered_by: 'system'
+          }
         });
       }
 
