@@ -11,6 +11,7 @@ import { HubStats } from './HubStats';
 import { HubTabs } from './HubTabs';
 import { QuickActions } from './QuickActions';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
+import { AIProgramEventCorrelator } from '@/components/ai/AIProgramEventCorrelator';
 
 // Lazy imports for tab content
 const ProgramsContent = React.lazy(() => import('@/pages/Programs'));
@@ -150,13 +151,15 @@ function ProgramsEventsHub() {
             {activeTab === 'campaigns' && <CampaignsContent embedded />}
             {activeTab === 'calendar' && <CalendarContent embedded />}
             {activeTab === 'analytics' && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="h-5 w-5 text-purple-600" />
                   <h3 className="font-semibold text-lg">
                     {t({ en: 'AI-Powered Insights', ar: 'رؤى مدعومة بالذكاء الاصطناعي' })}
                   </h3>
                 </div>
+                
+                {/* Quick Insights Cards */}
                 <div className="grid gap-4 md:grid-cols-3">
                   {aiInsights.map((insight, index) => (
                     <Card key={index} className={`border-l-4 ${
@@ -182,20 +185,12 @@ function ProgramsEventsHub() {
                     </Card>
                   ))}
                 </div>
-                <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
-                  <CardContent className="pt-6 text-center">
-                    <Sparkles className="h-12 w-12 text-purple-400 mx-auto mb-3" />
-                    <p className="font-medium text-purple-900">
-                      {t({ en: 'Full AI Analytics Coming Soon', ar: 'التحليلات الذكية الكاملة قريباً' })}
-                    </p>
-                    <p className="text-sm text-purple-600 mt-1">
-                      {t({ 
-                        en: 'Advanced predictions, correlations, and optimization recommendations',
-                        ar: 'تنبؤات متقدمة وارتباطات وتوصيات تحسين'
-                      })}
-                    </p>
-                  </CardContent>
-                </Card>
+
+                {/* AI Program-Event Correlator */}
+                <AIProgramEventCorrelator 
+                  programs={programs} 
+                  events={events} 
+                />
               </div>
             )}
           </React.Suspense>
