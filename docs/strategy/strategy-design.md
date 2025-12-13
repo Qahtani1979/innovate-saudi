@@ -210,21 +210,23 @@ interface StrategicPlan {
 }
 ```
 
-### Strategic Fields on Entities
+### Strategic Fields on Entities ✅ ALL COMPLETE
 
-#### CURRENT STATE vs REQUIRED
+#### CURRENT STATE (All Fields Present)
 
-| Entity | Current Fields | Required Fields | Gap |
-|--------|---------------|-----------------|-----|
-| **programs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `strategic_priority_level`, `strategic_kpi_contributions` | + `is_strategy_derived`, `strategy_derivation_date`, `lessons_learned` | 3 fields |
-| **events** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `strategic_alignment_score`, `is_strategy_derived`, `strategy_derivation_date`, `program_id` | ALL PRESENT | ✅ |
-| **challenges** | `strategic_plan_ids[]`, `strategic_goal`, `linked_program_ids[]` | ALL PRESENT | ✅ |
-| **partnerships** | `is_strategic`, `linked_challenge_ids[]`, `linked_pilot_ids[]`, `linked_program_ids[]` | + `strategic_plan_ids[]`, `strategic_objective_ids[]` | 2 fields |
-| **sandboxes** | NONE | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `strategic_gaps_addressed[]` | 5+ fields |
-| **living_labs** | NONE | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `research_priorities` | 5+ fields |
-| **email_campaigns** | NONE | `program_id`, `challenge_id` | 2 fields |
-| **scaling_plans** | `pilot_id` | + `rd_project_id` | 1 field |
-| **rd_calls** | `challenge_ids[]` | + `program_id` | 1 field |
+| Entity | Current Fields | Status |
+|--------|---------------|--------|
+| **programs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `strategic_priority_level`, `strategic_kpi_contributions`, `is_strategy_derived`, `strategy_derivation_date`, `lessons_learned` | ✅ COMPLETE |
+| **events** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `strategic_alignment_score`, `is_strategy_derived`, `strategy_derivation_date`, `program_id` | ✅ COMPLETE |
+| **challenges** | `strategic_plan_ids[]`, `strategic_goal`, `linked_program_ids[]` | ✅ COMPLETE |
+| **partnerships** | `is_strategic`, `linked_challenge_ids[]`, `linked_pilot_ids[]`, `linked_program_ids[]`, `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategy_derivation_date` | ✅ COMPLETE |
+| **sandboxes** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `strategic_gaps_addressed[]`, `strategic_taxonomy_codes[]` | ✅ COMPLETE |
+| **living_labs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `research_priorities`, `strategic_taxonomy_codes[]` | ✅ COMPLETE |
+| **email_campaigns** | `program_id`, `challenge_id` | ✅ COMPLETE |
+| **scaling_plans** | `pilot_id`, `rd_project_id` | ✅ COMPLETE |
+| **rd_calls** | `challenge_ids[]`, `program_id` | ✅ COMPLETE |
+| **policy_documents** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived` | ✅ COMPLETE |
+| **global_trends** | `strategic_plan_ids[]` | ✅ COMPLETE |
 
 ---
 
@@ -264,7 +266,7 @@ interface StrategicPlan {
 
 ## Components Inventory
 
-### Strategy Components (14 Existing + 5 Missing)
+### Strategy Components ✅ 20 Complete
 
 | # | Component | Purpose | AI | Status |
 |---|-----------|---------|-----|--------|
@@ -282,13 +284,12 @@ interface StrategicPlan {
 | 12 | StrategicPlanWorkflowTab | Workflow stage display | No | ✅ |
 | 13 | StrategyChallengeRouter | Challenge routing | No | ✅ |
 | 14 | AutomatedMIICalculator | MII score calculation | No | ✅ |
-| **15** | **StrategicAlignmentSandbox** | **Sandbox strategy alignment** | No | ✅ CREATED |
-| **16** | **StrategicAlignmentLivingLab** | **Living lab strategy alignment** | No | ✅ CREATED |
-| **17** | **StrategicAlignmentPartnership** | **Partnership strategy alignment** | No | ✅ CREATED |
-| **18** | **StrategicPlanSelector** | **Shared reusable selector** | No | ✅ CREATED |
-| **19** | **StrategicCoverageWidget** | **Coverage metrics dashboard** | No | ✅ CREATED |
-| **20** | **StrategyToSandboxGenerator** | **Generate sandboxes from strategy** | ✅ | ⏳ Phase 6 |
-| **21** | **StrategyToLivingLabGenerator** | **Generate living labs from strategy** | ✅ | ⏳ Phase 6 |
+| 15 | StrategicAlignmentSandbox | Sandbox strategy alignment | No | ✅ CREATED |
+| 16 | StrategicAlignmentLivingLab | Living lab strategy alignment | No | ✅ CREATED |
+| 17 | StrategicAlignmentPartnership | Partnership strategy alignment | No | ✅ CREATED |
+| 18 | StrategicPlanSelector | Shared reusable selector | No | ✅ CREATED |
+| 19 | StrategicCoverageWidget | Coverage metrics dashboard | No | ✅ CREATED |
+| 20 | StrategyDrillDown | Cross-entity drill-down page | No | ✅ CREATED |
 
 ---
 
