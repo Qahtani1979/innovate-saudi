@@ -261,36 +261,18 @@ export default function PublicIdeaSubmission() {
       // Send confirmation email if contact provided
       if (!contactInfo.is_anonymous && contactInfo.email) {
         try {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-            },
-            body: JSON.stringify({
-              to: contactInfo.email,
-              subject: language === 'ar' 
-                ? 'شكرًا لمشاركة فكرتك - بلدي للابتكار' 
-                : 'Thank you for your idea - Baladi Innovation',
-              html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #10b981;">${language === 'ar' ? 'شكرًا لمشاركة فكرتك!' : 'Thank you for sharing your idea!'}</h2>
-                  <p>${language === 'ar' ? `مرحبًا ${contactInfo.name || ''},` : `Hello ${contactInfo.name || ''},`}</p>
-                  <p>${language === 'ar' 
-                    ? 'لقد استلمنا فكرتك وسيتم مراجعتها من قبل فريقنا.' 
-                    : 'We have received your idea and it will be reviewed by our team.'}</p>
-                  <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                    <strong>${language === 'ar' ? 'عنوان الفكرة:' : 'Idea Title:'}</strong><br/>
-                    ${formData.title}
-                  </div>
-                  <p style="color: #6b7280; font-size: 14px;">
-                    ${language === 'ar' 
-                      ? 'سنتواصل معك إذا كانت لدينا أي أسئلة.' 
-                      : 'We will contact you if we have any questions.'}
-                  </p>
-                </div>
-              `
-            })
+          await supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'IDEA_SUBMITTED',
+              recipientEmail: contactInfo.email,
+              variables: {
+                userName: contactInfo.name || 'Citizen',
+                ideaTitle: formData.title,
+                ideaDescription: formData.description,
+                ideaCategory: formData.category,
+                submissionDate: new Date().toISOString()
+              }
+            }
           });
         } catch (emailError) {
           console.log('Email notification failed (non-critical):', emailError);

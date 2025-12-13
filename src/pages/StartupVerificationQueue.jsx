@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,10 +61,19 @@ function StartupVerificationQueue() {
 
       const startup = startups.find(s => s.id === startupId);
       if (startup?.user_email) {
-        await base44.integrations.Core.SendEmail({
-          to: startup.user_email,
-          subject: `Startup Verification ${status === 'verified' ? 'Approved' : 'Status Update'}`,
-          body: `Your startup verification has been ${status}.\n\n${notes}`
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: status === 'verified' ? 'STARTUP_VERIFIED' : 'STARTUP_VERIFICATION_UPDATE',
+            recipientEmail: startup.user_email,
+            entityType: 'startup',
+            entityId: startupId,
+            variables: {
+              startupName: startup.name_en || startup.company_name_en,
+              verificationStatus: status,
+              verificationNotes: notes,
+              verificationScore: score
+            }
+          }
         });
       }
     },

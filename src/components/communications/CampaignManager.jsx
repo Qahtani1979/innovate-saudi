@@ -39,13 +39,17 @@ const AUDIENCE_TYPES = [
 ];
 
 export default function CampaignManager() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [previewEmail, setPreviewEmail] = useState('');
   const [showAIHelpers, setShowAIHelpers] = useState(false);
+  
+  // AI-generated content for campaigns
+  const [aiGeneratedSubject, setAiGeneratedSubject] = useState('');
+  const [aiGeneratedBody, setAiGeneratedBody] = useState('');
   
   const [newCampaign, setNewCampaign] = useState({
     name: '',
@@ -58,6 +62,30 @@ export default function CampaignManager() {
   });
   
   const [customEmails, setCustomEmails] = useState('');
+  
+  // Handlers for AI-generated content
+  const handleUseAISubject = (subject) => {
+    setNewCampaign(prev => ({ 
+      ...prev, 
+      campaign_variables: { 
+        ...prev.campaign_variables, 
+        subject: subject 
+      } 
+    }));
+    toast.success(t({ en: 'Subject applied to campaign', ar: 'تم تطبيق العنوان على الحملة' }));
+  };
+  
+  const handleUseAIBody = (body) => {
+    setNewCampaign(prev => ({ 
+      ...prev, 
+      campaign_variables: { 
+        ...prev.campaign_variables, 
+        body: body,
+        content: body 
+      } 
+    }));
+    toast.success(t({ en: 'Content applied to campaign', ar: 'تم تطبيق المحتوى على الحملة' }));
+  };
 
   // Fetch campaigns
   const { data: campaigns = [], isLoading, refetch } = useQuery({
@@ -254,7 +282,14 @@ export default function CampaignManager() {
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-4">
-          <CampaignAIHelpers />
+          <CampaignAIHelpers 
+            onUseSubject={handleUseAISubject}
+            onUseBody={handleUseAIBody}
+            campaignContext={{
+              name: newCampaign.name,
+              description: newCampaign.description
+            }}
+          />
         </CollapsibleContent>
       </Collapsible>
 

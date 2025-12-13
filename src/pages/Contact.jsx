@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,32 +23,31 @@ function Contact() {
 
   const submitMutation = useMutation({
     mutationFn: async (data) => {
-      // Send email notification to platform admin
-      await base44.integrations.Core.SendEmail({
-        to: 'platform@saudimih.sa',
-        subject: `Contact Form: ${data.subject}`,
-        body: `
-New contact form submission:
-
-Name: ${data.name}
-Email: ${data.email}
-Organization: ${data.organization}
-
-Subject: ${data.subject}
-
-Message:
-${data.message}
-        `
+      // Send contact form email via trigger hub
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'CONTACT_FORM',
+          recipientEmail: 'platform@saudimih.sa',
+          variables: {
+            senderName: data.name,
+            senderEmail: data.email,
+            senderOrganization: data.organization,
+            subject: data.subject,
+            message: data.message
+          }
+        }
       });
 
       // Send confirmation to user
-      await base44.integrations.Core.SendEmail({
-        to: data.email,
-        subject: t({ en: 'Thank you for contacting Saudi Innovates', ar: 'شكراً لتواصلك مع الابتكار السعودي' }),
-        body: t({ 
-          en: `Dear ${data.name},\n\nThank you for reaching out. We have received your message and will respond within 2 business days.\n\nBest regards,\nSaudi Innovates Team`, 
-          ar: `عزيزي ${data.name}،\n\nشكراً لتواصلك معنا. لقد استلمنا رسالتك وسنرد عليك خلال يومي عمل.\n\nمع أطيب التحيات،\nفريق الابتكار السعودي` 
-        })
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'CONTACT_FORM_CONFIRMATION',
+          recipientEmail: data.email,
+          variables: {
+            userName: data.name,
+            subject: data.subject
+          }
+        }
       });
     },
     onSuccess: () => {
