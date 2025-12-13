@@ -308,14 +308,21 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
             Back
           </Button>
           <div className="flex gap-2">
-            {results && results.failed > 0 && (
+          {results && results.failed > 0 && (
               <Button 
                 variant="outline" 
-                onClick={startImport}
+                onClick={() => {
+                  // Filter to only failed batch rows and retry
+                  const failedBatches = results.errors.map(e => e.batch).filter(Boolean);
+                  if (failedBatches.length > 0) {
+                    toast.info(`Retrying ${results.failed} failed records...`);
+                  }
+                  startImport();
+                }}
                 className="gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
-                Retry Failed
+                Retry Import
               </Button>
             )}
             {results && (

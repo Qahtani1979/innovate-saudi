@@ -37,7 +37,8 @@ const ENTITY_OPTIONS = [
   { id: 'cities', name: 'Cities', icon: Building2, description: 'Cities data' },
   { id: 'strategic_plans', name: 'Strategic Plans', icon: FileText, description: 'Strategic planning documents' },
   { id: 'tags', name: 'Tags', icon: Target, description: 'Taxonomy tags' },
-  { id: 'kpi_references', name: 'KPI References', icon: Target, description: 'KPI definitions' }
+  { id: 'kpi_references', name: 'KPI References', icon: Target, description: 'KPI definitions' },
+  { id: 'citizen_ideas', name: 'Citizen Ideas', icon: Lightbulb, description: 'Citizen submitted ideas' }
 ];
 
 export default function StepEntityDetection({ state, updateState, onNext, onBack }) {
@@ -63,7 +64,7 @@ export default function StepEntityDetection({ state, updateState, onNext, onBack
 Available entity types:
 - challenges: Municipal challenges with fields like title_en, title_ar, description_en, status, priority, sector, municipality_id
 - solutions: Innovative solutions with fields like name_en, name_ar, description_en, solution_type, maturity_level, provider_id
-- pilots: Pilot projects with fields like title_en, title_ar, description_en, pilot_type, stage, status, start_date, end_date, budget, municipality_id
+- pilots: Pilot projects with fields like title_en, title_ar, sector (required), stage, status, start_date, end_date, budget, municipality_id (required), challenge_id (required)
 - programs: Innovation programs with fields like name_en, name_ar, description_en, program_type, status, start_date, end_date, budget
 - municipalities: Cities with fields like name_en, name_ar, region_id, population, area
 - organizations: Companies with fields like name_en, name_ar, organization_type, website, email
@@ -72,8 +73,8 @@ Available entity types:
 - rd_projects: Research projects with title_en, description_en, project_type, status, budget
 - rd_calls: Research funding calls with title_en, description_en, call_type, status, budget
 - events: Events and conferences with title_en, event_type, start_date, end_date, location
-- living_labs: Innovation labs with name_en, lab_type, status, location, capacity
-- sandboxes: Regulatory sandboxes with name_en, sandbox_type, status, start_date, end_date
+- living_labs: Innovation labs with name_en, domain, status, location, contact_name, contact_email, municipality_id
+- sandboxes: Regulatory sandboxes with name_en, sandbox_type, status, start_date, end_date, sector_id
 - contracts: Agreements with title_en, contract_code, contract_type, contract_value, provider_id
 - budgets: Budget allocations with name_en, budget_code, total_amount, allocated_amount, fiscal_year
 - sectors: Industry sectors with name_en, name_ar, description_en, code
@@ -82,6 +83,7 @@ Available entity types:
 - strategic_plans: Strategic planning with title_en, plan_type, status, start_date, end_date
 - tags: Taxonomy tags with name_en, name_ar, category, color
 - kpi_references: KPI definitions with name_en, code, description_en, unit, category, target_value
+- citizen_ideas: Citizen ideas with title, description, category, status, municipality_id
 
 Data headers: ${headers.join(', ')}
 Sample rows: ${JSON.stringify(sampleData, null, 2)}
