@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { CheckCircle, XCircle, Clock, User, FileText, RefreshCw } from 'lucide-react';
 import {
   Dialog,
@@ -21,6 +22,7 @@ export default function RoleRequestApprovalQueue() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
   const [reviewDialog, setReviewDialog] = useState(null);
   const [reviewNotes, setReviewNotes] = useState('');
 
@@ -95,23 +97,19 @@ export default function RoleRequestApprovalQueue() {
             console.error('Error assigning role:', roleError);
           }
 
-          // Send approval email notification
+          // Send approval email notification using unified trigger
           try {
-            await supabase.functions.invoke('send-email', {
-              body: {
-                template_key: 'role_request_approved',
-                recipient_email: userEmail,
-                recipient_user_id: targetUser.user_id,
-                variables: {
-                  userName: userName || userEmail.split('@')[0],
-                  roleName: role.name || requestedRole,
-                  dashboardUrl: window.location.origin + '/dashboard'
-                },
-                language: targetUser.preferred_language || 'en',
-                entity_type: 'role_request',
-                entity_id: requestId,
-                triggered_by: user?.email
-              }
+            await triggerEmail('ROLE_REQUEST_APPROVED', {
+              entityType: 'role_request',
+              entityId: requestId,
+              recipientEmail: userEmail,
+              recipientUserId: targetUser.user_id,
+              variables: {
+                userName: userName || userEmail.split('@')[0],
+                roleName: role.name || requestedRole,
+                dashboardUrl: window.location.origin + '/dashboard'
+              },
+              language: targetUser.preferred_language || 'en'
             });
           } catch (emailError) {
             console.error('Failed to send approval email:', emailError);
@@ -156,25 +154,21 @@ export default function RoleRequestApprovalQueue() {
         .eq('user_email', userEmail)
         .maybeSingle();
 
-      // Send rejection email notification
+      // Send rejection email notification using unified trigger
       if (targetUser) {
         try {
-          await supabase.functions.invoke('send-email', {
-            body: {
-              template_key: 'role_request_rejected',
-              recipient_email: userEmail,
-              recipient_user_id: targetUser.user_id,
-              variables: {
-                userName: userName || userEmail.split('@')[0],
-                roleName: requestedRole,
-                rejectionReason: reviewNotes || 'No specific reason provided',
-                dashboardUrl: window.location.origin + '/dashboard'
-              },
-              language: targetUser.preferred_language || 'en',
-              entity_type: 'role_request',
-              entity_id: requestId,
-              triggered_by: user?.email
-            }
+          await triggerEmail('ROLE_REQUEST_REJECTED', {
+            entityType: 'role_request',
+            entityId: requestId,
+            recipientEmail: userEmail,
+            recipientUserId: targetUser.user_id,
+            variables: {
+              userName: userName || userEmail.split('@')[0],
+              roleName: requestedRole,
+              rejectionReason: reviewNotes || 'No specific reason provided',
+              dashboardUrl: window.location.origin + '/dashboard'
+            },
+            language: targetUser.preferred_language || 'en'
           });
         } catch (emailError) {
           console.error('Failed to send rejection email:', emailError);
