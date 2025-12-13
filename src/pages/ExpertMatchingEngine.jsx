@@ -114,6 +114,14 @@ function ExpertMatchingEnginePage() {
     }
   });
 
+  const { data: events = [] } = useQuery({
+    queryKey: ['events-for-matching'],
+    queryFn: async () => {
+      const { data } = await supabase.from('events').select('*').order('created_at', { ascending: false }).limit(100);
+      return data || [];
+    }
+  });
+
   const { data: experts = [] } = useQuery({
     queryKey: ['expert-profiles'],
     queryFn: async () => {
@@ -199,7 +207,8 @@ function ExpertMatchingEnginePage() {
       rd_project: rdProjects,
       program_application: programApps,
       matchmaker_application: matchmakerApps,
-      scaling_plan: scalingPlans
+      scaling_plan: scalingPlans,
+      event: events
     };
 
     const entities = entityMap[entityType] || [];
@@ -291,7 +300,8 @@ Include match scores (0-100) and reasons.`;
       rd_project: rdProjects,
       program_application: programApps,
       matchmaker_application: matchmakerApps,
-      scaling_plan: scalingPlans
+      scaling_plan: scalingPlans,
+      event: events
     };
     return map[entityType] || [];
   };
@@ -338,6 +348,7 @@ Include match scores (0-100) and reasons.`;
                   <SelectItem value="program_application">{t({ en: 'Program Application', ar: 'طلب برنامج' })}</SelectItem>
                   <SelectItem value="matchmaker_application">{t({ en: 'Matchmaker Application', ar: 'طلب التوفيق' })}</SelectItem>
                   <SelectItem value="scaling_plan">{t({ en: 'Scaling Plan', ar: 'خطة التوسع' })}</SelectItem>
+                  <SelectItem value="event">{t({ en: 'Event', ar: 'فعالية' })}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
