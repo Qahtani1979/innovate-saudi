@@ -42,7 +42,7 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
-function ProgramsPage() {
+function ProgramsPage({ embedded = false }) {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
   const { language, isRTL, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
@@ -215,16 +215,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
     </div>
   );
 
-  return (
-    <PageLayout>
-      <PageHeader
-        icon={Layers}
-        title={{ en: 'Programs & Events', ar: 'البرامج والفعاليات' }}
-        description={{ en: 'Innovation programs, matchmakers, and capacity building', ar: 'برامج الابتكار والتدريب وبناء القدرات' }}
-        actions={headerActions}
-      />
-
-      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+  const pageContent = (
+    <>
 
       {/* AI Insights Modal */}
       {showAIInsights && (
@@ -684,6 +676,23 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </CardContent>
         </Card>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>{pageContent}</div>;
+  }
+
+  return (
+    <PageLayout>
+      <PageHeader
+        icon={Layers}
+        title={{ en: 'Programs & Events', ar: 'البرامج والفعاليات' }}
+        description={{ en: 'Innovation programs, matchmakers, and capacity building', ar: 'برامج الابتكار والتدريب وبناء القدرات' }}
+        actions={headerActions}
+      />
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        {pageContent}
       </div>
     </PageLayout>
   );

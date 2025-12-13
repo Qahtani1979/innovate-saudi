@@ -441,7 +441,7 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 |-------|------|----------|--------|----------|
 | 1 | Core Event CRUD | 2 weeks | 🟢 Complete | 100% |
 | 2 | Synchronization Service | 1 week | 🟢 Complete | 100% |
-| 3 | Hub Consolidation | 1 week | 🔴 Not Started | 0% |
+| 3 | Hub Consolidation | 1 week | 🟡 In Progress | 80% |
 | 4 | AI Enhancements | 1 week | 🔴 Not Started | 0% |
 
 **Legend:** 🔴 Not Started | 🟡 In Progress | 🟢 Complete | ⚫ Blocked
@@ -590,46 +590,53 @@ export function useUserEventRegistrations(userEmail) {
 
 ---
 
-## Phase 3: Hub Consolidation
+## Phase 3: Hub Consolidation 🟡 IN PROGRESS (80%)
 
 **Objective:** Create unified Programs & Events Hub
 
-### 3.1 Hub Components
+### 3.1 Hub Components ✅ COMPLETE
 
 | Task | File | Status | Notes |
 |------|------|--------|-------|
-| ProgramsEventsHub | `src/components/hub/ProgramsEventsHub.jsx` | 🔴 | Main tab container |
-| HubTabs | `src/components/hub/HubTabs.jsx` | 🔴 | Tab navigation |
-| HubStats | `src/components/hub/HubStats.jsx` | 🔴 | Unified statistics |
-| QuickActions | `src/components/hub/QuickActions.jsx` | 🔴 | Common actions |
+| ProgramsEventsHub | `src/components/hub/ProgramsEventsHub.jsx` | 🟢 | Main tab container |
+| HubTabs | `src/components/hub/HubTabs.jsx` | 🟢 | Tab navigation |
+| HubStats | `src/components/hub/HubStats.jsx` | 🟢 | Unified statistics |
+| QuickActions | `src/components/hub/QuickActions.jsx` | 🟢 | Common actions |
 
-### 3.2 Tab Structure
+### 3.2 Tab Structure ✅ COMPLETE
 
 | Tab | Content Source | Status |
 |-----|----------------|--------|
-| Programs | Current Programs.jsx listing | 🔴 |
-| Events | EventCalendar.jsx content | 🔴 |
-| Campaigns | CampaignPlanner.jsx content | 🔴 |
-| Calendar | CalendarView.jsx content | 🔴 |
-| AI Analytics | New AI dashboard | 🔴 |
+| Programs | Current Programs.jsx listing | 🟢 |
+| Events | EventCalendar.jsx content | 🟢 |
+| Campaigns | CampaignPlanner.jsx content | 🟢 |
+| Calendar | CalendarView.jsx content | 🟢 |
+| AI Analytics | AI Insights placeholder | 🟢 |
 
-### 3.3 Related Page Updates
-
-| Page | Update Type | Changes |
-|------|-------------|---------|
-| `ParticipantDashboard.jsx` | Add events | Show program events, quick registration |
-| `MyPrograms.jsx` | Add events | Show registered events, upcoming list |
-| `ProgramOperatorPortal.jsx` | Add events | Events per program, creation, stats |
-| `Portfolio.jsx` | Add programs | Include programs in pipeline |
-| `GapAnalysisTool.jsx` | Add programs | Include in coverage analysis |
-| `ApprovalCenter.jsx` | Add Events tab | Event approval workflow |
-
-### 3.4 Navigation Updates
+### 3.3 Navigation Updates ✅ COMPLETE
 
 | File | Changes | Status |
 |------|---------|--------|
-| `src/config/sidebarMenus.js` | Add submenu for Programs & Events | 🔴 |
-| `App.jsx` | Add routes for /events/create, /events/:id/edit | 🔴 |
+| `src/pages.config.js` | Added ProgramsEventsHub | 🟢 |
+| `src/config/sidebarMenus.js` | Added hub to admin & executive menus | 🟢 |
+
+### 3.4 Page Updates for Embedded Mode ✅ COMPLETE
+
+| Page | Update | Status |
+|------|--------|--------|
+| Programs.jsx | Added `embedded` prop support | 🟢 |
+| EventCalendar.jsx | Added `embedded` prop support | 🟢 |
+| CampaignPlanner.jsx | Added `embedded` prop support | 🟢 |
+| CalendarView.jsx | Added `embedded` prop support | 🟢 |
+
+### 3.5 Related Page Updates (Already Done in Phase 1)
+
+| Page | Update Type | Status |
+|------|-------------|--------|
+| `ParticipantDashboard.jsx` | Program Events section | 🟢 |
+| `MyPrograms.jsx` | Upcoming events list | 🟢 |
+| `ProgramOperatorPortal.jsx` | Events management | 🟢 |
+| `ApprovalCenter.jsx` | Events tab | 🟢 |
 
 ---
 

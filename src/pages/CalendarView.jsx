@@ -12,7 +12,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
-function CalendarView() {
+function CalendarView({ embedded = false }) {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { hasAnyPermission, roles } = usePermissions();
