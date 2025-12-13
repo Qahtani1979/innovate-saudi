@@ -14,6 +14,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from '../components/LanguageContext';
 import { Save, Loader2, Sparkles, Plus, X, Clock, Eye, History, AlertCircle, CheckCircle2, Rocket } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
+import MediaFieldWithPicker from '../components/media/MediaFieldWithPicker';
+import { useMediaIntegration } from '@/hooks/useMediaIntegration';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import AICurriculumGenerator from '../components/programs/AICurriculumGenerator';
@@ -30,6 +32,7 @@ function ProgramEditPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { invokeAI, status, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { handleMediaSelect, registerUploadedMedia } = useMediaIntegration('programs', programId);
 
   const { data: program, isLoading } = useQuery({
     queryKey: ['program', programId],
@@ -485,38 +488,43 @@ Generate comprehensive bilingual (English + Arabic) content:
             <h3 className="font-semibold text-slate-900">{t({ en: 'Program Media', ar: 'وسائط البرنامج' })}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t({ en: 'Program Image', ar: 'صورة البرنامج' })}</Label>
-                <FileUploader
-                  type="image"
-                  label={t({ en: 'Upload Program Image', ar: 'رفع صورة البرنامج' })}
-                  maxSize={10}
-                  onUploadComplete={(url) => setFormData({...formData, image_url: url})}
-                />
-              </div>
+              <MediaFieldWithPicker
+                label={t({ en: 'Program Image', ar: 'صورة البرنامج' })}
+                value={formData.image_url || ''}
+                onChange={(url) => setFormData({...formData, image_url: url})}
+                onMediaSelect={handleMediaSelect}
+                fieldName="image_url"
+                entityType="programs"
+                entityId={programId}
+                mediaType="image"
+                bucket="programs"
+              />
 
-              <div className="space-y-2">
-                <Label>{t({ en: 'Promotional Video', ar: 'فيديو ترويجي' })}</Label>
-                <FileUploader
-                  type="video"
-                  label={t({ en: 'Upload Video', ar: 'رفع فيديو' })}
-                  maxSize={200}
-                  preview={false}
-                  onUploadComplete={(url) => setFormData({...formData, video_url: url})}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t({ en: 'Program Brochure', ar: 'كتيب البرنامج' })}</Label>
-              <FileUploader
-                type="document"
-                label={t({ en: 'Upload PDF Brochure', ar: 'رفع كتيب PDF' })}
-                maxSize={50}
-                preview={false}
-                onUploadComplete={(url) => setFormData({...formData, brochure_url: url})}
+              <MediaFieldWithPicker
+                label={t({ en: 'Promotional Video', ar: 'فيديو ترويجي' })}
+                value={formData.video_url || ''}
+                onChange={(url) => setFormData({...formData, video_url: url})}
+                onMediaSelect={handleMediaSelect}
+                fieldName="video_url"
+                entityType="programs"
+                entityId={programId}
+                mediaType="video"
+                bucket="programs"
               />
             </div>
+
+            <MediaFieldWithPicker
+              label={t({ en: 'Program Brochure (PDF)', ar: 'كتيب البرنامج' })}
+              value={formData.brochure_url || ''}
+              onChange={(url) => setFormData({...formData, brochure_url: url})}
+              onMediaSelect={handleMediaSelect}
+              fieldName="brochure_url"
+              entityType="programs"
+              entityId={programId}
+              mediaType="document"
+              allowedTypes={['pdf', 'document']}
+              bucket="programs"
+            />
 
             <div className="space-y-2">
               <Label>{t({ en: 'Gallery Images', ar: 'معرض الصور' })}</Label>
@@ -524,9 +532,11 @@ Generate comprehensive bilingual (English + Arabic) content:
                 type="image"
                 label={t({ en: 'Add to Gallery', ar: 'إضافة للمعرض' })}
                 maxSize={10}
+                bucket="programs"
                 enableImageSearch={true}
                 searchContext={formData.name_en}
-                onUploadComplete={(url) => {
+                onUploadComplete={async (url) => {
+                  await registerUploadedMedia(url, 'gallery_urls');
                   setFormData(prev => ({
                     ...prev,
                     gallery_urls: [...(prev.gallery_urls || []), url]

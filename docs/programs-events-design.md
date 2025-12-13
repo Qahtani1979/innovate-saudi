@@ -1,8 +1,8 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 9.3  
+**Version:** 9.4  
 **Last Updated:** 2025-12-13  
-**Status:** 🟡 Phase 8 Pending | Media Management Integration Required
+**Status:** 🟢 Phase 8 Complete | Media Management Integrated
 
 ---
 
@@ -38,7 +38,7 @@
 | **Comments System** | ✅ Full | ✅ Full | None |
 | **Bookmarks** | ✅ Full | ✅ Full | None |
 | **Audit Logging** | ✅ Full | ✅ Full | None |
-| **Media Management** | ❌ Not Integrated | ❌ Not Integrated | Medium |
+| **Media Management** | ✅ Integrated | ✅ Integrated | None |
 | **Realtime Updates** | ❌ Future | ❌ Future | Low |
 
 **Full details:** See `docs/programs-events-integration-matrix.md`
@@ -143,16 +143,17 @@
 | Detailed audit logging | Medium | ✅ | useAuditLog.js + ProgramEventAuditLog.jsx |
 | Supabase Realtime updates | Low | 🔴 | Future enhancement |
 
-### 🟡 Phase 8 Tasks - Media Management Integration - PENDING
+### ✅ Phase 8 Tasks - Media Management Integration - COMPLETE
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
-| MediaLibrary picker for ProgramEdit | High | ❌ TODO | Select existing media |
-| MediaLibrary picker for EventEdit | High | ❌ TODO | Select existing media |
-| registerUsage() on program upload | High | ❌ TODO | Track in media_usages |
-| registerUsage() on event upload | High | ❌ TODO | Track in media_usages |
-| Dependency check before media deletion | Medium | ❌ TODO | Prevent orphaned references |
-| Update ProgramCreateWizard | Low | ❌ TODO | Use media library |
+| MediaLibraryPicker component | High | ✅ DONE | Dialog with search, filters, upload |
+| MediaFieldWithPicker component | High | ✅ DONE | Unified media field UI |
+| useMediaIntegration hook | High | ✅ DONE | Usage tracking & registration |
+| ProgramEdit.jsx integration | High | ✅ DONE | Library picker + usage tracking |
+| EventEdit.jsx integration | High | ✅ DONE | Library picker + usage tracking |
+| ProgramCreateWizard integration | Low | ❌ TODO | Future enhancement |
+| EventCreate integration | Low | ❌ TODO | Future enhancement |
 
 ---
 

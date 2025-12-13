@@ -18,6 +18,8 @@ import { useEvents } from '@/hooks/useEvents';
 import { EVENT_TYPES, EVENT_STATUSES } from '@/components/events/EventFilters';
 import { EventCancelDialog, EventAttendeeList } from '@/components/events';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
+import MediaFieldWithPicker from '@/components/media/MediaFieldWithPicker';
+import { useMediaIntegration } from '@/hooks/useMediaIntegration';
 import { 
   Calendar, 
   MapPin, 
@@ -44,6 +46,7 @@ function EventEdit() {
 
   const { updateEvent, cancelEvent, isUpdating, isCancelling, useEvent } = useEvents();
   const { data: event, isLoading } = useEvent(eventId);
+  const { handleMediaSelect } = useMediaIntegration('events', eventId);
 
   const [activeTab, setActiveTab] = useState('basic');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -308,14 +311,17 @@ function EventEdit() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>{t({ en: 'Cover Image URL', ar: 'رابط صورة الغلاف' })}</Label>
-                    <Input
-                      value={formData.image_url}
-                      onChange={(e) => handleChange('image_url', e.target.value)}
-                      placeholder="https://..."
-                    />
-                  </div>
+                  <MediaFieldWithPicker
+                    label={t({ en: 'Cover Image', ar: 'صورة الغلاف' })}
+                    value={formData.image_url || ''}
+                    onChange={(url) => handleChange('image_url', url)}
+                    onMediaSelect={handleMediaSelect}
+                    fieldName="image_url"
+                    entityType="events"
+                    entityId={eventId}
+                    mediaType="image"
+                    bucket="events"
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

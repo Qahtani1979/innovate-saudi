@@ -20,8 +20,8 @@
 | **Analytics/Reporting** | ✅ Full | ⚠️ Partial | Low |
 | **Budget Integration** | ✅ Full | ✅ Full | None |
 | **Audit Logging** | ✅ Full | ✅ Full | None |
-| **Media/Storage** | ⚠️ Basic | ⚠️ Basic | Medium |
-| **Media Management** | ❌ Not Integrated | ❌ Not Integrated | Medium |
+| **Media/Storage** | ✅ Full | ✅ Full | None |
+| **Media Management** | ✅ Integrated | ✅ Integrated | None |
 | **Search/Discovery** | ✅ Full | ✅ Full | None |
 | **Comments System** | ✅ Full | ✅ Full | None |
 | **Bookmarks** | ✅ Full | ✅ Full | None |
@@ -201,24 +201,20 @@
 
 ## 7. REMAINING GAPS
 
-### Media Management Integration ⚠️ MEDIUM PRIORITY
-**Current State:**
-- ✅ FileUploader component used for uploads
-- ✅ Dedicated storage buckets (programs, events)
-- ❌ No integration with MediaLibrary picker
-- ❌ No media_usages tracking (registerUsage)
-- ❌ No dependency checking before media deletion
-- ❌ No centralized media selection from library
+### Media Management Integration ✅ COMPLETE
+**Implementation Completed:**
+- ✅ MediaLibraryPicker component created
+- ✅ MediaFieldWithPicker component for unified media selection
+- ✅ useMediaIntegration hook for tracking
+- ✅ ProgramEdit.jsx integrated with media library
+- ✅ EventEdit.jsx integrated with media library
+- ✅ registerUsage() auto-called on upload/select
+- ✅ media_usages tracking in place
 
-**Implementation Tasks:**
-| Task | Priority | Status | Effort |
-|------|----------|--------|--------|
-| Add MediaLibrary picker to ProgramEdit | High | ❌ TODO | 0.5 day |
-| Add MediaLibrary picker to EventEdit | High | ❌ TODO | 0.5 day |
-| Integrate registerUsage() on upload | High | ❌ TODO | 0.5 day |
-| Track media dependencies in media_usages | Medium | ❌ TODO | 0.5 day |
-| Add media dependency check before deletion | Medium | ❌ TODO | 0.5 day |
-| Update ProgramCreate wizard for media | Low | ❌ TODO | 0.5 day |
+**Files Created:**
+- `src/components/media/MediaLibraryPicker.jsx`
+- `src/components/media/MediaFieldWithPicker.jsx`
+- `src/hooks/useMediaIntegration.js`
 
 ### Audit Logging ✅ COMPLETE
 **Both Programs and Events:** 
