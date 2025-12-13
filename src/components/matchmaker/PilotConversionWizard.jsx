@@ -12,10 +12,12 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function PilotConversionWizard({ application, challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
+  const { triggerEmail } = useEmailTrigger();
   const [step, setStep] = useState(1);
   const [pilotData, setPilotData] = useState({
     title_en: '',
@@ -85,8 +87,6 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
 
   const createPilot = async () => {
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
       const pilot = await base44.entities.Pilot.create({
         ...pilotData,
         challenge_id: challenge?.id,
@@ -102,30 +102,17 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
         stage: 'pilot_conversion'
       });
 
-      // Send pilot created email notification via email-trigger-hub
-      try {
-        const recipientEmail = application.contact_email || application.organization_email;
-        if (recipientEmail) {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'pilot.created',
-              recipient_email: recipientEmail,
-              entity_type: 'pilot',
-              entity_id: pilot.id,
-              variables: {
-                pilotTitle: pilotData.title_en || pilotData.title_ar,
-                pilotCode: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
-                startDate: new Date().toISOString().split('T')[0],
-                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
-              },
-              language: language,
-              triggered_by: 'system'
-            }
-          });
+      // Send pilot created email notification using hook
+      await triggerEmail('pilot.created', {
+        entityType: 'pilot',
+        entityId: pilot.id,
+        variables: {
+          pilot_title: pilotData.title_en || pilotData.title_ar,
+          pilot_code: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
+          organization_name: application.organization_name_en,
+          challenge_title: challenge?.title_en
         }
-      } catch (emailError) {
-        console.error('Failed to send pilot created email:', emailError);
-      }
+      }).catch(err => console.error('Email trigger failed:', err));
 
       toast.success(t({ en: 'Pilot created successfully!', ar: 'تم إنشاء التجربة بنجاح!' }));
       navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));

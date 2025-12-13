@@ -11,10 +11,12 @@ import { Sparkles, TestTube, Loader2, CheckCircle2, Target } from 'lucide-react'
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
   const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [selectedChallengeId, setSelectedChallengeId] = useState('');
   const [selectedMunicipalityId, setSelectedMunicipalityId] = useState('');
@@ -48,35 +50,21 @@ export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }
         description: `Provider proposed pilot: ${pilot.title_en}`
       });
 
-      // Send pilot created email notification via email-trigger-hub
-      try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const recipientEmail = data.pilot_manager_email || solution.contact_email;
-        if (recipientEmail) {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'pilot.created',
-              recipient_email: recipientEmail,
-              entity_type: 'pilot',
-              entity_id: pilot.id,
-              variables: {
-                pilotTitle: data.title_en || data.title_ar,
-                pilotCode: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
-                startDate: data.start_date || new Date().toISOString().split('T')[0],
-                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
-              },
-              language: language,
-              triggered_by: 'system'
-            }
-          });
-        }
-      } catch (emailError) {
-        console.error('Failed to send pilot created email:', emailError);
-      }
-
       return pilot;
     },
-    onSuccess: (pilot) => {
+    onSuccess: async (pilot) => {
+      // Send pilot created email notification using hook
+      await triggerEmail('pilot.created', {
+        entityType: 'pilot',
+        entityId: pilot.id,
+        variables: {
+          pilot_title: pilot.title_en || pilot.title_ar,
+          pilot_code: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
+          solution_name: solution.name_en,
+          start_date: new Date().toISOString().split('T')[0]
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+
       queryClient.invalidateQueries({ queryKey: ['pilots'] });
       toast.success(t({ en: 'Pilot proposal created', ar: 'تم إنشاء مقترح التجربة' }));
       onSuccess?.(pilot);

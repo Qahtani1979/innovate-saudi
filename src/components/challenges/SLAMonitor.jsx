@@ -1,17 +1,20 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Clock, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
-
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { toast } from 'sonner';
 export default function SLAMonitor() {
   const { language, isRTL, t } = useLanguage();
-
+  const { triggerEmail } = useEmailTrigger();
+  const queryClient = useQueryClient();
+  const [escalatingId, setEscalatingId] = React.useState(null);
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
     queryFn: () => base44.entities.Challenge.list()
@@ -40,6 +43,38 @@ export default function SLAMonitor() {
     .sort((a, b) => b.sla.daysOverdue - a.sla.daysOverdue);
 
   const escalationRequired = slaBreaches.filter(c => c.sla.daysOverdue > 7);
+
+  const handleEscalate = async (challenge) => {
+    setEscalatingId(challenge.id);
+    try {
+      // Update challenge escalation level
+      await base44.entities.Challenge.update(challenge.id, {
+        escalation_level: (challenge.escalation_level || 0) + 1,
+        escalation_date: new Date().toISOString()
+      });
+
+      // Trigger escalation email
+      await triggerEmail('challenge.escalated', {
+        entityType: 'challenge',
+        entityId: challenge.id,
+        variables: {
+          challenge_title: challenge.title_en || challenge.title_ar,
+          challenge_code: challenge.code,
+          days_overdue: challenge.sla.daysOverdue,
+          current_status: challenge.status,
+          escalation_level: (challenge.escalation_level || 0) + 1
+        }
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      toast.success(t({ en: 'Challenge escalated', ar: 'تم تصعيد التحدي' }));
+    } catch (error) {
+      console.error('Escalation failed:', error);
+      toast.error(t({ en: 'Escalation failed', ar: 'فشل التصعيد' }));
+    } finally {
+      setEscalatingId(null);
+    }
+  };
 
   return (
     <Card className="border-2 border-orange-300">
@@ -91,8 +126,17 @@ export default function SLAMonitor() {
                         </span>
                       </div>
                     </div>
-                    <Button size="sm" variant="destructive">
-                      <ArrowRight className="h-3 w-3 mr-1" />
+                    <Button 
+                      size="sm" 
+                      variant="destructive"
+                      onClick={() => handleEscalate(challenge)}
+                      disabled={escalatingId === challenge.id}
+                    >
+                      {escalatingId === challenge.id ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <ArrowRight className="h-3 w-3 mr-1" />
+                      )}
                       {t({ en: 'Escalate', ar: 'صعّد' })}
                     </Button>
                   </div>

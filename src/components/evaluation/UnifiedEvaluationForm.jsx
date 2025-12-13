@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function UnifiedEvaluationForm({ 
   entityType, 
@@ -24,6 +25,7 @@ export default function UnifiedEvaluationForm({
   const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiAssisting, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { user } = useAuth();
+  const { triggerEmail } = useEmailTrigger();
 
   const [scores, setScores] = useState({
     feasibility_score: 50,
@@ -64,7 +66,20 @@ export default function UnifiedEvaluationForm({
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Trigger evaluation completed email
+      await triggerEmail('evaluation.completed', {
+        entityType: entityType,
+        entityId: entityId,
+        variables: {
+          entity_type: entityType,
+          entity_id: entityId,
+          evaluator_email: user?.email,
+          recommendation: recommendation,
+          overall_score: Object.values(scores).reduce((a, b) => a + b, 0) / Object.keys(scores).length
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+
       queryClient.invalidateQueries(['expert-evaluations']);
       queryClient.invalidateQueries(['expert-assignments']);
       toast.success(t({ en: 'Evaluation submitted', ar: 'تم إرسال التقييم' }));
