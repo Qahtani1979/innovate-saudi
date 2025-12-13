@@ -109,9 +109,58 @@ export default function StepFileUpload({ state, updateState, onNext }) {
     return { headers, rows, rawText: text };
   };
 
-  // Process Excel files using AI (xlsx library has React compatibility issues)
+  // Process Excel files using dynamic import to avoid React hook conflicts
   const processExcel = async (file) => {
-    return processWithAI(file, 'excel');
+    setProcessStatus('Loading Excel parser...');
+    
+    try {
+      // Dynamic import to isolate xlsx from React's module resolution
+      const XLSX = await import('xlsx');
+      
+      setProcessStatus('Reading Excel file...');
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      
+      // Convert to JSON with headers
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      if (jsonData.length === 0) {
+        throw new Error('No data found in Excel file');
+      }
+      
+      // First row is headers
+      const headers = jsonData[0].map(h => String(h || '').trim()).filter(h => h);
+      const rows = [];
+      
+      // Process remaining rows
+      for (let i = 1; i < jsonData.length; i++) {
+        const rowData = jsonData[i];
+        if (!rowData || rowData.length === 0) continue;
+        
+        const row = {};
+        let hasData = false;
+        
+        headers.forEach((header, idx) => {
+          const value = rowData[idx];
+          row[header] = value !== undefined && value !== null ? String(value) : '';
+          if (row[header]) hasData = true;
+        });
+        
+        if (hasData) {
+          rows.push(row);
+        }
+      }
+      
+      return { headers, rows, rawText: JSON.stringify({ headers, rows }) };
+    } catch (error) {
+      console.error('Excel parsing error:', error);
+      // Fallback to AI extraction if xlsx fails
+      setProcessStatus('Falling back to AI extraction...');
+      return processWithAI(file, 'excel');
+    }
   };
 
   const processWithAI = async (file, fileType) => {
