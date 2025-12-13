@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import { notifyEventAction } from '@/components/AutoNotification';
 import { toast } from 'sonner';
 
@@ -20,6 +21,7 @@ export function useEvents(options = {}) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { triggerEmail } = useEmailTrigger();
+  const { logEventActivity, logApprovalActivity } = useAuditLog();
 
   // Fetch events
   const eventsQuery = useQuery({
@@ -146,6 +148,16 @@ export function useEvents(options = {}) {
       queryClient.invalidateQueries(['events']);
       queryClient.invalidateQueries(['event-approvals']);
       
+      // Audit logging
+      const action = data.status === 'pending' ? 'submitted' : 'created';
+      await logEventActivity(action, data);
+      if (data.status === 'pending') {
+        await logApprovalActivity('submitted', 'event', data.id, {
+          event_title: data.title_en,
+          event_type: data.event_type
+        });
+      }
+      
       // Create in-app notification
       try {
         if (data.status === 'pending') {
@@ -196,6 +208,11 @@ export function useEvents(options = {}) {
     onSuccess: async (data, variables) => {
       queryClient.invalidateQueries(['events']);
       queryClient.invalidateQueries(['event', variables.eventId]);
+
+      // Audit logging
+      await logEventActivity('updated', data, {
+        updated_fields: Object.keys(variables.updates || {})
+      });
 
       // Notify registrants if significant changes
       if (data.registered_count > 0) {
@@ -255,9 +272,14 @@ export function useEvents(options = {}) {
 
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries(['events']);
       queryClient.invalidateQueries(['event', variables.eventId]);
+
+      // Audit logging
+      await logEventActivity('cancelled', data, {
+        reason: variables.reason
+      });
     }
   });
 
@@ -275,8 +297,11 @@ export function useEvents(options = {}) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async (_, eventId) => {
       queryClient.invalidateQueries(['events']);
+
+      // Audit logging
+      await logEventActivity('deleted', { id: eventId });
     }
   });
 

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import { notifyProgramEvent } from '@/components/AutoNotification';
 import { toast } from 'sonner';
 
@@ -20,6 +21,7 @@ export function usePrograms(options = {}) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { triggerEmail } = useEmailTrigger();
+  const { logProgramActivity, logApprovalActivity } = useAuditLog();
 
   // Fetch programs
   const programsQuery = useQuery({
@@ -145,6 +147,16 @@ export function usePrograms(options = {}) {
       queryClient.invalidateQueries(['programs-with-visibility']);
       queryClient.invalidateQueries(['program-approvals']);
       
+      // Audit logging
+      const action = data.status === 'pending' ? 'submitted' : 'created';
+      await logProgramActivity(action, data);
+      if (data.status === 'pending') {
+        await logApprovalActivity('submitted', 'program', data.id, {
+          program_name: data.name_en,
+          program_type: data.program_type
+        });
+      }
+      
       // Create in-app notification
       try {
         if (data.status === 'pending') {
@@ -196,6 +208,11 @@ export function usePrograms(options = {}) {
       queryClient.invalidateQueries(['programs-with-visibility']);
       queryClient.invalidateQueries(['program', variables.programId]);
 
+      // Audit logging
+      await logProgramActivity('updated', data, {
+        updated_fields: Object.keys(variables.updates || {})
+      });
+
       // Trigger update email
       try {
         await triggerEmail('program.updated', {
@@ -236,6 +253,12 @@ export function usePrograms(options = {}) {
       queryClient.invalidateQueries(['programs-crud']);
       queryClient.invalidateQueries(['programs-with-visibility']);
       queryClient.invalidateQueries(['program', programId]);
+
+      // Audit logging
+      await logProgramActivity('status_changed', data, {
+        new_status: 'active',
+        action: 'launched'
+      });
 
       // In-app notification
       try {
@@ -284,6 +307,12 @@ export function usePrograms(options = {}) {
       queryClient.invalidateQueries(['programs-crud']);
       queryClient.invalidateQueries(['programs-with-visibility']);
       queryClient.invalidateQueries(['program', programId]);
+
+      // Audit logging
+      await logProgramActivity('status_changed', data, {
+        new_status: 'completed',
+        action: 'completed'
+      });
 
       // In-app notification
       try {
@@ -340,10 +369,17 @@ export function usePrograms(options = {}) {
 
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries(['programs-crud']);
       queryClient.invalidateQueries(['programs-with-visibility']);
       queryClient.invalidateQueries(['program', variables.programId]);
+
+      // Audit logging
+      await logProgramActivity('status_changed', { id: variables.programId, ...data }, {
+        new_status: 'cancelled',
+        action: 'cancelled',
+        reason: variables.reason
+      });
     }
   });
 
@@ -361,9 +397,12 @@ export function usePrograms(options = {}) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async (_, programId) => {
       queryClient.invalidateQueries(['programs-crud']);
       queryClient.invalidateQueries(['programs-with-visibility']);
+
+      // Audit logging
+      await logProgramActivity('deleted', { id: programId });
     }
   });
 
