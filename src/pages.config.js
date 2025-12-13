@@ -181,6 +181,7 @@ import SandboxLabCapacityPlanner from './pages/SandboxLabCapacityPlanner';
 import ServiceCatalog from './pages/ServiceCatalog';
 import MultiYearRoadmap from './pages/MultiYearRoadmap';
 import StrategicPlanApprovalGate from './pages/StrategicPlanApprovalGate';
+import SWOTAnalysisPage from './pages/SWOTAnalysisPage';
 import BudgetAllocationApprovalGate from './pages/BudgetAllocationApprovalGate';
 import InitiativeLaunchGate from './pages/InitiativeLaunchGate';
 import PortfolioReviewGate from './pages/PortfolioReviewGate';
@@ -974,6 +975,7 @@ export const PAGES = {
     "DeputyshipOnboarding": DeputyshipOnboarding,
     "Onboarding": Onboarding,
     "StrategyFeedbackDashboard": StrategyFeedbackDashboard,
+    "SWOTAnalysisPage": SWOTAnalysisPage,
     "Auth": Auth,
     "ResetPassword": ResetPassword,
 }
