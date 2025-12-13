@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,23 +62,19 @@ export default function ProgramCompletionWorkflow({ program, onClose }) {
       // Send completion emails to participants
       for (const participant of participants) {
         if (participant.email) {
-          await base44.integrations.Core.SendEmail({
-            to: participant.email,
-            subject: `Thank You for Completing ${program.name_en}`,
-            body: `Dear ${participant.applicant_name},
-
-Congratulations on completing ${program.name_en}!
-
-${completionData.completion_summary}
-
-Your certificate will be available for download from your dashboard within 48 hours.
-
-${completionData.post_program_plan}
-
-We look forward to seeing your innovation journey continue!
-
-Best regards,
-Saudi Innovates Platform`
+          await supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'PROGRAM_COMPLETED',
+              recipientEmail: participant.email,
+              entityType: 'program',
+              entityId: program.id,
+              variables: {
+                userName: participant.applicant_name,
+                programName: program.name_en,
+                completionSummary: completionData.completion_summary,
+                postProgramPlan: completionData.post_program_plan
+              }
+            }
           });
         }
       }

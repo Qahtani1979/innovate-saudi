@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,10 +55,20 @@ Create professional email:
       const [subject, ...bodyLines] = emailContent.split('\n').filter(line => line.trim());
       const body = bodyLines.join('\n');
       
-      await base44.integrations.Core.SendEmail({
-        to: provider.contact_email,
-        subject: subject.replace('Subject: ', ''),
-        body: body
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'MATCHMAKER_MATCH',
+          recipientEmail: provider.contact_email,
+          entityType: 'match',
+          entityId: match.id,
+          variables: {
+            providerName: provider.name_en,
+            challengeTitle: challenge.title_en,
+            matchScore: match.match_score,
+            emailSubject: subject.replace('Subject: ', ''),
+            emailBody: body
+          }
+        }
       });
 
       await base44.entities.Notification.create({

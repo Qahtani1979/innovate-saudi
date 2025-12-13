@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -132,10 +133,17 @@ export default function BulkUserImport() {
           });
 
           // Send welcome email
-          await base44.integrations.Core.SendEmail({
-            to: userData.email,
-            subject: 'Welcome to Saudi Innovates Platform',
-            body: `Hello ${userData.full_name},\n\nYou have been invited to join the Saudi Innovates Platform.\n\nYour assigned roles: ${roleNames.join(', ')}\n\nPlease login to complete your profile.`
+          await supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'WELCOME',
+              recipientEmail: userData.email,
+              variables: {
+                userName: userData.full_name,
+                assignedRoles: roleNames.join(', '),
+                organization: userData.organization,
+                loginUrl: `${window.location.origin}/auth`
+              }
+            }
           });
 
           results.success.push(userData.email);
