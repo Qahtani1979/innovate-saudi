@@ -836,11 +836,24 @@ Provide approval recommendation with reasoning.`;
                       onClick={async () => {
                         const { error } = await supabase
                           .from('events')
-                          .update({ status: 'scheduled', is_published: true })
+                          .update({ status: 'scheduled', is_published: true, approved_by: user?.email, approved_at: new Date().toISOString() })
                           .eq('id', event.id);
                         if (!error) {
                           queryClient.invalidateQueries(['event-approvals-legacy']);
                           toast.success(t({ en: 'Event approved and scheduled', ar: 'تمت الموافقة وجدولة الفعالية' }));
+                          // Trigger email notification
+                          try {
+                            const { supabase: sb } = await import('@/integrations/supabase/client');
+                            await sb.functions.invoke('email-trigger-hub', {
+                              body: {
+                                trigger: 'event.approved',
+                                entity_type: 'event',
+                                entity_id: event.id,
+                                recipient_email: event.created_by,
+                                entity_data: { title: event.title_en, start_date: event.start_date, location: event.location }
+                              }
+                            });
+                          } catch (e) { console.warn('Email trigger failed:', e); }
                         }
                       }}
                     >
@@ -1093,6 +1106,6 @@ Provide approval recommendation with reasoning.`;
 }
 
 export default ProtectedPage(ApprovalCenter, {
-  requiredPermissions: ['challenge_approve', 'pilot_approve', 'program_approve', 'rd_proposal_approve', 'solution_approve', 'matchmaker_approve'],
+  requiredPermissions: ['challenge_approve', 'pilot_approve', 'program_approve', 'rd_proposal_approve', 'solution_approve', 'matchmaker_approve', 'event_approve'],
   requireAll: false
 });
