@@ -168,6 +168,11 @@ stateDiagram-v2
 | strategic_plan_ids | uuid[] | FK array to strategic_plans |
 | strategic_objective_ids | uuid[] | FK array to strategic_objectives |
 | strategic_pillar_id | uuid | FK to strategic_pillars |
+| strategic_priority_level | text | Priority level (critical, high, medium, low) |
+| strategic_kpi_contributions | jsonb | KPI contribution data |
+| is_strategy_derived | boolean | Created from strategy |
+| strategy_derivation_date | timestamptz | When derived from strategy |
+| lessons_learned | jsonb | Lessons for strategy feedback |
 | image_url | text | Cover image URL |
 | gallery_urls | text[] | Gallery image URLs |
 | video_url | text | Video URL |
@@ -200,6 +205,10 @@ stateDiagram-v2
 | municipality_id | uuid | FK to municipalities |
 | strategic_plan_ids | uuid[] | FK array to strategic_plans |
 | strategic_objective_ids | uuid[] | FK array to strategic_objectives |
+| strategic_pillar_id | uuid | FK to strategic_pillars |
+| strategic_alignment_score | numeric | Alignment score (0-100) |
+| is_strategy_derived | boolean | Created from strategy |
+| strategy_derivation_date | timestamptz | When derived from strategy |
 | image_url | text | Cover image URL |
 | gallery_urls | text[] | Gallery image URLs |
 | created_by | text | Creator email |
@@ -370,6 +379,7 @@ stateDiagram-v2
 | useAuditLog | `src/hooks/useAuditLog.js` | Audit logging |
 | useEmailTrigger | `src/hooks/useEmailTrigger.ts` | Email triggers |
 | useStrategicKPI | `src/hooks/useStrategicKPI.js` | Strategic KPI updates |
+| useStrategicCascadeValidation | `src/hooks/useStrategicCascadeValidation.js` | Cascade validation & coverage |
 
 ---
 
