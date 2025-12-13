@@ -1,22 +1,24 @@
 # Strategy System - Design Document
 
-**Version:** 2.0 (VERIFIED DEEP REVIEW)  
+**Version:** 3.0 (COMPREHENSIVE ENTITY INTEGRATION REVIEW)  
 **Last Updated:** 2025-12-13  
-**Status:** ⚠️ 92% COMPLETE - Programs Table Missing 3 Columns
+**Status:** ⚠️ 67% PLATFORM INTEGRATION - Critical Gaps on Sandboxes/Living Labs
 
 ---
 
 ## Table of Contents
 
 1. [System Overview](#system-overview)
-2. [Architecture](#architecture)
-3. [Data Model](#data-model)
-4. [Pages Inventory](#pages-inventory)
-5. [Components Inventory](#components-inventory)
-6. [Edge Functions](#edge-functions)
-7. [Hooks](#hooks)
-8. [AI Features](#ai-features)
-9. [User Flows](#user-flows)
+2. [Entity Integration Model](#entity-integration-model)
+3. [Architecture](#architecture)
+4. [Data Model](#data-model)
+5. [Pages Inventory](#pages-inventory)
+6. [Components Inventory](#components-inventory)
+7. [Edge Functions](#edge-functions)
+8. [Hooks](#hooks)
+9. [AI Features](#ai-features)
+10. [User Flows](#user-flows)
+11. [Gap Analysis](#gap-analysis)
 
 ---
 
@@ -26,7 +28,7 @@ The Strategy System provides comprehensive strategic planning and execution mana
 
 - **Strategic Plan Creation** - Build and manage multi-year strategic plans
 - **Objective & KPI Management** - Define and track strategic objectives and KPIs
-- **Bidirectional Integration** - Strategy drives programs, programs inform strategy
+- **Bidirectional Integration** - Strategy drives entities, entities inform strategy
 - **AI-Powered Insights** - 7 AI features for analysis and recommendations
 - **Approval Workflows** - Multi-step approval gates for strategic decisions
 
@@ -35,11 +37,77 @@ The Strategy System provides comprehensive strategic planning and execution mana
 | Metric | Count | Status |
 |--------|-------|--------|
 | Pages | 25+ | ✅ Complete |
-| Components | 18 | ✅ Complete |
+| Components | 14 | ✅ Complete |
 | Edge Functions | 7 | ✅ Complete |
 | Hooks | 1 | ✅ Complete |
 | Database Tables | 6 | ✅ Complete |
 | AI Features | 7 | ✅ Complete |
+| Direct Entity Integration | 2/5 | ⚠️ 40% |
+| Indirect Entity Integration | 13/16 | ⚠️ 81% |
+
+---
+
+## Entity Integration Model
+
+### Three-Tier Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         STRATEGY SYSTEM                                      │
+│                    (Strategic Plans, Objectives, KPIs)                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  TIER 1: DIRECT INTEGRATION                                                  │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │ Programs ⚠️  │ Challenges ✅ │ Partnerships ⚠️ │ Sandboxes ❌ │ Labs ❌ │   │
+│  │ (85%)        │ (100%)        │ (60%)           │ (0%)         │ (0%)   │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│         │                                                                    │
+│         ▼                                                                    │
+│  TIER 2: INDIRECT INTEGRATION (Via Parent Entity)                            │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │ Campaigns ❌ │ R&D Calls ⚠️ │ Events ✅ │ Matchmaker ✅ │ Solutions ✅ │   │
+│  │ (0%)         │ (80%)         │ (100%+)   │ (100%)       │ (100%)      │   │
+│  ├──────────────────────────────────────────────────────────────────────┤   │
+│  │ Pilots ✅ │ R&D Projects ✅ │ Scaling ⚠️ │ Proposals ✅ │ Innovations ✅│   │
+│  │ (100%)    │ (100%)          │ (50%)      │ (100%)       │ (100%)       │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│         │                                                                    │
+│         ▼                                                                    │
+│  TIER 3: NO INTEGRATION (By Design)                                          │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │ Providers (External) │ Ideas (Raw Input) │ Municipalities (Owns Plan) │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### DIRECT Integration Requirements
+
+Entities that should have explicit strategy fields:
+
+| Entity | Required Fields | Current State | Gap |
+|--------|-----------------|---------------|-----|
+| **Programs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `lessons_learned` | Missing 3 fields | P0 |
+| **Challenges** | `strategic_plan_ids[]`, `strategic_goal` | ✅ Complete | - |
+| **Partnerships** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived` | Has `is_strategic` only | P1 |
+| **Sandboxes** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date` | ❌ NO FIELDS | P0 |
+| **Living Labs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date` | ❌ NO FIELDS | P0 |
+
+### INDIRECT Integration Chains
+
+| Entity | Via Chain | DB Fields | Status |
+|--------|-----------|-----------|--------|
+| **Campaigns** | Programs → Strategy | ❌ No `program_id` | BROKEN |
+| **R&D Calls** | Challenges → Strategy | `challenge_ids[]` | ✅ Works |
+| **Events** | Programs → Strategy | `program_id` + DIRECT fields | ✅ EXCEEDS |
+| **Matchmaker** | Challenges → Strategy | `target_challenges[]` | ✅ Works |
+| **Solutions** | Programs/R&D → Strategy | `source_program_id`, `source_rd_project_id` | ✅ Works |
+| **Pilots** | Challenges → Strategy | `challenge_id`, `source_program_id` | ✅ Works |
+| **R&D Projects** | R&D Calls → Challenges → Strategy | `rd_call_id`, `challenge_ids[]` | ✅ Works |
+| **Scaling Plans** | Pilots → Challenges → Strategy | `pilot_id` | ⚠️ Missing `rd_project_id` |
+| **Proposals** | Challenges → Strategy | `challenge_id`, `target_challenges[]` | ✅ Works |
+| **Innovations** | Challenges → Strategy | `target_challenges[]` | ✅ Works |
 
 ---
 
@@ -53,7 +121,7 @@ The Strategy System provides comprehensive strategic planning and execution mana
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                   │
-│  │   STRATEGY   │───▶│   PROGRAMS   │───▶│   OUTCOMES   │                   │
+│  │   STRATEGY   │───▶│   ENTITIES   │───▶│   OUTCOMES   │                   │
 │  │    LAYER     │    │    LAYER     │    │    LAYER     │                   │
 │  └──────┬───────┘    └──────────────┘    └──────┬───────┘                   │
 │         │                                        │                           │
@@ -77,35 +145,29 @@ The Strategy System provides comprehensive strategic planning and execution mana
 ```
 src/
 ├── pages/
-│   ├── StrategyCockpit.jsx              # Main dashboard (471 lines)
-│   ├── StrategicPlanBuilder.jsx         # Create/edit plans (156 lines)
-│   ├── StrategyFeedbackDashboard.jsx    # Bidirectional hub (279 lines)
-│   ├── GapAnalysisTool.jsx              # Gap detection (531 lines)
+│   ├── StrategyCockpit.jsx              # Main dashboard
+│   ├── StrategicPlanBuilder.jsx         # Create/edit plans
+│   ├── StrategyFeedbackDashboard.jsx    # Bidirectional hub
+│   ├── GapAnalysisTool.jsx              # Gap detection
 │   ├── OKRManagementSystem.jsx          # OKR management
-│   ├── Portfolio.jsx                     # Kanban board (383 lines)
-│   ├── StrategicPlanApprovalGate.jsx    # Approval workflow
-│   ├── BudgetAllocationTool.jsx         # Budget allocation
-│   ├── WhatIfSimulatorPage.jsx          # Scenario simulation
-│   └── ... (15+ more pages)
+│   └── ... (20+ more pages)
 │
 ├── components/strategy/
-│   ├── StrategyToProgramGenerator.jsx   # Forward flow (357 lines)
-│   ├── StrategicGapProgramRecommender.jsx # Gap recommendations (425 lines)
+│   ├── StrategyToProgramGenerator.jsx   # Forward flow
+│   ├── StrategicGapProgramRecommender.jsx # Gap recommendations
 │   ├── WhatIfSimulator.jsx              # What-if simulation
-│   ├── SectorGapAnalysisWidget.jsx      # Sector gaps
-│   ├── BottleneckDetector.jsx           # Bottleneck detection
-│   └── ... (9 more components)
+│   └── ... (11 more components)
 │
 ├── components/programs/
-│   ├── ProgramOutcomeKPITracker.jsx     # KPI tracking (280 lines)
-│   ├── ProgramLessonsToStrategy.jsx     # Lessons feedback (383 lines)
+│   ├── ProgramOutcomeKPITracker.jsx     # KPI tracking
+│   ├── ProgramLessonsToStrategy.jsx     # Lessons feedback
 │   └── StrategicAlignmentWidget.jsx     # Alignment display
 │
 ├── components/events/
-│   └── EventStrategicAlignment.jsx      # Event linking (215 lines)
+│   └── EventStrategicAlignment.jsx      # Event linking
 │
 ├── hooks/
-│   └── useStrategicKPI.js               # Centralized KPI logic (211 lines)
+│   └── useStrategicKPI.js               # Centralized KPI logic
 │
 └── supabase/functions/
     ├── strategic-plan-approval/
@@ -121,82 +183,46 @@ src/
 
 ## Data Model
 
-### Core Tables (Verified in Database)
+### Core Tables
 
 #### strategic_plans
 
 ```typescript
 interface StrategicPlan {
-  id: string;                    // UUID primary key
-  name_en: string;               // English name
-  name_ar: string;               // Arabic name
-  description_en: string;        // English description
-  description_ar: string;        // Arabic description
-  municipality_id: string;       // FK to municipalities
-  start_year: number;            // Plan start year
-  end_year: number;              // Plan end year
-  vision_en: string;             // English vision statement
-  vision_ar: string;             // Arabic vision statement
-  pillars: JSONB;                // Strategic pillars array
-  objectives: JSONB;             // Strategic objectives array
-  kpis: JSONB;                   // Key performance indicators
-  status: string;                // draft|pending|active|completed|archived
+  id: string;
+  name_en: string;
+  name_ar: string;
+  description_en: string;
+  description_ar: string;
+  municipality_id: string;
+  start_year: number;
+  end_year: number;
+  vision_en: string;
+  vision_ar: string;
+  pillars: JSONB;      // Strategic pillars array
+  objectives: JSONB;   // Strategic objectives array
+  kpis: JSONB;         // Key performance indicators
+  status: string;      // draft|pending|active|completed|archived
   created_at: timestamp;
   updated_at: timestamp;
 }
 ```
 
-#### Supporting Tables
+### Strategic Fields on Entities
 
-| Table | Purpose | Key Fields |
-|-------|---------|------------|
-| `strategic_plan_challenge_links` | Many-to-many linking | plan_id, challenge_id |
-| `kpi_references` | Reusable KPI definitions | id, name, description, unit, target, category |
-| `pilot_kpis` | Pilot-level KPI tracking | id, pilot_id, kpi_reference_id, target, current |
-| `pilot_kpi_datapoints` | Time-series KPI data | id, pilot_kpi_id, value, recorded_at |
-| `scaling_plans` | Strategy for scaling | pilot_id, strategy, target_locations, progress |
+#### CURRENT STATE vs REQUIRED
 
-### JSONB Structures
-
-#### Pillars Structure
-
-```typescript
-interface StrategicPillar {
-  id: string;
-  name_en: string;
-  name_ar?: string;
-  description?: string;
-  weight?: number;           // Relative importance (0-100)
-}
-```
-
-#### Objectives Structure
-
-```typescript
-interface StrategicObjective {
-  id: string;
-  name_en: string;
-  name_ar?: string;
-  description?: string;
-  pillar_id?: string;        // Link to pillar
-  target?: number;
-  current?: number;
-  unit?: string;
-  contributing_programs?: string[];  // Program IDs
-  contributions?: Contribution[];    // History
-  last_updated?: string;
-}
-```
-
-### Strategic Fields on Other Entities
-
-| Entity | Fields | Purpose |
-|--------|--------|---------|
-| **Programs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `is_strategy_derived`, `strategy_derivation_date`, `kpi_contributions[]`, `lessons_learned[]` | Forward and feedback flow |
-| **Events** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `strategic_alignment_score`, `is_strategy_derived` | Event alignment |
-| **Challenges** | `strategic_plan_ids[]`, `strategic_goal` | Challenge routing |
-| **Sandboxes** | `strategic_pillar_id`, `strategic_objective_ids[]` | Sandbox alignment |
-| **LivingLabs** | `strategic_pillar_id`, `strategic_objective_ids[]` | Lab alignment |
+| Entity | Current Fields | Required Fields | Gap |
+|--------|---------------|-----------------|-----|
+| **programs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `strategic_priority_level`, `strategic_kpi_contributions` | + `is_strategy_derived`, `strategy_derivation_date`, `lessons_learned` | 3 fields |
+| **events** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id`, `strategic_alignment_score`, `is_strategy_derived`, `strategy_derivation_date`, `program_id` | ALL PRESENT | ✅ |
+| **challenges** | `strategic_plan_ids[]`, `strategic_goal`, `linked_program_ids[]` | ALL PRESENT | ✅ |
+| **partnerships** | `is_strategic`, `linked_challenge_ids[]`, `linked_pilot_ids[]`, `linked_program_ids[]` | + `strategic_plan_ids[]`, `strategic_objective_ids[]` | 2 fields |
+| **sandboxes** | NONE | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `strategic_gaps_addressed[]` | 5+ fields |
+| **living_labs** | NONE | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `research_priorities` | 5+ fields |
+| **email_campaigns** | NONE | `program_id`, `challenge_id` | 2 fields |
+| **scaling_plans** | `pilot_id` | + `rd_project_id` | 1 field |
+| **rd_calls** | `challenge_ids[]` | + `program_id` | 1 field |
 
 ---
 
@@ -204,65 +230,61 @@ interface StrategicObjective {
 
 ### Core Strategy Pages (25+)
 
-| # | Page | File | Purpose | Lines | Status |
-|---|------|------|---------|-------|--------|
-| 1 | StrategyCockpit | StrategyCockpit.jsx | Main strategy dashboard | 471 | ✅ |
-| 2 | StrategicPlanBuilder | StrategicPlanBuilder.jsx | Create/edit plans | 156 | ✅ |
-| 3 | StrategyFeedbackDashboard | StrategyFeedbackDashboard.jsx | Bidirectional hub | 279 | ✅ |
-| 4 | GapAnalysisTool | GapAnalysisTool.jsx | AI-powered gap detection | 531 | ✅ |
-| 5 | OKRManagementSystem | OKRManagementSystem.jsx | OKR management | ~500 | ✅ |
-| 6 | Portfolio | Portfolio.jsx | Innovation Kanban | 383 | ✅ |
-| 7 | StrategicPlanApprovalGate | StrategicPlanApprovalGate.jsx | Approval workflow | ~300 | ✅ |
-| 8 | BudgetAllocationTool | BudgetAllocationTool.jsx | Budget allocation | ~400 | ✅ |
-| 9 | BudgetAllocationApprovalGate | BudgetAllocationApprovalGate.jsx | Budget approval | ~300 | ✅ |
-| 10 | WhatIfSimulatorPage | WhatIfSimulatorPage.jsx | Scenario simulation | ~350 | ✅ |
-| 11 | StrategicKPITracker | StrategicKPITracker.jsx | KPI monitoring | ~400 | ✅ |
-| 12 | StrategicExecutionDashboard | StrategicExecutionDashboard.jsx | Execution view | ~350 | ✅ |
-| 13 | StrategicInitiativeTracker | StrategicInitiativeTracker.jsx | Initiative tracking | ~300 | ✅ |
-| 14 | StrategicPlanningProgress | StrategicPlanningProgress.jsx | Progress tracking | ~250 | ✅ |
-| 15 | StrategicAdvisorChat | StrategicAdvisorChat.jsx | AI advisor | ~400 | ✅ |
-| 16 | StrategyCopilotChat | StrategyCopilotChat.jsx | Strategy copilot | ~350 | ✅ |
-| 17 | StrategyAlignment | StrategyAlignment.jsx | Entity alignment | ~300 | ✅ |
-| 18 | InitiativePortfolio | InitiativePortfolio.jsx | Portfolio view | ~400 | ✅ |
-| 19 | ProgressToGoalsTracker | ProgressToGoalsTracker.jsx | Goal tracking | ~350 | ✅ |
-| 20 | MultiYearRoadmap | MultiYearRoadmap.jsx | Long-term planning | ~400 | ✅ |
-| 21 | InitiativeLaunchGate | InitiativeLaunchGate.jsx | Launch gate | ~250 | ✅ |
-| 22 | PortfolioReviewGate | PortfolioReviewGate.jsx | Review gate | ~300 | ✅ |
-| 23 | PortfolioRebalancing | PortfolioRebalancing.jsx | Rebalancing | ~350 | ✅ |
-| 24 | StrategicCommunicationsHub | StrategicCommunicationsHub.jsx | Communications | ~400 | ✅ |
-| 25 | StrategicPlanningCoverageReport | StrategicPlanningCoverageReport.jsx | Coverage report | ~500 | ✅ |
+| # | Page | Purpose | Status |
+|---|------|---------|--------|
+| 1 | StrategyCockpit | Main strategy dashboard | ✅ |
+| 2 | StrategicPlanBuilder | Create/edit plans | ✅ |
+| 3 | StrategyFeedbackDashboard | Bidirectional hub | ✅ |
+| 4 | GapAnalysisTool | AI-powered gap detection | ✅ |
+| 5 | OKRManagementSystem | OKR management | ✅ |
+| 6 | Portfolio | Innovation Kanban | ✅ |
+| 7 | StrategicPlanApprovalGate | Approval workflow | ✅ |
+| 8 | BudgetAllocationTool | Budget allocation | ✅ |
+| 9 | BudgetAllocationApprovalGate | Budget approval | ✅ |
+| 10 | WhatIfSimulatorPage | Scenario simulation | ✅ |
+| 11 | StrategicKPITracker | KPI monitoring | ✅ |
+| 12 | StrategicExecutionDashboard | Execution view | ✅ |
+| 13 | StrategicInitiativeTracker | Initiative tracking | ✅ |
+| 14 | StrategicPlanningProgress | Progress tracking | ✅ |
+| 15 | StrategicAdvisorChat | AI advisor | ✅ |
+| 16 | StrategyCopilotChat | Strategy copilot | ✅ |
+| 17 | StrategyAlignment | Entity alignment | ✅ |
+| 18 | InitiativePortfolio | Portfolio view | ✅ |
+| 19 | ProgressToGoalsTracker | Goal tracking | ✅ |
+| 20 | MultiYearRoadmap | Long-term planning | ✅ |
+| 21 | InitiativeLaunchGate | Launch gate | ✅ |
+| 22 | PortfolioReviewGate | Review gate | ✅ |
+| 23 | PortfolioRebalancing | Rebalancing | ✅ |
+| 24 | StrategicCommunicationsHub | Communications | ✅ |
+| 25 | StrategicPlanningCoverageReport | Coverage report | ✅ |
 
 ---
 
 ## Components Inventory
 
-### Strategy Components (14)
+### Strategy Components (14 Existing + 5 Missing)
 
-| # | Component | File | Purpose | AI | Lines | Status |
-|---|-----------|------|---------|-----|-------|--------|
-| 1 | StrategyToProgramGenerator | strategy/ | Generate programs from plans | ✅ | 357 | ✅ |
-| 2 | StrategicGapProgramRecommender | strategy/ | Gap-based recommendations | ✅ | 425 | ✅ |
-| 3 | WhatIfSimulator | strategy/ | Scenario simulation | ✅ | - | ✅ |
-| 4 | SectorGapAnalysisWidget | strategy/ | Sector gap analysis | ✅ | - | ✅ |
-| 5 | BottleneckDetector | strategy/ | Pipeline bottleneck detection | ✅ | - | ✅ |
-| 6 | StrategicNarrativeGenerator | strategy/ | AI narrative generation | ✅ | - | ✅ |
-| 7 | ResourceAllocationView | strategy/ | Resource visualization | No | - | ✅ |
-| 8 | PartnershipNetwork | strategy/ | Network visualization | No | - | ✅ |
-| 9 | CollaborationMapper | strategy/ | Collaboration view | No | - | ✅ |
-| 10 | HistoricalComparison | strategy/ | Year-over-year comparison | No | - | ✅ |
-| 11 | GeographicCoordinationWidget | strategy/ | Geographic coordination | No | - | ✅ |
-| 12 | StrategicPlanWorkflowTab | strategy/ | Workflow stage display | No | - | ✅ |
-| 13 | StrategyChallengeRouter | strategy/ | Challenge routing | No | - | ✅ |
-| 14 | AutomatedMIICalculator | strategy/ | MII score calculation | No | - | ✅ |
-
-### Integration Components (4)
-
-| # | Component | Location | Purpose | Lines | Status |
-|---|-----------|----------|---------|-------|--------|
-| 1 | ProgramOutcomeKPITracker | programs/ | Track KPI contributions | 280 | ✅ |
-| 2 | ProgramLessonsToStrategy | programs/ | Capture lessons feedback | 383 | ✅ |
-| 3 | StrategicAlignmentWidget | programs/ | Alignment display | - | ✅ |
-| 4 | EventStrategicAlignment | events/ | Event strategic linking | 215 | ✅ |
+| # | Component | Purpose | AI | Status |
+|---|-----------|---------|-----|--------|
+| 1 | StrategyToProgramGenerator | Generate programs from plans | ✅ | ✅ |
+| 2 | StrategicGapProgramRecommender | Gap-based recommendations | ✅ | ✅ |
+| 3 | WhatIfSimulator | Scenario simulation | ✅ | ✅ |
+| 4 | SectorGapAnalysisWidget | Sector gap analysis | ✅ | ✅ |
+| 5 | BottleneckDetector | Pipeline bottleneck detection | ✅ | ✅ |
+| 6 | StrategicNarrativeGenerator | AI narrative generation | ✅ | ✅ |
+| 7 | ResourceAllocationView | Resource visualization | No | ✅ |
+| 8 | PartnershipNetwork | Network visualization | No | ✅ |
+| 9 | CollaborationMapper | Collaboration view | No | ✅ |
+| 10 | HistoricalComparison | Year-over-year comparison | No | ✅ |
+| 11 | GeographicCoordinationWidget | Geographic coordination | No | ✅ |
+| 12 | StrategicPlanWorkflowTab | Workflow stage display | No | ✅ |
+| 13 | StrategyChallengeRouter | Challenge routing | No | ✅ |
+| 14 | AutomatedMIICalculator | MII score calculation | No | ✅ |
+| **15** | **StrategicAlignmentSandbox** | **Sandbox strategy alignment** | No | ❌ MISSING |
+| **16** | **StrategicAlignmentLivingLab** | **Living lab strategy alignment** | No | ❌ MISSING |
+| **17** | **StrategicAlignmentPartnership** | **Partnership strategy alignment** | No | ❌ MISSING |
+| **18** | **StrategyToSandboxGenerator** | **Generate sandboxes from strategy** | ✅ | ❌ MISSING |
+| **19** | **StrategyToLivingLabGenerator** | **Generate living labs from strategy** | ✅ | ❌ MISSING |
 
 ---
 
@@ -270,49 +292,15 @@ interface StrategicObjective {
 
 ### Strategy Edge Functions (7)
 
-| # | Function | Method | Purpose | Status |
-|---|----------|--------|---------|--------|
-| 1 | `strategic-plan-approval` | POST | Process approval actions | ✅ |
-| 2 | `strategic-priority-scoring` | POST | Calculate priority scores | ✅ |
-| 3 | `strategy-program-theme-generator` | POST | AI program theme generation | ✅ |
-| 4 | `strategy-lab-research-generator` | POST | AI research brief generation | ✅ |
-| 5 | `strategy-rd-call-generator` | POST | Generate R&D calls | ✅ |
-| 6 | `strategy-sandbox-planner` | POST | Plan sandbox from strategy | ✅ |
-| 7 | `strategy-sector-gap-analysis` | POST | Sector gap analysis | ✅ |
-
-### Edge Function Details
-
-#### strategic-plan-approval
-
-```typescript
-interface ApprovalRequest {
-  plan_id: string;
-  approver_email: string;
-  action: 'approve' | 'reject' | 'request_changes' | 'submit_for_approval';
-  comments?: string;
-}
-```
-
-#### strategy-program-theme-generator
-
-```typescript
-interface ThemeRequest {
-  strategic_goals: StrategicObjective[];
-  sector_focus: string;
-}
-
-interface ThemeResponse {
-  themes: {
-    name_en: string;
-    name_ar: string;
-    description_en: string;
-    description_ar: string;
-    objectives: string[];
-    target_outcomes: string[];
-    recommended_type: string;
-  }[];
-}
-```
+| # | Function | Purpose | Status |
+|---|----------|---------|--------|
+| 1 | `strategic-plan-approval` | Process approval actions | ✅ |
+| 2 | `strategic-priority-scoring` | Calculate priority scores | ✅ |
+| 3 | `strategy-program-theme-generator` | AI program theme generation | ✅ |
+| 4 | `strategy-lab-research-generator` | AI research brief generation | ✅ |
+| 5 | `strategy-rd-call-generator` | Generate R&D calls | ✅ |
+| 6 | `strategy-sandbox-planner` | Plan sandbox from strategy | ✅ |
+| 7 | `strategy-sector-gap-analysis` | Sector gap analysis | ✅ |
 
 ---
 
@@ -344,141 +332,107 @@ export function useStrategicKPI() {
 }
 ```
 
-### Hook Usage Examples
-
-```typescript
-// In ProgramOutcomeKPITracker
-const { strategicKPIs, updateStrategicKPI } = useStrategicKPI();
-
-// Submit KPI contribution
-updateStrategicKPI({
-  kpiId: 'kpi-123',
-  programId: 'prog-456',
-  contributionValue: 15,
-  notes: 'Q4 progress update'
-});
-
-// In StrategyFeedbackDashboard
-const { getStrategicCoverage } = useStrategicKPI();
-const coverage = getStrategicCoverage(programs);
-// coverage = { planCoverage: 85, kpiCoverage: 72, plansWithPrograms: 4 }
-```
-
 ---
 
 ## AI Features
 
 ### AI Feature Matrix (7 Features)
 
-| # | Feature | Component | Usage | Status |
-|---|---------|-----------|-------|--------|
-| 1 | Strategic Insights | StrategyCockpit | Portfolio analysis, recommendations | ✅ |
-| 2 | Program Theme Generation | StrategyToProgramGenerator | Generate programs from plans | ✅ |
-| 3 | Gap Recommendations | StrategicGapProgramRecommender | Recommend programs for gaps | ✅ |
-| 4 | Plan Generation | StrategicPlanBuilder | Generate strategic plans | ✅ |
-| 5 | Strategy Feedback | ProgramLessonsToStrategy | Generate feedback from lessons | ✅ |
-| 6 | Narrative Generation | StrategicNarrativeGenerator | Generate strategy narratives | ✅ |
-| 7 | What-If Simulation | WhatIfSimulator | Scenario modeling | ✅ |
-
-### AI Implementation Pattern
-
-All AI features use the `useAIWithFallback` hook with proper fallbacks:
-
-```typescript
-const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-
-const result = await invokeAI({
-  prompt: 'Your prompt here...',
-  response_json_schema: {
-    type: 'object',
-    properties: {
-      // Define expected response structure
-    }
-  }
-});
-
-if (result.success) {
-  // Use result.data
-} else {
-  // Fallback data is automatically provided
-}
-```
+| # | Feature | Component | Status |
+|---|---------|-----------|--------|
+| 1 | Strategic Insights | StrategyCockpit | ✅ |
+| 2 | Program Theme Generation | StrategyToProgramGenerator | ✅ |
+| 3 | Gap Recommendations | StrategicGapProgramRecommender | ✅ |
+| 4 | Plan Generation | StrategicPlanBuilder | ✅ |
+| 5 | Strategy Feedback | ProgramLessonsToStrategy | ✅ |
+| 6 | Narrative Generation | StrategicNarrativeGenerator | ✅ |
+| 7 | What-If Simulation | WhatIfSimulator | ✅ |
 
 ---
 
 ## User Flows
 
-### Flow 1: Strategy → Programs (Forward Flow)
+### Flow 1: Strategy → Programs (Forward Flow) ✅
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Select Plan    │───▶│  Generate       │───▶│  Create         │
-│  (Dropdown)     │    │  Themes (AI)    │    │  Programs       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                      │
-                                                      ▼
-                                              ┌─────────────────┐
-                                              │  Programs with  │
-                                              │  strategic_plan │
-                                              │  _ids linked    │
-                                              └─────────────────┘
+Strategic Plan → Select Objectives → AI Generate Themes → Create Programs
+                                                              │
+                                                              ▼
+                                                 Programs with:
+                                                 - strategic_plan_ids[]
+                                                 - strategic_objective_ids[]
+                                                 - is_strategy_derived ⚠️ MISSING
 ```
 
-**Implementation:** `StrategyToProgramGenerator.jsx`
-
-### Flow 2: Programs → Strategy (Feedback Flow)
+### Flow 2: Programs → Strategy (Feedback Flow) ✅
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Track Outcomes │───▶│  Capture        │───▶│  Generate AI    │
-│  (KPIs)         │    │  Lessons        │    │  Summary        │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                      │
-                                                      ▼
-                                              ┌─────────────────┐
-                                              │  Send Feedback  │
-                                              │  to Strategic   │
-                                              │  Plans          │
-                                              └─────────────────┘
+Program Outcomes → Track KPI Contributions → Update Strategic KPIs
+       │
+       ▼
+Lessons Learned → AI Analysis → Strategy Recommendations
+                                      │
+                                      ▼ ⚠️ lessons_learned column MISSING
+                             Update Strategic Plans
 ```
 
-**Implementation:** `ProgramOutcomeKPITracker.jsx` + `ProgramLessonsToStrategy.jsx`
-
-### Flow 3: Gap Analysis → Program Creation
+### Flow 3: Strategy → Sandboxes (BROKEN) ❌
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Calculate      │───▶│  Generate AI    │───▶│  Create         │
-│  Gaps           │    │  Recommendations│    │  Programs       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+Strategic Plan → Identify Gaps → ??? → Create Sandbox
+                                   │
+                                   ▼
+                        NO STRATEGIC FIELDS ON SANDBOXES
+                        Edge function exists but can't persist linkage
 ```
 
-**Implementation:** `StrategicGapProgramRecommender.jsx`
+### Flow 4: Strategy → Living Labs (BROKEN) ❌
+
+```
+Strategic Plan → Research Priorities → ??? → Create Living Lab
+                                         │
+                                         ▼
+                              NO STRATEGIC FIELDS ON LIVING_LABS
+                              Edge function exists but can't persist linkage
+```
 
 ---
 
-## Design Principles
+## Gap Analysis
 
-### 1. Bidirectional Integration
-- Strategy drives program creation
-- Program outcomes feed back to strategy
-- Closed-loop learning system
+### P0 Critical Gaps
 
-### 2. AI-First with Fallbacks
-- All AI features use Lovable AI
-- Every AI call has manual fallback data
-- Graceful degradation
+| # | Entity | Gap | Impact |
+|---|--------|-----|--------|
+| 1 | sandboxes | No `strategic_plan_ids[]` | Cannot track strategy alignment |
+| 2 | sandboxes | No `strategic_objective_ids[]` | Cannot link to objectives |
+| 3 | sandboxes | No `is_strategy_derived` | Cannot identify strategy-derived sandboxes |
+| 4 | living_labs | No `strategic_plan_ids[]` | Cannot track strategy alignment |
+| 5 | living_labs | No `strategic_objective_ids[]` | Cannot link to objectives |
+| 6 | living_labs | No `is_strategy_derived` | Cannot identify strategy-derived labs |
+| 7 | programs | No `is_strategy_derived` | Cannot identify strategy-derived programs |
+| 8 | programs | No `strategy_derivation_date` | Cannot track derivation timing |
+| 9 | programs | No `lessons_learned` | Cannot persist lessons feedback |
 
-### 3. JSONB Flexibility
-- Objectives, KPIs, pillars stored as JSONB
-- Allows schema evolution without migrations
-- Supports complex nested structures
+### P1 High Priority Gaps
 
-### 4. Separation of Concerns
-- Hooks for data logic (useStrategicKPI)
-- Components for UI
-- Edge functions for complex operations
+| # | Entity | Gap | Impact |
+|---|--------|-----|--------|
+| 1 | partnerships | No `strategic_plan_ids[]` | Only has boolean flag, not explicit link |
+| 2 | email_campaigns | No `program_id` | Cannot trace campaigns to strategy |
+| 3 | email_campaigns | No `challenge_id` | Cannot trace campaigns to strategy |
+| 4 | scaling_plans | No `rd_project_id` | R&D scaling path broken |
+| 5 | rd_calls | No `program_id` | Cannot link R&D calls to programs |
 
 ---
 
-*Design document last updated: 2025-12-13 (Verified Deep Review)*
+## Summary
+
+| Dimension | Current | Target | Gap |
+|-----------|---------|--------|-----|
+| Core Strategy System | 92% | 100% | 8% |
+| Direct Entity Integration | 40% | 100% | 60% |
+| Indirect Entity Integration | 81% | 100% | 19% |
+| Overall Platform Integration | **67%** | **100%** | **33%** |
+
+*Design document last updated: 2025-12-13 (Comprehensive Entity Integration Review)*
