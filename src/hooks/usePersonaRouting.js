@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { usePermissions } from '@/components/permissions/usePermissions.jsx';
 
 /**
@@ -18,7 +17,8 @@ export function usePersonaRouting() {
     hasAnyPermission = () => false
   } = permissionsData || {};
 
-  const personaConfig = useMemo(() => {
+  // Compute persona config without using React hooks (avoids invalid hook call issues)
+  const computePersonaConfig = () => {
     // Platform Admin
     if (isAdmin || roles.includes('admin')) {
       return {
@@ -139,10 +139,12 @@ export function usePersonaRouting() {
       onboardingWizard: 'Onboarding',
       portalType: 'citizen',
     };
-  }, [isAdmin, roles, hasPermission, isDeputyship, isMunicipality, isNationalEntity, hasAnyPermission]);
+  };
+
+  const personaConfig = computePersonaConfig();
 
   // Get menu sections visibility based on persona
-  const menuVisibility = useMemo(() => ({
+  const menuVisibility = {
     // Admin-only sections
     showAdminTools: isAdmin,
     showCoverageReports: isAdmin,
@@ -175,7 +177,7 @@ export function usePersonaRouting() {
     showInnovationPipeline: hasAnyPermission(['challenge_view_all', 'pilot_view_all', 'challenge_view']),
     showPrograms: true, // Programs are generally visible
     showRDSection: hasAnyPermission(['rd_project_view_all', 'rd_project_create']),
-  }), [personaConfig, isAdmin, isDeputyship, isMunicipality, isNationalEntity, hasPermission, hasAnyPermission]);
+  };
 
   return {
     ...personaConfig,
@@ -187,7 +189,7 @@ export function usePersonaRouting() {
   };
 }
 
-// Default config for unauthenticated or error states
+// Default config for unauthenticated or error states (kept for potential future use)
 function getDefaultConfig() {
   return {
     persona: 'guest',
