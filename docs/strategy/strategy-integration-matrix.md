@@ -14,12 +14,12 @@ This matrix documents all integrations required for the complete Strategy Leader
 | **Platform Entity Integration** | 24 | 0 | 0 | ✅ 100% |
 | **Pre-Planning Integrations** | 11 | 0 | 0 | ✅ 100% |
 | **Creation Integrations** | 10 | 0 | 0 | ✅ 100% |
-| **Cascade Integrations** | 4 | 3 | 3 | ⚠️ 55% |
+| **Cascade Integrations** | 10 | 0 | 2 | ✅ 83% |
 | **Governance Integrations** | 3 | 0 | 2 | ⚠️ 60% |
 | **Communication Integrations** | 2 | 0 | 2 | ⚠️ 50% |
 | **Monitoring Integrations** | 8 | 0 | 1 | ✅ 89% |
 | **Review Integrations** | 2 | 0 | 3 | ⚠️ 40% |
-| **OVERALL WORKFLOW** | 64 | 3 | 11 | **⚠️ 83%** |
+| **OVERALL WORKFLOW** | 70 | 0 | 10 | **⚠️ 88%** |
 
 ---
 
@@ -297,7 +297,7 @@ CREATE TABLE public.strategy_templates (
 
 ---
 
-### B.3 PHASE 3: CASCADE & OPERATIONALIZATION INTEGRATIONS (55% Complete)
+### B.3 PHASE 3: CASCADE & OPERATIONALIZATION INTEGRATIONS (80% Complete) ✅
 
 **Purpose:** Generate operational entities from strategy
 
@@ -307,21 +307,14 @@ CREATE TABLE public.strategy_templates (
 | 3.2 | Generate Sandboxes | Component + Function | `StrategyToSandboxGenerator` | `strategy-sandbox-planner` | ✅ Complete |
 | 3.3 | Gap Analysis | Component + Function | `SectorGapAnalysisWidget` | `strategy-sector-gap-analysis` | ✅ Complete |
 | 3.4 | Gap Recommendations | Component | `StrategicGapProgramRecommender` | - | ✅ Complete |
-| 3.5 | Generate Challenges | Component + Function | `StrategyChallengeGenerator` | `strategy-challenge-generator` | ❌ Missing |
-| 3.6 | Generate Living Labs | Component | `StrategyToLivingLabGenerator` | `strategy-lab-research-generator` | ⚠️ Function Only |
-| 3.7 | Generate R&D Calls | Component | `StrategyToRDCallGenerator` | `strategy-rd-call-generator` | ⚠️ Function Only |
-| 3.8 | Generate Pilots | Component + Function | `StrategyToPilotGenerator` | `strategy-pilot-generator` | ⚠️ Component Only |
-| 3.9 | Generate Partnerships | Component + Function | `StrategyToPartnershipGenerator` | `strategy-partnership-matcher` | ❌ Missing |
-| 3.10 | Generate Events | Component + Function | `StrategyToEventGenerator` | `strategy-event-planner` | ❌ Missing |
-
-#### New Edge Functions Required for Phase 3
-
-| # | Function | Purpose | Input | Output | Priority |
-|---|----------|---------|-------|--------|----------|
-| 1 | `strategy-challenge-generator` | AI-generate challenges | objectives, sector | challenges array | P1 |
-| 2 | `strategy-partnership-matcher` | Match partners to goals | plan, capabilities | partner recommendations | P2 |
-| 3 | `strategy-event-planner` | Plan strategic events | plan, event_type | event plan | P3 |
-| 4 | `strategy-pilot-generator` | Generate pilot designs | challenge, solution | pilot design | P2 |
+| 3.5 | Generate Challenges | Component + Function | `StrategyChallengeGenerator` | `strategy-challenge-generator` | ✅ Complete |
+| 3.6 | Generate Living Labs | Component + Function | `StrategyToLivingLabGenerator` | `strategy-lab-research-generator` | ✅ Complete |
+| 3.7 | Generate R&D Calls | Component + Function | `StrategyToRDCallGenerator` | `strategy-rd-call-generator` | ✅ Complete |
+| 3.8 | Generate Pilots | Component + Function | `StrategyToPilotGenerator` | `strategy-pilot-generator` | ✅ Complete |
+| 3.9 | Generate Partnerships | Component + Function | `StrategyToPartnershipGenerator` | `strategy-partnership-matcher` | ✅ Complete |
+| 3.10 | Generate Events | Component + Function | `StrategyToEventGenerator` | `strategy-event-planner` | ✅ Complete |
+| 3.11 | Generate Campaigns | Component + Function | `StrategyToCampaignGenerator` | `strategy-campaign-planner` | ⚠️ Pending |
+| 3.12 | Generate Policies | Component + Function | `StrategyToPolicyGenerator` | `strategy-policy-deriver` | ⚠️ Pending |
 
 ---
 
