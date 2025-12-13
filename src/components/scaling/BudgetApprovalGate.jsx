@@ -22,10 +22,20 @@ export default function BudgetApprovalGate({ scalingPlan, onApproved, onRejected
         budget_approval_comments: comments
       });
       
-      await base44.integrations.Core.SendEmail({
-        to: scalingPlan.created_by,
-        subject: `Scaling Plan Budget Approved - ${scalingPlan.title_en}`,
-        body: `Your scaling plan budget has been approved.\n\nAmount: ${scalingPlan.estimated_budget} SAR\n\nComments: ${comments}`
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'proposal.accepted',
+          recipient_email: scalingPlan.created_by,
+          entity_type: 'scaling_plan',
+          entity_id: scalingPlan.id,
+          variables: {
+            planTitle: scalingPlan.title_en,
+            budgetAmount: scalingPlan.estimated_budget,
+            comments: comments
+          },
+          triggered_by: 'system'
+        }
       });
       
       onApproved?.();
@@ -44,10 +54,19 @@ export default function BudgetApprovalGate({ scalingPlan, onApproved, onRejected
         budget_approval_comments: comments
       });
       
-      await base44.integrations.Core.SendEmail({
-        to: scalingPlan.created_by,
-        subject: `Scaling Plan Budget Needs Revision - ${scalingPlan.title_en}`,
-        body: `Your scaling plan budget requires revision.\n\nComments: ${comments}`
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'proposal.revision_requested',
+          recipient_email: scalingPlan.created_by,
+          entity_type: 'scaling_plan',
+          entity_id: scalingPlan.id,
+          variables: {
+            planTitle: scalingPlan.title_en,
+            comments: comments
+          },
+          triggered_by: 'system'
+        }
       });
       
       onRejected?.();

@@ -44,16 +44,22 @@ export default function CrossCitySolutionSharing({ challenge }) {
           details: { shared_to_municipality: cityId, shared_date: new Date().toISOString() }
         });
 
-        await base44.integrations.Core.SendEmail({
-          to: `innovation@${cityId}.gov.sa`,
-          subject: `Solution Available for Challenge: ${challenge.title_en}`,
-          body: `A solution has been validated for a similar challenge in another municipality and is now available for consideration in your city.
-
-Challenge: ${challenge.title_en}
-Sector: ${challenge.sector}
-Treatment Approach: ${challenge.track}
-
-View details: ${window.location.origin}/challenge/${challenge.id}`
+        // Send email via email-trigger-hub
+        const { supabase } = await import('@/integrations/supabase/client');
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'challenge.match_found',
+            recipient_email: `innovation@${cityId}.gov.sa`,
+            entity_type: 'challenge',
+            entity_id: challenge.id,
+            variables: {
+              challengeTitle: challenge.title_en,
+              sector: challenge.sector,
+              track: challenge.track,
+              viewUrl: `${window.location.origin}/challenge/${challenge.id}`
+            },
+            triggered_by: 'system'
+          }
         });
       }
     },

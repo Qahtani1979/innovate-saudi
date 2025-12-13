@@ -33,10 +33,20 @@ export default function AutomatedCertificateGenerator({ programId, graduates }) 
   };
 
   const sendCertificate = async (cert) => {
-    await base44.integrations.Core.SendEmail({
-      to: cert.email,
-      subject: t({ en: 'Your Program Completion Certificate', ar: 'شهادة إتمام البرنامج' }),
-      body: `Congratulations! Your certificate is ready. Credential ID: ${cert.credential_id}`
+    const { supabase } = await import('@/integrations/supabase/client');
+    await supabase.functions.invoke('email-trigger-hub', {
+      body: {
+        trigger: 'program.completed',
+        recipient_email: cert.email,
+        entity_type: 'program',
+        entity_id: program.id,
+        variables: {
+          recipientName: cert.name,
+          programName: program.name_en,
+          credentialId: cert.credential_id
+        },
+        triggered_by: 'system'
+      }
     });
     toast.success(t({ en: 'Certificate sent', ar: 'تم إرسال الشهادة' }));
   };
