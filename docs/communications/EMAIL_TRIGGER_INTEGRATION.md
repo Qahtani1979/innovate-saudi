@@ -2,7 +2,37 @@
 
 ## Overview
 
-The email system uses a **unified triggering mechanism** via the `email-trigger-hub` edge function. This allows any part of the codebase to trigger emails by simply specifying a trigger key and providing entity data.
+This guide explains how to integrate email notifications into your components using the unified `email-trigger-hub` system.
+
+**Last Updated**: 2025-12-13
+
+---
+
+## Quick Start
+
+### 1. Import the Hook
+
+```tsx
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+```
+
+### 2. Use in Component
+
+```tsx
+function MyComponent() {
+  const { triggerEmail, triggerBatch } = useEmailTrigger();
+
+  const handleAction = async (entity) => {
+    await triggerEmail('category.action', {
+      entity_type: 'entity_name',
+      entity_id: entity.id,
+      entity_data: entity,
+    });
+  };
+}
+```
+
+---
 
 ## Architecture
 
@@ -27,30 +57,6 @@ The email system has **two distinct flows** that share the same template infrast
     │   Frontend Code               │       │   Communications Hub UI         │
     │   useEmailTrigger()           │       │   Campaign Manager              │
     └───────────────────────────────┘       └─────────────────────────────────┘
-                    │                                         │
-                    ▼                                         ▼
-    ┌───────────────────────────────┐       ┌─────────────────────────────────┐
-    │    email-trigger-hub          │       │      campaign-sender            │
-    │    (Edge Function)            │       │      (Edge Function)            │
-    └───────────────────────────────┘       └─────────────────────────────────┘
-                    │                                         │
-                    ▼                                         ▼
-    ┌───────────────────────────────┐       ┌─────────────────────────────────┐
-    │   email_trigger_config        │       │      email_campaigns            │
-    │   (Maps trigger → template)   │       │      campaign_recipients        │
-    └───────────────────────────────┘       └─────────────────────────────────┘
-                    │                                         │
-                    ▼                                         ▼
-    ┌───────────────────────────────┐       ┌─────────────────────────────────┐
-    │   email_queue (optional)      │       │      (Direct send or batch)     │
-    │   (Delayed Emails)            │       │                                 │
-    └───────────────────────────────┘       └─────────────────────────────────┘
-                    │
-                    ▼
-    ┌───────────────────────────────┐
-    │   queue-processor             │
-    │   (Cron Triggered)            │
-    └───────────────────────────────┘
 ```
 
 ## Triggers vs Campaigns
@@ -77,63 +83,108 @@ The email system has **two distinct flows** that share the same template infrast
 - Targeting a filtered audience segment
 - Admin controls timing and content
 
-## How to Use
+---
 
-### 1. Using the Hook (Recommended)
+## Integration Examples
+
+### 1. Challenge Approval
 
 ```tsx
+// src/components/ChallengeReviewWorkflow.jsx
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
-function ChallengeApprovalHandler() {
+function ChallengeReviewWorkflow({ challenge }) {
   const { triggerEmail } = useEmailTrigger();
 
-  const handleApprove = async (challenge) => {
-    // Approve the challenge in database
+  const handleApprove = async () => {
+    // Update challenge status
     await supabase
       .from('challenges')
       .update({ status: 'approved' })
       .eq('id', challenge.id);
 
-    // Trigger the email
+    // Send approval email
     await triggerEmail('challenge.approved', {
       entity_type: 'challenge',
       entity_id: challenge.id,
-      entity_data: challenge, // The trigger hub will extract variables
+      entity_data: challenge,
     });
   };
 }
 ```
 
-### 2. Direct Edge Function Call
+### 2. Role Request Approval
 
-```typescript
-const { data, error } = await supabase.functions.invoke('email-trigger-hub', {
-  body: {
-    trigger: 'pilot.status_changed',
-    entity_type: 'pilot',
-    entity_id: 'uuid-here',
-    entity_data: {
-      name_en: 'Smart Traffic Pilot',
-      status: 'active',
-      pilot_lead_email: 'lead@municipality.gov',
-    },
-  },
-});
+```tsx
+// src/components/access/RoleRequestApprovalQueue.jsx
+const handleApprove = async (request) => {
+  // Update request
+  await supabase
+    .from('approval_requests')
+    .update({ approval_status: 'approved' })
+    .eq('id', request.id);
+
+  // Send approval email
+  await triggerEmail('role.approved', {
+    entity_type: 'role_request',
+    entity_id: request.id,
+    entity_data: request,
+  });
+};
 ```
 
-### 3. With Explicit Recipients
+### 3. Contract Creation
+
+```tsx
+// src/components/solutions/ContractGeneratorWizard.jsx
+const handleCreateContract = async (contract) => {
+  const { data: createdContract } = await supabase
+    .from('contracts')
+    .insert(contract)
+    .select()
+    .single();
+
+  await triggerEmail('contract.created', {
+    entity_type: 'contract',
+    entity_id: createdContract.id,
+    entity_data: createdContract,
+  });
+};
+```
+
+### 4. Event Registration
+
+```tsx
+// src/pages/EventRegistration.jsx
+const handleRegister = async (event) => {
+  // Create registration
+  await supabase
+    .from('event_registrations')
+    .insert({ event_id: event.id, user_email: user.email });
+
+  // Send confirmation
+  await triggerEmail('event.registration_confirmed', {
+    entity_type: 'event',
+    entity_id: event.id,
+    entity_data: event,
+    recipient_email: user.email,
+  });
+};
+```
+
+### 5. With Explicit Recipients
 
 ```tsx
 await triggerEmail('task.assigned', {
   entity_type: 'task',
   entity_id: task.id,
   entity_data: task,
-  recipient_email: 'specific@email.com', // Override auto-detection
+  recipient_email: 'specific@email.com',
   additional_recipients: ['cc1@email.com', 'cc2@email.com'],
 });
 ```
 
-### 4. With Custom Variables
+### 6. With Custom Variables
 
 ```tsx
 await triggerEmail('contract.expiring', {
@@ -141,13 +192,95 @@ await triggerEmail('contract.expiring', {
   entity_id: contract.id,
   entity_data: contract,
   variables: {
-    daysUntilExpiry: '7', // Override or add variables
+    daysUntilExpiry: '7',
     renewalLink: 'https://...',
   },
 });
 ```
 
-## Available Triggers
+### 7. With Delayed Sending
+
+```tsx
+await triggerEmail('pilot.feedback_request', {
+  entity_type: 'pilot',
+  entity_id: pilot.id,
+  entity_data: pilot,
+  delay_seconds: 3600, // Send in 1 hour
+});
+```
+
+### 8. Bypass User Preferences
+
+```tsx
+await triggerEmail('auth.password_reset', {
+  recipient_email: user.email,
+  variables: {
+    userName: user.name,
+    resetUrl: resetLink,
+  },
+  skip_preferences: true, // Critical - always send
+});
+```
+
+---
+
+## Currently Integrated Components (41+ files)
+
+### Authentication & Onboarding
+| File | Triggers |
+|------|----------|
+| `OnboardingWizard.jsx` | `auth.signup` |
+| `PublicIdeaSubmission.jsx` | `idea.submitted` |
+| `BulkUserImport.jsx` | `auth.signup` |
+
+### Challenges
+| File | Triggers |
+|------|----------|
+| `ChallengeReviewWorkflow.jsx` | `challenge.approved`, `challenge.rejected` |
+| `ChallengeStatusUpdate.jsx` | `challenge.status_changed` |
+
+### Pilots
+| File | Triggers |
+|------|----------|
+| `IdeaToPilotConverter.jsx` | `pilot.created`, `idea.converted` |
+| `PilotConversionWizard.jsx` | `pilot.created` |
+| `ProgramToPilotWorkflow.jsx` | `pilot.created` |
+| `LabToPilotTransitionWizard.jsx` | `pilot.created` |
+
+### Solutions
+| File | Triggers |
+|------|----------|
+| `IdeaToSolutionConverter.jsx` | `solution.submitted` |
+| `ContractGeneratorWizard.jsx` | `contract.created` |
+| `ExpressInterestButton.jsx` | `solution.interest_expressed` |
+| `SolutionDeprecationWizard.jsx` | `solution.deprecated` |
+
+### Events & Programs
+| File | Triggers |
+|------|----------|
+| `EventRegistration.jsx` | `event.registration_confirmed` |
+| `ProgramSelectionWorkflow.jsx` | `program.application_status` |
+| `ProgramCompletionWorkflow.jsx` | `program.completed` |
+| `WaitlistManager.jsx` | `waitlist.promoted` |
+
+### Access & Roles
+| File | Triggers |
+|------|----------|
+| `RoleRequestApprovalQueue.jsx` | `role.approved`, `role.rejected` |
+
+### Other Integrations
+| File | Triggers |
+|------|----------|
+| `Contact.jsx` | `contact.form` |
+| `ChallengeSolutionMatching.jsx` | `solution.matched` |
+| `PartnershipWorkflow.jsx` | `partnership.proposal` |
+| `DashboardSharing.jsx` | `dashboard.shared` |
+| `LivingLabExpertMatching.jsx` | `expert.consultation_request` |
+| `AnnouncementTargeting.jsx` | `announcement.send` |
+
+---
+
+## Available Trigger Keys
 
 ### Authentication
 | Trigger Key | Template | Description |
@@ -206,64 +339,24 @@ await triggerEmail('contract.expiring', {
 | `task.overdue` | task_overdue | Task overdue |
 | `task.completed` | task_completed | Task completed |
 
-## Integration Points
+### Roles
+| Trigger Key | Template | Description |
+|-------------|----------|-------------|
+| `role.approved` | role_request_approved | Role request approved |
+| `role.rejected` | role_request_rejected | Role request rejected |
 
-Here's where to add email triggers in the codebase:
-
-### 1. Challenge Status Changes
-**File:** `src/components/challenges/ChallengeStatusUpdate.jsx`
-```tsx
-// After status update
-await triggerEmail('challenge.status_changed', {
-  entity_type: 'challenge',
-  entity_id: challengeId,
-  entity_data: { ...challenge, old_status: oldStatus, status: newStatus },
-});
-```
-
-### 2. Pilot Creation
-**File:** `src/components/pilots/PilotForm.jsx`
-```tsx
-// After pilot creation
-await triggerEmail('pilot.created', {
-  entity_type: 'pilot',
-  entity_id: newPilot.id,
-  entity_data: newPilot,
-});
-```
-
-### 3. Task Assignment
-**File:** `src/components/tasks/TaskAssignment.jsx`
-```tsx
-// After task assignment
-await triggerEmail('task.assigned', {
-  entity_type: 'task',
-  entity_id: task.id,
-  entity_data: { ...task, assigned_by_name: currentUser.name },
-});
-```
-
-### 4. Role Approval
-**File:** `src/components/admin/RoleRequestManager.jsx`
-```tsx
-// After role approved
-await triggerEmail('role.approved', {
-  entity_type: 'role_request',
-  entity_id: request.id,
-  entity_data: request,
-});
-```
+---
 
 ## Delayed Emails
 
-Some triggers have built-in delays:
+Some triggers have built-in delays configured in `email_trigger_config`:
 
 | Trigger | Delay | Purpose |
 |---------|-------|---------|
 | `pilot.feedback_request` | 60 seconds | Avoid immediate request after action |
-| `event.reminder` | -24 hours (scheduled) | Day-before reminder |
-| `task.due_reminder` | -24 hours (scheduled) | Day-before reminder |
-| `living_lab.booking_reminder` | -24 hours | Day-before reminder |
+| `event.reminder` | Scheduled | Day-before reminder |
+| `task.due_reminder` | Scheduled | Day-before reminder |
+| `living_lab.booking_reminder` | Scheduled | Day-before reminder |
 
 For custom delays:
 ```tsx
@@ -273,31 +366,37 @@ await triggerEmail('custom.trigger', {
 });
 ```
 
+---
+
 ## Queue Processing
 
 Delayed emails are stored in `email_queue` and processed by the `queue-processor` edge function.
 
-To set up automatic processing, add a cron job:
+### Cron Job
+- **Job Name**: `process-email-queue`
+- **Schedule**: Every 5 minutes (`*/5 * * * *`)
 
-```sql
-SELECT cron.schedule(
-  'process-email-queue',
-  '*/5 * * * *', -- Every 5 minutes
-  $$
-  SELECT net.http_post(
-    url := 'https://wneorgiqyvkkjmqootpe.supabase.co/functions/v1/queue-processor',
-    headers := '{"Authorization": "Bearer YOUR_SERVICE_KEY"}'::jsonb,
-    body := '{"batch_size": 50}'::jsonb
-  );
-  $$
-);
-```
+---
 
 ## User Preferences
 
 The trigger system automatically respects user notification preferences stored in `user_notification_preferences`.
 
-To force send (bypass preferences):
+### Preference Categories
+
+| Category | Applies To |
+|----------|------------|
+| `authentication` | auth.* triggers (critical - usually bypassed) |
+| `challenges` | challenge.* triggers |
+| `pilots` | pilot.* triggers |
+| `solutions` | solution.* triggers |
+| `events` | event.* triggers |
+| `tasks` | task.* triggers |
+| `programs` | program.* triggers |
+| `marketing` | campaign emails |
+
+### Force Send (Bypass Preferences)
+
 ```tsx
 await triggerEmail('important.notification', {
   entity_data: data,
@@ -305,10 +404,20 @@ await triggerEmail('important.notification', {
 });
 ```
 
+---
+
 ## Adding New Triggers
 
-1. **Add the template** in Communications Hub → Templates tab
-2. **Add trigger config** via database insert:
+### Step 1: Create the Template
+
+1. Navigate to Communications Hub (`/communications-hub`)
+2. Go to Templates tab
+3. Click "New Template"
+4. Fill in all fields (EN/AR)
+5. Save
+
+### Step 2: Add Trigger Config
+
 ```sql
 INSERT INTO email_trigger_config (
   trigger_key,
@@ -324,18 +433,70 @@ INSERT INTO email_trigger_config (
   'my_template_key',
   true,
   'owner_email', -- Field in entity_data containing recipient
-  '{"varName": "entity_field"}'::jsonb, -- Map template vars to entity fields
+  '{"varName": "entity_field"}'::jsonb,
   true,
   3,
   0
 );
 ```
 
-3. **Call the trigger** in your code:
+### Step 3: Integrate in Component
+
 ```tsx
-await triggerEmail('my_entity.my_action', {
-  entity_type: 'my_entity',
-  entity_id: entity.id,
-  entity_data: entity,
-});
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+
+function MyComponent() {
+  const { triggerEmail } = useEmailTrigger();
+
+  const handleAction = async (entity) => {
+    await triggerEmail('my_entity.my_action', {
+      entity_type: 'my_entity',
+      entity_id: entity.id,
+      entity_data: entity,
+    });
+  };
+}
 ```
+
+---
+
+## Troubleshooting
+
+### Email Not Sent
+
+1. Check if trigger is active in `email_trigger_config`
+2. Check if template exists and is active
+3. Check user notification preferences
+4. Check edge function logs
+
+### Variables Not Replaced
+
+1. Verify variable names match template `{{variableName}}`
+2. Check `variable_mapping` in trigger config
+3. Ensure `entity_data` contains the required fields
+
+### Recipient Not Found
+
+1. Provide explicit `recipient_email`
+2. Check `recipient_field` in trigger config
+3. Ensure `entity_data` contains the email field
+
+---
+
+## Best Practices
+
+1. **Always include entity context** - Helps with logging and tracking
+2. **Use entity_data** - Allows automatic variable extraction
+3. **Respect preferences** - Only bypass for critical emails
+4. **Test in Communications Hub** - Preview before deploying
+5. **Handle errors gracefully** - Log but don't break the flow
+6. **Use batch for multiple emails** - More efficient than sequential
+
+---
+
+## Related Documentation
+
+- [Communication System](./COMMUNICATION_SYSTEM.md) - Architecture overview
+- [Email Template System](./EMAIL_TEMPLATE_SYSTEM.md) - Template catalog
+- [Email Trigger Hub](./EMAIL_TRIGGER_HUB.md) - Technical reference
+- [Campaign System](./CAMPAIGN_SYSTEM.md) - Bulk email campaigns

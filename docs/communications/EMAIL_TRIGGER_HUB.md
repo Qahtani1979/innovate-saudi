@@ -2,7 +2,19 @@
 
 ## Overview
 
-The `email-trigger-hub` is the **unified entry point** for all email sending across the Saudi Innovates platform. It provides a single, consistent API for triggering emails based on platform events, with automatic template lookup, variable extraction, preference checking, and queue management.
+The `email-trigger-hub` is the **unified entry point** for all automated email sending across the Saudi Innovates platform. It provides a single, consistent API for triggering emails based on platform events, with automatic template lookup, variable extraction, preference checking, and queue management.
+
+**Last Updated**: 2025-12-13
+
+---
+
+## Current Statistics
+
+| Metric | Count |
+|--------|-------|
+| Active Triggers | 96 |
+| Trigger Categories | 20+ |
+| Integrated Components | 41+ |
 
 ---
 
@@ -29,7 +41,7 @@ The `email-trigger-hub` is the **unified entry point** for all email sending acr
 │  └───────────────────────────────────────────────────────────────┼──────────┘  │
 │                                                                  │             │
 │  ┌────────────────┐                  ┌─────────────────┐        │             │
-│  │ campaign-sender│                  │  queue-processor │◀──(cron)            │
+│  │ campaign-sender│                  │  queue-processor │◀──(cron every 5min) │
 │  │  (bulk/batch)  │                  │  (delayed emails)│                     │
 │  └───────┬────────┘                  └────────┬─────────┘                     │
 │          │                                    │                               │
@@ -46,6 +58,12 @@ The `email-trigger-hub` is the **unified entry point** for all email sending acr
 │  ┌─────────────────────────────────────────────────────────────────────────┐  │
 │  │                           Resend API                                      │  │
 │  │                      (Email Delivery Service)                            │  │
+│  └─────────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                          │
+│                                      ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────────┐  │
+│  │                        resend-webhook                                     │  │
+│  │           (Delivery tracking: opens, clicks, bounces)                    │  │
 │  └─────────────────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -142,7 +160,7 @@ function ChallengeApprovalHandler() {
 ```typescript
 const { data, error } = await supabase.functions.invoke('email-trigger-hub', {
   body: {
-    trigger: 'pilot.milestone_reached',
+    trigger: 'pilot.milestone_completed',
     entity_type: 'pilot',
     entity_id: 'uuid-here',
     entity_data: {
@@ -192,9 +210,9 @@ await triggerEmail('auth.password_reset', {
 
 ---
 
-## Available Trigger Keys
+## Complete Trigger Key Reference
 
-### Authentication (`auth.*`)
+### Authentication (`auth.*`) - 7 triggers
 
 | Trigger Key | Template Key | Description |
 |-------------|--------------|-------------|
@@ -206,7 +224,7 @@ await triggerEmail('auth.password_reset', {
 | `auth.account_locked` | `account_locked` | Account locked notification |
 | `auth.account_suspended` | `account_suspended_admin` | Admin suspended account |
 
-### Challenges (`challenge.*`)
+### Challenges (`challenge.*`) - 8 triggers
 
 | Trigger Key | Template Key | Description |
 |-------------|--------------|-------------|
@@ -219,21 +237,19 @@ await triggerEmail('auth.password_reset', {
 | `challenge.match_found` | `challenge_match_found` | Solution matched |
 | `challenge.needs_info` | `challenge_needs_info` | Additional info needed |
 
-### Pilots (`pilot.*`)
+### Pilots (`pilot.*`) - 9 triggers
 
 | Trigger Key | Template Key | Description |
 |-------------|--------------|-------------|
 | `pilot.created` | `pilot_created` | New pilot created |
 | `pilot.status_changed` | `pilot_status_change` | Status update |
 | `pilot.milestone_completed` | `pilot_milestone_completed` | Milestone achieved |
-| `pilot.kpi_alert` | `pilot_kpi_alert` | KPI below threshold |
-| `pilot.issue_reported` | `pilot_issue_reported` | Issue logged |
 | `pilot.completed` | `pilot_completed` | Pilot finished |
-| `pilot.extension_request` | `pilot_extension_request` | Extension requested |
+| `pilot.extended` | `pilot_extended` | Pilot extension approved |
 | `pilot.enrollment_confirmed` | `pilot_enrollment_confirmed` | Citizen enrolled |
 | `pilot.feedback_request` | `pilot_feedback_request` | Feedback requested |
 
-### Solutions (`solution.*`)
+### Solutions (`solution.*`) - 7 triggers
 
 | Trigger Key | Template Key | Description |
 |-------------|--------------|-------------|
@@ -241,19 +257,21 @@ await triggerEmail('auth.password_reset', {
 | `solution.verified` | `solution_verified` | Solution verified |
 | `solution.published` | `solution_published` | Published to marketplace |
 | `solution.interest_received` | `solution_interest_received` | Interest expressed |
+| `solution.interest_expressed` | `solution_interest_expressed` | User expressed interest |
+| `solution.matched` | `solution_matched` | Matched to challenge |
+| `solution.deprecated` | `solution_deprecated` | Solution deprecated |
 
-### Programs (`program.*`)
+### Programs (`program.*`) - 6 triggers
 
 | Trigger Key | Template Key | Description |
 |-------------|--------------|-------------|
-| `program.application_submitted` | `program_application_received` | Application received |
+| `program.application_received` | `program_application_received` | Application received |
+| `program.application_status` | `program_application_status` | Status update |
 | `program.accepted` | `program_accepted` | Accepted to program |
 | `program.rejected` | `program_rejected` | Not accepted |
 | `program.deadline_reminder` | `program_deadline_reminder` | Deadline reminder |
-| `program.cohort_start` | `program_cohort_start` | Cohort begins |
-| `program.mentorship_assigned` | `program_mentorship_assigned` | Mentor assigned |
 
-### Tasks (`task.*`)
+### Tasks (`task.*`) - 4 triggers
 
 | Trigger Key | Template Key | Description |
 |-------------|--------------|-------------|
@@ -262,7 +280,7 @@ await triggerEmail('auth.password_reset', {
 | `task.overdue` | `task_overdue` | Task overdue |
 | `task.completed` | `task_completed` | Task completed |
 
-### Events (`event.*`)
+### Events (`event.*`) - 5 triggers
 
 | Trigger Key | Template Key | Description |
 |-------------|--------------|-------------|
@@ -272,23 +290,61 @@ await triggerEmail('auth.password_reset', {
 | `event.updated` | `event_updated` | Event details changed |
 | `event.cancelled` | `event_cancelled` | Event cancelled |
 
-### Roles (`role.*`)
+### Roles (`role.*`) - 2 triggers
 
 | Trigger Key | Template Key | Description |
 |-------------|--------------|-------------|
-| `role.request_submitted` | `role_request_submitted` | Role request created |
 | `role.approved` | `role_request_approved` | Role request approved |
 | `role.rejected` | `role_request_rejected` | Role request rejected |
-| `role.expiring` | `role_expiring_soon` | Role expires soon |
 
-### Citizen (`citizen.*`)
+### Citizen (`citizen.*`) - 4 triggers
 
 | Trigger Key | Template Key | Description |
 |-------------|--------------|-------------|
-| `citizen.idea_submitted` | `idea_submitted` | Idea submitted |
-| `citizen.idea_approved` | `idea_approved` | Idea approved |
+| `citizen.signup` | `citizen_welcome` | Citizen registration |
 | `citizen.badge_earned` | `badge_earned` | Badge unlocked |
 | `citizen.level_up` | `level_up` | New level reached |
+| `citizen.points_expiring` | `points_expiring` | Points about to expire |
+
+### Ideas (`idea.*`) - 3 triggers
+
+| Trigger Key | Template Key | Description |
+|-------------|--------------|-------------|
+| `idea.submitted` | `idea_submitted` | Idea submitted |
+| `idea.approved` | `idea_approved` | Idea approved |
+| `idea.converted` | `idea_converted` | Idea became challenge |
+
+### Contracts (`contract.*`) - 4 triggers
+
+| Trigger Key | Template Key | Description |
+|-------------|--------------|-------------|
+| `contract.created` | `contract_created` | Contract generated |
+| `contract.pending_signature` | `contract_pending_signature` | Awaiting signature |
+| `contract.signed` | `contract_signed` | Contract signed |
+| `contract.expiring` | `contract_expiring` | Contract expiring soon |
+
+### Contact (`contact.*`) - 2 triggers
+
+| Trigger Key | Template Key | Description |
+|-------------|--------------|-------------|
+| `contact.form` | `contact_form_received` | Contact form received |
+| `contact.form_confirmation` | `contact_form_confirmation` | Confirmation to sender |
+
+### Additional Triggers
+
+| Category | Triggers |
+|----------|----------|
+| `proposal.*` | submitted, accepted, rejected, revision_requested |
+| `evaluation.*` | assigned, reminder, completed |
+| `feedback.*` | requested, received |
+| `panel.*` | invitation, reminder |
+| `partnership.*` | proposal |
+| `dashboard.*` | shared |
+| `waitlist.*` | promoted |
+| `living_lab.*` | booking_confirmed, booking_reminder |
+| `finance.*` | invoice_issued, payment_received, payment_overdue |
+| `announcement.*` | send |
+| `campaign.*` | newsletter_send, announcement_send, etc. |
 
 ---
 
@@ -331,17 +387,11 @@ Delayed email storage:
 
 Delayed emails are processed by the `queue-processor` edge function, which runs every 5 minutes via cron.
 
-### Cron Setup
+### Cron Job Configuration
 
 ```sql
-SELECT cron.schedule(
-  'process-email-queue',
-  '*/5 * * * *',
-  $$SELECT net.http_post(
-    url := 'https://PROJECT_ID.supabase.co/functions/v1/queue-processor',
-    headers := '{"Authorization": "Bearer SERVICE_KEY"}'::jsonb
-  );$$
-);
+-- Job name: process-email-queue
+-- Schedule: */5 * * * * (every 5 minutes)
 ```
 
 ### Queue States
@@ -360,11 +410,12 @@ The trigger hub automatically respects user notification preferences stored in `
 
 | Preference | Category Mapping |
 |------------|------------------|
-| `challenge_updates` | challenge.* triggers |
-| `pilot_updates` | pilot.* triggers |
-| `task_reminders` | task.* triggers |
-| `system_announcements` | system.* triggers |
-| `email_enabled` | Master switch |
+| `email_categories.challenges` | challenge.* triggers |
+| `email_categories.pilots` | pilot.* triggers |
+| `email_categories.tasks` | task.* triggers |
+| `email_categories.events` | event.* triggers |
+| `email_categories.authentication` | auth.* triggers (critical) |
+| `email_notifications` | Master switch |
 
 To bypass preferences for critical emails:
 ```typescript
@@ -407,6 +458,20 @@ skip_preferences: true
 4. **Add delays** - Use for feedback requests to avoid immediate spam
 5. **Log errors** - Track failed sends for debugging
 6. **Test templates** - Use the Communications Hub preview before deployment
+
+---
+
+## Webhook Tracking
+
+The `resend-webhook` edge function tracks email delivery:
+
+| Event | Action |
+|-------|--------|
+| `email.delivered` | Update delivery timestamp |
+| `email.opened` | Track opens |
+| `email.clicked` | Track link clicks |
+| `email.bounced` | Mark as bounced |
+| `email.complained` | Disable marketing for user |
 
 ---
 

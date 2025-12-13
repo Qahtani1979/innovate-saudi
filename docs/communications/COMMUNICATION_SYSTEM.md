@@ -4,6 +4,19 @@
 
 The Saudi Innovates platform includes a comprehensive, bilingual (English/Arabic) communication system that handles automated notifications, transactional emails, and marketing campaigns.
 
+**Last Updated**: 2025-12-13
+
+## Current System Status
+
+| Component | Status | Count |
+|-----------|--------|-------|
+| Email Templates | ✅ Active | 126 templates |
+| Trigger Configurations | ✅ Active | 96 triggers |
+| User Preferences | ✅ Active | 24 users |
+| Cron Jobs | ✅ Running | 2 jobs |
+| Edge Functions | ✅ Deployed | 6 functions |
+| Integrated Components | ✅ Connected | 41+ files |
+
 ## Related Documentation
 
 - [Email Template System](./EMAIL_TEMPLATE_SYSTEM.md) - Template catalog and structure
@@ -22,7 +35,7 @@ The system has **two distinct email flows** that share infrastructure:
 │                           SHARED INFRASTRUCTURE                              │
 │  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────────┐    │
 │  │ email_templates │     │    email_logs   │     │     Resend API      │    │
-│  │   (Database)    │     │   (Database)    │     │   (Delivery)        │    │
+│  │   (126 active)  │     │   (Database)    │     │   (Delivery)        │    │
 │  └─────────────────┘     └─────────────────┘     └─────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────────────┘
                     ▲                                         ▲
@@ -38,6 +51,7 @@ The system has **two distinct email flows** that share infrastructure:
     ┌───────────────┴───────────────┐       ┌─────────────────┴───────────────┐
     │   Frontend Code               │       │   Communications Hub UI         │
     │   useEmailTrigger()           │       │   Campaign Manager              │
+    │   (41+ integrated files)      │       │   /communications-hub           │
     └───────────────────────────────┘       └─────────────────────────────────┘
                     │                                         │
                     ▼                                         ▼
@@ -49,7 +63,7 @@ The system has **two distinct email flows** that share infrastructure:
                     ▼                                         ▼
     ┌───────────────────────────────┐       ┌─────────────────────────────────┐
     │   email_trigger_config        │       │      email_campaigns            │
-    │   (Maps trigger → template)   │       │      campaign_recipients        │
+    │   (96 active triggers)        │       │      campaign_recipients        │
     └───────────────────────────────┘       └─────────────────────────────────┘
                     │                                         │
                     └──────────────┬──────────────────────────┘
@@ -64,6 +78,12 @@ The system has **two distinct email flows** that share infrastructure:
                          │   RESEND API    │
                          │  (Email Sender) │
                          └─────────────────┘
+                                   │
+                                   ▼
+                    ┌───────────────────────────────┐
+                    │      resend-webhook           │
+                    │   (Bounce/Open Tracking)      │
+                    └───────────────────────────────┘
 ```
 
 ---
@@ -85,13 +105,15 @@ The system has **two distinct email flows** that share infrastructure:
 
 ## 🖥️ Communications Hub
 
+Accessible at `/communications-hub` (requires `manage:email_templates` permission):
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     COMMUNICATION HUB                                │
 │  /communications-hub                                                 │
 ├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┤
-│  Templates  │    Logs     │  Settings   │ User Prefs  │  Campaigns  │
-│   Editor    │   Viewer    │   Editor    │  Overview   │   Manager   │
+│  Templates  │  Campaigns  │    Logs     │  Settings   │ User Prefs  │
+│   Editor    │   Manager   │   Viewer    │   Editor    │  Overview   │
 └──────┬──────┴──────┬──────┴──────┬──────┴──────┬──────┴──────┬──────┘
        │             │             │             │             │
        ▼             ▼             ▼             ▼             ▼
@@ -99,17 +121,19 @@ The system has **two distinct email flows** that share infrastructure:
 │                    SUPABASE DATABASE                                 │
 ├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┤
 │   email_    │   email_    │   email_    │    user_    │   email_    │
-│  templates  │    logs     │  settings   │notification_│  campaigns  │
-│             │             │             │ preferences │             │
+│  templates  │  campaigns  │    logs     │notification_│  settings   │
+│   (126)     │             │             │ preferences │             │
 └──────┬──────┴──────┬──────┴─────────────┴──────┬──────┴──────┬──────┘
        │             │                           │             │
        ▼             ▼                           ▼             ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    EDGE FUNCTIONS                                    │
-├─────────────────────┬───────────────────────┬───────────────────────┤
-│     send-email      │  email-trigger-hub    │   campaign-sender     │
-│   (shared sender)   │ (event-driven flow)   │   (bulk marketing)    │
-└─────────────────────┴───────────────────────┴───────────────────────┘
+├───────────────┬────────────────┬─────────────────┬──────────────────┤
+│  send-email   │ email-trigger  │ campaign-sender │ resend-webhook   │
+│  (delivery)   │     -hub       │  (bulk send)    │ (tracking)       │
+├───────────────┴────────────────┴─────────────────┴──────────────────┤
+│  queue-processor (cron)                                              │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -123,7 +147,7 @@ Stores all email templates with bilingual support.
 |--------|------|-------------|
 | `id` | UUID | Primary key |
 | `template_key` | VARCHAR | Unique identifier (e.g., `challenge_approved`) |
-| `category` | VARCHAR | Category for grouping |
+| `category` | VARCHAR | Category for grouping (17 categories) |
 | `name_en` / `name_ar` | VARCHAR | Display names |
 | `subject_en` / `subject_ar` | TEXT | Email subjects |
 | `body_en` / `body_ar` | TEXT | HTML email bodies |
@@ -160,7 +184,7 @@ Tracks all sent emails with delivery status.
 | `entity_type` / `entity_id` | VARCHAR/UUID | Related entity |
 | `triggered_by` | VARCHAR | Who/what triggered this email |
 
-### 3. `email_settings` (6 columns)
+### 3. `email_settings` (15+ settings)
 Global email configuration.
 
 | Setting Key | Description |
@@ -177,21 +201,23 @@ Global email configuration.
 | `daily_email_limit` | Rate limiting |
 | `enable_tracking` | Open/click tracking |
 
-### 4. `user_notification_preferences` (10 columns)
-Per-user notification settings.
+### 4. `user_notification_preferences` (14 columns)
+Per-user notification settings with auto-creation trigger.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `user_id` | UUID | User reference |
-| `user_email` | VARCHAR | User email |
+| `user_email` | VARCHAR | User email (unique) |
 | `email_notifications` | BOOLEAN | Master email switch |
 | `in_app_notifications` | BOOLEAN | In-app notifications |
 | `push_notifications` | BOOLEAN | Push notifications |
-| `email_categories` | JSONB | Category opt-in/out |
+| `sms_notifications` | BOOLEAN | SMS notifications |
+| `notification_types` | JSONB | Type-based preferences |
+| `email_categories` | JSONB | 14 category opt-in/out |
 | `frequency` | VARCHAR | immediate/daily/weekly |
 | `quiet_hours_start` / `_end` | TIME | Do not disturb window |
 
-### 5. `email_campaigns`
+### 5. `email_campaigns` (18 columns)
 Marketing and bulk email campaigns.
 
 | Column | Type | Description |
@@ -201,15 +227,18 @@ Marketing and bulk email campaigns.
 | `template_id` | UUID | Template to use |
 | `audience_type` | VARCHAR | all/role/municipality/sector/custom |
 | `audience_filter` | JSONB | Audience criteria |
+| `campaign_variables` | JSONB | Custom variables |
 | `recipient_count` | INTEGER | Total recipients |
 | `sent_count` | INTEGER | Successfully sent |
+| `opened_count` | INTEGER | Opened emails |
+| `clicked_count` | INTEGER | Clicked links |
 | `failed_count` | INTEGER | Failed to send |
 | `status` | VARCHAR | draft/scheduled/sending/completed/cancelled |
 | `scheduled_at` | TIMESTAMPTZ | When to send |
 | `started_at` / `completed_at` | TIMESTAMPTZ | Execution times |
 | `created_by` | VARCHAR | Admin who created |
 
-### 6. `email_trigger_config`
+### 6. `email_trigger_config` (11 columns)
 Maps trigger keys to templates for automated emails.
 
 | Column | Type | Description |
@@ -222,18 +251,32 @@ Maps trigger keys to templates for automated emails.
 | `respect_preferences` | BOOLEAN | Check user preferences |
 | `priority` | INTEGER | 1=critical, 2=high, 3=normal |
 | `delay_seconds` | INTEGER | Default delay before sending |
+| `additional_recipient_fields` | TEXT[] | Extra recipient fields |
+
+### 7. `email_queue` (12 columns)
+Delayed email storage for scheduled sending.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `trigger_key` | VARCHAR | Trigger used |
+| `template_key` | VARCHAR | Template to use |
+| `recipient_email` | VARCHAR | Recipient address |
+| `variables` | JSONB | Interpolation data |
+| `scheduled_for` | TIMESTAMPTZ | When to send |
+| `status` | VARCHAR | pending/processing/sent/failed |
 
 ---
 
-## 🔄 Email Template Categories
+## 🔄 Email Template Categories (17 Categories)
 
 | Category | Templates | Trigger Type |
 |----------|-----------|--------------|
 | **auth** | welcome, password_reset, email_verification, login_new_device, account_locked, account_deactivated | Automatic (auth events) |
 | **challenge** | submitted, approved, rejected, assigned, escalated, status_change, match_found, needs_info | Automatic (status change) |
 | **pilot** | created, kickoff, milestone, progress, completed, issue_reported, extension_request, kpi_alert | Automatic (workflow) |
-| **solution** | submitted, approved, verified, feedback, partnership | Automatic (status change) |
-| **program** | application_submitted, accepted, rejected, started, milestone, completed | Automatic (workflow) |
+| **solution** | submitted, approved, verified, feedback, partnership, deprecated | Automatic (status change) |
+| **program** | application_submitted, accepted, rejected, started, milestone, completed, waitlist | Automatic (workflow) |
 | **evaluation** | assigned, reminder, completed, feedback_requested, panel_invitation | Automatic (assignment) |
 | **role** | request_submitted, approved, rejected, revoked | Automatic (RBAC events) |
 | **contract** | created, pending_signature, signed, expiring | Automatic + Scheduled |
@@ -244,6 +287,8 @@ Maps trigger keys to templates for automated emails.
 | **task** | assigned, reminder, completed, overdue | Automatic + Scheduled |
 | **system** | announcements, maintenance, feature_update | Manual (admin) |
 | **marketing** | newsletter, promotion, survey, re-engagement | Manual (campaigns) |
+| **finance** | invoice, payment, overdue | Automatic |
+| **contact** | form submission, auto-reply | Automatic |
 
 ---
 
@@ -298,189 +343,176 @@ Handles marketing campaigns and bulk sending.
 ### 4. `queue-processor`
 Processes delayed emails from `email_queue` (runs via cron every 5 minutes).
 
----
-
-## 🎯 Trigger Mapping
-
-| Trigger Event | Template Key | Auto-detected Recipients |
-|---------------|--------------|--------------------------|
-| `auth.signup` | `welcome_new_user` | New user email |
-| `auth.password_reset` | `password_reset` | User email |
-| `challenge.submitted` | `challenge_submitted` | Submitter email |
-| `challenge.approved` | `challenge_approved` | Challenge owner |
-| `challenge.rejected` | `challenge_rejected` | Challenge owner |
-| `challenge.assigned` | `challenge_assigned` | Assigned reviewer |
-| `pilot.created` | `pilot_created` | Pilot manager |
-| `pilot.status_changed` | `pilot_status_change` | Pilot manager + stakeholders |
-| `pilot.milestone_completed` | `pilot_milestone_completed` | Pilot manager |
-| `solution.verified` | `solution_verified` | Provider contact |
-| `evaluation.assigned` | `evaluation_assigned` | Assigned evaluator |
-| `role.approved` | `role_request_approved` | Requester |
-| `role.rejected` | `role_request_rejected` | Requester |
-| `contract.expiring` | `contract_expiring` | Contract parties |
-| `task.assigned` | `task_assigned` | Assignee |
-| `task.overdue` | `task_overdue` | Assignee + manager |
+### 5. `resend-webhook`
+Handles Resend webhook events for delivery tracking:
+- `email.delivered` - Updates delivery timestamp
+- `email.opened` - Tracks opens
+- `email.clicked` - Tracks link clicks
+- `email.bounced` - Marks bounced emails
+- `email.complained` - Disables marketing for user
 
 ---
 
-## 🔐 RLS Policies
+## ⏰ Cron Jobs
 
-| Table | Policy | Access |
-|-------|--------|--------|
-| `email_templates` | View active | Anyone (public) |
-| `email_templates` | Manage all | Admins only |
-| `email_logs` | View own | Recipients can see their emails |
-| `email_logs` | Manage all | Admins only |
-| `email_settings` | View | Anyone (needed by edge function) |
-| `email_settings` | Manage | Admins only |
-| `user_notification_preferences` | Manage own | Users can manage their prefs |
-| `user_notification_preferences` | Manage all | Admins only |
-| `email_campaigns` | Manage | Admins only |
+| Job Name | Schedule | Purpose |
+|----------|----------|---------|
+| `process-email-queue` | Every 5 minutes | Processes delayed/scheduled emails |
+| `process-scheduled-campaigns` | Every 5 minutes | Processes scheduled campaigns |
 
 ---
 
-## 📱 Frontend Components
+## 🎯 Trigger Key Format
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| `EmailTemplateEditorContent` | `/communications-hub` | Create/edit email templates |
-| `EmailLogsViewer` | `/communications-hub` | View sent emails, resend failed |
-| `EmailSettingsEditor` | `/communications-hub` | Configure email branding |
-| `UserPreferencesOverview` | `/communications-hub` | Admin view of user prefs |
-| `CampaignManager` | `/communications-hub` | Create/send bulk campaigns |
-| `NotificationPreferences` | User settings | User self-service prefs |
+All triggers use `category.action` format:
 
----
-
-## 🔄 Workflow Integrations
-
-### Current Integrations (41+ files with email triggers)
-
-**Authentication:**
-- `AuthContext.jsx` - Welcome email on signup (`auth.signup`)
-
-**Challenge Workflow:**
-- `ChallengeReviewWorkflow.jsx` - Challenge approved/rejected emails (`challenge.approved`)
-- `ChallengeSubmissionWizard.jsx` - Challenge submitted email (`challenge.submitted`)
-
-**Role Management:**
-- `RoleRequestApprovalQueue.jsx` - Role approved/rejected emails (`role.approved`, `role.rejected`)
-
-**Pilot Creation (8+ sources):**
-- `IdeaToPilotConverter.jsx` - Pilot from idea (`pilot.created`, `idea.converted`)
-- `IdeaToSolutionConverter.jsx` - Solution from idea (`solution.submitted`)
-- `PilotConversionWizard.jsx` - Pilot from match (`pilot.created`)
-- `ProgramToPilotWorkflow.jsx` - Pilot from program (`pilot.created`)
-- `LabToPilotTransitionWizard.jsx` - Pilot from living lab (`pilot.created`)
-- `RDToPilotTransition.jsx` - Pilot from R&D (`pilot.created`)
-- `SolutionToPilotWorkflow.jsx` - Pilot from solution (`pilot.created`)
-- `ProgramLaunchWorkflow.jsx` - Pilot from program launch (`pilot.created`)
-
-**Contract Management:**
-- `ContractGeneratorWizard.jsx` - Contract created (`contract.created`)
-
-**Event Management:**
-- `EventRegistration.jsx` - Event registration confirmed (`event.registration_confirmed`)
-- `CommitteeMeetingScheduler.jsx` - Meeting invitation (`event.invitation`)
-
-**Evaluation & R&D:**
-- `RDProposalAwardWorkflow.jsx` - Proposal awarded (`proposal.accepted`)
-- `RDProposalEscalationAutomation.jsx` - Escalation notification (`challenge.escalated`)
-- `ExpertMatchingEngine.jsx` - Evaluation assigned (`evaluation.assigned`)
-
-**Other Integrations:**
-- `BudgetApprovalGate.jsx` - Budget approval/revision (`proposal.accepted`, `proposal.revision_requested`)
-- `PostProgramFollowUp.jsx` - Feedback request (`pilot.feedback_request`)
-- `AutomatedCertificateGenerator.jsx` - Program completed (`program.completed`)
-- `WaitlistManager.jsx` - Waitlist notifications
-- `BulkUserImport.jsx` - Welcome emails for imported users
-
-### Scheduled Jobs (Cron)
-| Job | Schedule | Edge Function |
-|-----|----------|---------------|
-| Queue Processor | Every 5 minutes | `queue-processor` |
-| Campaign Sender | Every 5 minutes | `campaign-sender` |
-| MII Recalculation | Daily at 2am | `calculate-mii` |
+| Category | Example Triggers |
+|----------|-----------------|
+| `auth` | `auth.signup`, `auth.password_reset`, `auth.login_new_device` |
+| `challenge` | `challenge.approved`, `challenge.rejected`, `challenge.assigned` |
+| `pilot` | `pilot.created`, `pilot.status_changed`, `pilot.milestone_completed` |
+| `solution` | `solution.verified`, `solution.submitted`, `solution.interest_received` |
+| `program` | `program.accepted`, `program.rejected`, `program.deadline_reminder` |
+| `task` | `task.assigned`, `task.completed`, `task.overdue` |
+| `event` | `event.invitation`, `event.registration_confirmed`, `event.reminder` |
+| `role` | `role.approved`, `role.rejected` |
+| `citizen` | `citizen.badge_earned`, `citizen.level_up` |
+| `contract` | `contract.created`, `contract.signed`, `contract.expiring` |
 
 ---
 
-## 🔗 User Profile Integration
-
-The communication system is fully integrated with user profiles:
+## 👤 User Profile Integration
 
 ### Auto-Creation of Preferences
-When a new `user_profiles` record is created, a database trigger automatically creates default `user_notification_preferences`:
-- Email notifications: enabled
-- In-app notifications: enabled
-- Push notifications: enabled
-- All email categories: enabled
-- Frequency: immediate
+When a new `user_profiles` record is created, a trigger automatically creates default notification preferences:
 
-### Preference Checking Flow
-1. `email-trigger-hub` receives trigger → calls `send-email`
-2. `send-email` checks `user_notification_preferences` for:
-   - Master email switch (`email_notifications`)
-   - Category-specific settings (`email_categories`)
-   - User's language preference from `user_profiles`
-3. Critical emails (auth, security) bypass preferences
+```sql
+-- Trigger: create_default_notification_preferences
+-- Fires: ON INSERT to user_profiles
+-- Creates: Default preferences in user_notification_preferences
+```
 
-### User Settings Page
-`/notification-preferences` allows users to:
-- Toggle email/in-app/push notifications
-- Set email frequency (immediate/daily/weekly)
-- Configure quiet hours
-- Enable/disable specific email categories
+### Preference Categories (14 categories)
+Users can opt-out of specific email categories:
+- `authentication` - Login, password reset
+- `challenges` - Challenge updates
+- `pilots` - Pilot status
+- `solutions` - Solution notifications
+- `contracts` - Contract updates
+- `evaluations` - Evaluation requests
+- `events` - Event invitations
+- `tasks` - Task assignments
+- `programs` - Program updates
+- `proposals` - Proposal status
+- `roles` - Role approvals
+- `finance` - Financial notifications
+- `citizen` - Gamification updates
+- `marketing` - Newsletters, promotions
 
----
+### Quiet Hours
+Users can set `quiet_hours_start` and `quiet_hours_end` to prevent emails during specific hours.
 
-## 🔄 Webhook Integration (Resend)
-
-The `resend-webhook` edge function handles email delivery events:
-
-| Event | Action |
-|-------|--------|
-| `email.delivered` | Update `email_logs.delivered_at` |
-| `email.opened` | Update `email_logs.opened_at` |
-| `email.clicked` | Update `email_logs.clicked_at` |
-| `email.bounced` | Mark as bounced, log error |
-| `email.complained` | Disable marketing emails for user |
-
-**Setup Required:**
-Configure webhook URL in Resend dashboard:
-`https://wneorgiqyvkkjmqootpe.supabase.co/functions/v1/resend-webhook`
-
-## 📊 Metrics & Analytics
-
-| Metric | Source | Dashboard |
-|--------|--------|-----------|
-| Total emails sent | `email_logs` count | Communications Hub |
-| Delivery rate | sent vs delivered | Communications Hub |
-| Open rate | opened_at populated | Communications Hub |
-| Click rate | clicked_at populated | Communications Hub |
-| Bounce rate | bounced_at populated | Communications Hub |
-| Unsubscribe rate | Preference changes | Communications Hub |
-| Campaign performance | `email_campaigns` | Campaign Manager |
+### Frequency Settings
+- `immediate` - Send emails instantly
+- `daily` - Batch into daily digest
+- `weekly` - Batch into weekly digest
 
 ---
 
-## 🛠️ Maintenance Tasks
+## 🔧 Frontend Integration
 
-| Task | Frequency | Method |
-|------|-----------|--------|
-| Retry failed emails | Hourly | Scheduled job |
-| Clean old logs (>90 days) | Weekly | Scheduled job |
-| Contract expiry reminders | Daily | Scheduled job |
-| Task overdue notifications | Daily | Scheduled job |
-| Inactive user re-engagement | Monthly | Campaign |
+### Using the Hook
+
+```tsx
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+
+function MyComponent() {
+  const { triggerEmail, triggerBatch } = useEmailTrigger();
+
+  const handleAction = async (entity) => {
+    await triggerEmail('category.action', {
+      entity_type: 'entity_name',
+      entity_id: entity.id,
+      entity_data: entity,
+    });
+  };
+}
+```
+
+### Integrated Components (41+ files)
+
+Key integrations include:
+- `ChallengeReviewWorkflow.jsx` - Challenge approvals/rejections
+- `RoleRequestApprovalQueue.jsx` - Role approvals
+- `ContractGeneratorWizard.jsx` - Contract creation
+- `EventRegistration.jsx` - Event registrations
+- `OnboardingWizard.jsx` - User signup
+- `ExpressInterestButton.jsx` - Solution interest
+- And 35+ more components
 
 ---
 
-## 🔮 Future Enhancements
+## 📈 Analytics & Tracking
 
-1. **A/B Testing** - Test subject lines and content variations
-2. **Personalization Engine** - Dynamic content based on user behavior
-3. **SMS Integration** - Multi-channel notifications
-4. **WhatsApp Business API** - Message templates
-5. **Email Analytics Dashboard** - Advanced reporting
-6. **Drip Campaigns** - Automated email sequences
-7. **Segment Builder** - Advanced audience targeting
+### Email Metrics
+- **Sent** - Successfully delivered to Resend
+- **Delivered** - Confirmed delivery to inbox
+- **Opened** - Email opened (tracked via pixel)
+- **Clicked** - Link clicked in email
+- **Bounced** - Delivery failed
+- **Complained** - Marked as spam
+
+### Webhook Integration
+Configure Resend webhook at:
+```
+https://wneorgiqyvkkjmqootpe.supabase.co/functions/v1/resend-webhook
+```
+
+Events handled:
+- `email.delivered`
+- `email.opened`
+- `email.clicked`
+- `email.bounced`
+- `email.complained`
+
+---
+
+## 🔐 Security & Permissions
+
+### Required Permission
+- `manage:email_templates` - Access Communications Hub
+
+### Critical Emails
+Some emails bypass user preferences:
+- Password reset
+- Account locked
+- Email verification
+- Security alerts
+
+### Bounce Handling
+When users mark emails as spam (`email.complained`), marketing emails are automatically disabled for that user.
+
+---
+
+## 🚀 Getting Started
+
+### 1. For Developers
+```tsx
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+
+const { triggerEmail } = useEmailTrigger();
+await triggerEmail('trigger.key', { entity_data: data });
+```
+
+### 2. For Admins
+Navigate to `/communications-hub` to:
+- Edit email templates
+- Create and send campaigns
+- View email logs
+- Configure settings
+- Monitor user preferences
+
+### 3. For New Integrations
+1. Create template in Communications Hub
+2. Add trigger config to `email_trigger_config`
+3. Call `triggerEmail()` in your component
