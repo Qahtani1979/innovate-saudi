@@ -1,8 +1,8 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 9.2  
+**Version:** 9.3  
 **Last Updated:** 2025-12-13  
-**Status:** ✅ ALL PHASES COMPLETE (100%) | Audit Logging Implemented
+**Status:** 🟡 Phase 8 Pending | Media Management Integration Required
 
 ---
 
@@ -17,6 +17,7 @@
 7. [Data Model](#data-model)
 8. [Critical Gaps](#critical-gaps)
 9. [Phase 7 - Extended Integrations](#phase-7-extended-integrations)
+10. [Phase 8 - Media Management Integration](#phase-8-media-management-integration)
 
 ---
 
@@ -37,6 +38,7 @@
 | **Comments System** | ✅ Full | ✅ Full | None |
 | **Bookmarks** | ✅ Full | ✅ Full | None |
 | **Audit Logging** | ✅ Full | ✅ Full | None |
+| **Media Management** | ❌ Not Integrated | ❌ Not Integrated | Medium |
 | **Realtime Updates** | ❌ Future | ❌ Future | Low |
 
 **Full details:** See `docs/programs-events-integration-matrix.md`
@@ -126,7 +128,7 @@
 | event_submitted email template | Medium | ✅ | Created with bilingual support |
 | Approval system assessment doc | Medium | ✅ | docs/approval-system-assessment.md |
 
-### ✅ Phase 7 Tasks - Extended Integrations - COMPLETE (90%)
+### ✅ Phase 7 Tasks - Extended Integrations - COMPLETE
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
@@ -138,7 +140,19 @@
 | Event reminder edge function | Medium | ✅ | supabase/functions/event-reminder/ |
 | Add comments to events | Low | ✅ | EventDetail.jsx with full comments UI |
 | Add bookmarks to events | Low | ✅ | EventDetail.jsx with bookmark toggle |
+| Detailed audit logging | Medium | ✅ | useAuditLog.js + ProgramEventAuditLog.jsx |
 | Supabase Realtime updates | Low | 🔴 | Future enhancement |
+
+### 🟡 Phase 8 Tasks - Media Management Integration - PENDING
+
+| Task | Priority | Status | Notes |
+|------|----------|--------|-------|
+| MediaLibrary picker for ProgramEdit | High | ❌ TODO | Select existing media |
+| MediaLibrary picker for EventEdit | High | ❌ TODO | Select existing media |
+| registerUsage() on program upload | High | ❌ TODO | Track in media_usages |
+| registerUsage() on event upload | High | ❌ TODO | Track in media_usages |
+| Dependency check before media deletion | Medium | ❌ TODO | Prevent orphaned references |
+| Update ProgramCreateWizard | Low | ❌ TODO | Use media library |
 
 ---
 
