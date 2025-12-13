@@ -4,7 +4,6 @@
  * @version 2.0.0
  */
 
-import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -28,6 +27,14 @@ function getSessionId() {
   return sessionId;
 }
 
+/**
+ * Lightweight, non-reactive AI helper.
+ *
+ * NOTE: This is intentionally NOT a real React hook anymore to avoid
+ * duplicate-React / invalid hook call issues in the current bundle.
+ * It keeps the same API shape so existing callers keep working,
+ * but `status`/`isLoading` etc. are not reactive (no re-renders).
+ */
 export function useAIWithFallback(options = {}) {
   const {
     showToasts = true,
@@ -36,17 +43,29 @@ export function useAIWithFallback(options = {}) {
     onError = null
   } = options;
 
-  const [status, setStatus] = useState(AI_STATUS.IDLE);
-  const [error, setError] = useState(null);
-  const [rateLimitInfo, setRateLimitInfo] = useState(null);
+  // Internal mutable state (non-reactive)
+  let status = AI_STATUS.IDLE;
+  let error = null;
+  let rateLimitInfo = null;
 
-  const invokeAI = useCallback(async ({ prompt, response_json_schema, system_prompt }) => {
+  const setStatus = (nextStatus) => {
+    status = nextStatus;
+  };
+
+  const setError = (nextError) => {
+    error = nextError;
+  };
+
+  const setRateLimitInfo = (info) => {
+    rateLimitInfo = info;
+  };
+
+  const invokeAI = async ({ prompt, response_json_schema, system_prompt }) => {
     setStatus(AI_STATUS.LOADING);
     setError(null);
 
     try {
       const sessionId = getSessionId();
-      
       const { data: result, error: invokeError } = await supabase.functions.invoke('invoke-llm', {
         body: { prompt, response_json_schema, system_prompt, session_id: sessionId }
       });
@@ -66,7 +85,7 @@ export function useAIWithFallback(options = {}) {
       // Check if result contains rate limit info
       if (result?.rate_limit_info) {
         setRateLimitInfo(result.rate_limit_info);
-        
+
         // Check for 80% warning
         if (result.rate_limit_info.daily_remaining <= result.rate_limit_info.daily_limit * 0.2) {
           if (showToasts) {
@@ -79,44 +98,44 @@ export function useAIWithFallback(options = {}) {
       return { success: true, data: result, fallback: false };
     } catch (err) {
       console.error('AI invocation error:', err);
-      
+
       // Handle rate limiting
       if (err?.message?.includes('Rate limit') || err?.status === 429) {
         setStatus(AI_STATUS.RATE_LIMITED);
         setError('You have reached your AI usage limit. Please try again later.');
-        
+
         if (showToasts) {
           toast.error('AI rate limit reached. Feature available without AI assistance.');
         }
-        
+
         if (onRateLimited) {
           onRateLimited(err);
         }
-        
+
         return { success: false, data: fallbackData, fallback: true, rateLimited: true };
       }
-      
+
       // Handle other errors
       setStatus(AI_STATUS.ERROR);
       setError(err?.message || 'AI service temporarily unavailable');
-      
+
       if (showToasts) {
         toast.error('AI assistance unavailable. You can continue manually.');
       }
-      
+
       if (onError) {
         onError(err);
       }
-      
+
       return { success: false, data: fallbackData, fallback: true, error: err };
     }
-  }, [showToasts, fallbackData, onRateLimited, onError]);
+  };
 
-  const reset = useCallback(() => {
+  const reset = () => {
     setStatus(AI_STATUS.IDLE);
     setError(null);
     setRateLimitInfo(null);
-  }, []);
+  };
 
   return {
     invokeAI,
@@ -127,7 +146,7 @@ export function useAIWithFallback(options = {}) {
     isLoading: status === AI_STATUS.LOADING,
     isRateLimited: status === AI_STATUS.RATE_LIMITED,
     isError: status === AI_STATUS.ERROR,
-    isAvailable: status !== AI_STATUS.RATE_LIMITED && status !== AI_STATUS.UNAVAILABLE
+    isAvailable: status !== AI_STATUS.RATE_LIMITED && status !== AI_STATUS.UNAVAILABLE,
   };
 }
 
