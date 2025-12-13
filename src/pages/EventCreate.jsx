@@ -17,7 +17,6 @@ import { useEvents } from '@/hooks/useEvents';
 import { EVENT_TYPES } from '@/components/events/EventFilters';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import MediaFieldWithPicker from '@/components/media/MediaFieldWithPicker';
-import { useMediaIntegration } from '@/hooks/useMediaIntegration';
 import { 
   Calendar, 
   MapPin, 

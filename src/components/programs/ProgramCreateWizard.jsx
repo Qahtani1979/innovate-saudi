@@ -15,7 +15,6 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { ArrowRight, ArrowLeft, Sparkles, Loader2, CheckCircle2, Calendar, Target, Users, Award, Building2, FileText, MapPin, X, Save } from 'lucide-react';
 import MediaFieldWithPicker from '@/components/media/MediaFieldWithPicker';
-import { useMediaIntegration } from '@/hooks/useMediaIntegration';
 import { toast } from 'sonner';
 import AICurriculumGenerator from './AICurriculumGenerator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
