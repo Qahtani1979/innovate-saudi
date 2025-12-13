@@ -1,587 +1,340 @@
 # Programs & Events - System Integration Matrix
 
-**Last Updated:** 2025-12-13 (PHASE 11 FULLY COMPLETE)  
-**Status:** Phase 11 COMPLETE - All Strategy↔Programs Components CREATED & INTEGRATED ✅
+**Last Updated:** 2025-12-13  
+**Scope:** Integration status with platform systems (no architecture or task tracking)
 
 ---
 
-## Phase 11 Strategy↔Programs Components - FULLY INTEGRATED
+## Integration Summary
 
-| Component | File | Used In | Status |
-|-----------|------|---------|--------|
-| `StrategyToProgramGenerator` | `src/components/strategy/StrategyToProgramGenerator.jsx` | StrategyCockpit, StrategyFeedbackDashboard | ✅ DONE |
-| `ProgramOutcomeKPITracker` | `src/components/programs/ProgramOutcomeKPITracker.jsx` | ProgramDetail (Strategic tab) | ✅ DONE |
-| `StrategicGapProgramRecommender` | `src/components/strategy/StrategicGapProgramRecommender.jsx` | StrategyCockpit, StrategyFeedbackDashboard | ✅ DONE |
-| `EventStrategicAlignment` | `src/components/events/EventStrategicAlignment.jsx` | EventDetail (Strategy tab) | ✅ DONE |
-| `ProgramLessonsToStrategy` | `src/components/programs/ProgramLessonsToStrategy.jsx` | ProgramDetail (Strategic tab) | ✅ DONE |
-| `StrategyFeedbackDashboard` | `src/pages/StrategyFeedbackDashboard.jsx` | Route in pages.config.js | ✅ DONE |
-| `useStrategicKPI` | `src/hooks/useStrategicKPI.js` | Multiple components | ✅ DONE |
-
----
-
-## COMPREHENSIVE DEEP REVIEW STATUS
-
-| # | System | Programs | Events | Gap Level | Notes |
-|---|--------|----------|--------|-----------|-------|
-| 1 | **Approval Workflow** | ✅ Full (4 gates) | ✅ Full (2 gates) | None | ApprovalCenter, approval_requests table |
-| 2 | **Permissions (Roles)** | ✅ Full (18 roles) | ✅ Full (18 roles) | None | hasPermission(), ProtectedPage |
-| 3 | **Email Templates** | ✅ Full (8 active) | ✅ Full (7 active) | None | email_templates table |
-| 4 | **Email Triggers** | ✅ Full (6 triggers) | ✅ Full (4 triggers) | None | useEmailTrigger hook |
-| 5 | **In-App Notifications** | ✅ Full (9 types) | ✅ Full (9 types) | None | notifyProgramEvent, notifyEventAction |
-| 6 | **Calendar Integration** | ✅ Full | ✅ Full | None | CalendarView.jsx, eventSyncService.js |
-| 7 | **Campaign Sync** | ✅ Full | ✅ Full | None | CampaignPlanner.jsx, syncEventsToTable() |
-| 8 | **AI Components** | ✅ Full (6/6) | ✅ Full (4/4) | None | All AI components integrated |
-| 9 | **Budget Integration** | ✅ Full | ✅ Full | None | Events linked via budget columns + dashboard |
-| 10 | **Audit Logging** | ✅ Full | ✅ Full | None | useAuditLog, logProgramActivity, logEventActivity |
-| 11 | **Media/Storage** | ✅ Full | ✅ Full | None | 'programs' and 'events' storage buckets |
-| 12 | **Media Management** | ✅ Integrated | ✅ Integrated | None | useMediaIntegration, MediaFieldWithPicker |
-| 13 | **Expert & Evaluation** | ✅ Full | ✅ Full | None | EventExpertEvaluation, EvaluationConsensusPanel |
-| 14 | **Search/Discovery** | ✅ Full | ✅ Full | None | AdvancedSearch, EventFilters |
-| 15 | **Comments System** | ✅ Full | ✅ Full | None | ProgramComment entity, comments table |
-| 16 | **Bookmarks** | ✅ Full | ✅ Full | None | bookmarks table integration |
-| 17 | **Analytics/Reporting** | ✅ Full | ✅ Full | None | EventsAnalyticsDashboard added |
+| # | System | Programs | Events | Status |
+|---|--------|----------|--------|--------|
+| 1 | Approval Workflow | ✅ Full | ✅ Full | Complete |
+| 2 | Permissions (Roles) | ✅ Full | ✅ Full | Complete |
+| 3 | Email Templates | ✅ Full | ✅ Full | Complete |
+| 4 | Email Triggers | ✅ Full | ✅ Full | Complete |
+| 5 | In-App Notifications | ✅ Full | ✅ Full | Complete |
+| 6 | Calendar Integration | ✅ Full | ✅ Full | Complete |
+| 7 | Campaign Sync | ✅ Full | ✅ Full | Complete |
+| 8 | AI Components | ✅ Full | ✅ Full | Complete |
+| 9 | Budget Integration | ✅ Full | ✅ Full | Complete |
+| 10 | Audit Logging | ✅ Full | ✅ Full | Complete |
+| 11 | Media/Storage | ✅ Full | ✅ Full | Complete |
+| 12 | Media Management | ✅ Full | ✅ Full | Complete |
+| 13 | Expert & Evaluation | ✅ Full | ✅ Full | Complete |
+| 14 | Search/Discovery | ✅ Full | ✅ Full | Complete |
+| 15 | Comments System | ✅ Full | ✅ Full | Complete |
+| 16 | Bookmarks | ✅ Full | ✅ Full | Complete |
+| 17 | Analytics/Reporting | ✅ Full | ✅ Full | Complete |
 
 ---
 
-## 1. APPROVAL WORKFLOW ✅ FULLY INTEGRATED
+## 1. Approval Workflow
 
 ### Programs (4 Gates)
-| Gate | Type | SLA | Component | Status |
-|------|------|-----|-----------|--------|
-| `launch_approval` | approval | 5 days | ProgramLaunchWorkflow | ✅ |
-| `selection_approval` | approval | 7 days | ProgramSelectionWorkflow | ✅ |
-| `mid_review` | review | 3 days | ProgramMidReviewGate | ✅ |
-| `completion_review` | approval | 10 days | ProgramCompletionWorkflow | ✅ |
 
-**Files:**
-- `src/components/approval/ApprovalGateConfig.jsx` (lines 509-608)
-- `src/pages/ApprovalCenter.jsx` (Programs tab)
-- `src/pages/ProgramDetail.jsx` (UnifiedWorkflowApprovalTab)
-- `src/hooks/usePrograms.js` (auto-creates approval_requests on submission)
+| Gate | Type | SLA | Status |
+|------|------|-----|--------|
+| launch_approval | approval | 5 days | ✅ |
+| selection_approval | approval | 7 days | ✅ |
+| mid_review | review | 3 days | ✅ |
+| completion_review | approval | 10 days | ✅ |
 
 ### Events (2 Gates)
-| Gate | Type | SLA | Component | Status |
-|------|------|-----|-----------|--------|
-| `submission` | submission | 2 days | EventCreate | ✅ |
-| `approval` | approval | 3 days | ApprovalCenter | ✅ |
 
-**Files:**
-- `src/components/approval/ApprovalGateConfig.jsx` (lines 711-759)
-- `src/hooks/useEvents.js` (lines 108-142 - auto-creates approval_requests)
-- `src/pages/ApprovalCenter.jsx` (lines 271-306, 772-793 - Events tab)
+| Gate | Type | SLA | Status |
+|------|------|-----|--------|
+| submission | submission | 2 days | ✅ |
+| approval | approval | 3 days | ✅ |
 
-### Gap: NONE ✅
+### Key Files
 
----
-
-## 2. PERMISSIONS (ROLES) ✅ FULLY INTEGRATED
-
-### Programs Permission Implementation
-| Page | Hook | Permission Checks | Status |
-|------|------|-------------------|--------|
-| Programs.jsx | usePermissions | `program_create`, `program_edit` | ✅ |
-| ProgramDetail.jsx | hasPermission | `program_edit`, `program_approve` | ✅ |
-| ProgramEdit.jsx | hasPermission | Edit access + owner check | ✅ |
-| ProgramOperatorPortal.jsx | ProtectedPage | `['program_manage']` | ✅ |
-| ApprovalCenter.jsx | hasPermission | `program_approve` | ✅ |
-
-### Events Permission Implementation
-| Page | Hook | Permission Checks | Status |
-|------|------|-------------------|--------|
-| EventCalendar.jsx | hasAnyPermission | `['event_create', 'admin']` + role fallback | ✅ |
-| EventDetail.jsx | hasAnyPermission | `['event_edit', 'event_manage', 'admin']`, `['event_evaluate', 'expert_evaluate']` | ✅ |
-| EventCreate.jsx | usePermissions | `municipalityId` scoping | ✅ |
-| EventEdit.jsx | hasAnyPermission | `['event_manage', 'admin']` + owner check | ✅ |
-
-### Roles Matrix (18 roles with permissions)
-| Role | Programs | Events |
-|------|----------|--------|
-| Admin | Full CRUD + approve | Full CRUD + approve + evaluate |
-| Super Admin | Full CRUD + approve | Full CRUD + approve + evaluate |
-| Municipality Admin | Full CRUD + approve | Full CRUD + approve + evaluate |
-| Municipality Coordinator | Create, Edit, View | Create, Edit, View, Approve |
-| Municipality Staff | View only | Create, Edit, View |
-| GDIBS Internal | Full CRUD + approve | Full CRUD + approve + evaluate |
-| Program Manager/Director | Full CRUD + manage | - |
-| Program Operator | Edit, View, Manage | - |
-| Event Manager | - | Create, Edit, View |
-| Expert/Evaluator | View only | View + Evaluate |
-
-### Gap: NONE ✅
+- `src/components/approval/ApprovalGateConfig.jsx`
+- `src/pages/ApprovalCenter.jsx`
+- `src/hooks/usePrograms.js` (auto-creates approval_requests)
+- `src/hooks/useEvents.js` (auto-creates approval_requests)
 
 ---
 
-## 3. EMAIL TEMPLATES ✅ FULLY INTEGRATED
+## 2. Permissions (Roles)
 
-### Programs (8 Active Templates)
-| Template Key | Purpose | Variables | Status |
-|-------------|---------|-----------|--------|
-| `program_accepted` | Application accepted | userName, programName, startDate | ✅ |
-| `program_announced` | New program announcement | programName, description, deadline | ✅ |
-| `program_application_received` | Confirmation of application | applicantName, programName, code | ✅ |
-| `program_application_reviewed` | Application under review | userName, programName, status | ✅ |
-| `program_cohort_start` | Cohort starting notification | programName, startDate, location | ✅ |
-| `program_deadline_reminder` | Application deadline reminder | programName, deadline, daysLeft | ✅ |
-| `program_mentorship_assigned` | Mentor assignment | menteeName, mentorName, programName | ✅ |
-| `program_rejected` | Application rejected | userName, programName, feedback | ✅ |
+### Programs Permissions
 
-### Events (7 Active Templates)
-| Template Key | Purpose | Variables | Status |
-|-------------|---------|-----------|--------|
-| `event_approved` | Event approved for publishing | eventName, organizer, approver | ✅ |
-| `event_cancelled` | Event cancellation notice | eventName, reason, date | ✅ |
-| `event_invitation` | Event invitation | eventName, date, location, registerUrl | ✅ |
-| `event_registration_confirmed` | Registration confirmation | userName, eventName, date, location | ✅ |
-| `event_reminder` | 24h reminder | eventName, date, time, location | ✅ |
-| `event_submitted` | Submitted for approval | eventName, submitter, reviewUrl | ✅ |
-| `event_updated` | Event details updated | eventName, changesDescription | ✅ |
+| Permission | Used In |
+|------------|---------|
+| program_view | Programs.jsx, ProgramDetail.jsx |
+| program_create | Programs.jsx (Create button) |
+| program_edit | ProgramEdit.jsx, ProgramDetail.jsx |
+| program_approve | ApprovalCenter.jsx |
+| program_manage | ProgramOperatorPortal.jsx |
+| program_apply | ProgramApplicationWizard.jsx |
+| program_participate | ParticipantDashboard.jsx |
 
-### Gap: NONE ✅
+### Events Permissions
 
----
-
-## 4. EMAIL TRIGGERS ✅ FULLY INTEGRATED
-
-### usePrograms.js Triggers (6)
-| Trigger Key | Lifecycle Event | File Location | Status |
-|-------------|-----------------|---------------|--------|
-| `program.created` | Draft created | line 172-186 | ✅ |
-| `program.submitted` | Submitted for approval | line 127-141 | ✅ |
-| `program.updated` | Data updated | line 217-229 | ✅ |
-| `program.launched` | Status → active | line 271-284 | ✅ |
-| `program.completed` | Status → completed | line 325-336 | ✅ |
-| `program.cancelled` | Status → cancelled | line 360-368 | ✅ |
-
-### useEvents.js Triggers (4)
-| Trigger Key | Lifecycle Event | File Location | Status |
-|-------------|-----------------|---------------|--------|
-| `event.created` | Draft created | line 173-187 | ✅ |
-| `event.submitted` | Submitted for approval | line 129-142 | ✅ |
-| `event.updated` | Updated (if registrants > 0) | line 218-231 | ✅ |
-| `event.cancelled` | Cancelled | line 263-270 | ✅ |
-
-### Infrastructure
-| Component | Purpose | Status |
-|-----------|---------|--------|
-| `src/hooks/useEmailTrigger.ts` | Unified trigger hook | ✅ |
-| `supabase/functions/email-trigger-hub/` | Trigger processing | ✅ |
-| `supabase/functions/send-email/` | Email sending via Resend | ✅ |
-| `supabase/functions/event-reminder/` | 24h reminder cron | ✅ |
-
-### Gap: NONE ✅
+| Permission | Used In |
+|------------|---------|
+| event_view | EventCalendar.jsx, EventDetail.jsx |
+| event_create | EventCalendar.jsx (Create button) |
+| event_edit | EventEdit.jsx |
+| event_manage | EventDetail.jsx |
+| event_approve | ApprovalCenter.jsx |
+| event_register | EventRegistration.jsx |
+| event_evaluate | EventExpertEvaluation |
 
 ---
 
-## 5. IN-APP NOTIFICATIONS ✅ FULLY INTEGRATED
+## 3. Email Templates
 
-### Programs (notifyProgramEvent - 9 event types)
-| Event Type | Message | Priority | Integrated In | Status |
-|------------|---------|----------|---------------|--------|
-| `created` | New program created | medium | usePrograms.js:165 | ✅ |
-| `submitted` | Submitted for approval | medium | usePrograms.js:163 | ✅ |
-| `approved` | Program approved | high | AutoNotification.jsx | ✅ |
-| `launched` | Launched, accepting applications | high | usePrograms.js:265 | ✅ |
-| `application_received` | New application | medium (task) | AutoNotification.jsx | ✅ |
-| `participant_enrolled` | Participant enrolled | medium | AutoNotification.jsx | ✅ |
-| `session_scheduled` | New session scheduled | medium | AutoNotification.jsx | ✅ |
-| `milestone_completed` | Milestone completed | medium | AutoNotification.jsx | ✅ |
-| `completed` | Program completed | medium | usePrograms.js:319 | ✅ |
+### Programs (8 Active)
 
-### Events (notifyEventAction - 9 event types)
-| Action Type | Message | Priority | Integrated In | Status |
-|-------------|---------|----------|---------------|--------|
-| `created` | New event created | medium | useEvents.js:166 | ✅ |
-| `submitted` | Submitted for approval | medium | useEvents.js:164 | ✅ |
-| `approved` | Event approved | medium | AutoNotification.jsx | ✅ |
-| `published` | Event published | medium | AutoNotification.jsx | ✅ |
-| `registration_opened` | Registration open | medium | AutoNotification.jsx | ✅ |
-| `registration_closed` | Registration closed | medium | AutoNotification.jsx | ✅ |
-| `reminder` | Event reminder | high | AutoNotification.jsx | ✅ |
-| `cancelled` | Event cancelled | high | useEvents.js:256 | ✅ |
-| `completed` | Event concluded | medium | AutoNotification.jsx | ✅ |
+| Template Key | Purpose |
+|-------------|---------|
+| program_accepted | Application accepted |
+| program_announced | New program announcement |
+| program_application_received | Application confirmation |
+| program_application_reviewed | Application under review |
+| program_cohort_start | Cohort starting |
+| program_deadline_reminder | Application deadline |
+| program_mentorship_assigned | Mentor assigned |
+| program_rejected | Application rejected |
 
-### Gap: NONE ✅
+### Events (7 Active)
+
+| Template Key | Purpose |
+|-------------|---------|
+| event_approved | Event approved |
+| event_cancelled | Event cancelled |
+| event_invitation | Event invitation |
+| event_registration_confirmed | Registration confirmed |
+| event_reminder | 24h reminder |
+| event_submitted | Submitted for approval |
+| event_updated | Details updated |
 
 ---
 
-## 6. CALENDAR INTEGRATION ✅ FULLY INTEGRATED
+## 4. Email Triggers
 
-### CalendarView.jsx
-| Data Source | Implementation | Status |
-|-------------|----------------|--------|
-| Events table | useQuery with supabase | ✅ |
-| Pilots table | Date range filtering | ✅ |
-| Programs table | Timeline milestones | ✅ |
-| Color coding | By entity type | ✅ |
+### usePrograms.js Triggers
 
-### EventCalendar.jsx
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| Month/week/day views | Responsive grid | ✅ |
-| Filter by type/status | EventFilters component | ✅ |
-| Create event from date | Quick action | ✅ |
+| Trigger Key | Lifecycle Event |
+|-------------|-----------------|
+| program.created | Draft created |
+| program.submitted | Submitted for approval |
+| program.updated | Data updated |
+| program.launched | Status → active |
+| program.completed | Status → completed |
+| program.cancelled | Status → cancelled |
 
-### Gap: NONE ✅
+### useEvents.js Triggers
 
----
-
-## 7. CAMPAIGN SYNC ✅ FULLY INTEGRATED
-
-### CampaignPlanner.jsx Integration
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| Campaign → Events sync | `syncEventsToTable()` function (lines 45-77) | ✅ |
-| Auto-create events | On campaign creation (lines 101-104) | ✅ |
-| Bidirectional tracking | sync_id in events | ✅ |
-| Program linkage | program_id in events | ✅ |
-
-### eventSyncService.js
-| Function | Purpose | Status |
-|----------|---------|--------|
-| `syncEventsToTable()` | Create/update events from campaign | ✅ |
-| `removeCampaignEvents()` | Cleanup on campaign delete | ✅ |
-
-### Gap: NONE ✅
+| Trigger Key | Lifecycle Event |
+|-------------|-----------------|
+| event.created | Draft created |
+| event.submitted | Submitted for approval |
+| event.updated | Updated (if registrants > 0) |
+| event.cancelled | Cancelled |
 
 ---
 
-## 8. AI COMPONENTS ✅ FULLY INTEGRATED
+## 5. In-App Notifications
 
-### Programs (6/6 - FULLY INTEGRATED)
-| Component | Purpose | Used In | Status |
-|-----------|---------|---------|--------|
-| `AICurriculumGenerator` | Generate curriculum | ProgramDetail, ProgramEdit | ✅ |
-| `AIDropoutPredictor` | Predict at-risk participants | ProgramDetail (active) | ✅ |
-| `AICohortOptimizerWidget` | Optimize cohort | ProgramDetail (selection) | ✅ |
-| `AIAlumniSuggester` | Alumni next steps | ProgramDetail (completed) | ✅ |
-| `AIProgramBenchmarking` | Benchmark programs | ProgramDetail | ✅ |
-| `AIProgramSuccessPredictor` | Predict success rate | ProgramDetail | ✅ |
+### Programs (notifyProgramEvent)
 
-### Events (4/4 - FULLY INTEGRATED)
-| Component | Purpose | Used In | Status |
-|-----------|---------|---------|--------|
-| `AIProgramEventCorrelator` | Correlate programs-events | ProgramsEventsHub | ✅ |
-| `AIEventOptimizer` | Optimize timing/content | EventCreate, EventDetail | ✅ |
-| `AIAttendancePredictor` | Predict attendance | EventDetail (AI Insights tab) | ✅ |
-| `AIConflictDetector` | Detect scheduling conflicts | EventCreate (Schedule tab) | ✅ |
+| Event Type | Priority |
+|------------|----------|
+| created | medium |
+| submitted | medium |
+| approved | high |
+| launched | high |
+| application_received | medium |
+| participant_enrolled | medium |
+| session_scheduled | medium |
+| milestone_completed | medium |
+| completed | medium |
 
-### Gap: NONE ✅
-**Implementation Details (2025-12-13):**
-- `AIEventOptimizer` added to EventCreate.jsx (Basic Info tab) and EventDetail.jsx (AI Insights tab)
-- `AIAttendancePredictor` added to EventDetail.jsx (AI Insights tab)
-- `AIConflictDetector` added to EventCreate.jsx (Schedule tab) - auto-detects conflicts with existing events/programs
+### Events (notifyEventAction)
+
+| Action Type | Priority |
+|-------------|----------|
+| created | medium |
+| submitted | medium |
+| approved | medium |
+| published | medium |
+| registration_opened | medium |
+| registration_closed | medium |
+| reminder | high |
+| cancelled | high |
+| completed | medium |
 
 ---
 
-## 9. BUDGET INTEGRATION ✅ FULLY INTEGRATED
+## 6. Calendar Integration
+
+| Feature | Programs | Events |
+|---------|----------|--------|
+| CalendarView.jsx | ✅ Timeline milestones | ✅ Event entries |
+| Date filtering | ✅ | ✅ |
+| Color coding | ✅ | ✅ |
+| Quick actions | ✅ | ✅ |
+
+---
+
+## 7. Campaign Sync
+
+| Feature | Implementation |
+|---------|----------------|
+| Campaign → Events | `syncEventsToTable()` in eventSyncService.js |
+| Auto-create events | On campaign creation |
+| Bidirectional tracking | `sync_id` in events |
+| Program linkage | `program_id` in events |
+
+---
+
+## 8. AI Components
+
+### Programs (6 Components)
+
+| Component | Purpose | Used In |
+|-----------|---------|---------|
+| AICurriculumGenerator | Generate curriculum | ProgramDetail, ProgramEdit |
+| AIDropoutPredictor | Predict at-risk | ProgramDetail |
+| AICohortOptimizerWidget | Optimize cohort | ProgramDetail |
+| AIAlumniSuggester | Alumni next steps | ProgramDetail |
+| AIProgramBenchmarking | Benchmark | ProgramDetail |
+| AIProgramSuccessPredictor | Predict success | ProgramDetail |
+
+### Events (4 Components)
+
+| Component | Purpose | Used In |
+|-----------|---------|---------|
+| AIProgramEventCorrelator | Correlate programs-events | ProgramsEventsHub |
+| AIEventOptimizer | Optimize timing/content | EventCreate, EventDetail |
+| AIAttendancePredictor | Predict attendance | EventDetail |
+| AIConflictDetector | Detect conflicts | EventCreate |
+
+---
+
+## 9. Budget Integration
+
+| Feature | Programs | Events |
+|---------|----------|--------|
+| budget_estimate | ✅ In table | ✅ In table |
+| budget_actual | - | ✅ In table |
+| funding_details | ✅ JSON | - |
+| Budget entity link | ✅ Via budgets table | ✅ Via columns |
+| Cost analysis | ✅ | ✅ EventsAnalyticsDashboard |
+
+---
+
+## 10. Audit Logging
+
+| Function | Entity | Actions |
+|----------|--------|---------|
+| logProgramActivity() | Program | created, submitted, updated, launched, completed, cancelled, deleted |
+| logEventActivity() | Event | created, submitted, updated, cancelled, deleted |
+| logApprovalActivity() | Both | submitted, approved, rejected, escalated |
+
+### Key Files
+
+- `src/hooks/useAuditLog.js`
+- `src/components/audit/ProgramEventAuditLog.jsx`
+
+---
+
+## 11. Media/Storage
+
+| Bucket | Entity | Public |
+|--------|--------|--------|
+| programs | Programs | Yes |
+| events | Events | Yes |
+
+| Feature | Programs | Events |
+|---------|----------|--------|
+| Image upload | ✅ | ✅ |
+| Gallery support | ✅ gallery_urls | ✅ gallery_urls |
+| Video URL | ✅ video_url | ✅ |
+
+---
+
+## 12. Media Management
+
+| Component | Purpose |
+|-----------|---------|
+| MediaLibraryPicker | Select from library |
+| MediaFieldWithPicker | Unified field wrapper |
+| useMediaIntegration | Usage tracking |
+
+| Page | Integration |
+|------|-------------|
+| ProgramEdit.jsx | ✅ |
+| EventEdit.jsx | ✅ |
+| ProgramCreateWizard | ✅ (UI only) |
+| EventCreate | ✅ (UI only) |
+
+---
+
+## 13. Expert & Evaluation
+
+| Feature | Programs | Events |
+|---------|----------|--------|
+| Expert assignment | ✅ ExpertMatchingEngine | ✅ entity_type='event' |
+| Expert evaluation | ✅ ProgramExpertEvaluation | ✅ EventExpertEvaluation |
+| Consensus panel | ✅ EvaluationConsensusPanel | ✅ EvaluationConsensusPanel |
+| Mentor matching | ✅ ProgramMentorMatching | - |
+
+---
+
+## 14. Search/Discovery
 
 ### Programs
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| budget_estimate column | ✅ In programs table | ✅ |
-| funding_details JSON | ✅ Detailed breakdown | ✅ |
-| Budget entity link | ✅ Via budgets table | ✅ |
-| BudgetManagement page | ✅ Full integration | ✅ |
+
+| Feature | Implementation |
+|---------|----------------|
+| Text search | Programs.jsx filters |
+| Advanced search | AdvancedSearch.jsx |
+| Filter by type | program_type filter |
+| Filter by status | status filter |
+| Filter by sector | sector_id filter |
 
 ### Events
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| budget_estimate column | ✅ In events table | ✅ |
-| budget_actual column | ✅ In events table | ✅ |
-| Budget tracking | ✅ Via event columns | ✅ |
-| Cost analysis | ✅ In EventsAnalyticsDashboard | ✅ |
 
-### Gap: NONE ✅
-
----
-
-## 10. AUDIT LOGGING ✅ FULLY INTEGRATED
-
-### useAuditLog.js
-| Function | Entity | Actions Logged | Status |
-|----------|--------|----------------|--------|
-| `logProgramActivity()` | Program | created, submitted, updated, launched, completed, cancelled, deleted | ✅ |
-| `logEventActivity()` | Event | created, submitted, updated, cancelled, deleted | ✅ |
-| `logApprovalActivity()` | Both | submitted, approved, rejected, escalated | ✅ |
-
-### ProgramEventAuditLog.jsx
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| View program logs | Filter by program ID | ✅ |
-| View event logs | Filter by event ID | ✅ |
-| Combined timeline | Unified view | ✅ |
-
-### Integration Points
-| Hook | Uses Logging | Status |
-|------|--------------|--------|
-| usePrograms.js | ✅ logProgramActivity | ✅ |
-| useEvents.js | ✅ logEventActivity | ✅ |
-
-### Gap: NONE ✅
+| Feature | Implementation |
+|---------|----------------|
+| Text search | EventFilters.jsx |
+| Filter by type | event_type filter |
+| Filter by status | status filter |
+| Filter by mode | is_virtual filter |
+| Upcoming filter | start_date >= now |
 
 ---
 
-## 11. MEDIA/STORAGE ✅ FULLY INTEGRATED
+## 15. Comments System
 
-### Storage Buckets
-| Bucket | Entity | Public | Status |
-|--------|--------|--------|--------|
-| `programs` | Programs | Yes | ✅ |
-| `events` | Events | Yes | ✅ |
-
-### Integration
-| Feature | Programs | Events | Status |
-|---------|----------|--------|--------|
-| Image upload | ✅ | ✅ | Complete |
-| Gallery support | ✅ gallery_urls | ✅ gallery_urls | Complete |
-| Video URL | ✅ video_url | ✅ | Complete |
-
-### Gap: NONE ✅
+| Feature | Programs | Events |
+|---------|----------|--------|
+| Comments table | ✅ entity_type='program' | ✅ entity_type='event' |
+| UI integration | ✅ ProgramDetail | ✅ EventDetail |
+| Threaded replies | ✅ | ✅ |
+| Internal comments | ✅ | ✅ |
 
 ---
 
-## 12. MEDIA MANAGEMENT ✅ FULLY INTEGRATED
+## 16. Bookmarks
 
-### Components
-| Component | Purpose | Status |
-|-----------|---------|--------|
-| MediaLibraryPicker | Select from library | ✅ |
-| MediaFieldWithPicker | Unified field wrapper | ✅ |
-| useMediaIntegration | Usage tracking | ✅ |
-
-### Integration
-| Page | Uses MediaFieldWithPicker | Status |
-|------|---------------------------|--------|
-| ProgramEdit.jsx | ✅ line 35 | ✅ |
-| EventEdit.jsx | ✅ line 49 | ✅ |
-
-### Gap: NONE ✅
+| Feature | Programs | Events |
+|---------|----------|--------|
+| Bookmarks table | ✅ entity_type='program' | ✅ entity_type='event' |
+| UI integration | ✅ ProgramDetail | ✅ EventDetail |
+| My Bookmarks page | ✅ | ✅ |
 
 ---
 
-## 13. EXPERT & EVALUATION ✅ FULLY INTEGRATED
+## 17. Analytics/Reporting
 
-### Programs
-| Feature | Component | Status |
-|---------|-----------|--------|
-| Expert assignment | ExpertMatchingEngine | ✅ |
-| Expert evaluation | ExpertEvaluation (program_application) | ✅ |
-| Consensus panel | EvaluationConsensusPanel | ✅ |
-| Mentor matching | ProgramMentorMatching | ✅ |
-
-### Events
-| Feature | Component | Status |
-|---------|-----------|--------|
-| Expert assignment | ExpertMatchingEngine (entity_type='event') | ✅ |
-| Expert evaluation | EventExpertEvaluation | ✅ |
-| Consensus panel | EvaluationConsensusPanel (entity_type='event') | ✅ |
-| Evaluation tab | EventDetail.jsx (lines 253-258, 405-408) | ✅ |
-
-### Gap: NONE ✅
-
----
-
-## 14. SEARCH/DISCOVERY ✅ FULLY INTEGRATED
-
-### Programs
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| Text search | Programs.jsx filters | ✅ |
-| Advanced search | AdvancedSearch.jsx (Programs tab) | ✅ |
-| Filter by type | program_type filter | ✅ |
-| Filter by status | status filter | ✅ |
-| Filter by sector | sector_id filter | ✅ |
-
-### Events
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| Text search | EventFilters.jsx | ✅ |
-| Filter by type | event_type filter | ✅ |
-| Filter by status | status filter | ✅ |
-| Filter by mode | is_virtual filter | ✅ |
-| Upcoming filter | start_date >= now | ✅ |
-
-### Gap: NONE ✅
-
----
-
-## 15. COMMENTS SYSTEM ✅ FULLY INTEGRATED
-
-### Programs
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| ProgramComment entity | base44.entities.ProgramComment | ✅ |
-| Comment form | ProgramDetail.jsx (lines 1153-1156) | ✅ |
-| Comment list | ProgramDetail.jsx Activity tab | ✅ |
-| ProgramActivityLog | Includes comments timeline | ✅ |
-
-### Events
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| comments table | supabase 'comments' table | ✅ |
-| Comment form | EventDetail.jsx (lines 358-376) | ✅ |
-| Comment list | EventDetail.jsx Comments tab (lines 347-401) | ✅ |
-| Add comment | addCommentMutation (lines 81-99) | ✅ |
-
-### Gap: NONE ✅
-
----
-
-## 16. BOOKMARKS ✅ FULLY INTEGRATED
-
-### Programs
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| Bookmark toggle | ProgramDetail.jsx | ✅ |
-| bookmarks table | entity_type='program' | ✅ |
-
-### Events
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| Bookmark toggle | EventDetail.jsx (lines 102-130) | ✅ |
-| bookmarks table | entity_type='event' | ✅ |
-| Bookmark icon | Header action (lines 173-181) | ✅ |
-| Visual indicator | Fill color when bookmarked | ✅ |
-
-### Gap: NONE ✅
-
----
-
-## 17. ANALYTICS/REPORTING ✅ FULLY INTEGRATED
-
-### Programs
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| ProgramImpactDashboard | Comprehensive metrics | ✅ |
-| ProgramConversionFunnel | Conversion analytics | ✅ |
-| ProgramOutcomesAnalytics | Outcome tracking | ✅ |
-| Application analytics | In ProgramDetail | ✅ |
-| Graduation metrics | graduation_rate field | ✅ |
-
-### Events
-| Feature | Implementation | Status |
-|---------|----------------|--------|
-| Registration stats | registration_count, capacity | ✅ |
-| Basic attendance | In EventDetail cards | ✅ |
-| EventsAnalyticsDashboard | `src/pages/EventsAnalyticsDashboard.jsx` | ✅ |
-| ROI tracking | Budget columns in dashboard | ✅ |
-| Attendance analysis | AI Attendance Predictor | ✅ |
-
-### Gap: NONE ✅
-
----
-
-## 18. STRATEGY ↔ PROGRAMS INTEGRATION (NEW ASSESSMENT)
-
-### Current Implementation
-| Feature | Status | Implementation |
-|---------|--------|----------------|
-| Programs → Strategy linking | ✅ | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id` |
-| StrategicAlignmentWidget | ✅ | `src/components/programs/StrategicAlignmentWidget.jsx` |
-| StrategyCockpit shows programs | ✅ | Programs counted in portfolio metrics |
-
-### Identified Gaps
-| Gap | Direction | Priority | Effort | Status |
-|-----|-----------|----------|--------|--------|
-| Strategy does NOT drive Program creation | Strategy→Programs | **P0** | 3 days | ❌ TODO |
-| No feedback from Programs to Strategy KPIs | Programs→Strategy | **P0** | 2 days | ❌ TODO |
-| Strategic gap analysis → Program recommendations | Strategy→Programs | P1 | 2 days | ❌ TODO |
-| Events not linked to Strategic objectives | Strategy→Events | P1 | 1 day | ❌ TODO |
-| Program outcomes don't inform strategy refinement | Programs→Strategy | P2 | 2 days | ❌ TODO |
-
-### Implementation Diagram
-
-```mermaid
-graph TD
-    subgraph STRATEGY["📊 STRATEGY SYSTEM"]
-        SP[Strategic Plan]
-        SO[Strategic Objectives]
-        ST[Strategic Themes]
-        KPI[Strategic KPIs]
-        SG[Strategic Gaps]
-    end
-    
-    subgraph PROGRAMS["📚 PROGRAMS SYSTEM"]
-        P[Program]
-        PO[Program Outcomes]
-        PI[Program Impact]
-    end
-    
-    SP -->|"✅ strategic_plan_ids[]"| P
-    SO -->|"✅ strategic_objective_ids[]"| P
-    ST -->|"❌ SHOULD GENERATE"| P
-    SG -->|"❌ SHOULD RECOMMEND"| P
-    
-    PO -->|"❌ SHOULD REPORT"| KPI
-    PI -->|"❌ SHOULD FEED"| SP
-```
-
----
-
-## SUMMARY: ALL SYSTEMS COMPLETE
-
-| Category | Count | Status |
-|----------|-------|--------|
-| **Fully Complete** | 17/17 | ✅ 100% |
-| **Partial** | 0/17 | ✅ 0% |
-| **Critical Gaps** | 0 | ✅ None |
-
-### New Phase 11: Strategy↔Programs Integration
-
-| # | Task | Priority | Effort | Status |
-|---|------|----------|--------|--------|
-| 1 | StrategyToProgramGenerator component | P0 | 2 days | ❌ TODO |
-| 2 | generateProgramThemes() AI function | P0 | 1 day | ❌ TODO |
-| 3 | ProgramOutcomeKPITracker component | P0 | 1.5 days | ❌ TODO |
-| 4 | updateStrategicKPI() function | P0 | 0.5 day | ❌ TODO |
-| 5 | StrategicGapProgramRecommender | P1 | 2 days | ❌ TODO |
-| 6 | Add strategic fields to Events | P1 | 0.5 day | ❌ TODO |
-| 7 | EventStrategicAlignment widget | P1 | 0.5 day | ❌ TODO |
-| 8 | ProgramLessonsToStrategy | P2 | 1 day | ❌ TODO |
-| 9 | Strategy feedback dashboard | P2 | 1 day | ❌ TODO |
-
----
-
-## FILE REFERENCES
-
-### Core Hooks
-| File | Purpose |
-|------|---------|
-| `src/hooks/usePrograms.js` | Program CRUD + triggers |
-| `src/hooks/useEvents.js` | Event CRUD + triggers |
-| `src/hooks/useEmailTrigger.ts` | Email trigger helper |
-| `src/hooks/useAuditLog.js` | Audit logging |
-| `src/hooks/useMediaIntegration.js` | Media tracking |
-
-### Core Pages
-| File | Purpose |
-|------|---------|
-| `src/pages/ProgramDetail.jsx` | 16-tab program view |
-| `src/pages/EventDetail.jsx` | Event detail with tabs |
-| `src/pages/EventCalendar.jsx` | Event listing/calendar |
-| `src/pages/ApprovalCenter.jsx` | Unified approvals |
-| `src/pages/CampaignPlanner.jsx` | Campaign-event sync |
-| `src/pages/EventsAnalyticsDashboard.jsx` | Event analytics |
-
-### AI Components
-| File | Entity | Integrated |
-|------|--------|------------|
-| `src/components/programs/AICurriculumGenerator.jsx` | Program | ✅ |
-| `src/components/programs/AIDropoutPredictor.jsx` | Program | ✅ |
-| `src/components/programs/AICohortOptimizerWidget.jsx` | Program | ✅ |
-| `src/components/programs/AIAlumniSuggester.jsx` | Program | ✅ |
-| `src/components/programs/AIProgramBenchmarking.jsx` | Program | ✅ |
-| `src/components/programs/AIProgramSuccessPredictor.jsx` | Program | ✅ |
-| `src/components/ai/AIProgramEventCorrelator.jsx` | Both | ✅ |
-| `src/components/ai/AIEventOptimizer.jsx` | Event | ✅ |
-| `src/components/ai/AIAttendancePredictor.jsx` | Event | ✅ |
-| `src/components/ai/AIConflictDetector.jsx` | Event | ✅ |
-
-### Strategy Components (Phase 11 - TODO)
-| File | Purpose | Status |
-|------|---------|--------|
-| `src/components/strategy/StrategyToProgramGenerator.jsx` | Generate programs from strategy | ❌ TODO |
-| `src/components/strategy/StrategicGapProgramRecommender.jsx` | Recommend programs for gaps | ❌ TODO |
-| `src/components/programs/ProgramOutcomeKPITracker.jsx` | Track KPI contribution | ❌ TODO |
-| `src/components/programs/ProgramLessonsToStrategy.jsx` | Feed lessons to strategy | ❌ TODO |
-| `src/components/events/EventStrategicAlignment.jsx` | Event strategic alignment | ❌ TODO |
+| Feature | Programs | Events |
+|---------|----------|--------|
+| Dashboard | ✅ ProgramsControlDashboard | ✅ EventsAnalyticsDashboard |
+| Metrics | Applications, enrollments, completion | Registrations, attendance, budget |
+| Charts | ✅ Recharts | ✅ Recharts |
+| Export | ✅ | ✅ |
