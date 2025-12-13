@@ -31,6 +31,77 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
     }
   }, []);
 
+  // Lookup tables for linked entities
+  const LOOKUP_TABLES = {
+    sector_id: { table: 'sectors', nameField: 'name_en' },
+    municipality_id: { table: 'municipalities', nameField: 'name_en' },
+    region_id: { table: 'regions', nameField: 'name_en' },
+    city_id: { table: 'cities', nameField: 'name_en' },
+    organization_id: { table: 'organizations', nameField: 'name_en' },
+    provider_id: { table: 'providers', nameField: 'name_en' },
+    subsector_id: { table: 'subsectors', nameField: 'name_en' },
+    service_id: { table: 'services', nameField: 'name_en' },
+    ministry_id: { table: 'ministries', nameField: 'name_en' },
+    program_id: { table: 'programs', nameField: 'name_en' },
+    pilot_id: { table: 'pilots', nameField: 'name_en' },
+    challenge_id: { table: 'challenges', nameField: 'title_en' },
+    solution_id: { table: 'solutions', nameField: 'name_en' },
+  };
+
+  // Load reference data for entity resolution
+  const loadReferenceData = async () => {
+    const refData = {};
+    const mappedFields = Object.keys(state.fieldMappings);
+    
+    // Identify which lookup tables we need
+    const neededLookups = Object.entries(LOOKUP_TABLES).filter(([field]) => 
+      mappedFields.includes(field) || 
+      mappedFields.some(f => f.includes(field.replace('_id', '')))
+    );
+
+    for (const [field, config] of neededLookups) {
+      try {
+        const { data } = await supabase
+          .from(config.table)
+          .select(`id, ${config.nameField}, name_ar`)
+          .limit(500);
+        
+        if (data) {
+          refData[field] = data.map(item => ({
+            id: item.id,
+            name_en: item[config.nameField] || item.name_en || item.title_en,
+            name_ar: item.name_ar || item.title_ar
+          }));
+        }
+      } catch (e) {
+        console.warn(`Failed to load ${config.table}:`, e);
+      }
+    }
+    return refData;
+  };
+
+  // Match text to reference entity ID
+  const resolveEntityId = (text, refList) => {
+    if (!text || !refList?.length) return null;
+    const normalized = text.toString().toLowerCase().trim();
+    
+    // Exact match
+    let match = refList.find(r => 
+      r.name_en?.toLowerCase().trim() === normalized ||
+      r.name_ar?.trim() === text.trim()
+    );
+    
+    // Partial match
+    if (!match) {
+      match = refList.find(r => 
+        r.name_en?.toLowerCase().includes(normalized) ||
+        normalized.includes(r.name_en?.toLowerCase())
+      );
+    }
+    
+    return match?.id || null;
+  };
+
   const runValidation = async () => {
     setIsValidating(true);
     setValidationProgress(0);
@@ -48,14 +119,28 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
     };
 
     try {
+      // Load reference data for linked entities
+      setValidationProgress(10);
+      const referenceData = await loadReferenceData();
+      
       const rows = state.extractedData.rows;
       const mappings = state.fieldMappings;
       const batchSize = 10;
       
+      // Identify fields needing special handling
+      const idFields = Object.keys(mappings).filter(f => f.endsWith('_id'));
+      const enFields = Object.keys(mappings).filter(f => f.endsWith('_en'));
+      const arFields = Object.keys(mappings).filter(f => f.endsWith('_ar'));
+      const textNameFields = Object.keys(mappings).filter(f => 
+        (f.includes('sector') || f.includes('municipality') || f.includes('region') || 
+         f.includes('city') || f.includes('organization') || f.includes('provider')) &&
+        !f.endsWith('_id')
+      );
+      
       // Process in batches
       for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
-        setValidationProgress(Math.round((i / rows.length) * 100));
+        setValidationProgress(10 + Math.round((i / rows.length) * 50));
         
         // Transform rows using mappings
         const transformedBatch = batch.map((row, idx) => {
@@ -67,24 +152,61 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
           return transformed;
         });
 
-        // Basic validation
+        // Resolve linked entities and validate
         transformedBatch.forEach((row, batchIdx) => {
           const rowIndex = i + batchIdx;
           const rowErrors = [];
           const rowWarnings = [];
+          const rowEnrichments = [];
           
           // Check required fields
           Object.entries(mappings).forEach(([field, mapping]) => {
             const value = row[field];
             if (!value || value.toString().trim() === '') {
-              // Check if this is a required field based on field name
               if (field.includes('title') || field.includes('name')) {
                 rowErrors.push(`Row ${rowIndex + 1}: Missing required field "${field}"`);
               }
             }
           });
 
-          // Check for potential duplicates (by title/name)
+          // Resolve ID fields from text values
+          idFields.forEach(idField => {
+            if (!row[idField] && referenceData[idField]) {
+              // Look for corresponding text field
+              const baseName = idField.replace('_id', '');
+              const textField = textNameFields.find(f => f.includes(baseName)) ||
+                               Object.keys(row).find(k => k.includes(baseName) && !k.endsWith('_id'));
+              
+              if (textField && row[textField]) {
+                const resolvedId = resolveEntityId(row[textField], referenceData[idField]);
+                if (resolvedId) {
+                  rowEnrichments.push({
+                    rowIndex,
+                    field: idField,
+                    suggestedValue: resolvedId,
+                    reason: `Resolved from "${row[textField]}"`
+                  });
+                } else {
+                  rowWarnings.push(`Row ${rowIndex + 1}: Could not resolve ${idField} from "${row[textField]}"`);
+                }
+              }
+            }
+          });
+
+          // Check for missing Arabic translations
+          enFields.forEach(enField => {
+            const arField = enField.replace('_en', '_ar');
+            if (row[enField] && (!row[arField] || row[arField].toString().trim() === '')) {
+              rowEnrichments.push({
+                rowIndex,
+                field: arField,
+                suggestedValue: `__NEEDS_TRANSLATION__:${row[enField]}`,
+                reason: `Arabic translation needed for: "${row[enField]}"`
+              });
+            }
+          });
+
+          // Check for potential duplicates
           const titleField = Object.keys(row).find(k => k.includes('title') || k.includes('name'));
           if (titleField && row[titleField]) {
             const duplicateIdx = results.processedRows.findIndex(
@@ -109,57 +231,97 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
           
           results.errors.push(...rowErrors);
           results.warnings.push(...rowWarnings);
+          results.enrichments.push(...rowEnrichments);
           results.processedRows.push({ ...row, _errors: rowErrors, _warnings: rowWarnings });
         });
       }
 
-      // AI-enhanced validation for suggestions and translations
-      setValidationProgress(80);
+      // AI-enhanced validation for translations and additional suggestions
+      setValidationProgress(70);
+      
+      // Collect items needing AI translation
+      const translationNeeded = results.enrichments
+        .filter(e => e.suggestedValue?.startsWith('__NEEDS_TRANSLATION__:'))
+        .slice(0, 30); // Limit for AI processing
+      
+      if (translationNeeded.length > 0) {
+        const textsToTranslate = translationNeeded.map(e => ({
+          rowIndex: e.rowIndex,
+          field: e.field,
+          text: e.suggestedValue.replace('__NEEDS_TRANSLATION__:', '')
+        }));
+
+        const aiResult = await invokeAI({
+          prompt: `Translate the following English texts to Arabic. Maintain formal tone suitable for government/municipal context.
+
+${JSON.stringify(textsToTranslate, null, 2)}
+
+Return translations in the exact format specified.`,
+          system_prompt: 'You are an expert Arabic translator specializing in government and municipal terminology. Provide accurate, formal Arabic translations.',
+          response_json_schema: {
+            type: 'object',
+            properties: {
+              translations: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    rowIndex: { type: 'number' },
+                    field: { type: 'string' },
+                    arabic: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        if (aiResult.success && aiResult.data?.translations) {
+          aiResult.data.translations.forEach(t => {
+            const idx = results.enrichments.findIndex(
+              e => e.rowIndex === t.rowIndex && e.field === t.field
+            );
+            if (idx !== -1) {
+              results.enrichments[idx].suggestedValue = t.arabic;
+              results.enrichments[idx].reason = 'AI-generated Arabic translation';
+            }
+          });
+        }
+      }
+
+      // Remove any enrichments that still have placeholder values
+      results.enrichments = results.enrichments.filter(
+        e => !e.suggestedValue?.startsWith('__NEEDS_TRANSLATION__:')
+      );
+
+      // Additional AI analysis for data quality
+      setValidationProgress(85);
       
       if (results.processedRows.length > 0) {
         const sampleRows = results.processedRows.slice(0, 5);
-        
-        // Identify fields that need Arabic translations
-        const fieldsWithTranslations = Object.keys(state.fieldMappings).filter(field => 
-          field.endsWith('_en') || field.endsWith('_ar')
-        );
-        
-        const enFields = fieldsWithTranslations.filter(f => f.endsWith('_en'));
-        const arFields = fieldsWithTranslations.filter(f => f.endsWith('_ar'));
-        
-        // Check which rows need Arabic translations
-        const rowsNeedingTranslation = results.processedRows.map((row, idx) => {
-          const missingAr = [];
-          enFields.forEach(enField => {
-            const arField = enField.replace('_en', '_ar');
-            if (row[enField] && (!row[arField] || row[arField].trim() === '')) {
-              missingAr.push({ enField, arField, value: row[enField] });
-            }
-          });
-          return { rowIndex: idx, missing: missingAr };
-        }).filter(r => r.missing.length > 0);
+        const availableRefs = Object.entries(referenceData)
+          .map(([field, items]) => `${field}: ${items.slice(0, 5).map(i => i.name_en).join(', ')}...`)
+          .join('\n');
 
         const aiResult = await invokeAI({
-          prompt: `Analyze this data for quality issues and fill in missing translations.
+          prompt: `Analyze this data for quality issues and suggest improvements.
 
 Entity type: ${state.detectedEntity}
-Sample data:
-${JSON.stringify(sampleRows, null, 2)}
+Sample data: ${JSON.stringify(sampleRows, null, 2)}
 
-Fields available: ${Object.keys(state.fieldMappings).join(', ')}
+Available reference entities for linking:
+${availableRefs}
 
-IMPORTANT TASKS:
-1. Look for typos or inconsistencies in text fields
-2. Check for invalid formats (dates, numbers, etc.)
-3. **CRITICAL: Generate Arabic translations for any _ar fields that are empty when the corresponding _en field has content**
-4. Standardize data where needed
+Fields in data: ${Object.keys(state.fieldMappings).join(', ')}
 
-Rows needing Arabic translation:
-${JSON.stringify(rowsNeedingTranslation.slice(0, 10), null, 2)}
+Look for:
+1. Typos or inconsistencies
+2. Invalid formats (dates, numbers)
+3. Missing links that could be inferred from context
+4. Standardization opportunities
 
-For each missing Arabic field, provide the Arabic translation of the English content.
-Return corrections (for errors/typos) and enrichments (for missing data including translations).`,
-          system_prompt: 'You are a data quality expert fluent in English and Arabic. Analyze data for issues, suggest improvements, and provide accurate Arabic translations for missing _ar fields when the _en field has content.',
+Return corrections and enrichments.`,
+          system_prompt: 'You are a data quality expert. Analyze data for issues and suggest improvements.',
           response_json_schema: {
             type: 'object',
             properties: {
@@ -194,12 +356,18 @@ Return corrections (for errors/typos) and enrichments (for missing data includin
 
         if (aiResult.success && aiResult.data) {
           results.corrections = aiResult.data.corrections || [];
-          results.enrichments = aiResult.data.enrichments || [];
+          // Merge AI enrichments with existing ones (avoiding duplicates)
+          const existingKeys = new Set(results.enrichments.map(e => `${e.rowIndex}-${e.field}`));
+          (aiResult.data.enrichments || []).forEach(e => {
+            if (!existingKeys.has(`${e.rowIndex}-${e.field}`)) {
+              results.enrichments.push(e);
+            }
+          });
         }
       }
 
-      // Check for existing records (duplicate detection against database)
-      setValidationProgress(90);
+      // Check for existing records in database
+      setValidationProgress(95);
       await checkDatabaseDuplicates(results);
 
       setValidationProgress(100);
