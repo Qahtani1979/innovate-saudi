@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import * as XLSX from 'xlsx';
 
 const SUPPORTED_TYPES = {
   'text/csv': { icon: FileSpreadsheet, label: 'CSV', color: 'bg-green-100 text-green-800' },
@@ -110,38 +109,9 @@ export default function StepFileUpload({ state, updateState, onNext }) {
     return { headers, rows, rawText: text };
   };
 
-  // Process Excel files locally using xlsx library
+  // Process Excel files using AI (xlsx library has React compatibility issues)
   const processExcel = async (file) => {
-    const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: 'array' });
-    
-    // Get first sheet
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    
-    // Convert to JSON
-    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-    
-    if (jsonData.length === 0) {
-      return { headers: [], rows: [], rawText: '' };
-    }
-    
-    // First row is headers
-    const headers = jsonData[0].map(h => String(h || '').trim()).filter(h => h);
-    const rows = [];
-    
-    for (let i = 1; i < jsonData.length; i++) {
-      const rowData = jsonData[i];
-      if (rowData && rowData.some(v => v !== undefined && v !== null && v !== '')) {
-        const row = {};
-        headers.forEach((h, idx) => {
-          row[h] = rowData[idx] !== undefined ? String(rowData[idx]) : '';
-        });
-        rows.push(row);
-      }
-    }
-    
-    return { headers, rows, rawText: JSON.stringify(rows) };
+    return processWithAI(file, 'excel');
   };
 
   const processWithAI = async (file, fileType) => {
