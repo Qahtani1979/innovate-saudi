@@ -74,6 +74,8 @@ Generate:
 
   const createPilotMutation = useMutation({
     mutationFn: async (data) => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
       const pilot = await base44.entities.Pilot.create({
         ...data,
         code: `PLT-IDEA-${Date.now()}`,
@@ -85,12 +87,48 @@ Generate:
         converted_pilot_id: pilot.id
       });
 
-      await base44.functions.invoke('citizenNotifications', {
-        eventType: 'idea_converted_pilot',
-        ideaId: idea.id,
-        pilotId: pilot.id,
-        citizenEmail: idea.submitter_email
-      });
+      // Send pilot created email notification via email-trigger-hub
+      try {
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'pilot.created',
+            recipient_email: idea.submitter_email,
+            entity_type: 'pilot',
+            entity_id: pilot.id,
+            variables: {
+              pilotTitle: data.title_en || data.title_ar,
+              pilotCode: pilot.code || `PLT-IDEA-${pilot.id?.substring(0, 8)}`,
+              startDate: new Date().toISOString().split('T')[0],
+              dashboardUrl: window.location.origin + '/pilots/' + pilot.id
+            },
+            language: language,
+            triggered_by: 'system'
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send pilot created email:', emailError);
+      }
+
+      // Also notify about idea conversion
+      try {
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'idea.converted',
+            recipient_email: idea.submitter_email,
+            entity_type: 'citizen_idea',
+            entity_id: idea.id,
+            variables: {
+              ideaTitle: idea.title,
+              pilotTitle: data.title_en || data.title_ar,
+              pilotUrl: window.location.origin + '/pilots/' + pilot.id
+            },
+            language: language,
+            triggered_by: 'system'
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send idea converted email:', emailError);
+      }
 
       return pilot;
     },

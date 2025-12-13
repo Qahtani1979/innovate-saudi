@@ -64,10 +64,10 @@ export default function ChallengeReviewWorkflow({ challenge, onClose }) {
       // Send email notification on approval using unified trigger
       if (decision === 'approve' && challenge.challenge_owner_email) {
         try {
-          await triggerEmail('CHALLENGE_APPROVED', {
-            entityType: 'challenge',
-            entityId: challenge.id,
-            recipientEmail: challenge.challenge_owner_email,
+          await triggerEmail('challenge.approved', {
+            entity_type: 'challenge',
+            entity_id: challenge.id,
+            recipient_email: challenge.challenge_owner_email,
             variables: {
               challengeTitle: language === 'ar' ? (challenge.title_ar || challenge.title_en) : challenge.title_en,
               challengeCode: challenge.code || challenge.id.substring(0, 8),

@@ -85,6 +85,8 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
 
   const createPilot = async () => {
     try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
       const pilot = await base44.entities.Pilot.create({
         ...pilotData,
         challenge_id: challenge?.id,
@@ -99,6 +101,31 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
         converted_pilot_id: pilot.id,
         stage: 'pilot_conversion'
       });
+
+      // Send pilot created email notification via email-trigger-hub
+      try {
+        const recipientEmail = application.contact_email || application.organization_email;
+        if (recipientEmail) {
+          await supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'pilot.created',
+              recipient_email: recipientEmail,
+              entity_type: 'pilot',
+              entity_id: pilot.id,
+              variables: {
+                pilotTitle: pilotData.title_en || pilotData.title_ar,
+                pilotCode: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
+                startDate: new Date().toISOString().split('T')[0],
+                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
+              },
+              language: language,
+              triggered_by: 'system'
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send pilot created email:', emailError);
+      }
 
       toast.success(t({ en: 'Pilot created successfully!', ar: 'تم إنشاء التجربة بنجاح!' }));
       navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));

@@ -18,7 +18,7 @@ import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVi
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function ProgramToPilotWorkflow({ program, graduateApplication }) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
