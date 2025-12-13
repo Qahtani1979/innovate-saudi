@@ -5,6 +5,8 @@
 This guide explains how to integrate email notifications into your components using the unified `email-trigger-hub` system.
 
 **Last Updated**: 2025-12-13
+**System Status**: ✅ Fully Operational
+**Integration Coverage**: 94% (50/53 module integrations)
 
 ---
 
@@ -224,7 +226,7 @@ await triggerEmail('auth.password_reset', {
 
 ---
 
-## Currently Integrated Components (41+ files)
+## Currently Integrated Components (50+ files)
 
 ### Authentication & Onboarding
 | File | Triggers |
@@ -236,47 +238,75 @@ await triggerEmail('auth.password_reset', {
 ### Challenges
 | File | Triggers |
 |------|----------|
-| `ChallengeReviewWorkflow.jsx` | `challenge.approved`, `challenge.rejected` |
-| `ChallengeStatusUpdate.jsx` | `challenge.status_changed` |
+| `ChallengeCreate.jsx` | `challenge.created` |
+| `Approvals.jsx` | `challenge.approved`, `challenge.rejected` |
+| `Challenges.jsx` | `challenge.status_changed` |
+| `SLAMonitor.jsx` | `challenge.escalated` |
+| `TrackAssignment.jsx` | `challenge.assigned` |
+| `ChallengeSolutionMatching.jsx` | `challenge.match_found`, `solution.matched` |
 
 ### Pilots
 | File | Triggers |
 |------|----------|
-| `IdeaToPilotConverter.jsx` | `pilot.created`, `idea.converted` |
-| `PilotConversionWizard.jsx` | `pilot.created` |
-| `ProgramToPilotWorkflow.jsx` | `pilot.created` |
+| `PilotCreate.jsx` | `pilot.created` |
+| `ProposalToPilotConverter.jsx` | `pilot.created`, `proposal.approved` |
+| `RDToPilotTransition.jsx` | `pilot.created` |
 | `LabToPilotTransitionWizard.jsx` | `pilot.created` |
+| `PilotConversionWizard.jsx` | `pilot.created` |
+| `SolutionToPilotWorkflow.jsx` | `pilot.created` |
+| `ProgramToPilotWorkflow.jsx` | `pilot.created` |
+| `MilestoneTracker.jsx` | `pilot.milestone_completed` |
+| `PilotToProcurementWorkflow.jsx` | `contract.created` |
+| `Approvals.jsx` | `pilot.approved`, `pilot.rejected` |
 
 ### Solutions
 | File | Triggers |
 |------|----------|
-| `IdeaToSolutionConverter.jsx` | `solution.submitted` |
+| `SolutionCreateWizard.jsx` | `solution.created` |
 | `ContractGeneratorWizard.jsx` | `contract.created` |
-| `ExpressInterestButton.jsx` | `solution.interest_expressed` |
-| `SolutionDeprecationWizard.jsx` | `solution.deprecated` |
+| `SolutionVerificationWizard.jsx` | `solution.verified` |
 
-### Events & Programs
+### Programs & Events
 | File | Triggers |
 |------|----------|
+| `ProgramCreateWizard.jsx` | `program.created` |
+| `ProgramLaunchWorkflow.jsx` | `program.launched` |
 | `EventRegistration.jsx` | `event.registration_confirmed` |
-| `ProgramSelectionWorkflow.jsx` | `program.application_status` |
-| `ProgramCompletionWorkflow.jsx` | `program.completed` |
-| `WaitlistManager.jsx` | `waitlist.promoted` |
+| `CommitteeMeetingScheduler.jsx` | `event.invitation` |
 
-### Access & Roles
+### R&D & Research
 | File | Triggers |
 |------|----------|
-| `RoleRequestApprovalQueue.jsx` | `role.approved`, `role.rejected` |
+| `RDProjectCreateWizard.jsx` | `rd.project_created` |
+| `ChallengeToRDWizard.jsx` | `rd.project_created` |
+| `RDProposalSubmissionGate.jsx` | `proposal.submitted` |
+| `RDProposalReviewGate.jsx` | `proposal.reviewed` |
+| `RDCallPublishWorkflow.jsx` | `rd.call_published` |
 
-### Other Integrations
+### Living Labs, Sandbox & Partnerships
 | File | Triggers |
 |------|----------|
-| `Contact.jsx` | `contact.form` |
-| `ChallengeSolutionMatching.jsx` | `solution.matched` |
-| `PartnershipWorkflow.jsx` | `partnership.proposal` |
-| `DashboardSharing.jsx` | `dashboard.shared` |
-| `LivingLabExpertMatching.jsx` | `expert.consultation_request` |
-| `AnnouncementTargeting.jsx` | `announcement.send` |
+| `LivingLabCreateWizard.jsx` | `livinglab.created` |
+| `SandboxCreateWizard.jsx` | `sandbox.created` |
+| `StartupCollaborationHub.jsx` | `partnership.created` |
+
+### Approvals & Evaluations
+| File | Triggers |
+|------|----------|
+| `InlineApprovalWizard.jsx` | `approval.approved`, `approval.rejected`, `approval.conditional` |
+| `UnifiedEvaluationForm.jsx` | `evaluation.completed` |
+
+### Tasks & Knowledge
+| File | Triggers |
+|------|----------|
+| `TaskManagement.jsx` | `task.assigned` |
+| `KnowledgeDocumentEdit.jsx` | `knowledge.published` |
+
+### Citizen & Proposals
+| File | Triggers |
+|------|----------|
+| `CitizenIdeaSubmissionForm.jsx` | `citizen.idea_submitted` |
+| `ProposalSubmissionForm.jsx` | `challenge.proposal_received` |
 
 ---
 
