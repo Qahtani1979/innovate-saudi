@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function Approvals() {
   const { language, isRTL, t } = useLanguage();
@@ -22,6 +23,7 @@ export default function Approvals() {
   const [aiBriefs, setAiBriefs] = useState({});
   const { invokeAI, status, isLoading: generatingBrief, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [currentBriefId, setCurrentBriefId] = useState(null);
+  const { triggerEmail } = useEmailTrigger();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['pending-challenges'],
@@ -40,14 +42,29 @@ export default function Approvals() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: async ({ entity, id, newStatus }) => {
+    mutationFn: async ({ entity, id, newStatus, action }) => {
       if (entity === 'Challenge') {
         return base44.entities.Challenge.update(id, { status: newStatus });
       } else {
         return base44.entities.Pilot.update(id, { stage: newStatus });
       }
     },
-    onSuccess: () => {
+    onSuccess: async (result, variables) => {
+      const { entity, id, action } = variables;
+      const triggerKey = action === 'approve' 
+        ? (entity === 'Challenge' ? 'challenge.approved' : 'pilot.approved')
+        : (entity === 'Challenge' ? 'challenge.rejected' : 'pilot.rejected');
+      
+      // Trigger approval/rejection email
+      await triggerEmail(triggerKey, {
+        entityType: entity.toLowerCase(),
+        entityId: id,
+        variables: {
+          entity_type: entity,
+          action: action
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+
       queryClient.invalidateQueries(['pending-challenges']);
       queryClient.invalidateQueries(['pending-pilots']);
       toast.success(t({ en: 'Action completed', ar: 'تم الإجراء' }));
@@ -56,12 +73,12 @@ export default function Approvals() {
 
   const handleApprove = (entity, id) => {
     const newStatus = entity === 'Challenge' ? 'approved' : 'approved';
-    approveMutation.mutate({ entity, id, newStatus });
+    approveMutation.mutate({ entity, id, newStatus, action: 'approve' });
   };
 
   const handleReject = (entity, id) => {
     const newStatus = entity === 'Challenge' ? 'draft' : 'design';
-    approveMutation.mutate({ entity, id, newStatus });
+    approveMutation.mutate({ entity, id, newStatus, action: 'reject' });
   };
 
   const generateAIBrief = async (entity, id) => {
