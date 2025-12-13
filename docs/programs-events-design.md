@@ -1,8 +1,8 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 5.2  
+**Version:** 5.3  
 **Last Updated:** 2025-12-13  
-**Status:** Phase 1 Implementation IN PROGRESS (65%)  
+**Status:** Phase 1 Implementation IN PROGRESS (90%)  
 
 ---
 
@@ -38,15 +38,15 @@
 | EventCalendar.jsx → link to EventCreate | ✅ | 2025-12-13 |
 | EventDetail.jsx → Edit button added | ✅ | 2025-12-13 |
 | CalendarView.jsx → events table query | ✅ | 2025-12-13 |
+| ParticipantDashboard.jsx → Program Events section | ✅ | 2025-12-13 |
+| MyPrograms.jsx → Upcoming Program Events section | ✅ | 2025-12-13 |
+| ProgramOperatorPortal.jsx → Events management section | ✅ | 2025-12-13 |
 
 ### 🔴 Remaining Tasks (Phase 1)
 
 | Task | Priority | Notes |
 |------|----------|-------|
 | Database permissions migration | High | Add event_create, event_edit, etc. |
-| ParticipantDashboard.jsx events | Medium | Show program events |
-| MyPrograms.jsx events | Medium | Show enrolled program events |
-| ProgramOperatorPortal.jsx events | Medium | Add event management section |
 | ApprovalCenter.jsx Events tab | Medium | Add 12th entity type |
 
 ---

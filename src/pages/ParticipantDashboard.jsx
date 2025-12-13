@@ -9,9 +9,10 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { format } from 'date-fns';
 import {
   Calendar, Users, Award, CheckCircle2, Clock, FileText,
-  TrendingUp, Target, BookOpen, MessageSquare, Upload
+  TrendingUp, Target, BookOpen, MessageSquare, Upload, CalendarDays
 } from 'lucide-react';
 
 export default function ParticipantDashboard() {
@@ -113,6 +114,25 @@ export default function ParticipantDashboard() {
       };
     },
     enabled: !!program?.id && !!user?.email
+  });
+
+  // Fetch program events
+  const { data: programEvents = [] } = useQuery({
+    queryKey: ['participant-program-events', program?.id],
+    queryFn: async () => {
+      if (!program?.id) return [];
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('program_id', program.id)
+        .eq('is_deleted', false)
+        .gte('start_date', new Date().toISOString())
+        .order('start_date', { ascending: true })
+        .limit(5);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!program?.id
   });
 
   // Fallback data if queries return nothing
@@ -219,6 +239,48 @@ export default function ParticipantDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Program Events */}
+          {programEvents.length > 0 && (
+            <Card className="border-2 border-teal-200">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <CalendarDays className="h-5 w-5 text-teal-600" />
+                    {t({ en: 'Program Events', ar: 'فعاليات البرنامج' })}
+                  </CardTitle>
+                  <Link to={createPageUrl('EventCalendar')}>
+                    <Button size="sm" variant="outline">
+                      {t({ en: 'View All', ar: 'عرض الكل' })}
+                    </Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {programEvents.map((event) => (
+                  <Link key={event.id} to={createPageUrl(`EventDetail?id=${event.id}`)}>
+                    <div className="p-3 bg-teal-50 rounded-lg border border-teal-200 hover:border-teal-400 transition-all">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            {language === 'ar' && event.title_ar ? event.title_ar : event.title_en}
+                          </p>
+                          <p className="text-xs text-slate-600 mt-1">
+                            {format(new Date(event.start_date), 'MMM d, yyyy')} • {event.event_mode}
+                          </p>
+                        </div>
+                        <Badge className={
+                          event.event_type === 'workshop' ? 'bg-purple-100 text-purple-700' :
+                          event.event_type === 'webinar' ? 'bg-blue-100 text-blue-700' :
+                          'bg-teal-100 text-teal-700'
+                        }>{event.event_type}</Badge>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Upcoming */}
           <Card>

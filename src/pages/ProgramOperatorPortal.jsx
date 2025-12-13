@@ -9,9 +9,11 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
   Calendar, Users, Target, TrendingUp, CheckCircle2, Clock, Award, Sparkles,
-  FileText, Activity, BarChart3, Plus, Bell, Zap, TestTube, MessageSquare
+  FileText, Activity, BarChart3, Plus, Bell, Zap, TestTube, MessageSquare, CalendarDays
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAuth } from '@/lib/AuthContext';
+import { format } from 'date-fns';
 import { useAuth } from '@/lib/AuthContext';
 
 function ProgramOperatorPortal() {
@@ -81,10 +83,30 @@ function ProgramOperatorPortal() {
     enabled: myPrograms.some(p => p.program_type === 'matchmaker')
   });
 
+  // Fetch events for operated programs
+  const { data: programEvents = [] } = useQuery({
+    queryKey: ['operator-program-events', myPrograms.length],
+    queryFn: async () => {
+      const myProgramIds = myPrograms.map(p => p.id);
+      if (myProgramIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .in('program_id', myProgramIds)
+        .eq('is_deleted', false)
+        .order('start_date', { ascending: true })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: myPrograms.length > 0
+  });
+
   const activePrograms = myPrograms.filter(p => ['active', 'applications_open'].includes(p.status));
   const pendingApplications = applications.filter(a => a.status === 'submitted');
   const acceptedApplications = applications.filter(a => a.status === 'accepted');
   const matchmakerInEngagement = matchmakerApps.filter(m => m.stage === 'engagement');
+  const upcomingEvents = programEvents.filter(e => new Date(e.start_date) >= new Date());
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -337,6 +359,81 @@ function ProgramOperatorPortal() {
           </CardContent>
         </Card>
       )}
+
+      {/* Program Events Management */}
+      <Card className="border-2 border-teal-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-teal-600" />
+              {t({ en: 'Program Events', ar: 'فعاليات البرامج' })} ({programEvents.length})
+            </CardTitle>
+            <div className="flex gap-2">
+              <Link to={createPageUrl('EventCalendar')}>
+                <Button size="sm" variant="outline">
+                  {t({ en: 'Calendar', ar: 'التقويم' })}
+                </Button>
+              </Link>
+              <Link to={createPageUrl('EventCreate')}>
+                <Button size="sm" className="bg-teal-600">
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t({ en: 'New Event', ar: 'فعالية جديدة' })}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {upcomingEvents.slice(0, 5).map((event) => {
+            const program = myPrograms.find(p => p.id === event.program_id);
+            return (
+              <Link key={event.id} to={createPageUrl(`EventDetail?id=${event.id}`)}>
+                <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg hover:border-teal-400 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-sm text-slate-900">
+                          {language === 'ar' && event.title_ar ? event.title_ar : event.title_en}
+                        </p>
+                        <Badge className={
+                          event.event_type === 'workshop' ? 'bg-purple-100 text-purple-700 text-xs' :
+                          event.event_type === 'webinar' ? 'bg-blue-100 text-blue-700 text-xs' :
+                          'bg-teal-100 text-teal-700 text-xs'
+                        }>{event.event_type}</Badge>
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        {format(new Date(event.start_date), 'MMM d, yyyy')} • {program?.name_en || 'General'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {event.registered_count || 0}/{event.max_participants || '∞'}
+                      </Badge>
+                      <Badge className={
+                        event.status === 'published' ? 'bg-green-100 text-green-700 text-xs' :
+                        event.status === 'draft' ? 'bg-slate-100 text-slate-700 text-xs' :
+                        'bg-amber-100 text-amber-700 text-xs'
+                      }>{event.status}</Badge>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+          {programEvents.length === 0 && (
+            <div className="text-center py-8">
+              <CalendarDays className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500 mb-3">{t({ en: 'No events yet', ar: 'لا توجد فعاليات بعد' })}</p>
+              <Link to={createPageUrl('EventCreate')}>
+                <Button size="sm" className="bg-teal-600">
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t({ en: 'Create First Event', ar: 'إنشاء أول فعالية' })}
+                </Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Pending Applications List */}
       <Card>
