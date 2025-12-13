@@ -13,6 +13,7 @@ import { FileText, Sparkles, Loader2, ChevronRight, ChevronLeft, CheckCircle2, X
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function ContractGeneratorWizard({ solution, pilot, onComplete, onCancel }) {
   const { language, isRTL, t } = useLanguage();
@@ -114,13 +115,33 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
     }
   };
 
+  const { triggerEmail } = useEmailTrigger();
+
   const createContractMutation = useMutation({
     mutationFn: async (data) => {
       return await base44.entities.Contract.create(data);
     },
-    onSuccess: () => {
+    onSuccess: async (createdContract) => {
       queryClient.invalidateQueries(['contracts']);
       toast.success(t({ en: 'Contract created', ar: 'تم إنشاء العقد' }));
+      
+      // Trigger contract.created email
+      try {
+        await triggerEmail('contract.created', {
+          entity_type: 'contract',
+          entity_id: createdContract?.id,
+          entity_data: {
+            ...contractData,
+            solution_name: solution?.name_en,
+            pilot_title: pilot?.title_en,
+            provider_name: solution?.provider_name
+          },
+          language
+        });
+      } catch (error) {
+        console.error('Failed to send contract.created email:', error);
+      }
+      
       onComplete?.();
     }
   });

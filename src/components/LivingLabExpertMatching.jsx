@@ -112,10 +112,10 @@ Return top 3 expert matches with scores and consultation recommendations.`;
       if (selectedExpert.expertData.email) {
         await supabase.functions.invoke('email-trigger-hub', {
           body: {
-            trigger: 'EXPERT_CONSULTATION_REQUEST',
-            recipientEmail: selectedExpert.expertData.email,
-            entityType: 'livinglab',
-            entityId: lab.id,
+            trigger: 'panel.invitation',
+            recipient_email: selectedExpert.expertData.email,
+            entity_type: 'livinglab',
+            entity_id: lab.id,
             variables: {
               expertName: selectedExpert.expertData.name,
               labName: lab.name_en,

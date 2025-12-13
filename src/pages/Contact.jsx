@@ -26,8 +26,8 @@ function Contact() {
       // Send contact form email via trigger hub
       await supabase.functions.invoke('email-trigger-hub', {
         body: {
-          trigger: 'CONTACT_FORM',
-          recipientEmail: 'platform@saudimih.sa',
+          trigger: 'contact.form',
+          recipient_email: 'platform@saudimih.sa',
           variables: {
             senderName: data.name,
             senderEmail: data.email,
@@ -41,8 +41,8 @@ function Contact() {
       // Send confirmation to user
       await supabase.functions.invoke('email-trigger-hub', {
         body: {
-          trigger: 'CONTACT_FORM_CONFIRMATION',
-          recipientEmail: data.email,
+          trigger: 'contact.form_confirmation',
+          recipient_email: data.email,
           variables: {
             userName: data.name,
             subject: data.subject

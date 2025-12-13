@@ -1,17 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { Calendar, Users, MapPin, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Calendar, Users, MapPin, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { toast } from 'sonner';
 
 function EventRegistration() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
+  const [isRegistering, setIsRegistering] = useState(false);
   const urlParams = new URLSearchParams(window.location.search);
   const eventId = urlParams.get('id');
 
@@ -23,6 +28,44 @@ function EventRegistration() {
     },
     enabled: !!eventId
   });
+
+  const handleRegister = async () => {
+    if (!user || !event) return;
+    
+    setIsRegistering(true);
+    try {
+      // Update event registration count
+      const { error } = await supabase
+        .from('events')
+        .update({ registration_count: (event.registration_count || 0) + 1 })
+        .eq('id', eventId);
+      
+      if (error) throw error;
+      
+      // Send confirmation email
+      await triggerEmail('event.registration_confirmed', {
+        entity_type: 'event',
+        entity_id: eventId,
+        recipient_email: user.email,
+        entity_data: {
+          title: language === 'ar' ? event.title_ar : event.title_en,
+          start_date: event.start_date,
+          end_date: event.end_date,
+          location: event.location,
+          mode: event.mode
+        },
+        language
+      });
+      
+      queryClient.invalidateQueries(['event-registration', eventId]);
+      toast.success(t({ en: 'Registration confirmed!', ar: 'تم تأكيد التسجيل!' }));
+    } catch (error) {
+      console.error('Registration failed:', error);
+      toast.error(t({ en: 'Registration failed', ar: 'فشل التسجيل' }));
+    } finally {
+      setIsRegistering(false);
+    }
+  };
 
   if (isLoading || !event) {
     return (
@@ -119,8 +162,16 @@ function EventRegistration() {
               <p className="text-sm text-slate-600">{user?.email}</p>
             </div>
 
-            <Button className="w-full bg-green-600 hover:bg-green-700">
-              <CheckCircle2 className="h-4 w-4 mr-2" />
+            <Button 
+              className="w-full bg-green-600 hover:bg-green-700"
+              onClick={handleRegister}
+              disabled={isRegistering}
+            >
+              {isRegistering ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+              )}
               {t({ en: 'Confirm Registration', ar: 'تأكيد التسجيل' })}
             </Button>
           </CardContent>

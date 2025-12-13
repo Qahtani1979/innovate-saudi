@@ -49,8 +49,8 @@ export default function AnnouncementTargeting() {
         await Promise.all(targeted.slice(0, 10).map(u =>
           supabase.functions.invoke('email-trigger-hub', {
             body: {
-              trigger: 'ANNOUNCEMENT',
-              recipientEmail: u.email,
+              trigger: 'campaign.announcement',
+              recipient_email: u.email,
               variables: {
                 title: data.title,
                 message: data.message

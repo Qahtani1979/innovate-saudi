@@ -68,10 +68,10 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
         if (pilot.created_by) {
           await supabase.functions.invoke('email-trigger-hub', {
             body: {
-              trigger: 'SOLUTION_DEPRECATED',
-              recipientEmail: pilot.created_by,
-              entityType: 'solution',
-              entityId: solution.id,
+              trigger: 'solution.deprecated',
+              recipient_email: pilot.created_by,
+              entity_type: 'solution',
+              entity_id: solution.id,
               variables: {
                 solutionName: solution.name_en,
                 pilotTitle: pilot.title_en,

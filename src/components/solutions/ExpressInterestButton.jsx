@@ -50,10 +50,10 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
       // Notify provider
       await supabase.functions.invoke('email-trigger-hub', {
         body: {
-          trigger: 'SOLUTION_INTEREST_EXPRESSED',
-          recipientEmail: solution.contact_email || solution.support_contact_email,
-          entityType: 'solution',
-          entityId: solution.id,
+          trigger: 'solution.interest_received',
+          recipient_email: solution.contact_email || solution.support_contact_email,
+          entity_type: 'solution',
+          entity_id: solution.id,
           variables: {
             solutionName: solution.name_en,
             interestedByName: data.interested_by_name,

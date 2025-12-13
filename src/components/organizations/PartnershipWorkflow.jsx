@@ -37,10 +37,10 @@ export default function PartnershipWorkflow({ organization, onComplete }) {
       // Store partnership as a comment/activity for now (could be separate entity)
       await supabase.functions.invoke('email-trigger-hub', {
         body: {
-          trigger: 'PARTNERSHIP_PROPOSAL',
-          recipientEmail: 'admin@platform.gov.sa',
-          entityType: 'organization',
-          entityId: organization?.id,
+          trigger: 'partnership.proposal',
+          recipient_email: 'admin@platform.gov.sa',
+          entity_type: 'organization',
+          entity_id: organization?.id,
           variables: {
             organizationName: organization?.name_en,
             partnershipType: partnershipData.partnership_type,

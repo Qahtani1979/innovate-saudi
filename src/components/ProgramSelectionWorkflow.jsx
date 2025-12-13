@@ -62,15 +62,16 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
         if (app?.email) {
           await supabase.functions.invoke('email-trigger-hub', {
             body: {
-              trigger: 'PROGRAM_ACCEPTED',
-              recipientEmail: app.email,
-              entityType: 'program',
-              entityId: program.id,
+              trigger: 'program.application_status',
+              recipient_email: app.email,
+              entity_type: 'program',
+              entity_id: program.id,
               variables: {
                 userName: app.applicant_name,
                 programName: program.name_en,
                 programStartDate: program.timeline?.program_start || 'TBD',
-                durationWeeks: program.duration_weeks
+                durationWeeks: program.duration_weeks,
+                status: 'accepted'
               }
             }
           });
@@ -83,14 +84,15 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
         if (app?.email) {
           await supabase.functions.invoke('email-trigger-hub', {
             body: {
-              trigger: 'PROGRAM_REJECTED',
-              recipientEmail: app.email,
-              entityType: 'program',
-              entityId: program.id,
+              trigger: 'program.application_status',
+              recipient_email: app.email,
+              entity_type: 'program',
+              entity_id: program.id,
               variables: {
                 userName: app.applicant_name,
                 programName: program.name_en,
-                rejectionReason: rejectionMessage
+                rejectionReason: rejectionMessage,
+                status: 'rejected'
               }
             }
           });

@@ -34,9 +34,9 @@ const sendWelcomeEmail = async (userId, userEmail, userName, persona, language) 
   try {
     const { data, error } = await supabase.functions.invoke('email-trigger-hub', {
       body: { 
-        trigger: 'WELCOME',
-        recipientEmail: userEmail,
-        recipientUserId: userId,
+        trigger: 'auth.signup',
+        recipient_email: userEmail,
+        recipient_user_id: userId,
         variables: { 
           userName, 
           persona, 

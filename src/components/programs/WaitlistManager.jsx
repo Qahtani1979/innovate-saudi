@@ -34,12 +34,13 @@ export default function WaitlistManager({ programId }) {
 
       await supabase.functions.invoke('email-trigger-hub', {
         body: {
-          trigger: 'WAITLIST_PROMOTED',
-          recipientEmail: app.applicant_email,
-          entityType: 'program',
-          entityId: programId,
+          trigger: 'program.application_status',
+          recipient_email: app.applicant_email,
+          entity_type: 'program',
+          entity_id: programId,
           variables: {
-            userName: app.applicant_name
+            userName: app.applicant_name,
+            status: 'waitlist_promoted'
           }
         }
       });
