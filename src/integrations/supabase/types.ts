@@ -2877,6 +2877,8 @@ export type Database = {
           max_participants: number | null
           municipality_id: string | null
           program_id: string | null
+          program_sync_source: string | null
+          program_synced: boolean | null
           registration_deadline: string | null
           start_date: string | null
           status: string | null
@@ -2900,6 +2902,8 @@ export type Database = {
           max_participants?: number | null
           municipality_id?: string | null
           program_id?: string | null
+          program_sync_source?: string | null
+          program_synced?: boolean | null
           registration_deadline?: string | null
           start_date?: string | null
           status?: string | null
@@ -2923,6 +2927,8 @@ export type Database = {
           max_participants?: number | null
           municipality_id?: string | null
           program_id?: string | null
+          program_sync_source?: string | null
+          program_synced?: boolean | null
           registration_deadline?: string | null
           start_date?: string | null
           status?: string | null
