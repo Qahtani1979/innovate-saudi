@@ -4,6 +4,13 @@
 
 The Saudi Innovates platform includes a comprehensive, bilingual (English/Arabic) communication system that handles automated notifications, transactional emails, and marketing campaigns.
 
+## Related Documentation
+
+- [Email Template System](./EMAIL_TEMPLATE_SYSTEM.md) - Template catalog and structure
+- [Email Trigger Hub](./EMAIL_TRIGGER_HUB.md) - Technical reference for triggers
+- [Email Trigger Integration](./EMAIL_TRIGGER_INTEGRATION.md) - Developer integration guide
+- [Campaign System](./CAMPAIGN_SYSTEM.md) - Bulk email campaigns
+
 ---
 
 ## 🏗️ Architecture
@@ -184,7 +191,7 @@ Per-user notification settings.
 | `frequency` | VARCHAR | immediate/daily/weekly |
 | `quiet_hours_start` / `_end` | TIME | Do not disturb window |
 
-### 5. `email_campaigns` (NEW - To be created)
+### 5. `email_campaigns`
 Marketing and bulk email campaigns.
 
 | Column | Type | Description |
@@ -201,6 +208,20 @@ Marketing and bulk email campaigns.
 | `scheduled_at` | TIMESTAMPTZ | When to send |
 | `started_at` / `completed_at` | TIMESTAMPTZ | Execution times |
 | `created_by` | VARCHAR | Admin who created |
+
+### 6. `email_trigger_config`
+Maps trigger keys to templates for automated emails.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `trigger_key` | VARCHAR | Unique trigger identifier (e.g., `challenge.approved`) |
+| `template_key` | VARCHAR | Associated template key |
+| `is_active` | BOOLEAN | Enable/disable trigger |
+| `recipient_field` | VARCHAR | Field in entity_data for recipient |
+| `variable_mapping` | JSONB | Maps template vars to entity fields |
+| `respect_preferences` | BOOLEAN | Check user preferences |
+| `priority` | INTEGER | 1=critical, 2=high, 3=normal |
+| `delay_seconds` | INTEGER | Default delay before sending |
 
 ---
 
@@ -228,8 +249,8 @@ Marketing and bulk email campaigns.
 
 ## 🚀 Edge Functions
 
-### 1. `send-email` (Existing)
-Sends individual transactional emails.
+### 1. `send-email`
+Sends individual transactional emails (shared by both flows).
 
 ```typescript
 // Request body
@@ -246,7 +267,7 @@ Sends individual transactional emails.
 }
 ```
 
-### 2. `email-trigger-hub` (NEW - Unified Trigger)
+### 2. `email-trigger-hub`
 Centralized email triggering for all platform events.
 
 ```typescript
@@ -263,16 +284,19 @@ Centralized email triggering for all platform events.
 }
 ```
 
-### 3. `campaign-sender` (NEW - Bulk Emails)
+### 3. `campaign-sender`
 Handles marketing campaigns and bulk sending.
 
 ```typescript
 // Request body
 {
   campaign_id: string,
-  action: 'send' | 'preview' | 'cancel'
+  action: 'send' | 'preview' | 'pause' | 'resume' | 'cancel'
 }
 ```
+
+### 4. `queue-processor`
+Processes delayed emails from `email_queue` (runs via cron every 5 minutes).
 
 ---
 

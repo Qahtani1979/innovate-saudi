@@ -225,7 +225,7 @@ await triggerEmail('auth.password_reset', {
 |-------------|--------------|-------------|
 | `pilot.created` | `pilot_created` | New pilot created |
 | `pilot.status_changed` | `pilot_status_change` | Status update |
-| `pilot.milestone_reached` | `pilot_milestone_completed` | Milestone achieved |
+| `pilot.milestone_completed` | `pilot_milestone_completed` | Milestone achieved |
 | `pilot.kpi_alert` | `pilot_kpi_alert` | KPI below threshold |
 | `pilot.issue_reported` | `pilot_issue_reported` | Issue logged |
 | `pilot.completed` | `pilot_completed` | Pilot finished |

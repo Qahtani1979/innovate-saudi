@@ -60,7 +60,8 @@ Resend API
 | Table | Purpose | Record Count |
 |-------|---------|--------------|
 | `email_settings` | Global configuration (logo, colors, footer) | ~12 settings |
-| `email_templates` | Template storage with bilingual support | 10 templates |
+| `email_templates` | Template storage with bilingual support | 118+ templates |
+| `email_trigger_config` | Maps triggers to templates | Dynamic |
 | `email_logs` | Email send tracking and analytics | Dynamic |
 
 ### Key Features
@@ -103,7 +104,8 @@ The Email Template Editor includes an AI-powered analysis tool that provides:
 
 ### Database Tables Created
 - `email_settings` - Global email configuration
-- `email_templates` - Template storage with bilingual support (10 templates)
+- `email_templates` - Template storage with bilingual support (118+ templates)
+- `email_trigger_config` - Maps trigger keys to templates
 - `email_logs` - Email send tracking and analytics
 
 ### Edge Function Features
