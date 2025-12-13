@@ -1,8 +1,8 @@
 # Strategy System - Design Document
 
-**Version:** 3.2 (PHASE 3-4 COMPLETE)  
+**Version:** 3.3 (PHASE 5 COMPLETE)  
 **Last Updated:** 2025-12-13  
-**Status:** 🔄 92% PLATFORM INTEGRATION - Phase 1-4 Complete, Phase 5-6 Remaining
+**Status:** 🔄 96% PLATFORM INTEGRATION - Phase 1-5 Complete, Phase 6 Remaining
 
 ---
 
@@ -37,9 +37,9 @@ The Strategy System provides comprehensive strategic planning and execution mana
 | Metric | Count | Status |
 |--------|-------|--------|
 | Pages | 25+ | ✅ Complete |
-| Components | 18 | ✅ Complete (+4 new alignment widgets) |
-| Edge Functions | 7 | ✅ Complete |
-| Hooks | 1 | ✅ Complete |
+| Components | 20 | ✅ Complete (+6 new alignment widgets) |
+| Edge Functions | 7 | ✅ Complete (updated with strategic fields) |
+| Hooks | 2 | ✅ Complete (+1 useStrategicCascadeValidation) |
 | Database Tables | 6 | ✅ Complete |
 | AI Features | 7 | ✅ Complete |
 | Direct Entity Integration | 5/5 | ✅ 100% (DB + UI Complete) |
@@ -168,15 +168,16 @@ src/
 │   └── EventStrategicAlignment.jsx      # Event linking
 │
 ├── hooks/
-│   └── useStrategicKPI.js               # Centralized KPI logic
+│   ├── useStrategicKPI.js               # Centralized KPI logic
+│   └── useStrategicCascadeValidation.js # Cascade validation & coverage
 │
 └── supabase/functions/
     ├── strategic-plan-approval/
     ├── strategic-priority-scoring/
     ├── strategy-program-theme-generator/
-    ├── strategy-lab-research-generator/
+    ├── strategy-lab-research-generator/   # Updated with strategic fields
     ├── strategy-rd-call-generator/
-    ├── strategy-sandbox-planner/
+    ├── strategy-sandbox-planner/          # Updated with strategic fields
     └── strategy-sector-gap-analysis/
 ```
 
@@ -285,8 +286,9 @@ interface StrategicPlan {
 | **16** | **StrategicAlignmentLivingLab** | **Living lab strategy alignment** | No | ✅ CREATED |
 | **17** | **StrategicAlignmentPartnership** | **Partnership strategy alignment** | No | ✅ CREATED |
 | **18** | **StrategicPlanSelector** | **Shared reusable selector** | No | ✅ CREATED |
-| **19** | **StrategyToSandboxGenerator** | **Generate sandboxes from strategy** | ✅ | ⏳ Phase 5 |
-| **20** | **StrategyToLivingLabGenerator** | **Generate living labs from strategy** | ✅ | ⏳ Phase 5 |
+| **19** | **StrategicCoverageWidget** | **Coverage metrics dashboard** | No | ✅ CREATED |
+| **20** | **StrategyToSandboxGenerator** | **Generate sandboxes from strategy** | ✅ | ⏳ Phase 6 |
+| **21** | **StrategyToLivingLabGenerator** | **Generate living labs from strategy** | ✅ | ⏳ Phase 6 |
 
 ---
 

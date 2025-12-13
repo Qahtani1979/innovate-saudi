@@ -12,7 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { topic, sector_id, research_type } = await req.json();
+    const { 
+      topic, 
+      sector_id, 
+      research_type,
+      // New strategic fields
+      strategic_plan_ids,
+      strategic_objective_ids,
+      living_lab_id,
+      research_priorities
+    } = await req.json();
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -92,7 +101,7 @@ serve(async (req) => {
       recommendations = ['Recommendation 1', 'Recommendation 2', 'Recommendation 3'];
     }
 
-    // Save research
+    // Save research with strategic alignment
     const { data: research, error } = await supabase
       .from('strategy_lab_research')
       .insert({
@@ -103,7 +112,12 @@ serve(async (req) => {
         key_findings,
         recommendations,
         status: 'draft',
-        generated_at: new Date().toISOString()
+        generated_at: new Date().toISOString(),
+        // Strategic alignment fields
+        strategic_plan_ids: strategic_plan_ids || [],
+        strategic_objective_ids: strategic_objective_ids || [],
+        living_lab_id: living_lab_id || null,
+        research_priorities: research_priorities || []
       })
       .select()
       .single();
