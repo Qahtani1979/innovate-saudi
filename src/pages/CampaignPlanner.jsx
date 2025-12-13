@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Megaphone, Plus, Calendar, Target, Sparkles, Users, Loader2, Edit2, Trash2 } from 'lucide-react';
+import { Megaphone, Plus, Calendar, Target, Sparkles, Users, Loader2, Edit2, Trash2, RefreshCw, CheckCircle2, Link as LinkIcon, Tags } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -15,11 +15,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { eventSyncService } from '@/services/eventSyncService';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function CampaignPlanner() {
   const { language, isRTL, t } = useLanguage();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [syncingEvents, setSyncingEvents] = useState(false);
   const [campaignData, setCampaignData] = useState({
     program_type: 'campaign',
     name_en: '',
@@ -37,6 +40,35 @@ function CampaignPlanner() {
   });
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const queryClient = useQueryClient();
+
+  // Sync events to events table after campaign creation
+  const syncEventsToTable = async (programId, events) => {
+    if (!events || events.length === 0) return;
+    
+    setSyncingEvents(true);
+    try {
+      const results = await eventSyncService.syncAllProgramEvents(programId, events);
+      const successCount = results.filter(r => r.success).length;
+      if (successCount > 0) {
+        toast.success(t({ en: `${successCount} events synced to calendar`, ar: `تم مزامنة ${successCount} فعالية مع التقويم` }));
+        queryClient.invalidateQueries(['events']);
+      }
+    } catch (error) {
+      console.error('Error syncing events:', error);
+      toast.error(t({ en: 'Failed to sync events', ar: 'فشل في مزامنة الفعاليات' }));
+    } finally {
+      setSyncingEvents(false);
+    }
+  };
+
+  // Manual sync for existing program
+  const handleManualSync = async (program) => {
+    if (!program?.id || !program?.events?.length) {
+      toast.info(t({ en: 'No events to sync', ar: 'لا توجد فعاليات للمزامنة' }));
+      return;
+    }
+    await syncEventsToTable(program.id, program.events);
+  };
 
   const { data: programs = [] } = useQuery({
     queryKey: ['campaigns'],
@@ -63,8 +95,14 @@ function CampaignPlanner() {
 
   const createCampaignMutation = useMutation({
     mutationFn: (data) => base44.entities.Program.create(data),
-    onSuccess: () => {
+    onSuccess: async (createdProgram) => {
       queryClient.invalidateQueries(['campaigns']);
+      
+      // Sync events to events table after campaign creation
+      if (campaignData.events?.length > 0 && createdProgram?.id) {
+        await syncEventsToTable(createdProgram.id, campaignData.events);
+      }
+      
       setWizardOpen(false);
       setCurrentStep(1);
       setCampaignData({ program_type: 'campaign', name_en: '', name_ar: '', focus_areas: [], timeline: {}, events: [], target_participants: {} });
@@ -421,7 +459,15 @@ Generate a comprehensive innovation campaign in BOTH English and Arabic:
 
                   <div className="border-t pt-4">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="font-medium text-slate-900">{t({ en: 'Campaign Events', ar: 'فعاليات الحملة' })}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-slate-900">{t({ en: 'Campaign Events', ar: 'فعاليات الحملة' })}</p>
+                        {campaignData.events?.some(e => e.sync_id) && (
+                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {t({ en: 'Synced', ar: 'مزامن' })}
+                          </Badge>
+                        )}
+                      </div>
                       <Button
                         size="sm"
                         onClick={() => setCampaignData({ 
@@ -435,7 +481,21 @@ Generate a comprehensive innovation campaign in BOTH English and Arabic:
                     </div>
                     <div className="space-y-3">
                       {campaignData.events?.map((event, idx) => (
-                        <div key={idx} className="grid grid-cols-4 gap-3 p-3 bg-white rounded border">
+                        <div key={idx} className="grid grid-cols-4 gap-3 p-3 bg-white rounded border relative">
+                          {event.sync_id && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="absolute -top-1 -right-1">
+                                    <LinkIcon className="h-3 w-3 text-green-600" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{t({ en: 'Synced to calendar', ar: 'مزامن مع التقويم' })}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           <Input
                             placeholder={t({ en: 'Event name', ar: 'اسم الفعالية' })}
                             value={event.name}
@@ -486,7 +546,14 @@ Generate a comprehensive innovation campaign in BOTH English and Arabic:
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => setCampaignData({ ...campaignData, events: campaignData.events.filter((_, i) => i !== idx) })}
+                              onClick={async () => {
+                                // Delete synced event from events table
+                                if (event.sync_id) {
+                                  await eventSyncService.deleteSyncedEvent(event.sync_id);
+                                  queryClient.invalidateQueries(['events']);
+                                }
+                                setCampaignData({ ...campaignData, events: campaignData.events.filter((_, i) => i !== idx) });
+                              }}
                             >
                               <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
@@ -659,6 +726,29 @@ Generate a comprehensive innovation campaign in BOTH English and Arabic:
                           {t({ en: 'View Details', ar: 'عرض التفاصيل' })}
                         </Button>
                       </Link>
+                      {campaign.events?.length > 0 && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleManualSync(campaign)}
+                                disabled={syncingEvents}
+                              >
+                                {syncingEvents ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-4 w-4 text-blue-600" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t({ en: 'Sync events to calendar', ar: 'مزامنة الفعاليات مع التقويم' })}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       <Link to={createPageUrl(`ProgramEdit?id=${campaign.id}`)}>
                         <Button variant="ghost" size="sm">
                           <Edit2 className="h-4 w-4" />

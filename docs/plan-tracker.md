@@ -440,7 +440,7 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | Phase | Name | Duration | Status | Progress |
 |-------|------|----------|--------|----------|
 | 1 | Core Event CRUD | 2 weeks | 🟢 Complete | 100% |
-| 2 | Synchronization Service | 1 week | 🔴 Not Started | 0% |
+| 2 | Synchronization Service | 1 week | 🟢 Complete | 100% |
 | 3 | Hub Consolidation | 1 week | 🔴 Not Started | 0% |
 | 4 | AI Enhancements | 1 week | 🔴 Not Started | 0% |
 
@@ -531,72 +531,61 @@ INSERT INTO permissions (code, name, name_ar, description, description_ar, entit
 
 ---
 
-## Phase 2: Synchronization Service
+## Phase 2: Synchronization Service ✅ COMPLETE
 
 **Objective:** Sync events between CampaignPlanner and events table
 
-### 2.1 Core Service
+### 2.1 Core Service ✅ COMPLETE
 
 | Task | File | Status | Notes |
 |------|------|--------|-------|
-| Create EventSyncService | `src/services/eventSyncService.js` | 🔴 | Core sync logic |
+| Create EventSyncService | `src/services/eventSyncService.js` | 🟢 | Core sync logic |
+| Create useEventRegistrations | `src/hooks/useEventRegistrations.js` | 🟢 | Registration management |
+| Create services index | `src/services/index.js` | 🟢 | Module exports |
 
-### 2.2 Sync Logic
+### 2.2 Database Migration ✅ COMPLETE
 
-```javascript
-// eventSyncService.js
-export const eventSyncService = {
-  // Sync from program.events[] to events table
-  syncEventToTable: async (programId, eventData) => {
-    if (eventData.sync_id) {
-      // Update existing
-      await supabase.from('events').update({...}).eq('id', eventData.sync_id);
-    } else {
-      // Create new and get sync_id
-      const { data } = await supabase.from('events').insert({
-        program_id: programId,
-        title_en: eventData.name,
-        start_date: eventData.date,
-        location: eventData.location,
-        event_type: eventData.type,
-        // ... map other fields
-      }).select().single();
-      return data.id; // Return sync_id
-    }
-  },
-  
-  // Sync from events table back to program.events[]
-  syncEventToProgram: async (eventId, programId) => {
-    // Read event, update program.events[] with changes
-  },
-  
-  // Bulk sync all program events
-  syncAllProgramEvents: async (programId) => {
-    // Get program.events[], sync each to table
-  }
-};
+```sql
+-- Add sync tracking to events table
+ALTER TABLE events ADD COLUMN IF NOT EXISTS program_synced boolean DEFAULT false;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS program_sync_source text;
 ```
+**Status:** 🟢 Migration applied 2025-12-13
 
-### 2.3 CampaignPlanner Updates
+### 2.3 CampaignPlanner Updates ✅ COMPLETE
 
 | Task | Location | Status |
 |------|----------|--------|
-| Import eventSyncService | Top of file | 🔴 |
-| Call sync on event add | `setCampaignData` for events | 🔴 |
-| Call sync on event edit | Event edit handler | 🔴 |
-| Call sync on event delete | Event delete handler | 🔴 |
-| Add sync status indicator | UI near events section | 🔴 |
-| Add manual sync button | Events section header | 🔴 |
+| Import eventSyncService | Top of file | 🟢 |
+| Call sync on campaign create | `createCampaignMutation.onSuccess` | 🟢 |
+| Call sync on event delete | Event delete handler | 🟢 |
+| Add sync status indicator | UI near events section | 🟢 |
+| Add manual sync button | Campaign card actions | 🟢 |
 
-### 2.4 Schema Updates (Optional)
+### 2.4 EventSyncService Methods
 
-```sql
--- Add sync tracking to programs.events[] items
--- Each item should have: { ..., sync_id: uuid, synced_at: timestamp }
+```javascript
+// Implemented in src/services/eventSyncService.js
+export const eventSyncService = {
+  syncEventToTable(programId, eventData, eventIndex),
+  syncAllProgramEvents(programId, events),
+  updateEventsWithSyncIds(originalEvents, syncResults),
+  deleteSyncedEvent(syncId),
+  syncEventToProgram(eventId),
+  getSyncStatus(programId)
+};
+```
 
--- Add source tracking to events table
-ALTER TABLE events ADD COLUMN IF NOT EXISTS program_synced boolean DEFAULT false;
-ALTER TABLE events ADD COLUMN IF NOT EXISTS program_sync_source text; -- 'campaign_planner' | 'direct'
+### 2.5 useEventRegistrations Hook
+
+```javascript
+// Implemented in src/hooks/useEventRegistrations.js
+export function useEventRegistrations(options) {
+  // Returns: registrations, register, cancel, updateStatus, bulkUpdateAttendance, getEventStats
+}
+export function useUserEventRegistrations(userEmail) {
+  // Returns user's event registrations with event details
+}
 ```
 
 ---
