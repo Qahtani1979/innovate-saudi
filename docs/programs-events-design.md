@@ -75,9 +75,21 @@
 | AIAttendancePredictor | Medium | ✅ | Attendance forecast |
 | AIConflictDetector | High | ✅ | Schedule conflicts |
 | AIProgramEventCorrelator | High | ✅ | Program-event analysis |
-| Hub analytics integration | High | ✅ | Added to ProgramsEventsHub
-| Hub navigation | Medium | Sidebar menu update |
-| Event reminder edge function | Low | 24h before event notification |
+| Hub analytics integration | High | ✅ | Added to ProgramsEventsHub |
+| Hub navigation | Medium | ✅ | Sidebar menu update |
+| Event reminder edge function | Low | 🔴 | 24h before event notification (future) |
+
+### ✅ Phase 5 Tasks - Permissions & Polish - COMPLETE
+
+| Task | Priority | Status | Notes |
+|------|----------|--------|-------|
+| Citizen role permissions | High | ✅ | event_view, event_register, program_view, program_apply |
+| Provider role permissions | High | ✅ | + program_participate |
+| Expert role permissions | High | ✅ | event_view, event_register, program_view |
+| Researcher role permissions | High | ✅ | event_view, event_register, program_view, program_apply |
+| User role permissions | Medium | ✅ | event_view, program_view |
+| Viewer role permissions | Low | ✅ | event_view only (read-only by design) |
+| Public pages verification | High | ✅ | All public pages accessible |
 
 ---
 
