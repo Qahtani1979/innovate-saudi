@@ -16,7 +16,7 @@ import {
   CitizenEmptyState 
 } from '@/components/citizen/CitizenPageLayout';
 
-function EventCalendar() {
+function EventCalendar({ embedded = false }) {
   const { t, isRTL, language } = useLanguage();
   const { roles, hasAnyPermission } = usePermissions();
   const [viewMode, setViewMode] = useState('list');
@@ -75,8 +75,8 @@ function EventCalendar() {
     );
   }
 
-  return (
-    <CitizenPageLayout>
+  const content = (
+    <>
       <CitizenPageHeader
         icon={Calendar}
         title={t({ en: 'Events', ar: 'الفعاليات' })}
@@ -180,6 +180,16 @@ function EventCalendar() {
           )}
         </CardContent>
       </Card>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <CitizenPageLayout>
+      {content}
     </CitizenPageLayout>
   );
 }

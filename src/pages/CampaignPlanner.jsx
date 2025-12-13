@@ -18,7 +18,7 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { eventSyncService } from '@/services/eventSyncService';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-function CampaignPlanner() {
+function CampaignPlanner({ embedded = false }) {
   const { language, isRTL, t } = useLanguage();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
