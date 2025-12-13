@@ -143,7 +143,7 @@
 | Detailed audit logging | Medium | ✅ | useAuditLog.js + ProgramEventAuditLog.jsx |
 | Supabase Realtime updates | Low | 🔴 | Future enhancement |
 
-### ✅ Phase 8 Tasks - Media Management Integration - COMPLETE
+### ✅ Phase 8 Tasks - Media Management Integration - COMPLETE (100%)
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
@@ -152,8 +152,8 @@
 | useMediaIntegration hook | High | ✅ DONE | Usage tracking & registration |
 | ProgramEdit.jsx integration | High | ✅ DONE | Library picker + usage tracking |
 | EventEdit.jsx integration | High | ✅ DONE | Library picker + usage tracking |
-| ProgramCreateWizard integration | Low | ❌ TODO | Future enhancement |
-| EventCreate integration | Low | ❌ TODO | Future enhancement |
+| ProgramCreateWizard integration | Low | ✅ DONE | MediaFieldWithPicker for image + brochure |
+| EventCreate integration | Low | ✅ DONE | MediaFieldWithPicker for cover image |
 
 ---
 
