@@ -178,7 +178,7 @@ await triggerEmail('contract.expiring', {
 | `pilot.status_changed` | pilot_status_change | Status update |
 | `pilot.enrollment_confirmed` | pilot_enrollment_confirmed | Citizen enrollment |
 | `pilot.feedback_request` | pilot_feedback_request | Feedback request |
-| `pilot.milestone_reached` | pilot_milestone_reached | Milestone achieved |
+| `pilot.milestone_completed` | pilot_milestone_completed | Milestone achieved |
 | `pilot.completed` | pilot_completed | Pilot completed |
 
 ### Solutions
