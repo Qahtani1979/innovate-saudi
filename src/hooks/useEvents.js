@@ -85,10 +85,14 @@ export function useEvents(options = {}) {
   // Create event
   const createEventMutation = useMutation({
     mutationFn: async (eventData) => {
+      // Determine status: if publishing, set to 'pending' for approval workflow
+      const status = eventData.is_published ? 'pending' : (eventData.status || 'draft');
+      
       const { data, error } = await supabase
         .from('events')
         .insert({
           ...eventData,
+          status,
           created_by: user?.email,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -97,13 +101,36 @@ export function useEvents(options = {}) {
         .single();
 
       if (error) throw error;
+
+      // Create approval request for events requiring approval
+      if (status === 'pending') {
+        const slaDueDate = new Date();
+        slaDueDate.setDate(slaDueDate.getDate() + 3); // 3-day SLA
+
+        await supabase.from('approval_requests').insert({
+          entity_type: 'event',
+          entity_id: data.id,
+          request_type: 'event_approval',
+          requester_email: user?.email,
+          approval_status: 'pending',
+          sla_due_date: slaDueDate.toISOString(),
+          metadata: {
+            gate_name: 'approval',
+            event_type: data.event_type,
+            start_date: data.start_date,
+            title: data.title_en
+          }
+        });
+      }
+
       return data;
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries(['events']);
+      queryClient.invalidateQueries(['event-approvals']);
       
-      // Trigger email notification
-      if (data.is_published) {
+      // Trigger email notification for draft (not pending approval)
+      if (data.status === 'draft') {
         try {
           await triggerEmail('event.created', {
             entity_type: 'event',

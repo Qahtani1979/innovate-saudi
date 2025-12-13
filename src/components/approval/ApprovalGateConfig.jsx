@@ -706,8 +706,58 @@ export const gateConfigs = {
         reviewer: 'Review public-facing content quality, validate SEO optimization, confirm marketplace readiness. Auto-approve if all criteria met.'
       }
     }
+  ],
+
+  event: [
+    {
+      name: 'submission',
+      label: { en: 'Event Submission', ar: 'تقديم الفعالية' },
+      type: 'submission',
+      requiredRole: 'event_coordinator',
+      sla_days: 2,
+      selfCheckItems: [
+        { en: 'Event title and description complete', ar: 'عنوان ووصف الفعالية مكتمل' },
+        { en: 'Date and time confirmed', ar: 'التاريخ والوقت مؤكد' },
+        { en: 'Venue or virtual link ready', ar: 'المكان أو رابط الاجتماع جاهز' },
+        { en: 'Target audience defined', ar: 'الجمهور المستهدف محدد' },
+        { en: 'Registration capacity set', ar: 'سعة التسجيل محددة' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'Event aligns with program objectives', ar: 'الفعالية تتوافق مع أهداف البرنامج' },
+        { en: 'No scheduling conflicts', ar: 'لا توجد تعارضات في الجدول' },
+        { en: 'Resources available', ar: 'الموارد متاحة' },
+        { en: 'Content appropriate', ar: 'المحتوى مناسب' }
+      ],
+      aiAssistance: {
+        requester: 'Verify event details completeness, check for scheduling conflicts, suggest optimal timing',
+        reviewer: 'Assess event quality, detect conflicts with other events, validate resource availability'
+      }
+    },
+    {
+      name: 'approval',
+      label: { en: 'Event Approval', ar: 'موافقة الفعالية' },
+      type: 'approval',
+      requiredRole: 'event_approver',
+      sla_days: 3,
+      selfCheckItems: [
+        { en: 'All event details finalized', ar: 'كل تفاصيل الفعالية نهائية' },
+        { en: 'Speakers/presenters confirmed', ar: 'المتحدثون مؤكدون' },
+        { en: 'Marketing materials ready', ar: 'المواد التسويقية جاهزة' },
+        { en: 'Registration system configured', ar: 'نظام التسجيل جاهز' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'Event value justified', ar: 'قيمة الفعالية مبررة' },
+        { en: 'Budget approved (if applicable)', ar: 'الميزانية معتمدة (إن وجدت)' },
+        { en: 'Communication plan ready', ar: 'خطة التواصل جاهزة' },
+        { en: 'Approval justified', ar: 'الموافقة مبررة' }
+      ],
+      aiAssistance: {
+        requester: 'Validate event readiness, generate promotional content suggestions',
+        reviewer: 'Assess event impact potential, predict attendance, recommend approval decision'
+      }
+    }
   ]
-  };
+};
 
   // Get gate config by entity type and gate name
 export function getGateConfig(entityType, gateName) {

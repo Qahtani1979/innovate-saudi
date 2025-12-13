@@ -270,9 +270,40 @@ function ApprovalCenter() {
     }
   });
 
-  // Fetch events pending approval
+  // Fetch events pending approval (via approval_requests for workflow integration)
+  const { data: eventApprovalRequests = [] } = useQuery({
+    queryKey: ['event-approval-requests'],
+    queryFn: async () => {
+      // First try approval_requests table (new workflow)
+      const { data: approvalData, error: approvalError } = await supabase
+        .from('approval_requests')
+        .select('*')
+        .eq('entity_type', 'event')
+        .in('approval_status', ['pending', 'under_review'])
+        .order('created_at', { ascending: false });
+      
+      if (approvalError) throw approvalError;
+      
+      // Fetch event details for each approval
+      if (approvalData && approvalData.length > 0) {
+        const eventIds = approvalData.map(a => a.entity_id);
+        const { data: events } = await supabase
+          .from('events')
+          .select('*, programs:program_id (title_en, title_ar)')
+          .in('id', eventIds);
+        
+        return approvalData.map(a => ({
+          ...a,
+          eventData: events?.find(e => e.id === a.entity_id)
+        })).filter(a => a.eventData);
+      }
+      return [];
+    }
+  });
+
+  // Also fetch legacy events with status='pending' (direct table query)
   const { data: eventApprovals = [] } = useQuery({
-    queryKey: ['event-approvals'],
+    queryKey: ['event-approvals-legacy'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
@@ -399,7 +430,7 @@ Provide approval recommendation with reasoning.`;
                        matchmakerApprovalRequests.length + policyApprovals.length +
                        solutionApprovals.length + programEntityApprovals.length +
                        citizenIdeas.length + innovationProposalApprovals.length +
-                       eventApprovals.length;
+                       eventApprovalRequests.length + eventApprovals.length;
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -446,7 +477,7 @@ Provide approval recommendation with reasoning.`;
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-sm text-slate-600">{t({ en: 'Events', ar: 'الفعاليات' })}</p>
-              <p className="text-3xl font-bold text-cyan-600 mt-1">{eventApprovals.length}</p>
+              <p className="text-3xl font-bold text-cyan-600 mt-1">{eventApprovalRequests.length + eventApprovals.length}</p>
             </div>
           </CardContent>
         </Card>
@@ -739,69 +770,89 @@ Provide approval recommendation with reasoning.`;
         </TabsContent>
 
         <TabsContent value="events" className="space-y-4">
-          {eventApprovals.length > 0 ? (
-            eventApprovals.map((event) => (
-              <Card key={event.id} className="border-2 hover:border-cyan-400">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-cyan-100 text-cyan-700">{event.event_type}</Badge>
-                        <Badge className="bg-yellow-100 text-yellow-700">{event.status}</Badge>
-                        {event.event_mode && (
-                          <Badge variant="outline">{event.event_mode}</Badge>
-                        )}
-                      </div>
-                      <h3 className="font-semibold text-lg text-slate-900 mb-1">
-                        {language === 'ar' ? (event.title_ar || event.title_en) : event.title_en}
-                      </h3>
-                      <p className="text-sm text-slate-600 line-clamp-2">
-                        {language === 'ar' ? (event.description_ar || event.description_en) : event.description_en}
-                      </p>
-                      <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="h-3 w-3" />
-                          {event.start_date ? format(new Date(event.start_date), 'MMM d, yyyy') : 'TBD'}
-                        </span>
-                        {event.programs && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {language === 'ar' ? (event.programs.title_ar || event.programs.title_en) : event.programs.title_en}
-                          </span>
-                        )}
-                        {event.max_attendees && (
-                          <span>{event.max_attendees} {t({ en: 'max capacity', ar: 'الحد الأقصى' })}</span>
-                        )}
-                      </div>
+          {/* Workflow-based approvals (via approval_requests) */}
+          {eventApprovalRequests.length > 0 && eventApprovalRequests.map((approval) => {
+            const event = approval.eventData;
+            const gateConfig = getGateConfig('event', approval.metadata?.gate_name || 'approval');
+            
+            return (
+              <InlineApprovalWizard
+                key={approval.id}
+                approvalRequest={approval}
+                entityData={event}
+                gateConfig={gateConfig}
+                onComplete={() => {
+                  queryClient.invalidateQueries(['event-approval-requests']);
+                  queryClient.invalidateQueries(['event-approvals-legacy']);
+                }}
+              />
+            );
+          })}
+          
+          {/* Legacy direct approvals (events with status='pending' but no approval_request) */}
+          {eventApprovals.length > 0 && eventApprovals.map((event) => (
+            <Card key={event.id} className="border-2 hover:border-cyan-400">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-cyan-100 text-cyan-700">{event.event_type}</Badge>
+                      <Badge className="bg-yellow-100 text-yellow-700">{event.status}</Badge>
+                      {event.is_virtual && (
+                        <Badge variant="outline">{t({ en: 'Virtual', ar: 'افتراضي' })}</Badge>
+                      )}
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <Link to={createPageUrl(`EventDetail?id=${event.id}`)}>
-                        <Button size="sm" variant="outline">
-                          {t({ en: 'Review', ar: 'مراجعة' })}
-                        </Button>
-                      </Link>
-                      <Button 
-                        size="sm" 
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={async () => {
-                          const { error } = await supabase
-                            .from('events')
-                            .update({ status: 'scheduled' })
-                            .eq('id', event.id);
-                          if (!error) {
-                            queryClient.invalidateQueries(['event-approvals']);
-                            toast.success(t({ en: 'Event approved', ar: 'تمت الموافقة' }));
-                          }
-                        }}
-                      >
-                        {t({ en: 'Approve', ar: 'موافقة' })}
-                      </Button>
+                    <h3 className="font-semibold text-lg text-slate-900 mb-1">
+                      {language === 'ar' ? (event.title_ar || event.title_en) : event.title_en}
+                    </h3>
+                    <p className="text-sm text-slate-600 line-clamp-2">
+                      {language === 'ar' ? (event.description_ar || event.description_en) : event.description_en}
+                    </p>
+                    <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {event.start_date ? format(new Date(event.start_date), 'MMM d, yyyy') : 'TBD'}
+                      </span>
+                      {event.programs && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {language === 'ar' ? (event.programs.title_ar || event.programs.title_en) : event.programs.title_en}
+                        </span>
+                      )}
+                      {event.max_participants && (
+                        <span>{event.max_participants} {t({ en: 'max capacity', ar: 'الحد الأقصى' })}</span>
+                      )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
+                  <div className="flex flex-col gap-2">
+                    <Link to={createPageUrl(`EventDetail?id=${event.id}`)}>
+                      <Button size="sm" variant="outline">
+                        {t({ en: 'Review', ar: 'مراجعة' })}
+                      </Button>
+                    </Link>
+                    <Button 
+                      size="sm" 
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from('events')
+                          .update({ status: 'scheduled', is_published: true })
+                          .eq('id', event.id);
+                        if (!error) {
+                          queryClient.invalidateQueries(['event-approvals-legacy']);
+                          toast.success(t({ en: 'Event approved and scheduled', ar: 'تمت الموافقة وجدولة الفعالية' }));
+                        }
+                      }}
+                    >
+                      {t({ en: 'Approve', ar: 'موافقة' })}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          
+          {eventApprovalRequests.length === 0 && eventApprovals.length === 0 && (
             <Card>
               <CardContent className="text-center py-12">
                 <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
