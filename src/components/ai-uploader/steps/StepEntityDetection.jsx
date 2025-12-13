@@ -8,14 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Brain, ArrowRight, ArrowLeft, Loader2, CheckCircle, 
-  AlertTriangle, Sparkles, Building2, Lightbulb, Target,
-  Users, FileText, Briefcase, Globe
-} from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 
 const ENTITY_OPTIONS = [
   { id: 'challenges', name: 'Challenges', icon: Target, description: 'Municipal challenges and problems' },
@@ -34,7 +28,6 @@ export default function StepEntityDetection({ state, updateState, onNext, onBack
   const [isDetecting, setIsDetecting] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [selectedEntity, setSelectedEntity] = useState(state.detectedEntity || '');
-  const { invokeAI, isLoading } = useAIWithFallback({ showToasts: false });
 
   useEffect(() => {
     if (state.extractedData && !state.detectedEntity) {
@@ -68,37 +61,56 @@ Sample rows: ${JSON.stringify(sampleData, null, 2)}
 
 Return the top 3 most likely entity types with confidence scores.`;
 
-      const result = await invokeAI({
-        prompt,
-        system_prompt: 'You are a data classification expert. Analyze data structures and determine entity types.',
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            suggestions: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  entity_type: { type: 'string' },
-                  confidence: { type: 'number' },
-                  reason: { type: 'string' }
-                }
+      const response_json_schema = {
+        type: 'object',
+        properties: {
+          suggestions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                entity_type: { type: 'string' },
+                confidence: { type: 'number' },
+                reason: { type: 'string' }
               }
             }
           }
         }
+      };
+
+      // Optional anonymous session id for rate limiting
+      let sessionId = null;
+      if (typeof window !== 'undefined') {
+        sessionId = sessionStorage.getItem('ai_session_id');
+        if (!sessionId) {
+          sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          sessionStorage.setItem('ai_session_id', sessionId);
+        }
+      }
+
+      const { data: aiData, error } = await supabase.functions.invoke('invoke-llm', {
+        body: { 
+          prompt,
+          system_prompt: 'You are a data classification expert. Analyze data structures and determine entity types.',
+          response_json_schema,
+          session_id: sessionId
+        }
       });
 
-      if (result.success && result.data?.suggestions) {
-        setAiSuggestions(result.data.suggestions);
-        if (result.data.suggestions.length > 0) {
-          const topMatch = result.data.suggestions[0];
-          setSelectedEntity(topMatch.entity_type);
-          updateState({
-            detectedEntity: topMatch.entity_type,
-            entityConfidence: topMatch.confidence
-          });
-        }
+      if (error) {
+        throw error;
+      }
+
+      const suggestions = aiData?.suggestions || [];
+
+      if (suggestions.length > 0) {
+        setAiSuggestions(suggestions);
+        const topMatch = suggestions[0];
+        setSelectedEntity(topMatch.entity_type);
+        updateState({
+          detectedEntity: topMatch.entity_type,
+          entityConfidence: topMatch.confidence
+        });
       }
     } catch (error) {
       console.error('Entity detection error:', error);
@@ -219,7 +231,7 @@ Return the top 3 most likely entity types with confidence scores.`;
           </div>
 
           {/* Re-detect Button */}
-          <Button variant="outline" onClick={detectEntity} disabled={isLoading} className="gap-2">
+          <Button variant="outline" onClick={detectEntity} disabled={isDetecting} className="gap-2">
             <Brain className="h-4 w-4" />
             Re-analyze with AI
           </Button>
