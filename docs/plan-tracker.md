@@ -1,37 +1,49 @@
 # Programs & Events Hub - Implementation Plan Tracker
 
 **Project:** Programs & Events Hub  
-**Last Audit:** 2025-12-13 (Phase 6 Approval Integration Complete)  
-**Target Completion:** 6 Phases  
-**Status:** 🟢 ALL 6 PHASES COMPLETE (100%)
+**Last Audit:** 2025-12-13 (Full System Integration Assessment)  
+**Target Completion:** 7 Phases (6 Complete + Phase 7 Pending)  
+**Status:** 🟢 PHASES 1-6 COMPLETE (100%) | Phase 7 Pending
 
 ---
 
 ## Executive Summary
 
-This document tracks the implementation of the Programs & Events Hub. A **complete** codebase audit has been completed, identifying:
+This document tracks the implementation of the Programs & Events Hub. A **complete** codebase audit has been completed.
+
+### Current Status
 
 | Category | Count | Status |
 |----------|-------|--------|
 | Program Pages | 25 | ✅ All Active (1 empty file) |
-| Event Pages | 4 | ⚠️ 2 Missing (EventCreate, EventEdit) |
+| Event Pages | 5 | ✅ All Complete |
 | Campaign/Calendar Pages | 3 | ✅ All Active |
 | Supporting Pages | 10 | ✅ All Active |
 | Program Components | 37 | ✅ All Active |
-| Event Components | 0 | ❌ Folder Missing |
+| Event Components | 5 | ✅ All Complete |
+| AI Event Components | 4 | ✅ All Complete |
+| Hub Components | 4 | ✅ All Complete |
 | Workflow Components | 7 | ✅ All Active |
-| AI Program Components | 6 | ✅ All Active |
 
-**Key Related Pages Analyzed:**
-- `ParticipantDashboard.jsx` (280 lines)
-- `MyPrograms.jsx` (199 lines)
-- `ProgramOperatorPortal.jsx` (396 lines)
-- `ApprovalCenter.jsx` (941 lines)
-- `Portfolio.jsx` (383 lines)
-- `GapAnalysisTool.jsx` (531 lines)
-- `CampaignPlanner.jsx` (699 lines)
-- `CalendarView.jsx` (210 lines)
-- `StrategicPlanBuilder.jsx` (156 lines)
+### System Integration Matrix
+
+| System | Programs | Events | Gap Level |
+|--------|----------|--------|-----------|
+| **Approval Workflow** | ✅ Full (4 gates) | ✅ Full (2 gates) | None |
+| **Permissions (Roles)** | ✅ Full (18 roles) | ✅ Full (18 roles) | None |
+| **Email Templates** | ✅ Full (8 templates) | ✅ Full (8 templates) | None |
+| **Email Triggers** | ⚠️ Partial (5/8) | ✅ Full (5/5) | Low |
+| **In-App Notifications** | ⚠️ Not integrated | ⚠️ Not integrated | Medium |
+| **Calendar Integration** | ✅ Full | ✅ Full | None |
+| **Campaign Sync** | ✅ Full | ✅ Full | None |
+| **AI Components** | ✅ Full (6) | ✅ Full (4) | None |
+| **Search/Discovery** | ✅ Full | ⚠️ Missing | Medium |
+| **Budget Integration** | ✅ Full | ⚠️ Missing | Medium |
+| **Comments System** | ✅ Full | ⚠️ Missing | Low |
+| **Bookmarks** | ✅ Full | ⚠️ Missing | Low |
+| **Realtime Updates** | ❌ Missing | ❌ Missing | Medium |
+
+**See:** `docs/programs-events-integration-matrix.md` for full details
 
 ---
 
@@ -462,8 +474,51 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | 4 | AI Enhancements | 1 week | 🟢 Complete | 100% |
 | 5 | Permissions & Polish | 1 week | 🟢 Complete | 100% |
 | 6 | Approval System Deep Integration | 1 day | 🟢 Complete | 100% |
+| 7 | Extended Integrations | TBD | 🔴 Pending | 0% |
 
 **Legend:** 🔴 Not Started | 🟡 In Progress | 🟢 Complete | ⚫ Blocked
+
+---
+
+## Phase 7: Extended Integrations (PENDING)
+
+**Objective:** Complete remaining system integrations for full feature parity
+
+### 7.1 HIGH PRIORITY Tasks
+
+| Task | Target | Effort | Status |
+|------|--------|--------|--------|
+| Program email triggers for all lifecycle events | usePrograms hooks | 2 days | 🔴 |
+| In-app notifications for Programs | notifications table | 1 day | 🔴 |
+| In-app notifications for Events | notifications table | 1 day | 🔴 |
+
+### 7.2 MEDIUM PRIORITY Tasks
+
+| Task | Target | Effort | Status |
+|------|--------|--------|--------|
+| Add events to global search | useVisibilityAwareSearch | 1 day | 🔴 |
+| Add budget tracking to events | events table + UI | 1 day | 🔴 |
+| Event reminder edge function (24h before) | Edge function | 1 day | 🔴 |
+
+### 7.3 LOW PRIORITY Tasks
+
+| Task | Target | Effort | Status |
+|------|--------|--------|--------|
+| Add comments to events | comments table integration | 0.5 day | 🔴 |
+| Add bookmarks to events | bookmarks table integration | 0.5 day | 🔴 |
+| Supabase Realtime for live updates | Both Programs & Events | 2 days | 🔴 |
+| Detailed audit logging | Both Programs & Events | 2 days | 🔴 |
+
+### 7.4 Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/hooks/useVisibilityAwareSearch.js` | Add events to search |
+| `src/hooks/useProgramApplication*.js` | Add notification triggers |
+| `src/components/events/EventForm.jsx` | Add budget fields |
+| `supabase/functions/event-reminder/` | Create scheduled function |
+| `src/pages/EventDetail.jsx` | Add comments section |
+| `src/pages/EventCalendar.jsx` | Add bookmark button |
 
 ---
 

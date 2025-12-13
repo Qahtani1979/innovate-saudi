@@ -1,22 +1,44 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 7.0  
+**Version:** 8.0  
 **Last Updated:** 2025-12-13  
-**Status:** ALL PHASES COMPLETE + APPROVAL INTEGRATION (100%) 🟢
+**Status:** PHASES 1-6 COMPLETE (100%) | Phase 7 Integration Pending 🟢
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
-2. [System Architecture Diagrams](#system-architecture-diagrams)
-3. [Complete Pages Inventory](#complete-pages-inventory)
-4. [Complete Components Inventory](#complete-components-inventory)
-5. [Related Pages Deep Dive](#related-pages-deep-dive)
-6. [Data Model](#data-model)
-7. [Critical Gaps](#critical-gaps)
-8. [Implementation Plan](#implementation-plan)
-9. [Implementation Progress](#implementation-progress)
+1. [System Integration Matrix](#system-integration-matrix)
+2. [Implementation Progress](#implementation-progress)
+3. [System Architecture Diagrams](#system-architecture-diagrams)
+4. [Complete Pages Inventory](#complete-pages-inventory)
+5. [Complete Components Inventory](#complete-components-inventory)
+6. [Related Pages Deep Dive](#related-pages-deep-dive)
+7. [Data Model](#data-model)
+8. [Critical Gaps](#critical-gaps)
+9. [Phase 7 - Extended Integrations](#phase-7-extended-integrations)
+
+---
+
+## System Integration Matrix
+
+| System | Programs | Events | Gap Level |
+|--------|----------|--------|-----------|
+| **Approval Workflow** | ✅ 4 gates | ✅ 2 gates | None |
+| **Permissions (Roles)** | ✅ 18 roles | ✅ 18 roles | None |
+| **Email Templates** | ✅ 8 templates | ✅ 8 templates | None |
+| **Email Triggers (Hooks)** | ⚠️ Partial | ✅ Full | Low |
+| **In-App Notifications** | ⚠️ Missing | ⚠️ Missing | Medium |
+| **Calendar Integration** | ✅ Full | ✅ Full | None |
+| **Campaign Sync** | ✅ Full | ✅ Full | None |
+| **AI Components** | ✅ 6 components | ✅ 4 components | None |
+| **Search/Discovery** | ✅ Full | ⚠️ Missing | Medium |
+| **Budget Integration** | ✅ Full | ⚠️ Missing | Medium |
+| **Comments System** | ✅ Full | ⚠️ Missing | Low |
+| **Bookmarks** | ✅ Full | ⚠️ Missing | Low |
+| **Realtime Updates** | ❌ Missing | ❌ Missing | Medium |
+
+**Full details:** See `docs/programs-events-integration-matrix.md`
 
 ---
 
@@ -102,6 +124,20 @@
 | event_approved email template | Medium | ✅ | Created with bilingual support |
 | event_submitted email template | Medium | ✅ | Created with bilingual support |
 | Approval system assessment doc | Medium | ✅ | docs/approval-system-assessment.md |
+
+### 🔴 Phase 7 Tasks - Extended Integrations - PENDING
+
+| Task | Priority | Status | Notes |
+|------|----------|--------|-------|
+| Program email triggers (all lifecycle) | High | 🔴 | cohort_start, deadline_reminder, etc. |
+| In-app notifications for Programs | High | 🔴 | Use notifications table |
+| In-app notifications for Events | High | 🔴 | Use notifications table |
+| Add events to global search | Medium | 🔴 | useVisibilityAwareSearch.js |
+| Add budget tracking to events | Medium | 🔴 | events table + EventForm |
+| Event reminder edge function | Medium | 🔴 | 24h before event notification |
+| Add comments to events | Low | 🔴 | entity_type='event' |
+| Add bookmarks to events | Low | 🔴 | entity_type='event' |
+| Supabase Realtime updates | Low | 🔴 | Live updates for listings |
 
 ---
 
