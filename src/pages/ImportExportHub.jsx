@@ -184,44 +184,41 @@ const ENTITY_DEFINITIONS = {
   sandboxes: {
     label: 'Sandboxes',
     table: 'sandboxes',
-    requiredColumns: ['name_en'],
-    templateColumns: ['code', 'name_en', 'name_ar', 'description_en', 'description_ar', 'sandbox_type', 'status', 'start_date', 'end_date', 'sector_id', 'municipality_id'],
+    requiredColumns: ['name'],
+    templateColumns: ['name', 'name_ar', 'description', 'description_ar', 'domain', 'status', 'start_date', 'end_date', 'capacity', 'municipality_id', 'living_lab_id'],
     aiSchema: {
       type: 'object',
       properties: {
-        code: { type: 'string' },
-        name_en: { type: 'string' },
+        name: { type: 'string' },
         name_ar: { type: 'string' },
-        description_en: { type: 'string' },
-        sandbox_type: { type: 'string' },
+        description: { type: 'string' },
+        domain: { type: 'string' },
         status: { type: 'string' }
       },
-      required: ['name_en']
+      required: ['name']
     },
-    relations: { sector_id: 'sectors', municipality_id: 'municipalities' },
-    hasDeleted: true
+    relations: { municipality_id: 'municipalities', living_lab_id: 'living_labs' },
+    hasDeleted: false
   },
   living_labs: {
     label: 'Living Labs',
     table: 'living_labs',
     requiredColumns: ['name_en'],
-    templateColumns: ['code', 'name_en', 'name_ar', 'description_en', 'description_ar', 'lab_type', 'status', 'location', 'capacity', 'sector_id', 'municipality_id'],
+    templateColumns: ['name_en', 'name_ar', 'description_en', 'description_ar', 'domain', 'status', 'location', 'contact_name', 'contact_email', 'municipality_id', 'region_id'],
     aiSchema: {
       type: 'object',
       properties: {
-        code: { type: 'string' },
         name_en: { type: 'string' },
         name_ar: { type: 'string' },
         description_en: { type: 'string' },
-        lab_type: { type: 'string' },
+        domain: { type: 'string' },
         status: { type: 'string' },
-        location: { type: 'string' },
-        capacity: { type: 'number' }
+        location: { type: 'string' }
       },
       required: ['name_en']
     },
-    relations: { sector_id: 'sectors', municipality_id: 'municipalities' },
-    hasDeleted: true
+    relations: { municipality_id: 'municipalities', region_id: 'regions' },
+    hasDeleted: false
   },
   case_studies: {
     label: 'Case Studies',
@@ -340,22 +337,23 @@ const ENTITY_DEFINITIONS = {
   strategic_plans: {
     label: 'Strategic Plans',
     table: 'strategic_plans',
-    requiredColumns: ['title_en'],
-    templateColumns: ['code', 'title_en', 'title_ar', 'description_en', 'description_ar', 'plan_type', 'status', 'start_date', 'end_date', 'municipality_id'],
+    requiredColumns: ['name_en'],
+    templateColumns: ['name_en', 'name_ar', 'description_en', 'description_ar', 'vision_en', 'vision_ar', 'status', 'start_year', 'end_year', 'municipality_id'],
     aiSchema: {
       type: 'object',
       properties: {
-        code: { type: 'string' },
-        title_en: { type: 'string' },
-        title_ar: { type: 'string' },
+        name_en: { type: 'string' },
+        name_ar: { type: 'string' },
         description_en: { type: 'string' },
-        plan_type: { type: 'string' },
-        status: { type: 'string' }
+        vision_en: { type: 'string' },
+        status: { type: 'string' },
+        start_year: { type: 'number' },
+        end_year: { type: 'number' }
       },
-      required: ['title_en']
+      required: ['name_en']
     },
     relations: { municipality_id: 'municipalities' },
-    hasDeleted: true
+    hasDeleted: false
   },
   rd_calls: {
     label: 'R&D Calls',
