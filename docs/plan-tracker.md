@@ -173,6 +173,21 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | GapAnalysisTool | ✅ | `[]` | Exec, Strategy | `requiredPermissions: [], requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead']` |
 | CampaignPlanner | ✅ | `[]` | Multiple | `requiredPermissions: [], requiredRoles: ['Executive Leadership', 'Program Director', 'Communication Manager']` |
 
+### Sidebar Programs & Events Links (VERIFIED 2025-12-13)
+
+| Persona | Programs | Events | Hub | Status |
+|---------|----------|--------|-----|--------|
+| Admin | ✅ Programs | ✅ EventCalendar | ✅ ProgramsEventsHub | ✅ Complete |
+| Executive | ✅ Programs | ✅ EventCalendar | ✅ ProgramsEventsHub | ✅ Complete |
+| Deputyship | ✅ Programs | ✅ EventCalendar | ✅ ProgramsEventsHub | ✅ Complete |
+| Municipality | ✅ Programs | ✅ EventCalendar | - | ✅ Complete |
+| Provider | ✅ Programs | ✅ EventCalendar | - | ✅ Complete |
+| Expert | ✅ Programs | ✅ EventCalendar | - | ✅ Complete |
+| Researcher | ✅ Programs | ✅ EventCalendar | - | ✅ Complete |
+| Citizen | ✅ Programs | ✅ EventCalendar | - | ✅ Complete |
+| User | ✅ Programs | ✅ EventCalendar | - | ✅ Complete |
+| Viewer | ✅ Programs | ✅ EventCalendar | - | ✅ Complete |
+
 ### Persona Access Matrix
 
 | Page | Admin | Executive | Deputyship | Municipality | Provider | Expert | Citizen |
