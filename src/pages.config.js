@@ -170,6 +170,7 @@ import SystemDefaultsConfig from './pages/SystemDefaultsConfig';
 import SecurityPolicyManager from './pages/SecurityPolicyManager';
 import DataRetentionConfig from './pages/DataRetentionConfig';
 import EmailTemplateEditor from './pages/EmailTemplateEditor';
+import CommunicationsHub from './pages/CommunicationsHub';
 import FeatureFlagsDashboard from './pages/FeatureFlagsDashboard';
 import UserProfile from './pages/UserProfile';
 import StartupProfile from './pages/StartupProfile';
@@ -650,6 +651,7 @@ export const PAGES = {
     "SecurityPolicyManager": SecurityPolicyManager,
     "DataRetentionConfig": DataRetentionConfig,
     "EmailTemplateEditor": EmailTemplateEditor,
+    "CommunicationsHub": CommunicationsHub,
     "FeatureFlagsDashboard": FeatureFlagsDashboard,
     "UserProfile": UserProfile,
     "StartupProfile": StartupProfile,
