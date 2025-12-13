@@ -40,17 +40,19 @@ export default function EvaluationConsensusPanel({ entityType, entityId }) {
     );
   }
 
-  const avgScore = evaluations.reduce((sum, e) => sum + (e.overall_score || 0), 0) / evaluations.length;
+  // Support both field naming conventions (overall_score/score, expert_email/evaluator_email)
+  const avgScore = evaluations.reduce((sum, e) => sum + (e.overall_score || e.score || 0), 0) / evaluations.length;
   const recommendations = evaluations.map(e => e.recommendation);
   const consensus = recommendations.every(r => r === recommendations[0]);
   const consensusRecommendation = consensus ? recommendations[0] : null;
 
+  // Calculate score criteria - support nested criteria_scores for events
   const scoreCriteria = {
-    feasibility: evaluations.reduce((sum, e) => sum + (e.feasibility_score || 0), 0) / evaluations.length,
-    impact: evaluations.reduce((sum, e) => sum + (e.impact_score || 0), 0) / evaluations.length,
-    innovation: evaluations.reduce((sum, e) => sum + (e.innovation_score || 0), 0) / evaluations.length,
-    cost: evaluations.reduce((sum, e) => sum + (e.cost_effectiveness_score || 0), 0) / evaluations.length,
-    alignment: evaluations.reduce((sum, e) => sum + (e.strategic_alignment_score || 0), 0) / evaluations.length
+    feasibility: evaluations.reduce((sum, e) => sum + (e.feasibility_score || e.criteria_scores?.feasibility_score || 0), 0) / evaluations.length,
+    impact: evaluations.reduce((sum, e) => sum + (e.impact_score || e.criteria_scores?.impact_score || 0), 0) / evaluations.length,
+    innovation: evaluations.reduce((sum, e) => sum + (e.innovation_score || e.criteria_scores?.innovation_score || 0), 0) / evaluations.length,
+    cost: evaluations.reduce((sum, e) => sum + (e.cost_effectiveness_score || e.criteria_scores?.value_score || 0), 0) / evaluations.length,
+    alignment: evaluations.reduce((sum, e) => sum + (e.strategic_alignment_score || e.criteria_scores?.organization_score || 0), 0) / evaluations.length
   };
 
   return (
@@ -115,18 +117,20 @@ export default function EvaluationConsensusPanel({ entityType, entityId }) {
           {evaluations.map((evaluation, idx) => (
             <div key={idx} className="p-3 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-slate-900">{evaluation.expert_email}</p>
+                <p className="text-sm font-medium text-slate-900">
+                  {evaluation.expert_email || evaluation.evaluator_email || evaluation.evaluator_name}
+                </p>
                 <Badge className="capitalize">
                   {evaluation.recommendation?.replace(/_/g, ' ')}
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-indigo-600" />
-                <Progress value={evaluation.overall_score} className="flex-1" />
-                <span className="text-sm font-bold">{evaluation.overall_score}</span>
+                <Progress value={evaluation.overall_score || evaluation.score || 0} className="flex-1" />
+                <span className="text-sm font-bold">{(evaluation.overall_score || evaluation.score || 0).toFixed?.(1) || evaluation.overall_score || evaluation.score}</span>
               </div>
-              {evaluation.feedback_text && (
-                <p className="text-xs text-slate-600 mt-2">{evaluation.feedback_text}</p>
+              {(evaluation.feedback_text || evaluation.comments) && (
+                <p className="text-xs text-slate-600 mt-2">{evaluation.feedback_text || evaluation.comments}</p>
               )}
             </div>
           ))}

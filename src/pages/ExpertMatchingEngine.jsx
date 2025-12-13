@@ -349,6 +349,7 @@ Include match scores (0-100) and reasons.`;
                   <SelectItem value="matchmaker_application">{t({ en: 'Matchmaker Application', ar: 'طلب التوفيق' })}</SelectItem>
                   <SelectItem value="scaling_plan">{t({ en: 'Scaling Plan', ar: 'خطة التوسع' })}</SelectItem>
                   <SelectItem value="event">{t({ en: 'Event', ar: 'فعالية' })}</SelectItem>
+                  <SelectItem value="event">{t({ en: 'Event', ar: 'فعالية' })}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
