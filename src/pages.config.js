@@ -332,6 +332,8 @@ import BudgetVarianceReport from './pages/BudgetVarianceReport';
 import VendorApproval from './pages/VendorApproval';
 import InvoiceApproval from './pages/InvoiceApproval';
 import EventRegistration from './pages/EventRegistration';
+import EventCreate from './pages/EventCreate';
+import EventEdit from './pages/EventEdit';
 import InfrastructureRoadmap from './pages/InfrastructureRoadmap';
 import RLSImplementationSpec from './pages/RLSImplementationSpec';
 import RLSValidationDashboard from './pages/RLSValidationDashboard';
@@ -821,6 +823,8 @@ export const PAGES = {
     "VendorApproval": VendorApproval,
     "InvoiceApproval": InvoiceApproval,
     "EventRegistration": EventRegistration,
+    "EventCreate": EventCreate,
+    "EventEdit": EventEdit,
     "InfrastructureRoadmap": InfrastructureRoadmap,
     "RLSImplementationSpec": RLSImplementationSpec,
     "RLSValidationDashboard": RLSValidationDashboard,

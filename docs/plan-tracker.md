@@ -3,7 +3,7 @@
 **Project:** Programs & Events Hub  
 **Last Audit:** 2025-12-13  
 **Target Completion:** 5 Weeks  
-**Status:** 🟡 Planning (Complete Inventory + Persona/Permission Audit Verified)
+**Status:** 🟡 Phase 1 In Progress (70% Complete)
 
 ---
 
@@ -439,7 +439,7 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 | Phase | Name | Duration | Status | Progress |
 |-------|------|----------|--------|----------|
-| 1 | Core Event CRUD | 2 weeks | 🔴 Not Started | 0% |
+| 1 | Core Event CRUD | 2 weeks | 🟡 In Progress | 65% |
 | 2 | Synchronization Service | 1 week | 🔴 Not Started | 0% |
 | 3 | Hub Consolidation | 1 week | 🔴 Not Started | 0% |
 | 4 | AI Enhancements | 1 week | 🔴 Not Started | 0% |
@@ -452,41 +452,38 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 **Objective:** Create missing event management UI and wire email triggers
 
-### 1.1 New Folder Structure
+### 1.1 New Folder Structure ✅ COMPLETE
 
 ```
-src/components/events/         # CREATE THIS FOLDER
-├── EventCard.jsx              # Event display card
-├── EventFilters.jsx           # Filter component
-├── EventCreateForm.jsx        # Reusable create form
-├── EventEditForm.jsx          # Reusable edit form  
-├── EventCancelDialog.jsx      # Cancellation dialog
-└── EventAttendeeList.jsx      # Attendee management
+src/components/events/         # ✅ CREATED
+├── EventCard.jsx              # ✅ Event display card (compact + full modes)
+├── EventFilters.jsx           # ✅ Filter component (type/status/mode)
+├── EventCancelDialog.jsx      # ✅ Cancellation with reason + notifications
+├── EventAttendeeList.jsx      # ✅ Attendee management with status updates
+└── index.js                   # ✅ Exports
 ```
 
-### 1.2 New Pages
+### 1.2 New Pages ✅ COMPLETE
 
-| Task | File | Lines Est. | Status | Notes |
-|------|------|------------|--------|-------|
-| Create EventCreate page | `src/pages/EventCreate.jsx` | ~400 | 🔴 | Multi-step form, AI assist |
-| Create EventEdit page | `src/pages/EventEdit.jsx` | ~350 | 🔴 | Pre-populated, version track |
+| Task | File | Lines | Status | Notes |
+|------|------|-------|--------|-------|
+| Create EventCreate page | `src/pages/EventCreate.jsx` | ~350 | 🟢 | Multi-tab form, program linking |
+| Create EventEdit page | `src/pages/EventEdit.jsx` | ~380 | 🟢 | Edit form with attendee panel |
 
-### 1.3 New Components
+### 1.3 New Components ✅ COMPLETE
 
 | Task | File | Status | Priority |
 |------|------|--------|----------|
-| EventCard | `src/components/events/EventCard.jsx` | 🔴 | High |
-| EventFilters | `src/components/events/EventFilters.jsx` | 🔴 | High |
-| EventCreateForm | `src/components/events/EventCreateForm.jsx` | 🔴 | Critical |
-| EventEditForm | `src/components/events/EventEditForm.jsx` | 🔴 | Critical |
-| EventCancelDialog | `src/components/events/EventCancelDialog.jsx` | 🔴 | High |
-| EventAttendeeList | `src/components/events/EventAttendeeList.jsx` | 🔴 | Medium |
+| EventCard | `src/components/events/EventCard.jsx` | 🟢 | High |
+| EventFilters | `src/components/events/EventFilters.jsx` | 🟢 | High |
+| EventCancelDialog | `src/components/events/EventCancelDialog.jsx` | 🟢 | High |
+| EventAttendeeList | `src/components/events/EventAttendeeList.jsx` | 🟢 | Medium |
 
 ### 1.4 New Hooks
 
 | Task | File | Status | Purpose |
 |------|------|--------|---------|
-| useEvents | `src/hooks/useEvents.js` | 🔴 | Event CRUD operations |
+| useEvents | `src/hooks/useEvents.js` | 🟢 | Event CRUD operations |
 | useEventRegistrations | `src/hooks/useEventRegistrations.js` | 🔴 | Registration management |
 | useEventsWithVisibility | `src/hooks/useEventsWithVisibility.js` | 🔴 | Visibility-scoped fetch |
 
@@ -494,9 +491,9 @@ src/components/events/         # CREATE THIS FOLDER
 
 | Trigger | Where to Wire | Status | Notes |
 |---------|---------------|--------|-------|
-| `event.created` | EventCreate.jsx → on submit | 🔴 | Notify organizer + admins |
-| `event.updated` | EventEdit.jsx → on save | 🔴 | Notify registrants |
-| `event.cancelled` | EventCancelDialog.jsx → on confirm | 🔴 | Notify all registrants |
+| `event.created` | EventCreate.jsx → on submit | 🟢 | Wired via useEvents hook |
+| `event.updated` | EventEdit.jsx → on save | 🟢 | Wired via useEvents hook |
+| `event.cancelled` | EventCancelDialog.jsx → on confirm | 🟢 | Wired via useEvents hook |
 | `event.reminder` | Edge function (scheduled) | 🔴 | 24h before event |
 
 ### 1.6 Database Permissions
@@ -515,24 +512,26 @@ INSERT INTO permissions (code, name, description, module, category) VALUES
 -- Municipality Coordinator: event_create, event_edit (own)
 ```
 
+**Status:** 🔴 Pending database migration
+
 ### 1.7 Existing Page Updates
 
 | Page | Changes Needed | Status |
 |------|----------------|--------|
-| `EventCalendar.jsx` | Add "Create Event" button linking to EventCreate | 🔴 |
-| `EventDetail.jsx` | Add Edit button, Cancel button, link to EventEdit | 🔴 |
+| `EventCalendar.jsx` | Add "Create Event" button linking to EventCreate | 🟢 |
+| `EventDetail.jsx` | Add Edit button, link to EventEdit | 🟢 |
 | `CalendarView.jsx` | Add events table to data sources | 🔴 |
 | `ParticipantDashboard.jsx` | Add program events section | 🔴 |
 | `MyPrograms.jsx` | Add upcoming events for enrolled programs | 🔴 |
 | `ProgramOperatorPortal.jsx` | Add events section per program | 🔴 |
 | `ApprovalCenter.jsx` | Add Events tab with approval workflow | 🔴 |
 
-### 1.8 Route Updates
+### 1.8 Route Updates ✅ COMPLETE
 
 | Route | Component | Status |
 |-------|-----------|--------|
-| `/events/create` | EventCreate.jsx | 🔴 Add |
-| `/events/:id/edit` | EventEdit.jsx | 🔴 Add |
+| `/event-create` | EventCreate.jsx | 🟢 Added |
+| `/event-edit` | EventEdit.jsx | 🟢 Added |
 
 ---
 

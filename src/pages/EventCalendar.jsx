@@ -88,7 +88,7 @@ function EventCalendar() {
           { value: stats.registered, label: t({ en: 'Registrations', ar: 'التسجيلات' }), icon: Users },
         ]}
         action={canCreateEvents && (
-          <Link to={createPageUrl('EventDetail') + '?mode=create'}>
+          <Link to={createPageUrl('EventCreate')}>
             <Button className="gap-2 bg-gradient-to-r from-slate-600 to-gray-500 hover:opacity-90 text-white shadow-lg">
               <Plus className="h-4 w-4" />
               {t({ en: 'Create Event', ar: 'إنشاء فعالية' })}
