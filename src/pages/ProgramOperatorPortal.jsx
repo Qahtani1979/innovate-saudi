@@ -14,7 +14,6 @@ import {
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { useAuth } from '@/lib/AuthContext';
 
 function ProgramOperatorPortal() {
   const { language, isRTL, t } = useLanguage();
