@@ -1,51 +1,143 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 10.0 (COMPREHENSIVE DEEP REVIEW)  
+**Version:** 11.0 (STRATEGY INTEGRATION DEEP REVIEW)  
 **Last Updated:** 2025-12-13  
-**Status:** 🟢 Phase 9 Complete - 82% Systems Fully Integrated
+**Status:** 🟢 Phase 10 Complete - ALL 17 SYSTEMS FULLY INTEGRATED + Strategy Gaps Identified
 
 ---
 
 ## Table of Contents
 
 1. [Deep Review Summary](#deep-review-summary)
-2. [System Integration Matrix](#system-integration-matrix)
-3. [Implementation Progress](#implementation-progress)
-4. [System Architecture Diagrams](#system-architecture-diagrams)
-5. [Complete Pages Inventory](#complete-pages-inventory)
-6. [Complete Components Inventory](#complete-components-inventory)
-7. [Related Pages Deep Dive](#related-pages-deep-dive)
-8. [Data Model](#data-model)
-9. [Critical Gaps](#critical-gaps)
-10. [Phase 7 - Extended Integrations](#phase-7-extended-integrations)
-11. [Phase 8 - Media Management Integration](#phase-8-media-management-integration)
-12. [Phase 10 - AI Components UI Integration](#phase-10-ai-components-ui-integration)
+2. [Strategy ↔ Programs Relationship](#strategy-programs-relationship)
+3. [System Integration Matrix](#system-integration-matrix)
+4. [Implementation Progress](#implementation-progress)
+5. [System Architecture Diagrams](#system-architecture-diagrams)
+6. [Complete Pages Inventory](#complete-pages-inventory)
+7. [Complete Components Inventory](#complete-components-inventory)
+8. [Related Pages Deep Dive](#related-pages-deep-dive)
+9. [Data Model](#data-model)
+10. [Phase 7-10 - Completed Integrations](#phase-7-extended-integrations)
+11. [Phase 11 - Strategy↔Programs Bidirectional Integration](#phase-11-strategy-programs-integration)
 
 ---
 
 ## Deep Review Summary (2025-12-13)
 
-### Systems Reviewed: 17 Total
+### Programs & Events Systems: 17 Total - ALL COMPLETE ✅
 
 | Category | Count | Percentage |
 |----------|-------|------------|
-| **Fully Integrated** | 14 | 82% |
-| **Partial Integration** | 3 | 18% |
+| **Fully Integrated** | 17 | 100% |
+| **Partial Integration** | 0 | 0% |
 | **Critical Gaps** | 0 | 0% |
 
-### Identified Gaps
+### NEW: Strategy↔Programs Integration Gaps Identified
 
-| # | Gap | Entity | Priority | Effort |
-|---|-----|--------|----------|--------|
-| 1 | AIEventOptimizer not in Event UI | Events | Medium | 0.5 day |
-| 2 | AIAttendancePredictor not in Event UI | Events | Medium | 0.5 day |
-| 3 | AIConflictDetector not in Event UI | Events | Medium | 0.5 day |
-| 4 | Events lack Budget entity link | Events | Low | 0.5 day |
-| 5 | Events lack analytics dashboard | Events | Low | 1-2 days |
+| # | Gap | Direction | Priority | Effort | Status |
+|---|-----|-----------|----------|--------|--------|
+| 1 | Strategy does NOT drive Program creation | Strategy→Programs | **P0 Critical** | 3 days | ❌ TODO |
+| 2 | No feedback from Programs to Strategy KPIs | Programs→Strategy | **P0 Critical** | 2 days | ❌ TODO |
+| 3 | Strategic gap analysis → Program recommendations | Strategy→Programs | P1 Medium | 2 days | ❌ TODO |
+| 4 | Events not linked to Strategic objectives | Strategy→Events | P1 Medium | 1 day | ❌ TODO |
+| 5 | Program outcomes don't inform strategy refinement | Programs→Strategy | P2 Low | 2 days | ❌ TODO |
 
 ---
 
-## System Integration Matrix (Verified 2025-12-13)
+## Strategy ↔ Programs Relationship
+
+### System Flow Diagram
+
+```mermaid
+graph TD
+    subgraph STRATEGY["📊 STRATEGY SYSTEM"]
+        SP[Strategic Plan]
+        SO[Strategic Objectives]
+        ST[Strategic Themes]
+        KPI[Strategic KPIs]
+        SG[Strategic Gaps]
+    end
+    
+    subgraph PROGRAMS["📚 PROGRAMS SYSTEM"]
+        P[Program]
+        PA[Program Applications]
+        PC[Program Cohorts]
+        PO[Program Outcomes]
+        PI[Program Impact]
+    end
+    
+    subgraph EVENTS["📅 EVENTS SYSTEM"]
+        E[Event]
+        ER[Event Registrations]
+        EA[Event Attendance]
+    end
+    
+    SP -->|"strategic_plan_ids[]"| P
+    SO -->|"strategic_objective_ids[]"| P
+    ST -->|"❌ SHOULD GENERATE"| P
+    SG -->|"❌ SHOULD RECOMMEND"| P
+    
+    P -->|"program_id"| E
+    
+    PO -->|"❌ SHOULD REPORT"| KPI
+    PI -->|"❌ SHOULD FEED"| SP
+    
+    style ST fill:#ffcccc
+    style SG fill:#ffcccc
+    style KPI fill:#ffcccc
+    style PI fill:#ffcccc
+```
+
+### Current Implementation vs Target State
+
+| Feature | Current State | Target State | Gap |
+|---------|---------------|--------------|-----|
+| **Strategy → Programs Linking** | ✅ `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategic_pillar_id` | Same | None |
+| **StrategicAlignmentWidget** | ✅ Shows alignment in ProgramDetail | Same | None |
+| **Strategy → Programs Generation** | ❌ Missing | AI generates program themes from strategic_themes | **P0** |
+| **Strategic Gap → Program Recommendations** | ❌ Missing | AI recommends programs based on strategic gaps | **P1** |
+| **Programs → Strategy KPI Contribution** | ❌ Missing | Program outcomes update strategic KPI progress | **P0** |
+| **Programs → Strategy Refinement** | ❌ Missing | Program learnings inform strategy updates | **P2** |
+| **Events → Strategy Linking** | ❌ Missing | Events linked to strategic objectives | **P1** |
+
+### Why Strategy Should DRIVE Programs
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Strategy DEFINES → Programs EXECUTE → Outcomes INFORM → Strategy   │
+│                              REFINES                                 │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+1. **Strategic Themes** → Generate program focus areas automatically
+2. **Strategic Gaps** → Trigger new program creation recommendations
+3. **Strategic Priorities** → Auto-rank programs by strategic importance
+4. **Strategic Budget** → Allocate resources to strategically-aligned programs
+
+### Why Programs Should FEEDBACK to Strategy
+
+1. **Program Outcomes** → Contribute to strategic KPI progress tracking
+2. **Skill Development** → Update strategic capacity metrics
+3. **Innovation Outputs** → Feed back to strategic innovation goals
+4. **Lessons Learned** → Inform strategy refinement and planning
+
+### Implementation Tasks (Phase 11)
+
+| # | Task | Priority | Effort | Dependencies |
+|---|------|----------|--------|--------------|
+| 1 | Create `StrategyToProgramGenerator` component | P0 | 2 days | StrategicPlan entity |
+| 2 | Add `generateProgramThemes()` AI function | P0 | 1 day | AI hook |
+| 3 | Create `ProgramOutcomeKPITracker` component | P0 | 1.5 days | KPI system |
+| 4 | Add `updateStrategicKPI()` function | P0 | 0.5 day | KPI system |
+| 5 | Create `StrategicGapProgramRecommender` component | P1 | 2 days | Gap analysis |
+| 6 | Add strategic fields to Events entity | P1 | 0.5 day | DB migration |
+| 7 | Create `EventStrategicAlignment` widget | P1 | 0.5 day | Events |
+| 8 | Create `ProgramLessonsToStrategy` component | P2 | 1 day | Both systems |
+| 9 | Add strategy feedback dashboard | P2 | 1 day | StrategyCockpit |
+
+---
+
+## System Integration Matrix (Verified 2025-12-13 - ALL COMPLETE)
 
 | # | System | Programs | Events | Gap Level |
 |---|--------|----------|--------|-----------|
@@ -56,8 +148,8 @@
 | 5 | **In-App Notifications** | ✅ 9 types | ✅ 9 types | None |
 | 6 | **Calendar Integration** | ✅ Full | ✅ Full | None |
 | 7 | **Campaign Sync** | ✅ Full | ✅ Full | None |
-| 8 | **AI Components** | ✅ 6/6 | ⚠️ 1/4 UI | Medium |
-| 9 | **Budget Integration** | ✅ Full | ⚠️ Basic | Low |
+| 8 | **AI Components** | ✅ 6/6 | ✅ 4/4 | None |
+| 9 | **Budget Integration** | ✅ Full | ✅ Full | None |
 | 10 | **Audit Logging** | ✅ Full | ✅ Full | None |
 | 11 | **Media/Storage** | ✅ Full | ✅ Full | None |
 | 12 | **Media Management** | ✅ Integrated | ✅ Integrated | None |
@@ -65,7 +157,7 @@
 | 14 | **Search/Discovery** | ✅ Full | ✅ Full | None |
 | 15 | **Comments System** | ✅ Full | ✅ Full | None |
 | 16 | **Bookmarks** | ✅ Full | ✅ Full | None |
-| 17 | **Analytics/Reporting** | ✅ Full | ⚠️ Partial | Low |
+| 17 | **Analytics/Reporting** | ✅ Full | ✅ Full | None |
 
 **Full details:** See `docs/programs-events-integration-matrix.md`
 
