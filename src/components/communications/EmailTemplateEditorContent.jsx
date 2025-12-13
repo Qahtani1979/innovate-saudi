@@ -7,18 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLanguage } from '../components/LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Mail, Eye, Save, Sparkles, Loader2, Send, Plus, Trash2, Copy, Settings, RefreshCw, Check, X, FileText, Brain, AlertTriangle, Lightbulb, TrendingUp, CheckCircle2, History } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { toast } from 'sonner';
-import ProtectedPage from '../components/permissions/ProtectedPage';
+// ProtectedPage removed - handled by parent
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+// PageLayout, PageHeader removed - handled by parent
 
 const CATEGORIES = [
   { value: 'auth', label: { en: 'Authentication', ar: 'المصادقة' } },
@@ -37,7 +37,7 @@ const CATEGORIES = [
   { value: 'research', label: { en: 'Research', ar: 'البحث' } },
 ];
 
-function EmailTemplateEditor() {
+function EmailTemplateEditorContent() {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
@@ -616,32 +616,35 @@ Provide a comprehensive analysis covering:
   };
 
   return (
-    <PageLayout>
-      {/* Header with PageHeader component */}
-      <PageHeader
-        icon={Mail}
-        title={{ en: 'Email Template Manager', ar: 'مدير قوالب البريد' }}
-        description={{ en: 'Create, customize, and test bilingual email templates for all platform communications', ar: 'إنشاء وتخصيص واختبار قوالب البريد ثنائية اللغة لجميع اتصالات المنصة' }}
-        stats={[
-          { icon: FileText, value: templates.length, label: { en: 'Templates', ar: 'قوالب' } },
-          { icon: CheckCircle2, value: templates.filter(t => t.is_active).length, label: { en: 'Active', ar: 'نشط' } },
-        ]}
-        actions={
-          <div className="flex items-center gap-2">
-            {analysisResult && (
-              <Button variant="outline" onClick={() => setShowAnalysisDialog(true)} className="gap-2">
-                <History className="h-4 w-4" />
-                {t({ en: 'View Analysis', ar: 'عرض التحليل' })}
-                <Badge variant="secondary" className="ml-1">{analysisResult.overall_score}/100</Badge>
-              </Button>
-            )}
-            <Button onClick={handleAIAnalysis} disabled={aiLoading || templates.length === 0} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-              <Brain className="h-4 w-4" />
-              {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
-            </Button>
+    <div className="space-y-6">
+      {/* Header Stats */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{templates.length}</span>
+            <span className="text-sm text-muted-foreground">{t({ en: 'Templates', ar: 'قوالب' })}</span>
           </div>
-        }
-      />
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <span className="text-sm font-medium">{templates.filter(t => t.is_active).length}</span>
+            <span className="text-sm text-muted-foreground">{t({ en: 'Active', ar: 'نشط' })}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {analysisResult && (
+            <Button variant="outline" onClick={() => setShowAnalysisDialog(true)} className="gap-2">
+              <History className="h-4 w-4" />
+              {t({ en: 'View Analysis', ar: 'عرض التحليل' })}
+              <Badge variant="secondary" className="ml-1">{analysisResult.overall_score}/100</Badge>
+            </Button>
+          )}
+          <Button onClick={handleAIAnalysis} disabled={aiLoading || templates.length === 0} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+            <Brain className="h-4 w-4" />
+            {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
+          </Button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-12 gap-6">
         {/* Template List Sidebar */}
@@ -1228,8 +1231,8 @@ Provide a comprehensive analysis covering:
           </SheetFooter>
         </SheetContent>
       </Sheet>
-    </PageLayout>
+    </div>
   );
 }
 
-export default ProtectedPage(EmailTemplateEditor, { requireAdmin: true });
+export default EmailTemplateEditorContent;
