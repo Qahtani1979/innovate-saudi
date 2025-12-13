@@ -311,6 +311,7 @@ import TeamPerformance from './pages/TeamPerformance';
 import CollaborativePilots from './pages/CollaborativePilots';
 import ProgramImpactDashboard from './pages/ProgramImpactDashboard';
 import StrategyAlignment from './pages/StrategyAlignment';
+import StrategyDrillDown from './pages/StrategyDrillDown';
 import MentorDashboard from './pages/MentorDashboard';
 import PartnershipPerformance from './pages/PartnershipPerformance';
 import MultiCityCoordination from './pages/MultiCityCoordination';
@@ -805,6 +806,7 @@ export const PAGES = {
     "CollaborativePilots": CollaborativePilots,
     "ProgramImpactDashboard": ProgramImpactDashboard,
     "StrategyAlignment": StrategyAlignment,
+    "StrategyDrillDown": StrategyDrillDown,
     "MentorDashboard": MentorDashboard,
     "PartnershipPerformance": PartnershipPerformance,
     "MultiCityCoordination": MultiCityCoordination,

@@ -3333,9 +3333,12 @@ export type Database = {
           id: string
           image_url: string | null
           is_published: boolean | null
+          linked_objective_ids: string[] | null
           relevance_to_saudi: string | null
           source: string | null
           source_url: string | null
+          strategic_plan_ids: string[] | null
+          strategic_relevance_score: number | null
           tags: string[] | null
           title_ar: string | null
           title_en: string
@@ -3349,9 +3352,12 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_published?: boolean | null
+          linked_objective_ids?: string[] | null
           relevance_to_saudi?: string | null
           source?: string | null
           source_url?: string | null
+          strategic_plan_ids?: string[] | null
+          strategic_relevance_score?: number | null
           tags?: string[] | null
           title_ar?: string | null
           title_en: string
@@ -3365,9 +3371,12 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_published?: boolean | null
+          linked_objective_ids?: string[] | null
           relevance_to_saudi?: string | null
           source?: string | null
           source_url?: string | null
+          strategic_plan_ids?: string[] | null
+          strategic_relevance_score?: number | null
           tags?: string[] | null
           title_ar?: string | null
           title_en?: string
@@ -6407,9 +6416,12 @@ export type Database = {
           id: string
           is_deleted: boolean | null
           is_published: boolean | null
+          is_strategy_derived: boolean | null
           policy_type: string | null
           sector_id: string | null
           status: string | null
+          strategic_objective_ids: string[] | null
+          strategic_plan_ids: string[] | null
           title_ar: string | null
           title_en: string
           updated_at: string | null
@@ -6433,9 +6445,12 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           policy_type?: string | null
           sector_id?: string | null
           status?: string | null
+          strategic_objective_ids?: string[] | null
+          strategic_plan_ids?: string[] | null
           title_ar?: string | null
           title_en: string
           updated_at?: string | null
@@ -6459,9 +6474,12 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           policy_type?: string | null
           sector_id?: string | null
           status?: string | null
+          strategic_objective_ids?: string[] | null
+          strategic_plan_ids?: string[] | null
           title_ar?: string | null
           title_en?: string
           updated_at?: string | null
