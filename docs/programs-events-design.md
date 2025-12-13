@@ -178,7 +178,31 @@ This document provides a **complete inventory** of all existing program and even
 
 ## 4. Related Pages Deep Dive
 
-### 4.1 ParticipantDashboard.jsx (280 lines)
+### 4.1 ProgramsControlDashboard.jsx (218 lines)
+
+**Purpose:** Portfolio-level dashboard for all innovation programs with AI insights.
+
+**Data Sources:**
+- `programs` table (via base44 entity)
+- `program_applications` table (via base44 entity)
+
+**Features:**
+- Key metrics: Total programs, Active programs, Total applicants, Graduates
+- AI Portfolio Insights (gaps, recommendations, success patterns)
+- Program type distribution chart (BarChart)
+- Active programs listing with application stats
+
+**AI Integration:**
+- Portfolio analysis via `useAIWithFallback`
+- Generates: balance_score, gaps, success_patterns, recommendations
+
+**Event Integration Needs:**
+- [ ] Add events count per program
+- [ ] Show upcoming events across all programs
+
+---
+
+### 4.2 ParticipantDashboard.jsx (280 lines)
 
 **Purpose:** Active participant's view of their enrolled program progress.
 
@@ -194,17 +218,21 @@ This document provides a **complete inventory** of all existing program and even
 
 **Features:**
 - Overall progress percentage calculation
-- Session completion tracking
-- Assignment submission status
+- Session completion tracking (X/12 sessions)
+- Assignment submission status (X/8 assignments)
 - Mentor meeting count
 - Peer collaboration count
 - Quick actions: Submit Assignment, Cohort Forum, Resources
+- Upcoming section (next session, pending assignments)
 
-**Integration Needs for Events:**
-- Add upcoming program events section
-- Link to EventRegistration for program-linked events
+**Event Integration Needs:**
+- [ ] Add program events section
+- [ ] Link to EventRegistration for program-linked events
+- [ ] Show upcoming events in "Upcoming" section
 
-### 4.2 MyPrograms.jsx (199 lines)
+---
+
+### 4.3 MyPrograms.jsx (199 lines)
 
 **Purpose:** User's program portfolio - enrolled, pending, and graduated programs.
 
@@ -215,13 +243,89 @@ This document provides a **complete inventory** of all existing program and even
 **Features:**
 - Stats: Enrolled count, Pending count, Graduated count
 - Active programs list with progress bars
+- Attendance rate display
+- Deliverables tracking (X/Y completed)
 - Upcoming milestones from curriculum JSONB
 - Links to `ProgramApplicationDetail`
 
-**Integration Needs for Events:**
-- Add "Upcoming Events" section for enrolled programs
+**Event Integration Needs:**
+- [ ] Add "My Events" section
+- [ ] Show upcoming events for enrolled programs
+- [ ] Link to EventRegistration for quick sign-up
 
-### 4.3 ProgramOperatorPortal.jsx (396 lines)
+---
+
+### 4.4 ProgramIdeaSubmission.jsx (361 lines)
+
+**Purpose:** Multi-step innovation proposal submission form.
+
+**Data Sources:**
+- `programs` table (active programs for selection)
+- `innovation_proposals` table (submission target)
+- `sectors` table (reference data)
+
+**Features:**
+- 4-step wizard: Program Selection → Details → Implementation → Success
+- AI enhancement via `useAIWithFallback` hook
+- Generates bilingual title/description
+- Budget/timeline estimation
+- Team composition suggestions
+- Success metrics generation
+
+**AI Schema:**
+```json
+{
+  "title_en": "string",
+  "title_ar": "string",
+  "description_en": "string",
+  "description_ar": "string",
+  "implementation_plan": "string",
+  "success_metrics_proposed": ["string"],
+  "timeline_proposal": "string",
+  "team_composition": [{ "role": "string", "expertise": "string" }]
+}
+```
+
+**Event Integration Needs:**
+- [ ] Link submitted proposals to program events
+- [ ] Show related events during submission
+
+---
+
+### 4.5 ApprovalCenter.jsx (941 lines)
+
+**Purpose:** Unified approval queue for ALL entity types in the system.
+
+**Entity Types Handled (11 total):**
+1. `policy_recommendation` - Policy approvals
+2. `challenge` - Challenge approvals (4 gates)
+3. `pilot` - Pilot approvals (milestones, budget)
+4. `rd_proposal` - R&D proposal approvals
+5. `program_application` - Program application approvals
+6. `matchmaker_application` - Matchmaker approvals
+7. `solution` - Solution approvals
+8. `program` - Program entity approvals (4 gates: launch, selection, mid_review, completion_review)
+9. `citizen_ideas` - Citizen idea approvals
+10. `innovation_proposal` - Innovation proposal approvals
+11. `rd_projects` - R&D project approvals
+
+**Features:**
+- Tab-based navigation per entity type
+- `InlineApprovalWizard` integration for in-context decisions
+- AI analysis for approval recommendations
+- SLA tracking and escalation badges
+- Bulk approval actions
+- Pending pilot milestone approvals
+- Pending budget approvals
+
+**Event Integration Needs:**
+- [ ] Add "Events" tab (12th entity type)
+- [ ] Wire event.created triggers to create approval requests
+- [ ] Add event workflow gates
+
+---
+
+### 4.6 ProgramOperatorPortal.jsx (396 lines)
 
 **Purpose:** Dashboard for program operators (organizations that run programs).
 
@@ -234,64 +338,186 @@ This document provides a **complete inventory** of all existing program and even
 
 **Features:**
 - Pending actions alert for unreviewed applications
-- Stats: Active programs, Applications, Participants, Pilots
-- Program list with conversion metrics
+- Stats: Active programs, Applications, Participants, Pilots, Matchmaker active
+- Program list with conversion metrics (apps, accepted, rate, pilots)
+- Matchmaker pipeline visualization (4 stages)
 - Links to ApplicationReviewHub
 
-**Integration Needs for Events:**
-- Add event management section for program-linked events
-- Event creation shortcut
+**Key Metrics per Program:**
+- Application count
+- Accepted count
+- Conversion rate (%)
+- Pilot conversions
 
-### 4.4 ApprovalCenter.jsx (941 lines)
+**Event Integration Needs:**
+- [ ] Add program events section
+- [ ] Show events per program with registration stats
+- [ ] Add event creation quick action
+- [ ] Link to EventCalendar filtered by operator's programs
 
-**Purpose:** Unified approval queue for ALL entity types.
+---
 
-**Entity Types Handled (11 total):**
-1. `policy_recommendation`
-2. `challenge`
-3. `pilot`
-4. `rd_proposal`
-5. `program_application`
-6. `matchmaker_application`
-7. `solution`
-8. `program`
-9. `citizen_ideas`
-10. `innovation_proposal`
-11. `rd_projects`
+### 4.7 StrategicPlanBuilder.jsx (156 lines)
 
-**Integration Needs for Events:**
-- Add `event` entity type (12th)
-- Event approval workflow for published events
-
-### 4.5 CalendarView.jsx (210 lines)
-
-**Purpose:** Unified calendar view for pilots, programs, and expert assignments.
+**Purpose:** AI-assisted strategic plan creation.
 
 **Data Sources:**
-- `pilots` table (timeline.pilot_start)
-- `programs` table (timeline.program_start)
-- `expert_assignments` table (due_date)
+- `strategic_plans` table (via base44 entity)
 
-**CRITICAL GAP:** Does NOT read from `events` table!
+**Features:**
+- Title/Vision input fields
+- Strategic objectives array management
+- AI generation via `useAIWithFallback`
+- Generates: title_en, vision_en, objectives[]
 
-**Integration Needs:**
-- Add `events` table query
-- Display events alongside pilots/programs
-
-### 4.6 CampaignPlanner.jsx (699 lines)
-
-**Purpose:** Campaign and event creation wizard.
-
-**CRITICAL GAP:** Events stored in `programs.events[]` JSONB but NOT synced to `events` table!
-
-```javascript
-// Current structure (NOT persisted to events table)
-events: [{ name, type, date, location }]
+**AI Schema:**
+```json
+{
+  "title_en": "string",
+  "vision_en": "string",
+  "objectives": [{ "name_en": "string", "description_en": "string" }]
+}
 ```
 
+**Event Integration Needs:**
+- [ ] Link strategic plans to programs
+- [ ] Show programs aligned to each plan
+- [ ] Calendar view of plan-linked program timelines
+
+---
+
+### 4.8 Portfolio.jsx (383 lines)
+
+**Purpose:** Innovation portfolio Kanban board tracking items across pipeline stages.
+
+**Data Sources:**
+- `challenges` table
+- `pilots` table
+- `sectors` table
+
+**Pipeline Stages (6):**
+1. Discover → 2. Validate → 3. Experiment → 4. Pilot → 5. Scale → 6. Institutionalize
+
+**Features:**
+- Drag-and-drop Kanban (using @hello-pangea/dnd)
+- Matrix view alternative
+- Timeline Gantt view
+- Sector filtering
+- Year filtering
+- Bulk actions toolbar
+- Export dialog
+- AI Pipeline Insights (5 categories)
+
+**AI Analysis Categories:**
+- Pipeline health
+- Transition recommendations
+- Resource allocation
+- Acceleration strategies
+- Balancing recommendations
+
+**Event Integration Needs:**
+- [ ] Add programs to pipeline (currently challenges only)
+- [ ] Link program events to timeline
+- [ ] Show program-linked events in Gantt view
+
+---
+
+### 4.9 GapAnalysisTool.jsx (531 lines)
+
+**Purpose:** AI-powered discovery of innovation gaps and opportunities.
+
+**Data Sources:**
+- `challenges` table
+- `pilots` table
+- `solutions` table
+- `sectors` table
+- `rd_projects` table
+
+**AI Gap Categories (10 total):**
+1. Underserved sectors
+2. Innovation gaps
+3. Geographic gaps
+4. Technology gaps
+5. Capacity gaps
+6. Skills & talent gaps
+7. Partnership gaps
+8. Budget gaps
+9. Timeline gaps
+10. Service quality gaps
+
+**Features:**
+- Sector coverage bar chart
+- Portfolio balance radar chart
+- Gap cards with severity badges (high/medium/low)
+- Priority action items
+- Sector-level statistics
+- Bilingual insights (EN/AR)
+
+**Event Integration Needs:**
+- [ ] Include program coverage in gap analysis
+- [ ] Suggest programs to address gaps
+- [ ] Link gap recommendations to program creation
+
+---
+
+### 4.10 CampaignPlanner.jsx (699 lines)
+
+**Purpose:** Campaign and event creation wizard for innovation initiatives.
+
+**Data Sources:**
+- `programs` table (filtered by program_type = 'campaign' or 'challenge')
+- `challenges` table (for AI context)
+- `sectors` table (focus area selection)
+- `strategic_plans` table (linking)
+
+**Campaign Data Structure:**
+```javascript
+{
+  program_type: 'campaign',
+  name_en, name_ar,
+  tagline_en, tagline_ar,
+  description_en, description_ar,
+  focus_areas: [],
+  timeline: {},
+  events: [{ name, type, date, location }],  // ← NOT SYNCED TO events table!
+  target_participants: {},
+  objectives_en, objectives_ar
+}
+```
+
+**Features:**
+- 4-step wizard: Details → Strategic Alignment → Events & Schedule → Targeting
+- AI campaign generator
+- Events list management (JSONB, not table)
+- Target participant configuration
+- Strategic plan linking
+- Stats: Total campaigns, Active, Participants, Events count
+
+**AI Schema:**
+```json
+{
+  "name_en": "string",
+  "name_ar": "string",
+  "tagline_en": "string",
+  "tagline_ar": "string",
+  "description_en": "string",
+  "description_ar": "string",
+  "objectives_en": "string",
+  "objectives_ar": "string",
+  "focus_areas": ["string"],
+  "events": [{ "name": "string", "type": "string", "date": "string", "location": "string" }],
+  "target_participants": { "type": ["string"], "min_participants": 0, "max_participants": 0 },
+  "budget_estimate": 0
+}
+```
+
+**CRITICAL GAP:** Events added in CampaignPlanner are stored in `programs.events[]` JSONB but NOT synced to the `events` database table!
+
 **Required Fix:**
-- Sync events to `events` table on campaign save
-- Link events via `program_id` foreign key
+- Create `eventSyncService.js` to sync JSONB → table
+- Wire sync on event add/edit/delete in wizard
+- Add sync status indicator
+- Link events to calendar after sync
 
 ---
 

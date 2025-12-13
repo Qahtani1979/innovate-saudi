@@ -158,15 +158,40 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 ## Deep Dive: Related Pages Analysis
 
+### ProgramsControlDashboard.jsx (218 lines)
+
+**Current State:** ✅ Fully functional with AI
+**Data Tables Used:** programs (base44), program_applications (base44)
+
+**Features:**
+- Key metrics: Total programs, Active programs, Total applicants, Graduates
+- AI Portfolio Insights (gaps, recommendations, success patterns)
+- Program type distribution bar chart
+- Active programs listing with badges
+
+**Hub Integration Needs:**
+- [ ] Add events count per program
+- [ ] Show upcoming events across all programs
+
+---
+
 ### ParticipantDashboard.jsx (280 lines)
 
 **Current State:** ✅ Fully functional
 **Data Tables Used:** program_applications, programs, program_sessions, session_attendance, program_assignments, assignment_submissions, mentor_sessions, peer_collaborations
 
+**Features:**
+- Overall progress % calculation
+- Session tracking (X/12)
+- Assignment tracking (X/8)
+- Mentor meetings count
+- Peer collaborations count
+- Quick actions: Submit Assignment, Cohort Forum, Resources
+
 **Hub Integration Needs:**
-- [ ] Add events section showing program-linked events
-- [ ] Link to EventCalendar for upcoming program events
-- [ ] Add event registration quick action
+- [ ] Add program events section
+- [ ] Link to EventRegistration for program-linked events
+- [ ] Show upcoming events in "Upcoming" section
 
 ---
 
@@ -175,6 +200,13 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 **Current State:** ✅ Fully functional
 **Data Tables Used:** program_applications, programs
 
+**Features:**
+- Stats: Enrolled, Pending, Graduated counts
+- Active programs with progress bars
+- Attendance rate display
+- Deliverables tracking (X/Y completed)
+- Upcoming milestones from curriculum
+
 **Hub Integration Needs:**
 - [ ] Add "My Events" section
 - [ ] Show upcoming events for enrolled programs
@@ -182,10 +214,53 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 ---
 
+### ProgramIdeaSubmission.jsx (361 lines)
+
+**Current State:** ✅ Fully functional with AI
+**Data Tables Used:** programs, innovation_proposals, sectors
+
+**Features:**
+- 4-step wizard
+- AI enhancement (titles, descriptions, implementation plan)
+- Success metrics generation
+- Team composition suggestions
+
+**Hub Integration Needs:**
+- [ ] Link submitted proposals to program events
+- [ ] Show related events during submission
+
+---
+
+### ApprovalCenter.jsx (941 lines)
+
+**Current State:** ✅ Comprehensive, handles 11 entity types
+**Entity Types:** policy_recommendation, challenge, pilot, rd_proposal, program_application, matchmaker_application, solution, program, citizen_ideas, innovation_proposal, rd_projects
+
+**Features:**
+- Tab-based navigation per entity type
+- InlineApprovalWizard integration
+- AI analysis for approval recommendations
+- SLA tracking and escalation badges
+- Pending pilot milestone approvals
+- Pending budget approvals
+
+**Hub Integration Needs:**
+- [ ] Add "Events" tab (12th entity type)
+- [ ] Wire event.created triggers to create approval requests
+- [ ] Add event approval workflow gates
+
+---
+
 ### ProgramOperatorPortal.jsx (396 lines)
 
 **Current State:** ✅ Fully functional
 **Data Tables Used:** organizations, programs, program_applications, pilots, matchmaker_applications
+
+**Features:**
+- Pending actions alert
+- Stats: Active programs, Applications, Participants, Pilots, Matchmaker active
+- Program list with conversion metrics
+- Matchmaker pipeline (4 stages)
 
 **Hub Integration Needs:**
 - [ ] Add program events management section
@@ -195,15 +270,59 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 ---
 
-### ApprovalCenter.jsx (941 lines)
+### StrategicPlanBuilder.jsx (156 lines)
 
-**Current State:** ✅ Comprehensive, handles 11 entity types
-**Entity Types:** policy_recommendation, challenge, pilot, rd_proposal, program_application, matchmaker_application, solution, program, citizen_ideas, innovation_proposal, rd_projects
+**Current State:** ✅ Functional with AI
+**Data Tables Used:** strategic_plans
+
+**Features:**
+- Title/Vision fields
+- Strategic objectives array
+- AI generation
 
 **Hub Integration Needs:**
-- [ ] Add "Events" tab (12th entity type)
-- [ ] Wire event.created triggers to create approval requests
-- [ ] Add event approval workflow gates
+- [ ] Link strategic plans to programs
+- [ ] Show programs aligned to each plan
+
+---
+
+### Portfolio.jsx (383 lines)
+
+**Current State:** ✅ Fully functional
+**Data Tables Used:** challenges, pilots, sectors
+
+**Pipeline Stages:** Discover → Validate → Experiment → Pilot → Scale → Institutionalize
+
+**Features:**
+- Drag-and-drop Kanban
+- Matrix view, Timeline Gantt view
+- Sector/Year filtering
+- Bulk actions, Export dialog
+- AI Pipeline Insights (5 categories)
+
+**Hub Integration Needs:**
+- [ ] Add programs to pipeline (currently challenges only)
+- [ ] Link program events to timeline
+
+---
+
+### GapAnalysisTool.jsx (531 lines)
+
+**Current State:** ✅ Fully functional with AI
+**Data Tables Used:** challenges, pilots, solutions, sectors, rd_projects
+
+**AI Gap Categories (10):** Underserved sectors, Innovation gaps, Geographic gaps, Technology gaps, Capacity gaps, Skills gaps, Partnership gaps, Budget gaps, Timeline gaps, Service quality gaps
+
+**Features:**
+- Sector coverage bar chart
+- Portfolio balance radar chart
+- Gap cards with severity badges
+- Priority action items
+- Bilingual insights
+
+**Hub Integration Needs:**
+- [ ] Include program coverage in gap analysis
+- [ ] Suggest programs to address gaps
 
 ---
 
@@ -225,6 +344,12 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 **Current State:** ⚠️ Functional but events NOT synced
 **CRITICAL ISSUE:** `programs.events[]` (JSONB) → NO SYNC → `events` table
+
+**Features:**
+- 4-step wizard: Details → Strategic Alignment → Events & Schedule → Targeting
+- AI campaign generator
+- Events list management (JSONB, not table)
+- Stats: Total campaigns, Active, Participants, Events count
 
 **Hub Integration Needs:**
 - [ ] Create eventSyncService.js
