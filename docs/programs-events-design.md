@@ -1,8 +1,8 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 2.0  
+**Version:** 3.0  
 **Last Updated:** 2025-12-13  
-**Status:** Comprehensive Review Complete  
+**Status:** Deep Comprehensive Review Complete  
 
 ---
 
@@ -10,16 +10,17 @@
 
 1. [Executive Summary](#executive-summary)
 2. [Current State Analysis](#current-state-analysis)
-3. [System Architecture](#system-architecture)
-4. [Data Model](#data-model)
-5. [User Roles & Permissions](#user-roles--permissions)
-6. [Feature Specifications](#feature-specifications)
-7. [Integration Points](#integration-points)
-8. [Communication System](#communication-system)
-9. [AI Capabilities](#ai-capabilities)
-10. [UI/UX Design](#uiux-design)
-11. [Security Considerations](#security-considerations)
-12. [Migration Strategy](#migration-strategy)
+3. [Related Pages Deep Dive](#related-pages-deep-dive)
+4. [System Architecture](#system-architecture)
+5. [Data Model](#data-model)
+6. [User Roles & Permissions](#user-roles--permissions)
+7. [Feature Specifications](#feature-specifications)
+8. [Integration Points](#integration-points)
+9. [Communication System](#communication-system)
+10. [AI Capabilities](#ai-capabilities)
+11. [UI/UX Design](#uiux-design)
+12. [Security Considerations](#security-considerations)
+13. [Migration Strategy](#migration-strategy)
 
 ---
 
@@ -67,7 +68,7 @@ The Programs & Events Hub consolidates the management of programs, events, campa
 | `ProgramApplicationDetail.jsx` | Application view | Single application details | ✅ Active |
 | `ProgramApplicationEvaluationHub.jsx` | Evaluation | Application evaluation queue | ✅ Active |
 | `ProgramCohortManagement.jsx` | Cohort mgmt | NOT FOUND (referenced) | ❌ Missing |
-| `ProgramOperatorPortal.jsx` | Operator view | Program operator tools | ✅ Active |
+| `ProgramOperatorPortal.jsx` | Operator view | Program operator tools | ✅ Active (396 lines) |
 | `ProgramOutcomesAnalytics.jsx` | Analytics | Outcome metrics & charts | ✅ Active |
 | `ProgramImpactDashboard.jsx` | Impact | Conversion funnel analytics | ✅ Active |
 | `ProgramPortfolioPlanner.jsx` | Portfolio | Program portfolio planning | ✅ Active |
@@ -92,7 +93,279 @@ The Programs & Events Hub consolidates the management of programs, events, campa
 | `CalendarView.jsx` | `/calendar` | Unified calendar (pilots, programs, expert assignments) | ✅ Active (210 lines) |
 | `CampaignManager` (component) | Communications | Email campaign manager | ✅ Active |
 
-### 2.2 Existing Components Inventory
+---
+
+## 3. Related Pages Deep Dive
+
+### 3.1 ParticipantDashboard.jsx (280 lines)
+
+**Purpose:** Active participant's view of their enrolled program progress.
+
+**Data Sources:**
+- `program_applications` table (filtered by `user.email`)
+- `programs` table (joined)
+- `program_sessions` table (total sessions count)
+- `session_attendance` table (completed sessions)
+- `program_assignments` table (total assignments)
+- `assignment_submissions` table (submitted work)
+- `mentor_sessions` table (mentor meetings)
+- `peer_collaborations` table (collaborations)
+
+**Features:**
+- Overall progress percentage calculation
+- Session completion tracking
+- Assignment submission status
+- Mentor meeting count
+- Peer collaboration count
+- Quick actions: Submit Assignment, Cohort Forum, Resources
+
+**Integration Points:**
+- Links to `Programs` page if no active program
+- Uses `useAuth` for user context
+- Uses `useLanguage` for bilingual support
+
+### 3.2 MyPrograms.jsx (199 lines)
+
+**Purpose:** User's program portfolio - enrolled, pending, and graduated programs.
+
+**Data Sources:**
+- `program_applications` table (by `applicant_email` or `created_by`)
+- `programs` table (joined)
+
+**Features:**
+- Stats: Enrolled count, Pending count, Graduated count
+- Active programs list with progress bars
+- Upcoming milestones from curriculum JSONB
+- Links to `ProgramApplicationDetail`
+
+**Permissions:**
+- Protected via `ProtectedPage` HOC
+- No specific permissions required (user-scoped data)
+
+### 3.3 ProgramIdeaSubmission.jsx (361 lines)
+
+**Purpose:** Multi-step innovation proposal submission form.
+
+**Data Sources:**
+- `programs` table (active programs for selection)
+- `innovation_proposals` table (submission target)
+- `sectors` table (reference data)
+
+**Features:**
+- 4-step wizard: Program Selection → Details → Implementation → Success
+- AI enhancement via `useAIWithFallback` hook
+- Generates bilingual title/description
+- Budget/timeline estimation
+- Team composition suggestions
+
+**AI Integration:**
+- `AIStatusIndicator` component
+- JSON schema for structured response
+- Generates: title, description, implementation_plan, success_metrics, timeline, team_composition
+
+### 3.4 ApprovalCenter.jsx (941 lines) ✅ EXISTS
+
+**Purpose:** Unified approval queue for ALL entity types in the system.
+
+**Entity Types Handled:**
+1. `policy_recommendation` - Policy approvals
+2. `challenge` - Challenge approvals (4 gates)
+3. `pilot` - Pilot approvals (milestones, budget)
+4. `rd_proposal` - R&D proposal approvals
+5. `program_application` - Program application approvals
+6. `matchmaker_application` - Matchmaker approvals
+7. `solution` - Solution approvals
+8. `program` - Program entity approvals (4 gates: launch, selection, mid_review, completion_review)
+9. `citizen_ideas` - Citizen idea approvals
+10. `innovation_proposal` - Innovation proposal approvals
+11. `rd_projects` - R&D project approvals
+
+**Features:**
+- Tab-based navigation per entity type
+- `InlineApprovalWizard` integration for in-context decisions
+- AI analysis for approval recommendations
+- SLA tracking and escalation badges
+- Bulk approval actions
+
+**Integration with Programs:**
+- `program_application` approvals with full workflow
+- `program` entity approvals for all 4 gates
+- Links to `ProgramApplicationDetail` and `ProgramDetail`
+
+### 3.5 ProgramOperatorPortal.jsx (396 lines)
+
+**Purpose:** Dashboard for program operators (organizations that run programs).
+
+**Data Sources:**
+- `organizations` table (operator's org by contact_email)
+- `programs` table (filtered by operator_organization_id)
+- `program_applications` table (for operated programs)
+- `pilots` table (conversions from programs)
+- `matchmaker_applications` table (if operating matchmaker)
+
+**Features:**
+- Pending actions alert for unreviewed applications
+- Stats: Active programs, Applications, Participants, Pilots, Matchmaker active
+- Program list with conversion metrics
+- Matchmaker pipeline visualization
+- Links to ApplicationReviewHub
+
+**Key Metrics:**
+- Application count per program
+- Accepted count
+- Conversion rate
+- Pilot conversions
+
+### 3.6 StrategicPlanBuilder.jsx (156 lines)
+
+**Purpose:** AI-assisted strategic plan creation.
+
+**Data Sources:**
+- `strategic_plans` table (via base44 entity)
+
+**Features:**
+- Title/Vision input
+- Strategic objectives management
+- AI generation via `useAIWithFallback`
+- Generates: title, vision, objectives array
+
+**AI Schema:**
+```json
+{
+  "title_en": "string",
+  "vision_en": "string",
+  "objectives": [{ "name_en": "string", "description_en": "string" }]
+}
+```
+
+### 3.7 Portfolio.jsx (383 lines)
+
+**Purpose:** Innovation portfolio Kanban board tracking items across pipeline stages.
+
+**Data Sources:**
+- `challenges` table
+- `pilots` table
+- `sectors` table
+
+**Pipeline Stages:**
+1. Discover → 2. Validate → 3. Experiment → 4. Pilot → 5. Scale → 6. Institutionalize
+
+**Features:**
+- Drag-and-drop Kanban (using @hello-pangea/dnd)
+- Matrix view alternative
+- Sector filtering
+- Timeline Gantt view
+- Export dialog
+- AI Pipeline Insights
+
+**AI Analysis:**
+- Pipeline health assessment
+- Transition recommendations
+- Resource allocation suggestions
+- Acceleration strategies
+- Portfolio balancing recommendations
+
+### 3.8 GapAnalysisTool.jsx (531 lines)
+
+**Purpose:** AI-powered discovery of innovation gaps and opportunities.
+
+**Data Sources:**
+- `challenges` table
+- `pilots` table
+- `solutions` table
+- `sectors` table
+- `rd_projects` table
+
+**AI Analysis Categories:**
+1. Underserved sectors
+2. Innovation gaps
+3. Geographic gaps
+4. Technology gaps
+5. Capacity gaps
+6. Skills & talent gaps
+7. Partnership gaps
+8. Budget gaps
+9. Timeline gaps
+10. Service quality gaps
+
+**Features:**
+- Sector coverage bar chart
+- Portfolio balance radar chart
+- Gap cards with severity badges
+- Priority action items
+- Sector-level statistics
+
+### 3.9 CampaignPlanner.jsx (699 lines)
+
+**Purpose:** Campaign and event creation wizard for innovation initiatives.
+
+**Data Sources:**
+- `programs` table (filtered by program_type = 'campaign' or 'challenge')
+- `challenges` table (for AI context)
+- `sectors` table (focus area selection)
+- `strategic_plans` table (linking)
+
+**Campaign Data Structure:**
+```javascript
+{
+  program_type: 'campaign',
+  name_en, name_ar,
+  tagline_en, tagline_ar,
+  description_en, description_ar,
+  focus_areas: [],
+  timeline: {},
+  events: [{ name, type, date, location }],  // ← NOT SYNCED TO events table!
+  target_participants: {},
+  objectives_en, objectives_ar
+}
+```
+
+**Features:**
+- 4-step wizard: Details → Strategic Alignment → Events & Schedule → Targeting
+- AI campaign generator
+- Events list management (JSONB, not table)
+- Target participant configuration
+- Strategic plan linking
+
+**CRITICAL GAP:** Events added in CampaignPlanner are stored in `programs.events[]` JSONB but NOT synced to the `events` database table!
+
+---
+
+## 4. System Architecture
+
+### 4.1 Component Hierarchy
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     PROGRAMS & EVENTS HUB                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│  │   Programs   │ │    Events    │ │  Campaigns   │ │  Calendar  │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│         │                │                │               │         │
+│  ┌──────┴─────────┬──────┴─────────┬──────┴─────────┬─────┴───────┐ │
+│  │ Programs.jsx   │ EventCalendar  │ CampaignPlanner│ CalendarView│ │
+│  │ ProgramDetail  │ EventDetail    │                │             │ │
+│  │ ProgramCreate  │ EventCreate*   │                │             │ │
+│  │ ProgramEdit    │ EventEdit*     │                │             │ │
+│  │ MyPrograms     │                │                │             │ │
+│  │ ParticipantDash│                │                │             │ │
+│  │ OperatorPortal │                │                │             │ │
+│  └────────────────┴────────────────┴────────────────┴─────────────┘ │
+│                                                                     │
+│  * = MISSING - needs to be created                                  │
+│                                                                     │
+│  SUPPORTING PAGES:                                                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│  │ApprovalCenter│ │ Portfolio    │ │GapAnalysis   │ │StrategicPlan│ │
+│  │(941 lines)   │ │ (383 lines)  │ │(531 lines)   │ │(156 lines)  │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Existing Components Inventory
 
 #### Program Components (37 files in `/src/components/programs/`)
 
@@ -156,7 +429,11 @@ The Programs & Events Hub consolidates the management of programs, events, campa
 
 **CRITICAL GAP: No dedicated `/src/components/events/` folder exists!**
 
-### 2.3 Database Tables
+---
+
+## 5. Data Model
+
+### 5.1 Database Tables
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -230,20 +507,9 @@ The Programs & Events Hub consolidates the management of programs, events, campa
 │ total_deliverables                                              │
 │ submitted_at, decision_date, created_by                         │
 └─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│                  EMAIL_CAMPAIGNS TABLE                          │
-├─────────────────────────────────────────────────────────────────┤
-│ id, name, description, template_id                              │
-│ audience_type, audience_filter (JSONB)                          │
-│ campaign_variables (JSONB)                                      │
-│ status (draft|scheduled|sending|sent|failed)                    │
-│ scheduled_at, sent_at, created_by                               │
-│ created_at, updated_at                                          │
-└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.4 Critical Gap: Event Synchronization
+### 5.2 Critical Gap: Event Synchronization
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -269,7 +535,35 @@ The Programs & Events Hub consolidates the management of programs, events, campa
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.5 Existing Hooks
+---
+
+## 6. User Roles & Permissions
+
+### 6.1 ApprovalCenter Integration
+
+The ApprovalCenter (941 lines) handles program-related approvals through:
+
+| Entity Type | Gate Name | SLA | Self-Check Items | Reviewer Checklist |
+|-------------|-----------|-----|------------------|-------------------|
+| `program` | launch | 5 days | 4 items | 5 items |
+| `program` | selection | 7 days | 3 items | 4 items |
+| `program` | mid_review | 5 days | 4 items | 5 items |
+| `program` | completion_review | 7 days | 4 items | 5 items |
+| `program_application` | submission | 3 days | 5 items | 6 items |
+| `program_application` | evaluation | 5 days | 3 items | 4 items |
+
+### 6.2 Visibility Rules (from useProgramsWithVisibility.js)
+
+```javascript
+// Visibility Logic:
+// - Admin / Full Visibility Users: All programs
+// - National Deputyship: All programs in their sector(s)
+// - Municipality Staff: Own + national programs
+// - Provider: Programs they've applied to
+// - Others: Published/active programs only
+```
+
+### 6.3 Existing Hooks
 
 ```javascript
 // Program Hooks
@@ -287,7 +581,7 @@ useEmailTrigger.js            // Email trigger automation
 // useEventsWithVisibility.js - Visibility-scoped fetch
 ```
 
-### 2.6 Email Trigger Status
+### 6.4 Email Trigger Status
 
 | Trigger Code | Template | Wired In UI | Location |
 |--------------|----------|-------------|----------|
