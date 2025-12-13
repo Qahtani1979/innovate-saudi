@@ -126,16 +126,47 @@ function EmailTemplateEditor() {
           .update(data)
           .eq('id', selectedTemplateId);
         if (error) throw error;
+        return { isUpdate: true };
       } else {
         const { error } = await supabase
           .from('email_templates')
           .insert(data);
         if (error) throw error;
+        return { isUpdate: false };
       }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['email-templates'] });
       toast.success(t({ en: 'Template saved successfully', ar: 'تم حفظ القالب بنجاح' }));
+      
+      // Clear form after creating a new template
+      if (!result.isUpdate) {
+        setSelectedTemplateId(null);
+        setTemplate({
+          template_key: '',
+          category: 'system',
+          name_en: '',
+          name_ar: '',
+          subject_en: '',
+          subject_ar: '',
+          body_en: '',
+          body_ar: '',
+          is_html: true,
+          use_header: true,
+          use_footer: true,
+          header_title_en: '',
+          header_title_ar: '',
+          header_gradient_start: '#006C35',
+          header_gradient_end: '#00A651',
+          cta_text_en: '',
+          cta_text_ar: '',
+          cta_url_variable: '',
+          variables: [],
+          is_active: true,
+          is_system: false,
+          is_critical: false,
+        });
+      }
     },
     onError: (error) => {
       toast.error(error.message);
