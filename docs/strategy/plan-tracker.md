@@ -3,7 +3,7 @@
 **Project:** Strategy System  
 **Last Audit:** 2025-12-13 (VERIFIED DEEP REVIEW)  
 **Target Completion:** Full Implementation  
-**Status:** ✅ FULLY IMPLEMENTED - All Core Features Complete
+**Status:** ⚠️ PARTIALLY COMPLETE - Critical DB Gaps Identified
 
 ---
 
@@ -214,18 +214,36 @@
 
 ---
 
-## Identified Gaps & Future Enhancements
+## Identified Gaps & Required Actions
 
-### Minor Gaps (P2) - Not Blocking
+### P0 GAPS (Critical - Must Fix)
 
-| # | Gap | Description | Recommendation | Priority |
-|---|-----|-------------|----------------|----------|
-| 1 | OKR Auto-Tracking | No automated OKR progress alerts | Add scheduled function for OKR deadline alerts | P2 |
-| 2 | Strategy Version Comparison | No visual diff between plan versions | Add version comparison component | P2 |
-| 3 | Real-time KPI Dashboard | KPIs not real-time updated | Enable Supabase realtime for `strategic_plans` | P2 |
-| 4 | Hook Size | useStrategicKPI.js at 211 lines | Consider splitting into smaller hooks | P3 |
+| # | Gap | Description | Impact | Recommendation | Status |
+|---|-----|-------------|--------|----------------|--------|
+| 1 | Missing `is_strategy_derived` on Programs | DB column not found in programs table | Cannot track which programs came from strategy | Add DB column via migration | ❌ MISSING |
+| 2 | Missing `strategy_derivation_date` on Programs | DB column not found | Cannot track when programs were derived | Add DB column via migration | ❌ MISSING |
+| 3 | Missing `lessons_learned` on Programs | DB column not found | ProgramLessonsToStrategy cannot persist data | Add JSONB column via migration | ❌ MISSING |
+| 4 | Missing `is_strategy_derived` on Events | DB column not found in events table | Cannot identify strategy-derived events | Add DB column via migration | ❌ MISSING |
 
-### Enhancement Opportunities (P3)
+### P1 GAPS (High - Should Fix Soon)
+
+| # | Gap | Description | Impact | Recommendation | Status |
+|---|-----|-------------|--------|----------------|--------|
+| 1 | No `okrs` table | OKRManagementSystem exists but no dedicated OKR storage | OKRs stored in JSONB - harder to query/report | Create dedicated `okrs` and `key_results` tables | ❌ MISSING |
+| 2 | No `strategic_initiatives` table | Initiatives embedded in strategic_plans | No lifecycle tracking for individual initiatives | Create dedicated table | ❌ MISSING |
+| 3 | No realtime on strategic_plans | KPI updates not pushed live | Dashboard requires refresh to see changes | Enable Supabase realtime | ❌ NOT ENABLED |
+| 4 | Missing EventStrategicAlignment in EventDetail | Component exists but not integrated | Users cannot link events to strategy from event page | Add to EventDetail tabs | ❌ NOT INTEGRATED |
+
+### P2 GAPS (Medium - Nice to Have)
+
+| # | Gap | Description | Recommendation | Status |
+|---|-----|-------------|----------------|--------|
+| 1 | OKR Auto-Tracking | No automated OKR progress alerts | Add scheduled edge function for OKR deadlines | ❌ |
+| 2 | Strategy Version Comparison | No visual diff between plan versions | Add version comparison component | ❌ |
+| 3 | Hook Size | useStrategicKPI.js at 211 lines | Split into useStrategicPlans + useKPIContributions | ⚠️ REFACTOR |
+| 4 | Missing approval history UI | Approvals work but no timeline view | Add approval history component | ❌ |
+
+### P3 GAPS (Low - Future Enhancement)
 
 | # | Enhancement | Description | Priority |
 |---|-------------|-------------|----------|
@@ -233,6 +251,17 @@
 | 2 | Strategy Templates | Pre-built templates for common strategic frameworks | P3 |
 | 3 | KPI Benchmarking | Compare KPIs across municipalities/periods | P3 |
 | 4 | Strategic Risk Register | Dedicated risk tracking tied to objectives | P3 |
+
+---
+
+## Gap Summary
+
+| Priority | Count | Status |
+|----------|-------|--------|
+| P0 Critical | 4 | ❌ Must fix before claiming complete |
+| P1 High | 4 | ❌ Should fix soon |
+| P2 Medium | 4 | ⚠️ Can defer |
+| P3 Low | 4 | 📋 Future roadmap |
 
 ---
 
@@ -276,16 +305,16 @@
 
 ---
 
-## Overall Score: **95/100** ✅
+## Overall Score: **78/100** ⚠️ (Previously overclaimed at 95)
 
-| Category | Weight | Score | Weighted |
-|----------|--------|-------|----------|
-| Core Functionality | 30% | 100 | 30 |
-| Integration | 25% | 100 | 25 |
-| AI Features | 15% | 100 | 15 |
-| Edge Functions | 10% | 100 | 10 |
-| Code Quality | 10% | 85 | 8.5 |
-| Future-Proofing | 10% | 65 | 6.5 |
-| **TOTAL** | **100%** | - | **95** |
+| Category | Weight | Score | Weighted | Notes |
+|----------|--------|-------|----------|-------|
+| Core Functionality | 30% | 95 | 28.5 | Pages/components exist |
+| **Database Schema** | 20% | 60 | 12 | Missing P0 fields |
+| Integration | 20% | 75 | 15 | Forward flow incomplete |
+| AI Features | 10% | 100 | 10 | All 7 working |
+| Edge Functions | 10% | 100 | 10 | All 7 deployed |
+| Code Quality | 10% | 85 | 8.5 | Hook needs refactor |
+| **TOTAL** | **100%** | - | **84** |
 
-*Tracker last updated: 2025-12-13 (Verified Deep Review)*
+*Tracker last updated: 2025-12-13 (Gap Analysis Completed)*
