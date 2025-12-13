@@ -2874,6 +2874,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_published: boolean | null
+          is_strategy_derived: boolean | null
           is_virtual: boolean | null
           location: string | null
           location_ar: string | null
@@ -2886,6 +2887,11 @@ export type Database = {
           reminder_sent_at: string | null
           start_date: string | null
           status: string | null
+          strategic_alignment_score: number | null
+          strategic_objective_ids: string[] | null
+          strategic_pillar_id: string | null
+          strategic_plan_ids: string[] | null
+          strategy_derivation_date: string | null
           title_ar: string | null
           title_en: string
           updated_at: string | null
@@ -2903,6 +2909,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           is_virtual?: boolean | null
           location?: string | null
           location_ar?: string | null
@@ -2915,6 +2922,11 @@ export type Database = {
           reminder_sent_at?: string | null
           start_date?: string | null
           status?: string | null
+          strategic_alignment_score?: number | null
+          strategic_objective_ids?: string[] | null
+          strategic_pillar_id?: string | null
+          strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           title_ar?: string | null
           title_en: string
           updated_at?: string | null
@@ -2932,6 +2944,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           is_virtual?: boolean | null
           location?: string | null
           location_ar?: string | null
@@ -2944,6 +2957,11 @@ export type Database = {
           reminder_sent_at?: string | null
           start_date?: string | null
           status?: string | null
+          strategic_alignment_score?: number | null
+          strategic_objective_ids?: string[] | null
+          strategic_pillar_id?: string | null
+          strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           title_ar?: string | null
           title_en?: string
           updated_at?: string | null
