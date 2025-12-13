@@ -195,43 +195,81 @@ function EmailTemplateEditor() {
   };
 
   const handleAIGenerate = async () => {
+    const categoryLabel = CATEGORIES.find(c => c.value === template.category)?.label.en || template.category;
+    
     const result = await invokeAI({
-      prompt: `Generate a professional bilingual email template for: ${template.name_en || template.template_key}
-        
-For a Saudi municipal innovation platform. Include:
-- Professional yet warm tone
-- Clear call-to-action
-- Both English and Arabic versions (formal Arabic فصحى)
-- Use HTML formatting with <p>, <strong>, <ul>, <li> tags
-- Include appropriate variables like {{userName}}, {{entityTitle}}, {{actionUrl}}`,
+      prompt: `Generate a COMPLETE professional bilingual email template for: "${template.name_en || template.template_key}"
+Category: ${categoryLabel}
+
+This is for a Saudi municipal innovation platform (الابتكار السعودي). Generate ALL fields:
+
+REQUIREMENTS:
+1. Professional yet warm tone appropriate for government/municipal communication
+2. Both English and Arabic versions (use formal Arabic فصحى)
+3. Use HTML formatting: <p>, <strong>, <ul>, <li>, <br> tags
+4. Include ALL necessary template variables wrapped in {{variableName}} format
+5. CTA (Call-to-Action) should be action-oriented and clear
+6. Arabic name should be a proper translation of the English name
+
+COMMON VARIABLES TO USE (pick relevant ones):
+- {{userName}} - recipient's name
+- {{userEmail}} - recipient's email
+- {{entityTitle}} - title of challenge/solution/pilot/etc
+- {{organizationName}} - organization name
+- {{municipalityName}} - municipality name
+- {{actionUrl}} - link to take action
+- {{dashboardUrl}} - link to dashboard
+- {{deadline}} - deadline date
+- {{status}} - current status
+- {{score}} - evaluation score
+- {{roleName}} - role name
+- {{rejectionReason}} - reason for rejection if applicable
+
+Generate a complete, production-ready email template.`,
       response_json_schema: {
         type: 'object',
         properties: {
-          subject_en: { type: 'string' },
-          subject_ar: { type: 'string' },
-          body_en: { type: 'string' },
-          body_ar: { type: 'string' },
-          header_title_en: { type: 'string' },
-          header_title_ar: { type: 'string' },
-          cta_text_en: { type: 'string' },
-          cta_text_ar: { type: 'string' },
-          suggested_variables: { type: 'array', items: { type: 'string' } }
-        }
+          name_en: { type: 'string', description: 'English display name for the template' },
+          name_ar: { type: 'string', description: 'Arabic display name for the template' },
+          subject_en: { type: 'string', description: 'English email subject line' },
+          subject_ar: { type: 'string', description: 'Arabic email subject line' },
+          body_en: { type: 'string', description: 'Full English email body with HTML formatting' },
+          body_ar: { type: 'string', description: 'Full Arabic email body with HTML formatting' },
+          header_title_en: { type: 'string', description: 'English header/banner title' },
+          header_title_ar: { type: 'string', description: 'Arabic header/banner title' },
+          cta_text_en: { type: 'string', description: 'English call-to-action button text' },
+          cta_text_ar: { type: 'string', description: 'Arabic call-to-action button text' },
+          cta_url_variable: { type: 'string', description: 'Variable name for CTA URL like actionUrl or dashboardUrl' },
+          variables: { 
+            type: 'array', 
+            items: { type: 'string' },
+            description: 'List of all variable names used in the template (without curly braces)'
+          }
+        },
+        required: ['name_en', 'name_ar', 'subject_en', 'subject_ar', 'body_en', 'body_ar', 'header_title_en', 'header_title_ar', 'cta_text_en', 'cta_text_ar', 'variables']
       }
     });
+    
     if (result.success) {
+      const data = result.data;
       setTemplate(prev => ({
         ...prev,
-        subject_en: result.data.subject_en || prev.subject_en,
-        subject_ar: result.data.subject_ar || prev.subject_ar,
-        body_en: result.data.body_en || prev.body_en,
-        body_ar: result.data.body_ar || prev.body_ar,
-        header_title_en: result.data.header_title_en || prev.header_title_en,
-        header_title_ar: result.data.header_title_ar || prev.header_title_ar,
-        cta_text_en: result.data.cta_text_en || prev.cta_text_en,
-        cta_text_ar: result.data.cta_text_ar || prev.cta_text_ar,
+        name_en: data.name_en || prev.name_en,
+        name_ar: data.name_ar || prev.name_ar,
+        subject_en: data.subject_en || prev.subject_en,
+        subject_ar: data.subject_ar || prev.subject_ar,
+        body_en: data.body_en || prev.body_en,
+        body_ar: data.body_ar || prev.body_ar,
+        header_title_en: data.header_title_en || prev.header_title_en,
+        header_title_ar: data.header_title_ar || prev.header_title_ar,
+        cta_text_en: data.cta_text_en || prev.cta_text_en,
+        cta_text_ar: data.cta_text_ar || prev.cta_text_ar,
+        cta_url_variable: data.cta_url_variable || prev.cta_url_variable || 'actionUrl',
+        variables: data.variables && data.variables.length > 0 ? data.variables : prev.variables,
       }));
-      toast.success(t({ en: 'AI template generated', ar: 'تم توليد القالب الذكي' }));
+      toast.success(t({ en: 'AI generated all template fields', ar: 'تم توليد جميع حقول القالب' }));
+    } else {
+      toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد الذكي' }));
     }
   };
 
