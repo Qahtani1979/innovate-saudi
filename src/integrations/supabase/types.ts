@@ -2863,6 +2863,9 @@ export type Database = {
       }
       events: {
         Row: {
+          budget_actual: number | null
+          budget_currency: string | null
+          budget_estimate: number | null
           created_at: string | null
           description_ar: string | null
           description_en: string | null
@@ -2880,6 +2883,7 @@ export type Database = {
           program_sync_source: string | null
           program_synced: boolean | null
           registration_deadline: string | null
+          reminder_sent_at: string | null
           start_date: string | null
           status: string | null
           title_ar: string | null
@@ -2888,6 +2892,9 @@ export type Database = {
           virtual_link: string | null
         }
         Insert: {
+          budget_actual?: number | null
+          budget_currency?: string | null
+          budget_estimate?: number | null
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
@@ -2905,6 +2912,7 @@ export type Database = {
           program_sync_source?: string | null
           program_synced?: boolean | null
           registration_deadline?: string | null
+          reminder_sent_at?: string | null
           start_date?: string | null
           status?: string | null
           title_ar?: string | null
@@ -2913,6 +2921,9 @@ export type Database = {
           virtual_link?: string | null
         }
         Update: {
+          budget_actual?: number | null
+          budget_currency?: string | null
+          budget_estimate?: number | null
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
@@ -2930,6 +2941,7 @@ export type Database = {
           program_sync_source?: string | null
           program_synced?: boolean | null
           registration_deadline?: string | null
+          reminder_sent_at?: string | null
           start_date?: string | null
           status?: string | null
           title_ar?: string | null

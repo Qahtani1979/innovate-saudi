@@ -1,8 +1,8 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 8.0  
+**Version:** 9.0  
 **Last Updated:** 2025-12-13  
-**Status:** PHASES 1-6 COMPLETE (100%) | Phase 7 Integration Pending 🟢
+**Status:** PHASES 1-7 COMPLETE (90%) | Only Realtime remaining 🟢
 
 ---
 
@@ -125,7 +125,7 @@
 | event_submitted email template | Medium | ✅ | Created with bilingual support |
 | Approval system assessment doc | Medium | ✅ | docs/approval-system-assessment.md |
 
-### ✅ Phase 7 Tasks - Extended Integrations - PARTIAL COMPLETE
+### ✅ Phase 7 Tasks - Extended Integrations - COMPLETE (90%)
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
@@ -133,11 +133,11 @@
 | In-app notifications for Programs | High | ✅ | notifyProgramEvent() in AutoNotification |
 | In-app notifications for Events | High | ✅ | notifyEventAction() in AutoNotification |
 | Add events to global search | Medium | ✅ | useVisibilityAwareSearch.js updated |
-| Add budget tracking to events | Medium | 🔴 | events table + EventForm |
-| Event reminder edge function | Medium | 🔴 | 24h before event notification |
-| Add comments to events | Low | 🔴 | entity_type='event' |
-| Add bookmarks to events | Low | 🔴 | entity_type='event' |
-| Supabase Realtime updates | Low | 🔴 | Live updates for listings |
+| Add budget tracking to events | Medium | ✅ | Added budget_estimate, budget_actual columns |
+| Event reminder edge function | Medium | ✅ | supabase/functions/event-reminder/ |
+| Add comments to events | Low | ✅ | EventDetail.jsx with full comments UI |
+| Add bookmarks to events | Low | ✅ | EventDetail.jsx with bookmark toggle |
+| Supabase Realtime updates | Low | 🔴 | Future enhancement |
 
 ---
 
