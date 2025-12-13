@@ -91,27 +91,22 @@ Generate bilingual improvement recommendations:
 
   const sendMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.integrations.Core.SendEmail({
-        to: solution?.contact_email || pilot.created_by,
-        subject: `Pilot Feedback: ${pilot.title_en}`,
-        body: `
-Pilot: ${pilot.title_en}
-Municipality: ${pilot.municipality_id}
-
-IMPROVEMENTS IDENTIFIED:
-${data.improvements}
-
-${data.ai_suggestions ? `
-
-AI ANALYSIS:
-${JSON.stringify(data.ai_suggestions, null, 2)}
-` : ''}
-
-Please review and update the solution accordingly.
-
-Best regards,
-Saudi Innovates Platform
-        `
+      // Send feedback via email-trigger-hub
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'pilot.feedback_request',
+          recipient_email: solution?.contact_email || pilot.created_by,
+          entity_type: 'pilot',
+          entity_id: pilot.id,
+          variables: {
+            pilotTitle: pilot.title_en,
+            municipalityId: pilot.municipality_id,
+            improvements: data.improvements,
+            aiSuggestions: data.ai_suggestions ? JSON.stringify(data.ai_suggestions, null, 2) : ''
+          },
+          triggered_by: 'system'
+        }
       });
 
       // Create system activity

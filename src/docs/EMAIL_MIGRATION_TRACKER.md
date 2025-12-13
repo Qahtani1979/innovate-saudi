@@ -77,12 +77,21 @@ This document tracks the progress of migrating legacy email sending calls to the
 | `src/components/programs/AutomatedCertificateGenerator.jsx` | `email-trigger-hub` | ✅ | Certificate email |
 | `src/components/scaling/BudgetApprovalGate.jsx` | `email-trigger-hub` | ✅ | Budget approval/rejection |
 
+### Session 8 Files (migrated - missed in initial scan)
+
+| File | Current Method | Status | Notes |
+|------|---------------|--------|-------|
+| `src/components/programs/PostProgramFollowUp.jsx` | `email-trigger-hub` | ✅ | Post-program follow-up |
+| `src/components/challenges/CitizenClosureNotification.jsx` | `email-trigger-hub` | ✅ | Citizen idea closure |
+| `src/components/pilots/SolutionFeedbackLoop.jsx` | `email-trigger-hub` | ✅ | Solution feedback |
+
 ### Skipped Files
 
 | File | Current Method | Status | Notes |
 |------|---------------|--------|-------|
 | `src/pages/MasterDevelopmentPrompt.jsx` | `base44.integrations.Core.SendEmail` | ⏭️ | Documentation only - no runtime |
 | `src/components/communications/EmailTemplateEditorContent.jsx` | `supabase.functions.invoke('send-email')` | ⏭️ | Test email - keep direct |
+| `src/api/integrations.js` | Export wrapper | ⏭️ | Re-exports base44Client.SendEmail (already updated) |
 
 ---
 
@@ -95,8 +104,9 @@ This document tracks the progress of migrating legacy email sending calls to the
 | Session 5 files | 7 | 7 | 0 | 0 |
 | Session 6 files | 7 | 7 | 0 | 0 |
 | Session 7 files | 5 | 5 | 0 | 0 |
-| Documentation files | 1 | 0 | 1 | 0 |
-| **Total** | **~39** | **37** | **2** | **0** |
+| Session 8 files | 3 | 3 | 0 | 0 |
+| Skipped files | 3 | 0 | 3 | 0 |
+| **Total** | **~44** | **40** | **3** | **0** |
 
 **Progress: 100% Complete ✅**
 
@@ -289,6 +299,11 @@ await supabase.functions.invoke('email-trigger-hub', {
 36. ✅ `AutomatedCertificateGenerator.jsx` - Certificate email
 37. ✅ `BudgetApprovalGate.jsx` - Budget approval/rejection
 
+### Session 8 (2024-12-13) - Deep scan corrections
+38. ✅ `PostProgramFollowUp.jsx` - Post-program follow-up email
+39. ✅ `CitizenClosureNotification.jsx` - Citizen idea closure notification
+40. ✅ `SolutionFeedbackLoop.jsx` - Solution feedback email
+
 ---
 
 ## Special Cases
@@ -318,8 +333,8 @@ await supabase.functions.invoke('email-trigger-hub', {
 All production email calls have been migrated to use the unified `email-trigger-hub` edge function.
 
 ### Summary
-- **37 files migrated** to use `email-trigger-hub`
-- **2 files skipped** (testing/documentation purposes)
+- **40 files migrated** to use `email-trigger-hub`
+- **3 files skipped** (testing/documentation/export wrapper)
 - **All production email flows** now use the unified trigger system
 
 ### Benefits Achieved
