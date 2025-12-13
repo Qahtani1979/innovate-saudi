@@ -1,8 +1,8 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 9.4  
+**Version:** 9.5  
 **Last Updated:** 2025-12-13  
-**Status:** 🟢 Phase 8 Complete | Phase 9 Planned (Expert & Evaluation Integration)
+**Status:** 🟡 Phase 10 In Progress (AI Components UI Integration)
 
 ---
 
@@ -18,6 +18,7 @@
 8. [Critical Gaps](#critical-gaps)
 9. [Phase 7 - Extended Integrations](#phase-7-extended-integrations)
 10. [Phase 8 - Media Management Integration](#phase-8-media-management-integration)
+11. [Phase 10 - AI Components UI Integration](#phase-10-ai-components-ui-integration)
 
 ---
 
@@ -32,14 +33,14 @@
 | **In-App Notifications** | ✅ Integrated | ✅ Integrated | None |
 | **Calendar Integration** | ✅ Full | ✅ Full | None |
 | **Campaign Sync** | ✅ Full | ✅ Full | None |
-| **AI Components** | ✅ 6 components | ✅ 4 components | None |
+| **AI Components** | ✅ 6/6 integrated | ⚠️ 1/4 integrated | Medium |
 | **Search/Discovery** | ✅ Full | ✅ Full | None |
 | **Budget Integration** | ✅ Full | ✅ Full | None |
 | **Comments System** | ✅ Full | ✅ Full | None |
 | **Bookmarks** | ✅ Full | ✅ Full | None |
 | **Audit Logging** | ✅ Full | ✅ Full | None |
 | **Media Management** | ✅ Integrated | ✅ Integrated | None |
-| **Expert & Evaluation** | ✅ Full | ❌ Not Integrated | Medium |
+| **Expert & Evaluation** | ✅ Full | ✅ Full | None |
 | **Realtime Updates** | ❌ Future | ❌ Future | Low |
 
 **Full details:** See `docs/programs-events-integration-matrix.md`
@@ -180,6 +181,44 @@
 | Expert Assignment | ✅ entity_type: 'program' | ✅ entity_type: 'event' |
 | Expert Matching Engine | ✅ Supported | ✅ Supported |
 | Evaluation Consensus | ✅ Supported | ✅ Supported |
+
+### 🟡 Phase 10 Tasks - AI Components UI Integration - IN PROGRESS (0%)
+
+**Issue Identified:** AI components for Events were created in Phase 4 but never imported/used in pages.
+
+| Task | Priority | Status | Target File |
+|------|----------|--------|-------------|
+| Add AIEventOptimizer to EventDetail | High | ❌ TODO | EventDetail.jsx |
+| Add AIEventOptimizer to EventEdit | High | ❌ TODO | EventEdit.jsx |
+| Add AIEventOptimizer to EventCreate | Medium | ❌ TODO | EventCreate.jsx |
+| Add AIAttendancePredictor to EventDetail | Medium | ❌ TODO | EventDetail.jsx |
+| Add AIConflictDetector to EventCreate | High | ❌ TODO | EventCreate.jsx |
+| Add AIConflictDetector to EventEdit | High | ❌ TODO | EventEdit.jsx |
+
+**AI Component Integration Status:**
+
+| Component | File Exists | Used In UI | Gap |
+|-----------|-------------|------------|-----|
+| `AIProgramEventCorrelator` | ✅ | ✅ ProgramsEventsHub | None |
+| `AIEventOptimizer` | ✅ | ❌ Nowhere | **Integration needed** |
+| `AIAttendancePredictor` | ✅ | ❌ Nowhere | **Integration needed** |
+| `AIConflictDetector` | ✅ | ❌ Nowhere | **Integration needed** |
+
+**Implementation Plan:**
+```
+EventDetail.jsx
+├── New Tab: "AI Analysis"
+│   ├── AIEventOptimizer (suggestions for optimization)
+│   └── AIAttendancePredictor (attendance forecast)
+
+EventCreate.jsx
+├── AIConflictDetector (auto-checks when date selected)
+└── AIEventOptimizer sidebar (real-time suggestions)
+
+EventEdit.jsx
+├── AIConflictDetector (auto-checks when date changed)
+└── AIEventOptimizer sidebar (optimization suggestions)
+```
 
 ---
 
