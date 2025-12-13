@@ -171,14 +171,115 @@
 | 5 | `StrategicCoverageWidget` | Component | Coverage metrics dashboard | ✅ CREATED |
 | 6 | `useStrategicCascadeValidation` | Hook | Cascade validation & coverage | ✅ CREATED |
 
-### REMAINING Strategy Tools
+### REMAINING Strategy Tools - FULL IMPLEMENTATION PLAN
 
-| # | Tool | Type | Purpose | Priority |
-|---|------|------|---------|----------|
-| 1 | `StrategyToSandboxGenerator` | Page | Generate sandboxes from strategy | P2 |
-| 2 | `StrategyToLivingLabGenerator` | Page | Generate living labs from strategy | P2 |
-| 3 | `StrategyCampaignPlanner` | Component | Plan campaigns from strategy | P2 |
-| 4 | `StrategyPolicyDeriver` | Component | Derive policies from strategy | P2 |
+---
+
+## PHASE 7: P2 ENHANCEMENT - AI GENERATORS (Optional)
+
+### 7.1 Missing Edge Functions
+
+| # | Function | Purpose | Inputs | Outputs | Effort | Priority |
+|---|----------|---------|--------|---------|--------|----------|
+| 7.1.1 | `strategy-living-lab-generator` | AI-generate Living Lab designs from strategy | `strategic_plan_id`, `sector_id`, `focus_areas[]` | Lab name, objectives, methodology, timeline | 4hr | P2 |
+| 7.1.2 | `strategy-challenge-generator` | AI-generate challenges from objectives | `strategic_objective_ids[]`, `sector_id`, `gap_type` | Challenge title, description, impact metrics | 4hr | P2 |
+| 7.1.3 | `strategy-partnership-matcher` | Match partners to strategic goals | `strategic_plan_id`, `capability_needs[]` | Partner recommendations, match scores | 4hr | P2 |
+| 7.1.4 | `strategy-alignment-scorer` | Real-time alignment scoring | `entity_type`, `entity_id` | Alignment score, gaps, recommendations | 3hr | P2 |
+| 7.1.5 | `strategy-event-planner` | Plan events aligned to strategy | `strategic_plan_id`, `event_type`, `objectives[]` | Event plan, target audience, KPIs | 3hr | P3 |
+| 7.1.6 | `strategy-policy-deriver` | Generate policy docs from plans | `strategic_plan_id`, `policy_area` | Policy draft, references, impact | 4hr | P3 |
+| 7.1.7 | `strategy-campaign-planner` | Plan campaigns from strategy | `strategic_plan_id`, `target_audience`, `goals[]` | Campaign plan, messaging, schedule | 3hr | P3 |
+
+### 7.2 Missing UI Components
+
+| # | Component | Location | Purpose | Dependencies | Effort | Priority |
+|---|-----------|----------|---------|--------------|--------|----------|
+| 7.2.1 | `StrategyToLivingLabGenerator` | `src/components/strategy/` | One-click lab creation | `strategy-living-lab-generator` | 6hr | P2 |
+| 7.2.2 | `StrategyChallengeGenerator` | `src/components/strategy/` | AI challenge generation | `strategy-challenge-generator` | 6hr | P2 |
+| 7.2.3 | `StrategyPartnershipMatcher` | `src/components/strategy/` | Match partners to goals | `strategy-partnership-matcher` | 5hr | P2 |
+| 7.2.4 | `StrategyAlignmentScoreCard` | `src/components/strategy/` | Real-time alignment view | `strategy-alignment-scorer` | 4hr | P2 |
+| 7.2.5 | `StrategyToEventGenerator` | `src/components/strategy/` | Event planning from strategy | `strategy-event-planner` | 5hr | P3 |
+| 7.2.6 | `StrategyCampaignPlanner` | `src/components/strategy/` | Campaign alignment planner | `strategy-campaign-planner` | 5hr | P3 |
+| 7.2.7 | `StrategyTemplateLibrary` | `src/components/strategy/` | Reusable plan templates | None | 6hr | P3 |
+| 7.2.8 | `InternationalBenchmarkWidget` | `src/components/strategy/` | Compare with global standards | Web search API | 6hr | P3 |
+
+### 7.3 Missing Pages
+
+| # | Page | Route | Purpose | Components Needed | Effort | Priority |
+|---|------|-------|---------|-------------------|--------|----------|
+| 7.3.1 | `StrategyTemplates` | `/strategy/templates` | Library of reusable templates | `StrategyTemplateLibrary` | 8hr | P3 |
+| 7.3.2 | `StrategicBenchmarking` | `/strategy/benchmarking` | International comparison | `InternationalBenchmarkWidget` | 8hr | P3 |
+| 7.3.3 | `StrategyPublicView` | `/strategy/public/:id` | Public-facing strategy page | Read-only plan view | 6hr | P3 |
+
+### 7.4 Missing Hooks
+
+| # | Hook | Location | Purpose | Effort | Priority |
+|---|------|----------|---------|--------|----------|
+| 7.4.1 | `useStrategyAlignment` | `src/hooks/` | Real-time alignment tracking | 4hr | P2 |
+| 7.4.2 | `useStrategyTemplates` | `src/hooks/` | Template management | 3hr | P3 |
+
+---
+
+## PHASE 7 IMPLEMENTATION TASKS
+
+### Task 7.1: Edge Functions (7 functions, ~25hrs)
+
+```
+supabase/functions/
+├── strategy-living-lab-generator/index.ts     # P2 - 4hr
+├── strategy-challenge-generator/index.ts      # P2 - 4hr
+├── strategy-partnership-matcher/index.ts      # P2 - 4hr
+├── strategy-alignment-scorer/index.ts         # P2 - 3hr
+├── strategy-event-planner/index.ts            # P3 - 3hr
+├── strategy-policy-deriver/index.ts           # P3 - 4hr
+└── strategy-campaign-planner/index.ts         # P3 - 3hr
+```
+
+### Task 7.2: UI Components (8 components, ~43hrs)
+
+```
+src/components/strategy/
+├── StrategyToLivingLabGenerator.jsx           # P2 - 6hr
+├── StrategyChallengeGenerator.jsx             # P2 - 6hr
+├── StrategyPartnershipMatcher.jsx             # P2 - 5hr
+├── StrategyAlignmentScoreCard.jsx             # P2 - 4hr
+├── StrategyToEventGenerator.jsx               # P3 - 5hr
+├── StrategyCampaignPlanner.jsx                # P3 - 5hr
+├── StrategyTemplateLibrary.jsx                # P3 - 6hr
+└── InternationalBenchmarkWidget.jsx           # P3 - 6hr
+```
+
+### Task 7.3: New Pages (3 pages, ~22hrs)
+
+```
+src/pages/
+├── StrategyTemplates.jsx                      # P3 - 8hr
+├── StrategicBenchmarking.jsx                  # P3 - 8hr
+└── StrategyPublicView.jsx                     # P3 - 6hr
+```
+
+### Task 7.4: New Hooks (2 hooks, ~7hrs)
+
+```
+src/hooks/
+├── useStrategyAlignment.js                    # P2 - 4hr
+└── useStrategyTemplates.js                    # P3 - 3hr
+```
+
+---
+
+## EFFORT SUMMARY
+
+| Phase | Description | Effort | Status |
+|-------|-------------|--------|--------|
+| Phase 1 | P0 Database Schema | 2.5 hrs | ✅ COMPLETE |
+| Phase 2 | P1 Database Schema | 2 hrs | ✅ COMPLETE |
+| Phase 3 | P0 UI Components | 16 hrs | ✅ COMPLETE |
+| Phase 4 | P1 UI Components | 7 hrs | ✅ COMPLETE |
+| Phase 5 | Integration Logic | 12 hrs | ✅ COMPLETE |
+| Phase 6 | Reporting & Analytics | 18 hrs | ✅ COMPLETE |
+| **Phase 7** | **P2/P3 Enhancements** | **~97 hrs** | 📋 OPTIONAL |
+| **TOTAL CORE** | Phases 1-6 | **57.5 hrs** | **100% Complete** |
+| **TOTAL WITH ENHANCEMENTS** | All Phases | **~155 hrs** | **37% (Core Complete)** |
 
 ---
 

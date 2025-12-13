@@ -597,17 +597,93 @@ flowchart TB
 | 1 | useStrategicKPI | KPI management & feedback |
 | 2 | useStrategicCascadeValidation | Chain validation & coverage |
 
-### 🔄 Enhancement Opportunities (Not Critical)
+### 🔄 Enhancement Opportunities - FULL IMPLEMENTATION PLAN
 
-| Priority | Tool | Type | Purpose |
-|----------|------|------|---------|
-| P2 | Strategy-to-Sandbox Generator UI | Component | One-click sandbox from strategy |
-| P2 | Strategy-to-LivingLab Generator UI | Component | One-click lab from strategy |
-| P2 | Strategy Campaign Planner | Component | Campaign alignment planner |
-| P3 | Strategy Policy Deriver | Component | Auto-derive policies from plans |
-| P3 | Multi-Plan Hierarchy | Feature | Nested strategic plans |
-| P3 | Strategy Templates | Feature | Pre-built plan templates |
-| P3 | International Benchmarking | Feature | Compare with global standards |
+---
+
+## PHASE 7: P2/P3 ENHANCEMENTS (Optional)
+
+### 7.1 Missing Edge Functions (7 Total)
+
+| # | Function | Purpose | Inputs | Outputs | Priority | Effort |
+|---|----------|---------|--------|---------|----------|--------|
+| 1 | `strategy-living-lab-generator` | AI-generate Living Lab designs | `strategic_plan_id`, `sector_id`, `focus_areas[]` | Lab design with objectives, methodology | P2 | 4hr |
+| 2 | `strategy-challenge-generator` | AI-generate challenges from objectives | `strategic_objective_ids[]`, `sector_id` | Challenge title, description, KPIs | P2 | 4hr |
+| 3 | `strategy-partnership-matcher` | Match partners to strategic goals | `strategic_plan_id`, `capability_needs[]` | Partner recommendations with scores | P2 | 4hr |
+| 4 | `strategy-alignment-scorer` | Real-time alignment scoring | `entity_type`, `entity_id` | Alignment score, gaps, fixes | P2 | 3hr |
+| 5 | `strategy-event-planner` | Plan events aligned to strategy | `strategic_plan_id`, `event_type` | Event plan with KPIs | P3 | 3hr |
+| 6 | `strategy-policy-deriver` | Generate policy docs from plans | `strategic_plan_id`, `policy_area` | Policy draft with references | P3 | 4hr |
+| 7 | `strategy-campaign-planner` | Plan campaigns from strategy | `strategic_plan_id`, `audience` | Campaign plan, messaging | P3 | 3hr |
+
+### 7.2 Missing UI Components (8 Total)
+
+| # | Component | Purpose | AI-Powered | Dependencies | Priority | Effort |
+|---|-----------|---------|------------|--------------|----------|--------|
+| 1 | `StrategyToLivingLabGenerator` | One-click lab creation from strategy | ✅ | `strategy-living-lab-generator` | P2 | 6hr |
+| 2 | `StrategyChallengeGenerator` | AI challenge generation from objectives | ✅ | `strategy-challenge-generator` | P2 | 6hr |
+| 3 | `StrategyPartnershipMatcher` | Match partners to strategic goals | ✅ | `strategy-partnership-matcher` | P2 | 5hr |
+| 4 | `StrategyAlignmentScoreCard` | Real-time alignment dashboard | ✅ | `strategy-alignment-scorer` | P2 | 4hr |
+| 5 | `StrategyToEventGenerator` | Event planning from strategy | ✅ | `strategy-event-planner` | P3 | 5hr |
+| 6 | `StrategyCampaignPlanner` | Campaign alignment planner | ✅ | `strategy-campaign-planner` | P3 | 5hr |
+| 7 | `StrategyTemplateLibrary` | Reusable plan templates | No | None | P3 | 6hr |
+| 8 | `InternationalBenchmarkWidget` | Compare with global standards | ✅ | Web search API | P3 | 6hr |
+
+### 7.3 Missing Pages (3 Total)
+
+| # | Page | Route | Purpose | Priority | Effort |
+|---|------|-------|---------|----------|--------|
+| 1 | `StrategyTemplates` | `/strategy/templates` | Library of reusable templates | P3 | 8hr |
+| 2 | `StrategicBenchmarking` | `/strategy/benchmarking` | International comparison | P3 | 8hr |
+| 3 | `StrategyPublicView` | `/strategy/public/:id` | Public-facing strategy page | P3 | 6hr |
+
+### 7.4 Missing Hooks (2 Total)
+
+| # | Hook | Purpose | Priority | Effort |
+|---|------|---------|----------|--------|
+| 1 | `useStrategyAlignment` | Real-time alignment tracking for entities | P2 | 4hr |
+| 2 | `useStrategyTemplates` | Template CRUD and management | P3 | 3hr |
+
+### Implementation File Structure
+
+```
+supabase/functions/
+├── strategy-living-lab-generator/index.ts     # P2
+├── strategy-challenge-generator/index.ts      # P2
+├── strategy-partnership-matcher/index.ts      # P2
+├── strategy-alignment-scorer/index.ts         # P2
+├── strategy-event-planner/index.ts            # P3
+├── strategy-policy-deriver/index.ts           # P3
+└── strategy-campaign-planner/index.ts         # P3
+
+src/components/strategy/
+├── StrategyToLivingLabGenerator.jsx           # P2
+├── StrategyChallengeGenerator.jsx             # P2
+├── StrategyPartnershipMatcher.jsx             # P2
+├── StrategyAlignmentScoreCard.jsx             # P2
+├── StrategyToEventGenerator.jsx               # P3
+├── StrategyCampaignPlanner.jsx                # P3
+├── StrategyTemplateLibrary.jsx                # P3
+└── InternationalBenchmarkWidget.jsx           # P3
+
+src/pages/
+├── StrategyTemplates.jsx                      # P3
+├── StrategicBenchmarking.jsx                  # P3
+└── StrategyPublicView.jsx                     # P3
+
+src/hooks/
+├── useStrategyAlignment.js                    # P2
+└── useStrategyTemplates.js                    # P3
+```
+
+### Effort Summary
+
+| Category | P2 Items | P2 Effort | P3 Items | P3 Effort | Total |
+|----------|----------|-----------|----------|-----------|-------|
+| Edge Functions | 4 | 15hr | 3 | 10hr | 25hr |
+| Components | 4 | 21hr | 4 | 22hr | 43hr |
+| Pages | 0 | 0hr | 3 | 22hr | 22hr |
+| Hooks | 1 | 4hr | 1 | 3hr | 7hr |
+| **TOTAL** | **9** | **40hr** | **11** | **57hr** | **97hr** |
 
 ---
 
