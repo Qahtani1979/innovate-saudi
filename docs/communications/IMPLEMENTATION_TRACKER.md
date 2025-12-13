@@ -26,51 +26,26 @@ This document tracks the implementation progress of all identified gaps in the c
 
 ## Phase 1: Frontend Integration ✅ COMPLETE
 
-**Priority**: 🔴 HIGH → ✅ DONE
-**Status**: All 41 files already have `email-trigger-hub` integrations
+**Priority**: ✅ DONE
 **Verified**: 2025-12-13
 
-### Verified Integrated Files (41 total)
-- `CommitteeMeetingScheduler.jsx` - `event.invitation`
-- `ProgramSelectionWorkflow.jsx` - `program.application_status`
-- `WaitlistManager.jsx` - `program.application_status`
-- `PostProgramFollowUp.jsx` - `pilot.feedback_request`
-- `AutomatedMatchNotifier.jsx` - `MATCHMAKER_MATCH`
-- `StartupMentorshipMatcher.jsx` - mentorship triggers
-- `ExpressInterestButton.jsx` - `solution.interest_received`
-- `RDProposalAwardWorkflow.jsx` - `proposal.accepted`
-- `ChallengeSubmissionWizard.jsx` - `challenge.submitted`
-- `ChallengeSolutionMatching.jsx` - `challenge.match_found`
-- `Contact.jsx` - `contact.form`, `contact.form_confirmation`
-- `PublicIdeaSubmission.jsx` - `idea.submitted`
-- `ExpertMatchingEngine.jsx` - `evaluation.assigned`
-- `OnboardingWorkflow.jsx` - welcome emails
-- `RoleRequestApprovalQueue.jsx` - `role.approved`, `role.rejected`
-- `ContractGeneratorWizard.jsx` - `contract.created`
-- `ChallengeReviewWorkflow.jsx` - `challenge.approved`, `challenge.rejected`
-- `EventRegistration.jsx` - `event.registration_confirmed`
-- `IdeaToPilotConverter.jsx` - `pilot.created`, `idea.converted`
-- `IdeaToSolutionConverter.jsx` - `solution.submitted`
-- `ProgramToPilotWorkflow.jsx` - `pilot.created`
-- `ProgramCompletionWorkflow.jsx` - `program.completed`
-- `SolutionDeprecationWizard.jsx` - `solution.deprecated`
-- ... and 18 more files
+All 41+ frontend files are integrated with `useEmailTrigger` hook calling `email-trigger-hub`.
 
 ---
 
 ## Phase 2: Digest Processor ✅ COMPLETE
 
-**Priority**: 🔴 HIGH → ✅ DONE
-**Verified**: 2025-12-13
+**Priority**: ✅ DONE
+**Verified**: 2025-12-13 (Database verified)
 
-| # | Task | Type | Status | Notes |
-|---|------|------|--------|-------|
-| 2.1 | Create `email_digest_queue` table | Migration | ✅ Done | Table exists |
-| 2.2 | Create `digest-processor` edge function | Edge Function | ✅ Done | Deployed at `supabase/functions/digest-processor/` |
-| 2.3 | Add daily digest cron job (8 AM) | SQL Insert | ✅ Done | Cron scheduled |
-| 2.4 | Add weekly digest cron job (Monday 8 AM) | SQL Insert | ✅ Done | Cron scheduled |
-| 2.5 | Update `email-trigger-hub` to check frequency | Edge Function | ✅ Done | Checks user preferences |
-| 2.6 | Create digest email templates (daily/weekly) | DB Insert | ✅ Done | Templates inserted |
+| # | Task | Type | Status | Verification |
+|---|------|------|--------|--------------|
+| 2.1 | Create `email_digest_queue` table | Migration | ✅ Done | Table exists in DB |
+| 2.2 | Create `digest-processor` edge function | Edge Function | ✅ Done | File at `supabase/functions/digest-processor/index.ts` |
+| 2.3 | Add daily digest cron job (5 AM UTC) | SQL Insert | ✅ Done | `process-daily-digest: 0 5 * * *` |
+| 2.4 | Add weekly digest cron job (Monday 5 AM) | SQL Insert | ✅ Done | `process-weekly-digest: 0 5 * * 1` |
+| 2.5 | Update `email-trigger-hub` to check frequency | Edge Function | ✅ Done | Lines 222-244 queue to digest |
+| 2.6 | Create digest email templates | DB Insert | ✅ Done | `digest_daily`, `digest_weekly` exist |
 
 ---
 
@@ -82,40 +57,103 @@ This document tracks the implementation progress of all identified gaps in the c
 
 | # | Task | Type | Status | Details |
 |---|------|------|--------|---------|
-| 3.1 | Create `send-scheduled-reminders` edge function | Edge Function | ⬜ Pending | Query upcoming: tasks (due in 24h), contracts (expiring in 7 days), events (in 24h), pilot milestones (due in 48h) |
-| 3.2 | Add daily reminder cron job (8 AM) | SQL Insert | ⬜ Pending | `0 8 * * *` schedule |
-| 3.3 | Test with existing data | Manual | ⬜ Pending | Verify all entity types trigger correctly |
+| 3.1 | Create `send-scheduled-reminders` edge function | Edge Function | ⬜ Pending | See requirements below |
+| 3.2 | Add daily reminder cron job (8 AM UTC) | SQL Insert | ⬜ Pending | `0 8 * * *` schedule |
+| 3.3 | Test with existing data | Manual | ⬜ Pending | Verify all entity types |
 
-### Edge Function Requirements
+### Edge Function Requirements (`send-scheduled-reminders`)
 ```typescript
-// Query entities needing reminders:
-// 1. tasks WHERE due_date BETWEEN now() AND now() + interval '24 hours' AND status != 'completed'
-// 2. contracts WHERE end_date BETWEEN now() AND now() + interval '7 days' AND status = 'active'
-// 3. events WHERE start_date BETWEEN now() AND now() + interval '24 hours'
-// 4. pilot milestones WHERE target_date BETWEEN now() AND now() + interval '48 hours'
+// File: supabase/functions/send-scheduled-reminders/index.ts
+// Purpose: Query entities needing reminders and trigger emails
+
+// 1. Tasks due in 24 hours
+SELECT id, title, assigned_to_email, due_date FROM tasks 
+WHERE due_date BETWEEN now() AND now() + interval '24 hours' 
+AND status NOT IN ('completed', 'cancelled')
+AND reminder_sent IS NULL;
+
+// 2. Contracts expiring in 7 days
+SELECT id, title_en, signed_by_municipality, end_date FROM contracts
+WHERE end_date BETWEEN now() AND now() + interval '7 days'
+AND status = 'active';
+
+// 3. Events starting in 24 hours
+SELECT id, title_en, created_by FROM events
+WHERE start_date BETWEEN now() AND now() + interval '24 hours';
+
+// 4. Pilot milestones due in 48 hours
+SELECT pm.id, pm.name, p.pilot_owner_email, pm.target_date 
+FROM pilot_milestones pm
+JOIN pilots p ON pm.pilot_id = p.id
+WHERE pm.target_date BETWEEN now() AND now() + interval '48 hours'
+AND pm.status NOT IN ('completed', 'verified');
+
+// For each result, call email-trigger-hub with appropriate trigger:
+// - task.reminder
+// - contract.expiring
+// - event.reminder
+// - pilot.milestone_reminder
 ```
 
 ---
 
 ## Phase 4: Unsubscribe Endpoint
 
-**Priority**: 🟠 MEDIUM (Legal Compliance)
+**Priority**: 🟠 MEDIUM (Legal Compliance - CAN-SPAM / GDPR)
 **Estimated Effort**: 1.5 hours
 **Description**: Allow users to unsubscribe from email categories via link in emails.
 
 | # | Task | Type | Status | Details |
 |---|------|------|--------|---------|
-| 4.1 | Create `unsubscribe` edge function | Edge Function | ⬜ Pending | Accept JWT token, update user preferences |
-| 4.2 | Update `send-email` to generate unsubscribe token | Edge Function | ⬜ Pending | Add token to email footer |
-| 4.3 | Create unsubscribe confirmation page | Frontend | ⬜ Pending | `/unsubscribe?token=xxx` route |
-| 4.4 | Create re-subscribe option in page | Frontend | ⬜ Pending | Button to re-enable notifications |
+| 4.1 | Create `unsubscribe` edge function | Edge Function | ⬜ Pending | See requirements below |
+| 4.2 | Update `send-email` to add unsubscribe link | Edge Function | ⬜ Pending | Generate JWT token |
+| 4.3 | Create `/unsubscribe` page | Frontend | ⬜ Pending | See UI mockup below |
+| 4.4 | Add re-subscribe functionality | Frontend | ⬜ Pending | Button on page |
 
-### Edge Function Requirements
+### Edge Function Requirements (`unsubscribe`)
 ```typescript
-// GET /unsubscribe?token=xxx&category=challenges
-// 1. Decode JWT token (contains user_email, category)
-// 2. Update user_notification_preferences.email_categories[category] = false
-// 3. Return HTML confirmation page
+// File: supabase/functions/unsubscribe/index.ts
+// Purpose: Handle unsubscribe link clicks
+
+// Accept GET request: /unsubscribe?token=xxx
+// 1. Decode JWT token (contains: user_email, category, iat)
+// 2. Validate token not expired (30 days max)
+// 3. Update user_notification_preferences:
+//    - If category = 'all': set email_notifications = false
+//    - If category = specific: set email_categories[category] = false
+// 4. Return HTML confirmation page
+
+// Token generation (in send-email):
+const token = jwt.sign(
+  { email: recipientEmail, category: preferenceCategory },
+  UNSUBSCRIBE_SECRET,
+  { expiresIn: '30d' }
+);
+const unsubscribeUrl = `${SUPABASE_URL}/functions/v1/unsubscribe?token=${token}`;
+```
+
+### UI Requirements (`/unsubscribe` page)
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         🔔 Email Preferences                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│     ✅ You have been unsubscribed from [category] emails            │
+│                                                                     │
+│     Email: user@example.com                                         │
+│     Category: Challenges                                            │
+│                                                                     │
+│     ┌─────────────────────────────────────────────────────────┐     │
+│     │  Changed your mind?                                     │     │
+│     │  [Re-subscribe to these emails]                         │     │
+│     └─────────────────────────────────────────────────────────┘     │
+│                                                                     │
+│     ┌─────────────────────────────────────────────────────────┐     │
+│     │  Want to manage all your preferences?                   │     │
+│     │  [Go to Notification Settings]                          │     │
+│     └─────────────────────────────────────────────────────────┘     │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -128,13 +166,13 @@ This document tracks the implementation progress of all identified gaps in the c
 
 | # | Task | Type | Status | Details |
 |---|------|------|--------|---------|
-| 5.1 | Create `EmailAnalyticsDashboard.jsx` component | Frontend | ⬜ Pending | Charts for email metrics |
-| 5.2 | Add "Analytics" tab to Communications Hub | Frontend | ⬜ Pending | 6th tab after User Prefs |
-| 5.3 | Add date range filter | Frontend | ⬜ Pending | Last 7/30/90 days |
-| 5.4 | Add category breakdown chart | Frontend | ⬜ Pending | Pie chart by email category |
+| 5.1 | Create `EmailAnalyticsDashboard.jsx` | Frontend | ⬜ Pending | See UI mockup below |
+| 5.2 | Add "Analytics" tab to Communications Hub | Frontend | ⬜ Pending | 6th tab with BarChart3 icon |
+| 5.3 | Implement date range filter | Frontend | ⬜ Pending | 7/30/90 days selector |
+| 5.4 | Add category breakdown chart | Frontend | ⬜ Pending | Pie/donut chart |
 | 5.5 | Add trend line chart | Frontend | ⬜ Pending | Sent/opened/clicked over time |
 
-### UI Requirements
+### UI Requirements (`EmailAnalyticsDashboard.jsx`)
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │  📊 Email Analytics                              [Last 30 days ▼]  │
@@ -143,17 +181,18 @@ This document tracks the implementation progress of all identified gaps in the c
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────┐│
 │  │  12,450  │  │  11,890  │  │   4,520  │  │   1,230  │  │   120  ││
 │  │   Sent   │  │Delivered │  │  Opened  │  │ Clicked  │  │ Failed ││
-│  │   95.5%  │  │   36.0%  │  │   9.8%   │  │   1.0%   │  │        ││
+│  │          │  │   95.5%  │  │   36.0%  │  │   9.8%   │  │   1.0% ││
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └────────┘│
 │                                                                     │
 │  ┌────────────────────────────────┐  ┌─────────────────────────────┐│
 │  │   📈 Email Volume Over Time   │  │  📊 By Category             ││
-│  │   [Line chart: sent/opened]   │  │  [Pie chart]                ││
-│  │                               │  │  - Challenges: 25%          ││
-│  │                               │  │  - Pilots: 20%              ││
-│  │                               │  │  - Auth: 15%                ││
+│  │   [Recharts LineChart]        │  │  [Recharts PieChart]        ││
+│  │   - Lines: sent, opened       │  │  - Challenges: 25%          ││
+│  │   - X-axis: dates             │  │  - Pilots: 20%              ││
+│  │   - Y-axis: count             │  │  - Auth: 15%                ││
 │  │                               │  │  - Programs: 15%            ││
-│  │                               │  │  - Other: 25%               ││
+│  │                               │  │  - Events: 10%              ││
+│  │                               │  │  - Other: 15%               ││
 │  └────────────────────────────────┘  └─────────────────────────────┘│
 │                                                                     │
 │  ┌─────────────────────────────────────────────────────────────────┐│
@@ -164,9 +203,46 @@ This document tracks the implementation progress of all identified gaps in the c
 │  │  │ welcome_email              │ 2,340 │ 1,872  │ 80.0%         │││
 │  │  │ challenge_approved         │ 890   │ 623    │ 70.0%         │││
 │  │  │ pilot_kickoff              │ 456   │ 365    │ 80.0%         │││
+│  │  │ event_registration         │ 234   │ 187    │ 79.9%         │││
+│  │  │ task_assigned              │ 189   │ 151    │ 79.9%         │││
 │  │  └────────────────────────────┴───────┴────────┴───────────────┘││
 │  └─────────────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────────┘
+```
+
+### Component Structure
+```jsx
+// src/components/communications/EmailAnalyticsDashboard.jsx
+
+// Data queries needed:
+// 1. Stats summary: SELECT status, COUNT(*) FROM email_logs WHERE created_at > X GROUP BY status
+// 2. Category breakdown: SELECT template_key, COUNT(*) FROM email_logs WHERE created_at > X GROUP BY template_key
+// 3. Time series: SELECT DATE(created_at), status, COUNT(*) FROM email_logs WHERE created_at > X GROUP BY 1, 2
+// 4. Top templates: SELECT template_key, COUNT(*) as sent, SUM(CASE WHEN status='opened' THEN 1 ELSE 0 END) as opened 
+//                   FROM email_logs WHERE created_at > X GROUP BY template_key ORDER BY sent DESC LIMIT 10
+
+// Dependencies: recharts (already installed), @/components/ui/* (shadcn)
+```
+
+### CommunicationsHub.jsx Changes
+```jsx
+// Add 6th tab:
+import { BarChart3 } from 'lucide-react';
+import EmailAnalyticsDashboard from '@/components/communications/EmailAnalyticsDashboard';
+
+// Update TabsList to grid-cols-6
+<TabsList className="grid grid-cols-6 w-full max-w-4xl">
+  ...existing 5 tabs...
+  <TabsTrigger value="analytics" className="gap-2">
+    <BarChart3 className="h-4 w-4" />
+    {t({ en: 'Analytics', ar: 'التحليلات' })}
+  </TabsTrigger>
+</TabsList>
+
+// Add TabsContent:
+<TabsContent value="analytics">
+  <EmailAnalyticsDashboard />
+</TabsContent>
 ```
 
 ---
@@ -179,79 +255,113 @@ This document tracks the implementation progress of all identified gaps in the c
 
 | # | Task | Type | Status | Details |
 |---|------|------|--------|---------|
-| 6.1 | Add queue preview modal in Logs tab | Frontend | ⬜ Pending | Show pending emails in queue |
-| 6.2 | Add bounce cleanup job | Edge Function | ⬜ Pending | Mark users with 3+ bounces as problematic |
-| 6.3 | Add "Retry" button for failed emails | Frontend | ⬜ Pending | In email detail modal |
-| 6.4 | Add digest queue viewer | Frontend | ⬜ Pending | Show pending digest items |
+| 6.1 | Add "Retry" button for failed emails | Frontend | ⬜ Pending | In EmailLogsViewer detail modal |
+| 6.2 | Add digest queue viewer | Frontend | ⬜ Pending | New component or tab |
+| 6.3 | Add pending email queue viewer | Frontend | ⬜ Pending | Show email_queue items |
+| 6.4 | Add bounce cleanup job | Edge Function | ⬜ Pending | Mark users with 3+ bounces |
 
 ### Retry Button Implementation
-```typescript
-// In EmailLogsViewer.jsx, add button in detail modal:
-// onClick: call email-trigger-hub with same template_key and variables
-// Update email_logs.retry_count
+```jsx
+// In EmailLogsViewer.jsx, add to the detail dialog when status === 'failed':
+<Button
+  variant="outline"
+  onClick={async () => {
+    await supabase.functions.invoke('email-trigger-hub', {
+      body: {
+        trigger: selectedLog.template_key,
+        recipient_email: selectedLog.recipient_email,
+        variables: selectedLog.variables_used,
+        language: selectedLog.language
+      }
+    });
+    // Update retry_count in email_logs
+    await supabase.from('email_logs')
+      .update({ retry_count: (selectedLog.retry_count || 0) + 1 })
+      .eq('id', selectedLog.id);
+    refetch();
+    toast.success('Email retry queued');
+  }}
+>
+  <RefreshCw className="h-4 w-4 mr-2" />
+  Retry Send
+</Button>
+```
+
+### Digest Queue Viewer (Optional Tab or Section)
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  📬 Pending Digest Items                            [Refresh]       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Daily Digests (45 items for 12 users)                              │
+│  ┌────────────────────────────────┬───────────┬───────────────────┐ │
+│  │ User                           │ Items     │ Next Send         │ │
+│  ├────────────────────────────────┼───────────┼───────────────────┤ │
+│  │ user1@example.com              │ 5 items   │ Tomorrow 5 AM     │ │
+│  │ user2@example.com              │ 3 items   │ Tomorrow 5 AM     │ │
+│  └────────────────────────────────┴───────────┴───────────────────┘ │
+│                                                                     │
+│  Weekly Digests (23 items for 8 users)                              │
+│  ┌────────────────────────────────┬───────────┬───────────────────┐ │
+│  │ User                           │ Items     │ Next Send         │ │
+│  ├────────────────────────────────┼───────────┼───────────────────┤ │
+│  │ user3@example.com              │ 8 items   │ Monday 5 AM       │ │
+│  └────────────────────────────────┴───────────┴───────────────────┘ │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## UI Components Inventory
+## Existing Components (Verified)
 
-### Existing Components (in `src/components/communications/`)
-
-| Component | Purpose | Status |
-|-----------|---------|--------|
-| `EmailTemplateEditorContent.jsx` | Template CRUD with visual editor | ✅ Complete |
-| `EmailLogsViewer.jsx` | View sent emails, filter by status | ✅ Complete |
-| `EmailSettingsEditor.jsx` | Global email settings | ✅ Complete |
-| `UserPreferencesOverview.jsx` | View all user preferences | ✅ Complete |
-| `CampaignManager.jsx` | Create/send bulk campaigns | ✅ Complete |
-
-### Components to Create
-
-| Component | Purpose | Phase |
-|-----------|---------|-------|
-| `EmailAnalyticsDashboard.jsx` | Charts and metrics | Phase 5 |
-| `DigestQueueViewer.jsx` | View pending digest emails | Phase 6 |
-| `UnsubscribePage.jsx` | Public unsubscribe confirmation | Phase 4 |
+| Component | Location | Status |
+|-----------|----------|--------|
+| `EmailTemplateEditorContent.jsx` | `src/components/communications/` | ✅ Active |
+| `EmailLogsViewer.jsx` | `src/components/communications/` | ✅ Active |
+| `EmailSettingsEditor.jsx` | `src/components/communications/` | ✅ Active |
+| `UserPreferencesOverview.jsx` | `src/components/communications/` | ✅ Active |
+| `CampaignManager.jsx` | `src/components/communications/` | ✅ Active |
+| `CommunicationAnalytics.jsx` | `src/components/communications/` | ✅ Exists (basic) |
 
 ---
 
-## Edge Functions Inventory
+## Existing Edge Functions (Verified)
 
-### Existing Functions (in `supabase/functions/`)
-
-| Function | Purpose | Status |
-|----------|---------|--------|
-| `send-email` | Core email delivery via Resend | ✅ Active |
-| `email-trigger-hub` | Central trigger processor | ✅ Active |
-| `campaign-sender` | Bulk campaign delivery | ✅ Active |
-| `queue-processor` | Process delayed emails | ✅ Active |
-| `resend-webhook` | Track opens/clicks/bounces | ✅ Active |
-| `digest-processor` | Process daily/weekly digests | ✅ Active |
-
-### Functions to Create
-
-| Function | Purpose | Phase |
-|----------|---------|-------|
-| `send-scheduled-reminders` | Daily reminder emails | Phase 3 |
-| `unsubscribe` | Handle unsubscribe links | Phase 4 |
+| Function | Location | Status |
+|----------|----------|--------|
+| `send-email` | `supabase/functions/send-email/` | ✅ Active |
+| `email-trigger-hub` | `supabase/functions/email-trigger-hub/` | ✅ Active |
+| `campaign-sender` | `supabase/functions/campaign-sender/` | ✅ Active |
+| `queue-processor` | `supabase/functions/queue-processor/` | ✅ Active |
+| `resend-webhook` | `supabase/functions/resend-webhook/` | ✅ Active |
+| `digest-processor` | `supabase/functions/digest-processor/` | ✅ Active |
 
 ---
 
-## Database Tables Inventory
+## Database Tables (Verified)
 
-### Email-Related Tables
+| Table | Status | Records |
+|-------|--------|---------|
+| `email_templates` | ✅ Active | 126+ templates |
+| `email_logs` | ✅ Active | Tracking all emails |
+| `email_settings` | ✅ Active | Global config |
+| `email_campaigns` | ✅ Active | Campaign definitions |
+| `campaign_recipients` | ✅ Active | Recipient tracking |
+| `email_trigger_config` | ✅ Active | 96 triggers |
+| `email_queue` | ✅ Active | Delayed emails |
+| `email_digest_queue` | ✅ Active | Digest aggregation |
+| `user_notification_preferences` | ✅ Active | Per-user prefs |
 
-| Table | Purpose | Status |
-|-------|---------|--------|
-| `email_templates` | Store 126 email templates | ✅ Active |
-| `email_logs` | Track all sent emails | ✅ Active |
-| `email_settings` | Global configuration | ✅ Active |
-| `email_campaigns` | Bulk campaign definitions | ✅ Active |
-| `campaign_recipients` | Campaign recipient tracking | ✅ Active |
-| `email_trigger_config` | 96 trigger configurations | ✅ Active |
-| `email_queue` | Delayed email queue | ✅ Active |
-| `email_digest_queue` | Digest aggregation queue | ✅ Active |
-| `user_notification_preferences` | Per-user preferences | ✅ Active |
+---
+
+## Cron Jobs (Verified)
+
+| Job Name | Schedule | Status |
+|----------|----------|--------|
+| `process-daily-digest` | `0 5 * * *` (5 AM UTC daily) | ✅ Active |
+| `process-weekly-digest` | `0 5 * * 1` (5 AM UTC Monday) | ✅ Active |
+| `send-scheduled-reminders` | `0 8 * * *` (8 AM UTC daily) | ⬜ Pending |
 
 ---
 
@@ -259,54 +369,26 @@ This document tracks the implementation progress of all identified gaps in the c
 
 | Date | Phase | Task | Status | Notes |
 |------|-------|------|--------|-------|
-| 2025-12-13 | - | Document created | ✅ | Initial tracking document |
-| 2025-12-13 | 1 | Verified all 41 integrations | ✅ | Frontend complete |
-| 2025-12-13 | 2.1 | Created email_digest_queue table | ✅ | Migration applied |
-| 2025-12-13 | 2.2 | Created digest-processor function | ✅ | Function deployed |
-| 2025-12-13 | 2.3-2.4 | Added cron jobs | ✅ | Daily at 8AM, Weekly Monday 8AM |
-| 2025-12-13 | 2.5 | Updated email-trigger-hub | ✅ | Checks user frequency preference |
-| 2025-12-13 | 2.6 | Created digest templates | ✅ | digest_daily, digest_weekly |
+| 2025-12-13 | - | Document created | ✅ | Initial tracking |
+| 2025-12-13 | 1 | Verified 41+ integrations | ✅ | Frontend complete |
+| 2025-12-13 | 2 | Full digest system | ✅ | Table, function, crons, templates verified |
 
 ---
 
-## Next Steps (Recommended Order)
+## Recommended Implementation Order
 
-1. **Phase 4: Unsubscribe Endpoint** (Legal compliance - should be done before going live)
-   - Create edge function
-   - Update send-email footer
-   - Create frontend page
-
+1. **Phase 4: Unsubscribe** (Legal compliance - do before marketing campaigns)
 2. **Phase 3: Scheduled Reminders** (High value automation)
-   - Create edge function
-   - Add cron job
-
-3. **Phase 5: Analytics Dashboard** (Visibility into system)
-   - Create component
-   - Add to Communications Hub
-
+3. **Phase 5: Analytics Dashboard** (Visibility)
 4. **Phase 6: Minor Improvements** (Polish)
-   - Retry button
-   - Queue viewers
 
 ---
 
-## Dependencies & Prerequisites
+## Dependencies
 
-- **RESEND_API_KEY**: ✅ Configured
-- **Cron extension (pg_cron)**: ✅ Enabled
-- **Net extension (pg_net)**: ✅ Enabled
-
----
-
-## Notes
-
-### Architecture Decisions
-- All email triggers use the unified `useEmailTrigger` hook
-- Digest processor queues emails instead of sending immediately for daily/weekly users
-- Unsubscribe uses JWT tokens for security
-- Analytics pulls from `email_logs` table
-
-### Testing Strategy
-- Each Phase 1 integration should be tested by triggering the workflow
-- Phase 2/3 cron jobs tested via manual invocation first
-- Phase 4 tested with test unsubscribe tokens
+| Dependency | Status |
+|------------|--------|
+| `RESEND_API_KEY` | ✅ Configured |
+| `pg_cron` extension | ✅ Enabled |
+| `pg_net` extension | ✅ Enabled |
+| `recharts` package | ✅ Installed |
