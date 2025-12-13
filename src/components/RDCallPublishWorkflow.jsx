@@ -8,11 +8,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { CheckCircle2, X, AlertTriangle, Send, Loader2 } from 'lucide-react';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function RDCallPublishWorkflow({ rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [notes, setNotes] = useState('');
+  const { triggerEmail } = useEmailTrigger();
   
   const [checklist, setChecklist] = useState({
     title_complete: false,
@@ -42,6 +44,15 @@ export default function RDCallPublishWorkflow({ rdCall, onClose }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['rdCall']);
+      // Trigger email notification for R&D call published
+      triggerEmail('rd.call_published', {
+        entity_type: 'rd_call',
+        entity_id: rdCall.id,
+        variables: {
+          call_title: rdCall.title_en || rdCall.title_ar,
+          call_type: rdCall.call_type || 'general'
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
       toast.success(t({ en: 'R&D Call published', ar: 'تم نشر دعوة البحث' }));
       onClose();
     }

@@ -9,11 +9,13 @@ import { Sparkles, Loader2, TestTube, Microscope, Calendar, ShoppingCart, FileTe
 import { toast } from 'sonner';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function TrackAssignment({ challenge }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [suggestion, setSuggestion] = useState(null);
+  const { triggerEmail } = useEmailTrigger();
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
@@ -40,8 +42,17 @@ export default function TrackAssignment({ challenge }) {
 
   const assignTrackMutation = useMutation({
     mutationFn: (track) => base44.entities.Challenge.update(challenge.id, { track }),
-    onSuccess: () => {
+    onSuccess: (_, track) => {
       queryClient.invalidateQueries(['challenge']);
+      // Trigger email for challenge assigned to track
+      triggerEmail('challenge.assigned', {
+        entity_type: 'challenge',
+        entity_id: challenge.id,
+        variables: {
+          challenge_title: challenge.title_en || challenge.title_ar,
+          assigned_track: track
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
       toast.success(t({ en: 'Track assigned', ar: 'تم تعيين المسار' }));
     }
   });
