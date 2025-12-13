@@ -14,7 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { ArrowRight, ArrowLeft, Sparkles, Loader2, CheckCircle2, Calendar, Target, Users, Award, Building2, FileText, MapPin, X, Save } from 'lucide-react';
-import FileUploader from '../FileUploader';
+import MediaFieldWithPicker from '@/components/media/MediaFieldWithPicker';
+import { useMediaIntegration } from '@/hooks/useMediaIntegration';
 import { toast } from 'sonner';
 import AICurriculumGenerator from './AICurriculumGenerator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
@@ -890,26 +891,27 @@ Generate:
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Program Image</Label>
-                <FileUploader
-                  type="image"
-                  label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
-                  maxSize={10}
-                  onUploadComplete={(url) => setFormData({...formData, image_url: url})}
-                />
-              </div>
+              <MediaFieldWithPicker
+                label={t({ en: 'Program Image', ar: 'صورة البرنامج' })}
+                value={formData.image_url || ''}
+                onChange={(url) => setFormData({...formData, image_url: url})}
+                fieldName="image_url"
+                entityType="programs"
+                mediaType="image"
+                bucket="programs"
+                placeholder={t({ en: 'Image URL...', ar: 'رابط الصورة...' })}
+              />
 
-              <div className="space-y-2">
-                <Label>Program Brochure</Label>
-                <FileUploader
-                  type="document"
-                  label={t({ en: 'Upload PDF', ar: 'رفع PDF' })}
-                  maxSize={50}
-                  preview={false}
-                  onUploadComplete={(url) => setFormData({...formData, brochure_url: url})}
-                />
-              </div>
+              <MediaFieldWithPicker
+                label={t({ en: 'Program Brochure', ar: 'كتيب البرنامج' })}
+                value={formData.brochure_url || ''}
+                onChange={(url) => setFormData({...formData, brochure_url: url})}
+                fieldName="brochure_url"
+                entityType="programs"
+                mediaType="document"
+                bucket="programs"
+                placeholder={t({ en: 'Brochure URL...', ar: 'رابط الكتيب...' })}
+              />
             </>
           )}
         </CardContent>

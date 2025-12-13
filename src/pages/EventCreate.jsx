@@ -16,6 +16,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { useEvents } from '@/hooks/useEvents';
 import { EVENT_TYPES } from '@/components/events/EventFilters';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
+import MediaFieldWithPicker from '@/components/media/MediaFieldWithPicker';
+import { useMediaIntegration } from '@/hooks/useMediaIntegration';
 import { 
   Calendar, 
   MapPin, 
@@ -26,8 +28,7 @@ import {
   Save, 
   Send,
   Sparkles,
-  Loader2,
-  Image as ImageIcon
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPageUrl } from '@/utils';
@@ -249,20 +250,16 @@ function EventCreate() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>{t({ en: 'Cover Image URL', ar: 'رابط صورة الغلاف' })}</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={formData.image_url}
-                    onChange={(e) => handleChange('image_url', e.target.value)}
-                    placeholder="https://..."
-                    className="flex-1"
-                  />
-                  <Button variant="outline" size="icon">
-                    <ImageIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              <MediaFieldWithPicker
+                label={t({ en: 'Cover Image', ar: 'صورة الغلاف' })}
+                value={formData.image_url}
+                onChange={(url) => handleChange('image_url', url)}
+                fieldName="image_url"
+                entityType="events"
+                mediaType="image"
+                bucket="events"
+                placeholder={t({ en: 'Image URL...', ar: 'رابط الصورة...' })}
+              />
             </CardContent>
           </Card>
         </TabsContent>
