@@ -51,15 +51,16 @@ const ENTITY_FIELDS = {
     { name: 'title_ar', label: 'Title (Arabic)', required: false, type: 'string' },
     { name: 'description_en', label: 'Description (English)', required: false, type: 'string' },
     { name: 'description_ar', label: 'Description (Arabic)', required: false, type: 'string' },
-    { name: 'pilot_type', label: 'Pilot Type', required: false, type: 'string' },
+    { name: 'sector', label: 'Sector', required: true, type: 'string' },
+    { name: 'sub_sector', label: 'Sub-Sector', required: false, type: 'string' },
     { name: 'stage', label: 'Stage', required: false, type: 'string' },
     { name: 'status', label: 'Status', required: false, type: 'enum', options: ['planning', 'active', 'completed', 'cancelled'] },
     { name: 'start_date', label: 'Start Date', required: false, type: 'date' },
     { name: 'end_date', label: 'End Date', required: false, type: 'date' },
     { name: 'budget', label: 'Budget', required: false, type: 'number' },
-    { name: 'municipality_id', label: 'Municipality', required: false, type: 'relation', relation: 'municipalities' },
+    { name: 'municipality_id', label: 'Municipality', required: true, type: 'relation', relation: 'municipalities' },
     { name: 'solution_id', label: 'Solution', required: false, type: 'relation', relation: 'solutions' },
-    { name: 'challenge_id', label: 'Challenge', required: false, type: 'relation', relation: 'challenges' }
+    { name: 'challenge_id', label: 'Challenge', required: true, type: 'relation', relation: 'challenges' }
   ],
   programs: [
     { name: 'name_en', label: 'Name (English)', required: true, type: 'string' },
@@ -144,24 +145,28 @@ const ENTITY_FIELDS = {
   living_labs: [
     { name: 'name_en', label: 'Name (English)', required: true, type: 'string' },
     { name: 'name_ar', label: 'Name (Arabic)', required: false, type: 'string' },
-    { name: 'description_en', label: 'Description', required: false, type: 'string' },
-    { name: 'lab_type', label: 'Lab Type', required: false, type: 'string' },
+    { name: 'description_en', label: 'Description (English)', required: false, type: 'string' },
+    { name: 'description_ar', label: 'Description (Arabic)', required: false, type: 'string' },
+    { name: 'domain', label: 'Domain', required: false, type: 'string' },
     { name: 'status', label: 'Status', required: false, type: 'string' },
     { name: 'location', label: 'Location', required: false, type: 'string' },
-    { name: 'capacity', label: 'Capacity', required: false, type: 'number' },
-    { name: 'sector_id', label: 'Sector', required: false, type: 'relation', relation: 'sectors' },
-    { name: 'municipality_id', label: 'Municipality', required: false, type: 'relation', relation: 'municipalities' }
+    { name: 'contact_name', label: 'Contact Name', required: false, type: 'string' },
+    { name: 'contact_email', label: 'Contact Email', required: false, type: 'string' },
+    { name: 'municipality_id', label: 'Municipality', required: false, type: 'relation', relation: 'municipalities' },
+    { name: 'region_id', label: 'Region', required: false, type: 'relation', relation: 'regions' }
   ],
   sandboxes: [
     { name: 'name_en', label: 'Name (English)', required: true, type: 'string' },
     { name: 'name_ar', label: 'Name (Arabic)', required: false, type: 'string' },
-    { name: 'description_en', label: 'Description', required: false, type: 'string' },
+    { name: 'description_en', label: 'Description (English)', required: false, type: 'string' },
+    { name: 'description_ar', label: 'Description (Arabic)', required: false, type: 'string' },
     { name: 'sandbox_type', label: 'Sandbox Type', required: false, type: 'string' },
     { name: 'status', label: 'Status', required: false, type: 'string' },
     { name: 'start_date', label: 'Start Date', required: false, type: 'date' },
     { name: 'end_date', label: 'End Date', required: false, type: 'date' },
     { name: 'sector_id', label: 'Sector', required: false, type: 'relation', relation: 'sectors' },
-    { name: 'municipality_id', label: 'Municipality', required: false, type: 'relation', relation: 'municipalities' }
+    { name: 'municipality_id', label: 'Municipality', required: false, type: 'relation', relation: 'municipalities' },
+    { name: 'region_id', label: 'Region', required: false, type: 'relation', relation: 'regions' }
   ],
   contracts: [
     { name: 'title_en', label: 'Title (English)', required: true, type: 'string' },
@@ -232,6 +237,14 @@ const ENTITY_FIELDS = {
     { name: 'category', label: 'Category', required: false, type: 'string' },
     { name: 'target_value', label: 'Target Value', required: false, type: 'number' },
     { name: 'sector_id', label: 'Sector', required: false, type: 'relation', relation: 'sectors' }
+  ],
+  citizen_ideas: [
+    { name: 'title', label: 'Title', required: true, type: 'string' },
+    { name: 'description', label: 'Description', required: false, type: 'string' },
+    { name: 'category', label: 'Category', required: false, type: 'string' },
+    { name: 'status', label: 'Status', required: false, type: 'enum', options: ['submitted', 'under_review', 'approved', 'rejected', 'implemented'] },
+    { name: 'municipality_id', label: 'Municipality', required: false, type: 'relation', relation: 'municipalities' },
+    { name: 'is_published', label: 'Published', required: false, type: 'boolean' }
   ]
 };
 

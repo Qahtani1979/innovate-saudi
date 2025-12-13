@@ -31,7 +31,13 @@ export default function StepReview({ state, updateState, onNext, onBack }) {
   );
 
   const getDisplayFields = () => {
-    return Object.keys(mappings).slice(0, 5);
+    // Show more fields - prioritize required and title/name fields first
+    const allFields = Object.keys(mappings);
+    const priorityFields = allFields.filter(f => 
+      f.includes('title') || f.includes('name') || f.includes('code')
+    );
+    const otherFields = allFields.filter(f => !priorityFields.includes(f));
+    return [...priorityFields, ...otherFields].slice(0, 8);
   };
 
   const toggleRow = (index) => {
