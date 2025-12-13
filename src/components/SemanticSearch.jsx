@@ -25,7 +25,8 @@ export default function SemanticSearch({ placeholder }) {
       'pilot': `PilotDetail?id=${result.id}`,
       'solution': `SolutionDetail?id=${result.id}`,
       'rd-project': `RDProjectDetail?id=${result.id}`,
-      'program': `ProgramDetail?id=${result.id}`
+      'program': `ProgramDetail?id=${result.id}`,
+      'event': `EventDetail?id=${result.id}`
     };
     return typeUrls[result.type] || '#';
   };
@@ -35,7 +36,8 @@ export default function SemanticSearch({ placeholder }) {
     pilot: 'bg-purple-100 text-purple-700',
     solution: 'bg-green-100 text-green-700',
     'rd-project': 'bg-blue-100 text-blue-700',
-    program: 'bg-orange-100 text-orange-700'
+    program: 'bg-orange-100 text-orange-700',
+    event: 'bg-teal-100 text-teal-700'
   };
 
   return (

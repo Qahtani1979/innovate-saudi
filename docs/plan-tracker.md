@@ -32,12 +32,12 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | **Approval Workflow** | ✅ Full (4 gates) | ✅ Full (2 gates) | None |
 | **Permissions (Roles)** | ✅ Full (18 roles) | ✅ Full (18 roles) | None |
 | **Email Templates** | ✅ Full (8 templates) | ✅ Full (8 templates) | None |
-| **Email Triggers** | ⚠️ Partial (5/8) | ✅ Full (5/5) | Low |
-| **In-App Notifications** | ⚠️ Not integrated | ⚠️ Not integrated | Medium |
+| **Email Triggers** | ✅ Full (8/8) | ✅ Full (5/5) | None |
+| **In-App Notifications** | ✅ Integrated | ✅ Integrated | None |
 | **Calendar Integration** | ✅ Full | ✅ Full | None |
 | **Campaign Sync** | ✅ Full | ✅ Full | None |
 | **AI Components** | ✅ Full (6) | ✅ Full (4) | None |
-| **Search/Discovery** | ✅ Full | ⚠️ Missing | Medium |
+| **Search/Discovery** | ✅ Full | ✅ Full | None |
 | **Budget Integration** | ✅ Full | ⚠️ Missing | Medium |
 | **Comments System** | ✅ Full | ⚠️ Missing | Low |
 | **Bookmarks** | ✅ Full | ⚠️ Missing | Low |
@@ -474,29 +474,29 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | 4 | AI Enhancements | 1 week | 🟢 Complete | 100% |
 | 5 | Permissions & Polish | 1 week | 🟢 Complete | 100% |
 | 6 | Approval System Deep Integration | 1 day | 🟢 Complete | 100% |
-| 7 | Extended Integrations | TBD | 🔴 Pending | 0% |
+| 7 | Extended Integrations | 2 days | 🟡 In Progress | 60% |
 
 **Legend:** 🔴 Not Started | 🟡 In Progress | 🟢 Complete | ⚫ Blocked
 
 ---
 
-## Phase 7: Extended Integrations (PENDING)
+## Phase 7: Extended Integrations (IN PROGRESS)
 
 **Objective:** Complete remaining system integrations for full feature parity
 
-### 7.1 HIGH PRIORITY Tasks
+### 7.1 HIGH PRIORITY Tasks ✅ COMPLETE
 
 | Task | Target | Effort | Status |
 |------|--------|--------|--------|
-| Program email triggers for all lifecycle events | usePrograms hooks | 2 days | 🔴 |
-| In-app notifications for Programs | notifications table | 1 day | 🔴 |
-| In-app notifications for Events | notifications table | 1 day | 🔴 |
+| Program email triggers for all lifecycle events | usePrograms.js hook | 2 days | ✅ |
+| In-app notifications for Programs | notifyProgramEvent() | 1 day | ✅ |
+| In-app notifications for Events | notifyEventAction() | 1 day | ✅ |
 
-### 7.2 MEDIUM PRIORITY Tasks
+### 7.2 MEDIUM PRIORITY Tasks (Partial)
 
 | Task | Target | Effort | Status |
 |------|--------|--------|--------|
-| Add events to global search | useVisibilityAwareSearch | 1 day | 🔴 |
+| Add events to global search | useVisibilityAwareSearch | 1 day | ✅ |
 | Add budget tracking to events | events table + UI | 1 day | 🔴 |
 | Event reminder edge function (24h before) | Edge function | 1 day | 🔴 |
 
@@ -509,16 +509,15 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | Supabase Realtime for live updates | Both Programs & Events | 2 days | 🔴 |
 | Detailed audit logging | Both Programs & Events | 2 days | 🔴 |
 
-### 7.4 Files to Modify
+### 7.4 Completed Changes
 
-| File | Changes |
-|------|---------|
-| `src/hooks/useVisibilityAwareSearch.js` | Add events to search |
-| `src/hooks/useProgramApplication*.js` | Add notification triggers |
-| `src/components/events/EventForm.jsx` | Add budget fields |
-| `supabase/functions/event-reminder/` | Create scheduled function |
-| `src/pages/EventDetail.jsx` | Add comments section |
-| `src/pages/EventCalendar.jsx` | Add bookmark button |
+| File | Changes | Status |
+|------|---------|--------|
+| `src/hooks/useVisibilityAwareSearch.js` | Added events to search | ✅ |
+| `src/hooks/usePrograms.js` | Created with full lifecycle triggers | ✅ |
+| `src/hooks/useEvents.js` | Added in-app notifications | ✅ |
+| `src/components/AutoNotification.jsx` | Added notifyProgramEvent, notifyEventAction | ✅ |
+| `src/components/SemanticSearch.jsx` | Added event URL and styling | ✅ |
 
 ---
 

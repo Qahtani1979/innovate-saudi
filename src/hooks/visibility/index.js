@@ -14,6 +14,7 @@ export { useEntityVisibility } from '@/hooks/useEntityVisibility';
 export { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 export { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 export { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+export { usePrograms } from '@/hooks/usePrograms';
 export { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 export { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
 export { useContractsWithVisibility } from '@/hooks/useContractsWithVisibility';
