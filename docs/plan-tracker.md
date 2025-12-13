@@ -520,10 +520,10 @@ INSERT INTO permissions (code, name, description, module, category) VALUES
 |------|----------------|--------|
 | `EventCalendar.jsx` | Add "Create Event" button linking to EventCreate | 🟢 |
 | `EventDetail.jsx` | Add Edit button, link to EventEdit | 🟢 |
-| `CalendarView.jsx` | Add events table to data sources | 🔴 |
-| `ParticipantDashboard.jsx` | Add program events section | 🔴 |
-| `MyPrograms.jsx` | Add upcoming events for enrolled programs | 🔴 |
-| `ProgramOperatorPortal.jsx` | Add events section per program | 🔴 |
+| `CalendarView.jsx` | Add events table to data sources | 🟢 |
+| `ParticipantDashboard.jsx` | Add program events section | 🟢 |
+| `MyPrograms.jsx` | Add upcoming events for enrolled programs | 🟢 |
+| `ProgramOperatorPortal.jsx` | Add events section per program | 🟢 |
 | `ApprovalCenter.jsx` | Add Events tab with approval workflow | 🔴 |
 
 ### 1.8 Route Updates ✅ COMPLETE
