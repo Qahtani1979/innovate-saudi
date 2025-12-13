@@ -41,7 +41,7 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | **Budget Integration** | ✅ Full | ✅ Full | None |
 | **Comments System** | ✅ Full | ✅ Full | None |
 | **Bookmarks** | ✅ Full | ✅ Full | None |
-| **Realtime Updates** | ❌ Missing | ❌ Missing | Low |
+| **Realtime Updates** | ❌ Future | ❌ Future | Low |
 
 **See:** `docs/programs-events-integration-matrix.md` for full details
 

@@ -33,10 +33,10 @@
 | **Campaign Sync** | ✅ Full | ✅ Full | None |
 | **AI Components** | ✅ 6 components | ✅ 4 components | None |
 | **Search/Discovery** | ✅ Full | ✅ Full | None |
-| **Budget Integration** | ✅ Full | ⚠️ Missing | Medium |
-| **Comments System** | ✅ Full | ⚠️ Missing | Low |
-| **Bookmarks** | ✅ Full | ⚠️ Missing | Low |
-| **Realtime Updates** | ❌ Missing | ❌ Missing | Medium |
+| **Budget Integration** | ✅ Full | ✅ Full | None |
+| **Comments System** | ✅ Full | ✅ Full | None |
+| **Bookmarks** | ✅ Full | ✅ Full | None |
+| **Realtime Updates** | ❌ Future | ❌ Future | Low |
 
 **Full details:** See `docs/programs-events-integration-matrix.md`
 
