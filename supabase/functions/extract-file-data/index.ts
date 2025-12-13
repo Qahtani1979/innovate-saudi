@@ -11,40 +11,60 @@ serve(async (req) => {
   }
 
   try {
-    const { file_url, json_schema } = await req.json();
+    const body = await req.json();
+    const { file_url, file_content, file_name, file_type, json_schema } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Extracting data from file:", file_url);
+    console.log("Extracting data from file:", file_name || file_url);
 
-    // Fetch the file content
     let fileContent = "";
-    let fileType = "unknown";
+    let detectedType = "unknown";
     
-    try {
-      const fileResponse = await fetch(file_url);
-      const contentType = fileResponse.headers.get("content-type") || "";
+    // Handle base64 content (preferred for PDFs and images)
+    if (file_content) {
+      detectedType = file_type || "unknown";
       
-      if (contentType.includes("text/csv") || file_url.endsWith(".csv")) {
-        fileType = "csv";
-        fileContent = await fileResponse.text();
-      } else if (contentType.includes("application/json") || file_url.endsWith(".json")) {
-        fileType = "json";
-        fileContent = await fileResponse.text();
-      } else if (contentType.includes("text/") || file_url.endsWith(".txt")) {
-        fileType = "text";
-        fileContent = await fileResponse.text();
+      // For images and PDFs, we'll include them as data URLs in the prompt
+      if (detectedType.startsWith('image/') || detectedType === 'application/pdf') {
+        // The AI model can process images directly via data URLs
+        fileContent = `data:${detectedType};base64,${file_content}`;
       } else {
-        // For binary files (PDF, Excel, etc.), we'll use AI to describe what to extract
-        fileType = "binary";
-        fileContent = `[Binary file at: ${file_url}. Content type: ${contentType}]`;
+        // For text-based content, decode base64
+        try {
+          fileContent = atob(file_content);
+        } catch {
+          fileContent = `[Binary content: ${file_name}]`;
+        }
       }
-    } catch (fetchError) {
-      console.error("Error fetching file:", fetchError);
-      fileContent = `[Could not fetch file content from: ${file_url}]`;
+    } else if (file_url) {
+      // Legacy URL-based extraction
+      try {
+        const fileResponse = await fetch(file_url);
+        const contentType = fileResponse.headers.get("content-type") || "";
+        
+        if (contentType.includes("text/csv") || file_url.endsWith(".csv")) {
+          detectedType = "csv";
+          fileContent = await fileResponse.text();
+        } else if (contentType.includes("application/json") || file_url.endsWith(".json")) {
+          detectedType = "json";
+          fileContent = await fileResponse.text();
+        } else if (contentType.includes("text/") || file_url.endsWith(".txt")) {
+          detectedType = "text";
+          fileContent = await fileResponse.text();
+        } else {
+          detectedType = "binary";
+          fileContent = `[Binary file at: ${file_url}]`;
+        }
+      } catch (fetchError) {
+        console.error("Error fetching file:", fetchError);
+        fileContent = `[Could not fetch file content from: ${file_url}]`;
+      }
+    } else {
+      throw new Error("No file content or URL provided");
     }
 
     // Build prompt for extraction
@@ -52,27 +72,58 @@ serve(async (req) => {
       ? `Extract data matching this JSON schema:\n${JSON.stringify(json_schema, null, 2)}`
       : "Extract all relevant structured data from the file.";
 
-    const prompt = `You are a data extraction assistant. Extract structured data from the following ${fileType} file content.
+    // For images and PDFs, use vision-capable model with multimodal input
+    const isImageOrPdf = detectedType.startsWith('image/') || detectedType === 'application/pdf';
+    
+    let messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>;
+    
+    if (isImageOrPdf && file_content) {
+      // Use multimodal format for images
+      messages = [
+        { 
+          role: "system", 
+          content: "You are a data extraction assistant. Extract structured tabular data from images and documents. Always respond with valid JSON matching the requested schema. Look for tables, lists, or structured information and convert them to rows with headers." 
+        },
+        { 
+          role: "user", 
+          content: [
+            { 
+              type: "text", 
+              text: `${schemaDescription}\n\nExtract all tabular or structured data from this ${detectedType === 'application/pdf' ? 'PDF document' : 'image'}. Return the data as JSON with 'headers' array and 'rows' array of objects.` 
+            },
+            { 
+              type: "image_url", 
+              image_url: { url: `data:${detectedType};base64,${file_content}` } 
+            }
+          ]
+        }
+      ];
+    } else {
+      // Text-based extraction
+      const prompt = `You are a data extraction assistant. Extract structured data from the following ${detectedType} file content.
 
 ${schemaDescription}
 
 File content:
-${fileContent.substring(0, 10000)} ${fileContent.length > 10000 ? '...[truncated]' : ''}
+${typeof fileContent === 'string' ? fileContent.substring(0, 15000) : '[Content not readable]'} ${typeof fileContent === 'string' && fileContent.length > 15000 ? '...[truncated]' : ''}
 
-Return ONLY the extracted data as valid JSON matching the requested schema. If you cannot extract certain fields, use null.`;
+Return ONLY the extracted data as valid JSON with 'headers' (array of column names) and 'rows' (array of objects with those headers as keys). If you cannot extract certain fields, use null.`;
 
-    // Use Lovable AI to extract data
-    const body: Record<string, unknown> = {
-      model: "google/gemini-2.5-flash",
-      messages: [
+      messages = [
         { role: "system", content: "You are a data extraction assistant. Always respond with valid JSON only, no markdown or explanations." },
         { role: "user", content: prompt }
-      ],
+      ];
+    }
+
+    // Use Lovable AI to extract data - use gemini-2.5-flash for multimodal
+    const requestBody: Record<string, unknown> = {
+      model: isImageOrPdf ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash",
+      messages,
     };
 
     // If schema provided, use tool calling for structured output
     if (json_schema) {
-      body.tools = [
+      requestBody.tools = [
         {
           type: "function",
           function: {
@@ -82,8 +133,10 @@ Return ONLY the extracted data as valid JSON matching the requested schema. If y
           }
         }
       ];
-      body.tool_choice = { type: "function", function: { name: "extract_data" } };
+      requestBody.tool_choice = { type: "function", function: { name: "extract_data" } };
     }
+
+    console.log("Calling AI for extraction...");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -91,7 +144,7 @@ Return ONLY the extracted data as valid JSON matching the requested schema. If y
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -118,13 +171,16 @@ Return ONLY the extracted data as valid JSON matching the requested schema. If y
         const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
         result = JSON.parse(cleanContent);
       } catch {
-        result = { raw_content: content };
+        result = { error: "Could not parse AI response", raw_content: content };
       }
     } else {
-      result = { error: "No data extracted" };
+      result = { error: "No data extracted from file" };
     }
 
-    console.log("Data extraction completed successfully");
+    console.log("Data extraction completed:", {
+      headers: result.headers?.length || 0,
+      rows: result.rows?.length || 0
+    });
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
