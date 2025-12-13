@@ -2,8 +2,8 @@
 
 **Project:** Programs & Events Hub  
 **Last Audit:** 2025-12-13 (Full System Integration Assessment)  
-**Target Completion:** 7 Phases (ALL COMPLETE)  
-**Status:** 🟢 ALL PHASES COMPLETE (100%)
+**Target Completion:** 8 Phases (7 Complete, 1 In Progress)  
+**Status:** 🟡 Phase 8 - Media Management Integration (Pending)
 
 ---
 
@@ -42,6 +42,7 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | **Comments System** | ✅ Full | ✅ Full | None |
 | **Bookmarks** | ✅ Full | ✅ Full | None |
 | **Audit Logging** | ✅ Full | ✅ Full | None |
+| **Media Management** | ❌ Not Integrated | ❌ Not Integrated | Medium |
 | **Realtime Updates** | ❌ Future | ❌ Future | Low |
 
 **See:** `docs/programs-events-integration-matrix.md` for full details
@@ -476,8 +477,67 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | 5 | Permissions & Polish | 1 week | 🟢 Complete | 100% |
 | 6 | Approval System Deep Integration | 1 day | 🟢 Complete | 100% |
 | 7 | Extended Integrations | 2 days | 🟢 Complete | 100% |
+| 8 | Media Management Integration | 3 days | 🟡 Pending | 0% |
 
 **Legend:** 🔴 Not Started | 🟡 In Progress | 🟢 Complete | ⚫ Blocked
+
+---
+
+## Phase 8: Media Management Integration (PENDING)
+
+**Objective:** Integrate Programs & Events with centralized Media Management System
+
+### 8.1 Current State Analysis
+
+| Aspect | Programs | Events | Notes |
+|--------|----------|--------|-------|
+| **FileUploader** | ✅ Used | ✅ Used | Basic upload works |
+| **Storage Bucket** | ✅ `programs` | ✅ `events` | Dedicated buckets |
+| **MediaLibrary Picker** | ❌ Missing | ❌ Missing | Cannot select existing files |
+| **registerUsage()** | ❌ Missing | ❌ Missing | No usage tracking |
+| **media_usages table** | ❌ Not tracked | ❌ Not tracked | No dependency records |
+| **Dependency Check** | ❌ Missing | ❌ Missing | Can delete in-use media |
+
+### 8.2 Implementation Tasks
+
+| Task | Priority | Effort | Status | Target File |
+|------|----------|--------|--------|-------------|
+| Add MediaLibrary picker to ProgramEdit | High | 0.5 day | ❌ TODO | ProgramEdit.jsx |
+| Add MediaLibrary picker to EventEdit | High | 0.5 day | ❌ TODO | EventEdit.jsx |
+| Integrate registerUsage() on program upload | High | 0.5 day | ❌ TODO | usePrograms.js |
+| Integrate registerUsage() on event upload | High | 0.5 day | ❌ TODO | useEvents.js |
+| Track media in media_usages table | Medium | 0.5 day | ❌ TODO | Both hooks |
+| Add dependency check before media deletion | Medium | 0.5 day | ❌ TODO | MediaLibrary.jsx |
+| Update ProgramCreateWizard for media | Low | 0.5 day | ❌ TODO | ProgramCreateWizard.jsx |
+
+### 8.3 Integration Details
+
+**MediaLibrary Integration Pattern:**
+```jsx
+// Add to ProgramEdit.jsx / EventEdit.jsx
+import { MediaLibrary } from '@/components/media/MediaLibrary';
+import { useMediaUsage } from '@/hooks/useMediaUsage';
+
+const { registerUsage } = useMediaUsage();
+
+// When selecting from library:
+const handleMediaSelect = (mediaFile) => {
+  setImageUrl(mediaFile.public_url);
+  registerUsage(mediaFile.id, 'programs', programId, 'image_url', true);
+};
+```
+
+**registerUsage() Integration:**
+```jsx
+// When uploading new media, also register usage:
+await registerUsage(
+  mediaFileId,     // UUID of media file
+  'programs',      // entity_type
+  programId,       // entity_id  
+  'image_url',     // field_name
+  true             // is_primary
+);
+```
 
 ---
 
@@ -492,6 +552,7 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | Program email triggers for all lifecycle events | usePrograms.js hook | 2 days | ✅ |
 | In-app notifications for Programs | notifyProgramEvent() | 1 day | ✅ |
 | In-app notifications for Events | notifyEventAction() | 1 day | ✅ |
+| Detailed audit logging | useAuditLog.js hook | 2 days | ✅ |
 
 ### 7.2 MEDIUM PRIORITY Tasks ✅ COMPLETE
 
@@ -508,7 +569,6 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | Add comments to events | EventDetail.jsx | 0.5 day | ✅ |
 | Add bookmarks to events | EventDetail.jsx | 0.5 day | ✅ |
 | Supabase Realtime for live updates | Both Programs & Events | 2 days | 🔴 Future |
-| Detailed audit logging | Both Programs & Events | 2 days | 🔴 Future |
 
 ### 7.4 Completed Changes
 

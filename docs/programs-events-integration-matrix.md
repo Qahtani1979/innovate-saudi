@@ -19,8 +19,9 @@
 | **AI Components** | ✅ Full (6) | ✅ Full (4) | None |
 | **Analytics/Reporting** | ✅ Full | ⚠️ Partial | Low |
 | **Budget Integration** | ✅ Full | ✅ Full | None |
-| **Audit Logging** | ⚠️ Partial | ⚠️ Partial | Low |
-| **Media/Storage** | ✅ Full | ✅ Full | None |
+| **Audit Logging** | ✅ Full | ✅ Full | None |
+| **Media/Storage** | ⚠️ Basic | ⚠️ Basic | Medium |
+| **Media Management** | ❌ Not Integrated | ❌ Not Integrated | Medium |
 | **Search/Discovery** | ✅ Full | ✅ Full | None |
 | **Comments System** | ✅ Full | ✅ Full | None |
 | **Bookmarks** | ✅ Full | ✅ Full | None |
@@ -198,12 +199,34 @@
 
 ---
 
-## 7. REMAINING GAPS (LOW PRIORITY)
+## 7. REMAINING GAPS
 
-### Audit Logging ⚠️ PARTIAL
+### Media Management Integration ⚠️ MEDIUM PRIORITY
+**Current State:**
+- ✅ FileUploader component used for uploads
+- ✅ Dedicated storage buckets (programs, events)
+- ❌ No integration with MediaLibrary picker
+- ❌ No media_usages tracking (registerUsage)
+- ❌ No dependency checking before media deletion
+- ❌ No centralized media selection from library
+
+**Implementation Tasks:**
+| Task | Priority | Status | Effort |
+|------|----------|--------|--------|
+| Add MediaLibrary picker to ProgramEdit | High | ❌ TODO | 0.5 day |
+| Add MediaLibrary picker to EventEdit | High | ❌ TODO | 0.5 day |
+| Integrate registerUsage() on upload | High | ❌ TODO | 0.5 day |
+| Track media dependencies in media_usages | Medium | ❌ TODO | 0.5 day |
+| Add media dependency check before deletion | Medium | ❌ TODO | 0.5 day |
+| Update ProgramCreate wizard for media | Low | ❌ TODO | 0.5 day |
+
+### Audit Logging ✅ COMPLETE
 **Both Programs and Events:** 
-- ✅ Basic created_at/updated_at
-- ⚠️ No detailed change tracking (field-level audit trail)
+- ✅ useAuditLog.js hook with comprehensive logging
+- ✅ logProgramActivity() for all program lifecycle events
+- ✅ logEventActivity() for all event lifecycle events
+- ✅ ProgramEventAuditLog.jsx for viewing logs
+- ✅ Logs to access_logs table with detailed metadata
 
 ### Analytics/Reporting ⚠️ PARTIAL
 **Programs:** ✅ Full reporting (ProgramImpactDashboard, etc.)
@@ -233,11 +256,19 @@
 | Bookmarks for events | EventDetail.jsx with bookmarks table |
 | Event reminder edge function | supabase/functions/event-reminder/ |
 
+### NEXT PHASE: Media Management Integration
+| Task | Effort | Impact |
+|------|--------|--------|
+| MediaLibrary picker for Programs | 0.5 day | High |
+| MediaLibrary picker for Events | 0.5 day | High |
+| registerUsage() integration | 0.5 day | Medium |
+| media_usages tracking | 0.5 day | Medium |
+| Dependency check before deletion | 0.5 day | Medium |
+
 ### FUTURE ENHANCEMENTS (Low Priority)
 | Item | Effort | Impact |
 |------|--------|--------|
 | Implement Supabase Realtime for live updates | 2 days | Medium |
-| Add detailed audit logging | 2 days | Low |
 | Enhanced event analytics dashboard | 1 day | Low |
 
 ---
