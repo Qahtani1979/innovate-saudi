@@ -135,8 +135,8 @@ export default function BulkUserImport() {
           // Send welcome email
           await supabase.functions.invoke('email-trigger-hub', {
             body: {
-              trigger: 'WELCOME',
-              recipientEmail: userData.email,
+              trigger: 'auth.signup',
+              recipient_email: userData.email,
               variables: {
                 userName: userData.full_name,
                 assignedRoles: roleNames.join(', '),

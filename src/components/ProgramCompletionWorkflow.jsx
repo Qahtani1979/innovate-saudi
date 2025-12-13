@@ -64,10 +64,10 @@ export default function ProgramCompletionWorkflow({ program, onClose }) {
         if (participant.email) {
           await supabase.functions.invoke('email-trigger-hub', {
             body: {
-              trigger: 'PROGRAM_COMPLETED',
-              recipientEmail: participant.email,
-              entityType: 'program',
-              entityId: program.id,
+              trigger: 'program.completed',
+              recipient_email: participant.email,
+              entity_type: 'program',
+              entity_id: program.id,
               variables: {
                 userName: participant.applicant_name,
                 programName: program.name_en,

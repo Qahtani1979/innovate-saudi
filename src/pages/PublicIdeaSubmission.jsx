@@ -263,8 +263,8 @@ export default function PublicIdeaSubmission() {
         try {
           await supabase.functions.invoke('email-trigger-hub', {
             body: {
-              trigger: 'IDEA_SUBMITTED',
-              recipientEmail: contactInfo.email,
+              trigger: 'idea.submitted',
+              recipient_email: contactInfo.email,
               variables: {
                 userName: contactInfo.name || 'Citizen',
                 ideaTitle: formData.title,

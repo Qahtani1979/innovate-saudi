@@ -26,8 +26,8 @@ export default function DashboardSharing({ dashboardConfig, dashboardName }) {
     try {
       await supabase.functions.invoke('email-trigger-hub', {
         body: {
-          trigger: 'DASHBOARD_SHARED',
-          recipientEmail: email,
+          trigger: 'dashboard.shared',
+          recipient_email: email,
           variables: {
             dashboardName: dashboardName,
             shareUrl: shareUrl

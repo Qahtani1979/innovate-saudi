@@ -75,10 +75,10 @@ function ChallengeSolutionMatching() {
 
         await supabase.functions.invoke('email-trigger-hub', {
           body: {
-            trigger: 'SOLUTION_MATCHED',
-            recipientEmail: solution.contact_email,
-            entityType: 'solution',
-            entityId: solution.id,
+            trigger: 'challenge.match_found',
+            recipient_email: solution.contact_email,
+            entity_type: 'solution',
+            entity_id: solution.id,
             variables: {
               providerName: solution.provider_name,
               solutionName: solution.name_en,

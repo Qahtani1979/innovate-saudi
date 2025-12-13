@@ -354,26 +354,52 @@ Processes delayed emails from `email_queue` (runs via cron every 5 minutes).
 
 ## 🔄 Workflow Integrations
 
-### Current Integrations (11 files)
-1. `AuthContext.jsx` - Welcome email on signup
-2. `ChallengeReviewWorkflow.jsx` - Challenge approved email
-3. `ChallengeSubmissionWizard.jsx` - Challenge submitted email
-4. `RoleRequestApprovalQueue.jsx` - Role approved/rejected emails
-5. `RDToPilotTransition.jsx` - Pilot created email
-6. `ProgramToPilotWorkflow.jsx` - Pilot created email
-7. `SolutionToPilotWorkflow.jsx` - Pilot created email
-8. `RDProposalAwardWorkflow.jsx` - Proposal awarded email
-9. `PublicIdeaSubmission.jsx` - Idea submitted email
-10. `EmailTemplateEditorContent.jsx` - Test send
-11. `base44Client.js` - Generic send helper
+### Current Integrations (41+ files with email triggers)
 
-### Needed Integrations
-- Pilot status change triggers
-- Solution verification triggers
-- Evaluation assignment triggers
-- Task assignment triggers
-- Contract expiring (scheduled job)
-- Event reminders (scheduled job)
+**Authentication:**
+- `AuthContext.jsx` - Welcome email on signup (`auth.signup`)
+
+**Challenge Workflow:**
+- `ChallengeReviewWorkflow.jsx` - Challenge approved/rejected emails (`challenge.approved`)
+- `ChallengeSubmissionWizard.jsx` - Challenge submitted email (`challenge.submitted`)
+
+**Role Management:**
+- `RoleRequestApprovalQueue.jsx` - Role approved/rejected emails (`role.approved`, `role.rejected`)
+
+**Pilot Creation (8+ sources):**
+- `IdeaToPilotConverter.jsx` - Pilot from idea (`pilot.created`, `idea.converted`)
+- `IdeaToSolutionConverter.jsx` - Solution from idea (`solution.submitted`)
+- `PilotConversionWizard.jsx` - Pilot from match (`pilot.created`)
+- `ProgramToPilotWorkflow.jsx` - Pilot from program (`pilot.created`)
+- `LabToPilotTransitionWizard.jsx` - Pilot from living lab (`pilot.created`)
+- `RDToPilotTransition.jsx` - Pilot from R&D (`pilot.created`)
+- `SolutionToPilotWorkflow.jsx` - Pilot from solution (`pilot.created`)
+- `ProgramLaunchWorkflow.jsx` - Pilot from program launch (`pilot.created`)
+
+**Contract Management:**
+- `ContractGeneratorWizard.jsx` - Contract created (`contract.created`)
+
+**Event Management:**
+- `EventRegistration.jsx` - Event registration confirmed (`event.registration_confirmed`)
+- `CommitteeMeetingScheduler.jsx` - Meeting invitation (`event.invitation`)
+
+**Evaluation & R&D:**
+- `RDProposalAwardWorkflow.jsx` - Proposal awarded (`proposal.accepted`)
+- `RDProposalEscalationAutomation.jsx` - Escalation notification (`challenge.escalated`)
+- `ExpertMatchingEngine.jsx` - Evaluation assigned (`evaluation.assigned`)
+
+**Other Integrations:**
+- `BudgetApprovalGate.jsx` - Budget approval/revision (`proposal.accepted`, `proposal.revision_requested`)
+- `PostProgramFollowUp.jsx` - Feedback request (`pilot.feedback_request`)
+- `AutomatedCertificateGenerator.jsx` - Program completed (`program.completed`)
+- `WaitlistManager.jsx` - Waitlist notifications
+- `BulkUserImport.jsx` - Welcome emails for imported users
+
+### Scheduled Jobs (Cron)
+| Job | Schedule | Edge Function |
+|-----|----------|---------------|
+| Queue Processor | Every 5 minutes | `queue-processor` |
+| Campaign Sender | Every 5 minutes | `campaign-sender` |
 
 ---
 
