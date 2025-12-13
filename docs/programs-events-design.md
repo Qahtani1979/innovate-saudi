@@ -152,8 +152,10 @@
 | useMediaIntegration hook | High | ✅ DONE | Usage tracking & registration |
 | ProgramEdit.jsx integration | High | ✅ DONE | Library picker + usage tracking |
 | EventEdit.jsx integration | High | ✅ DONE | Library picker + usage tracking |
-| ProgramCreateWizard integration | Low | ✅ DONE | MediaFieldWithPicker for image + brochure |
-| EventCreate integration | Low | ✅ DONE | MediaFieldWithPicker for cover image |
+| ProgramCreateWizard integration | Low | ✅ DONE | Library picker UI (no tracking - no entity ID) |
+| EventCreate integration | Low | ✅ DONE | Library picker UI (no tracking - no entity ID) |
+
+**Note:** Create forms use MediaFieldWithPicker for UI but don't track media usage because entities don't have IDs until after creation.
 
 ---
 

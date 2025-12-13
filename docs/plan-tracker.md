@@ -492,11 +492,12 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | Aspect | Programs | Events | Notes |
 |--------|----------|--------|-------|
 | **FileUploader** | ✅ Used | ✅ Used | Basic upload works |
-| **Storage Bucket** | ✅ `programs` | ✅ `events` | Dedicated buckets |
+| **Storage Bucket** | ✅ `programs` | ✅ `events` | Dedicated buckets verified |
 | **MediaLibrary Picker** | ✅ Integrated | ✅ Integrated | MediaFieldWithPicker component |
-| **registerUsage()** | ✅ Integrated | ✅ Integrated | useMediaIntegration hook |
-| **media_usages table** | ✅ Tracked | ✅ Tracked | Auto-registers on upload/select |
-| **Dependency Check** | ✅ Existing | ✅ Existing | Already in useMediaDependencies |
+| **registerUsage() - Edit** | ✅ Tracked | ✅ Tracked | useMediaIntegration hook on Edit pages |
+| **media_usages table** | ✅ Exists | ✅ Exists | Auto-registers on upload/select |
+| **media_files table** | ✅ Exists | ✅ Exists | Central media registry |
+| **Dependency Check** | ✅ Existing | ✅ Existing | useMediaDependencies hook |
 
 ### 8.2 Implementation Tasks
 
@@ -505,10 +506,12 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | Create MediaLibraryPicker component | High | 0.5 day | ✅ DONE | MediaLibraryPicker.jsx |
 | Create MediaFieldWithPicker component | High | 0.5 day | ✅ DONE | MediaFieldWithPicker.jsx |
 | Create useMediaIntegration hook | High | 0.5 day | ✅ DONE | useMediaIntegration.js |
-| Add MediaLibrary picker to ProgramEdit | High | 0.5 day | ✅ DONE | ProgramEdit.jsx |
-| Add MediaLibrary picker to EventEdit | High | 0.5 day | ✅ DONE | EventEdit.jsx |
-| Update ProgramCreateWizard for media | Low | 0.5 day | ✅ DONE | ProgramCreateWizard.jsx |
-| Update EventCreate for media | Low | 0.5 day | ✅ DONE | EventCreate.jsx |
+| Add MediaLibrary picker to ProgramEdit | High | 0.5 day | ✅ DONE | ProgramEdit.jsx (with tracking) |
+| Add MediaLibrary picker to EventEdit | High | 0.5 day | ✅ DONE | EventEdit.jsx (with tracking) |
+| Add MediaFieldWithPicker to ProgramCreateWizard | Low | 0.5 day | ✅ DONE | ProgramCreateWizard.jsx |
+| Add MediaFieldWithPicker to EventCreate | Low | 0.5 day | ✅ DONE | EventCreate.jsx |
+
+**Note:** Create forms (ProgramCreateWizard, EventCreate) use MediaFieldWithPicker for the UI but don't register media usage because entity IDs don't exist until after creation. Media usage is tracked on Edit pages.
 
 ### 8.3 Files Created/Modified
 
@@ -517,10 +520,59 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | `src/components/media/MediaLibraryPicker.jsx` | NEW | Library picker dialog with search & filters |
 | `src/components/media/MediaFieldWithPicker.jsx` | NEW | Unified media field with library + upload |
 | `src/hooks/useMediaIntegration.js` | NEW | Hook for media registration & tracking |
-| `src/pages/ProgramEdit.jsx` | MODIFIED | Integrated MediaFieldWithPicker |
-| `src/pages/EventEdit.jsx` | MODIFIED | Integrated MediaFieldWithPicker |
-| `src/components/programs/ProgramCreateWizard.jsx` | MODIFIED | Integrated MediaFieldWithPicker |
-| `src/pages/EventCreate.jsx` | MODIFIED | Integrated MediaFieldWithPicker |
+| `src/pages/ProgramEdit.jsx` | MODIFIED | MediaFieldWithPicker + handleMediaSelect |
+| `src/pages/EventEdit.jsx` | MODIFIED | MediaFieldWithPicker + handleMediaSelect |
+| `src/components/programs/ProgramCreateWizard.jsx` | MODIFIED | MediaFieldWithPicker UI (no tracking) |
+| `src/pages/EventCreate.jsx` | MODIFIED | MediaFieldWithPicker UI (no tracking) |
+
+### 8.4 Architecture Notes
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    MEDIA MANAGEMENT INTEGRATION                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  CREATE FLOW (No Entity ID Yet)                                      │
+│  ┌──────────────────┐    ┌───────────────────┐                       │
+│  │ ProgramCreate    │    │ EventCreate       │                       │
+│  │ Wizard           │    │                   │                       │
+│  └────────┬─────────┘    └─────────┬─────────┘                       │
+│           │                        │                                  │
+│           ▼                        ▼                                  │
+│  ┌────────────────────────────────────────────┐                      │
+│  │        MediaFieldWithPicker                 │                      │
+│  │  • Library selection                        │                      │
+│  │  • Direct upload                            │                      │
+│  │  • URL input                                │                      │
+│  │  • NO usage tracking (no entity ID)         │                      │
+│  └─────────────────────────────────────────────┘                      │
+│                                                                       │
+│  EDIT FLOW (Entity ID Exists)                                        │
+│  ┌──────────────────┐    ┌───────────────────┐                       │
+│  │ ProgramEdit      │    │ EventEdit         │                       │
+│  └────────┬─────────┘    └─────────┬─────────┘                       │
+│           │                        │                                  │
+│           ▼                        ▼                                  │
+│  ┌────────────────────────────────────────────┐                      │
+│  │        MediaFieldWithPicker                 │                      │
+│  │  + onMediaSelect={handleMediaSelect}        │                      │
+│  │  + entityId passed                          │                      │
+│  └─────────────────────────────────────────────┘                      │
+│           │                                                           │
+│           ▼                                                           │
+│  ┌────────────────────────────────────────────┐                      │
+│  │        useMediaIntegration Hook             │                      │
+│  │  • registerMediaFromLibrary()               │                      │
+│  │  • registerUploadedMedia()                  │                      │
+│  │  • Writes to media_usages table             │                      │
+│  └─────────────────────────────────────────────┘                      │
+│                                                                       │
+│  STORAGE BUCKETS                                                      │
+│  ├─ programs (public)                                                │
+│  └─ events (public)                                                  │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
