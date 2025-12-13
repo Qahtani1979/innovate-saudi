@@ -4,9 +4,20 @@
 
 A comprehensive bilingual (EN/AR) email template system for the Saudi Innovates platform, supporting HTML emails with configurable headers/footers, user preferences integration, and complete platform coverage.
 
-**Status**: ✅ Fully Implemented (All Core Phases + Migration Complete)
+**Status**: ✅ Fully Implemented
 
 **Last Updated**: 2025-12-13
+
+---
+
+## Current Statistics
+
+| Metric | Count |
+|--------|-------|
+| Active Templates | 126 |
+| Template Categories | 17 |
+| Active Triggers | 96 |
+| Integrated Components | 41+ |
 
 ---
 
@@ -29,7 +40,9 @@ A comprehensive bilingual (EN/AR) email template system for the Saudi Innovates 
 | Phase 2 | Edge Function (template fetching, HTML builder, preferences) | ✅ Complete |
 | Phase 3 | Admin UI (template editor, preview, test send) | ✅ Complete |
 | Phase 4 | Integration (connect all triggers) | ✅ Complete |
-| Phase 5 | Migration to email-trigger-hub | ✅ Complete (40 files) |
+| Phase 5 | Migration to email-trigger-hub | ✅ Complete (41 files) |
+| Phase 6 | User profile integration | ✅ Complete |
+| Phase 7 | Webhook tracking (Resend) | ✅ Complete |
 
 ### Email Sending Architecture
 
@@ -44,25 +57,35 @@ useEmailTrigger() hook
        ▼
 email-trigger-hub (edge function)
        │
-       ├──▶ Template lookup
+       ├──▶ Trigger config lookup
+       ├──▶ Template fetching
        ├──▶ Variable extraction
        ├──▶ Preference check
        │
        ▼
 send-email (edge function)
        │
+       ├──▶ HTML builder
+       ├──▶ RTL support
+       ├──▶ Variable interpolation
+       │
        ▼
 Resend API
+       │
+       ▼
+resend-webhook (tracking)
 ```
 
 ### Database Tables
 
 | Table | Purpose | Record Count |
 |-------|---------|--------------|
-| `email_settings` | Global configuration (logo, colors, footer) | ~12 settings |
-| `email_templates` | Template storage with bilingual support | 118+ templates |
-| `email_trigger_config` | Maps triggers to templates | Dynamic |
+| `email_settings` | Global configuration (logo, colors, footer) | ~15 settings |
+| `email_templates` | Template storage with bilingual support | 126 templates |
+| `email_trigger_config` | Maps triggers to templates | 96 active |
 | `email_logs` | Email send tracking and analytics | Dynamic |
+| `email_queue` | Delayed/scheduled emails | Dynamic |
+| `user_notification_preferences` | Per-user settings | 24+ users |
 
 ### Key Features
 
@@ -77,78 +100,74 @@ Resend API
 - ✅ Live preview with language toggle
 - ✅ Test send to current user
 - ✅ Language-aware test variables (EN/AR match preview)
-- ✅ **AI Analysis** - Comprehensive template database assessment
-
-### AI Analysis Feature
-
-The Email Template Editor includes an AI-powered analysis tool that provides:
-
-| Analysis Type | Description | Action |
-|--------------|-------------|--------|
-| **Health Score** | Overall score (1-100) assessing template database quality | Visual indicator |
-| **Coverage Gaps** | Missing templates for common platform workflows | Click "Create" to start new template |
-| **Consistency Issues** | Templates missing Arabic content, headers, CTAs | Click template key to select & edit |
-| **Category Balance** | Identifies over/under-represented categories | Click category to filter template list |
-| **Recommendations** | Specific actionable improvements prioritized by impact | Reference for improvements |
-| **Suggested Templates** | AI-recommended new templates to add | Click "Create" to pre-fill new template |
-
-**How to Use:**
-1. Navigate to Email Template Editor (`/email-template-editor`)
-2. Click the "AI Analysis" button in the toolbar
-3. Review the comprehensive analysis report
-4. **Take Action Directly:**
-   - Click on a template key in consistency issues → Selects that template for editing
-   - Click on a category → Filters the template list by that category
-   - Click "Create" on suggested templates → Creates new template with pre-filled fields
-   - Use "AI Generate" after creating to auto-fill content
-
-### Database Tables Created
-- `email_settings` - Global email configuration
-- `email_templates` - Template storage with bilingual support (118+ templates)
-- `email_trigger_config` - Maps trigger keys to templates
-- `email_logs` - Email send tracking and analytics
-
-### Edge Function Features
-- Template-based or direct content emails
-- User preference checking (with bypass for critical emails)
-- HTML email builder with header/footer injection
-- RTL support for Arabic
-- Variable interpolation
-- Text-based logo fallback (when no logo URL configured)
-- Email logging
+- ✅ AI Analysis - Comprehensive template database assessment
+- ✅ Webhook tracking for opens/clicks/bounces
+- ✅ Auto-creation of user preferences on signup
 
 ---
 
 ## 1. User Preferences Integration
 
-### 1.1 Notification Preferences (from `user_notification_preferences` table)
-Users can control which emails they receive:
+### 1.1 Notification Preferences Table
 
-| Preference Key | Description | Default |
-|----------------|-------------|---------|
-| `email_enabled` | Master switch for all emails | `true` |
-| `challenge_updates` | Challenge status changes, matches | `true` |
-| `pilot_updates` | Pilot status, KPI alerts | `true` |
-| `program_updates` | Program deadlines, acceptances | `true` |
-| `task_reminders` | Task assignments, deadlines | `true` |
-| `proposal_updates` | Proposal status, feedback | `true` |
-| `system_announcements` | Platform-wide announcements | `true` |
-| `weekly_digest` | Weekly activity summary | `false` |
-| `marketing_emails` | News, tips, promotions | `false` |
+The `user_notification_preferences` table stores per-user settings:
 
-### 1.2 Language Preferences
+| Column | Type | Default | Description |
+|--------|------|---------|-------------|
+| `email_notifications` | BOOLEAN | true | Master switch for all emails |
+| `in_app_notifications` | BOOLEAN | true | In-app notifications |
+| `push_notifications` | BOOLEAN | true | Push notifications |
+| `sms_notifications` | BOOLEAN | false | SMS notifications |
+| `email_categories` | JSONB | (all true) | Per-category opt-in/out |
+| `frequency` | VARCHAR | immediate | immediate/daily/weekly |
+| `quiet_hours_start` | TIME | null | Do not disturb start |
+| `quiet_hours_end` | TIME | null | Do not disturb end |
+
+### 1.2 Email Categories (14 categories)
+
+| Category Key | Description | Default |
+|--------------|-------------|---------|
+| `authentication` | Login, password reset, security | true |
+| `challenges` | Challenge status changes | true |
+| `pilots` | Pilot updates and KPIs | true |
+| `solutions` | Solution notifications | true |
+| `contracts` | Contract lifecycle | true |
+| `evaluations` | Evaluation assignments | true |
+| `events` | Event invitations | true |
+| `tasks` | Task assignments | true |
+| `programs` | Program updates | true |
+| `proposals` | Proposal status | true |
+| `roles` | Role approvals | true |
+| `finance` | Financial notifications | true |
+| `citizen` | Gamification (badges, levels) | true |
+| `marketing` | Newsletters, promotions | true |
+
+### 1.3 Auto-Creation Trigger
+
+When a new user profile is created, notification preferences are automatically created:
+
+```sql
+-- Trigger: on_user_profile_created
+-- Fires: AFTER INSERT ON user_profiles
+-- Action: Creates default preferences in user_notification_preferences
+```
+
+### 1.4 Language Preferences
 - Primary source: `user_profiles.preferred_language` or `citizen_profiles.language_preference`
 - Fallback: Browser locale detection
 - Default: `en` (English)
 - RTL support: Automatic for Arabic (`ar`)
 
-### 1.3 Preference Checking Flow
+### 1.5 Preference Checking Flow
+
 ```
-1. Check if user has email_enabled = true
-2. Check specific preference category
-3. Get user's language preference
-4. Fetch template in correct language
-5. Send email with appropriate direction (LTR/RTL)
+1. Check if user has email_notifications = true
+2. Map template category to preference category
+3. Check email_categories[category] = true
+4. Check quiet hours (if set)
+5. Get user's language preference
+6. Fetch template in correct language
+7. Send email with appropriate direction (LTR/RTL)
 ```
 
 ---
@@ -205,629 +224,361 @@ Users can control which emails they receive:
 
 ---
 
-## 3. Complete Template Catalog
+## 3. Complete Template Catalog (126 Templates)
 
-### 3.1 Authentication & Onboarding
+### 3.1 Authentication & Onboarding (7 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 1 | `welcome_new_user` | auth | User registration | New user | `userName`, `loginUrl`, `supportEmail` |
-| 2 | `email_verification` | auth | Registration/email change | User | `userName`, `verificationUrl`, `expiresIn` |
-| 3 | `password_reset` | auth | Password reset request | User | `userName`, `resetUrl`, `expiresIn` |
-| 4 | `password_changed` | auth | Password successfully changed | User | `userName`, `changeTime`, `supportUrl` |
-| 5 | `account_locked` | auth | Multiple failed attempts | User | `userName`, `unlockTime`, `supportEmail` |
-| 6 | `account_deactivated` | auth | Admin deactivation | User | `userName`, `reason`, `appealUrl` |
-| 7 | `login_new_device` | auth | Login from new device/location | User | `userName`, `device`, `location`, `time` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 1 | `welcome_new_user` | `auth.signup` | New user | `userName`, `loginUrl`, `supportEmail` |
+| 2 | `email_verification` | `auth.email_verification` | User | `userName`, `verificationUrl`, `expiresIn` |
+| 3 | `password_reset` | `auth.password_reset` | User | `userName`, `resetUrl`, `expiresIn` |
+| 4 | `password_changed` | `auth.password_changed` | User | `userName`, `changeTime`, `supportUrl` |
+| 5 | `account_locked` | `auth.account_locked` | User | `userName`, `unlockTime`, `supportEmail` |
+| 6 | `account_deactivated` | `auth.account_deactivated` | User | `userName`, `reason`, `appealUrl` |
+| 7 | `login_new_device` | `auth.login_new_device` | User | `userName`, `device`, `location`, `time` |
 
-### 3.2 Role & Access Management
+### 3.2 Role & Access Management (8 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 8 | `role_request_submitted` | role | User submits role request | User | `userName`, `roleName`, `submissionDate` |
-| 9 | `role_request_pending` | role | New role request | Admin/Approver | `requesterName`, `roleName`, `justification`, `reviewUrl` |
-| 10 | `role_request_approved` | role | Role request approved | User | `userName`, `roleName`, `startDate`, `dashboardUrl` |
-| 11 | `role_request_rejected` | role | Role request rejected | User | `userName`, `roleName`, `reason`, `reapplyUrl` |
-| 12 | `role_expiring_soon` | role | Role expires in 7 days | User | `userName`, `roleName`, `expiryDate`, `renewUrl` |
-| 13 | `role_expired` | role | Role has expired | User | `userName`, `roleName`, `reapplyUrl` |
-| 14 | `invitation_sent` | role | User invited to platform | Invitee | `inviterName`, `roleName`, `organizationName`, `acceptUrl` |
-| 15 | `invitation_accepted` | role | Invitee accepts | Inviter | `inviteeName`, `roleName`, `profileUrl` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 8 | `role_request_submitted` | `role.request_submitted` | User | `userName`, `roleName`, `submissionDate` |
+| 9 | `role_request_pending` | `role.pending` | Admin | `requesterName`, `roleName`, `justification` |
+| 10 | `role_request_approved` | `role.approved` | User | `userName`, `roleName`, `startDate` |
+| 11 | `role_request_rejected` | `role.rejected` | User | `userName`, `roleName`, `reason` |
+| 12 | `role_expiring_soon` | `role.expiring` | User | `userName`, `roleName`, `expiryDate` |
+| 13 | `role_expired` | `role.expired` | User | `userName`, `roleName`, `reapplyUrl` |
+| 14 | `invitation_sent` | `invitation.sent` | Invitee | `inviterName`, `roleName`, `organizationName` |
+| 15 | `invitation_accepted` | `invitation.accepted` | Inviter | `inviteeName`, `roleName`, `profileUrl` |
 
-### 3.3 Challenges
+### 3.3 Challenges (8 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 16 | `challenge_submitted` | challenge | Challenge submitted | Submitter | `challengeTitle`, `challengeCode`, `trackingUrl` |
-| 17 | `challenge_assigned` | challenge | Challenge assigned for review | Reviewer | `challengeTitle`, `challengeCode`, `dueDate`, `reviewUrl` |
-| 18 | `challenge_approved` | challenge | Challenge approved | Submitter, Stakeholders | `challengeTitle`, `challengeCode`, `nextSteps`, `detailUrl` |
-| 19 | `challenge_rejected` | challenge | Challenge rejected | Submitter | `challengeTitle`, `reason`, `resubmitUrl` |
-| 20 | `challenge_needs_info` | challenge | Additional info requested | Submitter | `challengeTitle`, `questions`, `respondUrl` |
-| 21 | `challenge_status_change` | challenge | Status updated | Stakeholders | `challengeTitle`, `oldStatus`, `newStatus`, `detailUrl` |
-| 22 | `challenge_match_found` | challenge | Solution matched | Challenge Owner, Provider | `challengeTitle`, `solutionName`, `matchScore`, `matchUrl` |
-| 23 | `challenge_escalated` | challenge | SLA breach/escalation | Manager | `challengeTitle`, `escalationLevel`, `daysOverdue`, `actionUrl` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 16 | `challenge_submitted` | `challenge.submitted` | Submitter | `challengeTitle`, `challengeCode`, `trackingUrl` |
+| 17 | `challenge_assigned` | `challenge.assigned` | Reviewer | `challengeTitle`, `challengeCode`, `dueDate` |
+| 18 | `challenge_approved` | `challenge.approved` | Submitter | `challengeTitle`, `challengeCode`, `nextSteps` |
+| 19 | `challenge_rejected` | `challenge.rejected` | Submitter | `challengeTitle`, `reason`, `resubmitUrl` |
+| 20 | `challenge_needs_info` | `challenge.needs_info` | Submitter | `challengeTitle`, `questions`, `respondUrl` |
+| 21 | `challenge_status_change` | `challenge.status_changed` | Stakeholders | `challengeTitle`, `oldStatus`, `newStatus` |
+| 22 | `challenge_match_found` | `challenge.match_found` | Owner, Provider | `challengeTitle`, `solutionName`, `matchScore` |
+| 23 | `challenge_escalated` | `challenge.escalated` | Manager | `challengeTitle`, `escalationLevel`, `daysOverdue` |
 
-### 3.4 Solutions & Proposals
+### 3.4 Solutions & Proposals (9 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 24 | `solution_submitted` | solution | Solution registered | Provider | `solutionName`, `solutionCode`, `dashboardUrl` |
-| 25 | `solution_approved` | solution | Solution approved | Provider | `solutionName`, `marketplaceUrl` |
-| 26 | `solution_rejected` | solution | Solution rejected | Provider | `solutionName`, `reason`, `resubmitUrl` |
-| 27 | `solution_interest` | solution | Municipality interested | Provider | `solutionName`, `municipalityName`, `contactUrl` |
-| 28 | `proposal_submitted` | proposal | Proposal submitted | Provider | `proposalTitle`, `challengeTitle`, `trackingUrl` |
-| 29 | `proposal_received` | proposal | New proposal received | Challenge Owner | `proposalTitle`, `providerName`, `reviewUrl` |
-| 30 | `proposal_shortlisted` | proposal | Proposal shortlisted | Provider | `proposalTitle`, `challengeTitle`, `nextSteps` |
-| 31 | `proposal_selected` | proposal | Proposal selected for pilot | Provider | `proposalTitle`, `challengeTitle`, `pilotUrl` |
-| 32 | `proposal_rejected` | proposal | Proposal not selected | Provider | `proposalTitle`, `challengeTitle`, `feedback` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 24 | `solution_submitted` | `solution.submitted` | Provider | `solutionName`, `solutionCode`, `dashboardUrl` |
+| 25 | `solution_approved` | `solution.approved` | Provider | `solutionName`, `marketplaceUrl` |
+| 26 | `solution_rejected` | `solution.rejected` | Provider | `solutionName`, `reason` |
+| 27 | `solution_interest` | `solution.interest_received` | Provider | `solutionName`, `municipalityName` |
+| 28 | `solution_deprecated` | `solution.deprecated` | Provider | `solutionName`, `reason`, `migrationUrl` |
+| 29 | `proposal_submitted` | `proposal.submitted` | Provider | `proposalTitle`, `challengeTitle` |
+| 30 | `proposal_received` | `proposal.received` | Owner | `proposalTitle`, `providerName` |
+| 31 | `proposal_shortlisted` | `proposal.shortlisted` | Provider | `proposalTitle`, `challengeTitle` |
+| 32 | `proposal_selected` | `proposal.accepted` | Provider | `proposalTitle`, `pilotUrl` |
 
-### 3.5 Pilots
+### 3.5 Pilots (13 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 33 | `pilot_created` | pilot | Pilot initiated | All stakeholders | `pilotTitle`, `pilotCode`, `startDate`, `dashboardUrl` |
-| 34 | `pilot_kickoff` | pilot | Pilot officially starts | Team members | `pilotTitle`, `kickoffDate`, `objectives`, `workspaceUrl` |
-| 35 | `pilot_milestone_due` | pilot | Milestone due in 3 days | Responsible party | `pilotTitle`, `milestoneName`, `dueDate`, `updateUrl` |
-| 36 | `pilot_milestone_completed` | pilot | Milestone completed | Stakeholders | `pilotTitle`, `milestoneName`, `nextMilestone` |
-| 37 | `pilot_milestone_overdue` | pilot | Milestone overdue | Manager, Team | `pilotTitle`, `milestoneName`, `daysOverdue`, `actionUrl` |
-| 38 | `pilot_kpi_alert` | pilot | KPI below threshold | Pilot Manager | `pilotTitle`, `kpiName`, `currentValue`, `threshold`, `dashboardUrl` |
-| 39 | `pilot_issue_reported` | pilot | New issue logged | Pilot Manager | `pilotTitle`, `issueTitle`, `severity`, `issueUrl` |
-| 40 | `pilot_issue_resolved` | pilot | Issue resolved | Reporter | `pilotTitle`, `issueTitle`, `resolution` |
-| 41 | `pilot_status_change` | pilot | Status updated | Stakeholders | `pilotTitle`, `oldStatus`, `newStatus`, `detailUrl` |
-| 42 | `pilot_completed` | pilot | Pilot finished | All stakeholders | `pilotTitle`, `results`, `reportUrl`, `nextSteps` |
-| 43 | `pilot_extension_request` | pilot | Extension requested | Approver | `pilotTitle`, `currentEndDate`, `requestedEndDate`, `reason`, `approvalUrl` |
-| 44 | `pilot_approval_required` | pilot | Pilot needs approval | Approver | `pilotTitle`, `stage`, `requestedBy`, `approvalUrl` |
-| 45 | `pilot_expense_submitted` | pilot | Expense claim submitted | Finance | `pilotTitle`, `amount`, `category`, `reviewUrl` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 33 | `pilot_created` | `pilot.created` | Stakeholders | `pilotTitle`, `pilotCode`, `startDate` |
+| 34 | `pilot_kickoff` | `pilot.kickoff` | Team | `pilotTitle`, `kickoffDate`, `objectives` |
+| 35 | `pilot_milestone_due` | `pilot.milestone_due` | Responsible | `pilotTitle`, `milestoneName`, `dueDate` |
+| 36 | `pilot_milestone_completed` | `pilot.milestone_completed` | Stakeholders | `pilotTitle`, `milestoneName` |
+| 37 | `pilot_milestone_overdue` | `pilot.milestone_overdue` | Manager | `pilotTitle`, `milestoneName`, `daysOverdue` |
+| 38 | `pilot_kpi_alert` | `pilot.kpi_alert` | Manager | `pilotTitle`, `kpiName`, `currentValue` |
+| 39 | `pilot_issue_reported` | `pilot.issue_reported` | Manager | `pilotTitle`, `issueTitle`, `severity` |
+| 40 | `pilot_issue_resolved` | `pilot.issue_resolved` | Reporter | `pilotTitle`, `issueTitle`, `resolution` |
+| 41 | `pilot_status_change` | `pilot.status_changed` | Stakeholders | `pilotTitle`, `oldStatus`, `newStatus` |
+| 42 | `pilot_completed` | `pilot.completed` | Stakeholders | `pilotTitle`, `results`, `reportUrl` |
+| 43 | `pilot_extension_request` | `pilot.extension_request` | Approver | `pilotTitle`, `currentEndDate`, `reason` |
+| 44 | `pilot_enrollment_confirmed` | `pilot.enrollment_confirmed` | Citizen | `pilotTitle`, `location`, `startDate` |
+| 45 | `pilot_feedback_request` | `pilot.feedback_request` | Participant | `pilotTitle`, `feedbackUrl` |
 
-### 3.6 Programs
+### 3.6 Programs (8 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 46 | `program_announced` | program | New program launched | Eligible users | `programName`, `description`, `deadline`, `applyUrl` |
-| 47 | `program_application_received` | program | Application submitted | Applicant | `programName`, `applicationId`, `trackingUrl` |
-| 48 | `program_application_reviewed` | program | Application under review | Applicant | `programName`, `reviewerName`, `expectedDate` |
-| 49 | `program_accepted` | program | Accepted to program | Applicant | `programName`, `startDate`, `orientationUrl`, `nextSteps` |
-| 50 | `program_rejected` | program | Not accepted | Applicant | `programName`, `feedback`, `alternativePrograms` |
-| 51 | `program_deadline_reminder` | program | Deadline in 3 days | Potential applicants | `programName`, `deadline`, `applyUrl` |
-| 52 | `program_cohort_start` | program | Cohort begins | Participants | `programName`, `startDate`, `schedule`, `resourcesUrl` |
-| 53 | `program_mentorship_assigned` | program | Mentor assigned | Mentee, Mentor | `programName`, `mentorName`, `menteeName`, `meetingUrl` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 46 | `program_announced` | `program.announced` | Eligible | `programName`, `description`, `deadline` |
+| 47 | `program_application_received` | `program.application_received` | Applicant | `programName`, `applicationId` |
+| 48 | `program_application_reviewed` | `program.reviewed` | Applicant | `programName`, `reviewerName` |
+| 49 | `program_accepted` | `program.accepted` | Applicant | `programName`, `startDate`, `orientationUrl` |
+| 50 | `program_rejected` | `program.rejected` | Applicant | `programName`, `feedback` |
+| 51 | `program_deadline_reminder` | `program.deadline_reminder` | Potential | `programName`, `deadline`, `applyUrl` |
+| 52 | `program_cohort_start` | `program.cohort_start` | Participants | `programName`, `startDate`, `schedule` |
+| 53 | `program_mentorship_assigned` | `program.mentorship_assigned` | Both | `programName`, `mentorName`, `menteeName` |
 
-### 3.7 Evaluations & Reviews
+### 3.7 Evaluations & Reviews (7 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 54 | `evaluation_assigned` | evaluation | Assigned as evaluator | Expert | `entityType`, `entityTitle`, `deadline`, `evaluationUrl` |
-| 55 | `evaluation_reminder` | evaluation | Evaluation due soon | Expert | `entityType`, `entityTitle`, `dueDate`, `evaluationUrl` |
-| 56 | `evaluation_completed` | evaluation | Evaluation submitted | Requester | `entityType`, `entityTitle`, `evaluatorName`, `resultsUrl` |
-| 57 | `panel_invitation` | evaluation | Invited to expert panel | Expert | `panelName`, `purpose`, `sessionDate`, `acceptUrl` |
-| 58 | `panel_reminder` | evaluation | Panel session tomorrow | Panel members | `panelName`, `sessionDate`, `agendaUrl` |
-| 59 | `feedback_requested` | evaluation | Feedback request | Stakeholder | `entityType`, `entityTitle`, `deadline`, `feedbackUrl` |
-| 60 | `feedback_received` | evaluation | Feedback submitted | Entity owner | `entityType`, `entityTitle`, `fromName`, `viewUrl` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 54 | `evaluation_assigned` | `evaluation.assigned` | Expert | `entityType`, `entityTitle`, `deadline` |
+| 55 | `evaluation_reminder` | `evaluation.reminder` | Expert | `entityType`, `entityTitle`, `dueDate` |
+| 56 | `evaluation_completed` | `evaluation.completed` | Requester | `entityType`, `entityTitle`, `evaluatorName` |
+| 57 | `panel_invitation` | `panel.invitation` | Expert | `panelName`, `purpose`, `sessionDate` |
+| 58 | `panel_reminder` | `panel.reminder` | Members | `panelName`, `sessionDate`, `agendaUrl` |
+| 59 | `feedback_requested` | `feedback.requested` | Stakeholder | `entityType`, `entityTitle`, `deadline` |
+| 60 | `feedback_received` | `feedback.received` | Owner | `entityType`, `entityTitle`, `fromName` |
 
-### 3.8 Citizen Engagement
+### 3.8 Citizen Engagement (10 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 61 | `citizen_welcome` | citizen | Citizen registration | Citizen | `userName`, `exploreUrl`, `featuredChallenges` |
-| 62 | `idea_submitted` | citizen | Idea submitted | Citizen | `ideaTitle`, `trackingUrl` |
-| 63 | `idea_approved` | citizen | Idea approved | Citizen | `ideaTitle`, `pointsEarned`, `badgeEarned`, `dashboardUrl` |
-| 64 | `idea_converted` | citizen | Idea became challenge | Citizen | `ideaTitle`, `challengeTitle`, `challengeUrl` |
-| 65 | `vote_confirmation` | citizen | Vote recorded | Citizen | `entityTitle`, `voteType`, `totalVotes` |
-| 66 | `badge_earned` | citizen | Achievement unlocked | Citizen | `badgeName`, `badgeDescription`, `pointsEarned`, `profileUrl` |
-| 67 | `level_up` | citizen | New level reached | Citizen | `newLevel`, `benefits`, `nextLevelProgress`, `profileUrl` |
-| 68 | `pilot_enrollment_confirmed` | citizen | Enrolled in pilot | Citizen | `pilotTitle`, `location`, `startDate`, `detailsUrl` |
-| 69 | `pilot_feedback_request` | citizen | Pilot ended, feedback needed | Participant | `pilotTitle`, `feedbackUrl`, `rewardPoints` |
-| 70 | `points_expiring` | citizen | Points expire in 30 days | Citizen | `expiringPoints`, `expiryDate`, `redeemUrl` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 61 | `citizen_welcome` | `citizen.signup` | Citizen | `userName`, `exploreUrl` |
+| 62 | `idea_submitted` | `idea.submitted` | Citizen | `ideaTitle`, `trackingUrl` |
+| 63 | `idea_approved` | `idea.approved` | Citizen | `ideaTitle`, `pointsEarned`, `badgeEarned` |
+| 64 | `idea_converted` | `idea.converted` | Citizen | `ideaTitle`, `challengeTitle`, `challengeUrl` |
+| 65 | `vote_confirmation` | `vote.confirmation` | Citizen | `entityTitle`, `voteType`, `totalVotes` |
+| 66 | `badge_earned` | `citizen.badge_earned` | Citizen | `badgeName`, `badgeDescription`, `pointsEarned` |
+| 67 | `level_up` | `citizen.level_up` | Citizen | `newLevel`, `benefits`, `nextLevelProgress` |
+| 68 | `pilot_enrollment_confirmed` | `pilot.enrollment_confirmed` | Citizen | `pilotTitle`, `location`, `startDate` |
+| 69 | `pilot_feedback_request` | `pilot.feedback_request` | Participant | `pilotTitle`, `feedbackUrl`, `rewardPoints` |
+| 70 | `points_expiring` | `citizen.points_expiring` | Citizen | `expiringPoints`, `expiryDate`, `redeemUrl` |
 
-### 3.9 Tasks & Collaboration
+### 3.9 Tasks & Collaboration (6 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 71 | `task_assigned` | task | Task assigned | Assignee | `taskTitle`, `assignedBy`, `dueDate`, `priority`, `taskUrl` |
-| 72 | `task_due_reminder` | task | Task due tomorrow | Assignee | `taskTitle`, `dueDate`, `taskUrl` |
-| 73 | `task_overdue` | task | Task overdue | Assignee, Manager | `taskTitle`, `daysOverdue`, `taskUrl` |
-| 74 | `task_completed` | task | Task marked complete | Assigner | `taskTitle`, `completedBy`, `completionDate` |
-| 75 | `comment_mention` | task | Mentioned in comment | User | `mentionedBy`, `entityType`, `entityTitle`, `commentPreview`, `commentUrl` |
-| 76 | `comment_reply` | task | Reply to your comment | User | `repliedBy`, `entityTitle`, `replyPreview`, `commentUrl` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 71 | `task_assigned` | `task.assigned` | Assignee | `taskTitle`, `assignedBy`, `dueDate`, `priority` |
+| 72 | `task_due_reminder` | `task.due_reminder` | Assignee | `taskTitle`, `dueDate`, `taskUrl` |
+| 73 | `task_overdue` | `task.overdue` | Assignee, Manager | `taskTitle`, `daysOverdue` |
+| 74 | `task_completed` | `task.completed` | Assigner | `taskTitle`, `completedBy`, `completionDate` |
+| 75 | `comment_mention` | `comment.mention` | User | `mentionedBy`, `entityType`, `commentPreview` |
+| 76 | `comment_reply` | `comment.reply` | User | `repliedBy`, `entityTitle`, `replyPreview` |
 
-### 3.10 Events & Bookings
+### 3.10 Events & Bookings (5 templates)
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 77 | `event_invitation` | event | Invited to event | Invitee | `eventTitle`, `eventDate`, `location`, `rsvpUrl` |
-| 78 | `event_registration_confirmed` | event | Registration confirmed | Registrant | `eventTitle`, `eventDate`, `location`, `calendarUrl`, `qrCode` |
-| 79 | `event_reminder` | event | Event tomorrow | Registrant | `eventTitle`, `eventDate`, `location`, `directionsUrl` |
-| 80 | `event_cancelled` | event | Event cancelled | Registrants | `eventTitle`, `originalDate`, `reason`, `alternativeUrl` |
-| 81 | `event_updated` | event | Event details changed | Registrants | `eventTitle`, `changes`, `newDetailsUrl` |
-| 82 | `living_lab_booking_confirmed` | booking | Booking confirmed | User | `labName`, `bookingDate`, `duration`, `prepInfo` |
-| 83 | `living_lab_booking_reminder` | booking | Booking tomorrow | User | `labName`, `bookingDate`, `checklistUrl` |
-| 84 | `demo_request_received` | booking | Demo requested | Provider | `requesterName`, `solutionName`, `preferredDate`, `respondUrl` |
-| 85 | `demo_scheduled` | booking | Demo confirmed | Requester | `solutionName`, `demoDate`, `meetingUrl` |
+| # | Template Key | Trigger | Recipients | Variables |
+|---|--------------|---------|------------|-----------|
+| 77 | `event_invitation` | `event.invitation` | Invitee | `eventTitle`, `date`, `location` |
+| 78 | `event_registration_confirmed` | `event.registration_confirmed` | Registrant | `eventTitle`, `confirmationCode` |
+| 79 | `event_reminder` | `event.reminder` | Attendee | `eventTitle`, `date`, `location` |
+| 80 | `event_updated` | `event.updated` | Registered | `eventTitle`, `changes` |
+| 81 | `event_cancelled` | `event.cancelled` | Registered | `eventTitle`, `reason`, `refundInfo` |
 
-### 3.11 Contracts & Finance
+### 3.11+ Additional Categories
 
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 86 | `contract_created` | contract | Contract initiated | Parties | `contractTitle`, `contractCode`, `reviewUrl` |
-| 87 | `contract_pending_signature` | contract | Awaiting signature | Signatory | `contractTitle`, `fromParty`, `signUrl` |
-| 88 | `contract_signed` | contract | All parties signed | Parties | `contractTitle`, `signedDate`, `downloadUrl` |
-| 89 | `contract_expiring` | contract | Expires in 30 days | Parties | `contractTitle`, `expiryDate`, `renewUrl` |
-| 90 | `invoice_issued` | finance | Invoice created | Recipient | `invoiceNumber`, `amount`, `dueDate`, `payUrl` |
-| 91 | `payment_received` | finance | Payment confirmed | Payer | `invoiceNumber`, `amount`, `receiptUrl` |
-| 92 | `payment_overdue` | finance | Payment overdue | Payer | `invoiceNumber`, `amount`, `daysOverdue`, `payUrl` |
-
-### 3.12 Sandboxes & Regulatory
-
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 93 | `sandbox_application_received` | sandbox | Application submitted | Applicant | `sandboxName`, `applicationId`, `trackingUrl` |
-| 94 | `sandbox_application_approved` | sandbox | Application approved | Applicant | `sandboxName`, `startDate`, `guidelinesUrl` |
-| 95 | `sandbox_milestone_due` | sandbox | Milestone approaching | Participant | `sandboxName`, `milestoneName`, `dueDate` |
-| 96 | `exemption_granted` | sandbox | Regulatory exemption granted | Applicant | `exemptionType`, `validUntil`, `conditionsUrl` |
-| 97 | `exemption_expiring` | sandbox | Exemption expires soon | Holder | `exemptionType`, `expiryDate`, `renewUrl` |
-| 98 | `compliance_alert` | sandbox | Compliance issue detected | Participant | `sandboxName`, `issue`, `deadline`, `resolveUrl` |
-
-### 3.13 System & Administrative
-
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 99 | `system_maintenance` | system | Scheduled maintenance | All users | `maintenanceDate`, `duration`, `affectedServices` |
-| 100 | `platform_announcement` | system | Important announcement | All users | `title`, `message`, `learnMoreUrl` |
-| 101 | `weekly_digest` | system | Weekly (if subscribed) | Subscribed users | `challengeCount`, `pilotUpdates`, `upcomingEvents`, `dashboardUrl` |
-| 102 | `monthly_report` | system | Monthly summary | Managers | `month`, `metrics`, `highlights`, `reportUrl` |
-| 103 | `export_ready` | system | Data export completed | Requester | `exportType`, `downloadUrl`, `expiresIn` |
-| 104 | `backup_completed` | system | Backup successful | Admin | `backupDate`, `size`, `location` |
-| 105 | `security_alert` | system | Security event detected | Admin | `alertType`, `details`, `actionRequired`, `dashboardUrl` |
-| 106 | `quota_warning` | system | Usage quota at 80% | Admin | `quotaType`, `currentUsage`, `limit`, `upgradeUrl` |
-| 107 | `integration_failure` | system | External integration failed | Admin | `integrationName`, `errorDetails`, `retryUrl` |
-
-### 3.14 R&D & Research
-
-| # | Template Key | Category | Trigger | Recipients | Variables |
-|---|--------------|----------|---------|------------|-----------|
-| 108 | `rd_call_announced` | research | New R&D call published | Researchers | `callTitle`, `deadline`, `eligibility`, `applyUrl` |
-| 109 | `rd_proposal_submitted` | research | Proposal submitted | Researcher | `callTitle`, `proposalId`, `trackingUrl` |
-| 110 | `rd_proposal_reviewed` | research | Review completed | Researcher | `callTitle`, `score`, `feedback`, `detailUrl` |
-| 111 | `rd_project_approved` | research | Project approved for funding | Researcher | `projectTitle`, `fundingAmount`, `startDate`, `nextSteps` |
-| 112 | `rd_progress_due` | research | Progress report due | Researcher | `projectTitle`, `reportType`, `dueDate`, `submitUrl` |
+Templates continue for:
+- **Contracts** (4 templates) - Created, pending signature, signed, expiring
+- **Finance** (4 templates) - Invoice, payment received, overdue, statement
+- **Living Lab** (3 templates) - Booking, reminder, experiment created
+- **System** (5 templates) - Announcements, maintenance, feature updates
+- **Marketing/Campaigns** (10+ templates) - Newsletters, promotions, surveys
+- **Contact** (2 templates) - Form submission, auto-reply
 
 ---
 
-## 4. Database Schema
+## 4. AI Analysis Feature
 
-### 4.1 Email Settings (Global Configuration)
+### Overview
 
-```sql
-CREATE TABLE email_settings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  setting_key VARCHAR(100) UNIQUE NOT NULL,
-  setting_value JSONB NOT NULL,
-  description TEXT,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_by VARCHAR(255)
-);
+The Email Template Editor includes an AI-powered analysis tool accessible via the "AI Analysis" button.
 
--- Default settings
-INSERT INTO email_settings (setting_key, setting_value, description) VALUES
-('logo_url', '"https://saudiinnovates.sa/logo.png"', 'Platform logo for email headers'),
-('default_header_gradient_start', '"#006C35"', 'Default gradient start color (Saudi green)'),
-('default_header_gradient_end', '"#00A651"', 'Default gradient end color'),
-('primary_button_color', '"#006C35"', 'Primary CTA button color'),
-('footer_social_links', '{"twitter": "https://twitter.com/saudiinnovates", "linkedin": "https://linkedin.com/company/saudiinnovates"}', 'Social media links'),
-('footer_contact_email', '"support@saudiinnovates.sa"', 'Support email in footer'),
-('footer_contact_phone', '"+966-XXX-XXX-XXXX"', 'Contact phone'),
-('footer_address', '"Riyadh, Saudi Arabia"', 'Physical address'),
-('unsubscribe_url_base', '"https://saudiinnovates.sa/unsubscribe"', 'Base URL for unsubscribe'),
-('default_from_email', '"noreply@saudiinnovates.sa"', 'Default sender email'),
-('default_from_name_en', '"Saudi Innovates"', 'Default sender name (English)'),
-('default_from_name_ar', '"ابتكر السعودية"', 'Default sender name (Arabic)');
-```
+### Analysis Types
 
-### 4.2 Email Templates
+| Analysis Type | Description | Action |
+|--------------|-------------|--------|
+| **Health Score** | Overall score (1-100) assessing template database quality | Visual indicator |
+| **Coverage Gaps** | Missing templates for common platform workflows | Click "Create" to start new template |
+| **Consistency Issues** | Templates missing Arabic content, headers, CTAs | Click template key to select & edit |
+| **Category Balance** | Identifies over/under-represented categories | Click category to filter template list |
+| **Recommendations** | Specific actionable improvements prioritized by impact | Reference for improvements |
+| **Suggested Templates** | AI-recommended new templates to add | Click "Create" to pre-fill new template |
 
-```sql
-CREATE TABLE email_templates (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  template_key VARCHAR(100) UNIQUE NOT NULL,
-  category VARCHAR(50) NOT NULL,
-  
-  -- Template metadata
-  name_en VARCHAR(255) NOT NULL,
-  name_ar VARCHAR(255),
-  description TEXT,
-  
-  -- Content (bilingual)
-  subject_en TEXT NOT NULL,
-  subject_ar TEXT,
-  body_en TEXT NOT NULL,
-  body_ar TEXT,
-  
-  -- HTML structure options
-  is_html BOOLEAN DEFAULT true,
-  use_header BOOLEAN DEFAULT true,
-  use_footer BOOLEAN DEFAULT true,
-  header_title_en VARCHAR(255),
-  header_title_ar VARCHAR(255),
-  header_gradient_start VARCHAR(20),
-  header_gradient_end VARCHAR(20),
-  header_icon VARCHAR(50),
-  
-  -- CTA Button (optional)
-  cta_text_en VARCHAR(100),
-  cta_text_ar VARCHAR(100),
-  cta_url_variable VARCHAR(100),
-  
-  -- Variables definition
-  variables JSONB DEFAULT '[]',
-  
-  -- Preference mapping
-  preference_category VARCHAR(50),
-  
-  -- Status
-  is_active BOOLEAN DEFAULT true,
-  is_system BOOLEAN DEFAULT false,
-  
-  -- Versioning
-  version INTEGER DEFAULT 1,
-  
-  -- Audit
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  created_by VARCHAR(255),
-  updated_by VARCHAR(255)
-);
+### How to Use
 
--- Index for fast lookups
-CREATE INDEX idx_email_templates_key ON email_templates(template_key);
-CREATE INDEX idx_email_templates_category ON email_templates(category);
-```
-
-### 4.3 Email Logs
-
-```sql
-CREATE TABLE email_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
-  -- Template reference
-  template_id UUID REFERENCES email_templates(id),
-  template_key VARCHAR(100),
-  
-  -- Recipient info
-  recipient_email VARCHAR(255) NOT NULL,
-  recipient_user_id UUID,
-  
-  -- Content sent
-  subject TEXT NOT NULL,
-  body_preview TEXT,
-  language VARCHAR(10) DEFAULT 'en',
-  
-  -- Variables used
-  variables_used JSONB,
-  
-  -- Status tracking
-  status VARCHAR(50) DEFAULT 'queued',
-  sent_at TIMESTAMP WITH TIME ZONE,
-  delivered_at TIMESTAMP WITH TIME ZONE,
-  opened_at TIMESTAMP WITH TIME ZONE,
-  clicked_at TIMESTAMP WITH TIME ZONE,
-  bounced_at TIMESTAMP WITH TIME ZONE,
-  
-  -- Error tracking
-  error_message TEXT,
-  retry_count INTEGER DEFAULT 0,
-  
-  -- Metadata
-  entity_type VARCHAR(50),
-  entity_id UUID,
-  triggered_by VARCHAR(255),
-  
-  -- Audit
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Indexes for analytics
-CREATE INDEX idx_email_logs_recipient ON email_logs(recipient_email);
-CREATE INDEX idx_email_logs_template ON email_logs(template_key);
-CREATE INDEX idx_email_logs_status ON email_logs(status);
-CREATE INDEX idx_email_logs_created ON email_logs(created_at);
-```
-
-### 4.4 User Email Preferences
-
-```sql
--- Extends existing user_notification_preferences or creates new
-ALTER TABLE user_notification_preferences ADD COLUMN IF NOT EXISTS 
-  email_categories JSONB DEFAULT '{
-    "auth": true,
-    "role": true,
-    "challenge": true,
-    "solution": true,
-    "pilot": true,
-    "program": true,
-    "evaluation": true,
-    "citizen": true,
-    "task": true,
-    "event": true,
-    "contract": true,
-    "sandbox": true,
-    "system": true,
-    "research": true,
-    "marketing": false,
-    "digest": false
-  }';
-```
+1. Navigate to Communications Hub (`/communications-hub`)
+2. Go to Templates tab
+3. Click the "AI Analysis" button in the toolbar
+4. Review the comprehensive analysis report
+5. **Take Action Directly:**
+   - Click on a template key in consistency issues → Selects that template for editing
+   - Click on a category → Filters the template list by that category
+   - Click "Create" on suggested templates → Creates new template with pre-filled fields
+   - Use "AI Generate" after creating to auto-fill content
 
 ---
 
-## 5. Edge Function: send-email (Enhanced)
+## 5. Template Management
 
-### 5.1 Function Flow
+### Creating a Template
 
+1. Navigate to `/communications-hub`
+2. Select "Templates" tab
+3. Click "New Template"
+4. Fill required fields:
+   - Template Key (unique identifier)
+   - Category
+   - Name (EN/AR)
+   - Subject (EN/AR)
+   - Body (EN/AR)
+5. Configure options:
+   - Use header/footer
+   - Header gradient colors
+   - CTA button text and URL variable
+6. Save template
+
+### Template Variables
+
+Use `{{variableName}}` syntax in subject and body:
+
+```html
+<p>Hello {{userName}},</p>
+<p>Your {{entityType}} "{{entityTitle}}" has been {{action}}.</p>
+<a href="{{actionUrl}}">View Details</a>
 ```
-1. Receive request with template_key and variables
-2. Fetch template from database
-3. Get recipient's preferences
-   - Check email_enabled
-   - Check category preference
-   - Get language preference
-4. If preferences allow:
-   - Fetch email_settings for header/footer
-   - Interpolate variables into subject and body
-   - Build HTML with header/body/footer
-   - Apply RTL if Arabic
-   - Send via Resend API
-   - Log to email_logs
-5. Return success/failure
-```
 
-### 5.2 Request Schema
+### Preview & Test
+
+- Toggle language preview (EN/AR)
+- Send test email to current user
+- Language-aware test variables
+
+---
+
+## 6. Edge Function Integration
+
+### send-email Function
 
 ```typescript
+// supabase/functions/send-email/index.ts
+
 interface SendEmailRequest {
-  template_key: string;
+  template_key?: string;        // Use template
+  subject?: string;             // Or direct content
+  body?: string;
   recipient_email: string;
   recipient_user_id?: string;
-  variables: Record<string, string>;
-  language?: 'en' | 'ar';  // Override user preference
-  force_send?: boolean;     // Skip preference check (for critical emails)
+  language?: 'en' | 'ar';
+  variables?: Record<string, string>;
+  force_send?: boolean;         // Bypass preferences
   entity_type?: string;
   entity_id?: string;
+  triggered_by?: string;
 }
 ```
 
-### 5.3 Critical Emails (Always Send)
+### Features
 
-These emails bypass preference checks:
-- `email_verification`
-- `password_reset`
-- `password_changed`
-- `account_locked`
-- `account_deactivated`
-- `security_alert`
-- `login_new_device`
+- Template fetching from database
+- Variable interpolation
+- HTML builder with header/footer
+- RTL support for Arabic
+- User preference checking
+- Email logging
+- Resend API integration
 
-### 5.4 Usage Examples
+---
 
-#### From Frontend (React)
+## 7. Webhook Tracking
 
-```typescript
-import { supabase } from '@/integrations/supabase/client';
+### Resend Webhook Events
 
-// Send a template-based email
-const sendWelcomeEmail = async (userEmail: string, userName: string) => {
-  const { data, error } = await supabase.functions.invoke('send-email', {
-    body: {
-      template_key: 'welcome_new_user',
-      recipient_email: userEmail,
-      variables: {
-        userName: userName,
-        loginUrl: window.location.origin
-      },
-      language: 'en'
-    }
-  });
-  
-  if (error) throw error;
-  return data;
-};
+The `resend-webhook` edge function handles:
 
-// Send with preference bypass (critical)
-const sendPasswordReset = async (userEmail: string, resetUrl: string) => {
-  const { data, error } = await supabase.functions.invoke('send-email', {
-    body: {
-      template_key: 'password_reset',
-      recipient_email: userEmail,
-      variables: {
-        userName: 'User',
-        resetUrl: resetUrl,
-        expiresIn: '1 hour'
-      },
-      force_send: true
-    }
-  });
-  
-  return data;
-};
+| Event | Action |
+|-------|--------|
+| `email.delivered` | Update `email_logs.delivered_at` |
+| `email.opened` | Update `email_logs.opened_at` |
+| `email.clicked` | Update `email_logs.clicked_at` |
+| `email.bounced` | Update status to 'bounced', set `bounced_at` |
+| `email.complained` | Disable marketing emails for user |
+
+### Webhook URL
+
+```
+https://wneorgiqyvkkjmqootpe.supabase.co/functions/v1/resend-webhook
 ```
 
-#### From Edge Functions
+Configure in Resend dashboard → Webhooks.
+
+---
+
+## 8. Best Practices
+
+### Template Design
+1. Keep subjects under 50 characters
+2. Include clear CTA buttons
+3. Always provide Arabic translations
+4. Use consistent header colors per category
+5. Include unsubscribe link in footer
+
+### Integration
+1. Use `useEmailTrigger()` hook for all email sending
+2. Include `entity_type` and `entity_id` for tracking
+3. Provide `entity_data` for automatic variable extraction
+4. Use `skip_preferences: true` only for critical emails
+
+### Performance
+1. Use delayed sending for non-urgent emails
+2. Batch similar notifications
+3. Respect user quiet hours
+4. Monitor bounce rates
+
+---
+
+## 9. Troubleshooting
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| Email not sent | Check user preferences and category opt-in |
+| Template not found | Verify `template_key` matches exactly |
+| Variables not replaced | Check variable names match template |
+| Arabic text reversed | Ensure template uses RTL direction |
+| Bounce rate high | Review email addresses, check spam score |
+
+### Debug Logging
+
+Check edge function logs:
+1. Navigate to Supabase dashboard
+2. Go to Edge Functions → send-email
+3. View logs for errors
+
+---
+
+## 10. Migration Guide
+
+### From Legacy Email Sending
 
 ```typescript
-// In another edge function
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
-
-// Trigger email via function invoke
+// ❌ OLD - Don't use
 await supabase.functions.invoke('send-email', {
-  body: {
-    template_key: 'challenge_approved',
-    recipient_email: challenge.challenge_owner_email,
-    variables: {
-      challengeTitle: challenge.title_en,
-      challengeCode: challenge.code,
-      detailUrl: `https://saudiinnovates.sa/challenges/${challenge.id}`
-    }
-  }
+  body: { ... }
 });
-```
 
-#### Direct Content (Backward Compatible)
-
-```typescript
-// Send without template (legacy support)
-const { data } = await supabase.functions.invoke('send-email', {
-  body: {
-    to: 'user@example.com',
-    subject: 'Custom Email',
-    html: '<p>Hello World</p>'
-  }
-});
-```
-
----
-
-## 6. Admin UI Features
-
-### 6.1 Template List View
-- Filter by category
-- Search by name/key
-- Status toggle (active/inactive)
-- Quick preview
-- Usage stats (sent count, open rate)
-
-### 6.2 Template Editor
-- Split view: English / Arabic
-- WYSIWYG editor with formatting
-- Variable insertion toolbar
-- Header customization (gradient colors, title, icon)
-- CTA button configuration
-- Live preview (desktop/mobile, EN/AR)
-- Test send functionality
-- Version history
-
-### 6.3 Email Settings
-- Logo upload
-- Default colors
-- Footer content
-- Social links
-- Contact information
-
-### 6.4 Email Logs & Analytics
-- Sent/delivered/opened/clicked metrics
-- Filter by template, date, status
-- Export capabilities
-- Bounce management
-
----
-
-## 7. Implementation Phases
-
-### Phase 1: Database & Core ✅
-- [x] Create `email_settings` table with defaults
-- [x] Create `email_templates` table
-- [x] Create `email_logs` table
-- [x] Update `user_notification_preferences`
-- [x] Seed templates with default content
-
-### Phase 2: Edge Function ✅
-- [x] Enhance `send-email` function
-- [x] Template fetching and caching
-- [x] Variable interpolation
-- [x] HTML builder with header/footer
-- [x] RTL support
-- [x] Preference checking
-- [x] Logging
-
-### Phase 3: Admin UI ✅
-- [x] Redesign EmailTemplateEditor page
-- [x] Template list with filtering
-- [x] WYSIWYG editor integration
-- [x] Variable insertion
-- [x] Live preview
-- [x] Email settings page
-- [x] Test send
-
-### Phase 4: Integration ✅
-- [x] Update all edge functions to use templates
-- [x] Connect notification triggers
-- [x] Migrate hardcoded templates
-- [x] Add email preference UI to user settings
-- [x] Analytics dashboard
-
-### Phase 5: Unified Trigger Migration ✅
-- [x] Create `email-trigger-hub` edge function
-- [x] Create `useEmailTrigger` React hook
-- [x] Migrate 40 frontend components
-- [x] Implement queue processing
-- [x] Add delayed email support
-
----
-
-## 8. Variable Naming Conventions
-
-| Convention | Example | Description |
-|------------|---------|-------------|
-| camelCase | `userName` | Standard variables |
-| Url suffix | `detailUrl`, `dashboardUrl` | Links |
-| Date suffix | `startDate`, `dueDate` | Dates |
-| Count suffix | `challengeCount` | Numbers |
-| Name suffix | `providerName` | Entity names |
-| Title suffix | `challengeTitle` | Entity titles |
-| Code suffix | `pilotCode` | Reference codes |
-
----
-
-## 9. Localization Guidelines
-
-### English
-- Professional but friendly tone
-- Action-oriented subject lines
-- Clear CTAs
-
-### Arabic
-- Formal tone (فصحى)
-- Right-to-left layout
-- Arabic numerals
-- Culturally appropriate greetings
-
----
-
-## 10. Security Considerations
-
-1. **Unsubscribe tokens**: Signed, time-limited tokens
-2. **Variable sanitization**: Prevent XSS in variables
-3. **Rate limiting**: Max emails per user per hour
-4. **Bounce handling**: Auto-disable after multiple bounces
-5. **PII protection**: No sensitive data in logs
-6. **Audit trail**: Track all template changes
-
----
-
-## 11. Usage Guide
-
-### Sending Emails from Frontend
-
-```typescript
+// ✅ NEW - Use the hook
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
-function MyComponent() {
-  const { triggerEmail } = useEmailTrigger();
-
-  const sendNotification = async () => {
-    await triggerEmail('challenge.approved', {
-      entity_type: 'challenge',
-      entity_id: challenge.id,
-      entity_data: challenge,
-    });
-  };
-}
+const { triggerEmail } = useEmailTrigger();
+await triggerEmail('category.action', {
+  entity_type: 'entity',
+  entity_id: id,
+  entity_data: data,
+});
 ```
 
-### Available Trigger Keys
+### Adding New Templates
 
-See [Email Trigger Hub](./EMAIL_TRIGGER_HUB.md) for complete list.
-
----
-
-*Document Version: 2.0*
-*Last Updated: December 2025*
+1. Create template in Communications Hub UI
+2. Add trigger config via database:
+```sql
+INSERT INTO email_trigger_config (
+  trigger_key,
+  template_key,
+  is_active,
+  recipient_field,
+  respect_preferences,
+  priority
+) VALUES (
+  'category.action',
+  'template_key',
+  true,
+  'owner_email',
+  true,
+  3
+);
+```
+3. Integrate in component with `triggerEmail()`
