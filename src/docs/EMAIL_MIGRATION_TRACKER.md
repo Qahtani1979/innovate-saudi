@@ -2,7 +2,7 @@
 
 ## Migration Status: Legacy Calls → useEmailTrigger()
 
-This document tracks the progress of migrating legacy email sending calls to the unified `useEmailTrigger()` hook.
+This document tracks the progress of migrating legacy email sending calls to the unified `useEmailTrigger()` hook and `email-trigger-hub` edge function.
 
 ### Legend
 - ✅ Migrated
@@ -18,27 +18,27 @@ This document tracks the progress of migrating legacy email sending calls to the
 
 | File | Current Method | Status | Notes |
 |------|---------------|--------|-------|
-| `src/components/ChallengeReviewWorkflow.jsx` | `useEmailTrigger()` | ✅ | Challenge approval email - MIGRATED |
-| `src/components/access/RoleRequestApprovalQueue.jsx` | `useEmailTrigger()` | ✅ | Role request approval/rejection - MIGRATED |
-| `src/components/communications/EmailTemplateEditorContent.jsx` | `supabase.functions.invoke('send-email')` | ⏭️ | Test email sending - keep direct |
-| `src/pages/PublicIdeaSubmission.jsx` | `email-trigger-hub` | ✅ | Idea submission confirmation - MIGRATED |
-| `src/components/onboarding/OnboardingWizard.jsx` | `email-trigger-hub` | ✅ | Welcome email - MIGRATED |
+| `src/components/ChallengeReviewWorkflow.jsx` | `useEmailTrigger()` | ✅ | Challenge approval email |
+| `src/components/access/RoleRequestApprovalQueue.jsx` | `useEmailTrigger()` | ✅ | Role request approval/rejection |
+| `src/components/communications/EmailTemplateEditorContent.jsx` | `supabase.functions.invoke('send-email')` | ⏭️ | Test email - keep direct |
+| `src/pages/PublicIdeaSubmission.jsx` | `email-trigger-hub` | ✅ | Idea submission confirmation |
+| `src/components/onboarding/OnboardingWizard.jsx` | `email-trigger-hub` | ✅ | Welcome email |
 
 ### Medium Priority (base44 integration calls)
 
 | File | Current Method | Status | Notes |
 |------|---------------|--------|-------|
-| `src/pages/ChallengeSolutionMatching.jsx` | `email-trigger-hub` | ✅ | Match notification - MIGRATED |
-| `src/pages/Contact.jsx` | `email-trigger-hub` | ✅ | Contact form - MIGRATED |
-| `src/pages/StartupVerificationQueue.jsx` | `email-trigger-hub` | ✅ | Verification status - MIGRATED |
-| `src/components/ProgramCompletionWorkflow.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Completion certificate |
-| `src/components/access/BulkUserImport.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Welcome email |
-| `src/components/LivingLabExpertMatching.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Expert consultation request |
-| `src/components/matchmaker/AutomatedMatchNotifier.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Match notification |
+| `src/pages/ChallengeSolutionMatching.jsx` | `email-trigger-hub` | ✅ | Match notification |
+| `src/pages/Contact.jsx` | `email-trigger-hub` | ✅ | Contact form |
+| `src/pages/StartupVerificationQueue.jsx` | `email-trigger-hub` | ✅ | Verification status |
+| `src/components/ProgramCompletionWorkflow.jsx` | `email-trigger-hub` | ✅ | Completion certificate |
+| `src/components/access/BulkUserImport.jsx` | `email-trigger-hub` | ✅ | Welcome email |
+| `src/components/LivingLabExpertMatching.jsx` | `email-trigger-hub` | ✅ | Expert consultation request |
+| `src/components/matchmaker/AutomatedMatchNotifier.jsx` | `email-trigger-hub` | ✅ | Match notification |
 | `src/components/rd/RDProposalSubmissionGate.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Proposal submission |
 | `src/components/startup/StartupMentorshipMatcher.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Mentorship request |
 
-### Additional Files (found in search - 32 files with base44 SendEmail)
+### Additional Files (found in search - remaining ~23 files)
 
 | File | Current Method | Status | Notes |
 |------|---------------|--------|-------|
@@ -49,7 +49,7 @@ This document tracks the progress of migrating legacy email sending calls to the
 | `src/components/communications/AnnouncementTargeting.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Announcements |
 | `src/components/organizations/PartnershipWorkflow.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Partnership proposal |
 | `src/components/programs/WaitlistManager.jsx` | `base44.integrations.Core.SendEmail` | ❌ | Waitlist notification |
-| Other files (25+) | Various methods | ❌ | ~25 more files |
+| Other files (~18) | Various methods | ❌ | Remaining files |
 
 ---
 
@@ -58,11 +58,11 @@ This document tracks the progress of migrating legacy email sending calls to the
 | Category | Total | Migrated | In Progress | Not Started |
 |----------|-------|----------|-------------|-------------|
 | Direct Supabase calls | 5 | 4 | 0 | 0 |
-| base44 integration calls | 9 | 3 | 0 | 6 |
+| base44 integration calls | 9 | 7 | 0 | 2 |
 | Other files | ~25 | 0 | 0 | ~25 |
-| **Total** | **~39** | **7** | **0** | **~31** |
+| **Total** | **~39** | **11** | **0** | **~27** |
 
-**Progress: ~18% Complete**
+**Progress: ~28% Complete**
 
 ---
 
@@ -161,6 +161,15 @@ await supabase.functions.invoke('email-trigger-hub', {
 - `STARTUP_VERIFIED`
 - `STARTUP_VERIFICATION_UPDATE`
 
+### Program Triggers
+- `PROGRAM_COMPLETED`
+- `PROGRAM_ACCEPTED`
+- `PROGRAM_WAITLIST`
+
+### Expert/Matching Triggers
+- `EXPERT_CONSULTATION_REQUEST`
+- `MATCHMAKER_MATCH`
+
 ### System Triggers
 - `CONTACT_FORM`
 - `CONTACT_FORM_CONFIRMATION`
@@ -181,21 +190,24 @@ await supabase.functions.invoke('email-trigger-hub', {
 
 ---
 
-## AI Campaign Helpers Integration
+## Migrated Files Log
 
-The `CampaignAIHelpers` component is now fully integrated with `CampaignManager`:
+### Session 1 (2024-12-13)
+1. ✅ `ChallengeReviewWorkflow.jsx` - Challenge approval emails
+2. ✅ `RoleRequestApprovalQueue.jsx` - Role request approval/rejection
 
-### Integration Points
-1. **Subject Generation** → Applied to `campaign_variables.subject`
-2. **Body Generation** → Applied to `campaign_variables.body` and `campaign_variables.content`
-3. **Translation** → Copy/paste workflow
-4. **Text Improvement** → Copy/paste workflow
+### Session 2 (2024-12-13)
+3. ✅ `PublicIdeaSubmission.jsx` - Idea submission confirmation
+4. ✅ `OnboardingWizard.jsx` - Welcome email
+5. ✅ `ChallengeSolutionMatching.jsx` - Solution match notification
+6. ✅ `Contact.jsx` - Contact form emails
+7. ✅ `StartupVerificationQueue.jsx` - Startup verification emails
 
-### Usage
-1. Open the AI Campaign Helpers collapsible panel
-2. Generate content using any of the 4 tabs
-3. Click "Use" button to apply to current campaign
-4. Content is automatically applied to campaign variables
+### Session 3 (2024-12-13)
+8. ✅ `ProgramCompletionWorkflow.jsx` - Program completion certificate
+9. ✅ `BulkUserImport.jsx` - Welcome email for bulk imports
+10. ✅ `LivingLabExpertMatching.jsx` - Expert consultation requests
+11. ✅ `AutomatedMatchNotifier.jsx` - Matchmaker notifications
 
 ---
 
@@ -215,22 +227,10 @@ The `CampaignAIHelpers` component is now fully integrated with `CampaignManager`
 
 ---
 
-## Recent Migrations (2024-12-13)
-
-1. **ChallengeReviewWorkflow.jsx** - Challenge approval emails
-2. **RoleRequestApprovalQueue.jsx** - Role request approval/rejection
-3. **PublicIdeaSubmission.jsx** - Idea submission confirmation
-4. **OnboardingWizard.jsx** - Welcome email
-5. **ChallengeSolutionMatching.jsx** - Solution match notification
-6. **Contact.jsx** - Contact form emails
-7. **StartupVerificationQueue.jsx** - Startup verification emails
-
----
-
 ## Next Steps
 
-1. Continue migrating remaining base44.integrations calls
-2. Create any missing trigger configs if needed
+1. Continue migrating remaining files (~27 remaining)
+2. Create missing trigger configs for new triggers
 3. Test each migration in development
 4. Update tracker after each file
 5. Final verification of all email flows

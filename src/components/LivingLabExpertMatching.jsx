@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,26 +110,23 @@ Return top 3 expert matches with scores and consultation recommendations.`;
 
       // Send email to expert
       if (selectedExpert.expertData.email) {
-        await base44.integrations.Core.SendEmail({
-          to: selectedExpert.expertData.email,
-          subject: `Consultation Request - ${lab.name_en}`,
-          body: `Dear ${selectedExpert.expertData.name},
-
-A consultation has been requested at ${lab.name_en}.
-
-Date: ${bookingDetails.consultation_date}
-Time: ${bookingDetails.consultation_time}
-Duration: ${bookingDetails.duration_hours} hours
-Type: ${bookingDetails.meeting_type}
-
-Topic: ${bookingDetails.topic}
-
-${bookingDetails.notes}
-
-Please confirm your availability.
-
-Best regards,
-Saudi Innovates Platform`
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'EXPERT_CONSULTATION_REQUEST',
+            recipientEmail: selectedExpert.expertData.email,
+            entityType: 'livinglab',
+            entityId: lab.id,
+            variables: {
+              expertName: selectedExpert.expertData.name,
+              labName: lab.name_en,
+              consultationDate: bookingDetails.consultation_date,
+              consultationTime: bookingDetails.consultation_time,
+              durationHours: bookingDetails.duration_hours,
+              meetingType: bookingDetails.meeting_type,
+              topic: bookingDetails.topic,
+              notes: bookingDetails.notes
+            }
+          }
         });
       }
     },
