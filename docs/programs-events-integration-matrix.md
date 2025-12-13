@@ -12,8 +12,8 @@
 | **Approval Workflow** | ✅ Full | ✅ Full | None |
 | **Permissions (Roles)** | ✅ Full | ✅ Full | None |
 | **Email Templates** | ✅ Full (8) | ✅ Full (8) | None |
-| **Email Triggers (Hooks)** | ⚠️ Partial | ✅ Full | Low |
-| **Notifications (In-App)** | ⚠️ Partial | ⚠️ Partial | Medium |
+| **Email Triggers (Hooks)** | ✅ Full | ✅ Full | None |
+| **Notifications (In-App)** | ✅ Full | ✅ Full | None |
 | **Calendar Integration** | ✅ Full | ✅ Full | None |
 | **Campaign Sync** | ✅ Full | ✅ Full | None |
 | **AI Components** | ✅ Full (6) | ✅ Full (4) | None |
@@ -21,7 +21,7 @@
 | **Budget Integration** | ✅ Full | ⚠️ Missing | Medium |
 | **Audit Logging** | ⚠️ Partial | ⚠️ Partial | Low |
 | **Media/Storage** | ✅ Full | ✅ Full | None |
-| **Search/Discovery** | ✅ Full | ⚠️ Missing | Medium |
+| **Search/Discovery** | ✅ Full | ✅ Full | None |
 | **Comments System** | ✅ Full | ⚠️ Missing | Low |
 | **Bookmarks** | ✅ Full | ⚠️ Missing | Low |
 | **Realtime Updates** | ❌ Missing | ❌ Missing | Medium |

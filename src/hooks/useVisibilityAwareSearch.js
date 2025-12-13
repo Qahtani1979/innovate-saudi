@@ -90,11 +90,12 @@ export function useVisibilityAwareSearch() {
   const search = useCallback(async (query, options = {}) => {
     if (!query?.trim() || visibilityLoading) return [];
 
-    const { entityTypes = ['challenges', 'pilots', 'solutions', 'rd_projects', 'programs'], limit = 10 } = options;
+    const { entityTypes = ['challenges', 'pilots', 'solutions', 'rd_projects', 'programs', 'events'], limit = 10 } = options;
 
     setSearching(true);
     try {
       const queries = [];
+      const activeEntityTypes = [];
 
       if (entityTypes.includes('challenges')) {
         queries.push(
@@ -102,6 +103,7 @@ export function useVisibilityAwareSearch() {
             .select('id, title_en, title_ar, description_en, status, is_published, municipality_id, sector_id, created_by')
             .eq('is_deleted', false)
         );
+        activeEntityTypes.push('challenges');
       }
 
       if (entityTypes.includes('pilots')) {
@@ -110,6 +112,7 @@ export function useVisibilityAwareSearch() {
             .select('id, title_en, title_ar, description_en, stage, is_published, municipality_id, sector_id, created_by')
             .eq('is_deleted', false)
         );
+        activeEntityTypes.push('pilots');
       }
 
       if (entityTypes.includes('solutions')) {
@@ -118,6 +121,7 @@ export function useVisibilityAwareSearch() {
             .select('id, name_en, name_ar, description_en, is_published, sector_id, created_by, provider_id')
             .eq('is_deleted', false)
         );
+        activeEntityTypes.push('solutions');
       }
 
       if (entityTypes.includes('rd_projects')) {
@@ -126,6 +130,7 @@ export function useVisibilityAwareSearch() {
             .select('id, title_en, title_ar, description_en, status, is_published, municipality_id, sector_id, created_by')
             .eq('is_deleted', false)
         );
+        activeEntityTypes.push('rd_projects');
       }
 
       if (entityTypes.includes('programs')) {
@@ -134,16 +139,25 @@ export function useVisibilityAwareSearch() {
             .select('id, name_en, name_ar, description_en, status, is_published, municipality_id, sector_id, created_by')
             .eq('is_deleted', false)
         );
+        activeEntityTypes.push('programs');
+      }
+
+      if (entityTypes.includes('events')) {
+        queries.push(
+          supabase.from('events')
+            .select('id, title_en, title_ar, description_en, status, is_published, municipality_id, sector_id, created_by, start_date, event_type')
+            .eq('is_deleted', false)
+        );
+        activeEntityTypes.push('events');
       }
 
       const responses = await Promise.all(queries);
       const searchResults = [];
 
-      const entityTypeNames = entityTypes;
       responses.forEach((res, idx) => {
         if (res.error) return;
         
-        const entityType = entityTypeNames[idx];
+        const entityType = activeEntityTypes[idx];
         const filteredData = applyVisibilityFilter(res.data || [], entityType);
 
         filteredData.forEach(item => {
@@ -152,12 +166,27 @@ export function useVisibilityAwareSearch() {
           const relevance = calculateRelevance(query, `${title} ${description}`);
           
           if (relevance > 0.3) {
+            // Map entity type to singular form for URL generation
+            const typeMap = {
+              'challenges': 'challenge',
+              'pilots': 'pilot',
+              'solutions': 'solution',
+              'rd_projects': 'rd-project',
+              'programs': 'program',
+              'events': 'event'
+            };
+            
             searchResults.push({
-              type: entityType.replace(/_/g, '-').slice(0, -1), // challenges -> challenge
+              type: typeMap[entityType] || entityType.slice(0, -1),
               entity: item,
               relevance,
               title,
-              id: item.id
+              id: item.id,
+              // Add event-specific metadata
+              ...(entityType === 'events' && {
+                startDate: item.start_date,
+                eventType: item.event_type
+              })
             });
           }
         });

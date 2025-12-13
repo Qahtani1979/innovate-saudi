@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { notifyEventAction } from '@/components/AutoNotification';
 import { toast } from 'sonner';
 
 /**
@@ -145,6 +146,17 @@ export function useEvents(options = {}) {
       queryClient.invalidateQueries(['events']);
       queryClient.invalidateQueries(['event-approvals']);
       
+      // Create in-app notification
+      try {
+        if (data.status === 'pending') {
+          await notifyEventAction(data, 'submitted');
+        } else {
+          await notifyEventAction(data, 'created');
+        }
+      } catch (e) {
+        console.warn('In-app notification failed:', e);
+      }
+      
       // Trigger email notification for draft (not pending approval)
       if (data.status === 'draft') {
         try {
@@ -221,6 +233,13 @@ export function useEvents(options = {}) {
         .single();
 
       if (error) throw error;
+
+      // Create in-app notification for cancellation
+      try {
+        await notifyEventAction(data, 'cancelled');
+      } catch (e) {
+        console.warn('In-app notification failed:', e);
+      }
 
       // Notify registrants
       if (notifyRegistrants) {

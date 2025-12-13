@@ -27,12 +27,12 @@
 | **Approval Workflow** | ✅ 4 gates | ✅ 2 gates | None |
 | **Permissions (Roles)** | ✅ 18 roles | ✅ 18 roles | None |
 | **Email Templates** | ✅ 8 templates | ✅ 8 templates | None |
-| **Email Triggers (Hooks)** | ⚠️ Partial | ✅ Full | Low |
-| **In-App Notifications** | ⚠️ Missing | ⚠️ Missing | Medium |
+| **Email Triggers (Hooks)** | ✅ Full | ✅ Full | None |
+| **In-App Notifications** | ✅ Integrated | ✅ Integrated | None |
 | **Calendar Integration** | ✅ Full | ✅ Full | None |
 | **Campaign Sync** | ✅ Full | ✅ Full | None |
 | **AI Components** | ✅ 6 components | ✅ 4 components | None |
-| **Search/Discovery** | ✅ Full | ⚠️ Missing | Medium |
+| **Search/Discovery** | ✅ Full | ✅ Full | None |
 | **Budget Integration** | ✅ Full | ⚠️ Missing | Medium |
 | **Comments System** | ✅ Full | ⚠️ Missing | Low |
 | **Bookmarks** | ✅ Full | ⚠️ Missing | Low |
@@ -125,14 +125,14 @@
 | event_submitted email template | Medium | ✅ | Created with bilingual support |
 | Approval system assessment doc | Medium | ✅ | docs/approval-system-assessment.md |
 
-### 🔴 Phase 7 Tasks - Extended Integrations - PENDING
+### ✅ Phase 7 Tasks - Extended Integrations - PARTIAL COMPLETE
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
-| Program email triggers (all lifecycle) | High | 🔴 | cohort_start, deadline_reminder, etc. |
-| In-app notifications for Programs | High | 🔴 | Use notifications table |
-| In-app notifications for Events | High | 🔴 | Use notifications table |
-| Add events to global search | Medium | 🔴 | useVisibilityAwareSearch.js |
+| Program email triggers (all lifecycle) | High | ✅ | usePrograms.js hook with full triggers |
+| In-app notifications for Programs | High | ✅ | notifyProgramEvent() in AutoNotification |
+| In-app notifications for Events | High | ✅ | notifyEventAction() in AutoNotification |
+| Add events to global search | Medium | ✅ | useVisibilityAwareSearch.js updated |
 | Add budget tracking to events | Medium | 🔴 | events table + EventForm |
 | Event reminder edge function | Medium | 🔴 | 24h before event notification |
 | Add comments to events | Low | 🔴 | entity_type='event' |
