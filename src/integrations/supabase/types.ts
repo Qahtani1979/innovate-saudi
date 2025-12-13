@@ -10110,9 +10110,13 @@ export type Database = {
           created_at: string | null
           email_categories: Json | null
           email_notifications: boolean | null
+          frequency: string | null
           id: string
+          in_app_notifications: boolean | null
           notification_types: Json | null
           push_notifications: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
           sms_notifications: boolean | null
           updated_at: string | null
           user_email: string | null
@@ -10122,9 +10126,13 @@ export type Database = {
           created_at?: string | null
           email_categories?: Json | null
           email_notifications?: boolean | null
+          frequency?: string | null
           id?: string
+          in_app_notifications?: boolean | null
           notification_types?: Json | null
           push_notifications?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           sms_notifications?: boolean | null
           updated_at?: string | null
           user_email?: string | null
@@ -10134,9 +10142,13 @@ export type Database = {
           created_at?: string | null
           email_categories?: Json | null
           email_notifications?: boolean | null
+          frequency?: string | null
           id?: string
+          in_app_notifications?: boolean | null
           notification_types?: Json | null
           push_notifications?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           sms_notifications?: boolean | null
           updated_at?: string | null
           user_email?: string | null
