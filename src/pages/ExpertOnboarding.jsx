@@ -129,12 +129,20 @@ function ExpertOnboarding() {
       is_active: false
     });
 
-    // Notify admins
+    // Notify admins via email-trigger-hub
     try {
-      await base44.integrations.Core.SendEmail({
-        to: 'admin@municipality.gov.sa',
-        subject: 'New Expert Application Submitted',
-        body: `A new expert application has been submitted by ${user?.email}. Please review in the Expert Registry.`
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'program.application_received',
+          recipient_email: 'admin@municipality.gov.sa',
+          entity_type: 'expert',
+          variables: {
+            applicantEmail: user?.email,
+            applicationType: 'Expert Application'
+          },
+          triggered_by: user?.email
+        }
       });
     } catch (error) {
       console.error('Failed to send notification:', error);

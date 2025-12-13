@@ -47,12 +47,21 @@ export default function ProgramLaunchWorkflow({ program, onClose }) {
         link: `/ProgramDetail?id=${program.id}`
       });
 
-      // Send email to all interested parties (if contacts available)
+      // Send email to all interested parties via email-trigger-hub
       if (program.contact_email) {
-        await base44.integrations.Core.SendEmail({
-          to: program.contact_email,
-          subject: `Program Launched: ${program.name_en}`,
-          body: `The program "${program.name_en}" has been successfully launched and is now accepting applications.\n\n${announcement}`
+        const { supabase } = await import('@/integrations/supabase/client');
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'pilot.created',
+            recipient_email: program.contact_email,
+            entity_type: 'program',
+            entity_id: program.id,
+            variables: {
+              programName: program.name_en,
+              announcement: announcement
+            },
+            triggered_by: 'system'
+          }
         });
       }
     },

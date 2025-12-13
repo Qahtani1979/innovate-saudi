@@ -148,13 +148,23 @@ function ExpertMatchingEnginePage() {
 
       const created = await Promise.all(assignments.map(a => base44.entities.ExpertAssignment.create(a)));
 
-      // Send notifications
+      // Send notifications via email-trigger-hub
+      const { supabase } = await import('@/integrations/supabase/client');
       for (const email of expertEmails) {
         try {
-          await base44.integrations.Core.SendEmail({
-            to: email,
-            subject: `New Expert Assignment: ${entityType.replace(/_/g, ' ')}`,
-            body: `You have been assigned to evaluate a ${entityType.replace(/_/g, ' ')}. Please check your Expert Assignment Queue.${dueDate ? `\n\nDue Date: ${dueDate}` : ''}${assignmentNotes ? `\n\nNotes: ${assignmentNotes}` : ''}`
+          await supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'evaluation.assigned',
+              recipient_email: email,
+              entity_type: entityType,
+              entity_id: selectedEntityId,
+              variables: {
+                entityType: entityType.replace(/_/g, ' '),
+                dueDate: dueDate || 'Not specified',
+                notes: assignmentNotes || ''
+              },
+              triggered_by: 'system'
+            }
           });
         } catch (error) {
           console.error('Failed to send notification to', email, error);
