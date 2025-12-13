@@ -55,6 +55,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 function Challenges() {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
@@ -66,6 +67,7 @@ function Challenges() {
   const [aiInsights, setAiInsights] = useState(null);
   const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
+  const { triggerEmail } = useEmailTrigger();
   
   const { invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
@@ -86,8 +88,22 @@ function Challenges() {
 
   const archiveMutation = useMutation({
     mutationFn: (id) => base44.entities.Challenge.update(id, { status: 'archived' }),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries(['challenges']);
+      // Trigger status changed email
+      const challenge = challenges.find(c => c.id === id);
+      if (challenge) {
+        triggerEmail('challenge.status_changed', {
+          entity_type: 'challenge',
+          entity_id: id,
+          variables: {
+            challenge_title: challenge.title_en || challenge.title_ar,
+            challenge_code: challenge.code,
+            old_status: challenge.status,
+            new_status: 'archived'
+          }
+        }).catch(err => console.error('Email trigger failed:', err));
+      }
       toast.success('Challenge archived');
     }
   });
@@ -245,32 +261,58 @@ Use Saudi municipal context and data-driven insights.`;
     
     if (action === 'approve') {
       for (const id of selectedIds) {
-        await base44.entities.Challenge.update(id, { status: 'approved' });
         const challenge = challenges.find(c => c.id === id);
+        await base44.entities.Challenge.update(id, { status: 'approved' });
         await createNotification({
           title: 'Challenge Approved',
-          body: `${challenge.code} has been approved`,
+          body: `${challenge?.code} has been approved`,
           type: 'alert',
           priority: 'medium',
           linkUrl: `ChallengeDetail?id=${id}`,
           entityType: 'challenge',
           entityId: id
         });
+        // Trigger status changed email
+        if (challenge) {
+          triggerEmail('challenge.status_changed', {
+            entity_type: 'challenge',
+            entity_id: id,
+            variables: {
+              challenge_title: challenge.title_en || challenge.title_ar,
+              challenge_code: challenge.code,
+              old_status: challenge.status,
+              new_status: 'approved'
+            }
+          }).catch(err => console.error('Email trigger failed:', err));
+        }
       }
       toast.success(`${selectedIds.length} challenges approved`);
     } else if (action === 'archive') {
       for (const id of selectedIds) {
-        await base44.entities.Challenge.update(id, { is_archived: true });
         const challenge = challenges.find(c => c.id === id);
+        await base44.entities.Challenge.update(id, { is_archived: true });
         await createNotification({
           title: 'Challenge Archived',
-          body: `${challenge.code} has been archived`,
+          body: `${challenge?.code} has been archived`,
           type: 'alert',
           priority: 'low',
           linkUrl: `ChallengeDetail?id=${id}`,
           entityType: 'challenge',
           entityId: id
         });
+        // Trigger status changed email
+        if (challenge) {
+          triggerEmail('challenge.status_changed', {
+            entity_type: 'challenge',
+            entity_id: id,
+            variables: {
+              challenge_title: challenge.title_en || challenge.title_ar,
+              challenge_code: challenge.code,
+              old_status: challenge.status,
+              new_status: 'archived'
+            }
+          }).catch(err => console.error('Email trigger failed:', err));
+        }
       }
       toast.success(`${selectedIds.length} challenges archived`);
     } else if (action === 'delete') {

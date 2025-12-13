@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 function TaskManagement() {
   const { language, isRTL, t } = useLanguage();
@@ -23,6 +24,7 @@ function TaskManagement() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { isAdmin } = usePermissions();
+  const { triggerEmail } = useEmailTrigger();
 
   // Filter tasks: admin sees all, others see only their own
   const { data: tasks = [] } = useQuery({
@@ -58,13 +60,29 @@ function TaskManagement() {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const { error } = await supabase
+      const { data: createdTask, error } = await supabase
         .from('tasks')
-        .insert({ ...data, assigned_to: user?.email });
+        .insert({ ...data, assigned_to: data.assigned_to || user?.email })
+        .select()
+        .single();
       if (error) throw error;
+      return createdTask;
     },
-    onSuccess: () => {
+    onSuccess: (createdTask) => {
       queryClient.invalidateQueries(['tasks']);
+      // Trigger email if task is assigned to someone
+      if (createdTask?.assigned_to) {
+        triggerEmail('task.assigned', {
+          entity_type: 'task',
+          entity_id: createdTask.id,
+          recipient_email: createdTask.assigned_to,
+          variables: {
+            task_title: createdTask.title,
+            due_date: createdTask.due_date,
+            priority: createdTask.priority || 'normal'
+          }
+        }).catch(err => console.error('Email trigger failed:', err));
+      }
       setShowForm(false);
       setFormData({});
     }

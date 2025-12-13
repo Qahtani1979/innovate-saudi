@@ -11,6 +11,7 @@ import { BookOpen, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import {
   Select,
   SelectContent,
@@ -25,6 +26,7 @@ function KnowledgeDocumentEdit() {
   const docId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
+  const { triggerEmail } = useEmailTrigger();
 
   const { data: doc, isLoading } = useQuery({
     queryKey: ['knowledge-doc', docId],
@@ -43,12 +45,25 @@ function KnowledgeDocumentEdit() {
 
   const updateMutation = useMutation({
     mutationFn: (data) => base44.entities.KnowledgeDocument.update(docId, data),
-    onSuccess: () => {
+    onSuccess: (_, data) => {
       // Auto-generate embedding if content changed
       base44.functions.invoke('generateEmbeddings', {
         entity_name: 'KnowledgeDocument',
         mode: 'missing'
       }).catch(err => console.error('Embedding generation failed:', err));
+      
+      // Trigger email if document is being published
+      if (data.is_published && !doc?.is_published) {
+        triggerEmail('knowledge.published', {
+          entity_type: 'knowledge_document',
+          entity_id: docId,
+          variables: {
+            document_title: data.title_en || data.title_ar,
+            document_type: data.doc_type || 'document'
+          }
+        }).catch(err => console.error('Email trigger failed:', err));
+      }
+      
       toast.success(t({ en: 'Document updated', ar: 'تم تحديث المستند' }));
       navigate(createPageUrl('Knowledge'));
     }

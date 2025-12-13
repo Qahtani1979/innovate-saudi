@@ -13,8 +13,6 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionVerificationWizard({ solution, onClose }) {
   const { t, isRTL } = useLanguage();
