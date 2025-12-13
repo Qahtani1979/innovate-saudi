@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,32 +73,23 @@ function ChallengeSolutionMatching() {
         const solution = solutions.find(s => s.id === match.solution_id);
         if (!solution?.contact_email) continue;
 
-        await base44.integrations.Core.SendEmail({
-          to: solution.contact_email,
-          subject: `New Challenge Match: ${selectedChallenge.title_en}`,
-          body: `
-Hello ${solution.provider_name},
-
-Your solution "${solution.name_en}" has been matched with a new municipal challenge:
-
-Challenge: ${selectedChallenge.title_en}
-Municipality: ${selectedChallenge.municipality_id}
-Sector: ${selectedChallenge.sector}
-Match Score: ${match.similarity_score}%
-
-Challenge Details:
-${selectedChallenge.description_en?.substring(0, 300)}...
-
-Next Steps:
-1. Review the challenge details: [View Challenge]
-2. Submit a proposal via the ProviderProposalWizard
-3. Track your proposal status in your dashboard
-
-This is an AI-matched opportunity based on your solution profile.
-
-Best regards,
-Saudi Innovates Platform
-          `
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'SOLUTION_MATCHED',
+            recipientEmail: solution.contact_email,
+            entityType: 'solution',
+            entityId: solution.id,
+            variables: {
+              providerName: solution.provider_name,
+              solutionName: solution.name_en,
+              challengeTitle: selectedChallenge.title_en,
+              challengeCode: selectedChallenge.code,
+              municipalityId: selectedChallenge.municipality_id,
+              sector: selectedChallenge.sector,
+              matchScore: match.similarity_score,
+              challengeDescription: selectedChallenge.description_en?.substring(0, 300)
+            }
+          }
         });
 
         // Create notification record

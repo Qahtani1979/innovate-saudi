@@ -29,11 +29,21 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
-// Send welcome email via edge function
+// Send welcome email via trigger hub
 const sendWelcomeEmail = async (userId, userEmail, userName, persona, language) => {
   try {
-    const { data, error } = await supabase.functions.invoke('send-welcome-email', {
-      body: { userId, userEmail, userName, persona, language }
+    const { data, error } = await supabase.functions.invoke('email-trigger-hub', {
+      body: { 
+        trigger: 'WELCOME',
+        recipientEmail: userEmail,
+        recipientUserId: userId,
+        variables: { 
+          userName, 
+          persona, 
+          language,
+          loginUrl: `${window.location.origin}/auth`
+        }
+      }
     });
     if (error) console.warn('Welcome email failed:', error);
     else console.log('Welcome email sent:', data);
