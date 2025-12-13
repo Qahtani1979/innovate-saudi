@@ -113,27 +113,53 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
         });
       }
 
-      // AI-enhanced validation for suggestions
+      // AI-enhanced validation for suggestions and translations
       setValidationProgress(80);
       
       if (results.processedRows.length > 0) {
         const sampleRows = results.processedRows.slice(0, 5);
         
+        // Identify fields that need Arabic translations
+        const fieldsWithTranslations = Object.keys(state.fieldMappings).filter(field => 
+          field.endsWith('_en') || field.endsWith('_ar')
+        );
+        
+        const enFields = fieldsWithTranslations.filter(f => f.endsWith('_en'));
+        const arFields = fieldsWithTranslations.filter(f => f.endsWith('_ar'));
+        
+        // Check which rows need Arabic translations
+        const rowsNeedingTranslation = results.processedRows.map((row, idx) => {
+          const missingAr = [];
+          enFields.forEach(enField => {
+            const arField = enField.replace('_en', '_ar');
+            if (row[enField] && (!row[arField] || row[arField].trim() === '')) {
+              missingAr.push({ enField, arField, value: row[enField] });
+            }
+          });
+          return { rowIndex: idx, missing: missingAr };
+        }).filter(r => r.missing.length > 0);
+
         const aiResult = await invokeAI({
-          prompt: `Analyze this data for quality issues and suggest corrections/enrichments.
+          prompt: `Analyze this data for quality issues and fill in missing translations.
 
 Entity type: ${state.detectedEntity}
 Sample data:
 ${JSON.stringify(sampleRows, null, 2)}
 
-Look for:
-1. Typos or inconsistencies in text fields
-2. Invalid formats (dates, numbers, etc.)
-3. Missing data that could be inferred
-4. Standardization opportunities (e.g., consistent naming)
+Fields available: ${Object.keys(state.fieldMappings).join(', ')}
 
-Return corrections and enrichment suggestions.`,
-          system_prompt: 'You are a data quality expert. Analyze data for issues and suggest improvements.',
+IMPORTANT TASKS:
+1. Look for typos or inconsistencies in text fields
+2. Check for invalid formats (dates, numbers, etc.)
+3. **CRITICAL: Generate Arabic translations for any _ar fields that are empty when the corresponding _en field has content**
+4. Standardize data where needed
+
+Rows needing Arabic translation:
+${JSON.stringify(rowsNeedingTranslation.slice(0, 10), null, 2)}
+
+For each missing Arabic field, provide the Arabic translation of the English content.
+Return corrections (for errors/typos) and enrichments (for missing data including translations).`,
+          system_prompt: 'You are a data quality expert fluent in English and Arabic. Analyze data for issues, suggest improvements, and provide accurate Arabic translations for missing _ar fields when the _en field has content.',
           response_json_schema: {
             type: 'object',
             properties: {
