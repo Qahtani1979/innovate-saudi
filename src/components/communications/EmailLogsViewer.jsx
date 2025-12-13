@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from '@/components/LanguageContext';
-import { Mail, Search, RefreshCw, Eye, AlertCircle, CheckCircle2, Clock, XCircle, Send, Loader2 } from 'lucide-react';
+import { Mail, Search, RefreshCw, Eye, AlertCircle, CheckCircle2, Clock, XCircle, Send, Loader2, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 const STATUS_CONFIG = {
   sent: { icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-100', label: { en: 'Sent', ar: 'مُرسل' } },
@@ -24,10 +25,12 @@ const STATUS_CONFIG = {
 
 export default function EmailLogsViewer() {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedLog, setSelectedLog] = useState(null);
   const [page, setPage] = useState(0);
+  const [retrying, setRetrying] = useState(false);
   const pageSize = 20;
 
   const { data: logs = [], isLoading, refetch } = useQuery({
@@ -70,6 +73,42 @@ export default function EmailLogsViewer() {
       return counts;
     }
   });
+
+  const handleRetry = async (log) => {
+    setRetrying(true);
+    try {
+      // Call email-trigger-hub with the original data
+      const { error: invokeError } = await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: log.template_key,
+          recipient_email: log.recipient_email,
+          variables: log.variables_used || {},
+          language: log.language || 'en',
+          triggered_by: 'manual_retry'
+        }
+      });
+
+      if (invokeError) throw invokeError;
+
+      // Update retry count
+      await supabase
+        .from('email_logs')
+        .update({ 
+          retry_count: (log.retry_count || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', log.id);
+
+      toast.success(t({ en: 'Email retry queued successfully', ar: 'تمت إضافة إعادة الإرسال للقائمة' }));
+      refetch();
+      setSelectedLog(null);
+    } catch (error) {
+      console.error('Retry error:', error);
+      toast.error(t({ en: 'Failed to retry email', ar: 'فشل في إعادة إرسال البريد' }));
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   const StatusBadge = ({ status }) => {
     const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
@@ -170,6 +209,11 @@ export default function EmailLogsViewer() {
                       {log.template_key && (
                         <Badge variant="outline" className="text-xs">
                           {log.template_key}
+                        </Badge>
+                      )}
+                      {log.retry_count > 0 && (
+                        <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
+                          {t({ en: `Retried ${log.retry_count}x`, ar: `أعيد ${log.retry_count}x` })}
                         </Badge>
                       )}
                     </div>
@@ -276,6 +320,29 @@ export default function EmailLogsViewer() {
                     <pre className="p-2 bg-muted rounded text-xs overflow-auto">
                       {JSON.stringify(selectedLog.variables_used, null, 2)}
                     </pre>
+                  </div>
+                )}
+
+                {/* Retry Button for failed emails */}
+                {(selectedLog.status === 'failed' || selectedLog.status === 'bounced') && (
+                  <div className="pt-4 border-t">
+                    <Button 
+                      onClick={() => handleRetry(selectedLog)}
+                      disabled={retrying}
+                      className="w-full"
+                    >
+                      {retrying ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                      )}
+                      {t({ en: 'Retry Sending', ar: 'إعادة الإرسال' })}
+                    </Button>
+                    {selectedLog.retry_count > 0 && (
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        {t({ en: `Previously retried ${selectedLog.retry_count} time(s)`, ar: `تم إعادة المحاولة ${selectedLog.retry_count} مرة(مرات)` })}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
