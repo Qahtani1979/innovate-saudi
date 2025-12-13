@@ -4,9 +4,18 @@
 
 A comprehensive bilingual (EN/AR) email template system for the Saudi Innovates platform, supporting HTML emails with configurable headers/footers, user preferences integration, and complete platform coverage.
 
-**Status**: ✅ Fully Implemented (All Core Phases + Triggers Complete)
+**Status**: ✅ Fully Implemented (All Core Phases + Migration Complete)
 
-**Last Updated**: 2025-12-12
+**Last Updated**: 2025-12-13
+
+---
+
+## Related Documentation
+
+- [Email Trigger Hub](./EMAIL_TRIGGER_HUB.md) - Unified email triggering API
+- [Campaign System](./CAMPAIGN_SYSTEM.md) - Bulk email campaigns
+- [Communication System](./COMMUNICATION_SYSTEM.md) - Architecture overview
+- [Email Trigger Integration](./EMAIL_TRIGGER_INTEGRATION.md) - Integration guide
 
 ---
 
@@ -20,29 +29,31 @@ A comprehensive bilingual (EN/AR) email template system for the Saudi Innovates 
 | Phase 2 | Edge Function (template fetching, HTML builder, preferences) | ✅ Complete |
 | Phase 3 | Admin UI (template editor, preview, test send) | ✅ Complete |
 | Phase 4 | Integration (connect all triggers) | ✅ Complete |
+| Phase 5 | Migration to email-trigger-hub | ✅ Complete (40 files) |
 
-### Connected Email Triggers (10 Active)
+### Email Sending Architecture
 
-| Template Key | Trigger Location | Status |
-|--------------|------------------|--------|
-| `welcome_new_user` | `src/lib/AuthContext.jsx` - signUp() | ✅ Connected |
-| `role_request_approved` | `src/components/access/RoleRequestApprovalQueue.jsx` | ✅ Connected |
-| `role_request_rejected` | `src/components/access/RoleRequestApprovalQueue.jsx` | ✅ Connected |
-| `challenge_submitted` | `src/components/ChallengeSubmissionWizard.jsx` | ✅ Connected |
-| `challenge_approved` | `src/components/ChallengeReviewWorkflow.jsx` | ✅ Connected |
-| `pilot_created` | `src/components/programs/ProgramToPilotWorkflow.jsx` | ✅ Connected |
-| `pilot_created` | `src/components/solutions/SolutionToPilotWorkflow.jsx` | ✅ Connected |
-| `pilot_created` | `src/components/RDToPilotTransition.jsx` | ✅ Connected |
-| `rd_proposal_submitted` | `src/components/rd/RDProposalAwardWorkflow.jsx` | ✅ Connected |
-| `idea_submitted` | `src/components/citizen/PublicIdeaSubmission.jsx` | ✅ Connected |
-| `test_email` | `src/pages/EmailTemplateEditor.jsx` | ✅ Working |
+All email sending now goes through the unified `email-trigger-hub` edge function:
 
-### Pending Triggers (Low Priority)
-
-| Template Key | Notes | Status |
-|--------------|-------|--------|
-| `task_assigned` | Template ready, needs trigger in TaskAssignment components | ⏳ Template Ready |
-| `password_reset` | Requires Supabase Auth webhook configuration | ⏳ Needs Webhook |
+```
+Frontend Component
+       │
+       ▼
+useEmailTrigger() hook
+       │
+       ▼
+email-trigger-hub (edge function)
+       │
+       ├──▶ Template lookup
+       ├──▶ Variable extraction
+       ├──▶ Preference check
+       │
+       ▼
+send-email (edge function)
+       │
+       ▼
+Resend API
+```
 
 ### Database Tables
 
@@ -709,37 +720,44 @@ const { data } = await supabase.functions.invoke('send-email', {
 
 ## 7. Implementation Phases
 
-### Phase 1: Database & Core (Week 1)
-- [ ] Create `email_settings` table with defaults
-- [ ] Create `email_templates` table
-- [ ] Create `email_logs` table
-- [ ] Update `user_notification_preferences`
-- [ ] Seed all 112 templates with default content
+### Phase 1: Database & Core ✅
+- [x] Create `email_settings` table with defaults
+- [x] Create `email_templates` table
+- [x] Create `email_logs` table
+- [x] Update `user_notification_preferences`
+- [x] Seed templates with default content
 
-### Phase 2: Edge Function (Week 1-2)
-- [ ] Enhance `send-email` function
-- [ ] Template fetching and caching
-- [ ] Variable interpolation
-- [ ] HTML builder with header/footer
-- [ ] RTL support
-- [ ] Preference checking
-- [ ] Logging
+### Phase 2: Edge Function ✅
+- [x] Enhance `send-email` function
+- [x] Template fetching and caching
+- [x] Variable interpolation
+- [x] HTML builder with header/footer
+- [x] RTL support
+- [x] Preference checking
+- [x] Logging
 
-### Phase 3: Admin UI (Week 2-3)
-- [ ] Redesign EmailTemplateEditor page
-- [ ] Template list with filtering
-- [ ] WYSIWYG editor integration
-- [ ] Variable insertion
-- [ ] Live preview
-- [ ] Email settings page
-- [ ] Test send
+### Phase 3: Admin UI ✅
+- [x] Redesign EmailTemplateEditor page
+- [x] Template list with filtering
+- [x] WYSIWYG editor integration
+- [x] Variable insertion
+- [x] Live preview
+- [x] Email settings page
+- [x] Test send
 
-### Phase 4: Integration (Week 3-4)
-- [ ] Update all edge functions to use templates
-- [ ] Connect notification triggers
-- [ ] Migrate hardcoded templates
-- [ ] Add email preference UI to user settings
-- [ ] Analytics dashboard
+### Phase 4: Integration ✅
+- [x] Update all edge functions to use templates
+- [x] Connect notification triggers
+- [x] Migrate hardcoded templates
+- [x] Add email preference UI to user settings
+- [x] Analytics dashboard
+
+### Phase 5: Unified Trigger Migration ✅
+- [x] Create `email-trigger-hub` edge function
+- [x] Create `useEmailTrigger` React hook
+- [x] Migrate 40 frontend components
+- [x] Implement queue processing
+- [x] Add delayed email support
 
 ---
 
@@ -783,5 +801,31 @@ const { data } = await supabase.functions.invoke('send-email', {
 
 ---
 
-*Document Version: 1.0*
-*Last Updated: December 2024*
+## 11. Usage Guide
+
+### Sending Emails from Frontend
+
+```typescript
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+
+function MyComponent() {
+  const { triggerEmail } = useEmailTrigger();
+
+  const sendNotification = async () => {
+    await triggerEmail('challenge.approved', {
+      entity_type: 'challenge',
+      entity_id: challenge.id,
+      entity_data: challenge,
+    });
+  };
+}
+```
+
+### Available Trigger Keys
+
+See [Email Trigger Hub](./EMAIL_TRIGGER_HUB.md) for complete list.
+
+---
+
+*Document Version: 2.0*
+*Last Updated: December 2025*
