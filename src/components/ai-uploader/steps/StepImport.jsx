@@ -25,17 +25,35 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
     setLogs(prev => [...prev, { message, type, timestamp: new Date() }]);
   };
 
-  const startImport = async () => {
+  const startImport = async (retryFailedOnly = false) => {
     setIsImporting(true);
     setProgress(0);
     setLogs([]);
 
-    const rows = state.enrichedData || [];
+    const allRows = state.enrichedData || [];
     const entityType = state.detectedEntity;
     const batchSize = 50;
-    
+
+    // Wrap rows with their original index so we can track failures
+    const existingStatuses = state.importRowStatuses || [];
+    let rowWrappers = allRows.map((row, index) => ({ row, index }));
+
+    if (retryFailedOnly && existingStatuses.length === allRows.length) {
+      rowWrappers = rowWrappers.filter((_, idx) => existingStatuses[idx] === 'failed');
+      if (rowWrappers.length === 0) {
+        addLog('No failed records to retry.', 'info');
+        toast.info('No failed records to retry.');
+        setIsImporting(false);
+        return;
+      }
+    }
+
+    const rowStatuses = retryFailedOnly && existingStatuses.length === allRows.length
+      ? [...existingStatuses]
+      : new Array(allRows.length).fill('pending');
+
     const importResults = {
-      total: rows.length,
+      total: rowWrappers.length,
       inserted: 0,
       failed: 0,
       skipped: 0,
@@ -43,19 +61,19 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
     };
 
     try {
-      addLog(`Starting import of ${rows.length} records to ${entityType}...`);
+      addLog(`Starting import of ${rowWrappers.length} records to ${entityType}...`);
       
       // Get user info for created_by field
       const { data: { user } } = await supabase.auth.getUser();
       const userEmail = user?.email;
 
       // Process in batches
-      for (let i = 0; i < rows.length; i += batchSize) {
-        const batch = rows.slice(i, i + batchSize);
-        setProgress(Math.round((i / rows.length) * 100));
+      for (let i = 0; i < rowWrappers.length; i += batchSize) {
+        const batchWrappers = rowWrappers.slice(i, i + batchSize);
+        setProgress(Math.round((i / rowWrappers.length) * 100));
         
         // Clean rows - remove internal fields
-        const cleanedBatch = batch.map(row => {
+        const cleanedBatch = batchWrappers.map(({ row }) => {
           const cleaned = { ...row };
           delete cleaned._originalIndex;
           delete cleaned._errors;
@@ -69,7 +87,8 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
           return cleaned;
         });
 
-        addLog(`Processing batch ${Math.floor(i / batchSize) + 1}...`);
+        const batchNumber = Math.floor(i / batchSize) + 1;
+        addLog(`Processing batch ${batchNumber}...`);
 
         const { data, error } = await supabase
           .from(entityType)
@@ -77,15 +96,23 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
           .select('id');
 
         if (error) {
-          addLog(`Batch error: ${error.message}`, 'error');
+          addLog(`Batch ${batchNumber} error: ${error.message}`, 'error');
           importResults.errors.push({
-            batch: Math.floor(i / batchSize) + 1,
+            batch: batchNumber,
             error: error.message
           });
-          importResults.failed += batch.length;
+          importResults.failed += batchWrappers.length;
+
+          batchWrappers.forEach(({ index }) => {
+            rowStatuses[index] = 'failed';
+          });
         } else {
-          addLog(`Inserted ${data?.length || 0} records`, 'success');
+          addLog(`Inserted ${data?.length || 0} records in batch ${batchNumber}`, 'success');
           importResults.inserted += data?.length || 0;
+
+          batchWrappers.forEach(({ index }) => {
+            rowStatuses[index] = 'success';
+          });
         }
       }
 
@@ -97,7 +124,7 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
       await logImportHistory(importResults, entityType);
 
       setResults(importResults);
-      updateState({ importResults });
+      updateState({ importResults, importRowStatuses: rowStatuses });
 
     } catch (error) {
       console.error('Import error:', error);
@@ -308,23 +335,27 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
             Back
           </Button>
           <div className="flex gap-2">
-          {results && results.failed > 0 && (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  // Filter to only failed batch rows and retry
-                  const failedBatches = results.errors.map(e => e.batch).filter(Boolean);
-                  if (failedBatches.length > 0) {
-                    toast.info(`Retrying ${results.failed} failed records...`);
-                  }
-                  startImport();
-                }}
-                className="gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Retry Import
-              </Button>
-            )}
+            {results && results.failed > 0 && (
+               <Button 
+                 variant="outline" 
+                 onClick={() => {
+                   // Retry only rows that previously failed
+                   const statuses = state.importRowStatuses || [];
+                   const failedCount = statuses.filter(s => s === 'failed').length || results.failed;
+                   if (!failedCount) {
+                     toast.info('No failed records to retry.');
+                     return;
+                   }
+                   toast.info(`Retrying ${failedCount} failed records...`);
+                   startImport(true);
+                 }}
+                 className="gap-2"
+               >
+                 <RefreshCw className="h-4 w-4" />
+                 Retry Import
+               </Button>
+             )}
+
             {results && (
               <Button 
                 onClick={() => onComplete?.(results)}
