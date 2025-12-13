@@ -121,6 +121,22 @@ export function useEvents(options = {}) {
             title: data.title_en
           }
         });
+
+        // Trigger submission notification
+        try {
+          await triggerEmail('event.submitted', {
+            entity_type: 'event',
+            entity_id: data.id,
+            recipient_email: user?.email,
+            entity_data: {
+              title: data.title_en,
+              start_date: data.start_date,
+              event_type: data.event_type
+            }
+          });
+        } catch (e) {
+          console.warn('Email trigger for event.submitted failed:', e);
+        }
       }
 
       return data;
