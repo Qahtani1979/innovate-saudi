@@ -477,6 +477,7 @@ import MunicipalityStaffOnboarding from './pages/MunicipalityStaffOnboarding';
 import StartupOnboarding from './pages/StartupOnboarding';
 import DeputyshipOnboarding from './pages/DeputyshipOnboarding';
 import Onboarding from './pages/Onboarding';
+import StrategyFeedbackDashboard from './pages/StrategyFeedbackDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -970,6 +971,7 @@ export const PAGES = {
     "StartupOnboarding": StartupOnboarding,
     "DeputyshipOnboarding": DeputyshipOnboarding,
     "Onboarding": Onboarding,
+    "StrategyFeedbackDashboard": StrategyFeedbackDashboard,
     "Auth": Auth,
     "ResetPassword": ResetPassword,
 }

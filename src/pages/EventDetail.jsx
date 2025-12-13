@@ -10,12 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useAuth } from '@/lib/AuthContext';
-import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit, Bookmark, MessageSquare, Send, Loader2, Award, Info, Sparkles, BarChart3 } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit, Bookmark, MessageSquare, Send, Loader2, Award, Info, Sparkles, BarChart3, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { EventExpertEvaluation } from '@/components/events';
+import EventStrategicAlignment from '@/components/events/EventStrategicAlignment';
 import { AIEventOptimizer } from '@/components/ai/AIEventOptimizer';
 import { AIAttendancePredictor } from '@/components/ai/AIAttendancePredictor';
 
@@ -243,10 +244,14 @@ function EventDetail() {
 
       {/* Tabs for Details, AI Insights, Comments, Expert Evaluation */}
       <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="details" className="flex items-center gap-2">
             <Info className="h-4 w-4" />
             {t({ en: 'Details', ar: 'التفاصيل' })}
+          </TabsTrigger>
+          <TabsTrigger value="strategy" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            {t({ en: 'Strategy', ar: 'الاستراتيجية' })}
           </TabsTrigger>
           <TabsTrigger value="ai-insights" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
@@ -259,7 +264,7 @@ function EventDetail() {
           {canEvaluateEvents && (
             <TabsTrigger value="evaluation" className="flex items-center gap-2">
               <Award className="h-4 w-4" />
-              {t({ en: 'Expert Evaluation', ar: 'تقييم الخبير' })}
+              {t({ en: 'Evaluation', ar: 'تقييم' })}
             </TabsTrigger>
           )}
         </TabsList>
@@ -348,6 +353,11 @@ function EventDetail() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Strategy Tab */}
+        <TabsContent value="strategy" className="space-y-6 mt-6">
+          <EventStrategicAlignment event={event} onUpdate={() => queryClient.invalidateQueries(['event', eventId])} />
         </TabsContent>
 
         {/* AI Insights Tab */}
