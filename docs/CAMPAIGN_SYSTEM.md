@@ -4,6 +4,42 @@
 
 The Campaign System enables bulk email sending to targeted audiences with AI-powered content generation, scheduling, and analytics tracking.
 
+## Campaigns vs Triggers
+
+The email system has **two distinct flows** that share the same template infrastructure:
+
+| Aspect | Campaigns | Triggers |
+|--------|-----------|----------|
+| **Purpose** | Manual bulk marketing emails | Automated event-driven emails |
+| **Initiated By** | Admin via Communications Hub UI | Code events (status change, user action) |
+| **Recipients** | Large audience segments | Single user or small group |
+| **Template Lookup** | Via `email_campaigns.template_id` | Via `email_trigger_config.template_key` |
+| **Variables** | Defined per campaign | Extracted from entity data |
+| **Examples** | Newsletter, feature announcement | Challenge approved, task assigned |
+| **Edge Function** | `campaign-sender` | `email-trigger-hub` |
+
+### Shared Infrastructure
+
+Both flows use:
+- **`email_templates`** - Same template storage
+- **`email_logs`** - Same logging/tracking
+- **`send-email`** - Same Resend delivery function
+- **User preferences** - Same opt-out handling
+
+### When to Use Each
+
+**Use Campaigns when:**
+- Sending marketing or announcement emails
+- Targeting a filtered audience segment
+- Admin controls timing and content
+- Bulk sending to many recipients
+
+**Use Triggers when:**
+- Email is in response to a user action or system event
+- Recipients are determined by the event context
+- Variables come from entity data (challenge, pilot, task)
+- Single or few recipients per event
+
 ## Architecture
 
 ### Database Tables
@@ -12,8 +48,9 @@ The Campaign System enables bulk email sending to targeted audiences with AI-pow
 |-------|---------|
 | `email_campaigns` | Main campaign metadata, status, and statistics |
 | `campaign_recipients` | Individual recipient tracking with delivery status |
-| `email_templates` | Reusable email templates with variables |
-| `email_logs` | Detailed delivery logs |
+| `email_templates` | Reusable email templates (shared with triggers) |
+| `email_trigger_config` | Maps trigger keys to templates (trigger system only) |
+| `email_logs` | Detailed delivery logs (shared) |
 | `email_queue` | Scheduled/delayed email queue |
 
 ### Edge Functions
@@ -23,7 +60,7 @@ The Campaign System enables bulk email sending to targeted audiences with AI-pow
 | `campaign-sender` | Processes campaign sending, preview, pause, resume |
 | `email-trigger-hub` | Unified email triggering based on events |
 | `queue-processor` | Processes scheduled emails from queue (runs via cron) |
-| `send-email` | Core email sending via Resend |
+| `send-email` | Core email sending via Resend (shared by both flows) |
 
 ## Campaign Workflow
 
