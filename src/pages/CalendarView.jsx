@@ -159,7 +159,7 @@ function CalendarView({ embedded = false }) {
             </Button>
           </div>
         </div>
-      )
+      )}
 
       <Card>
         <CardContent className="pt-6">
