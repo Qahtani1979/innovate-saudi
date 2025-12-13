@@ -182,6 +182,8 @@ import ServiceCatalog from './pages/ServiceCatalog';
 import MultiYearRoadmap from './pages/MultiYearRoadmap';
 import StrategicPlanApprovalGate from './pages/StrategicPlanApprovalGate';
 import SWOTAnalysisPage from './pages/SWOTAnalysisPage';
+import StakeholderAnalysisPage from './pages/StakeholderAnalysisPage';
+import RiskAssessmentPage from './pages/RiskAssessmentPage';
 import BudgetAllocationApprovalGate from './pages/BudgetAllocationApprovalGate';
 import InitiativeLaunchGate from './pages/InitiativeLaunchGate';
 import PortfolioReviewGate from './pages/PortfolioReviewGate';
@@ -976,6 +978,8 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "StrategyFeedbackDashboard": StrategyFeedbackDashboard,
     "SWOTAnalysisPage": SWOTAnalysisPage,
+    "StakeholderAnalysisPage": StakeholderAnalysisPage,
+    "RiskAssessmentPage": RiskAssessmentPage,
     "Auth": Auth,
     "ResetPassword": ResetPassword,
 }
