@@ -182,6 +182,31 @@ serve(async (req: Request): Promise<Response> => {
     let templateId: string | null = null;
     let language: 'en' | 'ar' = request.language || 'en';
 
+    // Fetch settings early - needed for from address and template building
+    const { data: settingsRows } = await supabase
+      .from('email_settings')
+      .select('setting_key, setting_value');
+    
+    const settings: EmailSettings = {};
+    settingsRows?.forEach(row => {
+      try {
+        settings[row.setting_key] = typeof row.setting_value === 'string' 
+          ? JSON.parse(row.setting_value) 
+          : row.setting_value;
+      } catch {
+        settings[row.setting_key] = row.setting_value;
+      }
+    });
+
+    // Build from address from settings
+    const fromEmail = (settings.default_from_email as string) || 'onboarding@resend.dev';
+    const fromName = language === 'ar' 
+      ? (settings.default_from_name_ar as string) || (settings.default_from_name as string) || 'ابتكر السعودية'
+      : (settings.default_from_name as string) || 'Saudi Innovates';
+    const fromAddress = `${fromName} <${fromEmail}>`;
+    
+    console.log("Using from address:", fromAddress);
+
     // Option 1: Template-based email
     if (request.template_key) {
       console.log("Using template:", request.template_key);
@@ -208,19 +233,19 @@ serve(async (req: Request): Promise<Response> => {
       const isCritical = template.is_critical || CRITICAL_TEMPLATES.includes(request.template_key);
       
       if (!isCritical && !request.force_send && request.recipient_user_id) {
-        // Check user preferences
+        // Check user preferences - FIXED: use correct column name 'email_notifications'
         const { data: prefs } = await supabase
           .from('user_notification_preferences')
-          .select('email_enabled, email_categories')
+          .select('email_notifications, email_categories')
           .eq('user_id', request.recipient_user_id)
           .single();
         
         if (prefs) {
-          // Check master switch
-          if (prefs.email_enabled === false) {
-            console.log("User has disabled emails");
+          // Check master switch - FIXED: check email_notifications not email_enabled
+          if (prefs.email_notifications === false) {
+            console.log("User has disabled email notifications");
             return new Response(
-              JSON.stringify({ success: false, skipped: true, reason: "User disabled emails" }),
+              JSON.stringify({ success: false, skipped: true, reason: "User disabled email notifications" }),
               { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }
@@ -247,22 +272,6 @@ serve(async (req: Request): Promise<Response> => {
           language = profile.preferred_language as 'en' | 'ar';
         }
       }
-      
-      // Fetch settings
-      const { data: settingsRows } = await supabase
-        .from('email_settings')
-        .select('setting_key, setting_value');
-      
-      const settings: EmailSettings = {};
-      settingsRows?.forEach(row => {
-        try {
-          settings[row.setting_key] = typeof row.setting_value === 'string' 
-            ? JSON.parse(row.setting_value) 
-            : row.setting_value;
-        } catch {
-          settings[row.setting_key] = row.setting_value;
-        }
-      });
       
       // Get content based on language
       const rawSubject = language === 'ar' && template.subject_ar ? template.subject_ar : template.subject_en;
@@ -300,7 +309,7 @@ serve(async (req: Request): Promise<Response> => {
     
     console.log("Sending email to:", toAddresses, "Subject:", subject);
 
-    // Send email via Resend API
+    // Send email via Resend API - FIXED: use dynamic from address
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -308,7 +317,7 @@ serve(async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Saudi Innovates <onboarding@resend.dev>",
+        from: fromAddress,
         to: toAddresses,
         subject: subject,
         html: htmlContent,
