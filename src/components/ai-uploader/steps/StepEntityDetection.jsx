@@ -74,13 +74,13 @@ Available entity types:
 - rd_calls: Research funding calls with title_en, description_en, call_type, status, budget
 - events: Events and conferences with title_en, event_type, start_date, end_date, location
 - living_labs: Innovation labs with name_en, domain, status, location, contact_name, contact_email, municipality_id
-- sandboxes: Regulatory sandboxes with name_en, sandbox_type, status, start_date, end_date, sector_id
+- sandboxes: Regulatory sandboxes with name (required), description, domain, status, start_date, end_date, capacity, municipality_id
 - contracts: Agreements with title_en, contract_code, contract_type, contract_value, provider_id
 - budgets: Budget allocations with name_en, budget_code, total_amount, allocated_amount, fiscal_year
 - sectors: Industry sectors with name_en, name_ar, description_en, code
 - regions: Geographic regions with name_en, name_ar, code
 - cities: Cities data with name_en, name_ar, region_id, municipality_id, population
-- strategic_plans: Strategic planning with title_en, plan_type, status, start_date, end_date
+- strategic_plans: Strategic planning with name_en, description_en, vision_en, status, start_year, end_year, municipality_id
 - tags: Taxonomy tags with name_en, name_ar, category, color
 - kpi_references: KPI definitions with name_en, code, description_en, unit, category, target_value
 - citizen_ideas: Citizen ideas with title, description, category, status, municipality_id
