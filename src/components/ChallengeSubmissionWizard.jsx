@@ -47,14 +47,16 @@ export default function ChallengeSubmissionWizard({ challenge, onClose }) {
         metadata: { submission_notes: submissionNotes, ai_brief: aiBrief }
       });
 
-      // Send confirmation email to challenge owner
+      // Send confirmation email to challenge owner via email-trigger-hub
       if (challenge.challenge_owner_email) {
         try {
           const { supabase } = await import('@/integrations/supabase/client');
-          await supabase.functions.invoke('send-email', {
+          await supabase.functions.invoke('email-trigger-hub', {
             body: {
-              template_key: 'challenge_submitted',
+              trigger: 'challenge.submitted',
               recipient_email: challenge.challenge_owner_email,
+              entity_type: 'challenge',
+              entity_id: challenge.id,
               variables: {
                 userName: challenge.challenge_owner || challenge.challenge_owner_email.split('@')[0],
                 challengeTitle: language === 'ar' ? (challenge.title_ar || challenge.title_en) : challenge.title_en,
@@ -62,8 +64,6 @@ export default function ChallengeSubmissionWizard({ challenge, onClose }) {
                 trackingUrl: window.location.origin + '/challenges/' + challenge.id
               },
               language: language,
-              entity_type: 'challenge',
-              entity_id: challenge.id,
               triggered_by: challenge.challenge_owner_email
             }
           });

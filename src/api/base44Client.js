@@ -51,9 +51,15 @@ const integrations = {
       return data;
     },
     
-    SendEmail: async ({ to, subject, body, html }) => {
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: { to, subject, body, html }
+    SendEmail: async ({ to, subject, body, html, trigger, variables, entity_type, entity_id }) => {
+      // Use email-trigger-hub for trigger-based emails, fallback to send-email for legacy
+      const functionName = trigger ? 'email-trigger-hub' : 'send-email';
+      const payload = trigger 
+        ? { trigger, recipient_email: to, variables, entity_type, entity_id }
+        : { to, subject, body, html };
+      
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: payload
       });
       
       if (error) {

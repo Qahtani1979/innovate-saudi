@@ -48,15 +48,17 @@ export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }
         description: `Provider proposed pilot: ${pilot.title_en}`
       });
 
-      // Send pilot created email notification
+      // Send pilot created email notification via email-trigger-hub
       try {
         const { supabase } = await import('@/integrations/supabase/client');
         const recipientEmail = data.pilot_manager_email || solution.contact_email;
         if (recipientEmail) {
-          await supabase.functions.invoke('send-email', {
+          await supabase.functions.invoke('email-trigger-hub', {
             body: {
-              template_key: 'pilot_created',
+              trigger: 'pilot.created',
               recipient_email: recipientEmail,
+              entity_type: 'pilot',
+              entity_id: pilot.id,
               variables: {
                 pilotTitle: data.title_en || data.title_ar,
                 pilotCode: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
@@ -64,8 +66,6 @@ export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }
                 dashboardUrl: window.location.origin + '/pilots/' + pilot.id
               },
               language: language,
-              entity_type: 'pilot',
-              entity_id: pilot.id,
               triggered_by: 'system'
             }
           });
