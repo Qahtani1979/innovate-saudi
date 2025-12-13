@@ -5,14 +5,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Calendar, ChevronLeft, ChevronRight, TestTube, Target, Users } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, TestTube, Target, Users, CalendarDays, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { usePermissions } from '@/components/permissions/usePermissions';
 
 function CalendarView() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
+  const { hasAnyPermission, roles } = usePermissions();
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  const canCreateEvents = hasAnyPermission(['event_create', 'admin']) || 
+    roles?.some(r => ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r));
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
@@ -38,6 +45,20 @@ function CalendarView() {
     }
   });
 
+  // NEW: Fetch events from events table
+  const { data: dbEvents = [] } = useQuery({
+    queryKey: ['calendar-events'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('is_published', true)
+        .order('start_date', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const { data: expertAssignments = [] } = useQuery({
     queryKey: ['expert-assignments-calendar', user?.email],
     queryFn: async () => {
@@ -53,20 +74,31 @@ function CalendarView() {
     enabled: !!user
   });
 
-  const events = [
+  const calendarItems = [
+    // Events from events table (NEW)
+    ...dbEvents.map(e => ({
+      ...e,
+      type: 'event',
+      date: e.start_date,
+      title: language === 'ar' ? (e.title_ar || e.title_en) : (e.title_en || e.title_ar),
+      icon: CalendarDays,
+      link: createPageUrl('EventDetail') + `?id=${e.id}`
+    })),
     ...pilots.filter(p => p.timeline?.pilot_start).map(p => ({
       ...p,
       type: 'pilot',
       date: p.timeline.pilot_start,
-      title: p.title_en,
-      icon: TestTube
+      title: language === 'ar' ? (p.title_ar || p.title_en) : (p.title_en || p.title_ar),
+      icon: TestTube,
+      link: createPageUrl('PilotDetail') + `?id=${p.id}`
     })),
     ...programs.filter(p => p.timeline?.program_start).map(p => ({
       ...p,
       type: 'program',
       date: p.timeline.program_start,
-      title: p.name_en,
-      icon: Users
+      title: language === 'ar' ? (p.name_ar || p.name_en) : (p.name_en || p.name_ar),
+      icon: Users,
+      link: createPageUrl('ProgramDetail') + `?id=${p.id}`
     })),
     ...expertAssignments.map(a => ({
       ...a,
@@ -86,16 +118,26 @@ function CalendarView() {
         <h1 className="text-3xl font-bold text-slate-900">
           {t({ en: 'Calendar', ar: 'التقويم' })}
         </h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-lg font-medium px-4">
-            {currentDate.toLocaleDateString(language, { month: 'long', year: 'numeric' })}
-          </span>
-          <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-4">
+          {canCreateEvents && (
+            <Link to={createPageUrl('EventCreate')}>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                {t({ en: 'Create Event', ar: 'إنشاء فعالية' })}
+              </Button>
+            </Link>
+          )}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-medium px-4">
+              {currentDate.toLocaleDateString(language, { month: 'long', year: 'numeric' })}
+            </span>
+            <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -114,7 +156,7 @@ function CalendarView() {
             ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
-              const dayEvents = events.filter(e => {
+              const dayItems = calendarItems.filter(e => {
                 const eventDate = new Date(e.date);
                 return eventDate.getDate() === day &&
                        eventDate.getMonth() === currentDate.getMonth() &&
@@ -125,21 +167,28 @@ function CalendarView() {
                 <div key={day} className="aspect-square p-2 border rounded-lg hover:bg-slate-50 transition-colors">
                   <p className="text-sm font-medium text-slate-900 mb-1">{day}</p>
                   <div className="space-y-1">
-                    {dayEvents.slice(0, 2).map((event, j) => {
-                      const Icon = event.icon;
-                      return (
-                        <div key={j} className={`text-xs p-1 rounded ${
-                          event.type === 'pilot' ? 'bg-blue-100 text-blue-700' : 
-                          event.type === 'program' ? 'bg-purple-100 text-purple-700' :
-                          'bg-amber-100 text-amber-700'
-                        }`}>
+                    {dayItems.slice(0, 2).map((item, j) => {
+                      const Icon = item.icon;
+                      const colorClass = item.type === 'event' ? 'bg-green-100 text-green-700' :
+                        item.type === 'pilot' ? 'bg-blue-100 text-blue-700' : 
+                        item.type === 'program' ? 'bg-purple-100 text-purple-700' :
+                        'bg-amber-100 text-amber-700';
+                      
+                      const content = (
+                        <div className={`text-xs p-1 rounded cursor-pointer hover:opacity-80 ${colorClass}`}>
                           <Icon className="h-3 w-3 inline mr-1" />
-                          {event.title.substring(0, 10)}...
+                          {item.title?.substring(0, 10)}...
                         </div>
                       );
+
+                      return item.link ? (
+                        <Link key={j} to={item.link}>{content}</Link>
+                      ) : (
+                        <div key={j}>{content}</div>
+                      );
                     })}
-                    {dayEvents.length > 2 && (
-                      <p className="text-xs text-slate-500">+{dayEvents.length - 2} more</p>
+                    {dayItems.length > 2 && (
+                      <p className="text-xs text-slate-500">+{dayItems.length - 2} more</p>
                     )}
                   </div>
                 </div>
@@ -156,21 +205,45 @@ function CalendarView() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {events.slice(0, 5).map((event) => {
-                const Icon = event.icon;
-                return (
-                  <div key={event.id} className="p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Icon className="h-5 w-5 text-blue-600" />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{event.title}</p>
-                        <p className="text-xs text-slate-600">{event.date}</p>
+              {calendarItems
+                .filter(item => new Date(item.date) >= new Date())
+                .slice(0, 5)
+                .map((item) => {
+                  const Icon = item.icon;
+                  const colorClass = item.type === 'event' ? 'text-green-600' :
+                    item.type === 'pilot' ? 'text-blue-600' : 
+                    item.type === 'program' ? 'text-purple-600' : 'text-amber-600';
+                  
+                  const content = (
+                    <div className="p-3 border rounded-lg hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Icon className={`h-5 w-5 ${colorClass}`} />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{item.title}</p>
+                          <p className="text-xs text-slate-600">
+                            {new Date(item.date).toLocaleDateString(language, { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                        <Badge variant="outline">{item.type}</Badge>
                       </div>
-                      <Badge variant="outline">{event.type}</Badge>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                  
+                  return item.link ? (
+                    <Link key={item.id} to={item.link}>{content}</Link>
+                  ) : (
+                    <div key={item.id}>{content}</div>
+                  );
+                })}
+              {calendarItems.filter(item => new Date(item.date) >= new Date()).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {t({ en: 'No upcoming events', ar: 'لا توجد أحداث قادمة' })}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

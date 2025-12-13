@@ -5,13 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { Calendar, MapPin, Users, Clock, Globe, UserPlus } from 'lucide-react';
+import { usePermissions } from '@/components/permissions/usePermissions';
+import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function EventDetail() {
   const { t, language } = useLanguage();
+  const { hasAnyPermission, roles } = usePermissions();
   const urlParams = new URLSearchParams(window.location.search);
   const eventId = urlParams.get('id');
+
+  const canEditEvents = hasAnyPermission(['event_edit', 'event_manage', 'admin']) || 
+    roles?.some(r => ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r));
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', eventId],
@@ -57,12 +64,24 @@ function EventDetail() {
             {t({ en: 'Event Code:', ar: 'رمز الفعالية:' })} {event.code}
           </p>
         </div>
-        {event.status === 'registration_open' && (
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <UserPlus className="h-4 w-4 mr-2" />
-            {t({ en: 'Register', ar: 'التسجيل' })}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canEditEvents && (
+            <Link to={createPageUrl('EventEdit') + `?id=${eventId}`}>
+              <Button variant="outline">
+                <Edit className="h-4 w-4 mr-2" />
+                {t({ en: 'Edit', ar: 'تعديل' })}
+              </Button>
+            </Link>
+          )}
+          {event.status === 'registration_open' && (
+            <Link to={createPageUrl('EventRegistration') + `?id=${eventId}`}>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <UserPlus className="h-4 w-4 mr-2" />
+                {t({ en: 'Register', ar: 'التسجيل' })}
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
