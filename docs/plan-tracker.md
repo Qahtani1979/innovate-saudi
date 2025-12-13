@@ -158,20 +158,20 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 ## Persona & Permission Audit Summary
 
-### Permission Configurations by Page
+### Permission Configurations by Page (VERIFIED 2025-12-13)
 
-| Page | ProtectedPage? | Permissions | Roles | Notes |
-|------|----------------|-------------|-------|-------|
-| ProgramsControlDashboard | ✅ | `[]` (open) | - | Recommend: `['program_view_all']` |
-| ParticipantDashboard | ❌ | - | - | Uses inline useAuth, data scoped by email |
-| MyPrograms | ✅ | `[]` (open) | - | Personal view - RLS handles scope |
-| ProgramIdeaSubmission | ✅ | `[]` (open) | - | Anyone can submit - correct |
-| ApprovalCenter | ❌ | - | - | Inline checks, recommend ProtectedPage |
-| ProgramOperatorPortal | ✅ | `['program_manage']` | - | ✅ Correct - operator-only |
-| StrategicPlanBuilder | ✅ | `[]` | Executive, Strategy Lead | Uses roles instead |
-| Portfolio | ✅ | `['portfolio_view']` | - | ✅ Correct |
-| GapAnalysisTool | ❓ | Unknown | - | Needs review |
-| CampaignPlanner | ✅ | `[]` | Exec, Director, CommMgr | Uses roles instead |
+| Page | ProtectedPage? | Permissions | Roles | Actual Config |
+|------|----------------|-------------|-------|---------------|
+| ProgramsControlDashboard | ✅ | `[]` (open) | - | `requiredPermissions: []` |
+| ParticipantDashboard | ❌ | - | - | No wrapper, uses `useAuth()` + data scoped by email |
+| MyPrograms | ✅ | `[]` (open) | - | `requiredPermissions: []` |
+| ProgramIdeaSubmission | ✅ | `[]` (open) | - | `requiredPermissions: []` |
+| ApprovalCenter | ✅ | Multi-perm | - | `requiredPermissions: ['challenge_approve', 'pilot_approve', 'program_approve', 'rd_proposal_approve', 'solution_approve', 'matchmaker_approve'], requireAll: false` |
+| ProgramOperatorPortal | ✅ | `['program_manage']` | - | `requiredPermissions: ['program_manage']` |
+| StrategicPlanBuilder | ✅ | `[]` | Exec, Strategy | `requiredPermissions: [], requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead']` |
+| Portfolio | ✅ | `['portfolio_view']` | - | `requiredPermissions: ['portfolio_view']` |
+| GapAnalysisTool | ✅ | `[]` | Exec, Strategy | `requiredPermissions: [], requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead']` |
+| CampaignPlanner | ✅ | `[]` | Multiple | `requiredPermissions: [], requiredRoles: ['Executive Leadership', 'Program Director', 'Communication Manager']` |
 
 ### Persona Access Matrix
 
@@ -190,14 +190,15 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 **Legend:** ✅ Full access | ⚠️ Limited/scoped | ❌ No access
 
-### Permission Recommendations
+### Permission Recommendations (UPDATED)
 
 | Issue | Current | Recommended | Priority |
 |-------|---------|-------------|----------|
-| ProgramsControlDashboard too open | `[]` | `['program_view_all', 'program_manage']` | Medium |
-| ApprovalCenter no ProtectedPage | inline | Add ProtectedPage with approval perms | High |
-| ParticipantDashboard inconsistent | no wrapper | Add ProtectedPage for consistency | Low |
-| GapAnalysisTool access unclear | unknown | `['gap_analysis_view', 'portfolio_view']` | Medium |
+| ProgramsControlDashboard too open | `[]` | Add `requiredRoles: ['Program Operator', 'Executive Leadership']` | Medium |
+| ParticipantDashboard inconsistent | no wrapper | Add `ProtectedPage({ requiredPermissions: [] })` for consistency | Low |
+| ApprovalCenter properly secured | Multi-perm + requireAll:false | ✅ Already correct | - |
+| GapAnalysisTool properly secured | Roles-based | ✅ Already correct | - |
+| CampaignPlanner properly secured | Roles-based | ✅ Already correct | - |
 
 ---
 
