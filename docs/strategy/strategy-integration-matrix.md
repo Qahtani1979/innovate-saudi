@@ -1,22 +1,40 @@
 # Strategy System - Integration Matrix
 
-**Last Updated:** 2025-12-13 (ALL PHASES COMPLETE)  
-**Status:** ✅ 100% PLATFORM INTEGRATION COMPLETE
+**Last Updated:** 2025-12-13 (STRATEGY LEADER WORKFLOW)  
+**Status:** ✅ Platform Integration 100% | ⚠️ Workflow Integration 47%
 
 ---
 
-## INTEGRATION SUMMARY
+## EXECUTIVE SUMMARY
 
-### By Integration Type
+This matrix documents all integrations required for the complete Strategy Leader Workflow across 7 phases:
+
+| Dimension | Complete | Partial | Missing | Coverage |
+|-----------|----------|---------|---------|----------|
+| **Platform Entity Integration** | 24 | 0 | 0 | ✅ 100% |
+| **Pre-Planning Integrations** | 4 | 0 | 7 | ⚠️ 36% |
+| **Creation Integrations** | 4 | 0 | 6 | ⚠️ 40% |
+| **Cascade Integrations** | 4 | 3 | 3 | ⚠️ 55% |
+| **Governance Integrations** | 3 | 0 | 2 | ⚠️ 60% |
+| **Communication Integrations** | 2 | 0 | 2 | ⚠️ 50% |
+| **Monitoring Integrations** | 8 | 0 | 1 | ✅ 89% |
+| **Review Integrations** | 2 | 0 | 3 | ⚠️ 40% |
+| **OVERALL WORKFLOW** | 51 | 3 | 24 | **⚠️ 69%** |
+
+---
+
+## SECTION A: PLATFORM ENTITY INTEGRATION (100% Complete)
+
+### A.1 Integration Type Summary
 
 | Type | Entities | Complete | Partial | Missing | Coverage |
 |------|----------|----------|---------|---------|----------|
-| **DIRECT** | 5 | 5 | 0 | 0 | ✅ 100% |
+| **DIRECT** | 7 | 7 | 0 | 0 | ✅ 100% |
 | **INDIRECT** | 16 | 16 | 0 | 0 | ✅ 100% |
 | **NO INTEGRATION** | 3 | 3 | 0 | 0 | N/A |
-| **TOTAL** | 24 | 24 | 0 | 0 | **100%** |
+| **TOTAL** | 26 | 26 | 0 | 0 | **100%** |
 
-### Entity Status Overview
+### A.2 Entity Status Overview
 
 | # | Entity | Integration Type | Expected | Actual | Status |
 |---|--------|------------------|----------|--------|--------|
@@ -25,21 +43,693 @@
 | 3 | Partnerships | DIRECT | strategic_plan_ids[], is_strategy_derived | ✅ All present | ✅ 100% |
 | 4 | Sandboxes | DIRECT | strategic_plan_ids[], is_strategy_derived | ✅ All present | ✅ 100% |
 | 5 | Living Labs | DIRECT | strategic_plan_ids[], is_strategy_derived | ✅ All present | ✅ 100% |
-| 6 | Campaigns | INDIRECT | program_id → Programs | ✅ Has program_id, challenge_id | ✅ 100% |
-| 7 | R&D Calls | INDIRECT | challenge_ids[], program_id → Strategy | ✅ Has both | ✅ 100% |
-| 8 | Events | INDIRECT | program_id → Programs | ✅ Has program_id + DIRECT | ✅ 100%+ |
-| 9 | Matchmaker | INDIRECT | target_challenges[] → Challenges | ✅ Has target_challenges | ✅ 100% |
-| 10 | Solutions | INDIRECT | source_program_id → Programs | ✅ Has source_program_id | ✅ 100% |
-| 11 | Pilots | INDIRECT | challenge_id, source_program_id | ✅ Has both | ✅ 100% |
-| 12 | R&D Projects | INDIRECT | rd_call_id, challenge_ids[] | ✅ Has both | ✅ 100% |
-| 13 | Scaling Plans | INDIRECT | pilot_id, rd_project_id | ✅ Has both | ✅ 100% |
-| 14 | Proposals (Challenge) | INDIRECT | challenge_id | ✅ Has challenge_id | ✅ 100% |
-| 15 | Proposals (Innovation) | INDIRECT | target_challenges[] | ✅ Has target_challenges | ✅ 100% |
-| 16 | Citizens | INDIRECT | Via pilot enrollments | ✅ Works | ✅ 100% |
-| 17 | Staff | INDIRECT | Via municipality | ✅ Works | ✅ 100% |
-| 18 | Providers | NONE | N/A - External | ✅ Correct | ✅ N/A |
-| 19 | Ideas | NONE | N/A - Raw input | ✅ Correct | ✅ N/A |
-| 20 | Municipalities | NONE* | N/A - Owns strategy | Has strategic_plan_id | ⚠️ Reclassify |
+| 6 | Events | DIRECT | strategic_plan_ids[] + program_id | ✅ All present | ✅ 100% |
+| 7 | Policy Documents | DIRECT | strategic_plan_ids[], is_strategy_derived | ✅ All present | ✅ 100% |
+| 8 | Campaigns | INDIRECT | program_id → Programs | ✅ Has program_id, challenge_id | ✅ 100% |
+| 9 | R&D Calls | INDIRECT | challenge_ids[], program_id → Strategy | ✅ Has both | ✅ 100% |
+| 10 | Matchmaker | INDIRECT | target_challenges[] → Challenges | ✅ Has target_challenges | ✅ 100% |
+| 11 | Solutions | INDIRECT | source_program_id → Programs | ✅ Has source_program_id | ✅ 100% |
+| 12 | Pilots | INDIRECT | challenge_id, source_program_id | ✅ Has both | ✅ 100% |
+| 13 | R&D Projects | INDIRECT | rd_call_id, challenge_ids[] | ✅ Has both | ✅ 100% |
+| 14 | Scaling Plans | INDIRECT | pilot_id, rd_project_id | ✅ Has both | ✅ 100% |
+| 15 | Proposals (Challenge) | INDIRECT | challenge_id | ✅ Has challenge_id | ✅ 100% |
+| 16 | Proposals (Innovation) | INDIRECT | target_challenges[] | ✅ Has target_challenges | ✅ 100% |
+| 17 | Citizens | INDIRECT | Via pilot enrollments | ✅ Works | ✅ 100% |
+| 18 | Staff | INDIRECT | Via municipality | ✅ Works | ✅ 100% |
+| 19 | Global Trends | INDIRECT | strategic_plan_ids[] | ✅ Works | ✅ 100% |
+| 20 | Budgets | INDIRECT | entity_type, entity_id | ✅ Works | ✅ 100% |
+| 21 | Tasks | INDIRECT | entity_type, entity_id | ✅ Works | ✅ 100% |
+| 22 | Audits | INDIRECT | entity_type, entity_id | ✅ Works | ✅ 100% |
+| 23 | Providers | NONE | N/A - External | ✅ Correct | N/A |
+| 24 | Ideas | NONE | N/A - Raw input | ✅ Correct | N/A |
+| 25 | Municipalities | OWNER | Owns strategic plans | ✅ Works | ✅ 100% |
+| 26 | Organizations | NONE | N/A - External | ✅ Correct | N/A |
+
+---
+
+## SECTION B: WORKFLOW PHASE INTEGRATIONS
+
+### B.1 PHASE 1: PRE-PLANNING INTEGRATIONS (36% Complete)
+
+**Purpose:** Gather intelligence before strategy creation
+
+| # | Integration | Type | Components | Edge Functions | Data Sources | Status |
+|---|-------------|------|------------|----------------|--------------|--------|
+| 1.1 | Environmental Scan | Component | `EnvironmentalScanWidget` | - | global_trends, policy_documents | ❌ Missing |
+| 1.2 | SWOT Analysis | Component + Table | `SWOTAnalysisBuilder` | - | swot_analyses (NEW) | ❌ Missing |
+| 1.3 | Stakeholder Analysis | Component + Table | `StakeholderAnalysisWidget` | - | stakeholder_analyses (NEW) | ❌ Missing |
+| 1.4 | Risk Assessment | Component + Table | `RiskAssessmentBuilder` | - | strategy_risks (NEW) | ❌ Missing |
+| 1.5 | Input Collection | Component + Table | `StrategyInputCollector` | - | strategy_inputs (NEW) | ❌ Missing |
+| 1.6 | Baseline Data | Component | `BaselineDataCollector` | - | Multiple existing | ❌ Missing |
+| 1.7 | Resource Assessment | Page | `ResourceAllocationView` | - | budgets, tasks | ✅ Exists |
+| 1.8 | Policy Review | Page | `PolicyLibrary` | - | policy_documents | ✅ Exists |
+| 1.9 | Historical Data | Component | `HistoricalComparison` | - | Multiple existing | ✅ Exists |
+| 1.10 | Benchmarking | Page | `InternationalBenchmarkingSuite` | - | benchmarks | ✅ Exists |
+| 1.11 | Budget Review | Page | `BudgetManagement` | - | budgets | ✅ Exists |
+
+#### New Database Tables Required for Phase 1
+
+```sql
+-- SWOT Analysis Storage
+CREATE TABLE public.swot_analyses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  quadrant text NOT NULL CHECK (quadrant IN ('strength', 'weakness', 'opportunity', 'threat')),
+  title_en text NOT NULL,
+  title_ar text,
+  description_en text,
+  description_ar text,
+  impact_level text CHECK (impact_level IN ('high', 'medium', 'low')),
+  source text CHECK (source IN ('ai', 'manual', 'stakeholder')),
+  related_entity_ids uuid[],
+  created_by text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Stakeholder Analysis Storage
+CREATE TABLE public.stakeholder_analyses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  stakeholder_name_en text NOT NULL,
+  stakeholder_name_ar text,
+  stakeholder_type text CHECK (stakeholder_type IN ('government', 'private', 'academic', 'civil_society', 'international')),
+  power_level integer CHECK (power_level BETWEEN 1 AND 10),
+  interest_level integer CHECK (interest_level BETWEEN 1 AND 10),
+  current_engagement text CHECK (current_engagement IN ('champion', 'supporter', 'neutral', 'critic', 'blocker')),
+  engagement_tactics text[],
+  communication_frequency text CHECK (communication_frequency IN ('weekly', 'monthly', 'quarterly', 'annually')),
+  created_by text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Strategy Risk Registry
+CREATE TABLE public.strategy_risks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  title_en text NOT NULL,
+  title_ar text,
+  category text CHECK (category IN ('political', 'financial', 'operational', 'technological', 'reputational', 'environmental')),
+  probability integer CHECK (probability BETWEEN 1 AND 5),
+  impact integer CHECK (impact BETWEEN 1 AND 5),
+  risk_score integer GENERATED ALWAYS AS (probability * impact) STORED,
+  mitigation_strategy text,
+  contingency_plan text,
+  owner_email text,
+  status text DEFAULT 'identified' CHECK (status IN ('identified', 'mitigating', 'accepted', 'resolved')),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Strategy Inputs Collection
+CREATE TABLE public.strategy_inputs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  source_type text CHECK (source_type IN ('municipality', 'department', 'citizen', 'expert', 'stakeholder')),
+  source_entity_id uuid,
+  source_name text,
+  input_text text NOT NULL,
+  theme text,
+  sentiment text CHECK (sentiment IN ('positive', 'negative', 'neutral')),
+  priority_votes integer DEFAULT 0,
+  ai_extracted_themes text[],
+  created_at timestamptz DEFAULT now()
+);
+```
+
+---
+
+### B.2 PHASE 2: STRATEGY CREATION INTEGRATIONS (40% Complete)
+
+**Purpose:** Define strategic plan with all components
+
+| # | Integration | Type | Components | Edge Functions | Data Sources | Status |
+|---|-------------|------|------------|----------------|--------------|--------|
+| 2.1 | Vision/Mission | Page | `StrategicPlanBuilder` | - | strategic_plans | ✅ Exists |
+| 2.2 | Objectives | Page | `StrategicPlanBuilder` | - | strategic_plans.objectives | ✅ Exists |
+| 2.3 | KPI Definition | Hook | `useStrategicKPI` | - | strategic_plans.objectives.kpis | ✅ Exists |
+| 2.4 | Budget Allocation | Page | `BudgetAllocationTool` | - | budgets | ✅ Exists |
+| 2.5 | Timeline Planning | Component + Table | `StrategyTimelinePlanner` | - | strategy_milestones (NEW) | ❌ Missing |
+| 2.6 | Ownership Assignment | Component + Table | `StrategyOwnershipAssigner` | - | strategy_ownership (NEW) | ❌ Missing |
+| 2.7 | Action Plans | Component + Table | `ActionPlanBuilder` | - | action_plans (NEW), action_items (NEW) | ❌ Missing |
+| 2.8 | National Linking | Component | `NationalStrategyLinker` | - | national_strategy_alignments (NEW) | ❌ Missing |
+| 2.9 | Sector Strategies | Component + Table | `SectorStrategyBuilder` | - | sector_strategies (NEW) | ❌ Missing |
+| 2.10 | Templates | Component + Table | `StrategyTemplateLibrary` | - | strategy_templates (NEW) | ❌ Missing |
+
+#### New Database Tables Required for Phase 2
+
+```sql
+-- Strategy Milestones
+CREATE TABLE public.strategy_milestones (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  objective_id uuid,
+  title_en text NOT NULL,
+  title_ar text,
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  dependencies uuid[],
+  owner_email text,
+  status text DEFAULT 'planned' CHECK (status IN ('planned', 'in_progress', 'completed', 'delayed', 'cancelled')),
+  deliverables text[],
+  resources_required text[],
+  progress_percentage integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Strategy Ownership (RACI)
+CREATE TABLE public.strategy_ownership (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  objective_id uuid,
+  responsible_email text,
+  accountable_email text,
+  consulted_emails text[],
+  informed_emails text[],
+  delegation_allowed boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Action Plans
+CREATE TABLE public.action_plans (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  objective_id uuid,
+  title_en text NOT NULL,
+  title_ar text,
+  total_budget numeric,
+  currency text DEFAULT 'SAR',
+  start_date date,
+  end_date date,
+  status text DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'in_progress', 'completed', 'cancelled')),
+  owner_email text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Action Items
+CREATE TABLE public.action_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  action_plan_id uuid REFERENCES action_plans(id) ON DELETE CASCADE,
+  title_en text NOT NULL,
+  title_ar text,
+  description text,
+  owner_email text,
+  start_date date,
+  end_date date,
+  budget numeric,
+  dependencies uuid[],
+  deliverables text[],
+  status text DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'blocked', 'cancelled')),
+  progress_percentage integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- National Strategy Alignments
+CREATE TABLE public.national_strategy_alignments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  objective_id uuid,
+  national_strategy_type text CHECK (national_strategy_type IN ('vision_2030', 'sdg', 'national_innovation', 'sector_specific')),
+  national_goal_code text,
+  national_goal_name_en text,
+  national_goal_name_ar text,
+  alignment_score integer CHECK (alignment_score BETWEEN 1 AND 100),
+  alignment_notes text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Sector Strategies
+CREATE TABLE public.sector_strategies (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  parent_plan_id uuid REFERENCES strategic_plans(id),
+  sector_id uuid REFERENCES sectors(id),
+  name_en text NOT NULL,
+  name_ar text,
+  vision_en text,
+  vision_ar text,
+  objectives jsonb DEFAULT '[]',
+  kpis jsonb DEFAULT '[]',
+  owner_email text,
+  status text DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'active', 'archived')),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Strategy Templates
+CREATE TABLE public.strategy_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name_en text NOT NULL,
+  name_ar text,
+  description_en text,
+  description_ar text,
+  template_type text CHECK (template_type IN ('innovation', 'digital_transformation', 'sustainability', 'sector_specific', 'municipality')),
+  template_data jsonb NOT NULL,
+  is_public boolean DEFAULT false,
+  created_by_email text,
+  source_plan_id uuid REFERENCES strategic_plans(id),
+  usage_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+```
+
+---
+
+### B.3 PHASE 3: CASCADE & OPERATIONALIZATION INTEGRATIONS (55% Complete)
+
+**Purpose:** Generate operational entities from strategy
+
+| # | Integration | Type | Components | Edge Functions | Status |
+|---|-------------|------|------------|----------------|--------|
+| 3.1 | Generate Programs | Component + Function | `StrategyToProgramGenerator` | `strategy-program-theme-generator` | ✅ Complete |
+| 3.2 | Generate Sandboxes | Component + Function | `StrategyToSandboxGenerator` | `strategy-sandbox-planner` | ✅ Complete |
+| 3.3 | Gap Analysis | Component + Function | `SectorGapAnalysisWidget` | `strategy-sector-gap-analysis` | ✅ Complete |
+| 3.4 | Gap Recommendations | Component | `StrategicGapProgramRecommender` | - | ✅ Complete |
+| 3.5 | Generate Challenges | Component + Function | `StrategyChallengeGenerator` | `strategy-challenge-generator` | ❌ Missing |
+| 3.6 | Generate Living Labs | Component | `StrategyToLivingLabGenerator` | `strategy-lab-research-generator` | ⚠️ Function Only |
+| 3.7 | Generate R&D Calls | Component | `StrategyToRDCallGenerator` | `strategy-rd-call-generator` | ⚠️ Function Only |
+| 3.8 | Generate Pilots | Component + Function | `StrategyToPilotGenerator` | `strategy-pilot-generator` | ⚠️ Component Only |
+| 3.9 | Generate Partnerships | Component + Function | `StrategyToPartnershipGenerator` | `strategy-partnership-matcher` | ❌ Missing |
+| 3.10 | Generate Events | Component + Function | `StrategyToEventGenerator` | `strategy-event-planner` | ❌ Missing |
+
+#### New Edge Functions Required for Phase 3
+
+| # | Function | Purpose | Input | Output | Priority |
+|---|----------|---------|-------|--------|----------|
+| 1 | `strategy-challenge-generator` | AI-generate challenges | objectives, sector | challenges array | P1 |
+| 2 | `strategy-partnership-matcher` | Match partners to goals | plan, capabilities | partner recommendations | P2 |
+| 3 | `strategy-event-planner` | Plan strategic events | plan, event_type | event plan | P3 |
+| 4 | `strategy-pilot-generator` | Generate pilot designs | challenge, solution | pilot design | P2 |
+
+---
+
+### B.4 PHASE 4: GOVERNANCE INTEGRATIONS (60% Complete)
+
+**Purpose:** Approval and version control
+
+| # | Integration | Type | Components | Edge Functions | Data Sources | Status |
+|---|-------------|------|------------|----------------|--------------|--------|
+| 4.1 | Plan Approval | Function | - | `strategic-plan-approval` | approval_requests | ✅ Exists |
+| 4.2 | Committee Review | Component | `GovernanceCommitteeManager` | - | governance structures | ✅ Exists |
+| 4.3 | Executive Approval | Component | `ExecutiveApprovals` | - | approval_requests | ✅ Exists |
+| 4.4 | Stakeholder Sign-off | Component + Table | `StakeholderSignoffTracker` | - | strategy_signoffs (NEW) | ❌ Missing |
+| 4.5 | Version Control | Component + Table | `StrategyVersionControl` | - | strategy_versions (NEW) | ❌ Missing |
+
+#### New Database Tables Required for Phase 4
+
+```sql
+-- Strategy Stakeholder Sign-offs
+CREATE TABLE public.strategy_signoffs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  stakeholder_email text NOT NULL,
+  stakeholder_name text,
+  stakeholder_role text,
+  organization_name text,
+  signoff_status text DEFAULT 'pending' CHECK (signoff_status IN ('pending', 'approved', 'rejected', 'changes_requested')),
+  signoff_date timestamptz,
+  comments text,
+  requested_at timestamptz DEFAULT now(),
+  reminder_count integer DEFAULT 0,
+  last_reminder_at timestamptz
+);
+
+-- Strategy Version History
+CREATE TABLE public.strategy_versions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  version_number integer NOT NULL,
+  version_label text,
+  change_summary text,
+  change_type text CHECK (change_type IN ('major', 'minor', 'patch')),
+  plan_snapshot jsonb NOT NULL,
+  created_by_email text,
+  created_at timestamptz DEFAULT now(),
+  is_current boolean DEFAULT false,
+  approved_at timestamptz,
+  approved_by_email text
+);
+```
+
+---
+
+### B.5 PHASE 5: COMMUNICATION INTEGRATIONS (50% Complete)
+
+**Purpose:** Publish and communicate strategy
+
+| # | Integration | Type | Components | Edge Functions | Data Sources | Status |
+|---|-------------|------|------------|----------------|--------------|--------|
+| 5.1 | Internal Comms | Component | `CommunicationsHub` | - | email_campaigns | ✅ Exists |
+| 5.2 | Notifications | Function | - | `email-trigger-hub` | email_logs | ✅ Exists |
+| 5.3 | Public Strategy View | Page | `StrategyPublicView` | - | strategic_plans | ❌ Missing |
+| 5.4 | Public Dashboard | Page | `PublicStrategyDashboard` | - | Multiple | ❌ Missing |
+
+#### New Routes Required for Phase 5
+
+| # | Route | Page Component | Purpose | Priority |
+|---|-------|----------------|---------|----------|
+| 1 | `/strategy/public/:id` | `StrategyPublicView` | Public-facing strategy page | P3 |
+| 2 | `/strategy/dashboard/public` | `PublicStrategyDashboard` | Public progress dashboard | P3 |
+
+---
+
+### B.6 PHASE 6: MONITORING INTEGRATIONS (89% Complete)
+
+**Purpose:** Track progress and identify issues
+
+| # | Integration | Type | Components | Edge Functions | Data Sources | Status |
+|---|-------------|------|------------|----------------|--------------|--------|
+| 6.1 | KPI Tracking | Hook | `useStrategicKPI` | - | strategic_plans | ✅ Exists |
+| 6.2 | Progress Monitoring | Component | `StrategicCoverageWidget` | - | Multiple | ✅ Exists |
+| 6.3 | Coverage Analysis | Hook | `useStrategicCascadeValidation` | - | Multiple | ✅ Exists |
+| 6.4 | What-If Simulation | Component | `WhatIfSimulator` | - | Multiple | ✅ Exists |
+| 6.5 | Gap Analysis | Component | `SectorGapAnalysisWidget` | `strategy-sector-gap-analysis` | Multiple | ✅ Exists |
+| 6.6 | Strategic Reports | Component | `StrategicNarrativeGenerator` | - | Multiple | ✅ Exists |
+| 6.7 | Alignment Scoring | Function | - | `strategic-priority-scoring` | strategic_priorities | ✅ Exists |
+| 6.8 | Bottleneck Detection | Component | `BottleneckDetector` | - | Multiple | ✅ Exists |
+| 6.9 | Real-time Dashboard | Page | `StrategyCockpit` | - | Multiple | ❌ Missing |
+
+---
+
+### B.7 PHASE 7: REVIEW & ADJUSTMENT INTEGRATIONS (40% Complete)
+
+**Purpose:** Review, learn, and adjust strategy
+
+| # | Integration | Type | Components | Edge Functions | Data Sources | Status |
+|---|-------------|------|------------|----------------|--------------|--------|
+| 7.1 | Mid-Year Review | Page | `MidYearReviewDashboard` | - | Multiple | ✅ Exists |
+| 7.2 | Lessons Learned | Component | `LessonsLearnedRepository` | - | lessons_learned | ✅ Exists |
+| 7.3 | Strategy Adjustment | Component + Table | `StrategyAdjustmentWizard` | - | strategy_adjustments (NEW) | ❌ Missing |
+| 7.4 | Re-prioritization | Component | `StrategyReprioritizer` | - | strategic_plans | ❌ Missing |
+| 7.5 | Impact Assessment | Component | `StrategyImpactAssessment` | - | Multiple | ❌ Missing |
+
+#### New Database Tables Required for Phase 7
+
+```sql
+-- Strategy Adjustments Log
+CREATE TABLE public.strategy_adjustments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategic_plan_id uuid REFERENCES strategic_plans(id),
+  adjustment_type text CHECK (adjustment_type IN ('objective_change', 'kpi_update', 'timeline_shift', 'budget_revision', 'priority_change', 'scope_change')),
+  original_value jsonb,
+  new_value jsonb,
+  reason text NOT NULL,
+  impact_assessment text,
+  approved_by_email text,
+  approval_status text DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+  effective_date date,
+  created_by_email text,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+---
+
+## SECTION C: EDGE FUNCTIONS MATRIX
+
+### C.1 Existing Edge Functions (7)
+
+| # | Function | Purpose | Input | Output | Phase | Status |
+|---|----------|---------|-------|--------|-------|--------|
+| 1 | `strategic-plan-approval` | Plan approval workflow | plan_id, action, approver | Updated status | 4 | ✅ |
+| 2 | `strategic-priority-scoring` | Priority scoring | entity_type, entity_id, criteria | Priority score | 6 | ✅ |
+| 3 | `strategy-program-theme-generator` | Generate program themes | strategic_goals, sector_focus | Themes array | 3 | ✅ |
+| 4 | `strategy-lab-research-generator` | Generate research briefs | topic, sector_id, research_type | Research brief | 3 | ✅ |
+| 5 | `strategy-rd-call-generator` | Generate R&D calls | challenge_ids, sector_id, budget_range | R&D call draft | 3 | ✅ |
+| 6 | `strategy-sandbox-planner` | Plan sandbox experiments | sandbox_type, objectives, duration | Sandbox plan | 3 | ✅ |
+| 7 | `strategy-sector-gap-analysis` | Analyze sector gaps | sector_id | Gap analysis | 6 | ✅ |
+
+### C.2 Missing Edge Functions (4)
+
+| # | Function | Purpose | Input | Output | Phase | Priority | Effort |
+|---|----------|---------|-------|--------|-------|----------|--------|
+| 1 | `strategy-challenge-generator` | AI-generate challenges | objectives, sector | Challenges array | 3 | P1 | 4hr |
+| 2 | `strategy-partnership-matcher` | Match partners to goals | plan, capabilities | Partner recommendations | 3 | P2 | 4hr |
+| 3 | `strategy-event-planner` | Plan strategic events | plan, event_type | Event plan | 3 | P3 | 3hr |
+| 4 | `strategy-pilot-generator` | Generate pilot designs | challenge, solution | Pilot design | 3 | P2 | 4hr |
+
+---
+
+## SECTION D: HOOKS INTEGRATION MATRIX
+
+### D.1 Existing Hooks (2)
+
+| # | Hook | Purpose | Functions | Used By | Status |
+|---|------|---------|-----------|---------|--------|
+| 1 | `useStrategicKPI` | KPI management | `strategicPlans`, `strategicKPIs`, `updateStrategicKPI`, `calculateProgramContribution`, `getLinkedKPIs`, `getStrategicCoverage`, `batchUpdateKPIs` | Multiple components | ✅ |
+| 2 | `useStrategicCascadeValidation` | Cascade validation | `calculateCoverage`, `validateCascade`, `getStrategyDerivedEntities` | Coverage widgets | ✅ |
+
+### D.2 Missing Hooks (3)
+
+| # | Hook | Purpose | Functions | Priority | Effort |
+|---|------|---------|-----------|----------|--------|
+| 1 | `useStrategyAlignment` | Real-time alignment tracking | `getAlignmentScore`, `checkObjectiveAlignment`, `getSuggestedAlignments` | P2 | 4hr |
+| 2 | `useStrategyTemplates` | Template management | `listTemplates`, `applyTemplate`, `saveAsTemplate` | P3 | 3hr |
+| 3 | `useStrategyVersioning` | Version control | `getVersionHistory`, `compareVersions`, `rollbackToVersion` | P2 | 4hr |
+
+---
+
+## SECTION E: AI SERVICES INTEGRATION
+
+### E.1 Existing AI Integrations (7)
+
+| # | Feature | Component | AI Model | Hook | Status |
+|---|---------|-----------|----------|------|--------|
+| 1 | Strategic Insights | StrategyCockpit | gemini-2.5-flash | useAIWithFallback | ✅ |
+| 2 | Program Theme Generation | StrategyToProgramGenerator | gemini-2.5-flash | useAIWithFallback | ✅ |
+| 3 | Gap Recommendations | StrategicGapProgramRecommender | gemini-2.5-flash | useAIWithFallback | ✅ |
+| 4 | Plan Generation | StrategicPlanBuilder | gemini-2.5-flash | useAIWithFallback | ✅ |
+| 5 | Strategy Feedback | ProgramLessonsToStrategy | gemini-2.5-flash | useAIWithFallback | ✅ |
+| 6 | Narrative Generation | StrategicNarrativeGenerator | gemini-2.5-flash | useAIWithFallback | ✅ |
+| 7 | What-If Simulation | WhatIfSimulator | gemini-2.5-flash | useAIWithFallback | ✅ |
+
+### E.2 Missing AI Integrations (5)
+
+| # | Feature | Component | Purpose | Priority | Effort |
+|---|---------|-----------|---------|----------|--------|
+| 1 | Environmental Scanning | EnvironmentalScanWidget | PESTLE trend analysis | P1 | 2hr |
+| 2 | SWOT Suggestions | SWOTAnalysisBuilder | Auto-suggest factors | P1 | 2hr |
+| 3 | Challenge Generation | StrategyChallengeGenerator | Generate challenges from objectives | P1 | 2hr |
+| 4 | Partnership Matching | StrategyToPartnershipGenerator | Match partners to goals | P2 | 2hr |
+| 5 | Input Theme Extraction | StrategyInputCollector | Extract themes from inputs | P2 | 2hr |
+
+---
+
+## SECTION F: DATA FLOW DIAGRAMS
+
+### F.1 Strategy Creation Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PRE-PLANNING DATA INPUTS                                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                  │
+│  │ Environmental│  │    SWOT      │  │ Stakeholder  │                  │
+│  │    Scan      │  │  Analysis    │  │  Analysis    │                  │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘                  │
+│         │                 │                 │                           │
+│         ▼                 ▼                 ▼                           │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │                  STRATEGY INPUTS                              │      │
+│  └───────────────────────────┬──────────────────────────────────┘      │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │               STRATEGIC PLAN BUILDER                          │      │
+│  │   Vision │ Objectives │ KPIs │ Timeline │ Ownership           │      │
+│  └───────────────────────────┬──────────────────────────────────┘      │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │                  CASCADE GENERATORS                           │      │
+│  │  Programs │ Challenges │ Pilots │ Labs │ Partnerships │ R&D  │      │
+│  └───────────────────────────┬──────────────────────────────────┘      │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │                GOVERNANCE & APPROVAL                          │      │
+│  │     Sign-offs │ Committee Review │ Version Control            │      │
+│  └───────────────────────────┬──────────────────────────────────┘      │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │              MONITORING & FEEDBACK                            │      │
+│  │    KPI Tracking │ Coverage │ Lessons Learned │ Adjustments    │      │
+│  └──────────────────────────────────────────────────────────────┘      │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### F.2 Entity Integration Flow
+
+```
+                        STRATEGIC PLAN
+                              │
+          ┌───────────────────┼───────────────────┐
+          │                   │                   │
+          ▼                   ▼                   ▼
+    ┌──────────┐       ┌──────────┐       ┌──────────┐
+    │ PROGRAMS │       │CHALLENGES│       │SANDBOXES │
+    └────┬─────┘       └────┬─────┘       └────┬─────┘
+         │                  │                  │
+    ┌────┴────┐        ┌────┴────┐        ┌────┴────┐
+    │         │        │         │        │         │
+    ▼         ▼        ▼         ▼        ▼         ▼
+┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
+│EVENTS │ │R&D    │ │PILOTS │ │PROPO- │ │LIVING │ │PARTNER│
+│       │ │CALLS  │ │       │ │SALS   │ │LABS   │ │SHIPS  │
+└───────┘ └───┬───┘ └───┬───┘ └───────┘ └───────┘ └───────┘
+              │         │
+              ▼         ▼
+          ┌───────┐ ┌───────┐
+          │R&D    │ │SCALING│
+          │PROJ.  │ │PLANS  │
+          └───────┘ └───────┘
+```
+
+---
+
+## SECTION G: IMPLEMENTATION PRIORITY MATRIX
+
+### G.1 New Database Tables Summary
+
+| # | Table | Phase | Dependencies | Priority | Effort |
+|---|-------|-------|--------------|----------|--------|
+| 1 | `swot_analyses` | 1 | strategic_plans | P1 | 1hr |
+| 2 | `stakeholder_analyses` | 1 | strategic_plans | P1 | 1hr |
+| 3 | `strategy_risks` | 1 | strategic_plans | P1 | 1hr |
+| 4 | `strategy_inputs` | 1 | strategic_plans | P2 | 1hr |
+| 5 | `strategy_milestones` | 2 | strategic_plans | P1 | 1hr |
+| 6 | `strategy_ownership` | 2 | strategic_plans | P1 | 1hr |
+| 7 | `action_plans` | 2 | strategic_plans | P1 | 1hr |
+| 8 | `action_items` | 2 | action_plans | P1 | 1hr |
+| 9 | `national_strategy_alignments` | 2 | strategic_plans | P2 | 1hr |
+| 10 | `sector_strategies` | 2 | strategic_plans, sectors | P2 | 1hr |
+| 11 | `strategy_templates` | 2 | strategic_plans | P3 | 1hr |
+| 12 | `strategy_signoffs` | 4 | strategic_plans | P2 | 1hr |
+| 13 | `strategy_versions` | 4 | strategic_plans | P2 | 1hr |
+| 14 | `strategy_adjustments` | 7 | strategic_plans | P2 | 1hr |
+| **TOTAL** | 14 Tables | - | - | - | **14hr** |
+
+### G.2 New Components Summary
+
+| # | Component | Phase | Priority | Effort |
+|---|-----------|-------|----------|--------|
+| 1 | `EnvironmentalScanWidget` | 1 | P1 | 8hr |
+| 2 | `SWOTAnalysisBuilder` | 1 | P1 | 8hr |
+| 3 | `StakeholderAnalysisWidget` | 1 | P1 | 6hr |
+| 4 | `RiskAssessmentBuilder` | 1 | P1 | 6hr |
+| 5 | `StrategyInputCollector` | 1 | P2 | 6hr |
+| 6 | `BaselineDataCollector` | 1 | P2 | 5hr |
+| 7 | `StrategyTimelinePlanner` | 2 | P1 | 8hr |
+| 8 | `StrategyOwnershipAssigner` | 2 | P1 | 6hr |
+| 9 | `ActionPlanBuilder` | 2 | P1 | 10hr |
+| 10 | `NationalStrategyLinker` | 2 | P2 | 6hr |
+| 11 | `SectorStrategyBuilder` | 2 | P2 | 8hr |
+| 12 | `StrategyTemplateLibrary` | 2 | P3 | 7hr |
+| 13 | `StrategyChallengeGenerator` | 3 | P1 | 8hr |
+| 14 | `StrategyToLivingLabGenerator` | 3 | P2 | 6hr |
+| 15 | `StrategyToRDCallGenerator` | 3 | P2 | 5hr |
+| 16 | `StrategyToPartnershipGenerator` | 3 | P2 | 6hr |
+| 17 | `StrategyToEventGenerator` | 3 | P3 | 5hr |
+| 18 | `StakeholderSignoffTracker` | 4 | P2 | 5hr |
+| 19 | `StrategyVersionControl` | 4 | P2 | 6hr |
+| 20 | `StrategyPublicView` | 5 | P3 | 6hr |
+| 21 | `PublicStrategyDashboard` | 5 | P3 | 8hr |
+| 22 | `StrategyCockpit` | 6 | P1 | 12hr |
+| 23 | `StrategyAdjustmentWizard` | 7 | P2 | 8hr |
+| 24 | `StrategyReprioritizer` | 7 | P2 | 6hr |
+| 25 | `StrategyImpactAssessment` | 7 | P3 | 6hr |
+| **TOTAL** | 25 Components | - | - | **171hr** |
+
+### G.3 New Edge Functions Summary
+
+| # | Function | Phase | Priority | Effort |
+|---|----------|-------|----------|--------|
+| 1 | `strategy-challenge-generator` | 3 | P1 | 4hr |
+| 2 | `strategy-partnership-matcher` | 3 | P2 | 4hr |
+| 3 | `strategy-event-planner` | 3 | P3 | 3hr |
+| 4 | `strategy-pilot-generator` | 3 | P2 | 4hr |
+| **TOTAL** | 4 Functions | - | - | **15hr** |
+
+### G.4 New Hooks Summary
+
+| # | Hook | Phase | Priority | Effort |
+|---|------|-------|----------|--------|
+| 1 | `useStrategyAlignment` | 6 | P2 | 4hr |
+| 2 | `useStrategyTemplates` | 2 | P3 | 3hr |
+| 3 | `useStrategyVersioning` | 4 | P2 | 4hr |
+| **TOTAL** | 3 Hooks | - | - | **11hr** |
+
+---
+
+## SECTION H: TOTAL EFFORT SUMMARY
+
+| Category | P1 Items | P1 Hours | P2 Items | P2 Hours | P3 Items | P3 Hours | Total Hours |
+|----------|----------|----------|----------|----------|----------|----------|-------------|
+| Database Tables | 8 | 8hr | 5 | 5hr | 1 | 1hr | **14hr** |
+| Components | 10 | 78hr | 10 | 62hr | 5 | 32hr | **172hr** |
+| Edge Functions | 1 | 4hr | 2 | 8hr | 1 | 3hr | **15hr** |
+| Hooks | 0 | 0hr | 2 | 8hr | 1 | 3hr | **11hr** |
+| **TOTAL** | **19** | **90hr** | **19** | **83hr** | **8** | **39hr** | **212hr** |
+
+---
+
+## SECTION I: INTEGRATION DEPENDENCIES
+
+### I.1 Critical Path Dependencies
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ WEEK 1-2: Database Foundation                                     │
+│ ├── swot_analyses, stakeholder_analyses, strategy_risks          │
+│ ├── strategy_milestones, strategy_ownership                      │
+│ └── action_plans, action_items                                   │
+├──────────────────────────────────────────────────────────────────┤
+│ WEEK 2-3: Pre-Planning Components (depends on tables)            │
+│ ├── SWOTAnalysisBuilder → swot_analyses                          │
+│ ├── StakeholderAnalysisWidget → stakeholder_analyses             │
+│ └── RiskAssessmentBuilder → strategy_risks                       │
+├──────────────────────────────────────────────────────────────────┤
+│ WEEK 3-4: Creation Components (depends on tables)                │
+│ ├── StrategyTimelinePlanner → strategy_milestones                │
+│ ├── StrategyOwnershipAssigner → strategy_ownership               │
+│ └── ActionPlanBuilder → action_plans, action_items               │
+├──────────────────────────────────────────────────────────────────┤
+│ WEEK 4-5: Cascade Components (depends on edge functions)         │
+│ ├── strategy-challenge-generator (function first)                │
+│ └── StrategyChallengeGenerator → strategy-challenge-generator    │
+├──────────────────────────────────────────────────────────────────┤
+│ WEEK 5-6: Governance & Monitoring                                │
+│ ├── strategy_signoffs, strategy_versions (tables)                │
+│ ├── StakeholderSignoffTracker, StrategyVersionControl            │
+│ └── StrategyCockpit (real-time dashboard)                        │
+├──────────────────────────────────────────────────────────────────┤
+│ WEEK 7-8: Review & Communication                                 │
+│ ├── strategy_adjustments (table)                                 │
+│ ├── StrategyAdjustmentWizard, StrategyReprioritizer              │
+│ └── StrategyPublicView, PublicStrategyDashboard                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## DOCUMENT STATUS
+
+| Section | Coverage | Last Updated |
+|---------|----------|--------------|
+| A: Platform Entity Integration | 100% | 2025-12-13 |
+| B: Workflow Phase Integrations | 47% | 2025-12-13 |
+| C: Edge Functions Matrix | 64% | 2025-12-13 |
+| D: Hooks Integration Matrix | 40% | 2025-12-13 |
+| E: AI Services Integration | 58% | 2025-12-13 |
+| F: Data Flow Diagrams | 100% | 2025-12-13 |
+| G: Implementation Priority | 100% | 2025-12-13 |
+| H: Total Effort Summary | 100% | 2025-12-13 |
+| I: Integration Dependencies | 100% | 2025-12-13 |
 
 ---
 
