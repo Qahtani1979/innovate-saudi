@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../LanguageContext';
-import { Award, CheckCircle2, AlertCircle, Loader2, Star, Users, Calendar } from 'lucide-react';
+import { Award, CheckCircle2, AlertCircle, Loader2, Star, Users, Calendar, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import EvaluationConsensusPanel from '@/components/evaluation/EvaluationConsensusPanel';
 
 export default function EventExpertEvaluation({ event }) {
   const { t, language } = useLanguage();
@@ -165,8 +167,11 @@ export default function EventExpertEvaluation({ event }) {
 
   if (!event) return null;
 
-  return (
-    <div className="space-y-6">
+  const hasMultipleEvaluations = allEvaluations.length >= 2;
+
+  // Render the evaluation form as a reusable function
+  const renderEvaluationForm = () => (
+    <>
       {/* Evaluation Summary (if evaluations exist) */}
       {allEvaluations.length > 0 && (
         <Card className="border-emerald-200 bg-emerald-50/50">
@@ -376,6 +381,36 @@ export default function EventExpertEvaluation({ event }) {
             </div>
           </CardContent>
         </Card>
+      )}
+    </>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Tabs for multi-evaluator view */}
+      {hasMultipleEvaluations ? (
+        <Tabs defaultValue="submit" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="submit" className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              {t({ en: 'Submit Evaluation', ar: 'إرسال التقييم' })}
+            </TabsTrigger>
+            <TabsTrigger value="consensus" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              {t({ en: 'Consensus Panel', ar: 'لوحة الإجماع' })}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="submit" className="mt-6 space-y-6">
+            {renderEvaluationForm()}
+          </TabsContent>
+
+          <TabsContent value="consensus" className="mt-6">
+            <EvaluationConsensusPanel entityType="event" entityId={event.id} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        renderEvaluationForm()
       )}
     </div>
   );
