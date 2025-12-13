@@ -15,6 +15,7 @@ import PartnershipNetwork from '../components/strategy/PartnershipNetwork';
 import BottleneckDetector from '../components/strategy/BottleneckDetector';
 import StrategyToProgramGenerator from '../components/strategy/StrategyToProgramGenerator';
 import StrategicGapProgramRecommender from '../components/strategy/StrategicGapProgramRecommender';
+import StrategicCoverageWidget from '../components/strategy/StrategicCoverageWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
@@ -432,6 +433,9 @@ Provide bilingual insights (each item should have both English and Arabic versio
           </CardContent>
         </Card>
       </div>
+
+      {/* NEW: Strategic Coverage Widget */}
+      <StrategicCoverageWidget />
 
       <ResourceAllocationView />
 

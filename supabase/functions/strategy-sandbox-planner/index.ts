@@ -12,7 +12,17 @@ serve(async (req) => {
   }
 
   try {
-    const { sandbox_type, objectives, duration, resources } = await req.json();
+    const { 
+      sandbox_type, 
+      objectives, 
+      duration, 
+      resources,
+      // New strategic fields
+      strategic_plan_ids,
+      strategic_objective_ids,
+      is_strategy_derived,
+      strategic_gaps_addressed
+    } = await req.json();
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -123,7 +133,7 @@ serve(async (req) => {
       };
     }
 
-    // Save sandbox plan
+    // Save sandbox plan with strategic alignment
     const { data: savedPlan, error } = await supabase
       .from('sandbox_plans')
       .insert({
@@ -135,7 +145,12 @@ serve(async (req) => {
         risk_mitigation: plan.risk_mitigation,
         resource_allocation: plan.resource_allocation,
         status: 'draft',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        // Strategic alignment fields
+        strategic_plan_ids: strategic_plan_ids || [],
+        strategic_objective_ids: strategic_objective_ids || [],
+        is_strategy_derived: is_strategy_derived || false,
+        strategic_gaps_addressed: strategic_gaps_addressed || []
       })
       .select()
       .single();
