@@ -6,30 +6,76 @@ The email system uses a **unified triggering mechanism** via the `email-trigger-
 
 ## Architecture
 
+The email system has **two distinct flows** that share the same template infrastructure:
+
 ```
-┌─────────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
-│   Frontend Code     │────▶│  email-trigger-hub   │────▶│   send-email    │
-│  useEmailTrigger()  │     │  (Edge Function)     │     │ (Edge Function) │
-└─────────────────────┘     └──────────────────────┘     └─────────────────┘
-                                      │                           │
-                                      ▼                           ▼
-                            ┌──────────────────────┐     ┌─────────────────┐
-                            │ email_trigger_config │     │   Resend API    │
-                            │      (Database)      │     │                 │
-                            └──────────────────────┘     └─────────────────┘
-                                      │
-                                      ▼
-                            ┌──────────────────────┐
-                            │    email_queue       │
-                            │  (Delayed Emails)    │
-                            └──────────────────────┘
-                                      │
-                                      ▼
-                            ┌──────────────────────┐
-                            │   queue-processor    │
-                            │   (Cron Triggered)   │
-                            └──────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           SHARED INFRASTRUCTURE                              │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────────┐    │
+│  │ email_templates │     │    email_logs   │     │     Resend API      │    │
+│  │   (Database)    │     │   (Database)    │     │   (Delivery)        │    │
+│  └─────────────────┘     └─────────────────┘     └─────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                    ▲                                         ▲
+                    │                                         │
+    ┌───────────────┴───────────────┐       ┌─────────────────┴───────────────┐
+    │      TRIGGER FLOW             │       │        CAMPAIGN FLOW            │
+    │   (Event-Driven Emails)       │       │    (Bulk Marketing Emails)      │
+    └───────────────────────────────┘       └─────────────────────────────────┘
+                    │                                         │
+    ┌───────────────┴───────────────┐       ┌─────────────────┴───────────────┐
+    │   Frontend Code               │       │   Communications Hub UI         │
+    │   useEmailTrigger()           │       │   Campaign Manager              │
+    └───────────────────────────────┘       └─────────────────────────────────┘
+                    │                                         │
+                    ▼                                         ▼
+    ┌───────────────────────────────┐       ┌─────────────────────────────────┐
+    │    email-trigger-hub          │       │      campaign-sender            │
+    │    (Edge Function)            │       │      (Edge Function)            │
+    └───────────────────────────────┘       └─────────────────────────────────┘
+                    │                                         │
+                    ▼                                         ▼
+    ┌───────────────────────────────┐       ┌─────────────────────────────────┐
+    │   email_trigger_config        │       │      email_campaigns            │
+    │   (Maps trigger → template)   │       │      campaign_recipients        │
+    └───────────────────────────────┘       └─────────────────────────────────┘
+                    │                                         │
+                    ▼                                         ▼
+    ┌───────────────────────────────┐       ┌─────────────────────────────────┐
+    │   email_queue (optional)      │       │      (Direct send or batch)     │
+    │   (Delayed Emails)            │       │                                 │
+    └───────────────────────────────┘       └─────────────────────────────────┘
+                    │
+                    ▼
+    ┌───────────────────────────────┐
+    │   queue-processor             │
+    │   (Cron Triggered)            │
+    └───────────────────────────────┘
 ```
+
+## Triggers vs Campaigns
+
+| Aspect | Triggers | Campaigns |
+|--------|----------|-----------|
+| **Purpose** | Automated event-driven emails | Manual bulk marketing emails |
+| **Initiated By** | Code events (status change, etc.) | Admin via Communications Hub UI |
+| **Recipients** | Single user or small group | Large audience segments |
+| **Template Lookup** | Via `email_trigger_config.template_key` | Via `email_campaigns.template_id` |
+| **Variables** | Extracted from entity data | Defined per campaign |
+| **Examples** | Challenge approved, task assigned | Newsletter, feature announcement |
+| **Edge Function** | `email-trigger-hub` | `campaign-sender` |
+
+### When to Use Each
+
+**Use Triggers when:**
+- Email is in response to a user action or system event
+- Recipients are determined by the event context
+- Variables come from entity data (challenge, pilot, task, etc.)
+
+**Use Campaigns when:**
+- Sending marketing or announcement emails
+- Targeting a filtered audience segment
+- Admin controls timing and content
 
 ## How to Use
 
