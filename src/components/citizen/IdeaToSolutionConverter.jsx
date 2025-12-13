@@ -80,6 +80,8 @@ Format as JSON matching Solution entity schema.`,
 
   const createSolutionMutation = useMutation({
     mutationFn: async (data) => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
       const solution = await base44.entities.Solution.create({
         ...data,
         code: `SOL-IDEA-${Date.now()}`,
@@ -92,13 +94,26 @@ Format as JSON matching Solution entity schema.`,
         converted_solution_id: solution.id
       });
 
-      // Notify citizen
-      await base44.functions.invoke('citizenNotifications', {
-        eventType: 'idea_converted_solution',
-        ideaId: idea.id,
-        solutionId: solution.id,
-        citizenEmail: idea.submitter_email
-      });
+      // Send solution submitted email notification via email-trigger-hub
+      try {
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'solution.submitted',
+            recipient_email: idea.submitter_email,
+            entity_type: 'solution',
+            entity_id: solution.id,
+            variables: {
+              solutionName: data.name_en || data.name_ar,
+              solutionCode: solution.code,
+              dashboardUrl: window.location.origin + '/solutions/' + solution.id
+            },
+            language: language,
+            triggered_by: 'system'
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send solution submitted email:', emailError);
+      }
 
       return solution;
     },

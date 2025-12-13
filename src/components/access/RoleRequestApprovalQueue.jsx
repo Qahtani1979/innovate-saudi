@@ -99,11 +99,11 @@ export default function RoleRequestApprovalQueue() {
 
           // Send approval email notification using unified trigger
           try {
-            await triggerEmail('ROLE_REQUEST_APPROVED', {
-              entityType: 'role_request',
-              entityId: requestId,
-              recipientEmail: userEmail,
-              recipientUserId: targetUser.user_id,
+            await triggerEmail('role.approved', {
+              entity_type: 'role_request',
+              entity_id: requestId,
+              recipient_email: userEmail,
+              recipient_user_id: targetUser.user_id,
               variables: {
                 userName: userName || userEmail.split('@')[0],
                 roleName: role.name || requestedRole,
@@ -157,11 +157,11 @@ export default function RoleRequestApprovalQueue() {
       // Send rejection email notification using unified trigger
       if (targetUser) {
         try {
-          await triggerEmail('ROLE_REQUEST_REJECTED', {
-            entityType: 'role_request',
-            entityId: requestId,
-            recipientEmail: userEmail,
-            recipientUserId: targetUser.user_id,
+          await triggerEmail('role.rejected', {
+            entity_type: 'role_request',
+            entity_id: requestId,
+            recipient_email: userEmail,
+            recipient_user_id: targetUser.user_id,
             variables: {
               userName: userName || userEmail.split('@')[0],
               roleName: requestedRole,

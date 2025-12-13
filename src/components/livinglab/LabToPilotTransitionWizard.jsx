@@ -24,7 +24,37 @@ export default function LabToPilotTransitionWizard({ rdProject }) {
   });
 
   const createPilotMutation = useMutation({
-    mutationFn: (pilotData) => base44.entities.Pilot.create(pilotData),
+    mutationFn: async (pilotData) => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const pilot = await base44.entities.Pilot.create(pilotData);
+      
+      // Send pilot created email notification via email-trigger-hub
+      try {
+        const recipientEmail = rdProject.principal_investigator?.email;
+        if (recipientEmail) {
+          await supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'pilot.created',
+              recipient_email: recipientEmail,
+              entity_type: 'pilot',
+              entity_id: pilot.id,
+              variables: {
+                pilotTitle: pilotData.title_en,
+                pilotCode: pilot.code || `PLT-LAB-${pilot.id?.substring(0, 8)}`,
+                startDate: new Date().toISOString().split('T')[0],
+                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
+              },
+              language: language,
+              triggered_by: 'system'
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send pilot created email:', emailError);
+      }
+      
+      return pilot;
+    },
     onSuccess: (pilot) => {
       queryClient.invalidateQueries(['pilots']);
       toast.success(t({ en: 'Pilot created', ar: 'أُنشئت التجربة' }));
