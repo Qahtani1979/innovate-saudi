@@ -14,6 +14,7 @@ import { Beaker, Sparkles, Loader2, CheckCircle2, ArrowRight } from 'lucide-reac
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function LivingLabCreateWizard({ onClose }) {
   const { language, t } = useLanguage();
@@ -21,6 +22,7 @@ export default function LivingLabCreateWizard({ onClose }) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const { invokeAI, status, isLoading: aiGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { triggerEmail } = useEmailTrigger();
   const [formData, setFormData] = useState({
     name_en: '',
     name_ar: '',
@@ -73,8 +75,24 @@ Generate comprehensive bilingual lab design:
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.LivingLab.create(data),
-    onSuccess: (lab) => {
+    onSuccess: async (lab) => {
       queryClient.invalidateQueries(['livinglabs']);
+      
+      // Trigger livinglab.created email
+      try {
+        await triggerEmail('livinglab.created', {
+          entityType: 'living_lab',
+          entityId: lab.id,
+          variables: {
+            labName: formData.name_en,
+            labType: formData.lab_type,
+            researchAreas: formData.research_areas?.join(', ')
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send livinglab.created email:', error);
+      }
+      
       toast.success(t({ en: 'Living Lab created!', ar: 'تم إنشاء المختبر!' }));
       navigate(createPageUrl(`LivingLabDetail?id=${lab.id}`));
       onClose?.();

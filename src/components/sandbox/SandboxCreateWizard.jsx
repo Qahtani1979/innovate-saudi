@@ -14,12 +14,14 @@ import { Shield, Sparkles, Loader2, CheckCircle2, ArrowRight } from 'lucide-reac
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function SandboxCreateWizard({ onClose }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  const { triggerEmail } = useEmailTrigger();
   const [formData, setFormData] = useState({
     name_en: '',
     name_ar: '',
@@ -82,8 +84,24 @@ Generate comprehensive bilingual sandbox design:
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Sandbox.create(data),
-    onSuccess: (sandbox) => {
+    onSuccess: async (sandbox) => {
       queryClient.invalidateQueries(['sandboxes']);
+      
+      // Trigger sandbox.created email
+      try {
+        await triggerEmail('sandbox.created', {
+          entityType: 'sandbox',
+          entityId: sandbox.id,
+          variables: {
+            sandboxName: formData.name_en,
+            sandboxType: formData.sandbox_type,
+            sector: formData.sector
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send sandbox.created email:', error);
+      }
+      
       toast.success(t({ en: 'Sandbox created!', ar: 'تم إنشاء المنطقة!' }));
       navigate(createPageUrl(`SandboxDetail?id=${sandbox.id}`));
       onClose?.();

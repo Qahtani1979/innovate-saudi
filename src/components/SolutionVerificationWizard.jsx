@@ -12,12 +12,16 @@ import { Shield, CheckCircle2, X, Loader2, AlertCircle, Sparkles } from 'lucide-
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SolutionVerificationWizard({ solution, onClose }) {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
   const { invokeAI, status, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { triggerEmail } = useEmailTrigger();
 
   const verificationChecks = {
     step1_documentation: [
@@ -116,8 +120,25 @@ Provide:
         console.error('Auto-enrollment failed:', error);
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries(['solution']);
+      
+      // Trigger solution.verified email
+      try {
+        await triggerEmail('solution.verified', {
+          entityType: 'solution',
+          entityId: solution.id,
+          variables: {
+            solutionName: solution.name_en,
+            providerName: solution.provider_name,
+            verificationDate: new Date().toISOString().split('T')[0],
+            recommendation: aiRecommendation?.recommendation || 'approved'
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send solution.verified email:', error);
+      }
+      
       toast.success(t({ en: 'Solution verified', ar: 'تم التحقق من الحل' }));
       onClose();
     }

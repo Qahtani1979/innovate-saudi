@@ -11,6 +11,7 @@ import { Eye, CheckCircle2, XCircle, MessageSquare, Shield } from 'lucide-react'
 import { toast } from 'sonner';
 import StageSpecificEvaluationForm from '../evaluation/StageSpecificEvaluationForm';
 import PermissionGate from '@/components/permissions/PermissionGate';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function RDProposalReviewGate({ proposal, onClose }) {
   const { t } = useLanguage();
@@ -19,6 +20,7 @@ export default function RDProposalReviewGate({ proposal, onClose }) {
   const [notes, setNotes] = useState('');
   const [showEvalForm, setShowEvalForm] = useState(false);
   const { user } = useAuth();
+  const { triggerEmail } = useEmailTrigger();
 
   const { data: existingEvaluation } = useQuery({
     queryKey: ['proposal-evaluation', proposal.id],
@@ -55,8 +57,25 @@ export default function RDProposalReviewGate({ proposal, onClose }) {
         metadata: { decision: reviewData.decision, notes: reviewData.notes }
       });
     },
-    onSuccess: () => {
+    onSuccess: async (_, reviewData) => {
       queryClient.invalidateQueries(['rd-proposal']);
+      
+      // Trigger proposal.reviewed email
+      try {
+        await triggerEmail('proposal.reviewed', {
+          entityType: 'rd_proposal',
+          entityId: proposal.id,
+          variables: {
+            proposalTitle: proposal.title_en,
+            decision: reviewData.decision,
+            reviewerNotes: reviewData.notes,
+            reviewerEmail: user?.email
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send proposal.reviewed email:', error);
+      }
+      
       toast.success(t({ en: 'Review submitted', ar: 'تم تقديم المراجعة' }));
       onClose?.();
     }
