@@ -422,23 +422,25 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 
 ## Critical Gaps Summary
 
-### 🔴 Critical Priority
+### 🟢 All Critical Items RESOLVED
 
-| Gap | Impact | Files Affected |
-|-----|--------|----------------|
-| EventCreate.jsx missing | Cannot create events via UI | New file needed |
-| EventEdit.jsx missing | Cannot edit events via UI | New file needed |
-| /src/components/events/ folder missing | No event UI components | Create folder + 5 components |
-| CampaignPlanner → events table sync | Events invisible in calendar | CampaignPlanner.jsx, new service |
-| CalendarView missing events query | Events not shown | CalendarView.jsx |
+| Gap | Impact | Resolution |
+|-----|--------|------------|
+| ~~EventCreate.jsx missing~~ | ~~Cannot create events via UI~~ | ✅ Created |
+| ~~EventEdit.jsx missing~~ | ~~Cannot edit events via UI~~ | ✅ Created |
+| ~~/src/components/events/ folder missing~~ | ~~No event UI components~~ | ✅ Created with 5 components |
+| ~~CampaignPlanner → events table sync~~ | ~~Events invisible in calendar~~ | ✅ eventSyncService.js |
+| ~~CalendarView missing events query~~ | ~~Events not shown~~ | ✅ Updated |
+| ~~Event approval workflow missing~~ | ~~No approval gate for events~~ | ✅ Added to ApprovalGateConfig |
+| ~~Event permissions missing~~ | ~~Cannot control access~~ | ✅ Database migration applied |
 
-### 🟡 High Priority
+### 🟢 High Priority - RESOLVED
 
-| Gap | Impact | Files Affected |
-|-----|--------|----------------|
-| Event email triggers unwired | No notifications | EventCreate, EventEdit |
-| ApprovalCenter missing Events tab | No event approval | ApprovalCenter.jsx |
-| Event permissions missing | Cannot control access | Database migration |
+| Gap | Impact | Resolution |
+|-----|--------|------------|
+| ~~Event email triggers unwired~~ | ~~No notifications~~ | ✅ useEvents hook triggers emails |
+| ~~ApprovalCenter missing Events tab~~ | ~~No event approval~~ | ✅ Added with InlineApprovalWizard |
+| ~~Event approval_requests not created~~ | ~~No workflow integration~~ | ✅ useEvents creates approval_requests |
 
 ### 🟢 Medium Priority
 

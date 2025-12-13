@@ -24,7 +24,7 @@ import {
   Clock, 
   ArrowLeft, 
   Save, 
-  Eye,
+  Send,
   Sparkles,
   Loader2,
   Image as ImageIcon
@@ -106,15 +106,24 @@ function EventCreate() {
       const eventData = {
         ...formData,
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : null,
-        is_published: publish,
-        status: publish ? 'upcoming' : 'draft'
+        is_published: publish
+        // Note: status is determined by useEvents hook - 'pending' if publishing (requires approval), 'draft' otherwise
       };
 
       const result = await createEvent(eventData);
-      toast.success(t({ 
-        en: publish ? 'Event published!' : 'Event saved as draft',
-        ar: publish ? 'تم نشر الفعالية!' : 'تم حفظ الفعالية كمسودة'
-      }));
+      
+      if (publish) {
+        toast.success(t({ 
+          en: 'Event submitted for approval! It will be visible once approved.',
+          ar: 'تم إرسال الفعالية للموافقة! ستكون مرئية بعد الموافقة.'
+        }));
+      } else {
+        toast.success(t({ 
+          en: 'Event saved as draft',
+          ar: 'تم حفظ الفعالية كمسودة'
+        }));
+      }
+      
       navigate(createPageUrl('EventDetail') + `?id=${result.id}`);
     } catch (error) {
       console.error('Error creating event:', error);
@@ -148,9 +157,9 @@ function EventCreate() {
             {isCreating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <Eye className="h-4 w-4 mr-2" />
+              <Send className="h-4 w-4 mr-2" />
             )}
-            {t({ en: 'Publish', ar: 'نشر' })}
+            {t({ en: 'Submit for Approval', ar: 'إرسال للموافقة' })}
           </Button>
         </div>
       </div>
