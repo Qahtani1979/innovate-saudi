@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,22 +66,23 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
       // Notify all affected municipalities
       for (const pilot of activePilots) {
         if (pilot.created_by) {
-          await base44.integrations.Core.SendEmail({
-            to: pilot.created_by,
-            subject: `Solution Deprecation Notice: ${solution.name_en}`,
-            body: `
-${data.notification_message_en}
-
-Solution: ${solution.name_en}
-Reason: ${data.deprecation_reason}
-End of Life: ${data.end_of_life_date}
-Support Ends: ${data.support_end_date || 'Not specified'}
-${data.replacement_solution_id ? `Replacement Available: Yes` : ''}
-
-Your active pilot "${pilot.title_en}" uses this solution. Please plan accordingly.
-
-${data.migration_support_offered ? 'Migration support is available. Contact the provider for assistance.' : ''}
-            `
+          await supabase.functions.invoke('email-trigger-hub', {
+            body: {
+              trigger: 'SOLUTION_DEPRECATED',
+              recipientEmail: pilot.created_by,
+              entityType: 'solution',
+              entityId: solution.id,
+              variables: {
+                solutionName: solution.name_en,
+                pilotTitle: pilot.title_en,
+                deprecationReason: data.deprecation_reason,
+                endOfLifeDate: data.end_of_life_date,
+                supportEndDate: data.support_end_date || 'Not specified',
+                replacementAvailable: !!data.replacement_solution_id,
+                migrationSupportOffered: data.migration_support_offered,
+                notificationMessage: data.notification_message_en
+              }
+            }
           });
         }
       }

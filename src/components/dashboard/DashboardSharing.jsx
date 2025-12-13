@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Share2, Copy, Mail } from 'lucide-react';
 import { toast } from 'sonner';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Dashboard sharing functionality
@@ -24,10 +24,15 @@ export default function DashboardSharing({ dashboardConfig, dashboardName }) {
     if (!email) return;
 
     try {
-      await base44.integrations.Core.SendEmail({
-        to: email,
-        subject: `Shared Dashboard: ${dashboardName}`,
-        body: `View the shared dashboard here: ${shareUrl}`
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'DASHBOARD_SHARED',
+          recipientEmail: email,
+          variables: {
+            dashboardName: dashboardName,
+            shareUrl: shareUrl
+          }
+        }
       });
       toast.success('Dashboard shared via email');
       setEmail('');

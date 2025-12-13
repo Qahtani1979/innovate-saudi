@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -47,22 +48,24 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
       const interest = await base44.entities.SolutionInterest.create(data);
       
       // Notify provider
-      await base44.integrations.Core.SendEmail({
-        to: solution.contact_email || solution.support_contact_email,
-        subject: `Interest Expressed in ${solution.name_en}`,
-        body: `
-          ${data.interested_by_name} from ${data.municipality_id} has expressed interest in your solution "${solution.name_en}".
-          
-          Interest Type: ${data.interest_type}
-          ${data.challenge_id ? `For Challenge: ${data.challenge_id}` : ''}
-          Expected Timeline: ${data.expected_timeline || 'Not specified'}
-          Budget Range: ${data.expected_budget_min ? `${data.expected_budget_min} - ${data.expected_budget_max} SAR` : 'Not specified'}
-          
-          Message:
-          ${data.message}
-          
-          Please respond to discuss next steps.
-        `
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'SOLUTION_INTEREST_EXPRESSED',
+          recipientEmail: solution.contact_email || solution.support_contact_email,
+          entityType: 'solution',
+          entityId: solution.id,
+          variables: {
+            solutionName: solution.name_en,
+            interestedByName: data.interested_by_name,
+            municipalityId: data.municipality_id,
+            interestType: data.interest_type,
+            challengeId: data.challenge_id || null,
+            expectedTimeline: data.expected_timeline || 'Not specified',
+            budgetMin: data.expected_budget_min || null,
+            budgetMax: data.expected_budget_max || null,
+            message: data.message
+          }
+        }
       });
 
       // Log activity

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '../LanguageContext';
 import { Users, Calendar, FileText, CheckCircle2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,13 +35,20 @@ export default function PartnershipWorkflow({ organization, onComplete }) {
     setLoading(true);
     try {
       // Store partnership as a comment/activity for now (could be separate entity)
-      await base44.integrations.Core.SendEmail({
-        to: 'admin@platform.gov.sa',
-        subject: `New Partnership Proposal - ${organization?.name_en}`,
-        body: `Partnership Type: ${partnershipData.partnership_type}
-Partner: ${partnershipData.partner_organization_id}
-Description: ${partnershipData.description_en}
-Start Date: ${partnershipData.start_date}`
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'PARTNERSHIP_PROPOSAL',
+          recipientEmail: 'admin@platform.gov.sa',
+          entityType: 'organization',
+          entityId: organization?.id,
+          variables: {
+            organizationName: organization?.name_en,
+            partnershipType: partnershipData.partnership_type,
+            partnerOrganizationId: partnershipData.partner_organization_id,
+            description: partnershipData.description_en,
+            startDate: partnershipData.start_date
+          }
+        }
       });
       
       onComplete?.();
