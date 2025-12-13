@@ -96,13 +96,15 @@ Generate pilot proposal:`,
         metadata: { pilot_id: pilot.id }
       });
 
-      // Send pilot created email notification to stakeholders
+      // Send pilot created email notification to stakeholders via email-trigger-hub
       if (formData.pilot_manager_email || user?.email) {
         try {
-          await supabase.functions.invoke('send-email', {
+          await supabase.functions.invoke('email-trigger-hub', {
             body: {
-              template_key: 'pilot_created',
+              trigger: 'pilot.created',
               recipient_email: formData.pilot_manager_email || user?.email,
+              entity_type: 'pilot',
+              entity_id: pilot.id,
               variables: {
                 pilotTitle: formData.title_en || formData.title_ar,
                 pilotCode: pilot.code || `PLT-${pilot.id.substring(0, 8)}`,
@@ -110,8 +112,6 @@ Generate pilot proposal:`,
                 dashboardUrl: window.location.origin + '/pilots/' + pilot.id
               },
               language: language,
-              entity_type: 'pilot',
-              entity_id: pilot.id,
               triggered_by: user?.email
             }
           });

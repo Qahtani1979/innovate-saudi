@@ -73,13 +73,21 @@ export default function RDProposalAwardWorkflow({ proposal, rdCall, onClose }) {
         metadata: { rd_project_id: rdProject.id, awarded_amount: awardAmount }
       });
 
-      // Notify PI via edge function if needed
+      // Notify PI via email-trigger-hub
       if (proposal.principal_investigator?.email) {
-        await supabase.functions.invoke('send-email', {
+        await supabase.functions.invoke('email-trigger-hub', {
           body: {
-            to: proposal.principal_investigator.email,
-            subject: `🎉 Congratulations! Your R&D Proposal Has Been Awarded`,
-            body: `Dear ${proposal.principal_investigator.name},\n\nCongratulations! Your research proposal "${proposal.title_en}" has been selected for funding.\n\nAwarded Amount: ${awardAmount.toLocaleString()} SAR\nProject Start Date: ${startDate}\n\nNext steps:\n1. Review award agreement\n2. Complete project kickoff\n3. Begin research activities\n\nBest regards,\nSaudi Innovates Platform`
+            trigger: 'proposal.accepted',
+            recipient_email: proposal.principal_investigator.email,
+            entity_type: 'rd_proposal',
+            entity_id: proposal.id,
+            variables: {
+              recipientName: proposal.principal_investigator.name,
+              proposalTitle: proposal.title_en,
+              awardedAmount: awardAmount.toLocaleString(),
+              startDate: startDate
+            },
+            triggered_by: user?.email
           }
         });
       }
