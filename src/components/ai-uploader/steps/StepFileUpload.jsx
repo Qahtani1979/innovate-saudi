@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 
 const SUPPORTED_TYPES = {
   'text/csv': { icon: FileSpreadsheet, label: 'CSV', color: 'bg-green-100 text-green-800' },
@@ -44,17 +45,56 @@ export default function StepFileUpload({ state, updateState, onNext }) {
     return 'unknown';
   };
 
+  // Robust CSV parser that handles quoted fields, commas in values, etc.
+  const parseCSVLine = (line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+      
+      if (char === '"' && !inQuotes) {
+        inQuotes = true;
+      } else if (char === '"' && inQuotes) {
+        if (nextChar === '"') {
+          current += '"';
+          i++; // Skip escaped quote
+        } else {
+          inQuotes = false;
+        }
+      } else if ((char === ',' || char === ';' || char === '\t') && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
   const processCSV = async (file) => {
     const text = await file.text();
-    const lines = text.split('\n').filter(line => line.trim());
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+    // Handle different line endings
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    
+    if (lines.length === 0) {
+      return { headers: [], rows: [], rawText: text };
+    }
+    
+    const headers = parseCSVLine(lines[0]).map(h => h.replace(/^["']|["']$/g, ''));
     const rows = [];
     
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
-      if (values.length === headers.length) {
+      const values = parseCSVLine(lines[i]).map(v => v.replace(/^["']|["']$/g, ''));
+      // Be more lenient - create row even if column count doesn't match exactly
+      if (values.length > 0 && values.some(v => v)) {
         const row = {};
-        headers.forEach((h, idx) => row[h] = values[idx]);
+        headers.forEach((h, idx) => {
+          row[h] = values[idx] !== undefined ? values[idx] : '';
+        });
         rows.push(row);
       }
     }
@@ -70,26 +110,58 @@ export default function StepFileUpload({ state, updateState, onNext }) {
     return { headers, rows, rawText: text };
   };
 
+  // Process Excel files locally using xlsx library
+  const processExcel = async (file) => {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    
+    // Get first sheet
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    
+    // Convert to JSON
+    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    
+    if (jsonData.length === 0) {
+      return { headers: [], rows: [], rawText: '' };
+    }
+    
+    // First row is headers
+    const headers = jsonData[0].map(h => String(h || '').trim()).filter(h => h);
+    const rows = [];
+    
+    for (let i = 1; i < jsonData.length; i++) {
+      const rowData = jsonData[i];
+      if (rowData && rowData.some(v => v !== undefined && v !== null && v !== '')) {
+        const row = {};
+        headers.forEach((h, idx) => {
+          row[h] = rowData[idx] !== undefined ? String(rowData[idx]) : '';
+        });
+        rows.push(row);
+      }
+    }
+    
+    return { headers, rows, rawText: JSON.stringify(rows) };
+  };
+
   const processWithAI = async (file, fileType) => {
-    setProcessStatus('Uploading file for AI extraction...');
+    setProcessStatus('Processing with AI...');
     
-    // Upload to temp storage
-    const fileName = `ai-upload-${Date.now()}-${file.name}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('temp')
-      .upload(fileName, file);
-    
-    if (uploadError) throw new Error('Failed to upload file: ' + uploadError.message);
-    
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage.from('temp').getPublicUrl(fileName);
+    // For PDF and images, we need to use AI extraction
+    // Read file as base64 for AI processing
+    const buffer = await file.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
     
     setProcessStatus('AI is extracting data from your file...');
     
-    // Call AI extraction edge function
+    // Call AI extraction edge function with base64 content
     const { data: result, error: extractError } = await supabase.functions.invoke('extract-file-data', {
       body: { 
-        file_url: publicUrl,
+        file_content: base64,
+        file_name: file.name,
+        file_type: file.type,
         json_schema: {
           type: 'object',
           properties: {
@@ -100,10 +172,9 @@ export default function StepFileUpload({ state, updateState, onNext }) {
       }
     });
     
-    // Cleanup temp file
-    await supabase.storage.from('temp').remove([fileName]);
-    
     if (extractError) throw new Error('AI extraction failed: ' + extractError.message);
+    
+    if (result?.error) throw new Error(result.error);
     
     return {
       headers: result.headers || Object.keys(result.rows?.[0] || {}),
@@ -136,11 +207,16 @@ export default function StepFileUpload({ state, updateState, onNext }) {
       let extractedData;
       
       if (fileType === 'csv') {
+        setProcessStatus('Parsing CSV...');
         extractedData = await processCSV(file);
       } else if (fileType === 'json') {
+        setProcessStatus('Parsing JSON...');
         extractedData = await processJSON(file);
+      } else if (fileType === 'excel') {
+        setProcessStatus('Parsing Excel spreadsheet...');
+        extractedData = await processExcel(file);
       } else {
-        // PDF, Excel, Image - use AI extraction
+        // PDF, Image - use AI extraction
         extractedData = await processWithAI(file, fileType);
       }
       
