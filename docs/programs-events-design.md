@@ -1,6 +1,6 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 5.0  
+**Version:** 5.1  
 **Last Updated:** 2025-12-13  
 **Status:** Complete Inventory + Permission Audit VERIFIED  
 
@@ -9,13 +9,239 @@
 ## Table of Contents
 
 1. [Executive Summary](#executive-summary)
-2. [Complete Pages Inventory](#complete-pages-inventory)
-3. [Complete Components Inventory](#complete-components-inventory)
-4. [Related Pages Deep Dive](#related-pages-deep-dive)
-5. [System Architecture](#system-architecture)
+2. [System Architecture Diagrams](#system-architecture-diagrams)
+3. [Complete Pages Inventory](#complete-pages-inventory)
+4. [Complete Components Inventory](#complete-components-inventory)
+5. [Related Pages Deep Dive](#related-pages-deep-dive)
 6. [Data Model](#data-model)
 7. [Critical Gaps](#critical-gaps)
 8. [Implementation Plan](#implementation-plan)
+
+---
+
+## 2. System Architecture Diagrams
+
+### 2.1 Full System Overview
+
+```mermaid
+graph TB
+    subgraph PERSONAS["👥 PERSONAS & ACCESS"]
+        A1[Admin<br/>Full Access]
+        A2[Executive<br/>Strategic View]
+        A3[Deputyship<br/>Sector-Scoped]
+        A4[Municipality<br/>Geographic]
+        A5[Provider<br/>Own Programs]
+        A6[Citizen<br/>Participant]
+    end
+
+    subgraph PROGRAM_PAGES["📚 PROGRAM PAGES (25)"]
+        P1[Programs.jsx<br/>Main Listing]
+        P2[ProgramDetail.jsx<br/>16+ Tabs]
+        P3[ProgramCreate.jsx]
+        P4[ProgramEdit.jsx]
+        P5[MyPrograms.jsx<br/>User Portfolio]
+        P6[ParticipantDashboard.jsx<br/>Progress View]
+        P7[ProgramOperatorPortal.jsx<br/>Operator Tools]
+        P8[ProgramIdeaSubmission.jsx<br/>Innovation Proposals]
+        P9[ProgramApplicationWizard.jsx]
+        P10[ProgramCohortManagement.jsx]
+    end
+
+    subgraph EVENT_PAGES["📅 EVENT PAGES (4)"]
+        E1[EventCalendar.jsx ✅]
+        E2[EventDetail.jsx ✅]
+        E3[EventRegistration.jsx ✅]
+        E4[EventCreate.jsx ❌ MISSING]
+        E5[EventEdit.jsx ❌ MISSING]
+    end
+
+    subgraph CAMPAIGN_CALENDAR["🗓️ CAMPAIGN & CALENDAR (3)"]
+        C1[CampaignPlanner.jsx<br/>699 lines]
+        C2[CalendarView.jsx<br/>Unified Calendar]
+        C3[CommunicationsHub.jsx<br/>Email Campaigns]
+    end
+
+    subgraph SUPPORTING["🔧 SUPPORTING PAGES (10)"]
+        S1[ApprovalCenter.jsx<br/>11 Entity Types]
+        S2[Portfolio.jsx<br/>Innovation Kanban]
+        S3[GapAnalysisTool.jsx<br/>AI Gap Discovery]
+        S4[StrategicPlanBuilder.jsx]
+        S5[ApplicationReviewHub.jsx]
+    end
+
+    subgraph COMPONENTS["🧩 COMPONENTS"]
+        CM1[37 Program Components<br/>6 AI-Powered]
+        CM2[Event Components<br/>❌ FOLDER MISSING]
+        CM3[7 Workflow Components]
+    end
+
+    subgraph DATA["💾 DATA LAYER"]
+        D1[(programs table)]
+        D2[(events table)]
+        D3[(program_applications)]
+        D4[(event_registrations)]
+    end
+
+    subgraph CRITICAL_GAPS["🔴 CRITICAL GAPS"]
+        G1[CampaignPlanner events<br/>NOT synced to DB]
+        G2[CalendarView missing<br/>events query]
+    end
+
+    A1 --> P1 & S1 & S2
+    A2 --> P1 & S4 & C1
+    A3 --> P1 & S1
+    A4 --> P1 & E1
+    A5 --> P5 & P6 & P7
+    A6 --> P5 & P6 & E1 & E3
+
+    P1 --> D1
+    C1 -.->|❌ NOT SYNCED| D2
+    E1 --> D2
+    E3 --> D4
+```
+
+### 2.2 Persona Access Matrix Diagram
+
+```mermaid
+graph LR
+    subgraph ADMIN["🔑 ADMIN"]
+        AD[Full Access to All]
+    end
+
+    subgraph EXECUTIVE["📊 EXECUTIVE"]
+        EX1[StrategicPlanBuilder]
+        EX2[GapAnalysisTool]
+        EX3[CampaignPlanner]
+        EX4[Portfolio]
+        EX5[ApprovalCenter]
+    end
+
+    subgraph OPERATOR["⚙️ PROGRAM OPERATOR"]
+        OP1[ProgramOperatorPortal]
+        OP2[ProgramCreate/Edit]
+        OP3[CohortManagement]
+        OP4[ApplicationReviewHub]
+    end
+
+    subgraph PARTICIPANT["👤 PARTICIPANT"]
+        PA1[ParticipantDashboard]
+        PA2[MyPrograms]
+        PA3[EventCalendar]
+        PA4[EventRegistration]
+    end
+
+    subgraph CITIZEN["🏠 CITIZEN"]
+        CI1[Programs - View Only]
+        CI2[EventCalendar]
+        CI3[EventRegistration]
+        CI4[ProgramIdeaSubmission]
+    end
+```
+
+### 2.3 Data Flow Diagram
+
+```mermaid
+flowchart TD
+    subgraph INPUT["📥 INPUT SOURCES"]
+        I1[ProgramCreate]
+        I2[CampaignPlanner]
+        I3[EventCreate - MISSING]
+        I4[ProgramIdeaSubmission]
+    end
+
+    subgraph PROCESSING["⚙️ PROCESSING"]
+        PR1[Approval Workflows]
+        PR2[AI Enhancement]
+        PR3[Email Triggers]
+    end
+
+    subgraph STORAGE["💾 DATABASE"]
+        DB1[(programs)]
+        DB2[(events)]
+        DB3[(program_applications)]
+        DB4[(event_registrations)]
+        DB5[(approval_requests)]
+    end
+
+    subgraph OUTPUT["📤 OUTPUT VIEWS"]
+        O1[Programs Listing]
+        O2[EventCalendar]
+        O3[CalendarView]
+        O4[ParticipantDashboard]
+        O5[ApprovalCenter]
+    end
+
+    I1 --> PR1 --> DB1
+    I2 --> DB1
+    I2 -.->|❌ NOT SYNCED| DB2
+    I3 -.->|MISSING| DB2
+    I4 --> PR1 --> DB5
+
+    DB1 --> O1
+    DB2 --> O2
+    DB1 & DB2 --> O3
+    DB3 --> O4
+    DB5 --> O5
+```
+
+### 2.4 Event Sync Gap Diagram
+
+```mermaid
+flowchart LR
+    subgraph CURRENT["🔴 CURRENT STATE"]
+        CP1[CampaignPlanner.jsx]
+        CP2[programs.events JSONB]
+        CP3[CalendarView.jsx]
+        EV1[(events table)]
+        
+        CP1 -->|Saves to| CP2
+        CP3 -->|Reads from| CP2
+        CP3 -.->|❌ Does NOT read| EV1
+    end
+
+    subgraph TARGET["🟢 TARGET STATE"]
+        T1[CampaignPlanner.jsx]
+        T2[eventSyncService.js]
+        T3[(events table)]
+        T4[CalendarView.jsx]
+        
+        T1 -->|Calls| T2
+        T2 -->|Syncs to| T3
+        T4 -->|Reads from| T3
+    end
+```
+
+### 2.5 Permission Structure Diagram
+
+```mermaid
+graph TD
+    subgraph PROTECTED_PAGES["🛡️ PERMISSION-PROTECTED PAGES"]
+        PP1[ApprovalCenter<br/>Multi-permission OR logic]
+        PP2[ProgramOperatorPortal<br/>program_manage]
+        PP3[Portfolio<br/>portfolio_view]
+    end
+
+    subgraph ROLE_PROTECTED["👔 ROLE-PROTECTED PAGES"]
+        RP1[StrategicPlanBuilder<br/>Executive, Strategy Lead]
+        RP2[GapAnalysisTool<br/>Executive, Strategy Lead]
+        RP3[CampaignPlanner<br/>Executive, Director, Comms]
+    end
+
+    subgraph OPEN_PAGES["🔓 OPEN PAGES (Auth Only)"]
+        OP1[ProgramsControlDashboard]
+        OP2[MyPrograms]
+        OP3[ProgramIdeaSubmission]
+        OP4[ParticipantDashboard]
+    end
+
+    subgraph RECOMMENDATIONS["⚠️ RECOMMENDATIONS"]
+        R1[Add roles to ProgramsControlDashboard]
+        R2[Add ProtectedPage to ParticipantDashboard]
+    end
+
+    OP1 -.-> R1
+    OP4 -.-> R2
+```
 
 ---
 
