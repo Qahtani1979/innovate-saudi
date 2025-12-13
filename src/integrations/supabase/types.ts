@@ -2310,6 +2310,7 @@ export type Database = {
           audience_filter: Json | null
           audience_type: string
           campaign_variables: Json | null
+          challenge_id: string | null
           clicked_count: number | null
           completed_at: string | null
           created_at: string
@@ -2319,6 +2320,7 @@ export type Database = {
           id: string
           name: string
           opened_count: number | null
+          program_id: string | null
           recipient_count: number | null
           scheduled_at: string | null
           sent_count: number | null
@@ -2331,6 +2333,7 @@ export type Database = {
           audience_filter?: Json | null
           audience_type?: string
           campaign_variables?: Json | null
+          challenge_id?: string | null
           clicked_count?: number | null
           completed_at?: string | null
           created_at?: string
@@ -2340,6 +2343,7 @@ export type Database = {
           id?: string
           name: string
           opened_count?: number | null
+          program_id?: string | null
           recipient_count?: number | null
           scheduled_at?: string | null
           sent_count?: number | null
@@ -2352,6 +2356,7 @@ export type Database = {
           audience_filter?: Json | null
           audience_type?: string
           campaign_variables?: Json | null
+          challenge_id?: string | null
           clicked_count?: number | null
           completed_at?: string | null
           created_at?: string
@@ -2361,6 +2366,7 @@ export type Database = {
           id?: string
           name?: string
           opened_count?: number | null
+          program_id?: string | null
           recipient_count?: number | null
           scheduled_at?: string | null
           sent_count?: number | null
@@ -2370,6 +2376,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "email_campaigns_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "email_campaigns_template_id_fkey"
             columns: ["template_id"]
@@ -3984,12 +4004,18 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          is_strategy_derived: boolean | null
           location: string | null
           municipality_id: string | null
           name_ar: string | null
           name_en: string
           region_id: string | null
+          research_priorities: string[] | null
           status: string | null
+          strategic_objective_ids: string[] | null
+          strategic_plan_ids: string[] | null
+          strategic_taxonomy_codes: string[] | null
+          strategy_derivation_date: string | null
           updated_at: string | null
         }
         Insert: {
@@ -4006,12 +4032,18 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_strategy_derived?: boolean | null
           location?: string | null
           municipality_id?: string | null
           name_ar?: string | null
           name_en: string
           region_id?: string | null
+          research_priorities?: string[] | null
           status?: string | null
+          strategic_objective_ids?: string[] | null
+          strategic_plan_ids?: string[] | null
+          strategic_taxonomy_codes?: string[] | null
+          strategy_derivation_date?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -4028,12 +4060,18 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_strategy_derived?: boolean | null
           location?: string | null
           municipality_id?: string | null
           name_ar?: string | null
           name_en?: string
           region_id?: string | null
+          research_priorities?: string[] | null
           status?: string | null
+          strategic_objective_ids?: string[] | null
+          strategic_plan_ids?: string[] | null
+          strategic_taxonomy_codes?: string[] | null
+          strategy_derivation_date?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -5439,6 +5477,9 @@ export type Database = {
           scope_en: string | null
           start_date: string | null
           status: string | null
+          strategic_objective_ids: string[] | null
+          strategic_plan_ids: string[] | null
+          strategy_derivation_date: string | null
           updated_at: string | null
           value_created: Json | null
         }
@@ -5476,6 +5517,9 @@ export type Database = {
           scope_en?: string | null
           start_date?: string | null
           status?: string | null
+          strategic_objective_ids?: string[] | null
+          strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           updated_at?: string | null
           value_created?: Json | null
         }
@@ -5513,6 +5557,9 @@ export type Database = {
           scope_en?: string | null
           start_date?: string | null
           status?: string | null
+          strategic_objective_ids?: string[] | null
+          strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           updated_at?: string | null
           value_created?: Json | null
         }
@@ -6832,7 +6879,9 @@ export type Database = {
           is_deleted: boolean | null
           is_featured: boolean | null
           is_published: boolean | null
+          is_strategy_derived: boolean | null
           kpis: Json | null
+          lessons_learned: Json | null
           mentors: Json | null
           mii_dimension_targets: string[] | null
           municipal_capacity_impact: Json | null
@@ -6858,6 +6907,7 @@ export type Database = {
           strategic_pillar_id: string | null
           strategic_plan_ids: string[] | null
           strategic_priority_level: string | null
+          strategy_derivation_date: string | null
           subsector_id: string | null
           success_metrics: Json | null
           success_rate: number | null
@@ -6911,7 +6961,9 @@ export type Database = {
           is_deleted?: boolean | null
           is_featured?: boolean | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           kpis?: Json | null
+          lessons_learned?: Json | null
           mentors?: Json | null
           mii_dimension_targets?: string[] | null
           municipal_capacity_impact?: Json | null
@@ -6937,6 +6989,7 @@ export type Database = {
           strategic_pillar_id?: string | null
           strategic_plan_ids?: string[] | null
           strategic_priority_level?: string | null
+          strategy_derivation_date?: string | null
           subsector_id?: string | null
           success_metrics?: Json | null
           success_rate?: number | null
@@ -6990,7 +7043,9 @@ export type Database = {
           is_deleted?: boolean | null
           is_featured?: boolean | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           kpis?: Json | null
+          lessons_learned?: Json | null
           mentors?: Json | null
           mii_dimension_targets?: string[] | null
           municipal_capacity_impact?: Json | null
@@ -7016,6 +7071,7 @@ export type Database = {
           strategic_pillar_id?: string | null
           strategic_plan_ids?: string[] | null
           strategic_priority_level?: string | null
+          strategy_derivation_date?: string | null
           subsector_id?: string | null
           success_metrics?: Json | null
           success_rate?: number | null
@@ -7197,6 +7253,7 @@ export type Database = {
           focus_areas: string[] | null
           id: string
           is_published: boolean | null
+          program_id: string | null
           sector_id: string | null
           start_date: string | null
           status: string | null
@@ -7221,6 +7278,7 @@ export type Database = {
           focus_areas?: string[] | null
           id?: string
           is_published?: boolean | null
+          program_id?: string | null
           sector_id?: string | null
           start_date?: string | null
           status?: string | null
@@ -7245,6 +7303,7 @@ export type Database = {
           focus_areas?: string[] | null
           id?: string
           is_published?: boolean | null
+          program_id?: string | null
           sector_id?: string | null
           start_date?: string | null
           status?: string | null
@@ -7254,6 +7313,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "rd_calls_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rd_calls_sector_id_fkey"
             columns: ["sector_id"]
@@ -8306,6 +8372,7 @@ export type Database = {
           exemptions_granted: string[] | null
           id: string
           is_active: boolean | null
+          is_strategy_derived: boolean | null
           living_lab_id: string | null
           municipality_id: string | null
           name: string
@@ -8313,6 +8380,11 @@ export type Database = {
           regulatory_framework: Json | null
           start_date: string | null
           status: string | null
+          strategic_gaps_addressed: string[] | null
+          strategic_objective_ids: string[] | null
+          strategic_plan_ids: string[] | null
+          strategic_taxonomy_codes: string[] | null
+          strategy_derivation_date: string | null
           updated_at: string | null
         }
         Insert: {
@@ -8326,6 +8398,7 @@ export type Database = {
           exemptions_granted?: string[] | null
           id?: string
           is_active?: boolean | null
+          is_strategy_derived?: boolean | null
           living_lab_id?: string | null
           municipality_id?: string | null
           name: string
@@ -8333,6 +8406,11 @@ export type Database = {
           regulatory_framework?: Json | null
           start_date?: string | null
           status?: string | null
+          strategic_gaps_addressed?: string[] | null
+          strategic_objective_ids?: string[] | null
+          strategic_plan_ids?: string[] | null
+          strategic_taxonomy_codes?: string[] | null
+          strategy_derivation_date?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -8346,6 +8424,7 @@ export type Database = {
           exemptions_granted?: string[] | null
           id?: string
           is_active?: boolean | null
+          is_strategy_derived?: boolean | null
           living_lab_id?: string | null
           municipality_id?: string | null
           name?: string
@@ -8353,6 +8432,11 @@ export type Database = {
           regulatory_framework?: Json | null
           start_date?: string | null
           status?: string | null
+          strategic_gaps_addressed?: string[] | null
+          strategic_objective_ids?: string[] | null
+          strategic_plan_ids?: string[] | null
+          strategic_taxonomy_codes?: string[] | null
+          strategy_derivation_date?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -8395,6 +8479,7 @@ export type Database = {
           phases: Json | null
           pilot_id: string | null
           provider_revenue_total: number | null
+          rd_project_id: string | null
           rollout_progress: number | null
           stakeholder_alignment_score: number | null
           status: string | null
@@ -8433,6 +8518,7 @@ export type Database = {
           phases?: Json | null
           pilot_id?: string | null
           provider_revenue_total?: number | null
+          rd_project_id?: string | null
           rollout_progress?: number | null
           stakeholder_alignment_score?: number | null
           status?: string | null
@@ -8471,6 +8557,7 @@ export type Database = {
           phases?: Json | null
           pilot_id?: string | null
           provider_revenue_total?: number | null
+          rd_project_id?: string | null
           rollout_progress?: number | null
           stakeholder_alignment_score?: number | null
           status?: string | null
@@ -8493,6 +8580,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scaling_plans_rd_project_id_fkey"
+            columns: ["rd_project_id"]
+            isOneToOne: false
+            referencedRelation: "rd_projects"
             referencedColumns: ["id"]
           },
           {

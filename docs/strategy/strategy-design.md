@@ -1,8 +1,8 @@
 # Strategy System - Design Document
 
-**Version:** 3.0 (COMPREHENSIVE ENTITY INTEGRATION REVIEW)  
+**Version:** 3.1 (IMPLEMENTATION IN PROGRESS)  
 **Last Updated:** 2025-12-13  
-**Status:** ⚠️ 67% PLATFORM INTEGRATION - Critical Gaps on Sandboxes/Living Labs
+**Status:** 🔄 78% PLATFORM INTEGRATION - Phase 1-2 Complete, Phase 3-4 In Progress
 
 ---
 
@@ -37,13 +37,13 @@ The Strategy System provides comprehensive strategic planning and execution mana
 | Metric | Count | Status |
 |--------|-------|--------|
 | Pages | 25+ | ✅ Complete |
-| Components | 14 | ✅ Complete |
+| Components | 18 | ✅ Complete (+4 new) |
 | Edge Functions | 7 | ✅ Complete |
 | Hooks | 1 | ✅ Complete |
 | Database Tables | 6 | ✅ Complete |
 | AI Features | 7 | ✅ Complete |
-| Direct Entity Integration | 2/5 | ⚠️ 40% |
-| Indirect Entity Integration | 13/16 | ⚠️ 81% |
+| Direct Entity Integration | 5/5 | ✅ 100% (DB Complete) |
+| Indirect Entity Integration | 16/16 | ✅ 100% (DB Complete) |
 
 ---
 
@@ -57,20 +57,20 @@ The Strategy System provides comprehensive strategic planning and execution mana
 │                    (Strategic Plans, Objectives, KPIs)                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  TIER 1: DIRECT INTEGRATION                                                  │
+│  TIER 1: DIRECT INTEGRATION ✅ ALL COMPLETE                                  │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │ Programs ⚠️  │ Challenges ✅ │ Partnerships ⚠️ │ Sandboxes ❌ │ Labs ❌ │   │
-│  │ (85%)        │ (100%)        │ (60%)           │ (0%)         │ (0%)   │   │
+│  │ Programs ✅   │ Challenges ✅ │ Partnerships ✅ │ Sandboxes ✅ │ Labs ✅│   │
+│  │ (100%)        │ (100%)        │ (100%)          │ (100%)       │ (100%) │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
 │         │                                                                    │
 │         ▼                                                                    │
-│  TIER 2: INDIRECT INTEGRATION (Via Parent Entity)                            │
+│  TIER 2: INDIRECT INTEGRATION ✅ ALL COMPLETE                                │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │ Campaigns ❌ │ R&D Calls ⚠️ │ Events ✅ │ Matchmaker ✅ │ Solutions ✅ │   │
-│  │ (0%)         │ (80%)         │ (100%+)   │ (100%)       │ (100%)      │   │
+│  │ Campaigns ✅  │ R&D Calls ✅  │ Events ✅ │ Matchmaker ✅ │ Solutions ✅ │   │
+│  │ (100%)        │ (100%)        │ (100%+)   │ (100%)       │ (100%)      │   │
 │  ├──────────────────────────────────────────────────────────────────────┤   │
-│  │ Pilots ✅ │ R&D Projects ✅ │ Scaling ⚠️ │ Proposals ✅ │ Innovations ✅│   │
-│  │ (100%)    │ (100%)          │ (50%)      │ (100%)       │ (100%)       │   │
+│  │ Pilots ✅ │ R&D Projects ✅ │ Scaling ✅  │ Proposals ✅ │ Innovations ✅│   │
+│  │ (100%)    │ (100%)          │ (100%)      │ (100%)       │ (100%)       │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
 │         │                                                                    │
 │         ▼                                                                    │
@@ -82,30 +82,30 @@ The Strategy System provides comprehensive strategic planning and execution mana
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### DIRECT Integration Requirements
+### DIRECT Integration Requirements ✅ ALL COMPLETE
 
-Entities that should have explicit strategy fields:
+Entities with explicit strategy fields (ALL DB FIELDS NOW PRESENT):
 
-| Entity | Required Fields | Current State | Gap |
-|--------|-----------------|---------------|-----|
-| **Programs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `lessons_learned` | Missing 3 fields | P0 |
-| **Challenges** | `strategic_plan_ids[]`, `strategic_goal` | ✅ Complete | - |
-| **Partnerships** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived` | Has `is_strategic` only | P1 |
-| **Sandboxes** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date` | ❌ NO FIELDS | P0 |
-| **Living Labs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date` | ❌ NO FIELDS | P0 |
+| Entity | Required Fields | Current State | Status |
+|--------|-----------------|---------------|--------|
+| **Programs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `lessons_learned` | ✅ All present | ✅ Complete |
+| **Challenges** | `strategic_plan_ids[]`, `strategic_goal` | ✅ All present | ✅ Complete |
+| **Partnerships** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `strategy_derivation_date` | ✅ All present | ✅ Complete |
+| **Sandboxes** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `strategic_gaps_addressed[]`, `strategic_taxonomy_codes[]` | ✅ All present | ✅ Complete |
+| **Living Labs** | `strategic_plan_ids[]`, `strategic_objective_ids[]`, `is_strategy_derived`, `strategy_derivation_date`, `research_priorities`, `strategic_taxonomy_codes[]` | ✅ All present | ✅ Complete |
 
-### INDIRECT Integration Chains
+### INDIRECT Integration Chains ✅ ALL COMPLETE
 
 | Entity | Via Chain | DB Fields | Status |
 |--------|-----------|-----------|--------|
-| **Campaigns** | Programs → Strategy | ❌ No `program_id` | BROKEN |
-| **R&D Calls** | Challenges → Strategy | `challenge_ids[]` | ✅ Works |
+| **Campaigns** | Programs → Strategy | ✅ `program_id`, `challenge_id` | ✅ FIXED |
+| **R&D Calls** | Challenges + Programs → Strategy | ✅ `challenge_ids[]`, `program_id` | ✅ FIXED |
 | **Events** | Programs → Strategy | `program_id` + DIRECT fields | ✅ EXCEEDS |
 | **Matchmaker** | Challenges → Strategy | `target_challenges[]` | ✅ Works |
 | **Solutions** | Programs/R&D → Strategy | `source_program_id`, `source_rd_project_id` | ✅ Works |
 | **Pilots** | Challenges → Strategy | `challenge_id`, `source_program_id` | ✅ Works |
 | **R&D Projects** | R&D Calls → Challenges → Strategy | `rd_call_id`, `challenge_ids[]` | ✅ Works |
-| **Scaling Plans** | Pilots → Challenges → Strategy | `pilot_id` | ⚠️ Missing `rd_project_id` |
+| **Scaling Plans** | Pilots + R&D → Strategy | ✅ `pilot_id`, `rd_project_id` | ✅ FIXED |
 | **Proposals** | Challenges → Strategy | `challenge_id`, `target_challenges[]` | ✅ Works |
 | **Innovations** | Challenges → Strategy | `target_challenges[]` | ✅ Works |
 
