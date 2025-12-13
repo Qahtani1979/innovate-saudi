@@ -23,6 +23,7 @@ import CompetitiveAnalysisWidget from './CompetitiveAnalysisWidget';
 import AIPricingSuggester from './AIPricingSuggester';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function SolutionCreateWizard({ onComplete }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,6 +31,7 @@ export default function SolutionCreateWizard({ onComplete }) {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
   const [matchingChallenges, setMatchingChallenges] = useState([]);
+  const { triggerEmail } = useEmailTrigger();
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
@@ -113,8 +115,20 @@ export default function SolutionCreateWizard({ onComplete }) {
 
       return solution;
     },
-    onSuccess: (solution) => {
+    onSuccess: async (solution) => {
       queryClient.invalidateQueries(['solutions']);
+      
+      // Trigger email notification for solution creation
+      await triggerEmail('solution.created', {
+        entityType: 'solution',
+        entityId: solution.id,
+        variables: {
+          solution_name: solution.name_en,
+          solution_code: solution.code,
+          provider_name: solution.provider_name
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+      
       toast.success(t({ en: 'Solution created successfully!', ar: 'تم إنشاء الحل بنجاح!' }));
       if (onComplete) {
         onComplete(solution);

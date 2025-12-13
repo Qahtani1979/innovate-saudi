@@ -21,12 +21,14 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 function ChallengeCreatePage() {
   const { hasPermission } = usePermissions();
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
   
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
   
@@ -221,9 +223,21 @@ function ChallengeCreatePage() {
       
       return challenge;
     },
-    onSuccess: (challenge) => {
+    onSuccess: async (challenge) => {
       queryClient.invalidateQueries(['challenges']);
       localStorage.removeItem('challenge_draft');
+      
+      // Trigger email notification for challenge creation
+      await triggerEmail('challenge.created', {
+        entityType: 'challenge',
+        entityId: challenge.id,
+        variables: {
+          challenge_title: challenge.title_en,
+          challenge_code: challenge.code,
+          municipality_id: challenge.municipality_id
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+      
       toast.success(t({ en: 'Challenge created successfully!', ar: 'تم إنشاء التحدي بنجاح!' }));
       navigate(createPageUrl(`ChallengeDetail?id=${challenge.id}`));
     }

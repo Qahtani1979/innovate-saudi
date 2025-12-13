@@ -8,10 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Lightbulb, Send, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function CitizenIdeaSubmissionForm({ municipalityId }) {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
   const [ideaData, setIdeaData] = useState({
     title: '',
     description: '',
@@ -22,16 +24,29 @@ export default function CitizenIdeaSubmissionForm({ municipalityId }) {
 
   const submitIdea = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.CitizenFeedback.create({
+      const feedback = await base44.entities.CitizenFeedback.create({
         challenge_id: municipalityId,
         feedback_type: 'suggestion',
         content: `IDEA: ${data.title}\n\n${data.description}\n\nLocation: ${data.location}`,
         citizen_name: data.is_anonymous ? 'Anonymous' : data.citizen_name,
         is_anonymous: data.is_anonymous
       });
+      return feedback;
     },
-    onSuccess: () => {
+    onSuccess: async (feedback) => {
       queryClient.invalidateQueries(['citizen-ideas']);
+      
+      // Trigger email notification for citizen idea submission
+      await triggerEmail('citizen.idea_submitted', {
+        entityType: 'citizen_feedback',
+        entityId: feedback.id,
+        variables: {
+          idea_title: ideaData.title,
+          municipality_id: municipalityId,
+          is_anonymous: ideaData.is_anonymous
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+      
       setIdeaData({ title: '', description: '', location: '', category: 'infrastructure', is_anonymous: false });
       toast.success(t({ en: 'Idea submitted successfully!', ar: 'قُدمت الفكرة بنجاح!' }));
     }
