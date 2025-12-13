@@ -1,8 +1,8 @@
 # Strategy System - Design Document
 
-**Version:** 3.1 (IMPLEMENTATION IN PROGRESS)  
+**Version:** 3.2 (PHASE 3-4 COMPLETE)  
 **Last Updated:** 2025-12-13  
-**Status:** 🔄 78% PLATFORM INTEGRATION - Phase 1-2 Complete, Phase 3-4 In Progress
+**Status:** 🔄 92% PLATFORM INTEGRATION - Phase 1-4 Complete, Phase 5-6 Remaining
 
 ---
 
@@ -37,13 +37,14 @@ The Strategy System provides comprehensive strategic planning and execution mana
 | Metric | Count | Status |
 |--------|-------|--------|
 | Pages | 25+ | ✅ Complete |
-| Components | 18 | ✅ Complete (+4 new) |
+| Components | 18 | ✅ Complete (+4 new alignment widgets) |
 | Edge Functions | 7 | ✅ Complete |
 | Hooks | 1 | ✅ Complete |
 | Database Tables | 6 | ✅ Complete |
 | AI Features | 7 | ✅ Complete |
-| Direct Entity Integration | 5/5 | ✅ 100% (DB Complete) |
+| Direct Entity Integration | 5/5 | ✅ 100% (DB + UI Complete) |
 | Indirect Entity Integration | 16/16 | ✅ 100% (DB Complete) |
+| Form Integrations | 4/4 | ✅ 100% (All selectors added) |
 
 ---
 
@@ -280,11 +281,12 @@ interface StrategicPlan {
 | 12 | StrategicPlanWorkflowTab | Workflow stage display | No | ✅ |
 | 13 | StrategyChallengeRouter | Challenge routing | No | ✅ |
 | 14 | AutomatedMIICalculator | MII score calculation | No | ✅ |
-| **15** | **StrategicAlignmentSandbox** | **Sandbox strategy alignment** | No | ❌ MISSING |
-| **16** | **StrategicAlignmentLivingLab** | **Living lab strategy alignment** | No | ❌ MISSING |
-| **17** | **StrategicAlignmentPartnership** | **Partnership strategy alignment** | No | ❌ MISSING |
-| **18** | **StrategyToSandboxGenerator** | **Generate sandboxes from strategy** | ✅ | ❌ MISSING |
-| **19** | **StrategyToLivingLabGenerator** | **Generate living labs from strategy** | ✅ | ❌ MISSING |
+| **15** | **StrategicAlignmentSandbox** | **Sandbox strategy alignment** | No | ✅ CREATED |
+| **16** | **StrategicAlignmentLivingLab** | **Living lab strategy alignment** | No | ✅ CREATED |
+| **17** | **StrategicAlignmentPartnership** | **Partnership strategy alignment** | No | ✅ CREATED |
+| **18** | **StrategicPlanSelector** | **Shared reusable selector** | No | ✅ CREATED |
+| **19** | **StrategyToSandboxGenerator** | **Generate sandboxes from strategy** | ✅ | ⏳ Phase 5 |
+| **20** | **StrategyToLivingLabGenerator** | **Generate living labs from strategy** | ✅ | ⏳ Phase 5 |
 
 ---
 

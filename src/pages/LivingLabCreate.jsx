@@ -11,13 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../components/LanguageContext';
-import { Beaker, ChevronLeft, ChevronRight, FileText, Building2, Wifi, Users, Save, Sparkles, Loader2 } from 'lucide-react';
+import { Beaker, ChevronLeft, ChevronRight, FileText, Building2, Wifi, Users, Save, Sparkles, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 
 function LivingLabCreate() {
   const navigate = useNavigate();
@@ -60,7 +61,12 @@ function LivingLabCreate() {
     contact_phone: '',
     website_url: '',
     is_published: false,
-    is_featured: false
+    is_featured: false,
+    // Strategic alignment fields
+    strategic_plan_ids: [],
+    strategic_objective_ids: [],
+    is_strategy_derived: false,
+    research_priorities: []
   });
 
   const { data: cities = [] } = useQuery({
@@ -301,6 +307,17 @@ Provide bilingual enhancements:
                   onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
                   rows={4}
                   dir="rtl"
+                />
+              </div>
+              
+              {/* Strategic Alignment Section */}
+              <div className="border-t pt-4 mt-4">
+                <StrategicPlanSelector
+                  selectedPlanIds={formData.strategic_plan_ids}
+                  selectedObjectiveIds={formData.strategic_objective_ids}
+                  onPlanChange={(ids) => setFormData({...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0})}
+                  onObjectiveChange={(ids) => setFormData({...formData, strategic_objective_ids: ids})}
+                  showObjectives={true}
                 />
               </div>
             </>
