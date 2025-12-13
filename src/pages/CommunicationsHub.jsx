@@ -61,10 +61,6 @@ function CommunicationsHub() {
   );
 }
 
-export default function CommunicationsHubPage() {
-  return (
-    <ProtectedPage permission="manage:email_templates">
-      <CommunicationsHub />
-    </ProtectedPage>
-  );
-}
+export default ProtectedPage(CommunicationsHub, { 
+  requiredPermissions: ['manage:email_templates'] 
+});
