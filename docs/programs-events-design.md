@@ -1,8 +1,8 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 4.0  
+**Version:** 5.0  
 **Last Updated:** 2025-12-13  
-**Status:** Complete Inventory Verified  
+**Status:** Complete Inventory + Permission Audit VERIFIED  
 
 ---
 
@@ -359,14 +359,13 @@ export default ProtectedPage(ProgramIdeaSubmission, { requiredPermissions: [] })
 
 **Permission Configuration:**
 ```jsx
-// Page uses inline permission checks, NOT ProtectedPage wrapper
-function ApprovalCenter() {
-  const { user } = useAuth();
-  // Some queries check user.role === 'admin' for budget approvals
-}
+export default ProtectedPage(ApprovalCenter, {
+  requiredPermissions: ['challenge_approve', 'pilot_approve', 'program_approve', 'rd_proposal_approve', 'solution_approve', 'matchmaker_approve'],
+  requireAll: false  // User needs ANY of these permissions
+});
 ```
-- **Current Access:** Any authenticated user can VIEW the page
-- **Recommended:** Add `ProtectedPage({ requiredPermissions: ['challenge_approve', 'pilot_approve', 'solution_approve'] })`
+- **Current Access:** ✅ PROPERLY SECURED - requires any approval permission
+- **Design:** OR-logic allows specialists to access only their approval types
 
 **Personas Who Access:**
 | Persona | Access Level | Tabs Visible |
@@ -558,11 +557,13 @@ export default ProtectedPage(PortfolioPage, { requiredPermissions: ['portfolio_v
 
 **Permission Configuration:**
 ```jsx
-// No ProtectedPage wrapper visible in truncated content
-// Likely uses internal permission checks or is admin-only
+export default ProtectedPage(GapAnalysisTool, { 
+  requiredPermissions: [], 
+  requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead'] 
+});
 ```
-- **Current Access:** Review needed - appears open
-- **Recommended:** `['gap_analysis_view', 'portfolio_view']` for strategic users
+- **Current Access:** ✅ PROPERLY SECURED - requires Executive Leadership or Strategy Lead role
+- **Design:** Role-based access for strategic planning personas
 
 **Personas Who Access:**
 | Persona | Access Level | Use Case |
@@ -609,6 +610,16 @@ export default ProtectedPage(PortfolioPage, { requiredPermissions: ['portfolio_v
 ### 4.10 CampaignPlanner.jsx (699 lines)
 
 **Purpose:** Campaign and event creation wizard for innovation initiatives.
+
+**Permission Configuration:**
+```jsx
+export default ProtectedPage(CampaignPlanner, { 
+  requiredPermissions: [], 
+  requiredRoles: ['Executive Leadership', 'Program Director', 'Communication Manager'] 
+});
+```
+- **Current Access:** ✅ PROPERLY SECURED - requires specific leadership/communication roles
+- **Design:** Role-based access for campaign management personas
 
 **Data Sources:**
 - `programs` table (filtered by program_type = 'campaign' or 'challenge')
