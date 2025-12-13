@@ -731,10 +731,6 @@ Provide a comprehensive analysis covering:
               <Send className="h-4 w-4 mr-2" />
               {t({ en: 'Test Send', ar: 'إرسال تجريبي' })}
             </Button>
-            <Button onClick={handleAIAnalysis} disabled={aiLoading || !isAvailable || templates.length === 0} variant="outline" className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-200">
-              {aiLoading && showAnalysisDialog ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Brain className="h-4 w-4 mr-2 text-blue-600" />}
-              {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
-            </Button>
             <div className="flex-1" />
             {selectedTemplateId && !template.is_system && (
               <Button variant="destructive" size="sm" onClick={() => deleteMutation.mutate(selectedTemplateId)}>
@@ -1018,7 +1014,7 @@ Provide a comprehensive analysis covering:
 
       {/* AI Analysis Sheet - Side panel that stays open while taking actions */}
       <Sheet open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog}>
-        <SheetContent side="right" className="w-full max-w-lg p-0" dir={isRTL ? 'rtl' : 'ltr'}>
+        <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-0 overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
           <SheetHeader className="border-b p-4">
             <SheetTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-blue-600" />

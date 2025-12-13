@@ -169,7 +169,7 @@ import BrandingSettings from './pages/BrandingSettings';
 import SystemDefaultsConfig from './pages/SystemDefaultsConfig';
 import SecurityPolicyManager from './pages/SecurityPolicyManager';
 import DataRetentionConfig from './pages/DataRetentionConfig';
-import EmailTemplateEditor from './pages/EmailTemplateEditor';
+// EmailTemplateEditor - DELETED (migrated to CommunicationsHub)
 import CommunicationsHub from './pages/CommunicationsHub';
 import FeatureFlagsDashboard from './pages/FeatureFlagsDashboard';
 import UserProfile from './pages/UserProfile';
@@ -650,7 +650,7 @@ export const PAGES = {
     "SystemDefaultsConfig": SystemDefaultsConfig,
     "SecurityPolicyManager": SecurityPolicyManager,
     "DataRetentionConfig": DataRetentionConfig,
-    "EmailTemplateEditor": EmailTemplateEditor,
+    "EmailTemplateEditor": CommunicationsHub, // Redirect to CommunicationsHub
     "CommunicationsHub": CommunicationsHub,
     "FeatureFlagsDashboard": FeatureFlagsDashboard,
     "UserProfile": UserProfile,
