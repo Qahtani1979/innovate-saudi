@@ -9,18 +9,40 @@ import { Input } from "@/components/ui/input";
 import { useLanguage } from './LanguageContext';
 import { Calendar, CheckCircle2, Circle, Plus, X, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function MilestoneTracker({ pilot }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', status: 'pending' });
+  const { triggerEmail } = useEmailTrigger();
 
   const milestones = pilot?.milestones || [];
 
   const updateMutation = useMutation({
     mutationFn: (updatedMilestones) => base44.entities.Pilot.update(pilot.id, { milestones: updatedMilestones }),
-    onSuccess: () => {
+    onSuccess: async (_, updatedMilestones) => {
+      // Check if any milestone was just completed
+      const justCompleted = updatedMilestones.find((m, i) => 
+        m.completed && (!milestones[i] || !milestones[i].completed)
+      );
+      
+      if (justCompleted) {
+        await triggerEmail('pilot.milestone_completed', {
+          entityType: 'pilot',
+          entityId: pilot.id,
+          variables: {
+            pilot_title: pilot.title_en,
+            pilot_code: pilot.code,
+            milestone_name: justCompleted.name,
+            milestone_due_date: justCompleted.due_date,
+            completed_count: updatedMilestones.filter(m => m.completed).length,
+            total_milestones: updatedMilestones.length
+          }
+        }).catch(err => console.error('Email trigger failed:', err));
+      }
+
       queryClient.invalidateQueries(['pilot']);
       toast.success(t({ en: 'Milestones updated', ar: 'تم تحديث المعالم' }));
       setEditing(false);

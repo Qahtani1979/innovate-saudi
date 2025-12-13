@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import ReviewerAI from './ReviewerAI';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { toast } from 'sonner';
 
 /**
  * InlineApprovalWizard - Quick approval interface for ApprovalCenter
@@ -23,12 +25,35 @@ export default function InlineApprovalWizard({
   const queryClient = useQueryClient();
   const [comments, setComments] = useState('');
   const [showAI, setShowAI] = useState(false);
+  const { triggerEmail } = useEmailTrigger();
 
   const updateApprovalMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.ApprovalRequest.update(id, data),
-    onSuccess: () => {
+    onSuccess: async (_, variables) => {
+      const decision = variables.data.decision;
+      const triggerKey = decision === 'approved' ? 'approval.approved' : 
+                         decision === 'rejected' ? 'approval.rejected' : 'approval.conditional';
+      
+      // Trigger approval notification email
+      await triggerEmail(triggerKey, {
+        entityType: approvalRequest.entity_type,
+        entityId: approvalRequest.entity_id,
+        variables: {
+          entity_type: approvalRequest.entity_type,
+          entity_title: entityData.title_en || entityData.name_en || entityData.code,
+          gate_name: approvalRequest.gate_name,
+          decision: decision,
+          comments: variables.data.comments,
+          requester_email: approvalRequest.requester_email
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+
       queryClient.invalidateQueries(['approval-requests']);
       queryClient.invalidateQueries(['my-approvals']);
+      toast.success(t({ 
+        en: `Request ${decision}`, 
+        ar: decision === 'approved' ? 'تمت الموافقة' : decision === 'rejected' ? 'تم الرفض' : 'موافقة مشروطة' 
+      }));
       if (onComplete) onComplete();
     }
   });

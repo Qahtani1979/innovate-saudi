@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 function ChallengeSolutionMatching() {
   const { language, isRTL, t } = useLanguage();
@@ -20,6 +20,7 @@ function ChallengeSolutionMatching() {
   const [matches, setMatches] = useState([]);
   const [notifying, setNotifying] = useState(false);
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-for-matching'],
@@ -39,7 +40,19 @@ function ChallengeSolutionMatching() {
 
   const createMatchMutation = useMutation({
     mutationFn: (data) => base44.entities.ChallengeSolutionMatch.create(data),
-    onSuccess: () => {
+    onSuccess: async (result, variables) => {
+      // Trigger solution matched email
+      await triggerEmail('solution.matched', {
+        entityType: 'solution',
+        entityId: variables.solution_id,
+        variables: {
+          solution_id: variables.solution_id,
+          challenge_id: selectedChallenge.id,
+          challenge_title: selectedChallenge.title_en,
+          match_score: variables.similarity_score
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
+
       queryClient.invalidateQueries(['matches']);
       toast.success(t({ en: 'Match saved', ar: 'تم حفظ المطابقة' }));
     }
@@ -73,22 +86,20 @@ function ChallengeSolutionMatching() {
         const solution = solutions.find(s => s.id === match.solution_id);
         if (!solution?.contact_email) continue;
 
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: 'challenge.match_found',
-            recipient_email: solution.contact_email,
-            entity_type: 'solution',
-            entity_id: solution.id,
-            variables: {
-              providerName: solution.provider_name,
-              solutionName: solution.name_en,
-              challengeTitle: selectedChallenge.title_en,
-              challengeCode: selectedChallenge.code,
-              municipalityId: selectedChallenge.municipality_id,
-              sector: selectedChallenge.sector,
-              matchScore: match.similarity_score,
-              challengeDescription: selectedChallenge.description_en?.substring(0, 300)
-            }
+        // Use triggerEmail hook instead of direct supabase call
+        await triggerEmail('challenge.match_found', {
+          entityType: 'solution',
+          entityId: solution.id,
+          recipientEmail: solution.contact_email,
+          variables: {
+            provider_name: solution.provider_name,
+            solution_name: solution.name_en,
+            challenge_title: selectedChallenge.title_en,
+            challenge_code: selectedChallenge.code,
+            municipality_id: selectedChallenge.municipality_id,
+            sector: selectedChallenge.sector,
+            match_score: match.similarity_score,
+            challenge_description: selectedChallenge.description_en?.substring(0, 300)
           }
         });
 
