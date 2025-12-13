@@ -185,6 +185,9 @@ import SWOTAnalysisPage from './pages/SWOTAnalysisPage';
 import StakeholderAnalysisPage from './pages/StakeholderAnalysisPage';
 import RiskAssessmentPage from './pages/RiskAssessmentPage';
 import StrategyTimelinePage from './pages/StrategyTimelinePage';
+import EnvironmentalScanPage from './pages/EnvironmentalScanPage';
+import StrategyInputPage from './pages/StrategyInputPage';
+import BaselineDataPage from './pages/BaselineDataPage';
 import BudgetAllocationApprovalGate from './pages/BudgetAllocationApprovalGate';
 import InitiativeLaunchGate from './pages/InitiativeLaunchGate';
 import PortfolioReviewGate from './pages/PortfolioReviewGate';
@@ -982,6 +985,9 @@ export const PAGES = {
     "StakeholderAnalysisPage": StakeholderAnalysisPage,
     "RiskAssessmentPage": RiskAssessmentPage,
     "StrategyTimelinePage": StrategyTimelinePage,
+    "EnvironmentalScanPage": EnvironmentalScanPage,
+    "StrategyInputPage": StrategyInputPage,
+    "BaselineDataPage": BaselineDataPage,
     "Auth": Auth,
     "ResetPassword": ResetPassword,
 }
