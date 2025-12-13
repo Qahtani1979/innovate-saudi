@@ -143,3 +143,12 @@ verify_jwt = false
 
 [functions.calculate-mii]
 verify_jwt = false
+
+[functions.email-trigger-hub]
+verify_jwt = false
+
+[functions.campaign-sender]
+verify_jwt = true
+
+[functions.queue-processor]
+verify_jwt = true

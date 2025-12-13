@@ -50,6 +50,10 @@ function CommunicationsHub() {
           <EmailTemplateEditorContent />
         </TabsContent>
 
+        <TabsContent value="campaigns">
+          <CampaignManager />
+        </TabsContent>
+
         <TabsContent value="logs">
           <EmailLogsViewer />
         </TabsContent>
