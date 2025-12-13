@@ -14,11 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Microscope, Sparkles, Loader2, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import AIProposalWriter from './AIProposalWriter';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function RDProjectCreateWizard() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     title_en: '',
@@ -51,8 +53,26 @@ export default function RDProjectCreateWizard() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.RDProject.create(data),
-    onSuccess: (project) => {
+    onSuccess: async (project) => {
       queryClient.invalidateQueries(['rd-projects']);
+      
+      // Trigger rd.project_created email
+      try {
+        await triggerEmail('rd.project_created', {
+          entityType: 'rd_project',
+          entityId: project.id,
+          variables: {
+            projectTitle: formData.title_en,
+            institution: formData.institution_en,
+            researchArea: formData.research_area_en,
+            trlStart: formData.trl_start,
+            trlTarget: formData.trl_target
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send rd.project_created email:', error);
+      }
+      
       toast.success(t({ en: 'R&D Project created!', ar: 'تم إنشاء المشروع البحثي!' }));
       navigate(createPageUrl(`RDProjectDetail?id=${project.id}`));
     }

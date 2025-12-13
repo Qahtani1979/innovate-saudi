@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Calendar, Clock, Users, Mail, X, CheckCircle2, Video } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }) {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
 
   const [meetingData, setMeetingData] = useState({
     title: `${rdCall?.code} - Final Evaluation Committee Meeting`,
@@ -42,29 +44,6 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
         tags: ['committee_meeting', 'rd_evaluation', rdCall.code]
       });
 
-      // Send email notifications to attendees via email-trigger-hub
-      const { supabase } = await import('@/integrations/supabase/client');
-      for (const attendee of data.attendees) {
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: 'event.invitation',
-            recipient_email: attendee,
-            entity_type: 'rd_call',
-            entity_id: rdCall.id,
-            variables: {
-              meetingTitle: data.title,
-              meetingDate: data.date,
-              meetingTime: data.time,
-              durationMinutes: data.duration_minutes,
-              location: data.location,
-              meetingLink: data.meeting_link || 'To be provided',
-              agenda: data.agenda
-            },
-            triggered_by: 'system'
-          }
-        });
-      }
-
       // Update RD Call with meeting details
       await base44.entities.RDCall.update(rdCall.id, {
         evaluation_meeting_scheduled: true,
@@ -74,9 +53,32 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries(['rd-call']);
       queryClient.invalidateQueries(['tasks']);
+      
+      // Send email notifications to attendees using triggerEmail
+      for (const attendee of data.attendees) {
+        try {
+          await triggerEmail('event.invitation', {
+            entityType: 'rd_call',
+            entityId: rdCall.id,
+            recipientEmail: attendee,
+            variables: {
+              meetingTitle: data.title,
+              meetingDate: data.date,
+              meetingTime: data.time,
+              durationMinutes: data.duration_minutes,
+              location: data.location,
+              meetingLink: data.meeting_link || 'To be provided',
+              agenda: data.agenda
+            }
+          });
+        } catch (error) {
+          console.error('Failed to send meeting invitation to:', attendee, error);
+        }
+      }
+      
       toast.success(t({ en: 'Meeting scheduled and invitations sent', ar: 'تم جدولة الاجتماع وإرسال الدعوات' }));
       onClose();
     }

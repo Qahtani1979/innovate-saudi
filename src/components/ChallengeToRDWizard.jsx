@@ -13,11 +13,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { createPageUrl } from '../utils';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function ChallengeToRDWizard({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { triggerEmail } = useEmailTrigger();
 
   const [rdTitle, setRdTitle] = useState('');
   const [researchQuestions, setResearchQuestions] = useState('');
@@ -53,8 +55,24 @@ export default function ChallengeToRDWizard({ challenge, onClose }) {
 
       return rdProject.id;
     },
-    onSuccess: (rdId) => {
+    onSuccess: async (rdId) => {
       queryClient.invalidateQueries(['challenge']);
+      
+      // Trigger rd.project_created email
+      try {
+        await triggerEmail('rd.project_created', {
+          entityType: 'rd_project',
+          entityId: rdId,
+          variables: {
+            projectTitle: rdTitle,
+            challengeTitle: challenge.title_en,
+            researchArea: challenge.sector
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send rd.project_created email:', error);
+      }
+      
       toast.success(t({ en: 'R&D project created', ar: 'تم إنشاء مشروع البحث' }));
       navigate(createPageUrl(`RDProjectDetail?id=${rdId}`));
     }
