@@ -114,32 +114,52 @@ function CalendarView({ embedded = false }) {
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Calendar', ar: 'التقويم' })}
-        </h1>
-        <div className="flex items-center gap-4">
-          {canCreateEvents && (
-            <Link to={createPageUrl('EventCreate')}>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                {t({ en: 'Create Event', ar: 'إنشاء فعالية' })}
+      {/* Header - Only show when not embedded */}
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-slate-900">
+            {t({ en: 'Calendar', ar: 'التقويم' })}
+          </h1>
+          <div className="flex items-center gap-4">
+            {canCreateEvents && (
+              <Link to={createPageUrl('EventCreate')}>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  {t({ en: 'Create Event', ar: 'إنشاء فعالية' })}
+                </Button>
+              </Link>
+            )}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}>
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-            </Link>
-          )}
+              <span className="text-lg font-medium px-4">
+                {currentDate.toLocaleDateString(language, { month: 'long', year: 'numeric' })}
+              </span>
+              <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Compact calendar nav when embedded */}
+      {embedded && (
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}>
+            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-lg font-medium px-4">
+            <span className="text-sm font-medium px-2">
               {currentDate.toLocaleDateString(language, { month: 'long', year: 'numeric' })}
             </span>
-            <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}>
+            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
-      </div>
+      )
 
       <Card>
         <CardContent className="pt-6">

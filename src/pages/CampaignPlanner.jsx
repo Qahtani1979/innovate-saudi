@@ -183,20 +183,22 @@ Generate a comprehensive innovation campaign in BOTH English and Arabic:
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-pink-600 via-rose-600 to-orange-600 p-8 text-white">
-        <h1 className="text-5xl font-bold mb-2">
-          {t({ en: '📣 Campaign Planner', ar: '📣 مخطط الحملات' })}
-        </h1>
-        <p className="text-xl text-white/90">
-          {t({ en: 'Design and manage innovation campaigns, events, and awareness initiatives', ar: 'تصميم وإدارة حملات الابتكار والفعاليات ومبادرات التوعية' })}
-        </p>
-        <div className="mt-4">
-          <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-            {programs.length} {t({ en: 'active campaigns', ar: 'حملات نشطة' })}
-          </Badge>
+      {/* Header - Only show when not embedded */}
+      {!embedded && (
+        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-pink-600 via-rose-600 to-orange-600 p-8 text-white">
+          <h1 className="text-5xl font-bold mb-2">
+            {t({ en: '📣 Campaign Planner', ar: '📣 مخطط الحملات' })}
+          </h1>
+          <p className="text-xl text-white/90">
+            {t({ en: 'Design and manage innovation campaigns, events, and awareness initiatives', ar: 'تصميم وإدارة حملات الابتكار والفعاليات ومبادرات التوعية' })}
+          </p>
+          <div className="mt-4">
+            <Badge variant="outline" className="bg-white/20 text-white border-white/40">
+              {programs.length} {t({ en: 'active campaigns', ar: 'حملات نشطة' })}
+            </Badge>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
