@@ -314,20 +314,20 @@ interface StrategicPlan {
 export function useStrategicKPI() {
   return {
     // Data
-    strategicPlans: StrategicPlan[];
-    strategicKPIs: StrategicKPI[];
-    isLoading: boolean;
-    
+    strategicPlans,           // All strategic plans
+    strategicKPIs,           // Extracted KPIs from plans
+    isLoading,               // Loading state
+    isUpdating,              // Mutation state
+
     // Mutations
-    updateStrategicKPI: (kpiId, programId, value, notes) => void;
-    updateStrategicKPIAsync: (params) => Promise<void>;
-    isUpdating: boolean;
-    batchUpdateKPIs: (programId, outcomes) => void;
-    
+    updateStrategicKPI,      // Update single KPI
+    updateStrategicKPIAsync, // Async update with await
+    batchUpdateKPIs,         // Batch update from programs
+
     // Utilities
-    calculateProgramContribution: (programId) => ContributionMetrics;
-    getLinkedKPIs: (planIds, objectiveIds) => StrategicKPI[];
-    getStrategicCoverage: (programs) => CoverageMetrics;
+    calculateProgramContribution,  // Calculate program→KPI contribution
+    getLinkedKPIs,                 // Get KPIs linked to program
+    getStrategicCoverage          // Get coverage metrics
   };
 }
 ```
@@ -336,103 +336,74 @@ export function useStrategicKPI() {
 
 ## AI Features
 
-### AI Feature Matrix (7 Features)
+### 7 AI-Powered Features
 
-| # | Feature | Component | Status |
-|---|---------|-----------|--------|
-| 1 | Strategic Insights | StrategyCockpit | ✅ |
-| 2 | Program Theme Generation | StrategyToProgramGenerator | ✅ |
-| 3 | Gap Recommendations | StrategicGapProgramRecommender | ✅ |
-| 4 | Plan Generation | StrategicPlanBuilder | ✅ |
-| 5 | Strategy Feedback | ProgramLessonsToStrategy | ✅ |
-| 6 | Narrative Generation | StrategicNarrativeGenerator | ✅ |
-| 7 | What-If Simulation | WhatIfSimulator | ✅ |
+| # | Feature | Component/Function | Model | Status |
+|---|---------|-------------------|-------|--------|
+| 1 | Strategic Insights | StrategyCockpit | gemini-2.5-flash | ✅ |
+| 2 | Program Theme Generation | strategy-program-theme-generator | gemini-2.5-flash | ✅ |
+| 3 | Gap Recommendations | StrategicGapProgramRecommender | gemini-2.5-flash | ✅ |
+| 4 | Plan Generation | StrategicPlanBuilder | gemini-2.5-flash | ✅ |
+| 5 | Strategy Feedback | ProgramLessonsToStrategy | gemini-2.5-flash | ✅ |
+| 6 | Narrative Generation | StrategicNarrativeGenerator | gemini-2.5-flash | ✅ |
+| 7 | What-If Simulation | WhatIfSimulator | gemini-2.5-flash | ✅ |
 
 ---
 
 ## User Flows
 
-### Flow 1: Strategy → Programs (Forward Flow) ✅
+### Flow 1: Strategy-Driven Program Creation
 
 ```
-Strategic Plan → Select Objectives → AI Generate Themes → Create Programs
-                                                              │
-                                                              ▼
-                                                 Programs with:
-                                                 - strategic_plan_ids[]
-                                                 - strategic_objective_ids[]
-                                                 - is_strategy_derived ⚠️ MISSING
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Strategic Plan  │───▶│ Theme Generator │───▶│ Program Created │
+│ (Objectives)    │    │ (AI-powered)    │    │ (Auto-linked)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                                             │
+         └─────────── is_strategy_derived=true ────────┘
 ```
 
-### Flow 2: Programs → Strategy (Feedback Flow) ✅
+### Flow 2: Program Outcome Feedback
 
 ```
-Program Outcomes → Track KPI Contributions → Update Strategic KPIs
-       │
-       ▼
-Lessons Learned → AI Analysis → Strategy Recommendations
-                                      │
-                                      ▼ ⚠️ lessons_learned column MISSING
-                             Update Strategic Plans
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Program KPIs    │───▶│ Lessons Learned │───▶│ Strategy Update │
+│ (Achievements)  │    │ (AI Analysis)   │    │ (KPI Revision)  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                                             │
+         └─────────── useStrategicKPI hook ────────────┘
 ```
 
-### Flow 3: Strategy → Sandboxes (BROKEN) ❌
+### Flow 3: Gap Analysis & Recommendations
 
 ```
-Strategic Plan → Identify Gaps → ??? → Create Sandbox
-                                   │
-                                   ▼
-                        NO STRATEGIC FIELDS ON SANDBOXES
-                        Edge function exists but can't persist linkage
-```
-
-### Flow 4: Strategy → Living Labs (BROKEN) ❌
-
-```
-Strategic Plan → Research Priorities → ??? → Create Living Lab
-                                         │
-                                         ▼
-                              NO STRATEGIC FIELDS ON LIVING_LABS
-                              Edge function exists but can't persist linkage
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Strategic Gaps  │───▶│ AI Analysis     │───▶│ Recommendations │
+│ (Unmet Goals)   │    │ (Gap Detection) │    │ (New Programs)  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ---
 
 ## Gap Analysis
 
-### P0 Critical Gaps
+### Summary
 
-| # | Entity | Gap | Impact |
-|---|--------|-----|--------|
-| 1 | sandboxes | No `strategic_plan_ids[]` | Cannot track strategy alignment |
-| 2 | sandboxes | No `strategic_objective_ids[]` | Cannot link to objectives |
-| 3 | sandboxes | No `is_strategy_derived` | Cannot identify strategy-derived sandboxes |
-| 4 | living_labs | No `strategic_plan_ids[]` | Cannot track strategy alignment |
-| 5 | living_labs | No `strategic_objective_ids[]` | Cannot link to objectives |
-| 6 | living_labs | No `is_strategy_derived` | Cannot identify strategy-derived labs |
-| 7 | programs | No `is_strategy_derived` | Cannot identify strategy-derived programs |
-| 8 | programs | No `strategy_derivation_date` | Cannot track derivation timing |
-| 9 | programs | No `lessons_learned` | Cannot persist lessons feedback |
+| Priority | Count | Description |
+|----------|-------|-------------|
+| P0 Critical | 9 | Sandboxes/Living Labs have NO strategic fields |
+| P1 High | 6 | Programs missing columns, Partnerships missing IDs |
+| P2 Medium | 5 | Missing UI components for alignment display |
+| P3 Low | 4 | Policy documents, Global trends integration |
 
-### P1 High Priority Gaps
+### Critical Fixes Required
 
-| # | Entity | Gap | Impact |
-|---|--------|-----|--------|
-| 1 | partnerships | No `strategic_plan_ids[]` | Only has boolean flag, not explicit link |
-| 2 | email_campaigns | No `program_id` | Cannot trace campaigns to strategy |
-| 3 | email_campaigns | No `challenge_id` | Cannot trace campaigns to strategy |
-| 4 | scaling_plans | No `rd_project_id` | R&D scaling path broken |
-| 5 | rd_calls | No `program_id` | Cannot link R&D calls to programs |
+1. **Database: Add strategic fields to `sandboxes`**
+2. **Database: Add strategic fields to `living_labs`**
+3. **Database: Add missing columns to `programs`**
+4. **UI: Create StrategicAlignmentSandbox component**
+5. **UI: Create StrategicAlignmentLivingLab component**
 
 ---
 
-## Summary
-
-| Dimension | Current | Target | Gap |
-|-----------|---------|--------|-----|
-| Core Strategy System | 92% | 100% | 8% |
-| Direct Entity Integration | 40% | 100% | 60% |
-| Indirect Entity Integration | 81% | 100% | 19% |
-| Overall Platform Integration | **67%** | **100%** | **33%** |
-
-*Design document last updated: 2025-12-13 (Comprehensive Entity Integration Review)*
+*Document last updated: 2025-12-13*
