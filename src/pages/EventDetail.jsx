@@ -6,14 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useAuth } from '@/lib/AuthContext';
-import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit, Bookmark, MessageSquare, Send, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit, Bookmark, MessageSquare, Send, Loader2, Award, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { EventExpertEvaluation } from '@/components/events';
 
 function EventDetail() {
   const { t, language } = useLanguage();
@@ -28,6 +30,9 @@ function EventDetail() {
 
   const canEditEvents = hasAnyPermission(['event_edit', 'event_manage', 'admin']) || 
     roles?.some(r => ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r));
+  
+  const canEvaluateEvents = hasAnyPermission(['event_evaluate', 'expert_evaluate', 'admin']) || 
+    roles?.some(r => ['admin', 'super_admin', 'expert', 'evaluator', 'gdibs_internal'].includes(r));
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', eventId],
@@ -234,143 +239,175 @@ function EventDetail() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t({ en: 'Event Details', ar: 'تفاصيل الفعالية' })}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {event.event_type && (
-            <div>
-              <p className="text-xs font-semibold text-slate-600 mb-1">{t({ en: 'Event Type', ar: 'نوع الفعالية' })}</p>
-              <Badge>{event.event_type}</Badge>
-            </div>
+      {/* Tabs for Details, Comments, Expert Evaluation */}
+      <Tabs defaultValue="details" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="details" className="flex items-center gap-2">
+            <Info className="h-4 w-4" />
+            {t({ en: 'Details', ar: 'التفاصيل' })}
+          </TabsTrigger>
+          <TabsTrigger value="comments" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            {t({ en: 'Comments', ar: 'التعليقات' })} ({comments.length})
+          </TabsTrigger>
+          {canEvaluateEvents && (
+            <TabsTrigger value="evaluation" className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              {t({ en: 'Expert Evaluation', ar: 'تقييم الخبير' })}
+            </TabsTrigger>
+          )}
+        </TabsList>
+
+        {/* Details Tab */}
+        <TabsContent value="details" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t({ en: 'Event Details', ar: 'تفاصيل الفعالية' })}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {event.event_type && (
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 mb-1">{t({ en: 'Event Type', ar: 'نوع الفعالية' })}</p>
+                  <Badge>{event.event_type}</Badge>
+                </div>
+              )}
+
+              {event.location && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-5 w-5 text-slate-500 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600">{t({ en: 'Location', ar: 'الموقع' })}</p>
+                    <p className="text-sm text-slate-900">{event.location}</p>
+                  </div>
+                </div>
+              )}
+
+              {description && (
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 mb-2">{t({ en: 'Description', ar: 'الوصف' })}</p>
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{description}</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {event.agenda && event.agenda.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t({ en: 'Agenda', ar: 'جدول الأعمال' })}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {event.agenda.map((item, idx) => (
+                    <div key={idx} className="p-3 bg-slate-50 rounded-lg">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium text-slate-900">{item.title || item}</p>
+                          {item.time && (
+                            <p className="text-xs text-slate-600 mt-1">{item.time}</p>
+                          )}
+                        </div>
+                        {item.duration && (
+                          <Badge variant="outline" className="text-xs">{item.duration}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {event.location && (
-            <div className="flex items-start gap-2">
-              <MapPin className="h-5 w-5 text-slate-500 mt-0.5" />
-              <div>
-                <p className="text-xs font-semibold text-slate-600">{t({ en: 'Location', ar: 'الموقع' })}</p>
-                <p className="text-sm text-slate-900">{event.location}</p>
-              </div>
-            </div>
-          )}
-
-          {description && (
-            <div>
-              <p className="text-xs font-semibold text-slate-600 mb-2">{t({ en: 'Description', ar: 'الوصف' })}</p>
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{description}</p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {event.agenda && event.agenda.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t({ en: 'Agenda', ar: 'جدول الأعمال' })}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {event.agenda.map((item, idx) => (
-                <div key={idx} className="p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900">{item.title || item}</p>
-                      {item.time && (
-                        <p className="text-xs text-slate-600 mt-1">{item.time}</p>
+          {event.speakers && event.speakers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t({ en: 'Speakers', ar: 'المتحدثون' })}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {event.speakers.map((speaker, idx) => (
+                    <div key={idx} className="p-4 bg-slate-50 rounded-lg">
+                      <p className="font-semibold text-slate-900">{speaker.name || speaker}</p>
+                      {speaker.title && (
+                        <p className="text-sm text-slate-600">{speaker.title}</p>
+                      )}
+                      {speaker.organization && (
+                        <p className="text-xs text-slate-500 mt-1">{speaker.organization}</p>
                       )}
                     </div>
-                    {item.duration && (
-                      <Badge variant="outline" className="text-xs">{item.duration}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Comments Tab */}
+        <TabsContent value="comments" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                {t({ en: 'Comments', ar: 'التعليقات' })} ({comments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {userEmail && (
+                <div className="flex gap-2">
+                  <Textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder={t({ en: 'Add a comment...', ar: 'أضف تعليقاً...' })}
+                    className="min-h-[80px]"
+                  />
+                  <Button 
+                    onClick={handleAddComment} 
+                    disabled={!newComment.trim() || addCommentMutation.isPending}
+                    className="self-end"
+                  >
+                    {addCommentMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
                     )}
-                  </div>
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              )}
 
-      {event.speakers && event.speakers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t({ en: 'Speakers', ar: 'المتحدثون' })}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {event.speakers.map((speaker, idx) => (
-                <div key={idx} className="p-4 bg-slate-50 rounded-lg">
-                  <p className="font-semibold text-slate-900">{speaker.name || speaker}</p>
-                  {speaker.title && (
-                    <p className="text-sm text-slate-600">{speaker.title}</p>
-                  )}
-                  {speaker.organization && (
-                    <p className="text-xs text-slate-500 mt-1">{speaker.organization}</p>
-                  )}
+              {comments.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">
+                  {t({ en: 'No comments yet. Be the first to comment!', ar: 'لا توجد تعليقات بعد. كن أول من يعلق!' })}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="p-3 bg-slate-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm text-slate-900">
+                          {comment.user_name || comment.user_email}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {new Date(comment.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-700">{comment.comment_text}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Comments Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            {t({ en: 'Comments', ar: 'التعليقات' })} ({comments.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {userEmail && (
-            <div className="flex gap-2">
-              <Textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder={t({ en: 'Add a comment...', ar: 'أضف تعليقاً...' })}
-                className="min-h-[80px]"
-              />
-              <Button 
-                onClick={handleAddComment} 
-                disabled={!newComment.trim() || addCommentMutation.isPending}
-                className="self-end"
-              >
-                {addCommentMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          )}
-
-          {comments.length === 0 ? (
-            <p className="text-sm text-slate-500 text-center py-4">
-              {t({ en: 'No comments yet. Be the first to comment!', ar: 'لا توجد تعليقات بعد. كن أول من يعلق!' })}
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {comments.map((comment) => (
-                <div key={comment.id} className="p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-sm text-slate-900">
-                      {comment.user_name || comment.user_email}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      {new Date(comment.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-700">{comment.comment_text}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {/* Expert Evaluation Tab */}
+        {canEvaluateEvents && (
+          <TabsContent value="evaluation" className="mt-6">
+            <EventExpertEvaluation event={event} />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }

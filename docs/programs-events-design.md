@@ -158,28 +158,28 @@
 
 **Note:** Create forms use MediaFieldWithPicker for UI but don't track media usage because entities don't have IDs until after creation.
 
-### 🔲 Phase 9 Tasks - Expert & Evaluation Integration - PLANNED
+### 🔄 Phase 9 Tasks - Expert & Evaluation Integration - IN PROGRESS (80%)
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
-| EventExpertEvaluation component | High | 🔲 Planned | Similar to ProgramExpertEvaluation |
-| expert_evaluations entity_type: 'event' | High | 🔲 Planned | Allow expert reviews for events |
-| expert_assignments entity_type: 'event' | High | 🔲 Planned | Assign experts to evaluate events |
-| EventDetail expert evaluation tab | Medium | 🔲 Planned | Add evaluation section to EventDetail |
+| EventExpertEvaluation component | High | ✅ DONE | Similar to ProgramExpertEvaluation |
+| expert_evaluations entity_type: 'event' | High | ✅ DONE | Uses existing table structure |
+| EventDetail expert evaluation tab | Medium | ✅ DONE | Added tabbed interface with evaluation |
+| expert_assignments entity_type: 'event' | High | ✅ DONE | Added to ExpertMatchingEngine |
 | EvaluationConsensusPanel for events | Medium | 🔲 Planned | Multi-expert consensus for events |
-| ExpertMatchingEngine for events | Low | 🔲 Planned | AI-powered expert matching |
+| ExpertMatchingEngine for events | Low | ✅ DONE | Added 'event' entity type |
 
 **Current State:**
 - Programs: ✅ Full integration (ProgramExpertEvaluation, expert_assignments, EvaluationConsensusPanel)
-- Events: ❌ No expert evaluation integration
+- Events: 🔄 80% integration (EventExpertEvaluation + EventDetail tab + ExpertMatchingEngine)
 
 **Gap Analysis:**
 | Component | Programs | Events |
 |-----------|----------|--------|
-| Expert Evaluation Form | ✅ ProgramExpertEvaluation | 🔲 EventExpertEvaluation |
-| Expert Assignment | ✅ entity_type: 'program' | 🔲 entity_type: 'event' |
+| Expert Evaluation Form | ✅ ProgramExpertEvaluation | ✅ EventExpertEvaluation |
+| Expert Assignment | ✅ entity_type: 'program' | ✅ entity_type: 'event' |
+| Expert Matching Engine | ✅ Supported | ✅ Supported |
 | Evaluation Consensus | ✅ Supported | 🔲 Not Supported |
-| AI Expert Matching | ✅ ExpertMatchingEngine | 🔲 Not Supported |
 
 ---
 
