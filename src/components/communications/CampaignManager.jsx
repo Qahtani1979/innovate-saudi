@@ -72,7 +72,7 @@ export default function CampaignManager() {
     }
   });
 
-  // Fetch templates for selection
+  // Fetch templates for selection - ONLY campaign category
   const { data: templates = [] } = useQuery({
     queryKey: ['email-templates-for-campaigns'],
     queryFn: async () => {
@@ -80,7 +80,8 @@ export default function CampaignManager() {
         .from('email_templates')
         .select('id, template_key, name_en, name_ar, category, variables')
         .eq('is_active', true)
-        .order('category', { ascending: true });
+        .eq('category', 'campaign') // Only show campaign templates
+        .order('name_en', { ascending: true });
       if (error) throw error;
       return data || [];
     }

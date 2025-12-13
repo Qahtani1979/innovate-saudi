@@ -11,10 +11,12 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function ChallengeReviewWorkflow({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
   const [reviewNotes, setReviewNotes] = useState('');
   const [decision, setDecision] = useState(null);
   const [showExpertAssignment, setShowExpertAssignment] = useState(false);
@@ -59,24 +61,19 @@ export default function ChallengeReviewWorkflow({ challenge, onClose }) {
         details: { decision, review_notes: reviewNotes }
       });
 
-      // Send email notification on approval
+      // Send email notification on approval using unified trigger
       if (decision === 'approve' && challenge.challenge_owner_email) {
         try {
-          const { supabase } = await import('@/integrations/supabase/client');
-          await supabase.functions.invoke('send-email', {
-            body: {
-              template_key: 'challenge_approved',
-              recipient_email: challenge.challenge_owner_email,
-              variables: {
-                challengeTitle: language === 'ar' ? (challenge.title_ar || challenge.title_en) : challenge.title_en,
-                challengeCode: challenge.code || challenge.id.substring(0, 8),
-                detailUrl: window.location.origin + '/challenges/' + challenge.id
-              },
-              language: language,
-              entity_type: 'challenge',
-              entity_id: challenge.id,
-              triggered_by: 'reviewer'
-            }
+          await triggerEmail('CHALLENGE_APPROVED', {
+            entityType: 'challenge',
+            entityId: challenge.id,
+            recipientEmail: challenge.challenge_owner_email,
+            variables: {
+              challengeTitle: language === 'ar' ? (challenge.title_ar || challenge.title_en) : challenge.title_en,
+              challengeCode: challenge.code || challenge.id.substring(0, 8),
+              detailUrl: window.location.origin + '/challenges/' + challenge.id
+            },
+            language: language
           });
         } catch (emailError) {
           console.error('Failed to send challenge approval email:', emailError);
