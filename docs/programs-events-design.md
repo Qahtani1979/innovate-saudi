@@ -1,8 +1,8 @@
 # Programs & Events Hub - Design Document
 
-**Version:** 1.0  
+**Version:** 2.0  
 **Last Updated:** 2025-12-13  
-**Status:** Draft  
+**Status:** Comprehensive Review Complete  
 
 ---
 
@@ -18,9 +18,8 @@
 8. [Communication System](#communication-system)
 9. [AI Capabilities](#ai-capabilities)
 10. [UI/UX Design](#uiux-design)
-11. [API Specifications](#api-specifications)
-12. [Security Considerations](#security-considerations)
-13. [Migration Strategy](#migration-strategy)
+11. [Security Considerations](#security-considerations)
+12. [Migration Strategy](#migration-strategy)
 
 ---
 
@@ -54,45 +53,154 @@ The Programs & Events Hub consolidates the management of programs, events, campa
 
 ## 2. Current State Analysis
 
-### 2.1 Existing Components
+### 2.1 Existing Pages Inventory
 
-#### Database Tables
+#### Program Pages (14 total)
+
+| Page | Path | Purpose | Status |
+|------|------|---------|--------|
+| `Programs.jsx` | `/programs` | Main listing with filters, AI insights | ✅ Active |
+| `ProgramDetail.jsx` | `/programs/:id` | Full program view with 12+ tabs | ✅ Active (1215 lines) |
+| `ProgramCreate.jsx` | `/programs/create` | Create via `ProgramCreateWizard` | ✅ Active |
+| `ProgramEdit.jsx` | `/programs/:id/edit` | Edit with AI enhance, auto-save | ✅ Active (592 lines) |
+| `ProgramApplicationWizard.jsx` | Apply flow | Multi-step application | ✅ Active |
+| `ProgramApplicationDetail.jsx` | Application view | Single application details | ✅ Active |
+| `ProgramApplicationEvaluationHub.jsx` | Evaluation | Application evaluation queue | ✅ Active |
+| `ProgramCohortManagement.jsx` | Cohort mgmt | NOT FOUND (referenced) | ❌ Missing |
+| `ProgramOperatorPortal.jsx` | Operator view | Program operator tools | ✅ Active |
+| `ProgramOutcomesAnalytics.jsx` | Analytics | Outcome metrics & charts | ✅ Active |
+| `ProgramImpactDashboard.jsx` | Impact | Conversion funnel analytics | ✅ Active |
+| `ProgramPortfolioPlanner.jsx` | Portfolio | Program portfolio planning | ✅ Active |
+| `MyPrograms.jsx` | `/my-programs` | User's enrolled programs | ✅ Active (199 lines) |
+| `ParticipantDashboard.jsx` | Participant view | Active participant progress | ✅ Active (280 lines) |
+
+#### Event Pages (4 total)
+
+| Page | Path | Purpose | Status |
+|------|------|---------|--------|
+| `EventCalendar.jsx` | `/events` | Event listing (citizen-focused) | ✅ Active (187 lines) |
+| `EventDetail.jsx` | `/events/:id` | Single event view | ✅ Active (194 lines) |
+| `EventRegistration.jsx` | Component | Registration form | ✅ Active (221 lines) |
+| `EventCreate.jsx` | `/events/create` | Create new event | ❌ **MISSING** |
+| `EventEdit.jsx` | `/events/:id/edit` | Edit event | ❌ **MISSING** |
+
+#### Campaign & Calendar Pages (3 total)
+
+| Page | Path | Purpose | Status |
+|------|------|---------|--------|
+| `CampaignPlanner.jsx` | `/campaign-planner` | Campaign creation wizard | ✅ Active (699 lines) |
+| `CalendarView.jsx` | `/calendar` | Unified calendar (pilots, programs, expert assignments) | ✅ Active (210 lines) |
+| `CampaignManager` (component) | Communications | Email campaign manager | ✅ Active |
+
+### 2.2 Existing Components Inventory
+
+#### Program Components (37 files in `/src/components/programs/`)
+
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| `AICurriculumGenerator.jsx` | AI-generated week-by-week curriculum | ✅ Active |
+| `AIDropoutPredictor.jsx` | At-risk participant detection | ✅ Active |
+| `AICohortOptimizerWidget.jsx` | AI cohort optimization | ✅ Active |
+| `AIAlumniSuggester.jsx` | Alumni next-step suggestions | ✅ Active |
+| `AIProgramBenchmarking.jsx` | Program benchmarking | ✅ Active |
+| `AIProgramSuccessPredictor.jsx` | Success prediction | ✅ Active |
+| `AlumniImpactTracker.jsx` | Alumni impact tracking | ✅ Active |
+| `AlumniNetworkHub.jsx` | Alumni networking | ✅ Active |
+| `AlumniSuccessStoryGenerator.jsx` | AI story generation | ✅ Active |
+| `AttendanceTracker.jsx` | Session attendance | ✅ Active |
+| `AutomatedCertificateGenerator.jsx` | Certificate generation | ✅ Active |
+| `CohortManagement.jsx` | Cohort management | ✅ Active |
+| `CohortOptimizer.jsx` | Cohort optimization | ✅ Active |
+| `CrossProgramSynergy.jsx` | Cross-program analysis | ✅ Active |
+| `DropoutPredictor.jsx` | Dropout prediction | ✅ Active |
+| `EnhancedProgressDashboard.jsx` | Progress dashboard | ✅ Active |
+| `GraduationWorkflow.jsx` | Graduation process | ✅ Active |
+| `ImpactStoryGenerator.jsx` | Impact story generator | ✅ Active |
+| `MentorMatchingEngine.jsx` | Mentor matching | ✅ Active |
+| `MentorScheduler.jsx` | Mentor scheduling | ✅ Active |
+| `MunicipalImpactCalculator.jsx` | Municipal impact calc | ✅ Active |
+| `OnboardingWorkflow.jsx` | Participant onboarding | ✅ Active |
+| `ParticipantAssignmentSystem.jsx` | Assignment management | ✅ Active |
+| `PeerCollaborationHub.jsx` | Peer collaboration | ✅ Active |
+| `PeerLearningNetwork.jsx` | Peer learning network | ✅ Active |
+| `PostProgramFollowUp.jsx` | Post-program tracking | ✅ Active |
+| `ProgramActivityLog.jsx` | Activity logging | ✅ Active |
+| `ProgramAlumniStoryboard.jsx` | Alumni storyboard | ✅ Active |
+| `ProgramBenchmarking.jsx` | Benchmarking | ✅ Active |
+| `ProgramCreateWizard.jsx` | Creation wizard | ✅ Active |
+| `ProgramExpertEvaluation.jsx` | Expert evaluation | ✅ Active |
+| `ProgramToPilotWorkflow.jsx` | Program→Pilot transition | ✅ Active |
+| `ProgramToSolutionWorkflow.jsx` | Program→Solution transition | ✅ Active |
+| `ResourceLibrary.jsx` | Resource library | ✅ Active |
+| `SessionScheduler.jsx` | Session scheduling | ✅ Active |
+| `StrategicAlignmentWidget.jsx` | Strategic alignment | ✅ Active |
+| `WaitlistManager.jsx` | Waitlist management | ✅ Active |
+
+#### Workflow Components (Top-level, program-related)
+
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| `ProgramLaunchWorkflow.jsx` | Launch program with email trigger | ✅ Active |
+| `ProgramApplicationScreening.jsx` | Application screening | ✅ Active |
+| `ProgramSelectionWorkflow.jsx` | Cohort selection | ✅ Active |
+| `ProgramSessionManager.jsx` | Session management | ✅ Active |
+| `ProgramMentorMatching.jsx` | Mentor matching | ✅ Active |
+| `ProgramCompletionWorkflow.jsx` | Program completion | ✅ Active |
+| `ProgramMidReviewGate.jsx` | Mid-program review | ✅ Active |
+
+#### Event Components (1 file in `/src/components/calendar/`)
+
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| `ExternalCalendarSync.jsx` | External calendar sync | ✅ Active |
+
+**CRITICAL GAP: No dedicated `/src/components/events/` folder exists!**
+
+### 2.3 Database Tables
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        PROGRAMS TABLE                           │
 ├─────────────────────────────────────────────────────────────────┤
-│ id, code, title_en, title_ar, description_en, description_ar    │
-│ program_type (national|regional|local|sectoral)                 │
-│ status (draft|planned|open|active|completed|cancelled)          │
+│ id, code, name_en, name_ar, tagline_en, tagline_ar              │
+│ description_en, description_ar, objectives_en, objectives_ar    │
+│ program_type (accelerator|incubator|hackathon|challenge|        │
+│              fellowship|training|matchmaker|sandbox_wave|other)  │
+│ status (planning|applications_open|selection|active|completed|  │
+│         cancelled)                                               │
 │ municipality_id, sector_id, region_id                           │
-│ target_participants, max_participants, min_participants         │
-│ start_date, end_date, application_deadline                      │
+│ focus_areas, target_audience, eligibility_criteria              │
+│ min_participants, max_participants, application_count           │
+│ accepted_count, participants_count                               │
+│ duration_weeks, timeline (JSONB - app open/close, start/end)    │
 │ budget_amount, currency, funding_sources                        │
-│ events (JSONB array - NOT synced to events table)               │
-│ campaigns (JSONB array)                                         │
-│ eligibility_criteria, selection_criteria, evaluation_rubric     │
+│ curriculum (JSONB array), events (JSONB array - NOT SYNCED!)    │
+│ kpis, outcomes, success_metrics, lessons_learned                │
+│ created_by, manager_email, coordinator_emails                   │
 │ linked_challenge_ids, linked_pilot_ids, linked_solution_ids     │
-│ kpis, success_metrics, lessons_learned                          │
-│ created_by_email, manager_email, coordinator_emails             │
+│ is_featured, is_published, is_deleted                           │
+│ version_number, previous_version_id                             │
+│ created_at, updated_at                                          │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
 │                         EVENTS TABLE                            │
 ├─────────────────────────────────────────────────────────────────┤
-│ id, title_en, title_ar, description_en, description_ar          │
-│ event_type (webinar|workshop|conference|meetup|demo|training|   │
-│             networking|hackathon|ceremony|other)                │
-│ event_date, start_time, end_time, timezone                      │
-│ location_type (virtual|physical|hybrid)                         │
-│ location_name, location_address, virtual_link                   │
-│ organizer_id, organizer_email, organizer_name                   │
+│ id, code, title_en, title_ar, description_en, description_ar    │
+│ event_type (workshop|conference|hackathon|webinar|training|     │
+│             networking|ceremony|demo|meetup|other)               │
+│ start_date, end_date, timezone                                  │
+│ location, location_address, is_virtual, virtual_link            │
+│ mode (in_person|virtual|hybrid)                                 │
+│ organizer_email, organizer_name                                 │
 │ municipality_id, sector_id, program_id (FK to programs)         │
-│ max_attendees, current_attendees, waitlist_count                │
+│ capacity, max_participants, registered_count, registration_count│
 │ registration_required, registration_deadline                    │
 │ is_public, is_featured, is_cancelled                            │
-│ tags, image_url, agenda, speakers                               │
-│ created_by_email                                                │
+│ status (draft|published|registration_open|registration_closed|  │
+│         in_progress|completed|cancelled)                        │
+│ tags, image_url, agenda (JSONB), speakers (JSONB)               │
+│ created_by_email, created_at, updated_at                        │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
@@ -114,31 +222,28 @@ The Programs & Events Hub consolidates the management of programs, events, campa
 │ id, program_id, applicant_email, applicant_name                 │
 │ organization_id, provider_id                                    │
 │ status (draft|submitted|under_review|shortlisted|accepted|      │
-│         rejected|waitlisted|withdrawn)                          │
-│ application_data, attachments, cover_letter                     │
+│         rejected|waitlisted|withdrawn|enrolled|graduated)       │
+│ application_data (JSONB), attachments, cover_letter             │
 │ ai_score, ai_feedback, evaluation_scores                        │
 │ reviewer_email, review_notes, review_date                       │
-│ submitted_at, decision_date, waitlist_promoted_date             │
+│ progress_percentage, attendance_rate, deliverables_completed    │
+│ total_deliverables                                              │
+│ submitted_at, decision_date, created_by                         │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                  EMAIL_CAMPAIGNS TABLE                          │
+├─────────────────────────────────────────────────────────────────┤
+│ id, name, description, template_id                              │
+│ audience_type, audience_filter (JSONB)                          │
+│ campaign_variables (JSONB)                                      │
+│ status (draft|scheduled|sending|sent|failed)                    │
+│ scheduled_at, sent_at, created_by                               │
+│ created_at, updated_at                                          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-#### Existing UI Components
-
-| Component | Location | Purpose | Status |
-|-----------|----------|---------|--------|
-| `Programs.jsx` | `/programs` | Program listing & management | ✅ Active |
-| `ProgramDetail.jsx` | `/programs/:id` | Single program view | ✅ Active |
-| `ProgramCreate.jsx` | `/programs/create` | Create new program | ✅ Active |
-| `ProgramEdit.jsx` | `/programs/:id/edit` | Edit existing program | ✅ Active |
-| `ProgramApply.jsx` | `/programs/:id/apply` | Provider application | ✅ Active |
-| `CampaignPlanner.jsx` | Tab in ProgramDetail | Campaign & event planning | ⚠️ Partial |
-| `EventCalendar.jsx` | `/events` | Calendar view | ✅ Active |
-| `EventDetail.jsx` | `/events/:id` | Single event view | ✅ Active |
-| `EventRegistration.jsx` | Component | Registration form | ✅ Active |
-| `EventCreate.jsx` | - | Create new event | ❌ Missing |
-| `EventEdit.jsx` | - | Edit existing event | ❌ Missing |
-
-#### Critical Gap: Event Synchronization
+### 2.4 Critical Gap: Event Synchronization
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -152,38 +257,50 @@ The Programs & Events Hub consolidates the management of programs, events, campa
 │  └─────────────────┘                   └─────────────────┘     │
 │         ↑                                      ↓                │
 │   Events added here                   EventCalendar reads       │
-│   are NOT visible                     from here (empty)         │
+│   are NOT visible                     from here (may be empty)  │
 │   in EventCalendar                                              │
+│                                                                 │
+│  CalendarView.jsx reads from:                                   │
+│  - pilots.timeline.pilot_start                                  │
+│  - programs.timeline.program_start                              │
+│  - expert_assignments.due_date                                  │
+│  (Does NOT read from events table!)                             │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Existing Hooks
+### 2.5 Existing Hooks
 
 ```javascript
 // Program Hooks
-useProgramsWithVisibility.js  // Visibility-scoped program fetching
-usePrograms.js               // Basic program operations (if exists)
+useProgramsWithVisibility.js  // Visibility-scoped program fetching (164 lines)
+// Uses usePermissions, useVisibilitySystem
+// Handles: Admin, National Deputyship, Municipality Staff, Provider, Others
 
-// Event Hooks (to be created)
-useEvents.js                 // Event CRUD operations
-useEventRegistrations.js     // Registration management
-useEventSync.js              // Program-Event synchronization
+// Email Trigger Hook
+useEmailTrigger.js            // Email trigger automation
+// Used in: ProgramLaunchWorkflow, EventRegistration
+
+// Event Hooks (TO BE CREATED)
+// useEvents.js - Event CRUD operations
+// useEventRegistrations.js - Registration management
+// useEventsWithVisibility.js - Visibility-scoped fetch
 ```
 
-### 2.3 Existing Email Triggers
+### 2.6 Email Trigger Status
 
-| Trigger Code | Template | Status | Wired In UI |
-|--------------|----------|--------|-------------|
-| `event.registration_confirmed` | ✅ Exists | Active | ✅ EventRegistration.jsx |
-| `event.reminder` | ✅ Exists | Active | ❌ No cron/scheduler |
-| `event.invitation` | ✅ Exists | Active | ❌ No UI |
-| `event.updated` | ✅ Exists | Active | ❌ No EventEdit.jsx |
-| `event.cancelled` | ✅ Exists | Active | ❌ No cancellation UI |
-| `event.created` | ✅ Exists | Active | ❌ No EventCreate.jsx |
-| `program.application_received` | ✅ Exists | Active | ✅ ProgramApply.jsx |
-| `program.application_status_changed` | ✅ Exists | Active | ✅ Application review |
-| `program.participant_welcome` | ✅ Exists | Active | ✅ On acceptance |
+| Trigger Code | Template | Wired In UI | Location |
+|--------------|----------|-------------|----------|
+| `program.launched` | ✅ | ✅ | `ProgramLaunchWorkflow.jsx` |
+| `program.application_received` | ✅ | ⚠️ Unknown | Application flow |
+| `program.application_status_changed` | ✅ | ⚠️ Unknown | Status change |
+| `program.participant_welcome` | ✅ | ⚠️ Unknown | On acceptance |
+| `event.registration_confirmed` | ✅ | ✅ | `EventRegistration.jsx` |
+| `event.reminder` | ✅ | ❌ | No scheduler |
+| `event.invitation` | ✅ | ❌ | No UI |
+| `event.updated` | ✅ | ❌ | No EventEdit.jsx |
+| `event.cancelled` | ✅ | ❌ | No cancellation UI |
+| `event.created` | ✅ | ❌ | No EventCreate.jsx |
 
 ---
 
@@ -232,961 +349,299 @@ useEventSync.js              // Program-Event synchronization
                    └─────────────┘       └─────────────┘
 ```
 
-### 3.2 Component Architecture
+### 3.2 Proposed Component Structure
 
 ```
 src/
 ├── pages/
-│   ├── programs/
-│   │   ├── Programs.jsx              # Main hub (refactored)
-│   │   ├── ProgramDetail.jsx         # Existing
-│   │   ├── ProgramCreate.jsx         # Existing
-│   │   ├── ProgramEdit.jsx           # Existing
-│   │   └── ProgramApply.jsx          # Existing
-│   └── events/
-│       ├── Events.jsx                # Event listing (new)
-│       ├── EventDetail.jsx           # Existing (enhanced)
-│       ├── EventCreate.jsx           # NEW
-│       └── EventEdit.jsx             # NEW
+│   ├── Programs.jsx              # Refactor to hub with tabs
+│   ├── ProgramDetail.jsx         # Keep as-is (feature-complete)
+│   ├── ProgramCreate.jsx         # Keep as-is
+│   ├── ProgramEdit.jsx           # Keep as-is
+│   ├── EventCalendar.jsx         # Enhance with create link
+│   ├── EventDetail.jsx           # Enhance with edit/cancel
+│   ├── EventCreate.jsx           # NEW
+│   ├── EventEdit.jsx             # NEW
+│   ├── CalendarView.jsx          # Enhance to include events table
+│   ├── CampaignPlanner.jsx       # Enhance with sync
+│   ├── MyPrograms.jsx            # Keep as-is
+│   └── ParticipantDashboard.jsx  # Keep as-is
 │
 ├── components/
-│   ├── programs/
-│   │   ├── ProgramCard.jsx
-│   │   ├── ProgramFilters.jsx
-│   │   ├── ProgramStats.jsx
-│   │   ├── CampaignPlanner.jsx       # Enhanced with sync
-│   │   ├── WaitlistManager.jsx
-│   │   ├── AIDropoutPredictor.jsx
-│   │   └── AIApplicationScorer.jsx
+│   ├── programs/                  # 37 existing components
+│   │   └── ... (all existing)
 │   │
-│   ├── events/
-│   │   ├── EventCard.jsx             # NEW
-│   │   ├── EventFilters.jsx          # NEW
-│   │   ├── EventCalendar.jsx         # Enhanced
-│   │   ├── EventRegistration.jsx     # Existing
-│   │   ├── EventCreateForm.jsx       # NEW
-│   │   ├── EventEditForm.jsx         # NEW
-│   │   ├── EventCancelDialog.jsx     # NEW
-│   │   └── EventAttendeeList.jsx     # NEW
+│   ├── events/                    # NEW FOLDER
+│   │   ├── EventCard.jsx          # NEW
+│   │   ├── EventFilters.jsx       # NEW
+│   │   ├── EventCreateForm.jsx    # NEW
+│   │   ├── EventEditForm.jsx      # NEW
+│   │   ├── EventCancelDialog.jsx  # NEW
+│   │   └── EventAttendeeList.jsx  # NEW
 │   │
-│   ├── hub/
-│   │   ├── ProgramsEventsHub.jsx     # NEW - Main container
-│   │   ├── HubTabs.jsx               # NEW - Tab navigation
-│   │   ├── HubStats.jsx              # NEW - Unified statistics
-│   │   └── QuickActions.jsx          # NEW - Common actions
+│   ├── hub/                       # NEW FOLDER
+│   │   ├── ProgramsEventsHub.jsx  # NEW - Tab container
+│   │   ├── HubTabs.jsx            # NEW - Tab navigation
+│   │   ├── HubStats.jsx           # NEW - Unified statistics
+│   │   └── QuickActions.jsx       # NEW - Common actions
 │   │
 │   └── ai/
 │       ├── AIEventOptimizer.jsx      # NEW
 │       ├── AIAttendancePredictor.jsx # NEW
-│       ├── AIConflictDetector.jsx    # NEW
-│       └── AICampaignSuggester.jsx   # NEW
+│       └── AIConflictDetector.jsx    # NEW
 │
 ├── hooks/
-│   ├── programs/
-│   │   ├── usePrograms.js
-│   │   ├── useProgramsWithVisibility.js
-│   │   └── useProgramApplications.js
-│   │
-│   └── events/
-│       ├── useEvents.js              # NEW
-│       ├── useEventRegistrations.js  # NEW
-│       ├── useEventSync.js           # NEW
-│       └── useEventCalendar.js       # NEW
+│   ├── useProgramsWithVisibility.js  # Existing
+│   ├── useEvents.js                  # NEW
+│   ├── useEventRegistrations.js      # NEW
+│   └── useEventsWithVisibility.js    # NEW
 │
 └── services/
-    ├── eventSyncService.js           # NEW - Sync logic
-    └── campaignService.js            # NEW - Campaign orchestration
+    └── eventSyncService.js           # NEW - Sync logic
 ```
 
 ---
 
-## 4. Data Model
+## 4. User Roles & Permissions
 
-### 4.1 Enhanced Events Table
+### 4.1 Current Permissions (from codebase)
+
+```javascript
+// Existing program permissions
+'program_create'     // ProgramCreate page guard
+'program_edit'       // ProgramDetail edit button
+'program_delete'     // Archive/delete
+'program_manage'     // Full management
+
+// Missing permissions (to be added)
+'event_create'       // Create events
+'event_edit'         // Edit events
+'event_delete'       // Delete/cancel events
+'event_manage'       // Full event management
+'campaign_create'    // Create campaigns
+'campaign_manage'    // Manage campaigns
+```
+
+### 4.2 Role Permission Matrix
+
+| Role | program_create | program_edit | event_create | event_edit | campaign_manage |
+|------|----------------|--------------|--------------|------------|-----------------|
+| Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Deputyship Admin | ✅ (sector) | ✅ (sector) | ✅ (sector) | ✅ (sector) | ✅ (sector) |
+| Deputyship Staff | ✅ (sector) | ❌ | ✅ (sector) | ❌ | ❌ |
+| Municipality Admin | ✅ (own) | ✅ (own) | ✅ (own) | ✅ (own) | ✅ (own) |
+| Municipality Staff | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Municipality Coordinator | ❌ | ❌ | ✅ (own) | ✅ (own) | ❌ |
+| Provider | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Citizen | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+### 4.3 Visibility Rules (from useProgramsWithVisibility)
+
+```javascript
+// Admin: Full access
+// National Deputyship: Filter by assigned sectors
+// Municipality Staff: Own municipality + national programs
+// Provider: Published programs only
+// Others: Published programs only
+```
+
+---
+
+## 5. AI Capabilities
+
+### 5.1 Existing AI Features (Programs)
+
+| Feature | Component | Model Used | Status |
+|---------|-----------|------------|--------|
+| Curriculum Generator | `AICurriculumGenerator.jsx` | useAIWithFallback | ✅ Active |
+| Dropout Predictor | `AIDropoutPredictor.jsx` | Mock (random) | ⚠️ Mock |
+| Cohort Optimizer | `AICohortOptimizerWidget.jsx` | useAIWithFallback | ✅ Active |
+| Alumni Suggester | `AIAlumniSuggester.jsx` | useAIWithFallback | ✅ Active |
+| Success Predictor | `AIProgramSuccessPredictor.jsx` | useAIWithFallback | ✅ Active |
+| Benchmarking | `AIProgramBenchmarking.jsx` | useAIWithFallback | ✅ Active |
+| Strategic Insights | Programs.jsx `handleAIInsights` | useAIWithFallback | ✅ Active |
+| Content Enhancement | ProgramEdit.jsx `handleAIEnhance` | useAIWithFallback | ✅ Active |
+
+### 5.2 Existing AI Features (Campaigns)
+
+| Feature | Component | Model Used | Status |
+|---------|-----------|------------|--------|
+| Campaign Generator | `CampaignPlanner.jsx` | useAIWithFallback | ✅ Active |
+| Subject/Body Generator | `CampaignAIHelpers.jsx` | useAIWithFallback | ✅ Active |
+
+### 5.3 Proposed AI Features (Events)
+
+| Feature | Component | Purpose |
+|---------|-----------|---------|
+| Event Optimizer | `AIEventOptimizer.jsx` | Optimal timing + description |
+| Attendance Predictor | `AIAttendancePredictor.jsx` | Forecast attendance |
+| Conflict Detector | `AIConflictDetector.jsx` | Scheduling conflict detection |
+
+---
+
+## 6. Integration Points
+
+### 6.1 Entity Linkages
+
+```
+Programs ←→ Challenges
+  - programs.linked_challenge_ids[]
+  - ProgramChallengeAlignment.jsx page exists
+
+Programs ←→ Pilots
+  - programs.linked_pilot_ids[]
+  - ProgramToPilotWorkflow.jsx component
+
+Programs ←→ Solutions
+  - programs.linked_solution_ids[]
+  - ProgramToSolutionWorkflow.jsx component
+
+Programs ←→ Events
+  - events.program_id (FK)
+  - programs.events[] (JSONB - NOT SYNCED!)
+
+Programs ←→ Applications
+  - program_applications.program_id (FK)
+
+Programs ←→ Municipalities
+  - programs.municipality_id (FK)
+
+Programs ←→ Sectors
+  - programs.sector_id (FK)
+
+Events ←→ Registrations
+  - event_registrations.event_id (FK)
+
+Events ←→ Municipalities
+  - events.municipality_id (FK)
+```
+
+### 6.2 Menu Integration (sidebar)
+
+Current structure in sidebar needs update to reflect hub:
+
+```javascript
+// Proposed menu structure
+{
+  label: 'Programs & Events',
+  icon: Layers,
+  path: '/programs',
+  children: [
+    { label: 'All Programs', path: '/programs?tab=programs' },
+    { label: 'All Events', path: '/programs?tab=events' },
+    { label: 'Calendar', path: '/programs?tab=calendar' },
+    { label: 'Campaigns', path: '/programs?tab=campaigns' },
+    { label: 'Create Program', path: '/programs/create', permission: 'program_create' },
+    { label: 'Create Event', path: '/events/create', permission: 'event_create' },
+  ]
+}
+```
+
+---
+
+## 7. Communication System
+
+### 7.1 Email Templates (Existing)
+
+| Category | Template Key | Variables |
+|----------|--------------|-----------|
+| Events | `event.registration_confirmed` | eventTitle, eventDate, location |
+| Events | `event.reminder` | eventTitle, eventDate, hours_before |
+| Events | `event.invitation` | eventTitle, eventDate, inviter_name |
+| Events | `event.updated` | eventTitle, changes_summary |
+| Events | `event.cancelled` | eventTitle, reason, alternative |
+| Programs | `program.launched` | programName, programType, launchDate |
+| Programs | `program.application_received` | programName, applicant_name |
+| Programs | `program.application_status_changed` | programName, new_status |
+| Programs | `program.participant_welcome` | programName, start_date |
+
+### 7.2 Edge Functions
+
+| Function | Purpose | Status |
+|----------|---------|--------|
+| `send-email` | Send emails via Resend | ✅ Active |
+| `campaign-sender` | Send campaigns | ✅ Active |
+| `strategy-program-theme-generator` | AI theme generation | ✅ Active |
+
+---
+
+## 8. Security Considerations
+
+### 8.1 RLS Policies Required
 
 ```sql
--- No schema changes needed, existing table is comprehensive
--- Key relationships:
--- events.program_id → programs.id (FK exists)
--- events.municipality_id → municipalities.id (FK exists)
--- events.sector_id → sectors.id (FK exists)
+-- Events table should have:
+-- 1. Public read for is_public = true
+-- 2. Write restricted by municipality/sector scope
+-- 3. Delete restricted to admins + owners
+
+-- Event registrations:
+-- 1. Users can read their own
+-- 2. Event organizers can read all for their events
+-- 3. Admins can read all
 ```
 
-### 4.2 Synchronization Model
+### 8.2 Permission Checks
 
-```javascript
-// EventSyncService.js
-
-/**
- * Sync Direction: Program.events[] → events table
- * 
- * When an event is added in CampaignPlanner:
- * 1. Create record in events table
- * 2. Store the events table ID back in program.events[].sync_id
- * 3. Keep both in sync on updates
- */
-
-const syncEventFromProgram = async (program, eventData) => {
-  // Check if already synced
-  if (eventData.sync_id) {
-    // Update existing event
-    await supabase.from('events')
-      .update({
-        title_en: eventData.name,
-        event_date: eventData.date,
-        // ... map fields
-      })
-      .eq('id', eventData.sync_id);
-  } else {
-    // Create new event
-    const { data } = await supabase.from('events')
-      .insert({
-        title_en: eventData.name,
-        program_id: program.id,
-        municipality_id: program.municipality_id,
-        sector_id: program.sector_id,
-        event_date: eventData.date,
-        // ... map fields
-      })
-      .select()
-      .single();
-    
-    // Update program.events[] with sync_id
-    // ...
-  }
-};
-```
-
-### 4.3 Data Flow Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           DATA FLOW                                         │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  User Action                  Processing                    Result          │
-│  ───────────                  ──────────                    ──────          │
-│                                                                             │
-│  ┌─────────────┐             ┌─────────────┐             ┌─────────────┐   │
-│  │ Create Event│────────────►│ EventCreate │────────────►│ events table│   │
-│  │ (Standalone)│             │   Form      │             │ + email     │   │
-│  └─────────────┘             └─────────────┘             └─────────────┘   │
-│                                                                             │
-│  ┌─────────────┐             ┌─────────────┐             ┌─────────────┐   │
-│  │ Add Event   │────────────►│ Campaign    │────────────►│ programs.   │   │
-│  │ (In Program)│             │ Planner     │             │ events[] +  │   │
-│  └─────────────┘             └──────┬──────┘             │ sync to     │   │
-│                                     │                     │ events table│   │
-│                                     ▼                     └─────────────┘   │
-│                              ┌─────────────┐                               │
-│                              │ Sync Service│                               │
-│                              └─────────────┘                               │
-│                                                                             │
-│  ┌─────────────┐             ┌─────────────┐             ┌─────────────┐   │
-│  │ Register    │────────────►│ Registration│────────────►│ event_      │   │
-│  │ for Event   │             │ Component   │             │ registrations│  │
-│  └─────────────┘             └──────┬──────┘             │ + email     │   │
-│                                     │                     └─────────────┘   │
-│                                     ▼                                       │
-│                              ┌─────────────┐                               │
-│                              │ Email Edge  │                               │
-│                              │ Function    │                               │
-│                              └─────────────┘                               │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+All new pages must use:
+- `ProtectedPage` HOC
+- `usePermissions` hook
+- `hasPermission()` checks for actions
 
 ---
 
-## 5. User Roles & Permissions
+## 9. Migration Strategy
 
-### 5.1 Role Matrix
+### 9.1 Phase 1: Event CRUD (Week 1-2)
+1. Create `/src/components/events/` folder
+2. Create `EventCreate.jsx` and `EventEdit.jsx` pages
+3. Add event permissions to database
+4. Wire email triggers
 
-| Role | Programs | Events | Campaigns | Calendar |
-|------|----------|--------|-----------|----------|
-| **Admin** | Full CRUD | Full CRUD | Full CRUD | Full Access |
-| **Deputyship Admin** | Sector CRUD | Sector CRUD | Sector CRUD | Full Access |
-| **Deputyship Staff** | Sector View/Create | Sector View/Create | View | Full Access |
-| **Municipality Admin** | Own CRUD | Own CRUD | Own CRUD | Full Access |
-| **Municipality Staff** | Own View/Create | Own View/Create | View | Full Access |
-| **Municipality Coordinator** | Own View | Own CRUD | View | Full Access |
-| **Provider** | View/Apply | View/Register | View | View |
-| **Citizen** | Public View | Public View/Register | - | Public View |
-| **Guest** | Public View | Public View | - | Public View |
+### 9.2 Phase 2: Sync Service (Week 3)
+1. Create `eventSyncService.js`
+2. Update `CampaignPlanner.jsx` to use sync
+3. Add sync_id tracking
 
-### 5.2 Required Permissions
+### 9.3 Phase 3: Hub Consolidation (Week 4)
+1. Refactor `Programs.jsx` to hub with tabs
+2. Create hub components
+3. Update navigation/menus
 
-```javascript
-// New permissions to add to the system
-const eventPermissions = [
-  'event_create',    // Create new events
-  'event_edit',      // Edit own/assigned events
-  'event_delete',    // Delete/cancel events
-  'event_manage',    // Manage all event aspects
-  'event_register',  // Register for events
-  'event_view_all',  // View all events (bypass visibility)
-];
-
-const campaignPermissions = [
-  'campaign_create', // Create campaigns
-  'campaign_edit',   // Edit campaigns
-  'campaign_manage', // Full campaign management
-  'campaign_execute',// Execute/send campaigns
-];
-
-// Existing program permissions (for reference)
-const programPermissions = [
-  'program_create',
-  'program_edit',
-  'program_delete',
-  'program_manage',
-  'program_apply',
-  'program_review_applications',
-];
-```
-
-### 5.3 Visibility Rules
-
-```javascript
-/**
- * Visibility System Integration
- * 
- * Uses existing useVisibilitySystem hook patterns
- */
-
-// Events follow same visibility as programs:
-// - Admin: All events
-// - National Deputyship: Events in their sector(s)
-// - Geographic Municipality: Own + national events
-// - Provider: Events for programs they've applied to
-// - Public: Published/active events only
-
-const useEventsWithVisibility = (options) => {
-  const { hasFullVisibility, isNational, sectorIds, userMunicipalityId } = useVisibilitySystem();
-  
-  // Apply same patterns as useProgramsWithVisibility
-  // ...
-};
-```
+### 9.4 Phase 4: AI Enhancements (Week 5)
+1. Create AI event components
+2. Integrate with creation forms
+3. Add to hub dashboard
 
 ---
 
-## 6. Feature Specifications
+## 10. Appendix
 
-### 6.1 Programs Tab
+### A. File Size Analysis
 
-#### 6.1.1 Program Listing
-- Grid/List view toggle
-- Filters: status, type, sector, municipality, date range
-- Search: title, description, code
-- Sorting: date, participants, status
-- Quick actions: view, edit, duplicate, archive
+| File | Lines | Complexity |
+|------|-------|------------|
+| ProgramDetail.jsx | 1,215 | High (12+ tabs, many workflows) |
+| CampaignPlanner.jsx | 699 | Medium |
+| ProgramEdit.jsx | 592 | Medium |
+| ParticipantDashboard.jsx | 280 | Low |
+| EventRegistration.jsx | 221 | Low |
+| CalendarView.jsx | 210 | Low |
+| MyPrograms.jsx | 199 | Low |
+| EventDetail.jsx | 194 | Low |
+| EventCalendar.jsx | 187 | Low |
 
-#### 6.1.2 Program Creation
-- Multi-step wizard or single form
-- AI-assisted description generation
-- Template selection
-- Challenge/Pilot linking
-- Automatic code generation
+### B. Dependencies
 
-#### 6.1.3 Program Management
-- Application review queue
-- Participant management
-- Progress tracking
-- KPI monitoring
-- Event scheduling (CampaignPlanner integration)
-
-### 6.2 Events Tab
-
-#### 6.2.1 Event Listing
-- Card grid view
-- Filters: type, date, location type, program
-- Search: title, description
-- Quick registration button
-- Status indicators
-
-#### 6.2.2 Event Creation (NEW)
-
-```jsx
-// EventCreate.jsx - Feature Spec
-
-const eventCreateFeatures = {
-  basicInfo: {
-    title: { en: 'required', ar: 'optional' },
-    description: { en: 'required', ar: 'optional' },
-    eventType: 'dropdown', // webinar, workshop, etc.
-    tags: 'multi-select',
-    image: 'upload',
-  },
-  
-  scheduling: {
-    date: 'date-picker',
-    startTime: 'time-picker',
-    endTime: 'time-picker',
-    timezone: 'dropdown',
-    recurrence: 'optional', // Phase 2
-  },
-  
-  location: {
-    type: 'radio', // virtual, physical, hybrid
-    virtualLink: 'conditional', // if virtual/hybrid
-    locationName: 'conditional', // if physical/hybrid
-    locationAddress: 'conditional',
-  },
-  
-  registration: {
-    required: 'toggle',
-    maxAttendees: 'number',
-    deadline: 'date-picker',
-    waitlistEnabled: 'toggle',
-  },
-  
-  programLink: {
-    programId: 'optional-dropdown',
-    // If linked, inherits municipality/sector
-  },
-  
-  visibility: {
-    isPublic: 'toggle',
-    isFeatured: 'toggle',
-  },
-  
-  aiAssistance: {
-    generateDescription: 'button',
-    suggestTiming: 'button', // based on target audience
-    predictAttendance: 'button',
-  },
-};
-```
-
-#### 6.2.3 Event Edit (NEW)
-
-- Same form as create, pre-populated
-- Version history
-- Change notifications to registrants
-- Cancel option with reason
-
-#### 6.2.4 Event Cancellation (NEW)
-
-```jsx
-// EventCancelDialog.jsx
-
-const cancellationFeatures = {
-  reason: 'required-textarea',
-  notifyRegistrants: 'toggle', // default: true
-  offerAlternative: 'optional-event-select',
-  refundPolicy: 'info-display', // if applicable
-};
-
-// On cancellation:
-// 1. Set is_cancelled = true
-// 2. Trigger event.cancelled email to all registrants
-// 3. Update registration statuses
-// 4. Log activity
-```
-
-### 6.3 Campaigns Tab
-
-#### 6.3.1 Campaign Types
-- Awareness campaigns
-- Recruitment drives
-- Event promotion
-- Success stories
-- Surveys/Feedback
-
-#### 6.3.2 Campaign Builder
-- Template selection
-- Audience targeting
-- Multi-channel: email, in-app, (SMS Phase 2)
-- Scheduling
-- A/B testing (Phase 2)
-
-### 6.4 Calendar Tab
-
-#### 6.4.1 Views
-- Month view (default)
-- Week view
-- Day view
-- Agenda/List view
-
-#### 6.4.2 Features
-- Color-coded by type/status
-- Drag-and-drop rescheduling
-- Quick event creation
-- Conflict highlighting
-- Filter by program/type
-
-### 6.5 AI Analytics Tab
-
-#### 6.5.1 AI Features
-
-| Feature | Description | Implementation |
-|---------|-------------|----------------|
-| **Attendance Predictor** | Predict event attendance based on historical data | Edge function + ML |
-| **Optimal Timing** | Suggest best dates/times for events | Analytics-based |
-| **Conflict Detector** | Identify scheduling conflicts | Calendar analysis |
-| **Dropout Predictor** | Identify at-risk program participants | Existing component |
-| **Campaign Optimizer** | A/B test suggestions, timing optimization | Edge function |
-| **Description Generator** | AI-generated event/program descriptions | OpenAI/Gemini |
+All required dependencies are already installed:
+- `@tanstack/react-query` - Data fetching
+- `date-fns` - Date handling
+- `react-day-picker` - Calendar
+- `lucide-react` - Icons
+- `sonner` - Toasts
 
 ---
 
-## 7. Integration Points
-
-### 7.1 System Integrations
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         INTEGRATION MAP                                     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│                        ┌─────────────────┐                                  │
-│                        │  Programs &     │                                  │
-│                        │  Events Hub     │                                  │
-│                        └────────┬────────┘                                  │
-│                                 │                                           │
-│    ┌────────────────────────────┼────────────────────────────┐             │
-│    │                            │                            │             │
-│    ▼                            ▼                            ▼             │
-│ ┌──────────┐              ┌──────────┐              ┌──────────┐          │
-│ │Challenges│              │  Pilots  │              │Solutions │          │
-│ │          │◄────────────►│          │◄────────────►│          │          │
-│ └──────────┘              └──────────┘              └──────────┘          │
-│    │                            │                            │             │
-│    └────────────────────────────┼────────────────────────────┘             │
-│                                 │                                           │
-│                                 ▼                                           │
-│                        ┌─────────────────┐                                  │
-│                        │   Providers     │                                  │
-│                        │   (Applicants)  │                                  │
-│                        └─────────────────┘                                  │
-│                                 │                                           │
-│         ┌───────────────────────┼───────────────────────┐                  │
-│         │                       │                       │                  │
-│         ▼                       ▼                       ▼                  │
-│  ┌─────────────┐        ┌─────────────┐        ┌─────────────┐            │
-│  │Municipalities│        │  Sectors    │        │  Regions    │            │
-│  └─────────────┘        └─────────────┘        └─────────────┘            │
-│                                                                             │
-│                                 │                                           │
-│                                 ▼                                           │
-│  ┌─────────────┐        ┌─────────────┐        ┌─────────────┐            │
-│  │   Email     │        │Notifications│        │  Activity   │            │
-│  │   System    │        │   System    │        │    Logs     │            │
-│  └─────────────┘        └─────────────┘        └─────────────┘            │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 7.2 Challenge Integration
-
-```javascript
-// Programs can be linked to challenges
-// challenges.linked_program_ids[] ↔ programs.linked_challenge_ids[]
-
-const linkProgramToChallenge = async (programId, challengeId) => {
-  // Update both sides of relationship
-  await Promise.all([
-    supabase.from('programs')
-      .update({ linked_challenge_ids: [...existing, challengeId] })
-      .eq('id', programId),
-    supabase.from('challenges')
-      .update({ linked_program_ids: [...existing, programId] })
-      .eq('id', challengeId),
-  ]);
-};
-```
-
-### 7.3 Pilot Integration
-
-```javascript
-// Programs can spawn from successful pilots
-// pilots → programs (graduation path)
-
-const graduatePilotToProgram = async (pilotId) => {
-  const pilot = await fetchPilot(pilotId);
-  
-  const programData = {
-    title_en: `${pilot.title_en} Program`,
-    description_en: pilot.description_en,
-    municipality_id: pilot.municipality_id,
-    sector_id: pilot.sector_id,
-    linked_pilot_ids: [pilotId],
-    // ... inherit relevant fields
-  };
-  
-  return createProgram(programData);
-};
-```
-
-### 7.4 Provider Integration
-
-```javascript
-// Providers apply to programs
-// Providers register for events
-
-const providerIntegration = {
-  programs: {
-    canApply: true,
-    canViewApplicationStatus: true,
-    receivesNotifications: ['accepted', 'rejected', 'waitlisted'],
-  },
-  events: {
-    canRegister: true,
-    canViewRegisteredEvents: true,
-    receivesReminders: true,
-  },
-};
-```
-
----
-
-## 8. Communication System
-
-### 8.1 Email Triggers
-
-| Trigger | When | Recipients | Template |
-|---------|------|------------|----------|
-| `event.created` | New event published | Relevant users by visibility | Event announcement |
-| `event.updated` | Event details changed | All registrants | Update notification |
-| `event.cancelled` | Event cancelled | All registrants | Cancellation notice |
-| `event.reminder` | 24h before event | Confirmed registrants | Event reminder |
-| `event.registration_confirmed` | User registers | Registrant | Confirmation |
-| `program.application_received` | Provider applies | Applicant + Manager | Receipt confirmation |
-| `program.application_status_changed` | Status changes | Applicant | Status update |
-| `program.participant_welcome` | Accepted to program | New participant | Welcome package |
-
-### 8.2 Email Implementation
-
-```javascript
-// Edge function: send-email
-
-const sendEventEmail = async (triggerCode, eventId, recipientEmails) => {
-  const event = await fetchEvent(eventId);
-  const template = await fetchTemplate(triggerCode);
-  
-  const variables = {
-    event_title: event.title_en,
-    event_date: formatDate(event.event_date),
-    event_time: `${event.start_time} - ${event.end_time}`,
-    event_location: event.location_name || event.virtual_link,
-    event_link: `${BASE_URL}/events/${event.id}`,
-  };
-  
-  return sendBatchEmail(template, recipientEmails, variables);
-};
-```
-
-### 8.3 In-App Notifications
-
-```javascript
-// Notification types for events
-const eventNotificationTypes = [
-  'event_created',
-  'event_updated', 
-  'event_cancelled',
-  'event_reminder',
-  'event_registration_confirmed',
-  'event_registration_cancelled',
-  'event_feedback_requested',
-];
-
-// Use existing citizen_notifications table
-const createEventNotification = async (userId, type, eventId) => {
-  await supabase.from('citizen_notifications').insert({
-    user_id: userId,
-    notification_type: type,
-    entity_type: 'event',
-    entity_id: eventId,
-    title: getNotificationTitle(type),
-    message: getNotificationMessage(type, event),
-  });
-};
-```
-
----
-
-## 9. AI Capabilities
-
-### 9.1 AI Event Optimizer
-
-```javascript
-// AIEventOptimizer.jsx
-
-const aiEventOptimizer = {
-  features: [
-    {
-      name: 'Optimal Timing',
-      description: 'Suggests best date/time based on target audience availability',
-      input: { targetAudience: 'string', eventType: 'string' },
-      output: { suggestedDates: 'Date[]', reasoning: 'string' },
-    },
-    {
-      name: 'Description Generator',
-      description: 'Generates compelling event description',
-      input: { title: 'string', eventType: 'string', keyPoints: 'string[]' },
-      output: { description: 'string', tagline: 'string' },
-    },
-    {
-      name: 'Attendance Predictor',
-      description: 'Predicts expected attendance',
-      input: { eventId: 'uuid' },
-      output: { predicted: 'number', confidence: 'number', factors: 'string[]' },
-    },
-  ],
-};
-```
-
-### 9.2 AI Conflict Detector
-
-```javascript
-// AIConflictDetector.jsx
-
-const detectConflicts = async (newEvent) => {
-  // Check for:
-  // 1. Same organizer has another event
-  // 2. Same municipality has overlapping events
-  // 3. Similar target audience has competing events
-  // 4. Key stakeholders have calendar conflicts
-  
-  const conflicts = await analyzeCalendarConflicts(newEvent);
-  
-  return {
-    hasConflicts: conflicts.length > 0,
-    conflicts: conflicts.map(c => ({
-      type: c.type,
-      severity: c.severity, // high, medium, low
-      conflictingEvent: c.event,
-      suggestion: c.resolution,
-    })),
-  };
-};
-```
-
-### 9.3 AI Campaign Suggester
-
-```javascript
-// AICampaignSuggester.jsx
-
-const suggestCampaign = async (programId) => {
-  const program = await fetchProgram(programId);
-  
-  // Analyze program details and suggest:
-  return {
-    campaignType: 'recommended type',
-    targetAudience: 'segment definition',
-    messaging: {
-      headline: 'suggested headline',
-      body: 'suggested body',
-      cta: 'suggested call-to-action',
-    },
-    timing: {
-      startDate: 'suggested start',
-      duration: 'suggested duration',
-      frequency: 'suggested frequency',
-    },
-    channels: ['email', 'in-app'],
-  };
-};
-```
-
----
-
-## 10. UI/UX Design
-
-### 10.1 Hub Layout
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  Programs & Events Hub                                    [+ New ▼] [🔔] [⚙]│
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────┬─────────┬─────────┬─────────┬─────────┐                       │
-│  │Programs │ Events  │Campaigns│Calendar │AI Stats │                       │
-│  └─────────┴─────────┴─────────┴─────────┴─────────┘                       │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  Quick Stats Bar                                                     │   │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │   │
-│  │  │Active   │ │Upcoming │ │Total    │ │Open     │ │Pending  │       │   │
-│  │  │Programs │ │Events   │ │Attendees│ │Campaigns│ │Reviews  │       │   │
-│  │  │   12    │ │    8    │ │  1,247  │ │    3    │ │   45    │       │   │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘       │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-│  ┌─────────────────────────┐ ┌─────────────────────────────────────────┐   │
-│  │ Filters                 │ │ Content Area (tab-specific)             │   │
-│  │ ───────                 │ │                                         │   │
-│  │ Status: [All ▼]         │ │ ┌───────────────┐ ┌───────────────┐    │   │
-│  │ Type: [All ▼]           │ │ │ Program Card  │ │ Program Card  │    │   │
-│  │ Sector: [All ▼]         │ │ │               │ │               │    │   │
-│  │ Date: [Range]           │ │ └───────────────┘ └───────────────┘    │   │
-│  │                         │ │                                         │   │
-│  │ [Clear Filters]         │ │ ┌───────────────┐ ┌───────────────┐    │   │
-│  │                         │ │ │ Program Card  │ │ Program Card  │    │   │
-│  │ ───────                 │ │ │               │ │               │    │   │
-│  │ Quick Actions           │ │ └───────────────┘ └───────────────┘    │   │
-│  │ • Create Program        │ │                                         │   │
-│  │ • Create Event          │ │                                         │   │
-│  │ • Launch Campaign       │ │                                         │   │
-│  └─────────────────────────┘ └─────────────────────────────────────────┘   │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 10.2 Event Creation Flow
-
-```
-Step 1: Basic Info          Step 2: Schedule           Step 3: Settings
-┌─────────────────┐        ┌─────────────────┐        ┌─────────────────┐
-│ Title *         │        │ Date *          │        │ Registration    │
-│ [____________]  │        │ [📅 Select]     │        │ [✓] Required    │
-│                 │        │                 │        │                 │
-│ Description *   │        │ Start Time *    │        │ Max Attendees   │
-│ [____________]  │        │ [🕐 Select]     │        │ [____100____]   │
-│ [____________]  │        │                 │        │                 │
-│ [____________]  │        │ End Time *      │        │ Deadline        │
-│                 │        │ [🕐 Select]     │        │ [📅 Select]     │
-│ Event Type *    │        │                 │        │                 │
-│ [Workshop ▼]    │        │ Timezone        │        │ [✓] Waitlist    │
-│                 │        │ [UTC+3 ▼]       │        │                 │
-│ [🤖 AI Assist]  │        │                 │        │ Visibility      │
-│                 │        │ Location Type   │        │ [✓] Public      │
-│ Tags            │        │ ○ Virtual       │        │ [ ] Featured    │
-│ [____________]  │        │ ○ Physical      │        │                 │
-│                 │        │ ○ Hybrid        │        │ Link to Program │
-│ Image           │        │                 │        │ [Select... ▼]   │
-│ [📤 Upload]     │        │ [AI Suggest]    │        │                 │
-└─────────────────┘        └─────────────────┘        └─────────────────┘
-        │                          │                          │
-        ▼                          ▼                          ▼
-   [← Back]                   [← Back]                   [← Back]
-   [Next →]                   [Next →]                   [Create Event]
-```
-
-### 10.3 Calendar View
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  December 2025                                    [Month][Week][Day][Agenda]│
-├─────────────────────────────────────────────────────────────────────────────┤
-│  Sun    Mon    Tue    Wed    Thu    Fri    Sat                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│   1      2      3      4      5      6      7                              │
-│        ┌────┐                      ┌────┐                                  │
-│        │🔵  │                      │🟢  │                                  │
-│        │Wksp│                      │Demo│                                  │
-│        └────┘                      └────┘                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│   8      9     10     11     12     13     14                              │
-│        ┌────┐        ┌────┐                                                │
-│        │🟠  │        │🔴  │ ← Conflict                                     │
-│        │Conf│        │⚠️  │   indicator                                    │
-│        └────┘        └────┘                                                │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  Legend: 🔵 Workshop  🟢 Demo  🟠 Conference  🔴 Conflict                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 11. API Specifications
-
-### 11.1 Event APIs
-
-```typescript
-// Event CRUD Operations
-
-// Create Event
-POST /events
-Body: EventCreateDTO
-Response: Event
-
-// Update Event
-PUT /events/:id
-Body: EventUpdateDTO
-Response: Event
-
-// Cancel Event
-POST /events/:id/cancel
-Body: { reason: string, notifyRegistrants: boolean }
-Response: { success: boolean }
-
-// Get Event with Registrations
-GET /events/:id?include=registrations
-Response: Event & { registrations: Registration[] }
-
-// Register for Event
-POST /events/:id/register
-Body: { user_email: string, notes?: string }
-Response: Registration
-
-// Cancel Registration
-DELETE /events/:id/register
-Response: { success: boolean }
-```
-
-### 11.2 Program-Event Sync API
-
-```typescript
-// Sync Program Events
-POST /programs/:id/sync-events
-Response: { synced: number, created: number, updated: number }
-
-// Get Program with Events
-GET /programs/:id?include=events
-Response: Program & { events: Event[] }
-```
-
----
-
-## 12. Security Considerations
-
-### 12.1 RLS Policies
-
-```sql
--- Events RLS (similar pattern to programs)
-
--- Public can view published, non-cancelled events
-CREATE POLICY "Public can view published events"
-ON events FOR SELECT
-USING (is_public = true AND is_cancelled = false);
-
--- Staff can view events in their scope
-CREATE POLICY "Staff can view scoped events"
-ON events FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM user_roles ur
-    WHERE ur.user_id = auth.uid()
-    AND (
-      ur.role = 'admin'
-      OR ur.municipality_id = events.municipality_id
-      OR (ur.role IN ('deputyship_admin', 'deputyship_staff') 
-          AND events.sector_id IN (SELECT unnest(focus_sectors) FROM municipalities WHERE id = ur.municipality_id))
-    )
-  )
-);
-
--- Organizers can manage their events
-CREATE POLICY "Organizers can manage events"
-ON events FOR ALL
-USING (
-  organizer_id = auth.uid() 
-  OR created_by_email = (SELECT user_email FROM user_profiles WHERE user_id = auth.uid())
-);
-```
-
-### 12.2 Input Validation
-
-```javascript
-// Zod schemas for validation
-
-const eventCreateSchema = z.object({
-  title_en: z.string().min(5).max(200),
-  title_ar: z.string().max(200).optional(),
-  description_en: z.string().min(20).max(5000),
-  event_type: z.enum(['webinar', 'workshop', 'conference', ...]),
-  event_date: z.string().datetime(),
-  start_time: z.string().regex(/^\d{2}:\d{2}$/),
-  end_time: z.string().regex(/^\d{2}:\d{2}$/),
-  location_type: z.enum(['virtual', 'physical', 'hybrid']),
-  max_attendees: z.number().min(1).max(10000).optional(),
-  // ...
-});
-```
-
----
-
-## 13. Migration Strategy
-
-### 13.1 Phase 1: Core Event CRUD (Week 1-2)
-
-```
-Day 1-2: Create missing UI components
-├── EventCreate.jsx
-├── EventEdit.jsx
-├── EventCreateForm.jsx
-└── EventCancelDialog.jsx
-
-Day 3-4: Wire email triggers
-├── event.created → EventCreate
-├── event.updated → EventEdit
-└── event.cancelled → EventCancelDialog
-
-Day 5: Add permissions
-├── event_create
-├── event_edit
-├── event_delete
-└── event_manage
-
-Day 6-7: Testing & fixes
-```
-
-### 13.2 Phase 2: Synchronization (Week 3)
-
-```
-Day 1-2: Create EventSyncService
-├── syncEventFromProgram()
-├── syncProgramFromEvent()
-└── bidirectionalSync()
-
-Day 3-4: Update CampaignPlanner
-├── Auto-sync on event add
-├── Sync indicator UI
-└── Conflict detection
-
-Day 5: Testing sync
-```
-
-### 13.3 Phase 3: Hub Consolidation (Week 4)
-
-```
-Day 1-2: Create hub components
-├── ProgramsEventsHub.jsx
-├── HubTabs.jsx
-└── HubStats.jsx
-
-Day 3: Update routing & menus
-
-Day 4-5: Testing & polish
-```
-
-### 13.4 Phase 4: AI Enhancements (Week 5)
-
-```
-Day 1-2: AI components
-├── AIEventOptimizer.jsx
-├── AIAttendancePredictor.jsx
-└── AIConflictDetector.jsx
-
-Day 3-4: Integration & testing
-
-Day 5: Documentation & cleanup
-```
-
----
-
-## Appendix A: Glossary
-
-| Term | Definition |
-|------|------------|
-| **Program** | A structured initiative with applications, participants, and outcomes |
-| **Event** | A scheduled occurrence (webinar, workshop, etc.) |
-| **Campaign** | A coordinated communication effort |
-| **Hub** | The unified management interface |
-| **Sync** | Bidirectional data synchronization between systems |
-| **Visibility** | Access rules based on user role and geography |
-
-## Appendix B: References
-
-- Existing Files: `src/pages/Programs.jsx`, `src/components/events/EventCalendar.jsx`
-- Database Schema: `events`, `programs`, `event_registrations`, `program_applications`
-- Email System: `email_triggers`, `email_templates`, `email_logs`
-- Permissions: `permissions`, `role_permissions`, `user_roles`
-
----
-
-**Document Status:** Draft  
-**Next Review:** After Phase 1 completion  
-**Owner:** Development Team
+**Document Status:** Comprehensive Review Complete  
+**Last Updated:** 2025-12-13  
+**Next Action:** Proceed with Phase 1 Implementation
