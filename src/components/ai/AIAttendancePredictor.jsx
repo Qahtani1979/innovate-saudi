@@ -48,7 +48,22 @@ Provide your response as a JSON object:
   "no_show_estimate": 15
 }`;
 
-    const result = await invokeAI(prompt, 'json');
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          predicted_attendance: { type: 'number' },
+          attendance_rate: { type: 'number' },
+          confidence: { type: 'string' },
+          trend: { type: 'string' },
+          factors: { type: 'array' },
+          recommendations: { type: 'array' },
+          risk_level: { type: 'string' },
+          no_show_estimate: { type: 'number' }
+        }
+      }
+    });
     if (result.success && result.data) {
       setPrediction(result.data);
       if (onPredictionComplete) {

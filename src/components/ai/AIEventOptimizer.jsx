@@ -49,7 +49,19 @@ Provide your response as a JSON object with this exact structure:
   }
 }`;
 
-    const result = await invokeAI(prompt, 'json');
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          optimal_timing: { type: 'object' },
+          description_enhancement: { type: 'object' },
+          suggested_tags: { type: 'array', items: { type: 'string' } },
+          event_type_recommendation: { type: 'object' },
+          capacity_suggestion: { type: 'object' }
+        }
+      }
+    });
     if (result.success && result.data) {
       setSuggestions(result.data);
     }

@@ -77,7 +77,18 @@ Provide your analysis as a JSON object:
   }
 }`;
 
-    const result = await invokeAI(prompt, 'json');
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          programs_without_events: { type: 'array' },
+          event_gaps: { type: 'array' },
+          synergy_opportunities: { type: 'array' },
+          overall_health: { type: 'object' }
+        }
+      }
+    });
     if (result.success && result.data) {
       setAnalysis(result.data);
     }
