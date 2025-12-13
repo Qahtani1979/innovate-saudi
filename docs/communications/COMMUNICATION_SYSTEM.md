@@ -220,7 +220,7 @@ Per-user notification settings with auto-creation trigger.
 | `frequency` | VARCHAR | immediate/daily/weekly |
 | `quiet_hours_start` / `_end` | TIME | Do not disturb window |
 
-### 5. `email_campaigns` (18 columns)
+### 5. `email_campaigns` (20 columns)
 Marketing and bulk email campaigns.
 
 | Column | Type | Description |
@@ -231,6 +231,8 @@ Marketing and bulk email campaigns.
 | `audience_type` | VARCHAR | all/role/municipality/sector/custom |
 | `audience_filter` | JSONB | Audience criteria |
 | `campaign_variables` | JSONB | Custom variables |
+| `program_id` | UUID | FK to programs (Strategy Integration) |
+| `challenge_id` | UUID | FK to challenges (Strategy Integration) |
 | `recipient_count` | INTEGER | Total recipients |
 | `sent_count` | INTEGER | Successfully sent |
 | `opened_count` | INTEGER | Opened emails |
@@ -240,6 +242,8 @@ Marketing and bulk email campaigns.
 | `scheduled_at` | TIMESTAMPTZ | When to send |
 | `started_at` / `completed_at` | TIMESTAMPTZ | Execution times |
 | `created_by` | VARCHAR | Admin who created |
+
+> **Strategy Integration**: Campaigns linked to programs/challenges enable indirect strategy chain tracking.
 
 ### 6. `email_trigger_config` (11 columns)
 Maps trigger keys to templates for automated emails.
