@@ -123,23 +123,21 @@ const ENTITY_DEFINITIONS = {
     label: 'Providers',
     table: 'providers',
     requiredColumns: ['name_en'],
-    templateColumns: ['code', 'name_en', 'name_ar', 'description_en', 'description_ar', 'provider_type', 'company_size', 'website', 'email', 'phone', 'country', 'city', 'status'],
+    templateColumns: ['name_en', 'name_ar', 'provider_type', 'website_url', 'contact_email', 'contact_phone', 'country', 'city', 'cr_number'],
     aiSchema: {
       type: 'object',
       properties: {
-        code: { type: 'string' },
         name_en: { type: 'string' },
         name_ar: { type: 'string' },
-        description_en: { type: 'string' },
         provider_type: { type: 'string' },
-        company_size: { type: 'string' },
-        website: { type: 'string' },
-        email: { type: 'string' },
-        country: { type: 'string' }
+        website_url: { type: 'string' },
+        contact_email: { type: 'string' },
+        country: { type: 'string' },
+        city: { type: 'string' }
       },
       required: ['name_en']
     },
-    relations: {},
+    relations: { organization_id: 'organizations' },
     hasDeleted: true
   },
   organizations: {
@@ -967,7 +965,7 @@ function ImportExportHub() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="ai-uploader" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
             {t({ en: "AI Uploader", ar: "الرافع الذكي" })}
@@ -1096,6 +1094,29 @@ function ImportExportHub() {
                         className="h-8"
                       />
                     </div>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <Label className="text-xs">{t({ en: "Status", ar: "الحالة" })}</Label>
+                    <Select 
+                      value={exportFilters.status} 
+                      onValueChange={(value) => setExportFilters(f => ({ ...f, status: value === '__all__' ? '' : value }))}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder={t({ en: "All statuses", ar: "جميع الحالات" })} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">{t({ en: "All statuses", ar: "جميع الحالات" })}</SelectItem>
+                        <SelectItem value="draft">{t({ en: "Draft", ar: "مسودة" })}</SelectItem>
+                        <SelectItem value="submitted">{t({ en: "Submitted", ar: "مقدم" })}</SelectItem>
+                        <SelectItem value="under_review">{t({ en: "Under Review", ar: "قيد المراجعة" })}</SelectItem>
+                        <SelectItem value="approved">{t({ en: "Approved", ar: "معتمد" })}</SelectItem>
+                        <SelectItem value="active">{t({ en: "Active", ar: "نشط" })}</SelectItem>
+                        <SelectItem value="completed">{t({ en: "Completed", ar: "مكتمل" })}</SelectItem>
+                        <SelectItem value="cancelled">{t({ en: "Cancelled", ar: "ملغى" })}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
