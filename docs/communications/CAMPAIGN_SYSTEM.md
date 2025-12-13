@@ -140,6 +140,8 @@ Access at `/communications-hub` → Campaigns tab
 | `audience_type` | VARCHAR | all/role/municipality/sector/custom |
 | `audience_filter` | JSONB | Filter criteria |
 | `campaign_variables` | JSONB | Custom variables |
+| `program_id` | UUID | FK to programs (Strategy Integration) |
+| `challenge_id` | UUID | FK to challenges (Strategy Integration) |
 | `recipient_count` | INTEGER | Total recipients |
 | `sent_count` | INTEGER | Successfully sent |
 | `opened_count` | INTEGER | Unique opens |
@@ -151,6 +153,8 @@ Access at `/communications-hub` → Campaigns tab
 | `completed_at` | TIMESTAMPTZ | When sending finished |
 | `created_by` | VARCHAR | Admin email |
 | `created_at` | TIMESTAMPTZ | Creation time |
+
+> **Strategy Integration**: Campaigns can be linked to programs or challenges via `program_id` and `challenge_id` fields. This enables indirect strategy chain: Campaign → Program/Challenge → Strategic Plan.
 
 ### `campaign_recipients` Table
 
