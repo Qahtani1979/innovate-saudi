@@ -20,13 +20,24 @@ const ENTITY_OPTIONS = [
   { id: 'challenges', name: 'Challenges', icon: Target, description: 'Municipal challenges and problems' },
   { id: 'solutions', name: 'Solutions', icon: Lightbulb, description: 'Innovative solutions and technologies' },
   { id: 'pilots', name: 'Pilots', icon: Briefcase, description: 'Pilot projects and trials' },
+  { id: 'programs', name: 'Programs', icon: Briefcase, description: 'Innovation programs and initiatives' },
   { id: 'municipalities', name: 'Municipalities', icon: Building2, description: 'Cities and municipalities' },
   { id: 'organizations', name: 'Organizations', icon: Globe, description: 'Companies and institutions' },
   { id: 'providers', name: 'Providers', icon: Users, description: 'Solution providers and vendors' },
   { id: 'case_studies', name: 'Case Studies', icon: FileText, description: 'Success stories and case studies' },
   { id: 'rd_projects', name: 'R&D Projects', icon: Sparkles, description: 'Research and development projects' },
+  { id: 'rd_calls', name: 'R&D Calls', icon: Sparkles, description: 'Research funding calls' },
+  { id: 'events', name: 'Events', icon: FileText, description: 'Events and conferences' },
+  { id: 'living_labs', name: 'Living Labs', icon: Building2, description: 'Innovation living labs' },
+  { id: 'sandboxes', name: 'Sandboxes', icon: Target, description: 'Regulatory sandboxes' },
+  { id: 'contracts', name: 'Contracts', icon: FileText, description: 'Agreements and contracts' },
+  { id: 'budgets', name: 'Budgets', icon: FileText, description: 'Budget allocations' },
   { id: 'sectors', name: 'Sectors', icon: Target, description: 'Industry sectors' },
-  { id: 'strategic_plans', name: 'Strategic Plans', icon: FileText, description: 'Strategic planning documents' }
+  { id: 'regions', name: 'Regions', icon: Globe, description: 'Geographic regions' },
+  { id: 'cities', name: 'Cities', icon: Building2, description: 'Cities data' },
+  { id: 'strategic_plans', name: 'Strategic Plans', icon: FileText, description: 'Strategic planning documents' },
+  { id: 'tags', name: 'Tags', icon: Target, description: 'Taxonomy tags' },
+  { id: 'kpi_references', name: 'KPI References', icon: Target, description: 'KPI definitions' }
 ];
 
 export default function StepEntityDetection({ state, updateState, onNext, onBack }) {
@@ -50,16 +61,27 @@ export default function StepEntityDetection({ state, updateState, onNext, onBack
       const prompt = `Analyze this data and determine which entity type it belongs to.
 
 Available entity types:
-- challenges: Municipal challenges with fields like title, description, status, priority, sector
-- solutions: Innovative solutions with fields like name, provider, technology_type, maturity_level
-- pilots: Pilot projects with fields like name, municipality, start_date, end_date, budget
-- municipalities: Cities with fields like name, region, population, coordinates
-- organizations: Companies with fields like name, type, industry, contact info
-- providers: Solution providers with fields like company_name, expertise, certifications
-- case_studies: Success stories with title, challenge, solution, results
-- rd_projects: Research projects with title, objectives, methodology, findings
-- sectors: Industry sectors with name, description
-- strategic_plans: Strategic plans with goals, timeline, KPIs
+- challenges: Municipal challenges with fields like title_en, title_ar, description_en, status, priority, sector, municipality_id
+- solutions: Innovative solutions with fields like name_en, name_ar, description_en, solution_type, maturity_level, provider_id
+- pilots: Pilot projects with fields like title_en, title_ar, description_en, pilot_type, stage, status, start_date, end_date, budget, municipality_id
+- programs: Innovation programs with fields like name_en, name_ar, description_en, program_type, status, start_date, end_date, budget
+- municipalities: Cities with fields like name_en, name_ar, region_id, population, area
+- organizations: Companies with fields like name_en, name_ar, organization_type, website, email
+- providers: Solution providers with fields like name_en, name_ar, provider_type, website_url, contact_email, country
+- case_studies: Success stories with title_en, description_en, challenge_description, solution_description, results_achieved
+- rd_projects: Research projects with title_en, description_en, project_type, status, budget
+- rd_calls: Research funding calls with title_en, description_en, call_type, status, budget
+- events: Events and conferences with title_en, event_type, start_date, end_date, location
+- living_labs: Innovation labs with name_en, lab_type, status, location, capacity
+- sandboxes: Regulatory sandboxes with name_en, sandbox_type, status, start_date, end_date
+- contracts: Agreements with title_en, contract_code, contract_type, contract_value, provider_id
+- budgets: Budget allocations with name_en, budget_code, total_amount, allocated_amount, fiscal_year
+- sectors: Industry sectors with name_en, name_ar, description_en, code
+- regions: Geographic regions with name_en, name_ar, code
+- cities: Cities data with name_en, name_ar, region_id, municipality_id, population
+- strategic_plans: Strategic planning with title_en, plan_type, status, start_date, end_date
+- tags: Taxonomy tags with name_en, name_ar, category, color
+- kpi_references: KPI definitions with name_en, code, description_en, unit, category, target_value
 
 Data headers: ${headers.join(', ')}
 Sample rows: ${JSON.stringify(sampleData, null, 2)}

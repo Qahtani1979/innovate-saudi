@@ -152,15 +152,38 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
     URL.revokeObjectURL(url);
   };
 
-  useEffect(() => {
-    // Auto-start import
+  // Show confirmation before starting
+  const [confirmed, setConfirmed] = useState(false);
+  
+  const handleStartImport = () => {
+    setConfirmed(true);
     startImport();
-  }, []);
+  };
 
   return (
     <div className="space-y-6">
-      {/* Progress Section */}
-      {isImporting ? (
+      {/* Confirmation before import */}
+      {!confirmed && !isImporting && !results ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Sparkles className="h-16 w-16 text-primary mb-4" />
+          <h2 className="text-xl font-bold mb-2">Ready to Import</h2>
+          <p className="text-muted-foreground text-center mb-6 max-w-md">
+            You are about to import <strong>{state.enrichedData?.length || 0}</strong> records 
+            to <strong className="capitalize">{state.detectedEntity}</strong>.
+            This action cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Review
+            </Button>
+            <Button onClick={handleStartImport}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Start Import
+            </Button>
+          </div>
+        </div>
+      ) : isImporting ? (
         <div className="flex flex-col items-center justify-center py-8">
           <div className="relative">
             <Loader2 className="h-16 w-16 text-primary animate-spin" />
@@ -239,67 +262,75 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
         </div>
       ) : null}
 
-      {/* Import Logs */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-medium flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Import Log
-          </h4>
-        </div>
-        <ScrollArea className="h-[150px] border rounded-lg p-3 bg-muted/50">
-          <div className="space-y-1 font-mono text-xs">
-            {logs.map((log, idx) => (
-              <div 
-                key={idx}
-                className={`flex items-start gap-2 ${
-                  log.type === 'error' ? 'text-red-600' : 
-                  log.type === 'success' ? 'text-green-600' : 
-                  log.type === 'warning' ? 'text-yellow-600' : 'text-muted-foreground'
-                }`}
-              >
-                <span className="text-muted-foreground">
-                  {log.timestamp.toLocaleTimeString()}
-                </span>
-                <span>{log.message}</span>
-              </div>
-            ))}
+      {/* Import Logs - show when confirmed */}
+      {confirmed && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-medium flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Import Log
+            </h4>
           </div>
-        </ScrollArea>
-      </div>
+          <ScrollArea className="h-[150px] border rounded-lg p-3 bg-muted/50">
+            <div className="space-y-1 font-mono text-xs">
+              {logs.length === 0 ? (
+                <p className="text-muted-foreground">Waiting to start...</p>
+              ) : logs.map((log, idx) => (
+                <div 
+                  key={idx}
+                  className={`flex items-start gap-2 ${
+                    log.type === 'error' ? 'text-red-600' : 
+                    log.type === 'success' ? 'text-green-600' : 
+                    log.type === 'warning' ? 'text-yellow-600' : 'text-muted-foreground'
+                  }`}
+                >
+                  <span className="text-muted-foreground">
+                    {log.timestamp.toLocaleTimeString()}
+                  </span>
+                  <span>{log.message}</span>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
 
-      {/* Navigation */}
-      <div className="flex justify-between pt-4">
-        <Button 
-          variant="outline" 
-          onClick={onBack} 
-          disabled={isImporting}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-        <div className="flex gap-2">
-          {results && results.failed > 0 && (
-            <Button 
-              variant="outline" 
-              onClick={startImport}
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Retry Failed
-            </Button>
-          )}
+      {/* Navigation - only show after import starts or completes */}
+      {confirmed && (
+        <div className="flex justify-between pt-4">
           <Button 
-            onClick={() => onComplete?.(results)}
+            variant="outline" 
+            onClick={onBack} 
             disabled={isImporting}
             className="gap-2"
           >
-            <CheckCircle className="h-4 w-4" />
-            Done
+            <ArrowLeft className="h-4 w-4" />
+            Back
           </Button>
+          <div className="flex gap-2">
+            {results && results.failed > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={startImport}
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry Failed
+              </Button>
+            )}
+            {results && (
+              <Button 
+                onClick={() => onComplete?.(results)}
+                disabled={isImporting}
+                className="gap-2"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Done
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

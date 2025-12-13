@@ -398,12 +398,23 @@ Return corrections and enrichments.`,
 
       if (values.length === 0) return;
 
-      const { data: existing } = await supabase
+      // Build query - handle tables with/without is_deleted
+      let query = supabase
         .from(state.detectedEntity)
         .select(titleField)
         .in(titleField, values)
-        .eq('is_deleted', false)
         .limit(100);
+
+      // Only add is_deleted filter for tables that have this column
+      const tablesWithDeleted = ['challenges', 'solutions', 'pilots', 'programs', 'providers', 
+        'organizations', 'rd_projects', 'sandboxes', 'events', 'contracts', 'budgets', 
+        'strategic_plans', 'rd_calls'];
+      
+      if (tablesWithDeleted.includes(state.detectedEntity)) {
+        query = query.eq('is_deleted', false);
+      }
+
+      const { data: existing } = await query;
 
       if (existing && existing.length > 0) {
         const existingValues = new Set(existing.map(e => e[titleField]?.toLowerCase().trim()));
