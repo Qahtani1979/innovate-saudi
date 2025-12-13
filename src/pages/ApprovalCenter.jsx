@@ -12,8 +12,10 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import { 
   CheckCircle, Clock, AlertCircle, FileText, TestTube, Microscope, 
-  Calendar, Send, Sparkles, Loader2, TrendingUp, Shield, Target, Users 
+  Calendar, Send, Sparkles, Loader2, TrendingUp, Shield, Target, Users,
+  CalendarDays
 } from 'lucide-react';
+import { format } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import InlineApprovalWizard from '../components/approval/InlineApprovalWizard';
 import { getGateConfig } from '../components/approval/ApprovalGateConfig';
@@ -268,6 +270,24 @@ function ApprovalCenter() {
     }
   });
 
+  // Fetch events pending approval
+  const { data: eventApprovals = [] } = useQuery({
+    queryKey: ['event-approvals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          programs:program_id (title_en, title_ar)
+        `)
+        .eq('status', 'pending')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const approveMutation = useMutation({
     mutationFn: async ({ entity, id, updates }) => {
       if (entity === 'challenge') {
@@ -378,7 +398,8 @@ Provide approval recommendation with reasoning.`;
                        rdApprovals.length + programApprovalRequests.length + 
                        matchmakerApprovalRequests.length + policyApprovals.length +
                        solutionApprovals.length + programEntityApprovals.length +
-                       citizenIdeas.length + innovationProposalApprovals.length;
+                       citizenIdeas.length + innovationProposalApprovals.length +
+                       eventApprovals.length;
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -396,7 +417,7 @@ Provide approval recommendation with reasoning.`;
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 lg:grid-cols-11 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="pt-6">
             <div className="text-center">
@@ -418,6 +439,14 @@ Provide approval recommendation with reasoning.`;
             <div className="text-center">
               <p className="text-sm text-slate-600">{t({ en: 'Solutions', ar: 'الحلول' })}</p>
               <p className="text-3xl font-bold text-yellow-600 mt-1">{solutionApprovals.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-cyan-50 to-white">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-slate-600">{t({ en: 'Events', ar: 'الفعاليات' })}</p>
+              <p className="text-3xl font-bold text-cyan-600 mt-1">{eventApprovals.length}</p>
             </div>
           </CardContent>
         </Card>
@@ -480,7 +509,7 @@ Provide approval recommendation with reasoning.`;
       </div>
 
       <Tabs defaultValue="challenges" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-10 h-auto">
+        <TabsList className="grid w-full grid-cols-11 h-auto">
           <TabsTrigger value="challenges" className="flex flex-col gap-1 py-3">
             <AlertCircle className="h-4 w-4" />
             <span className="text-xs">{t({ en: 'Challenges', ar: 'التحديات' })}</span>
@@ -492,6 +521,10 @@ Provide approval recommendation with reasoning.`;
           <TabsTrigger value="solutions" className="flex flex-col gap-1 py-3">
             <Target className="h-4 w-4" />
             <span className="text-xs">{t({ en: 'Solutions', ar: 'الحلول' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="events" className="flex flex-col gap-1 py-3">
+            <CalendarDays className="h-4 w-4" />
+            <span className="text-xs">{t({ en: 'Events', ar: 'الفعاليات' })}</span>
           </TabsTrigger>
           <TabsTrigger value="program-apps" className="flex flex-col gap-1 py-3">
             <FileText className="h-4 w-4" />
@@ -700,6 +733,79 @@ Provide approval recommendation with reasoning.`;
               <CardContent className="text-center py-12">
                 <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
                 <p className="text-slate-500">{t({ en: 'No pending solution approvals', ar: 'لا توجد موافقات حلول معلقة' })}</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="events" className="space-y-4">
+          {eventApprovals.length > 0 ? (
+            eventApprovals.map((event) => (
+              <Card key={event.id} className="border-2 hover:border-cyan-400">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className="bg-cyan-100 text-cyan-700">{event.event_type}</Badge>
+                        <Badge className="bg-yellow-100 text-yellow-700">{event.status}</Badge>
+                        {event.event_mode && (
+                          <Badge variant="outline">{event.event_mode}</Badge>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-lg text-slate-900 mb-1">
+                        {language === 'ar' ? (event.title_ar || event.title_en) : event.title_en}
+                      </h3>
+                      <p className="text-sm text-slate-600 line-clamp-2">
+                        {language === 'ar' ? (event.description_ar || event.description_en) : event.description_en}
+                      </p>
+                      <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3" />
+                          {event.start_date ? format(new Date(event.start_date), 'MMM d, yyyy') : 'TBD'}
+                        </span>
+                        {event.programs && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {language === 'ar' ? (event.programs.title_ar || event.programs.title_en) : event.programs.title_en}
+                          </span>
+                        )}
+                        {event.max_attendees && (
+                          <span>{event.max_attendees} {t({ en: 'max capacity', ar: 'الحد الأقصى' })}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Link to={createPageUrl(`EventDetail?id=${event.id}`)}>
+                        <Button size="sm" variant="outline">
+                          {t({ en: 'Review', ar: 'مراجعة' })}
+                        </Button>
+                      </Link>
+                      <Button 
+                        size="sm" 
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={async () => {
+                          const { error } = await supabase
+                            .from('events')
+                            .update({ status: 'scheduled' })
+                            .eq('id', event.id);
+                          if (!error) {
+                            queryClient.invalidateQueries(['event-approvals']);
+                            toast.success(t({ en: 'Event approved', ar: 'تمت الموافقة' }));
+                          }
+                        }}
+                      >
+                        {t({ en: 'Approve', ar: 'موافقة' })}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12">
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                <p className="text-slate-500">{t({ en: 'No pending event approvals', ar: 'لا توجد موافقات فعاليات معلقة' })}</p>
               </CardContent>
             </Card>
           )}

@@ -496,25 +496,21 @@ src/components/events/         # ✅ CREATED
 | `event.cancelled` | EventCancelDialog.jsx → on confirm | 🟢 | Wired via useEvents hook |
 | `event.reminder` | Edge function (scheduled) | 🔴 | 24h before event |
 
-### 1.6 Database Permissions
+### 1.6 Database Permissions ✅ COMPLETE
 
 ```sql
--- Add these permissions
-INSERT INTO permissions (code, name, description, module, category) VALUES
-  ('event_create', 'Create Events', 'Create new events', 'events', 'manage'),
-  ('event_edit', 'Edit Events', 'Edit own or assigned events', 'events', 'manage'),
-  ('event_delete', 'Delete Events', 'Delete or cancel events', 'events', 'manage'),
-  ('event_manage', 'Manage Events', 'Full event management', 'events', 'manage');
-
--- Assign to roles (examples)
--- Admin: all event permissions
--- Municipality Admin: event_create, event_edit, event_delete (own)
--- Municipality Coordinator: event_create, event_edit (own)
+-- Event permissions added to permissions table
+INSERT INTO permissions (code, name, name_ar, description, description_ar, entity_type, action, is_active) VALUES
+  ('event_create', 'Create Events', 'إنشاء الفعاليات', 'Create new events', 'إنشاء فعاليات جديدة', 'event', 'create', true),
+  ('event_edit', 'Edit Events', 'تعديل الفعاليات', 'Edit own or assigned events', 'تعديل الفعاليات الخاصة أو المُسندة', 'event', 'update', true),
+  ('event_delete', 'Delete Events', 'حذف الفعاليات', 'Delete or cancel events', 'حذف أو إلغاء الفعاليات', 'event', 'delete', true),
+  ('event_manage', 'Manage Events', 'إدارة الفعاليات', 'Full event management', 'إدارة كاملة للفعاليات', 'event', 'manage', true),
+  ('event_approve', 'Approve Events', 'الموافقة على الفعاليات', 'Approve pending events', 'الموافقة على الفعاليات المعلقة', 'event', 'approve', true);
 ```
 
-**Status:** 🔴 Pending database migration
+**Status:** 🟢 Migration applied 2025-12-13
 
-### 1.7 Existing Page Updates
+### 1.7 Existing Page Updates ✅ COMPLETE
 
 | Page | Changes Needed | Status |
 |------|----------------|--------|
@@ -524,7 +520,7 @@ INSERT INTO permissions (code, name, description, module, category) VALUES
 | `ParticipantDashboard.jsx` | Add program events section | 🟢 |
 | `MyPrograms.jsx` | Add upcoming events for enrolled programs | 🟢 |
 | `ProgramOperatorPortal.jsx` | Add events section per program | 🟢 |
-| `ApprovalCenter.jsx` | Add Events tab with approval workflow | 🔴 |
+| `ApprovalCenter.jsx` | Add Events tab with approval workflow | 🟢 |
 
 ### 1.8 Route Updates ✅ COMPLETE
 
