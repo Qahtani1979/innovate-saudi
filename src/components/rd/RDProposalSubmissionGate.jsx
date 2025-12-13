@@ -8,10 +8,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { Send, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
   const [checklist, setChecklist] = useState({
     title_complete: false,
     abstract_complete: false,
@@ -59,28 +61,29 @@ export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) 
         timestamp: new Date().toISOString()
       });
 
-      // Notify call organizer via email-trigger-hub
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries(['rd-proposal']);
+      
+      // Notify call organizer using triggerEmail
       if (rdCall?.organizer_email) {
-        const { supabase } = await import('@/integrations/supabase/client');
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: 'proposal.submitted',
-            recipient_email: rdCall.organizer_email,
-            entity_type: 'rd_proposal',
-            entity_id: proposal.id,
+        try {
+          await triggerEmail('proposal.submitted', {
+            entityType: 'rd_proposal',
+            entityId: proposal.id,
+            recipientEmail: rdCall.organizer_email,
             variables: {
               proposalTitle: proposal.title_en,
               rdCallTitle: rdCall.title_en,
               piName: proposal.principal_investigator?.name,
               budgetRequested: proposal.budget_requested
-            },
-            triggered_by: proposal.created_by
-          }
-        });
+            }
+          });
+        } catch (error) {
+          console.error('Failed to send proposal.submitted email:', error);
+        }
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-proposal']);
+      
       toast.success(t({ en: 'Proposal submitted successfully!', ar: 'تم تقديم المقترح بنجاح!' }));
       onClose?.();
     }

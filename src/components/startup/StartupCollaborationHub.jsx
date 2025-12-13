@@ -9,12 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Users, Handshake, MessageSquare, Building2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function StartupCollaborationHub({ startupId }) {
   const { t } = useLanguage();
   const [showRequest, setShowRequest] = useState(false);
   const [requestData, setRequestData] = useState({ type: '', description: '' });
   const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
 
   const { data: partnerships = [] } = useQuery({
     queryKey: ['startup-partnerships', startupId],
@@ -33,10 +35,25 @@ export default function StartupCollaborationHub({ startupId }) {
 
   const createPartnershipMutation = useMutation({
     mutationFn: (data) => base44.entities.Partnership.create(data),
-    onSuccess: () => {
+    onSuccess: async (partnership) => {
       queryClient.invalidateQueries(['startup-partnerships']);
       setShowRequest(false);
       setRequestData({ type: '', description: '' });
+      
+      // Trigger partnership.created email
+      try {
+        await triggerEmail('partnership.created', {
+          entityType: 'partnership',
+          entityId: partnership?.id,
+          variables: {
+            partnershipType: requestData.type,
+            partnerDescription: requestData.description
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send partnership.created email:', error);
+      }
+      
       toast.success(t({ en: 'Partnership request sent', ar: 'تم إرسال طلب الشراكة' }));
     }
   });
