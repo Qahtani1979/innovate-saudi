@@ -182,6 +182,22 @@ This document provides a **complete inventory** of all existing program and even
 
 **Purpose:** Portfolio-level dashboard for all innovation programs with AI insights.
 
+**Permission Configuration:**
+```jsx
+export default ProtectedPage(ProgramsControlDashboard, { requiredPermissions: [] });
+```
+- **Current Access:** Any authenticated user
+- **Recommended Access:** `['program_view_all', 'program_manage']` - Program Operators, Admin
+
+**Personas Who Access:**
+| Persona | Access Level | Use Case |
+|---------|-------------|----------|
+| Admin | Full | Platform-wide portfolio oversight |
+| Executive | View | Strategic program performance review |
+| Deputyship | View | Sector-focused program metrics |
+| Program Operator | Full | Manage assigned programs |
+| Municipality | Limited | View programs in their area |
+
 **Data Sources:**
 - `programs` table (via base44 entity)
 - `program_applications` table (via base44 entity)
@@ -205,6 +221,24 @@ This document provides a **complete inventory** of all existing program and even
 ### 4.2 ParticipantDashboard.jsx (280 lines)
 
 **Purpose:** Active participant's view of their enrolled program progress.
+
+**Permission Configuration:**
+```jsx
+// NO ProtectedPage wrapper - uses inline useAuth() check
+export default function ParticipantDashboard() {
+  const { user } = useAuth();
+  // Data filtered by user.email
+}
+```
+- **Current Access:** Any authenticated user (data scoped by user email)
+- **Recommended:** Wrap with `ProtectedPage({ requiredPermissions: [] })` for consistency
+
+**Personas Who Access:**
+| Persona | Access Level | Use Case |
+|---------|-------------|----------|
+| Citizen | Full (own data) | Track personal program progress |
+| Provider | Full (own data) | Track startup's program journey |
+| Researcher | Full (own data) | Track R&D program participation |
 
 **Data Sources:**
 - `program_applications` table (filtered by `user.email`)
@@ -236,6 +270,18 @@ This document provides a **complete inventory** of all existing program and even
 
 **Purpose:** User's program portfolio - enrolled, pending, and graduated programs.
 
+**Permission Configuration:**
+```jsx
+export default ProtectedPage(MyPrograms, { requiredPermissions: [] });
+```
+- **Current Access:** Any authenticated user (data scoped by user email)
+- **Design:** Personal view - no permission needed, RLS handles data scope
+
+**Personas Who Access:**
+| Persona | Access Level | Use Case |
+|---------|-------------|----------|
+| All authenticated | Own data only | View personal program history |
+
 **Data Sources:**
 - `program_applications` table (by `applicant_email` or `created_by`)
 - `programs` table (joined)
@@ -258,6 +304,21 @@ This document provides a **complete inventory** of all existing program and even
 ### 4.4 ProgramIdeaSubmission.jsx (361 lines)
 
 **Purpose:** Multi-step innovation proposal submission form.
+
+**Permission Configuration:**
+```jsx
+export default ProtectedPage(ProgramIdeaSubmission, { requiredPermissions: [] });
+```
+- **Current Access:** Any authenticated user
+- **Recommended:** Keep open - anyone should be able to submit ideas
+
+**Personas Who Access:**
+| Persona | Access Level | Use Case |
+|---------|-------------|----------|
+| Citizen | Submit | Propose ideas for programs |
+| Provider | Submit | Submit startup solutions |
+| Researcher | Submit | Submit research proposals |
+| Municipality | Submit | Submit local innovation ideas |
 
 **Data Sources:**
 - `programs` table (active programs for selection)
@@ -296,6 +357,27 @@ This document provides a **complete inventory** of all existing program and even
 
 **Purpose:** Unified approval queue for ALL entity types in the system.
 
+**Permission Configuration:**
+```jsx
+// Page uses inline permission checks, NOT ProtectedPage wrapper
+function ApprovalCenter() {
+  const { user } = useAuth();
+  // Some queries check user.role === 'admin' for budget approvals
+}
+```
+- **Current Access:** Any authenticated user can VIEW the page
+- **Recommended:** Add `ProtectedPage({ requiredPermissions: ['challenge_approve', 'pilot_approve', 'solution_approve'] })`
+
+**Personas Who Access:**
+| Persona | Access Level | Tabs Visible |
+|---------|-------------|--------------|
+| Admin | Full - all tabs | All 11+ tabs |
+| Executive | Approve strategic | Challenge, Pilot, Solution, Program |
+| Deputyship | Sector-scoped | Challenges, Pilots in their sector |
+| Municipality | Geographic | Own challenges, pilots |
+| Expert | Evaluation only | Assigned evaluations |
+| Program Operator | Program-specific | Program applications, Matchmaker |
+
 **Entity Types Handled (11 total):**
 1. `policy_recommendation` - Policy approvals
 2. `challenge` - Challenge approvals (4 gates)
@@ -329,6 +411,22 @@ This document provides a **complete inventory** of all existing program and even
 
 **Purpose:** Dashboard for program operators (organizations that run programs).
 
+**Permission Configuration:**
+```jsx
+export default ProtectedPage(ProgramOperatorPortal, { 
+  requiredPermissions: ['program_manage']
+});
+```
+- **Current Access:** Users with `program_manage` permission
+- **Data Scoping:** RLS by operator_organization_id or created_by email
+
+**Personas Who Access:**
+| Persona | Access Level | Data Scope |
+|---------|-------------|------------|
+| Program Operator | Full | Programs they operate |
+| Admin | Full | All programs |
+| Municipality Admin | View | Programs in their municipality |
+
 **Data Sources:**
 - `organizations` table (operator's org by contact_email)
 - `programs` table (filtered by operator_organization_id)
@@ -361,6 +459,23 @@ This document provides a **complete inventory** of all existing program and even
 
 **Purpose:** AI-assisted strategic plan creation.
 
+**Permission Configuration:**
+```jsx
+export default ProtectedPage(StrategicPlanBuilder, { 
+  requiredPermissions: [], 
+  requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead'] 
+});
+```
+- **Current Access:** Role-based - Executive Leadership OR GDISB Strategy Lead
+- **Note:** Uses `requiredRoles` instead of `requiredPermissions`
+
+**Personas Who Access:**
+| Persona | Access Level | Use Case |
+|---------|-------------|----------|
+| Executive | Full | Create strategic plans |
+| GDISB Strategy Lead | Full | Set national strategy |
+| Admin | Full (via isAdmin) | Platform management |
+
 **Data Sources:**
 - `strategic_plans` table (via base44 entity)
 
@@ -389,6 +504,21 @@ This document provides a **complete inventory** of all existing program and even
 ### 4.8 Portfolio.jsx (383 lines)
 
 **Purpose:** Innovation portfolio Kanban board tracking items across pipeline stages.
+
+**Permission Configuration:**
+```jsx
+export default ProtectedPage(PortfolioPage, { requiredPermissions: ['portfolio_view'] });
+```
+- **Current Access:** Users with `portfolio_view` permission
+- **Strategic:** Portfolio-level oversight for decision makers
+
+**Personas Who Access:**
+| Persona | Access Level | Use Case |
+|---------|-------------|----------|
+| Admin | Full + drag-drop | Portfolio management |
+| Executive | View + insights | Strategic oversight |
+| Deputyship | Sector filter | Sector portfolio analysis |
+| Municipality | Geographic filter | Local portfolio view |
 
 **Data Sources:**
 - `challenges` table
@@ -425,6 +555,22 @@ This document provides a **complete inventory** of all existing program and even
 ### 4.9 GapAnalysisTool.jsx (531 lines)
 
 **Purpose:** AI-powered discovery of innovation gaps and opportunities.
+
+**Permission Configuration:**
+```jsx
+// No ProtectedPage wrapper visible in truncated content
+// Likely uses internal permission checks or is admin-only
+```
+- **Current Access:** Review needed - appears open
+- **Recommended:** `['gap_analysis_view', 'portfolio_view']` for strategic users
+
+**Personas Who Access:**
+| Persona | Access Level | Use Case |
+|---------|-------------|----------|
+| Admin | Full | Platform-wide gap analysis |
+| Executive | Full | Strategic gap identification |
+| Deputyship | Sector-scoped | Sector-specific gaps |
+| Researcher | View | Research opportunity identification |
 
 **Data Sources:**
 - `challenges` table

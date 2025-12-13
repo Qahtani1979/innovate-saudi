@@ -3,7 +3,7 @@
 **Project:** Programs & Events Hub  
 **Last Audit:** 2025-12-13  
 **Target Completion:** 5 Weeks  
-**Status:** 🟡 Planning (Complete Inventory Verified)  
+**Status:** 🟡 Planning (Complete Inventory + Persona/Permission Audit Verified)
 
 ---
 
@@ -153,6 +153,51 @@ This document tracks the implementation of the Programs & Events Hub. A **comple
 | 4 | EventCancelDialog.jsx | ❌ TO CREATE |
 | 5 | EventAttendeeList.jsx | ❌ TO CREATE |
 | 6 | AIEventOptimizer.jsx | ❌ TO CREATE |
+
+---
+
+## Persona & Permission Audit Summary
+
+### Permission Configurations by Page
+
+| Page | ProtectedPage? | Permissions | Roles | Notes |
+|------|----------------|-------------|-------|-------|
+| ProgramsControlDashboard | ✅ | `[]` (open) | - | Recommend: `['program_view_all']` |
+| ParticipantDashboard | ❌ | - | - | Uses inline useAuth, data scoped by email |
+| MyPrograms | ✅ | `[]` (open) | - | Personal view - RLS handles scope |
+| ProgramIdeaSubmission | ✅ | `[]` (open) | - | Anyone can submit - correct |
+| ApprovalCenter | ❌ | - | - | Inline checks, recommend ProtectedPage |
+| ProgramOperatorPortal | ✅ | `['program_manage']` | - | ✅ Correct - operator-only |
+| StrategicPlanBuilder | ✅ | `[]` | Executive, Strategy Lead | Uses roles instead |
+| Portfolio | ✅ | `['portfolio_view']` | - | ✅ Correct |
+| GapAnalysisTool | ❓ | Unknown | - | Needs review |
+| CampaignPlanner | ✅ | `[]` | Exec, Director, CommMgr | Uses roles instead |
+
+### Persona Access Matrix
+
+| Page | Admin | Executive | Deputyship | Municipality | Provider | Expert | Citizen |
+|------|-------|-----------|------------|--------------|----------|--------|---------|
+| ProgramsControlDashboard | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ | ❌ |
+| ParticipantDashboard | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| MyPrograms | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ProgramIdeaSubmission | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ApprovalCenter | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ⚠️ | ❌ |
+| ProgramOperatorPortal | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| StrategicPlanBuilder | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Portfolio | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ | ❌ |
+| GapAnalysisTool | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ | ❌ |
+| CampaignPlanner | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+**Legend:** ✅ Full access | ⚠️ Limited/scoped | ❌ No access
+
+### Permission Recommendations
+
+| Issue | Current | Recommended | Priority |
+|-------|---------|-------------|----------|
+| ProgramsControlDashboard too open | `[]` | `['program_view_all', 'program_manage']` | Medium |
+| ApprovalCenter no ProtectedPage | inline | Add ProtectedPage with approval perms | High |
+| ParticipantDashboard inconsistent | no wrapper | Add ProtectedPage for consistency | Low |
+| GapAnalysisTool access unclear | unknown | `['gap_analysis_view', 'portfolio_view']` | Medium |
 
 ---
 
