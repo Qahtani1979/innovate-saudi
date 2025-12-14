@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useStrategyOwnership } from '@/hooks/strategy';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Users,
   UserCheck,
@@ -44,13 +46,6 @@ const SAMPLE_OBJECTIVES = [
   { id: '4', title_en: 'Improve Municipal MII Scores', title_ar: 'تحسين درجات مؤشر الابتكار البلدي' }
 ];
 
-const SAMPLE_USERS = [
-  { email: 'director@innovation.gov.sa', name: 'Ahmed Al-Rashid', role: 'Innovation Director' },
-  { email: 'manager@digital.gov.sa', name: 'Fatima Al-Qahtani', role: 'Digital Transformation Manager' },
-  { email: 'analyst@strategy.gov.sa', name: 'Mohammed Al-Harbi', role: 'Strategy Analyst' },
-  { email: 'coordinator@muni.gov.sa', name: 'Sara Al-Dosari', role: 'Municipality Coordinator' }
-];
-
 const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
@@ -63,6 +58,45 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
     saveBulkAssignments,
     deleteAssignment
   } = useStrategyOwnership(strategicPlanId);
+
+  // Fetch real users from the platform for assignment selection
+  const { data: platformUsers = [] } = useQuery({
+    queryKey: ['platform-users-for-ownership'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('user_email, full_name, persona_type, municipality_id')
+        .order('full_name');
+      if (error) return [];
+      return data?.map(u => ({
+        email: u.user_email,
+        name: u.full_name || u.user_email,
+        role: u.persona_type || 'User'
+      })) || [];
+    }
+  });
+
+  // Fetch team members for quick assignment
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['team-members-for-ownership'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('id, user_email, role, team_id')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) return [];
+      return data || [];
+    }
+  });
+
+  // Use platform users if available, fallback to sample
+  const availableUsers = platformUsers.length > 0 ? platformUsers : [
+    { email: 'director@innovation.gov.sa', name: 'Ahmed Al-Rashid', role: 'Innovation Director' },
+    { email: 'manager@digital.gov.sa', name: 'Fatima Al-Qahtani', role: 'Digital Transformation Manager' },
+    { email: 'analyst@strategy.gov.sa', name: 'Mohammed Al-Harbi', role: 'Strategy Analyst' },
+    { email: 'coordinator@muni.gov.sa', name: 'Sara Al-Dosari', role: 'Municipality Coordinator' }
+  ];
   
   const [activeTab, setActiveTab] = useState('assignments');
   

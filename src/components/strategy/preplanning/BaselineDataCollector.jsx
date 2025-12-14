@@ -10,6 +10,8 @@ import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useStrategyBaselines } from '@/hooks/strategy/useStrategyBaselines';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Database, 
   Plus, 
@@ -41,11 +43,34 @@ const BaselineDataCollector = ({ strategicPlanId, onSave }) => {
     deleteBaseline: deleteFromDb 
   } = useStrategyBaselines(strategicPlanId);
 
+  // Fetch actual MII scores and platform metrics for baseline
+  const { data: platformMetrics } = useQuery({
+    queryKey: ['baseline-platform-metrics', strategicPlanId],
+    queryFn: async () => {
+      const [miiRes, challengesRes, pilotsRes, partnershipsRes] = await Promise.all([
+        supabase.from('mii_results').select('overall_score, municipality_id').eq('is_published', true).limit(50),
+        supabase.from('challenges').select('id, status').eq('is_deleted', false),
+        supabase.from('pilots').select('id, status, success_score'),
+        supabase.from('partnerships').select('id, status')
+      ]);
+      
+      const avgMII = miiRes.data?.length ? 
+        Math.round(miiRes.data.reduce((sum, m) => sum + (m.overall_score || 0), 0) / miiRes.data.length) : 0;
+      const challengeResolutionRate = challengesRes.data?.length ? 
+        Math.round((challengesRes.data.filter(c => c.status === 'resolved').length / challengesRes.data.length) * 100) : 0;
+      const avgPilotSuccess = pilotsRes.data?.length ? 
+        Math.round(pilotsRes.data.reduce((sum, p) => sum + (p.success_score || 0), 0) / pilotsRes.data.length) : 0;
+      const activePartnerships = partnershipsRes.data?.filter(p => p.status === 'active').length || 0;
+      
+      return { avgMII, challengeResolutionRate, avgPilotSuccess, activePartnerships };
+    }
+  });
+
   const kpiCategories = [
-    { id: 'innovation', label: { en: 'Innovation Index', ar: 'مؤشر الابتكار' }, color: 'bg-blue-500' },
-    { id: 'challenges', label: { en: 'Challenge Resolution', ar: 'حل التحديات' }, color: 'bg-green-500' },
-    { id: 'pilots', label: { en: 'Pilot Success', ar: 'نجاح التجارب' }, color: 'bg-purple-500' },
-    { id: 'partnerships', label: { en: 'Partnerships', ar: 'الشراكات' }, color: 'bg-amber-500' },
+    { id: 'innovation', label: { en: 'Innovation Index', ar: 'مؤشر الابتكار' }, color: 'bg-blue-500', platformValue: platformMetrics?.avgMII },
+    { id: 'challenges', label: { en: 'Challenge Resolution', ar: 'حل التحديات' }, color: 'bg-green-500', platformValue: platformMetrics?.challengeResolutionRate },
+    { id: 'pilots', label: { en: 'Pilot Success', ar: 'نجاح التجارب' }, color: 'bg-purple-500', platformValue: platformMetrics?.avgPilotSuccess },
+    { id: 'partnerships', label: { en: 'Partnerships', ar: 'الشراكات' }, color: 'bg-amber-500', platformValue: platformMetrics?.activePartnerships },
     { id: 'budget', label: { en: 'Budget Utilization', ar: 'استخدام الميزانية' }, color: 'bg-red-500' },
     { id: 'pipeline', label: { en: 'Innovation Pipeline', ar: 'خط الابتكار' }, color: 'bg-teal-500' }
   ];
