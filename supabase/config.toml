@@ -197,3 +197,12 @@ verify_jwt = false
 
 [functions.strategy-workflow-ai]
 verify_jwt = false
+
+[functions.strategy-sector-generator]
+verify_jwt = false
+
+[functions.strategy-action-plan-generator]
+verify_jwt = false
+
+[functions.strategy-national-linker]
+verify_jwt = false

@@ -148,12 +148,12 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
     return matchesSearch && matchesType;
   });
 
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
+  
   const applyTemplate = async (template) => {
-    setIsLoading(true);
+    setApplyingTemplate(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update usage count
+      // Update usage count in local state
       setTemplates(prev => prev.map(t => 
         t.id === template.id ? { ...t, usage_count: t.usage_count + 1 } : t
       ));
@@ -176,7 +176,7 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
         variant: 'destructive'
       });
     } finally {
-      setIsLoading(false);
+      setApplyingTemplate(false);
     }
   };
 
@@ -347,9 +347,9 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
                             <Button
                               size="sm"
                               onClick={() => applyTemplate(template)}
-                              disabled={isLoading}
+                              disabled={applyingTemplate}
                             >
-                              {isLoading ? (
+                              {applyingTemplate ? (
                                 <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                               ) : (
                                 <Copy className="h-4 w-4 mr-1" />
