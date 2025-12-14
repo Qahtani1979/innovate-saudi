@@ -16,4 +16,4 @@ function StrategyPartnershipGeneratorPage() {
   );
 }
 
-export default ProtectedPage(StrategyPartnershipGeneratorPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategyPartnershipGeneratorPage, { requiredPermissions: ['strategy_cascade'] });

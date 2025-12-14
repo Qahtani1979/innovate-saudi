@@ -15,4 +15,4 @@ const SectorStrategyPage = () => {
   );
 };
 
-export default ProtectedPage(SectorStrategyPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(SectorStrategyPage, { requiredPermissions: ['strategy_manage'] });

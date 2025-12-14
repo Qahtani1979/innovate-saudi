@@ -16,4 +16,4 @@ function StrategyChallengeGeneratorPage() {
   );
 }
 
-export default ProtectedPage(StrategyChallengeGeneratorPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategyChallengeGeneratorPage, { requiredPermissions: ['strategy_cascade'] });

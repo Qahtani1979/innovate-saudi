@@ -15,4 +15,4 @@ const StrategyOwnershipPage = () => {
   );
 };
 
-export default ProtectedPage(StrategyOwnershipPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategyOwnershipPage, { requiredPermissions: ['strategy_manage'] });
