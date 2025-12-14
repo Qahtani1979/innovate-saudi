@@ -351,7 +351,138 @@ This matrix documents all integrations required for the complete Strategy Leader
 
 ---
 
-## SECTION D: TECHNICAL INTEGRATION DETAILS
+## SECTION D: STRATEGIC ELEMENT RELATIONSHIPS
+
+### D.1 Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    STRATEGIC_PLAN ||--o{ PILLARS : "contains"
+    PILLARS ||--o{ OBJECTIVES : "defines"
+    OBJECTIVES ||--o{ KPIs : "measured_by"
+    OBJECTIVES ||--o{ ACTION_PLANS : "implemented_via"
+    STRATEGIC_PLAN ||--o{ SECTOR_STRATEGY : "tailored_for"
+    STRATEGIC_PLAN ||--o{ NATIONAL_ALIGNMENTS : "aligned_to"
+    STRATEGIC_PLAN ||--o{ TIMELINE : "scheduled_in"
+    STRATEGY_TEMPLATE }|--|| STRATEGIC_PLAN : "creates"
+
+    STRATEGIC_PLAN ||--o{ PROGRAMS : "DIRECT strategic_plan_ids"
+    STRATEGIC_PLAN ||--o{ CHALLENGES : "DIRECT strategic_plan_ids"
+    STRATEGIC_PLAN ||--o{ PARTNERSHIPS : "DIRECT strategic_plan_ids"
+    STRATEGIC_PLAN ||--o{ SANDBOXES : "DIRECT strategic_plan_ids"
+    STRATEGIC_PLAN ||--o{ LIVING_LABS : "DIRECT strategic_plan_ids"
+    STRATEGIC_PLAN ||--o{ EVENTS : "DIRECT strategic_plan_ids"
+    STRATEGIC_PLAN ||--o{ POLICY_DOCUMENTS : "DIRECT strategic_plan_ids"
+    STRATEGIC_PLAN ||--o{ GLOBAL_TRENDS : "DIRECT strategic_plan_ids"
+
+    PROGRAMS ||--o{ SOLUTIONS : "INDIRECT source_program_id"
+    PROGRAMS ||--o{ RD_CALLS : "INDIRECT program_id"
+    PROGRAMS ||--o{ CAMPAIGNS : "INDIRECT program_id"
+    CHALLENGES ||--o{ PILOTS : "INDIRECT challenge_id"
+    CHALLENGES ||--o{ PROPOSALS : "INDIRECT challenge_id"
+    CHALLENGES ||--o{ RD_CALLS : "INDIRECT challenge_ids"
+    RD_CALLS ||--o{ RD_PROJECTS : "INDIRECT rd_call_id"
+    PILOTS ||--o{ SCALING_PLANS : "INDIRECT pilot_id"
+    RD_PROJECTS ||--o{ SCALING_PLANS : "INDIRECT rd_project_id"
+```
+
+### D.2 Strategic Elements to Execution Entities
+
+#### Core Strategic Elements
+
+| Strategic Element | Contains/Produces | Links To Execution |
+|-------------------|-------------------|-------------------|
+| **Pillars** | Strategic themes, focus areas | Objectives, Sector Strategies |
+| **Objectives** | SMART goals with targets | KPIs, Action Plans, Programs, Challenges |
+| **Sector Strategy** | Sector-specific innovation plans | Programs, Challenges by sector |
+| **KPIs** | Measurable indicators | Program outcomes, Pilot results |
+| **Action Plans** | Initiatives, budgets, ownership | Tasks, Milestones |
+| **National Strategy** | V2030/SDG/NIS alignments | Compliance reporting, Scoring |
+| **Timeline** | Milestones, dependencies | Phase gates, Reviews |
+| **Strategy Template** | Pre-built patterns | Accelerate plan creation |
+
+#### Direct Integration Entities (strategic_plan_ids[])
+
+| Entity | Integration Fields | Phase Usage | Relationship |
+|--------|-------------------|-------------|--------------|
+| **Programs** | strategic_plan_ids[], is_strategy_derived, strategic_objective_ids[] | P3, P5 | Generated from objectives |
+| **Challenges** | strategic_plan_ids[], strategic_goal | P1, P3, P5, P6 | Derived from strategy gaps |
+| **Partnerships** | strategic_plan_ids[], is_strategy_derived | P1, P3, P5 | Enable strategy execution |
+| **Sandboxes** | strategic_plan_ids[], is_strategy_derived | P3 | Test strategic initiatives |
+| **Living Labs** | strategic_plan_ids[], is_strategy_derived | P3, P5 | Citizen co-creation |
+| **Events** | strategic_plan_ids[], program_id | P3, P5 | Strategy communication |
+| **Policy Documents** | strategic_plan_ids[], is_strategy_derived | P1, P3 | Policy enablement |
+| **Global Trends** | strategic_plan_ids[] | P1 | Environmental scanning |
+
+#### Indirect Integration Entities (via linked entities)
+
+| Entity | Links Via | Relationship Chain |
+|--------|-----------|-------------------|
+| **Solutions** | source_program_id | Strategy → Program → Solution |
+| **Pilots** | challenge_id, source_program_id | Strategy → Challenge/Program → Pilot |
+| **R&D Calls** | challenge_ids[], program_id | Strategy → Challenge/Program → R&D Call |
+| **R&D Projects** | rd_call_id | Strategy → R&D Call → R&D Project |
+| **Scaling Plans** | pilot_id, rd_project_id | Strategy → Pilot/R&D → Scaling |
+| **Campaigns** | program_id, challenge_id | Strategy → Program/Challenge → Campaign |
+| **Proposals** | challenge_id, target_challenges[] | Strategy → Challenge → Proposal |
+| **Matchmaker** | challenge ↔ solution links | Connects challenges to solutions |
+
+### D.3 Cascade Flow Visualization
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        STRATEGIC CASCADE FLOW                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   STRATEGY LAYER (Phase 2)                                                       │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │  Strategy Template → Strategic Plan → Pillars → Objectives → KPIs      │   │
+│   │                          ↓              ↓           ↓                    │   │
+│   │                   National Alignment  Sector    Action Plans            │   │
+│   │                   (V2030/SDG/NIS)    Strategy   Timeline                │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                             │
+│                    ════════════════╪════════════════                            │
+│                    DIRECT LINKAGE  │ strategic_plan_ids[]                       │
+│                    ════════════════╪════════════════                            │
+│                                    ▼                                             │
+│   EXECUTION LAYER (Phase 3)                                                      │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │  ┌──────────┐ ┌────────────┐ ┌─────────────┐ ┌──────────┐ ┌──────────┐ │   │
+│   │  │ Programs │ │ Challenges │ │ Partnerships│ │ Sandboxes│ │Living Lab│ │   │
+│   │  └────┬─────┘ └─────┬──────┘ └─────────────┘ └──────────┘ └──────────┘ │   │
+│   │       │             │                                                    │   │
+│   │       │             │  ┌─────────────┐ ┌─────────────┐ ┌───────────────┐│   │
+│   │       │             │  │   Events    │ │   Policy    │ │ Global Trends ││   │
+│   │       │             │  │             │ │  Documents  │ │               ││   │
+│   │       │             │  └─────────────┘ └─────────────┘ └───────────────┘│   │
+│   └───────┼─────────────┼───────────────────────────────────────────────────┘   │
+│           │             │                                                        │
+│           ▼             ▼                                                        │
+│   INNOVATION LAYER (Indirect)                                                    │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐ ┌───────────────┐ │   │
+│   │  │Solutions │ │  Pilots  │ │ R&D Calls│ │R&D Project│ │   Campaigns   │ │   │
+│   │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └─────┬─────┘ └───────────────┘ │   │
+│   │       │            │            │             │                          │   │
+│   │       │            ▼            ▼             │                          │   │
+│   │       │     ┌────────────┐ ┌────────────┐     │                          │   │
+│   │       │     │ Proposals  │ │ Matchmaker │     │                          │   │
+│   │       │     └────────────┘ └────────────┘     │                          │   │
+│   │       │                                       │                          │   │
+│   │       └───────────────────┬───────────────────┘                          │   │
+│   │                           ▼                                              │   │
+│   │                   ┌───────────────┐                                      │   │
+│   │                   │ Scaling Plans │                                      │   │
+│   │                   └───────────────┘                                      │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## SECTION E: TECHNICAL INTEGRATION DETAILS
 
 ### D.1 Database Hooks Summary
 
