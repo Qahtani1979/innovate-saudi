@@ -1,45 +1,75 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook to validate and calculate strategic cascade coverage
  * Validates chain integrity: Strategy → Entity → Child Entities
  */
 export function useStrategicCascadeValidation() {
-  const { data: strategicPlans = [] } = useQuery({
+  const { data: strategicPlans = [], isLoading: plansLoading } = useQuery({
     queryKey: ['strategic-plans-cascade'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const { data: programs = [] } = useQuery({
+  const { data: programs = [], isLoading: programsLoading } = useQuery({
     queryKey: ['programs-cascade'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const { data: challenges = [] } = useQuery({
+  const { data: challenges = [], isLoading: challengesLoading } = useQuery({
     queryKey: ['challenges-cascade'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const { data: sandboxes = [] } = useQuery({
+  const { data: sandboxes = [], isLoading: sandboxesLoading } = useQuery({
     queryKey: ['sandboxes-cascade'],
-    queryFn: () => base44.entities.Sandbox.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('sandboxes').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const { data: livingLabs = [] } = useQuery({
+  const { data: livingLabs = [], isLoading: labsLoading } = useQuery({
     queryKey: ['living-labs-cascade'],
-    queryFn: () => base44.entities.LivingLab.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const { data: partnerships = [] } = useQuery({
+  const { data: partnerships = [], isLoading: partnershipsLoading } = useQuery({
     queryKey: ['partnerships-cascade'],
-    queryFn: () => base44.entities.Partnership.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('partnerships').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const { data: pilots = [] } = useQuery({
+  const { data: pilots = [], isLoading: pilotsLoading } = useQuery({
     queryKey: ['pilots-cascade'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
+
+  const isLoading = plansLoading || programsLoading || challengesLoading || sandboxesLoading || labsLoading || partnershipsLoading || pilotsLoading;
 
   // Calculate coverage metrics
   const calculateCoverage = () => {
@@ -175,7 +205,7 @@ export function useStrategicCascadeValidation() {
     coverage: calculateCoverage(),
     validateCascade,
     getStrategyDerivedEntities,
-    isLoading: !strategicPlans.length
+    isLoading
   };
 }
 
