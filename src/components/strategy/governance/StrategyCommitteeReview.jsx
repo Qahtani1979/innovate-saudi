@@ -226,7 +226,9 @@ export default function StrategyCommitteeReview({ planId }) {
                   </p>
                   <ul className="space-y-1">
                     {actionItems.immediate_actions.map((action, idx) => (
-                      <li key={idx} className="text-sm">{action}</li>
+                      <li key={idx} className="text-sm">
+                        {typeof action === 'string' ? action : (action?.title || action?.description || JSON.stringify(action))}
+                      </li>
                     ))}
                   </ul>
                 </div>
