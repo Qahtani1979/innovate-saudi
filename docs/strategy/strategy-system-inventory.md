@@ -1,9 +1,9 @@
 # Strategy System Inventory
 
-> **Version:** 1.9  
+> **Version:** 2.0  
 > **Last Updated:** 2025-12-14  
 > **Total Assets:** 123 files (21 pages, 55 components, 30 hooks + 2 context files + 15 registered routes)
-> **Schema Audit:** ✅ Complete deep audit performed - all hooks, components, queries, and `.single()` usage verified
+> **Schema Audit:** ✅ Complete deep audit v2.0 - all hooks, components, queries, `.single()` usage, and KPI components verified
 
 ---
 

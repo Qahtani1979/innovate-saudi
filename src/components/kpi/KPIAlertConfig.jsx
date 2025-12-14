@@ -26,7 +26,6 @@ export default function KPIAlertConfig({ kpis = [] }) {
       const { data } = await supabase
         .from('strategic_plans')
         .select('id, name_en, name_ar, objectives')
-        .eq('is_deleted', false)
         .order('name_en');
       return data || [];
     }
