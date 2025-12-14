@@ -1,8 +1,9 @@
 # System Inventories Master Index
 
 > **Last Updated:** 2025-12-14  
-> **Total Systems:** 16 documented  
-> **Total Files Tracked:** 600+
+> **Total Systems:** 19 documented  
+> **Total Files Tracked:** 1200+ (Pages: 581, Components: 520+, Hooks: 120+)  
+> **Coverage Status:** ~70% assigned, ~30% orphaned
 
 ---
 
@@ -32,6 +33,14 @@
 
 ---
 
+## ⚠️ Orphan Tracking
+
+| Category | File |
+|----------|------|
+| **Orphan Files** | `docs/orphans/orphan-files-inventory.md` |
+
+---
+
 ## 🔗 System Hierarchy
 
 ```
@@ -52,12 +61,12 @@ Admin → All Systems
 
 ## 📊 Coverage Summary
 
-| Category | Count |
-|----------|-------|
-| Total Pages | ~300+ |
-| Total Components | ~500+ |
-| Total Hooks | ~80+ |
-| Systems Documented | 19 |
+| Category | Documented | Orphaned | Total |
+|----------|------------|----------|-------|
+| Pages | ~350 | ~230 | 581 |
+| Components | ~400 | ~120 | 520+ |
+| Hooks | ~50 | ~70 | 120+ |
+| Systems | 19 | - | 19 |
 
 ---
 
@@ -74,6 +83,7 @@ docs/
 ├── knowledge/knowledge-system-inventory.md
 ├── matchmaker/matchmaker-system-inventory.md
 ├── municipalities/municipalities-system-inventory.md
+├── orphans/orphan-files-inventory.md ← NEW
 ├── partnerships/partnerships-system-inventory.md
 ├── personas/startups-academia-system-inventory.md
 ├── pilots/pilots-system-inventory.md
