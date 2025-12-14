@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNationalAlignments } from '@/hooks/strategy';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Link2,
   Target,
@@ -112,22 +113,40 @@ const NationalStrategyLinker = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES,
   const autoLinkWithAI = async () => {
     setIsAutoLinking(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const { data, error } = await supabase.functions.invoke('strategy-national-linker', {
+        body: {
+          objectives: alignments.map(a => ({ 
+            objective_id: a.objective_id,
+            title_en: a.objective_title 
+          })),
+          strategic_plan_context: strategicPlan?.vision_en || 'Municipal Innovation Strategy'
+        }
+      });
 
-      // Simulate AI suggestions
-      setAlignments(prev => prev.map(a => {
-        const suggestedVision = ['v2030-2', 'v2030-3'];
-        const suggestedSDG = ['sdg-9', 'sdg-11'];
-        const suggestedNP = ['np-1', 'np-3'];
+      if (error) throw error;
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      const { alignments: aiAlignments } = data;
+
+      setAlignments(prev => prev.map((a, index) => {
+        const suggestion = aiAlignments?.find((s: any) => s.objective_index === index);
+        if (!suggestion) return a;
         
-        const totalLinks = suggestedVision.length + suggestedSDG.length + suggestedNP.length;
+        const newVision = [...new Set([...a.vision_2030, ...(suggestion.vision_2030 || [])])];
+        const newSDG = [...new Set([...a.sdg, ...(suggestion.sdg || [])])];
+        const newNP = [...new Set([...a.national_priorities, ...(suggestion.national_priorities || [])])];
+        
+        const totalLinks = newVision.length + newSDG.length + newNP.length;
         const maxPossible = VISION_2030_GOALS.length + SDG_GOALS.length + NATIONAL_PRIORITIES.length;
         
         return {
           ...a,
-          vision_2030: [...new Set([...a.vision_2030, ...suggestedVision])],
-          sdg: [...new Set([...a.sdg, ...suggestedSDG])],
-          national_priorities: [...new Set([...a.national_priorities, ...suggestedNP])],
+          vision_2030: newVision,
+          sdg: newSDG,
+          national_priorities: newNP,
           alignment_score: Math.round((totalLinks / maxPossible) * 100)
         };
       }));

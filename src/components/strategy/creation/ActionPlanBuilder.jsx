@@ -12,6 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useActionPlans } from '@/hooks/strategy';
+import { supabase } from '@/integrations/supabase/client';
 import {
   ClipboardList,
   Plus,
