@@ -115,7 +115,7 @@ const phases = [
 
 function StrategyHub() {
   const { t, isRTL, language } = useLanguage();
-  const { activePlanId, activePlan, strategicPlans: plans } = useActivePlan();
+  const { activePlanId, activePlan, strategicPlans: plans, isLoading: plansLoading } = useActivePlan();
   const { hasPermission, isAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState('workflow');
   const [activeAITool, setActiveAITool] = useState(null);
