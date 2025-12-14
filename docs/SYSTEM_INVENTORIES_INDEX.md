@@ -1,63 +1,63 @@
 # System Inventories Master Index
 
 > **Last Updated:** 2025-12-14  
-> **Total Systems:** 12 documented  
-> **Total Files Tracked:** 500+
+> **Total Systems:** 16 documented  
+> **Total Files Tracked:** 600+
 
 ---
 
-## 📚 Documented System Inventories
+## 📚 Complete System Inventories
 
-| System | Inventory File | Pages | Components | Hooks | Status |
-|--------|----------------|-------|------------|-------|--------|
-| **Strategy** | `docs/strategy/strategy-system-inventory.md` | 35 | 65 | 33 | ✅ Complete |
-| **Challenges** | `docs/challenges/challenges-system-inventory.md` | 22 | 51 | 5 | ✅ Complete |
-| **Pilots** | `docs/pilots/pilots-system-inventory.md` | 20 | 27 | 5 | ✅ Complete |
-| **Programs** | `docs/programs/programs-system-inventory.md` | 25 | 40 | 3 | ✅ Complete |
-| **R&D** | `docs/rd/rd-system-inventory.md` | 18 | 29 | 3 | ✅ Complete |
-| **Solutions** | `docs/solutions/solutions-system-inventory.md` | 15 | 37 | 2 | ✅ Complete |
-
----
-
-## 🔜 Systems Pending Documentation
-
-| System | Hub Page | Estimated Assets |
-|--------|----------|------------------|
-| Sandboxes | `/sandboxes` | ~25 files |
-| Living Labs | `/living-labs` | ~20 files |
-| Partnerships | `/partnership-registry` | ~15 files |
-| Municipalities | `/municipality-dashboard` | ~30 files |
-| Citizens | `/citizen-dashboard` | ~40 files |
-| MII | `/mii` | ~20 files |
-| Admin | `/admin-portal` | ~50 files |
-| User Management | `/user-management-hub` | ~25 files |
-| Communications | `/communications-hub` | ~20 files |
-| Knowledge | `/knowledge` | ~15 files |
+| System | Inventory File | Pages | Components | Status |
+|--------|----------------|-------|------------|--------|
+| **Strategy** | `docs/strategy/strategy-system-inventory.md` | 35 | 65 | ✅ |
+| **Challenges** | `docs/challenges/challenges-system-inventory.md` | 22 | 51 | ✅ |
+| **Pilots** | `docs/pilots/pilots-system-inventory.md` | 20 | 27 | ✅ |
+| **Programs** | `docs/programs/programs-system-inventory.md` | 25 | 40 | ✅ |
+| **R&D** | `docs/rd/rd-system-inventory.md` | 18 | 29 | ✅ |
+| **Solutions** | `docs/solutions/solutions-system-inventory.md` | 15 | 37 | ✅ |
+| **Sandboxes & Living Labs** | `docs/sandboxes-livinglabs/sandboxes-livinglabs-system-inventory.md` | 14 | 31 | ✅ |
+| **Municipalities** | `docs/municipalities/municipalities-system-inventory.md` | 18 | 18 | ✅ |
+| **Citizens** | `docs/citizens/citizens-system-inventory.md` | 18 | 34 | ✅ |
+| **Partnerships** | `docs/partnerships/partnerships-system-inventory.md` | 12 | 22 | ✅ |
+| **Scaling** | `docs/scaling/scaling-system-inventory.md` | 8 | 18 | ✅ |
+| **Events** | `docs/events/events-system-inventory.md` | 8 | 8 | ✅ |
+| **Matchmaker** | `docs/matchmaker/matchmaker-system-inventory.md` | 10 | 20 | ✅ |
+| **Admin** | `docs/admin/admin-system-inventory.md` | 45 | 35 | ✅ |
+| **Communications** | `docs/communications/communications-system-inventory.md` | 12 | 17 | ✅ |
+| **Knowledge** | `docs/knowledge/knowledge-system-inventory.md` | 10 | 12 | ✅ |
+| **Startups & Academia** | `docs/personas/startups-academia-system-inventory.md` | 10 | 20 | ✅ |
+| **Portfolio & Analytics** | `docs/portfolio/portfolio-analytics-system-inventory.md` | 15 | 12 | ✅ |
+| **Approvals** | `docs/approvals/approvals-system-inventory.md` | 12 | 25 | ✅ |
 
 ---
 
-## 🔗 System Relationships
+## 🔗 System Hierarchy
 
 ```
 Strategy (Root)
-├── Challenges ← Strategy Cascade
-│   ├── Solutions ← Challenge Matching
-│   ├── Pilots ← Challenge Resolution
-│   └── R&D ← Research Needs
-├── Programs ← Strategy Cascade
-│   ├── Pilots ← Program Outputs
-│   └── Alumni → Impact Tracking
-├── Partnerships ← Strategy Cascade
-├── Living Labs ← Strategy Cascade
-├── Sandboxes ← Regulatory Innovation
-└── Budget ← Resource Allocation
+├── Challenges → Solutions, Pilots, R&D
+├── Programs → Pilots, Alumni
+├── Partnerships
+├── Living Labs
+├── Sandboxes
+└── Budget
 
-Municipalities
-├── Challenges (owns)
-├── Pilots (hosts)
-├── MII (measured by)
-└── Citizens (serves)
+Municipalities → Challenges, Pilots, MII, Citizens
+
+Admin → All Systems
 ```
+
+---
+
+## 📊 Coverage Summary
+
+| Category | Count |
+|----------|-------|
+| Total Pages | ~300+ |
+| Total Components | ~500+ |
+| Total Hooks | ~80+ |
+| Systems Documented | 19 |
 
 ---
 
@@ -65,36 +65,24 @@ Municipalities
 
 ```
 docs/
-├── strategy/
-│   └── strategy-system-inventory.md
-├── challenges/
-│   └── challenges-system-inventory.md
-├── pilots/
-│   └── pilots-system-inventory.md
-├── programs/
-│   └── programs-system-inventory.md
-├── rd/
-│   └── rd-system-inventory.md
-├── solutions/
-│   └── solutions-system-inventory.md
-└── SYSTEM_INVENTORIES_INDEX.md (this file)
+├── admin/admin-system-inventory.md
+├── approvals/approvals-system-inventory.md
+├── challenges/challenges-system-inventory.md
+├── citizens/citizens-system-inventory.md
+├── communications/communications-system-inventory.md
+├── events/events-system-inventory.md
+├── knowledge/knowledge-system-inventory.md
+├── matchmaker/matchmaker-system-inventory.md
+├── municipalities/municipalities-system-inventory.md
+├── partnerships/partnerships-system-inventory.md
+├── personas/startups-academia-system-inventory.md
+├── pilots/pilots-system-inventory.md
+├── portfolio/portfolio-analytics-system-inventory.md
+├── programs/programs-system-inventory.md
+├── rd/rd-system-inventory.md
+├── sandboxes-livinglabs/sandboxes-livinglabs-system-inventory.md
+├── scaling/scaling-system-inventory.md
+├── solutions/solutions-system-inventory.md
+├── strategy/strategy-system-inventory.md
+└── SYSTEM_INVENTORIES_INDEX.md
 ```
-
----
-
-## 🎯 Inventory Standards
-
-Each inventory document includes:
-1. **Overview** - System purpose and scope
-2. **Pages** - All pages with routes, permissions, parent relationships
-3. **Components** - All components organized by subdirectory
-4. **Hooks** - All hooks with descriptions
-5. **Database Tables** - Related Supabase tables
-6. **RBAC Permissions** - Required permissions
-7. **Related Systems** - Cross-system relationships
-
----
-
-## 🔍 Finding Orphan Files
-
-Files not tracked in any inventory should be added to the appropriate system or marked as orphans for cleanup.
