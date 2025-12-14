@@ -8,11 +8,13 @@ import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, GraduationCap, Loader2, CheckCircle2, Plus, DollarSign, Calendar } from 'lucide-react';
+import { Sparkles, GraduationCap, Loader2, CheckCircle2, Plus, DollarSign, Calendar, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
 export default function StrategyToRDCallGenerator({ onRDCallCreated }) {
   const { t, isRTL } = useLanguage();
+  const { createApprovalRequest } = useApprovalRequest();
   const [selectedChallenges, setSelectedChallenges] = useState([]);
   const [budgetMin, setBudgetMin] = useState('50000');
   const [budgetMax, setBudgetMax] = useState('500000');
