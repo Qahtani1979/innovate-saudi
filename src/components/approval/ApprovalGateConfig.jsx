@@ -756,6 +756,261 @@ export const gateConfigs = {
         reviewer: 'Assess event impact potential, predict attendance, recommend approval decision'
       }
     }
+  ],
+
+  // Living Lab gate configs - Phase 4 integration for strategy-derived living labs
+  living_lab: [
+    {
+      name: 'setup_review',
+      label: { en: 'Living Lab Setup Review', ar: 'مراجعة إعداد المختبر الحي' },
+      type: 'review',
+      requiredRole: 'living_lab_coordinator',
+      sla_days: 5,
+      selfCheckItems: [
+        { en: 'Lab objectives clearly defined', ar: 'أهداف المختبر محددة بوضوح' },
+        { en: 'Stakeholder community identified', ar: 'مجتمع أصحاب المصلحة محدد' },
+        { en: 'Location/space requirements defined', ar: 'متطلبات الموقع/المساحة محددة' },
+        { en: 'Technology infrastructure planned', ar: 'البنية التحتية التقنية مخطط لها' },
+        { en: 'Strategic plan linkage documented', ar: 'ارتباط الخطة الاستراتيجية موثق' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'Concept aligns with strategic objectives', ar: 'المفهوم يتوافق مع الأهداف الاستراتيجية' },
+        { en: 'Community engagement plan viable', ar: 'خطة إشراك المجتمع قابلة للتطبيق' },
+        { en: 'Resources and budget realistic', ar: 'الموارد والميزانية واقعية' },
+        { en: 'Success metrics defined', ar: 'مقاييس النجاح محددة' }
+      ],
+      aiAssistance: {
+        requester: 'Validate setup completeness, suggest community engagement strategies',
+        reviewer: 'Assess strategic alignment, evaluate community plan, predict success factors'
+      }
+    },
+    {
+      name: 'launch_approval',
+      label: { en: 'Launch Approval', ar: 'موافقة الإطلاق' },
+      type: 'approval',
+      requiredRole: 'living_lab_approver',
+      sla_days: 7,
+      selfCheckItems: [
+        { en: 'Setup review completed', ar: 'مراجعة الإعداد مكتملة' },
+        { en: 'Team and roles assigned', ar: 'الفريق والأدوار معينة' },
+        { en: 'Community partners confirmed', ar: 'شركاء المجتمع مؤكدون' },
+        { en: 'Launch timeline ready', ar: 'الجدول الزمني للإطلاق جاهز' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'All prerequisites met', ar: 'كل المتطلبات محققة' },
+        { en: 'Budget approved', ar: 'الميزانية معتمدة' },
+        { en: 'Risk assessment complete', ar: 'تقييم المخاطر مكتمل' },
+        { en: 'Approval justified', ar: 'الموافقة مبررة' }
+      ],
+      aiAssistance: {
+        requester: 'Verify launch readiness, identify gaps',
+        reviewer: 'Assess overall readiness, predict success probability'
+      }
+    }
+  ],
+
+  // Sandbox gate configs - Phase 4 integration for strategy-derived sandboxes
+  sandbox: [
+    {
+      name: 'setup_review',
+      label: { en: 'Sandbox Setup Review', ar: 'مراجعة إعداد البيئة التجريبية' },
+      type: 'review',
+      requiredRole: 'sandbox_coordinator',
+      sla_days: 5,
+      selfCheckItems: [
+        { en: 'Regulatory scope defined', ar: 'النطاق التنظيمي محدد' },
+        { en: 'Participant criteria documented', ar: 'معايير المشاركين موثقة' },
+        { en: 'Duration and phases planned', ar: 'المدة والمراحل مخططة' },
+        { en: 'Monitoring framework ready', ar: 'إطار المراقبة جاهز' },
+        { en: 'Strategic alignment documented', ar: 'التوافق الاستراتيجي موثق' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'Regulatory framework appropriate', ar: 'الإطار التنظيمي مناسب' },
+        { en: 'Risk mitigation adequate', ar: 'تخفيف المخاطر كافٍ' },
+        { en: 'Success criteria clear', ar: 'معايير النجاح واضحة' },
+        { en: 'Exit strategy defined', ar: 'استراتيجية الخروج محددة' }
+      ],
+      aiAssistance: {
+        requester: 'Validate regulatory framework, suggest best practices',
+        reviewer: 'Assess regulatory compliance, evaluate risk framework'
+      }
+    },
+    {
+      name: 'launch_approval',
+      label: { en: 'Sandbox Launch Approval', ar: 'موافقة إطلاق البيئة التجريبية' },
+      type: 'approval',
+      requiredRole: 'sandbox_approver',
+      sla_days: 10,
+      selfCheckItems: [
+        { en: 'Legal review completed', ar: 'المراجعة القانونية مكتملة' },
+        { en: 'Participants vetted', ar: 'المشاركون محققون' },
+        { en: 'Monitoring team ready', ar: 'فريق المراقبة جاهز' },
+        { en: 'Communication plan ready', ar: 'خطة التواصل جاهزة' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'All legal requirements met', ar: 'كل المتطلبات القانونية محققة' },
+        { en: 'Public interest protected', ar: 'المصلحة العامة محمية' },
+        { en: 'Innovation potential justified', ar: 'إمكانية الابتكار مبررة' },
+        { en: 'Approval justified', ar: 'الموافقة مبررة' }
+      ],
+      aiAssistance: {
+        requester: 'Verify compliance readiness, draft communication materials',
+        reviewer: 'Comprehensive launch assessment, legal compliance check'
+      }
+    }
+  ],
+
+  // Partnership gate configs - Phase 4 integration for strategy-derived partnerships
+  partnership: [
+    {
+      name: 'initial_review',
+      label: { en: 'Partnership Initial Review', ar: 'المراجعة الأولية للشراكة' },
+      type: 'review',
+      requiredRole: 'partnership_coordinator',
+      sla_days: 5,
+      selfCheckItems: [
+        { en: 'Partner profile complete', ar: 'ملف الشريك مكتمل' },
+        { en: 'Partnership objectives defined', ar: 'أهداف الشراكة محددة' },
+        { en: 'Value proposition documented', ar: 'عرض القيمة موثق' },
+        { en: 'Strategic alignment documented', ar: 'التوافق الاستراتيجي موثق' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'Partner credibility verified', ar: 'مصداقية الشريك محققة' },
+        { en: 'Strategic value clear', ar: 'القيمة الاستراتيجية واضحة' },
+        { en: 'No conflicts of interest', ar: 'لا توجد تضاربات مصالح' },
+        { en: 'Recommendation justified', ar: 'التوصية مبررة' }
+      ],
+      aiAssistance: {
+        requester: 'Validate partner credentials, assess strategic fit',
+        reviewer: 'Due diligence analysis, conflict of interest check, value assessment'
+      }
+    },
+    {
+      name: 'mou_approval',
+      label: { en: 'MoU Approval', ar: 'موافقة مذكرة التفاهم' },
+      type: 'approval',
+      requiredRole: 'partnership_approver',
+      sla_days: 14,
+      selfCheckItems: [
+        { en: 'MoU draft complete', ar: 'مسودة المذكرة مكتملة' },
+        { en: 'Legal review requested', ar: 'المراجعة القانونية مطلوبة' },
+        { en: 'Budget implications documented', ar: 'الآثار المالية موثقة' },
+        { en: 'KPIs and deliverables defined', ar: 'المؤشرات والمخرجات محددة' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'Terms fair and balanced', ar: 'الشروط عادلة ومتوازنة' },
+        { en: 'Legal compliance verified', ar: 'الامتثال القانوني محقق' },
+        { en: 'Budget approved', ar: 'الميزانية معتمدة' },
+        { en: 'Exit clauses clear', ar: 'شروط الخروج واضحة' },
+        { en: 'Approval justified', ar: 'الموافقة مبررة' }
+      ],
+      aiAssistance: {
+        requester: 'Review MoU terms, identify missing clauses, suggest improvements',
+        reviewer: 'Legal analysis, terms comparison with similar partnerships, risk assessment'
+      }
+    }
+  ],
+
+  // R&D Call gate configs - Phase 4 integration for strategy-derived R&D calls
+  rd_call: [
+    {
+      name: 'publication_review',
+      label: { en: 'Call Publication Review', ar: 'مراجعة نشر الدعوة' },
+      type: 'review',
+      requiredRole: 'rd_coordinator',
+      sla_days: 5,
+      selfCheckItems: [
+        { en: 'Call objectives clearly defined', ar: 'أهداف الدعوة محددة بوضوح' },
+        { en: 'Eligibility criteria documented', ar: 'معايير الأهلية موثقة' },
+        { en: 'Budget allocation confirmed', ar: 'تخصيص الميزانية مؤكد' },
+        { en: 'Timeline and milestones defined', ar: 'الجدول الزمني والمراحل محددة' },
+        { en: 'Strategic alignment documented', ar: 'التوافق الاستراتيجي موثق' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'Call aligns with R&D strategy', ar: 'الدعوة تتوافق مع استراتيجية البحث' },
+        { en: 'Budget justified', ar: 'الميزانية مبررة' },
+        { en: 'Evaluation criteria fair', ar: 'معايير التقييم عادلة' },
+        { en: 'No duplicate active calls', ar: 'لا توجد دعوات نشطة مكررة' }
+      ],
+      aiAssistance: {
+        requester: 'Validate call structure, suggest improvements, check for duplicates',
+        reviewer: 'Assess call quality, evaluate alignment, predict proposal quality'
+      }
+    },
+    {
+      name: 'publication_approval',
+      label: { en: 'Publication Approval', ar: 'موافقة النشر' },
+      type: 'approval',
+      requiredRole: 'rd_approver',
+      sla_days: 7,
+      selfCheckItems: [
+        { en: 'All review feedback addressed', ar: 'كل ملاحظات المراجعة معالجة' },
+        { en: 'Publication materials ready', ar: 'مواد النشر جاهزة' },
+        { en: 'Communication plan ready', ar: 'خطة التواصل جاهزة' },
+        { en: 'Evaluation panel identified', ar: 'لجنة التقييم محددة' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'Call ready for publication', ar: 'الدعوة جاهزة للنشر' },
+        { en: 'All prerequisites met', ar: 'كل المتطلبات محققة' },
+        { en: 'Resources committed', ar: 'الموارد ملتزم بها' },
+        { en: 'Approval justified', ar: 'الموافقة مبررة' }
+      ],
+      aiAssistance: {
+        requester: 'Final readiness check, generate promotional content',
+        reviewer: 'Publication readiness assessment, resource verification'
+      }
+    }
+  ],
+
+  // Campaign gate configs - Phase 4 integration for strategy-derived campaigns
+  campaign: [
+    {
+      name: 'content_review',
+      label: { en: 'Campaign Content Review', ar: 'مراجعة محتوى الحملة' },
+      type: 'review',
+      requiredRole: 'campaign_coordinator',
+      sla_days: 3,
+      selfCheckItems: [
+        { en: 'Campaign objectives defined', ar: 'أهداف الحملة محددة' },
+        { en: 'Target audience identified', ar: 'الجمهور المستهدف محدد' },
+        { en: 'Content and messaging ready', ar: 'المحتوى والرسائل جاهزة' },
+        { en: 'Channels selected', ar: 'القنوات محددة' },
+        { en: 'Strategic alignment documented', ar: 'التوافق الاستراتيجي موثق' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'Messaging aligns with brand', ar: 'الرسائل تتوافق مع العلامة' },
+        { en: 'Content appropriate', ar: 'المحتوى مناسب' },
+        { en: 'Channel selection justified', ar: 'اختيار القنوات مبرر' },
+        { en: 'Budget reasonable', ar: 'الميزانية معقولة' }
+      ],
+      aiAssistance: {
+        requester: 'Review content quality, suggest improvements, optimize messaging',
+        reviewer: 'Content analysis, brand alignment check, audience fit assessment'
+      }
+    },
+    {
+      name: 'launch_approval',
+      label: { en: 'Campaign Launch Approval', ar: 'موافقة إطلاق الحملة' },
+      type: 'approval',
+      requiredRole: 'campaign_approver',
+      sla_days: 5,
+      selfCheckItems: [
+        { en: 'Content review completed', ar: 'مراجعة المحتوى مكتملة' },
+        { en: 'Budget approved', ar: 'الميزانية معتمدة' },
+        { en: 'Launch timeline confirmed', ar: 'جدول الإطلاق مؤكد' },
+        { en: 'Tracking setup complete', ar: 'إعداد التتبع مكتمل' }
+      ],
+      reviewerChecklistItems: [
+        { en: 'All prerequisites met', ar: 'كل المتطلبات محققة' },
+        { en: 'Campaign ready for launch', ar: 'الحملة جاهزة للإطلاق' },
+        { en: 'Success metrics defined', ar: 'مقاييس النجاح محددة' },
+        { en: 'Approval justified', ar: 'الموافقة مبررة' }
+      ],
+      aiAssistance: {
+        requester: 'Launch readiness check, predict campaign performance',
+        reviewer: 'Final assessment, success prediction, resource verification'
+      }
+    }
   ]
 };
 

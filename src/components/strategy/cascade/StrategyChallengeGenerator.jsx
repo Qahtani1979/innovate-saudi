@@ -8,11 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Target, Loader2, CheckCircle2, AlertTriangle, Plus } from 'lucide-react';
+import { Sparkles, Target, Loader2, CheckCircle2, AlertTriangle, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
 export default function StrategyChallengeGenerator({ onChallengeCreated }) {
   const { t, isRTL } = useLanguage();
+  const { createApprovalRequest } = useApprovalRequest();
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [selectedObjectives, setSelectedObjectives] = useState([]);
   const [selectedSector, setSelectedSector] = useState('');
@@ -87,7 +89,7 @@ export default function StrategyChallengeGenerator({ onChallengeCreated }) {
     }
   };
 
-  const handleSaveChallenge = async (challenge, index) => {
+  const handleSaveChallenge = async (challenge, index, submitForApproval = false) => {
     try {
       const { data, error } = await supabase
         .from('challenges')
@@ -104,7 +106,7 @@ export default function StrategyChallengeGenerator({ onChallengeCreated }) {
           strategic_plan_ids: [selectedPlanId],
           is_strategy_derived: true,
           strategy_derivation_date: new Date().toISOString(),
-          status: 'draft',
+          status: submitForApproval ? 'pending' : 'draft',
           source: 'ai_generated'
         })
         .select()
@@ -112,11 +114,29 @@ export default function StrategyChallengeGenerator({ onChallengeCreated }) {
 
       if (error) throw error;
 
+      // Create approval request if submitting for approval (Phase 4 integration)
+      if (submitForApproval) {
+        await createApprovalRequest({
+          entityType: 'challenge',
+          entityId: data.id,
+          entityTitle: challenge.title_en,
+          isStrategyDerived: true,
+          strategicPlanIds: [selectedPlanId],
+          metadata: {
+            sector_id: selectedSector,
+            source: 'cascade_generator'
+          }
+        });
+      }
+
       const updated = [...generatedChallenges];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id };
+      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
       setGeneratedChallenges(updated);
       
-      toast.success(t({ en: 'Challenge saved successfully', ar: 'تم حفظ التحدي بنجاح' }));
+      toast.success(t({ 
+        en: submitForApproval ? 'Challenge saved and submitted for approval' : 'Challenge saved successfully', 
+        ar: submitForApproval ? 'تم حفظ التحدي وإرساله للموافقة' : 'تم حفظ التحدي بنجاح' 
+      }));
       onChallengeCreated?.(data);
     } catch (error) {
       console.error('Save error:', error);
@@ -275,15 +295,23 @@ export default function StrategyChallengeGenerator({ onChallengeCreated }) {
                       </CardDescription>
                     </div>
                     {challenge.saved ? (
-                      <Badge variant="outline" className="bg-green-100 text-green-700">
+                      <Badge variant="outline" className={challenge.submitted ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        {t({ en: 'Saved', ar: 'محفوظ' })}
+                        {challenge.submitted 
+                          ? t({ en: 'Submitted', ar: 'مُرسل' })
+                          : t({ en: 'Saved', ar: 'محفوظ' })}
                       </Badge>
                     ) : (
-                      <Button size="sm" onClick={() => handleSaveChallenge(challenge, idx)}>
-                        <Plus className="h-3 w-3 mr-1" />
-                        {t({ en: 'Save', ar: 'حفظ' })}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" onClick={() => handleSaveChallenge(challenge, idx, false)}>
+                          <Plus className="h-3 w-3 mr-1" />
+                          {t({ en: 'Save', ar: 'حفظ' })}
+                        </Button>
+                        <Button size="sm" onClick={() => handleSaveChallenge(challenge, idx, true)}>
+                          <Send className="h-3 w-3 mr-1" />
+                          {t({ en: 'Save & Submit', ar: 'حفظ وإرسال' })}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardHeader>

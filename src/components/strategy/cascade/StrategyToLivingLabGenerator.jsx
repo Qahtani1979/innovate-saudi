@@ -8,11 +8,13 @@ import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, FlaskConical, Loader2, CheckCircle2, Plus, MapPin } from 'lucide-react';
+import { Sparkles, FlaskConical, Loader2, CheckCircle2, Plus, MapPin, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
 export default function StrategyToLivingLabGenerator({ onLabCreated }) {
   const { t, isRTL } = useLanguage();
+  const { createApprovalRequest } = useApprovalRequest();
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
   const [researchFocus, setResearchFocus] = useState('');
@@ -74,7 +76,7 @@ export default function StrategyToLivingLabGenerator({ onLabCreated }) {
     }
   };
 
-  const handleSaveLab = async (lab, index) => {
+  const handleSaveLab = async (lab, index, submitForApproval = false) => {
     try {
       const { data, error } = await supabase
         .from('living_labs')
@@ -89,18 +91,32 @@ export default function StrategyToLivingLabGenerator({ onLabCreated }) {
           strategic_plan_ids: [selectedPlanId],
           is_strategy_derived: true,
           strategy_derivation_date: new Date().toISOString(),
-          status: 'planning'
+          status: submitForApproval ? 'pending' : 'planning'
         })
         .select()
         .single();
 
       if (error) throw error;
 
+      if (submitForApproval) {
+        await createApprovalRequest({
+          entityType: 'living_lab',
+          entityId: data.id,
+          entityTitle: lab.name_en,
+          isStrategyDerived: true,
+          strategicPlanIds: [selectedPlanId],
+          metadata: { source: 'cascade_generator' }
+        });
+      }
+
       const updated = [...generatedLabs];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id };
+      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
       setGeneratedLabs(updated);
       
-      toast.success(t({ en: 'Living lab saved successfully', ar: 'تم حفظ المختبر الحي بنجاح' }));
+      toast.success(t({ 
+        en: submitForApproval ? 'Living lab saved and submitted' : 'Living lab saved successfully', 
+        ar: submitForApproval ? 'تم حفظ المختبر وإرساله' : 'تم حفظ المختبر الحي بنجاح' 
+      }));
       onLabCreated?.(data);
     } catch (error) {
       console.error('Save error:', error);

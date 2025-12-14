@@ -8,11 +8,13 @@ import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Rocket, Loader2, CheckCircle2, Plus, Clock, Users } from 'lucide-react';
+import { Sparkles, Rocket, Loader2, CheckCircle2, Plus, Clock, Users, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
 export default function StrategyToPilotGenerator({ onPilotCreated }) {
   const { t, isRTL } = useLanguage();
+  const { createApprovalRequest } = useApprovalRequest();
   const [selectedChallenge, setSelectedChallenge] = useState('');
   const [selectedSolution, setSelectedSolution] = useState('');
   const [pilotDuration, setPilotDuration] = useState('3');
@@ -83,7 +85,7 @@ export default function StrategyToPilotGenerator({ onPilotCreated }) {
     }
   };
 
-  const handleSavePilot = async (pilot, index) => {
+  const handleSavePilot = async (pilot, index, submitForApproval = false) => {
     const challenge = challenges?.find(c => c.id === selectedChallenge);
     
     try {
@@ -109,18 +111,36 @@ export default function StrategyToPilotGenerator({ onPilotCreated }) {
           strategic_plan_ids: strategicPlanIds,
           is_strategy_derived: strategicPlanIds.length > 0,
           strategy_derivation_date: strategicPlanIds.length > 0 ? new Date().toISOString() : null,
-          status: 'proposed'
+          status: submitForApproval ? 'pending' : 'proposed'
         })
         .select()
         .single();
 
       if (error) throw error;
 
+      // Create approval request if submitting for approval (Phase 4 integration)
+      if (submitForApproval && strategicPlanIds.length > 0) {
+        await createApprovalRequest({
+          entityType: 'pilot',
+          entityId: data.id,
+          entityTitle: pilot.name_en,
+          isStrategyDerived: true,
+          strategicPlanIds: strategicPlanIds,
+          metadata: {
+            challenge_id: selectedChallenge,
+            source: 'cascade_generator'
+          }
+        });
+      }
+
       const updated = [...generatedPilots];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id };
+      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
       setGeneratedPilots(updated);
       
-      toast.success(t({ en: 'Pilot saved successfully', ar: 'تم حفظ التجربة بنجاح' }));
+      toast.success(t({ 
+        en: submitForApproval ? 'Pilot saved and submitted for approval' : 'Pilot saved successfully', 
+        ar: submitForApproval ? 'تم حفظ التجربة وإرسالها للموافقة' : 'تم حفظ التجربة بنجاح' 
+      }));
       onPilotCreated?.(data);
     } catch (error) {
       console.error('Save error:', error);
