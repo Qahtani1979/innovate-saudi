@@ -88,6 +88,7 @@ export default function StrategyToPartnershipGenerator({ onPartnershipCreated })
           partnership_type: rec.recommended_partnership_type,
           strategic_plan_ids: [selectedPlanId],
           is_strategy_derived: true,
+          strategy_derivation_date: new Date().toISOString(),
           status: 'proposed'
         })
         .select()
