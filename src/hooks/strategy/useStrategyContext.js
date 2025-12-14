@@ -486,6 +486,7 @@ export function useStrategyContext(strategicPlanId = null) {
 
 /**
  * Identify strategic gaps based on existing data
+ * Returns bilingual gap descriptions
  */
 function identifyGaps({ plans, challenges, sectors, programs, pilots, coveredSectors, uncoveredSectors, unresolvedChallenges }) {
   const gaps = [];
@@ -495,10 +496,13 @@ function identifyGaps({ plans, challenges, sectors, programs, pilots, coveredSec
     gaps.push({
       type: 'uncovered_sectors',
       severity: 'high',
-      title: 'Sectors without strategic coverage',
+      title: `Sectors without strategic coverage`,
+      title_ar: `قطاعات بدون تغطية استراتيجية`,
       description: `${uncoveredSectors.length} sectors have no strategic plans, challenges, or programs`,
+      description_ar: `${uncoveredSectors.length} قطاعات ليس لديها خطط استراتيجية أو تحديات أو برامج`,
       sectors: uncoveredSectors,
-      recommendation: 'Consider creating strategic initiatives for these sectors'
+      recommendation: 'Consider creating strategic initiatives for these sectors',
+      recommendation_ar: 'يُنصح بإنشاء مبادرات استراتيجية لهذه القطاعات'
     });
   }
 
@@ -508,9 +512,12 @@ function identifyGaps({ plans, challenges, sectors, programs, pilots, coveredSec
       type: 'unlinked_challenges',
       severity: 'high',
       title: 'Challenges not linked to strategic plans',
+      title_ar: 'تحديات غير مرتبطة بالخطط الاستراتيجية',
       description: `${unresolvedChallenges.length} unresolved challenges are not linked to any strategic plan`,
+      description_ar: `${unresolvedChallenges.length} تحديات غير محلولة غير مرتبطة بأي خطة استراتيجية`,
       challenges: unresolvedChallenges,
-      recommendation: 'Link these challenges to strategic objectives or create new plans to address them'
+      recommendation: 'Link these challenges to strategic objectives or create new plans to address them',
+      recommendation_ar: 'اربط هذه التحديات بالأهداف الاستراتيجية أو أنشئ خططًا جديدة لمعالجتها'
     });
   }
 
@@ -521,9 +528,12 @@ function identifyGaps({ plans, challenges, sectors, programs, pilots, coveredSec
       type: 'plans_without_objectives',
       severity: 'medium',
       title: 'Strategic plans without objectives',
+      title_ar: 'خطط استراتيجية بدون أهداف',
       description: `${plansWithoutObjectives.length} plans have no defined objectives`,
+      description_ar: `${plansWithoutObjectives.length} خطط ليس لها أهداف محددة`,
       plans: plansWithoutObjectives,
-      recommendation: 'Generate objectives for these plans using the Objective Generator'
+      recommendation: 'Generate objectives for these plans using the Objective Generator',
+      recommendation_ar: 'أنشئ أهدافًا لهذه الخطط باستخدام مولد الأهداف'
     });
   }
 
@@ -534,9 +544,12 @@ function identifyGaps({ plans, challenges, sectors, programs, pilots, coveredSec
       type: 'plans_without_pillars',
       severity: 'medium',
       title: 'Strategic plans without pillars',
+      title_ar: 'خطط استراتيجية بدون ركائز',
       description: `${plansWithoutPillars.length} plans have no defined pillars`,
+      description_ar: `${plansWithoutPillars.length} خطط ليس لها ركائز محددة`,
       plans: plansWithoutPillars,
-      recommendation: 'Generate pillars for these plans using the Pillar Generator'
+      recommendation: 'Generate pillars for these plans using the Pillar Generator',
+      recommendation_ar: 'أنشئ ركائز لهذه الخطط باستخدام مولد الركائز'
     });
   }
 
@@ -554,9 +567,12 @@ function identifyGaps({ plans, challenges, sectors, programs, pilots, coveredSec
       type: 'challenges_without_action',
       severity: 'medium',
       title: 'Challenges without programs or pilots',
+      title_ar: 'تحديات بدون برامج أو مشاريع تجريبية',
       description: `${challengesWithoutPrograms.length} challenges have no associated programs or pilots`,
+      description_ar: `${challengesWithoutPrograms.length} تحديات ليس لها برامج أو مشاريع تجريبية مرتبطة`,
       challenges: challengesWithoutPrograms.slice(0, 10),
-      recommendation: 'Consider cascading these challenges to programs or pilots'
+      recommendation: 'Consider cascading these challenges to programs or pilots',
+      recommendation_ar: 'يُنصح بتحويل هذه التحديات إلى برامج أو مشاريع تجريبية'
     });
   }
 

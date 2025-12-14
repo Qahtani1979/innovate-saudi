@@ -106,7 +106,7 @@ function StrategicPlanBuilder() {
     const contextPrompt = buildStrategyContextPrompt(strategyContext);
     
     const result = await invokeAI({
-      system_prompt: `You are a strategic planning expert for municipal innovation. You analyze existing strategic landscape and create NEW plans that fill identified gaps while avoiding duplication.`,
+      system_prompt: `You are a bilingual strategic planning expert for municipal innovation in Saudi Arabia. You analyze existing strategic landscape and create NEW plans that fill identified gaps while avoiding duplication. You MUST provide content in BOTH English and Arabic. Arabic content should be professional, formal, and culturally appropriate for Saudi government context.`,
       prompt: `${contextPrompt}
 
 Based on the strategic context above, generate a NEW strategic plan that:
@@ -115,26 +115,40 @@ Based on the strategic context above, generate a NEW strategic plan that:
 3. Focuses on uncovered sectors and unresolved challenges
 4. Builds on SWOT strengths and opportunities
 
+IMPORTANT: Generate content in BOTH English AND Arabic.
+
 Format as JSON with:
-- title_en: Unique, descriptive title
-- vision_en: Compelling vision statement
-- objectives: Array of 3-5 objectives, each with name_en and description_en`,
+- title_en: Unique, descriptive title in English
+- title_ar: Same title translated to formal Arabic
+- vision_en: Compelling vision statement in English
+- vision_ar: Same vision statement in formal Arabic
+- objectives: Array of 3-5 objectives, each with:
+  - name_en: Objective name in English
+  - name_ar: Objective name in Arabic
+  - description_en: Description in English
+  - description_ar: Description in Arabic`,
       response_json_schema: {
         type: "object",
         properties: {
           title_en: { type: "string" },
+          title_ar: { type: "string" },
           vision_en: { type: "string" },
+          vision_ar: { type: "string" },
           objectives: {
             type: "array",
             items: {
               type: "object",
               properties: {
                 name_en: { type: "string" },
-                description_en: { type: "string" }
-              }
+                name_ar: { type: "string" },
+                description_en: { type: "string" },
+                description_ar: { type: "string" }
+              },
+              required: ["name_en", "name_ar", "description_en", "description_ar"]
             }
           }
-        }
+        },
+        required: ["title_en", "title_ar", "vision_en", "vision_ar", "objectives"]
       }
     });
     
@@ -163,8 +177,10 @@ Format as JSON with:
           ar: `${warnings.length} أهداف قد تكون مشابهة للأهداف الحالية. راجع أدناه.`
         }));
       } else {
-        toast.success(t({ en: 'Strategic plan generated', ar: 'تم إنشاء الخطة الاستراتيجية' }));
+        toast.success(t({ en: 'Strategic plan generated in English and Arabic', ar: 'تم إنشاء الخطة الاستراتيجية بالإنجليزية والعربية' }));
       }
+    } else {
+      toast.error(t({ en: 'Failed to generate plan. Please try again.', ar: 'فشل في إنشاء الخطة. يرجى المحاولة مرة أخرى.' }));
     }
   };
 
@@ -185,7 +201,7 @@ Format as JSON with:
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
@@ -306,16 +322,18 @@ Format as JSON with:
                         </p>
                       ) : (
                         existingPlans.map((p) => (
-                          <div key={p.id} className="p-3 border rounded-lg">
+                          <div key={p.id} className="p-3 border rounded-lg" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                             <div className="flex items-start justify-between">
                               <div>
-                                <h4 className="font-medium">{language === 'ar' ? p.name_ar : p.name_en}</h4>
+                                <h4 className="font-medium">{language === 'ar' ? p.name_ar || p.name_en : p.name_en}</h4>
                                 <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {language === 'ar' ? p.vision_ar : p.vision_en}
+                                  {language === 'ar' ? p.vision_ar || p.vision_en : p.vision_en}
                                 </p>
                               </div>
                               <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>
-                                {p.status || 'draft'}
+                                {p.status === 'active' ? t({ en: 'Active', ar: 'نشط' }) : 
+                                 p.status === 'draft' ? t({ en: 'Draft', ar: 'مسودة' }) : 
+                                 p.status || t({ en: 'Draft', ar: 'مسودة' })}
                               </Badge>
                             </div>
                             <div className="flex gap-2 mt-2">
@@ -416,19 +434,21 @@ Format as JSON with:
               ) : (
                 <div className="space-y-4">
                   {gaps.map((gap, index) => (
-                    <Alert key={index} variant={gap.severity === 'high' ? 'destructive' : 'default'}>
+                    <Alert key={index} variant={gap.severity === 'high' ? 'destructive' : 'default'} dir={language === 'ar' ? 'rtl' : 'ltr'}>
                       <AlertTriangle className="h-4 w-4" />
                       <AlertDescription>
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="font-medium">{gap.title}</p>
-                            <p className="text-sm mt-1">{gap.description}</p>
+                            <p className="font-medium">{language === 'ar' ? gap.title_ar || gap.title : gap.title}</p>
+                            <p className="text-sm mt-1">{language === 'ar' ? gap.description_ar || gap.description : gap.description}</p>
                             <p className="text-sm text-muted-foreground mt-2">
-                              <strong>{t({ en: 'Recommendation:', ar: 'التوصية:' })}</strong> {gap.recommendation}
+                              <strong>{t({ en: 'Recommendation:', ar: 'التوصية:' })}</strong> {language === 'ar' ? gap.recommendation_ar || gap.recommendation : gap.recommendation}
                             </p>
                           </div>
                           <Badge variant={gap.severity === 'high' ? 'destructive' : 'secondary'}>
-                            {gap.severity}
+                            {gap.severity === 'high' ? t({ en: 'High', ar: 'عالي' }) : 
+                             gap.severity === 'medium' ? t({ en: 'Medium', ar: 'متوسط' }) : 
+                             t({ en: 'Low', ar: 'منخفض' })}
                           </Badge>
                         </div>
                       </AlertDescription>
@@ -470,9 +490,9 @@ Format as JSON with:
                 <ScrollArea className="h-[200px]">
                   <div className="space-y-2">
                     {unresolvedChallenges.slice(0, 10).map((challenge) => (
-                      <div key={challenge.id} className="p-2 border rounded-lg flex items-center justify-between">
-                        <span className="text-sm">{challenge.title_en}</span>
-                        <Badge variant="outline">{challenge.priority || 'Not set'}</Badge>
+                      <div key={challenge.id} className="p-2 border rounded-lg flex items-center justify-between" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                        <span className="text-sm">{language === 'ar' ? challenge.title_ar || challenge.title_en : challenge.title_en}</span>
+                        <Badge variant="outline">{challenge.priority || t({ en: 'Not set', ar: 'غير محدد' })}</Badge>
                       </div>
                     ))}
                   </div>
