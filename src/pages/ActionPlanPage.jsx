@@ -23,6 +23,7 @@ const ActionPlanPage = () => {
       </div>
       
       <ActionPlanBuilder 
+        strategicPlanId={activePlanId}
         strategicPlan={activePlan}
         onSave={handleSave} 
       />

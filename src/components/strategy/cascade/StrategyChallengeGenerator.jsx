@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Target, Loader2, CheckCircle2, AlertTriangle, Plus, Send } from 'lucide-react';
+import { Sparkles, Target, Loader2, CheckCircle2, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
@@ -22,7 +22,6 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
   const [isGenerating, setIsGenerating] = useState(false);
   const [additionalContext, setAdditionalContext] = useState('');
 
-  // Use the passed strategicPlanId from context
   const selectedPlanId = strategicPlanId;
   const objectives = strategicPlan?.objectives || [];
 
@@ -101,7 +100,6 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
 
       if (error) throw error;
 
-      // Create approval request if submitting for approval (Phase 4 integration)
       if (submitForApproval) {
         await createApprovalRequest({
           entityType: 'challenge',
@@ -156,27 +154,23 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
             </div>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {t({ en: 'Sector Focus', ar: 'القطاع المستهدف' })}
-              </label>
-              <Select value={selectedSector} onValueChange={setSelectedSector}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t({ en: 'All sectors', ar: 'جميع القطاعات' })} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">{t({ en: 'All sectors', ar: 'جميع القطاعات' })}</SelectItem>
-                  {sectors?.map(sector => (
-                    <SelectItem key={sector.id} value={sector.id}>
-                      {isRTL ? sector.name_ar : sector.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {t({ en: 'Sector Focus', ar: 'القطاع المستهدف' })}
+            </label>
+            <Select value={selectedSector} onValueChange={setSelectedSector}>
+              <SelectTrigger>
+                <SelectValue placeholder={t({ en: 'All sectors', ar: 'جميع القطاعات' })} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{t({ en: 'All sectors', ar: 'جميع القطاعات' })}</SelectItem>
+                {sectors?.map(sector => (
+                  <SelectItem key={sector.id} value={sector.id}>
+                    {isRTL ? sector.name_ar : sector.name_en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {objectives.length > 0 && (
