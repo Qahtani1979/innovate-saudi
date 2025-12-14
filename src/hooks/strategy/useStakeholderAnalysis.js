@@ -21,7 +21,6 @@ export function useStakeholderAnalysis(strategicPlanId) {
         .from('stakeholder_analyses')
         .select('*')
         .eq('strategic_plan_id', strategicPlanId)
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -48,12 +47,12 @@ export function useStakeholderAnalysis(strategicPlanId) {
     try {
       const payload = {
         strategic_plan_id: strategicPlanId,
-        name_en: stakeholder.name_en,
-        name_ar: stakeholder.name_ar,
-        stakeholder_type: stakeholder.type,
-        power_level: stakeholder.power,
-        interest_level: stakeholder.interest,
-        influence_description: stakeholder.influence,
+        stakeholder_name_en: stakeholder.name_en || stakeholder.stakeholder_name_en,
+        stakeholder_name_ar: stakeholder.name_ar || stakeholder.stakeholder_name_ar,
+        stakeholder_type: stakeholder.type || stakeholder.stakeholder_type,
+        power_level: stakeholder.power || stakeholder.power_level,
+        interest_level: stakeholder.interest || stakeholder.interest_level,
+        influence_description: stakeholder.influence || stakeholder.influence_description,
         expectations: stakeholder.expectations,
         engagement_strategy: stakeholder.engagement_strategy,
         contact_info: stakeholder.contact_info,
@@ -105,7 +104,7 @@ export function useStakeholderAnalysis(strategicPlanId) {
     try {
       const { error } = await supabase
         .from('stakeholder_analyses')
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+        .delete()
         .eq('id', id);
 
       if (error) throw error;

@@ -21,7 +21,6 @@ export function useStrategyBaselines(strategicPlanId) {
         .from('strategy_baselines')
         .select('*')
         .eq('strategic_plan_id', strategicPlanId)
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -36,7 +35,7 @@ export function useStrategyBaselines(strategicPlanId) {
         unit: baseline.unit,
         target_value: baseline.target_value,
         collection_date: baseline.collection_date,
-        source: baseline.data_source,
+        source: baseline.source,
         status: baseline.status,
         notes: baseline.notes
       }));
@@ -71,7 +70,7 @@ export function useStrategyBaselines(strategicPlanId) {
         unit: baseline.unit,
         target_value: baseline.target_value,
         collection_date: baseline.collection_date || new Date().toISOString().split('T')[0],
-        data_source: baseline.source,
+        source: baseline.source,
         status: baseline.status,
         notes: baseline.notes,
         created_by_email: user.email,
@@ -105,7 +104,7 @@ export function useStrategyBaselines(strategicPlanId) {
         unit: result.data.unit,
         target_value: result.data.target_value,
         collection_date: result.data.collection_date,
-        source: result.data.data_source,
+        source: result.data.source,
         status: result.data.status,
         notes: result.data.notes
       };
@@ -136,7 +135,7 @@ export function useStrategyBaselines(strategicPlanId) {
     try {
       const { error } = await supabase
         .from('strategy_baselines')
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+        .delete()
         .eq('id', id);
 
       if (error) throw error;

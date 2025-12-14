@@ -21,7 +21,6 @@ export function useStrategyInputs(strategicPlanId) {
         .from('strategy_inputs')
         .select('*')
         .eq('strategic_plan_id', strategicPlanId)
-        .eq('is_deleted', false)
         .order('priority_votes', { ascending: false });
 
       if (error) throw error;
@@ -152,7 +151,7 @@ export function useStrategyInputs(strategicPlanId) {
     try {
       const { error } = await supabase
         .from('strategy_inputs')
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+        .delete()
         .eq('id', id);
 
       if (error) throw error;
