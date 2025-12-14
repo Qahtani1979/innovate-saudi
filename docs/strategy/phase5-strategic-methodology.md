@@ -20,13 +20,13 @@ Phase 5 (Strategy Communication) is the **visibility, engagement, and knowledge-
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
 │   PHASE 1: PRE-PLANNING ──→ Intelligence & Readiness Assessment                │
-│           ↓                                                                      │
-│   PHASE 2: STRATEGY CREATION ──→ Plans, Objectives, Ownership                   │
-│           ↓                                                                      │
-│   PHASE 3: STRATEGY CASCADE ──→ Entity Generation & Deployment                  │
-│           ↓                                                                      │
-│   PHASE 4: STRATEGY GOVERNANCE ──→ Control, Oversight, Accountability           │
-│           ↓                                                                      │
+│           ↓                        ↑ (End-of-Cycle from Phase 8)                │
+│   PHASE 2: STRATEGY CREATION ──→ Plans, Objectives, Ownership                  │
+│           ↓                        ↑ (Mid-Cycle Adjustments from Phase 8)       │
+│   PHASE 3: STRATEGY CASCADE ──→ Entity Generation & Deployment                 │
+│           ↓                        ↑ (Mid-Cycle Adjustments from Phase 8)       │
+│   PHASE 4: STRATEGY GOVERNANCE ──→ Control, Oversight, Accountability          │
+│           ↓                        ↑ (Mid-Cycle Adjustments from Phase 8)       │
 │   ╔═══════════════════════════════════════════════════════════════════════════╗ │
 │   ║   PHASE 5: STRATEGY COMMUNICATION ──→ Visibility & Engagement             ║ │
 │   ║   ├── Stakeholder Communication Strategy                                  ║ │
@@ -36,12 +36,12 @@ Phase 5 (Strategy Communication) is the **visibility, engagement, and knowledge-
 │   ║   ├── Multi-Channel Campaign Management                                   ║ │
 │   ║   └── Knowledge Sharing & Best Practices                                  ║ │
 │   ╚═══════════════════════════════════════════════════════════════════════════╝ │
-│           ↓                                                                      │
+│           ↓                        ↑ (Mid-Cycle Adjustments from Phase 8)       │
 │   PHASE 6: MONITORING & EXECUTION ──→ Tracking & Performance                   │
 │           ↓                                                                      │
-│   PHASE 7: EVALUATION ──→ Impact Assessment & Learning                          │
-│                                                                                  │
-│   [Feedback Loop: Phase 7 → Phase 1 for Next Strategic Cycle]                   │
+│   PHASE 7: EVALUATION & REVIEW ──→ Impact Assessment & Learning                │
+│           ↓                                                                      │
+│   PHASE 8: RECALIBRATION ──→ Feedback Loop & Strategic Adjustment              │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1038,6 +1038,15 @@ CONVERSION METRICS
 | **Phase 4** | Committee decisions | Decision communication | High |
 | **Phase 4** | Sign-off completion | Authority endorsement | Medium |
 
+### Inputs FROM Phase 8 (Mid-Cycle Adjustments)
+
+| Phase 8 Output | How It Informs Phase 5 | Trigger Condition |
+|----------------|------------------------|-------------------|
+| **Messaging Revisions** | Update key messages, clarify positioning | Stakeholder confusion detected |
+| **Channel Optimizations** | Shift to more effective channels | Engagement drops > 30% |
+| **Frequency Adjustments** | Increase/decrease communication cadence | Information overload or gaps |
+| **Pivot Communications** | Announce mid-cycle strategic changes | Pivot approved by Phase 8 |
+
 ### Outputs TO Subsequent Phases
 
 | Phase 5 Output | Used By | Purpose |
@@ -1057,6 +1066,7 @@ CONVERSION METRICS
 |---------|------|---------|
 | 1.0 | 2024-12-14 | Initial comprehensive methodology |
 | 1.1 | 2024-12-14 | Added phase interconnection mapping, fixed feedback loop |
+| 2.0 | 2024-12-14 | Added Phase 8 mid-cycle adjustment inputs, updated lifecycle |
 
 ---
 

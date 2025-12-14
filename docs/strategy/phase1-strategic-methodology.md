@@ -657,6 +657,17 @@ STRATEGIC DIRECTION
 
 ## Connection to Other Phases
 
+### Inputs FROM Phase 8 (Recalibration)
+
+| Phase 8 Output | How It Informs Phase 1 | Priority |
+|----------------|------------------------|----------|
+| **Updated Baselines** | New starting point for maturity assessment | Critical |
+| **Strategic Intelligence Brief** | Pre-analyzed lessons and patterns | Critical |
+| **Methodology Improvements** | Enhanced approaches based on experience | High |
+| **Gap Analysis** | Priority investigation areas | High |
+| **Best Practices** | Proven methodologies to adopt | Medium |
+| **Case Studies** | Evidence for decision-making | Medium |
+
 ### Outputs TO Subsequent Phases
 
 | Phase 1 Output | Used By | Purpose |
@@ -677,6 +688,7 @@ STRATEGIC DIRECTION
 |---------|------|---------|
 | 1.0 | 2024-12-14 | Initial comprehensive methodology |
 | 1.1 | 2024-12-14 | Added phase interconnection mapping |
+| 2.0 | 2024-12-14 | Added Phase 8 inputs for end-of-cycle feedback |
 
 ---
 
