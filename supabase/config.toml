@@ -167,3 +167,21 @@ verify_jwt = false
 
 [functions.event-reminder]
 verify_jwt = false
+
+[functions.strategy-challenge-generator]
+verify_jwt = false
+
+[functions.strategy-pilot-generator]
+verify_jwt = false
+
+[functions.strategy-partnership-matcher]
+verify_jwt = false
+
+[functions.strategy-event-planner]
+verify_jwt = false
+
+[functions.strategy-campaign-generator]
+verify_jwt = false
+
+[functions.strategy-policy-generator]
+verify_jwt = false
