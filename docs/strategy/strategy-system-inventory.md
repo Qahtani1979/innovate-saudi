@@ -1,8 +1,9 @@
 # Strategy System Inventory
 
-> **Version:** 1.5  
+> **Version:** 1.6  
 > **Last Updated:** 2025-12-14  
 > **Total Assets:** 123 files (21 pages, 55 components, 30 hooks + 2 context files + 15 registered routes)
+> **Schema Audit:** ✅ All hooks verified against database schema
 
 ---
 
@@ -30,12 +31,21 @@ All strategy pages use a shared global context for maintaining the active strate
 - Hooks accept `strategicPlanId` parameter for database filtering
 - All hooks use correct database column names (validated 2025-12-14)
 
-### Database Schema Notes
-- `swot_analyses`: Uses individual records per item with `quadrant` field (strengths/weaknesses/opportunities/threats)
-- `stakeholder_analyses`: Uses `stakeholder_name_en`/`stakeholder_name_ar` columns
-- `strategy_risks`: Uses `category` (not `risk_category`), `owner_email` (not `owner`)
-- `strategy_baselines`: Uses `source` (not `data_source`)
-- No soft delete (`is_deleted`) columns in strategy tables - use hard delete
+### ✅ Database Schema Verification (2025-12-14)
+
+| Table | Verified Columns | Notes |
+|-------|------------------|-------|
+| `strategic_plans` | `id`, `name_en`, `name_ar`, `status`, `vision_en`, `pillars`, `objectives` | No `is_deleted` column |
+| `swot_analyses` | `quadrant`, `title_en`, `title_ar`, `description_en`, `impact_level`, `priority` | Individual records per SWOT item |
+| `environmental_factors` | `category`, `title_en`, `impact_type`, `impact_level`, `trend`, `source` | No `is_deleted` column |
+| `stakeholder_analyses` | `stakeholder_name_en`, `stakeholder_name_ar`, `stakeholder_type`, `power_level`, `interest_level` | Not `name_en` |
+| `strategy_risks` | `name_en`, `category`, `probability`, `impact`, `owner_email`, `mitigation_strategy` | Not `risk_category` or `owner` |
+| `strategy_baselines` | `kpi_name_en`, `category`, `baseline_value`, `target_value`, `source`, `collection_date` | Not `data_source` |
+| `strategy_inputs` | `source_type`, `source_name`, `input_text`, `theme`, `sentiment`, `priority_votes` | Not `priority` |
+
+### Delete Strategy
+- **No soft delete**: Strategy tables do NOT have `is_deleted` columns
+- All hooks use **hard delete** (`.delete()`) instead of soft delete
 
 ---
 
