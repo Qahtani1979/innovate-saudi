@@ -5,6 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH):
+- 13 Administrative Regions across the Kingdom
+- Major Saudi Cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif, Najran, Jazan
+- Vision 2030 Programs: Quality of Life, Housing (Sakani - 70% ownership), National Transformation, Thriving Cities
+- Key Sectors: Transportation, Environment, Urban Planning, Digital Services, Public Safety, Infrastructure, Housing, Smart City, Waste Management, Water Resources
+- Stakeholders: Citizens, Municipalities, Private Sector, Academia, Startups, Government Partners`;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,20 +27,28 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert municipal innovation strategist specializing in sector-specific strategy development.
-Your role is to generate comprehensive sector strategies that align with the overall municipal strategic plan.
+    const systemPrompt = `You are an expert Saudi Arabian municipal innovation strategist within the Ministry of Municipal, Rural Affairs and Housing (MoMRAH), specializing in sector-specific strategy development.
+
+${SAUDI_CONTEXT}
+
+Your role is to generate comprehensive sector strategies for Saudi municipalities that:
+1. Align with Vision 2030 goals and MoMRAH's mandate
+2. Consider Saudi cultural context and local needs
+3. Support the Kingdom's transformation objectives
+4. Leverage public-private partnerships
+5. Enable smart city and digital transformation initiatives
 
 You must generate:
-1. A compelling sector-specific vision statement (in both English and Arabic)
-2. 2-3 strategic objectives for the sector (with titles in both languages)
-3. 3-4 Key Performance Indicators (KPIs) with realistic baselines and targets
+1. A compelling sector-specific vision statement (in both English and formal Arabic)
+2. 3-4 strategic objectives for the sector (with titles in both languages)
+3. 4-5 Key Performance Indicators (KPIs) with realistic baselines and ambitious but achievable targets
 
 Guidelines:
-- Vision should be aspirational but achievable
-- Objectives should be SMART (Specific, Measurable, Achievable, Relevant, Time-bound)
-- KPIs should have realistic baseline and target values
-- Consider the sector's unique challenges and opportunities
-- Align with Vision 2030 and SDG goals where applicable`;
+- Vision should be aspirational and aligned with Vision 2030
+- Objectives should be SMART and culturally appropriate
+- KPIs should have realistic baseline and target values for Saudi context
+- Consider the sector's unique challenges and opportunities in Saudi Arabia
+- Reference relevant national strategies and programs`;
 
     const userPrompt = `Generate a comprehensive sector strategy for the following:
 

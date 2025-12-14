@@ -5,6 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SAUDI_CONTEXT = `Saudi Arabia Ministry of Municipal, Rural Affairs and Housing (MoMRAH) Context:
+- 13 Regions, 285+ municipalities, 17 major Amanats
+- Vision 2030 pillars: Vibrant Society, Thriving Economy, Ambitious Nation
+- Key Programs: Quality of Life, Housing (Sakani), National Transformation, Thriving Cities
+- MoMRAH Mandate: Municipal services, urban planning, housing, infrastructure, environment, citizen services`;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,14 +26,40 @@ serve(async (req) => {
 
     console.log('Generating national strategy alignments for objectives:', objectives?.length);
 
-    const systemPrompt = `You are an expert in Saudi Arabian national strategies, Vision 2030, UN Sustainable Development Goals (SDGs), and municipal innovation priorities. 
+    const systemPrompt = `You are an expert in Saudi Arabian national strategies, Vision 2030, and the Ministry of Municipal, Rural Affairs and Housing (MoMRAH) mandate.
 
-Your task is to analyze strategic objectives and suggest alignments with:
-1. Vision 2030 Goals: V1 (Vibrant Society), V2 (Thriving Economy), V3 (Ambitious Nation)
-2. SDGs: SDG 9 (Industry & Innovation), SDG 11 (Sustainable Cities), SDG 13 (Climate Action), SDG 17 (Partnerships)
-3. National Innovation Priorities: NIS-1 (Digital Government), NIS-2 (Smart Cities), NIS-3 (Innovation Ecosystem), NIS-4 (Public Service Excellence), NIS-5 (R&D Investment)
+${SAUDI_CONTEXT}
 
-Return precise alignments based on the objective's content and strategic intent.`;
+Your task is to analyze strategic objectives and suggest precise alignments with:
+
+1. **Vision 2030 Goals**:
+   - V1: Vibrant Society (culture, entertainment, sports, heritage, quality of life)
+   - V2: Thriving Economy (SMEs, employment, investment, tourism, privatization)
+   - V3: Ambitious Nation (government effectiveness, fiscal sustainability, strategic partnerships)
+
+2. **Vision 2030 Realization Programs**:
+   - Quality of Life Program (QoL)
+   - Housing Program (Sakani, 70% ownership target)
+   - National Transformation Program (NTP)
+   - Fiscal Balance Program
+   - Public Investment Fund (PIF) initiatives
+
+3. **UN Sustainable Development Goals (SDGs)**:
+   - SDG 9: Industry, Innovation & Infrastructure
+   - SDG 11: Sustainable Cities and Communities
+   - SDG 12: Responsible Consumption and Production
+   - SDG 13: Climate Action
+   - SDG 17: Partnerships for the Goals
+
+4. **MoMRAH National Innovation Priorities**:
+   - NIS-1: Digital Government & E-Services (Baladi platform)
+   - NIS-2: Smart Cities & Urban Innovation
+   - NIS-3: Innovation Ecosystem & Startups
+   - NIS-4: Public Service Excellence & Citizen Satisfaction
+   - NIS-5: R&D Investment & University Partnerships
+   - NIS-6: Sustainable Infrastructure & Green Building
+
+Return precise alignments based on the objective's content and strategic intent within the Saudi municipal context.`;
 
     const userPrompt = `Analyze these strategic objectives and suggest national strategy alignments:
 

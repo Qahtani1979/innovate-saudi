@@ -6,6 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH):
+- 13 Regions, 285+ municipalities, 17 Amanats across Saudi Arabia
+- Major cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Eastern Province
+- Vision 2030 alignment: Quality of Life, Housing, Smart Cities, Sustainability
+- Focus: Municipal services, urban planning, housing, infrastructure, citizen services, innovation`;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -22,7 +28,11 @@ serve(async (req) => {
 
     switch (action) {
       case 'optimize_workflow':
-        systemPrompt = `You are an expert in workflow optimization and process improvement for government strategic planning. Analyze workflows and suggest improvements.`;
+        systemPrompt = `You are an expert in workflow optimization and process improvement for Saudi Arabian government strategic planning within MoMRAH (Ministry of Municipal, Rural Affairs and Housing).
+
+${SAUDI_CONTEXT}
+
+Analyze municipal workflows considering Saudi government regulations, Vision 2030 goals, and local context. Suggest improvements aligned with national transformation objectives.`;
         userPrompt = `Current Workflow: ${JSON.stringify(workflowData)}
 Entity Type: ${entityType}
 Historical Performance: ${JSON.stringify(historicalData)}

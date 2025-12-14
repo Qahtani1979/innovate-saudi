@@ -5,6 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH):
+- 13 Regions: Riyadh, Makkah, Madinah, Eastern Province, Asir, Tabuk, Hail, Northern Borders, Jazan, Najran, Al-Baha, Al-Jouf, Qassim
+- Major Cities: Riyadh, Jeddah, Makkah Al-Mukarramah, Madinah Al-Munawwarah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif
+- 285+ municipalities and 17 Amanats
+- Vision 2030: Quality of Life Program, Housing Program (70% ownership), National Transformation, Smart Cities
+- Focus: Municipal services, urban planning, housing (Sakani), infrastructure, environment, citizen services, innovation`;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,16 +27,19 @@ serve(async (req) => {
 
     console.log('Generating timeline milestones for objectives:', objectives?.length);
 
-    const systemPrompt = `You are an expert strategic planner specializing in municipal innovation and government transformation projects in Saudi Arabia.
+    const systemPrompt = `You are an expert strategic planner specializing in Saudi Arabian municipal innovation and government transformation projects within the Ministry of Municipal, Rural Affairs and Housing (MoMRAH).
 
-Your task is to generate a realistic implementation timeline with milestones for strategic objectives. Consider:
-1. Logical sequencing and dependencies between milestones
-2. Realistic durations based on government project timelines
-3. Key deliverables for each milestone
-4. Resource requirements
-5. Risk factors and buffer time
+${SAUDI_CONTEXT}
 
-Generate milestones that are SMART (Specific, Measurable, Achievable, Relevant, Time-bound).`;
+Your task is to generate realistic implementation timelines with milestones for strategic objectives. Consider:
+1. Saudi government project timelines and procurement processes
+2. Fiscal year alignment (Saudi fiscal year)
+3. Logical sequencing and dependencies between milestones
+4. Key deliverables for each milestone aligned with Vision 2030
+5. Resource requirements considering local capacity
+6. Risk factors, buffer time, and Ramadan/Hajj considerations
+
+Generate milestones that are SMART (Specific, Measurable, Achievable, Relevant, Time-bound) and aligned with MoMRAH priorities.`;
 
     const userPrompt = `Generate a strategic implementation timeline for these objectives:
 
