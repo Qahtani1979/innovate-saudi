@@ -142,6 +142,7 @@ import Contact from './pages/Contact';
 import ResearcherNetwork from './pages/ResearcherNetwork';
 import PublicSolutionsMarketplace from './pages/PublicSolutionsMarketplace';
 import StrategicPlanBuilder from './pages/StrategicPlanBuilder';
+import StrategyDemandDashboard from './pages/StrategyDemandDashboardPage';
 import BudgetAllocationTool from './pages/BudgetAllocationTool';
 import GapAnalysisTool from './pages/GapAnalysisTool';
 import RDPortfolioPlanner from './pages/RDPortfolioPlanner';
@@ -652,6 +653,7 @@ export const PAGES = {
     "ResearcherNetwork": ResearcherNetwork,
     "PublicSolutionsMarketplace": PublicSolutionsMarketplace,
     "StrategicPlanBuilder": StrategicPlanBuilder,
+    "StrategyDemandDashboard": StrategyDemandDashboard,
     "BudgetAllocationTool": BudgetAllocationTool,
     "GapAnalysisTool": GapAnalysisTool,
     "RDPortfolioPlanner": RDPortfolioPlanner,
