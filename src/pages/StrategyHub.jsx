@@ -549,4 +549,4 @@ function StrategyHub() {
   );
 }
 
-export default ProtectedPage(StrategyHub, { requiredPermissions: ['strategy.view'] });
+export default ProtectedPage(StrategyHub, { requiredPermissions: ['strategy_view'] });
