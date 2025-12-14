@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
+import { usePermissions } from '@/components/permissions/usePermissions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,16 +51,16 @@ import StrategicGapProgramRecommender from '@/components/strategy/StrategicGapPr
 import WhatIfSimulator from '@/components/strategy/WhatIfSimulator';
 import BottleneckDetector from '@/components/strategy/BottleneckDetector';
 
-// Cascade Generator Cards
+// Cascade Generator Cards with permission requirements
 const cascadeGenerators = [
-  { icon: Lightbulb, label: { en: 'Challenges', ar: 'التحديات' }, path: '/strategy-challenge-generator-page', color: 'text-orange-500' },
-  { icon: FlaskConical, label: { en: 'Pilots', ar: 'التجارب' }, path: '/strategy-pilot-generator-page', color: 'text-blue-500' },
-  { icon: FileText, label: { en: 'Policies', ar: 'السياسات' }, path: '/strategy-policy-generator-page', color: 'text-purple-500' },
-  { icon: Microscope, label: { en: 'R&D Calls', ar: 'طلبات البحث' }, path: '/strategy-rd-call-generator-page', color: 'text-green-500' },
-  { icon: Users, label: { en: 'Partnerships', ar: 'الشراكات' }, path: '/strategy-partnership-generator-page', color: 'text-pink-500' },
-  { icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' }, path: '/strategy-event-generator-page', color: 'text-amber-500' },
-  { icon: Building2, label: { en: 'Living Labs', ar: 'المختبرات الحية' }, path: '/strategy-living-lab-generator-page', color: 'text-cyan-500' },
-  { icon: MessageSquare, label: { en: 'Campaigns', ar: 'الحملات' }, path: '/strategy-campaign-generator-page', color: 'text-rose-500' },
+  { icon: Lightbulb, label: { en: 'Challenges', ar: 'التحديات' }, path: '/strategy-challenge-generator-page', color: 'text-orange-500', permission: 'strategy_cascade' },
+  { icon: FlaskConical, label: { en: 'Pilots', ar: 'التجارب' }, path: '/strategy-pilot-generator-page', color: 'text-blue-500', permission: 'strategy_cascade' },
+  { icon: FileText, label: { en: 'Policies', ar: 'السياسات' }, path: '/strategy-policy-generator-page', color: 'text-purple-500', permission: 'strategy_cascade' },
+  { icon: Microscope, label: { en: 'R&D Calls', ar: 'طلبات البحث' }, path: '/strategy-rd-call-generator-page', color: 'text-green-500', permission: 'strategy_cascade' },
+  { icon: Users, label: { en: 'Partnerships', ar: 'الشراكات' }, path: '/strategy-partnership-generator-page', color: 'text-pink-500', permission: 'strategy_cascade' },
+  { icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' }, path: '/strategy-event-generator-page', color: 'text-amber-500', permission: 'strategy_cascade' },
+  { icon: Building2, label: { en: 'Living Labs', ar: 'المختبرات الحية' }, path: '/strategy-living-lab-generator-page', color: 'text-cyan-500', permission: 'strategy_cascade' },
+  { icon: MessageSquare, label: { en: 'Campaigns', ar: 'الحملات' }, path: '/strategy-campaign-generator-page', color: 'text-rose-500', permission: 'strategy_cascade' },
 ];
 
 // AI Assistants with component keys
@@ -70,32 +71,32 @@ const aiAssistants = [
   { key: 'bottleneck', icon: Zap, label: { en: 'Bottleneck Detector', ar: 'كاشف الاختناقات' }, desc: { en: 'Find pipeline issues', ar: 'البحث عن مشاكل خط الأنابيب' } },
 ];
 
-// Governance Tools
+// Governance Tools with permission requirements
 const governanceTools = [
-  { icon: CheckCircle2, label: { en: 'Signoff Tracker', ar: 'متتبع الموافقات' }, path: '/strategy-governance-page', tab: 'signoff' },
-  { icon: GitBranch, label: { en: 'Version Control', ar: 'التحكم بالإصدارات' }, path: '/strategy-governance-page', tab: 'versions' },
-  { icon: Users, label: { en: 'Committee Review', ar: 'مراجعة اللجنة' }, path: '/strategy-governance-page', tab: 'committee' },
-  { icon: Settings, label: { en: 'Ownership', ar: 'الملكية' }, path: '/strategy-ownership-page' },
+  { icon: CheckCircle2, label: { en: 'Signoff Tracker', ar: 'متتبع الموافقات' }, path: '/strategy-governance-page', tab: 'signoff', permission: 'strategy_manage' },
+  { icon: GitBranch, label: { en: 'Version Control', ar: 'التحكم بالإصدارات' }, path: '/strategy-governance-page', tab: 'versions', permission: 'strategy_manage' },
+  { icon: Users, label: { en: 'Committee Review', ar: 'مراجعة اللجنة' }, path: '/strategy-governance-page', tab: 'committee', permission: 'strategy_manage' },
+  { icon: Settings, label: { en: 'Ownership', ar: 'الملكية' }, path: '/strategy-ownership-page', permission: 'strategy_manage' },
 ];
 
-// Communication Tools
+// Communication Tools with permission requirements
 const communicationTools = [
-  { icon: Megaphone, label: { en: 'Communication Planner', ar: 'مخطط التواصل' }, path: '/strategy-communication-page', desc: { en: 'Plan and schedule communications', ar: 'تخطيط وجدولة التواصل' } },
-  { icon: BookOpen, label: { en: 'Impact Stories', ar: 'قصص الأثر' }, path: '/strategy-communication-page?tab=stories', desc: { en: 'Generate impact narratives', ar: 'إنشاء سرديات الأثر' } },
-  { icon: Bell, label: { en: 'Notifications', ar: 'الإشعارات' }, path: '/strategy-communication-page?tab=notifications', desc: { en: 'Manage stakeholder alerts', ar: 'إدارة تنبيهات أصحاب المصلحة' } },
-  { icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, path: '/strategy-communication-page?tab=analytics', desc: { en: 'Communication metrics', ar: 'مقاييس التواصل' } },
-  { icon: Globe, label: { en: 'Public Dashboard', ar: 'اللوحة العامة' }, path: '/public-strategy-dashboard-page', desc: { en: 'Public-facing view', ar: 'العرض العام' } },
-  { icon: Eye, label: { en: 'Public View', ar: 'العرض العام' }, path: '/strategy-public-view-page', desc: { en: 'Share strategy externally', ar: 'مشاركة الاستراتيجية خارجياً' } },
+  { icon: Megaphone, label: { en: 'Communication Planner', ar: 'مخطط التواصل' }, path: '/strategy-communication-page', desc: { en: 'Plan and schedule communications', ar: 'تخطيط وجدولة التواصل' }, permission: 'strategy_view' },
+  { icon: BookOpen, label: { en: 'Impact Stories', ar: 'قصص الأثر' }, path: '/strategy-communication-page?tab=stories', desc: { en: 'Generate impact narratives', ar: 'إنشاء سرديات الأثر' }, permission: 'strategy_view' },
+  { icon: Bell, label: { en: 'Notifications', ar: 'الإشعارات' }, path: '/strategy-communication-page?tab=notifications', desc: { en: 'Manage stakeholder alerts', ar: 'إدارة تنبيهات أصحاب المصلحة' }, permission: 'strategy_view' },
+  { icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, path: '/strategy-communication-page?tab=analytics', desc: { en: 'Communication metrics', ar: 'مقاييس التواصل' }, permission: 'strategy_view' },
+  { icon: Globe, label: { en: 'Public Dashboard', ar: 'اللوحة العامة' }, path: '/public-strategy-dashboard-page', desc: { en: 'Public-facing view', ar: 'العرض العام' }, permission: null },
+  { icon: Eye, label: { en: 'Public View', ar: 'العرض العام' }, path: '/strategy-public-view-page', desc: { en: 'Share strategy externally', ar: 'مشاركة الاستراتيجية خارجياً' }, permission: null },
 ];
 
-// Preplanning Tools
+// Preplanning Tools with permission requirements
 const preplanningTools = [
-  { icon: Search, label: { en: 'Environmental Scan', ar: 'المسح البيئي' }, path: '/environmental-scan-page', desc: { en: 'PESTLE analysis', ar: 'تحليل PESTLE' } },
-  { icon: Layers, label: { en: 'SWOT Analysis', ar: 'تحليل SWOT' }, path: '/swot-analysis-page', desc: { en: 'Strengths, weaknesses, opportunities, threats', ar: 'نقاط القوة والضعف والفرص والتهديدات' } },
-  { icon: Users, label: { en: 'Stakeholder Analysis', ar: 'تحليل أصحاب المصلحة' }, path: '/stakeholder-analysis-page', desc: { en: 'Map key stakeholders', ar: 'رسم خريطة أصحاب المصلحة' } },
-  { icon: AlertTriangle, label: { en: 'Risk Assessment', ar: 'تقييم المخاطر' }, path: '/risk-assessment-page', desc: { en: 'Identify and assess risks', ar: 'تحديد وتقييم المخاطر' } },
-  { icon: FileBarChart, label: { en: 'Baseline Data', ar: 'البيانات الأساسية' }, path: '/baseline-data-page', desc: { en: 'Collect baseline metrics', ar: 'جمع المقاييس الأساسية' } },
-  { icon: ClipboardList, label: { en: 'Strategy Inputs', ar: 'مدخلات الاستراتيجية' }, path: '/strategy-input-page', desc: { en: 'Gather strategic inputs', ar: 'جمع المدخلات الاستراتيجية' } },
+  { icon: Search, label: { en: 'Environmental Scan', ar: 'المسح البيئي' }, path: '/environmental-scan-page', desc: { en: 'PESTLE analysis', ar: 'تحليل PESTLE' }, permission: 'strategy_manage' },
+  { icon: Layers, label: { en: 'SWOT Analysis', ar: 'تحليل SWOT' }, path: '/swot-analysis-page', desc: { en: 'Strengths, weaknesses, opportunities, threats', ar: 'نقاط القوة والضعف والفرص والتهديدات' }, permission: 'strategy_manage' },
+  { icon: Users, label: { en: 'Stakeholder Analysis', ar: 'تحليل أصحاب المصلحة' }, path: '/stakeholder-analysis-page', desc: { en: 'Map key stakeholders', ar: 'رسم خريطة أصحاب المصلحة' }, permission: 'strategy_manage' },
+  { icon: AlertTriangle, label: { en: 'Risk Assessment', ar: 'تقييم المخاطر' }, path: '/risk-assessment-page', desc: { en: 'Identify and assess risks', ar: 'تحديد وتقييم المخاطر' }, permission: 'strategy_manage' },
+  { icon: FileBarChart, label: { en: 'Baseline Data', ar: 'البيانات الأساسية' }, path: '/baseline-data-page', desc: { en: 'Collect baseline metrics', ar: 'جمع المقاييس الأساسية' }, permission: 'strategy_manage' },
+  { icon: ClipboardList, label: { en: 'Strategy Inputs', ar: 'مدخلات الاستراتيجية' }, path: '/strategy-input-page', desc: { en: 'Gather strategic inputs', ar: 'جمع المدخلات الاستراتيجية' }, permission: 'strategy_manage' },
 ];
 
 // Phase workflow definition
@@ -112,8 +113,27 @@ const phases = [
 
 function StrategyHub() {
   const { t, isRTL } = useLanguage();
+  const { hasPermission, isAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState('workflow');
   const [activeAITool, setActiveAITool] = useState(null);
+
+  // Filter tools based on permissions
+  const filterByPermission = (items) => {
+    return items.filter(item => {
+      if (!item.permission) return true; // No permission required
+      if (isAdmin) return true; // Admin sees all
+      return hasPermission(item.permission);
+    });
+  };
+
+  const filteredCascadeGenerators = useMemo(() => filterByPermission(cascadeGenerators), [isAdmin, hasPermission]);
+  const filteredGovernanceTools = useMemo(() => filterByPermission(governanceTools), [isAdmin, hasPermission]);
+  const filteredCommunicationTools = useMemo(() => filterByPermission(communicationTools), [isAdmin, hasPermission]);
+  const filteredPreplanningTools = useMemo(() => filterByPermission(preplanningTools), [isAdmin, hasPermission]);
+
+  // Permission flags for showing/hiding entire sections
+  const canManageStrategy = isAdmin || hasPermission('strategy_manage');
+  const canCascadeStrategy = isAdmin || hasPermission('strategy_cascade');
 
   // Fetch strategic plans
   const { data: plans = [], isLoading: plansLoading } = useQuery({
@@ -443,7 +463,7 @@ function StrategyHub() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {cascadeGenerators.map(gen => {
+                {filteredCascadeGenerators.map(gen => {
                   const Icon = gen.icon;
                   return (
                     <Link
@@ -509,7 +529,7 @@ function StrategyHub() {
         {/* Governance Tab */}
         <TabsContent value="governance" className="space-y-6">
           <div className="grid md:grid-cols-2 gap-4">
-            {governanceTools.map(tool => {
+            {filteredGovernanceTools.map(tool => {
               const Icon = tool.icon;
               return (
                 <Link key={tool.path + tool.tab} to={tool.path}>
@@ -560,7 +580,7 @@ function StrategyHub() {
         {/* Communication Tab */}
         <TabsContent value="communication" className="space-y-6">
           <div className="grid md:grid-cols-3 gap-4">
-            {communicationTools.map(tool => {
+            {filteredCommunicationTools.map(tool => {
               const Icon = tool.icon;
               return (
                 <Link key={tool.path} to={tool.path}>
@@ -609,7 +629,7 @@ function StrategyHub() {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4">
-                {preplanningTools.map(tool => {
+                {filteredPreplanningTools.map(tool => {
                   const Icon = tool.icon;
                   return (
                     <Link key={tool.path} to={tool.path}>

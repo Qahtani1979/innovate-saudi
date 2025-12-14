@@ -143,6 +143,7 @@ export const SIDEBAR_MENUS = {
       HOME_LINK,
       { name: 'ExecutiveDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
       { name: 'StrategyHub', icon: Target, label: { en: 'Strategy Hub', ar: 'مركز الاستراتيجية' }, permission: 'strategy_view' },
+      { name: 'StrategyCockpit', icon: Gauge, label: { en: 'Strategy Cockpit', ar: 'قمرة الاستراتيجية' }, permission: 'strategy_view' },
       { name: 'RegionalDashboard', icon: Map, label: { en: 'Regional Dashboard', ar: 'لوحة إقليمية' } },
       { name: 'SectorDashboard', icon: PieChart, label: { en: 'Sector Dashboard', ar: 'لوحة القطاع' } },
       { name: 'MultiCityOrchestration', icon: Network, label: { en: 'Multi-City Orchestration', ar: 'تنسيق متعدد المدن' } },
@@ -292,6 +293,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'PublicStrategyDashboardPage', icon: Target, label: { en: 'Strategy Dashboard', ar: 'لوحة الاستراتيجية' } },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
       { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Submit Proposal', ar: 'تقديم مقترح' } },
       { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },
@@ -337,6 +339,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'ViewerDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'PublicStrategyDashboardPage', icon: Target, label: { en: 'Strategy Dashboard', ar: 'لوحة الاستراتيجية' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
