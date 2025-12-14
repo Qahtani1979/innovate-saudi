@@ -24,3 +24,9 @@ export { useSignoffAI } from './useSignoffAI';
 export { useVersionAI } from './useVersionAI';
 export { useCommitteeAI } from './useCommitteeAI';
 export { useWorkflowAI } from './useWorkflowAI';
+
+// Phase 5: Communication Hooks
+export { useCommunicationPlans } from './useCommunicationPlans';
+export { useImpactStories } from './useImpactStories';
+export { useCommunicationNotifications } from './useCommunicationNotifications';
+export { useCommunicationAI } from './useCommunicationAI';
