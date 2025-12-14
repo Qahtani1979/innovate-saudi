@@ -1,288 +1,164 @@
 # Strategy System Inventory
 
-> **Version:** 2.1  
+> **Version:** 3.0  
 > **Last Updated:** 2025-12-14  
-> **Total Assets:** 123 files (21 pages, 55 components, 30 hooks + 2 context files + 15 registered routes)
-> **Schema Audit:** ✅ Complete deep audit v2.1 - all strategy pages, generators, AI workflows, queries, `.maybeSingle()` usage, and KPI components verified
+> **Total Assets:** 156 files (35 pages, 65 components, 33 hooks + 3 contexts)  
+> **Parent System:** Strategic Planning & Execution Framework  
+> **Hub Page:** `/strategy-hub`
 
 ---
 
 ## Overview
 
-The Strategy System is the core strategic planning and execution framework that spans all 8 phases of the strategic methodology. This document provides a complete inventory of all pages, components, and hooks that comprise the system.
-
-**All pages are now registered in `pages.config.js` and accessible from the Strategy Hub.**
+The Strategy System is the core strategic planning and execution framework spanning all 8 phases of the strategic methodology. This document provides a complete inventory of all pages, components, hooks, and their relationships.
 
 ---
 
-## 🌐 Global Active Plan Context
-
-All strategy pages use a shared global context for maintaining the active strategic plan selection:
-
-| File | Description |
-|------|-------------|
-| `src/contexts/StrategicPlanContext.jsx` | Global context with localStorage persistence |
-| `src/components/strategy/ActivePlanBanner.jsx` | Reusable banner component showing active plan selector |
-
-### Usage Pattern
-- All strategy pages import `useActivePlan` from the context
-- Pages render `ActivePlanBanner` for consistent UI
-- `activePlanId` and `activePlan` are passed to child components
-- Hooks accept `strategicPlanId` parameter for database filtering
-- All hooks use correct database column names (validated 2025-12-14)
-
----
-
-## ✅ Complete Database Schema Audit (2025-12-14)
-
-### Tables WITH `is_deleted` Column (Use Soft Delete)
-| Table | Verified | Notes |
-|-------|----------|-------|
-| `pilots` | ✅ | Has `is_deleted`, filter in queries |
-| `challenges` | ✅ | Has `is_deleted`, filter in queries |
-| `programs` | ✅ | Has `is_deleted`, filter in queries |
-| `partnerships` | ✅ | Has `is_deleted`, filter in queries |
-| `policy_documents` | ✅ | Has `is_deleted`, filter in queries |
-
-### Tables WITHOUT `is_deleted` Column (No Filter Needed)
-| Table | Verified | Notes |
-|-------|----------|-------|
-| `strategic_plans` | ✅ | NO `is_deleted` - do NOT filter |
-| `living_labs` | ✅ | NO `is_deleted` - do NOT filter |
-| `sandboxes` | ✅ | NO `is_deleted` - do NOT filter |
-| `swot_analyses` | ✅ | NO `is_deleted` - hard delete only |
-| `environmental_factors` | ✅ | NO `is_deleted` - hard delete only |
-| `stakeholder_analyses` | ✅ | NO `is_deleted` - hard delete only |
-| `strategy_risks` | ✅ | NO `is_deleted` - hard delete only |
-| `strategy_baselines` | ✅ | NO `is_deleted` - hard delete only |
-| `strategy_inputs` | ✅ | NO `is_deleted` - hard delete only |
-
-### Strategy Table Column Mappings (Verified)
-| Table | Correct Columns | Common Mistakes to Avoid |
-|-------|-----------------|--------------------------|
-| `swot_analyses` | `quadrant`, `title_en`, `title_ar`, `description_en`, `impact_level`, `priority` | Not array-based, individual records |
-| `environmental_factors` | `category`, `title_en`, `impact_type`, `impact_level`, `trend`, `source` | |
-| `stakeholder_analyses` | `stakeholder_name_en`, `stakeholder_name_ar`, `stakeholder_type`, `power_level`, `interest_level` | Not `name_en` |
-| `strategy_risks` | `name_en`, `category`, `probability`, `impact`, `owner_email`, `mitigation_strategy` | Not `risk_category`, not `owner` |
-| `strategy_baselines` | `kpi_name_en`, `category`, `baseline_value`, `target_value`, `source`, `collection_date` | Not `data_source` |
-| `strategy_inputs` | `source_type`, `source_name`, `input_text`, `theme`, `sentiment`, `priority_votes` | Not `priority` |
-
-### Delete Strategy Summary
-- **Strategy preplanning tables**: Use **hard delete** (`.delete()`)
-- **Core entity tables with is_deleted**: Use **soft delete** (`.update({ is_deleted: true })`)
-
-### Component Field Mappings (Fixed 2025-12-14)
-| Component | DB Field → Component Field |
-|-----------|---------------------------|
-| `SWOTAnalysisBuilder` | `title_en`/`title_ar` → display fields, `description_en`/`description_ar` |
-| `StakeholderAnalysisWidget` | `stakeholder_name_en` → `name_en`, `power_level` → `power` |
-| `RiskAssessmentBuilder` | `owner_email` → `owner`, `category` (not `risk_category`) |
-
-### Files Fixed in Deep Audit
-| File | Issue Fixed |
-|------|-------------|
-| `useStrategicCascadeValidation.js` | Removed `is_deleted` filter for `strategic_plans`, `sandboxes`, `living_labs` |
-| `ResourceAllocationView.jsx` | Removed `is_deleted` filter for `living_labs`, `sandboxes` |
-| `StrategyToProgramGenerator.jsx` | Removed `is_deleted` filter for `strategic_plans` |
-| `SLARuleBuilder.jsx` | Removed `is_deleted` filter for `strategic_plans` |
-| `StrategicPlanContext.jsx` | Removed `is_deleted` filter for `strategic_plans` |
-| `useEnvironmentalFactors.js` | Switched to hard delete |
-| `useRiskAssessment.js` | Fixed column names, switched to hard delete |
-| `useStrategyBaselines.js` | Fixed column names, switched to hard delete |
-| `useStrategyInputs.js` | Switched to hard delete |
-| `useStakeholderAnalysis.js` | Fixed column names, switched to hard delete |
-| `useSwotAnalysis.js` | Complete rewrite for correct schema |
-
-### Pages Using Global Context (All Verified)
-- ✅ EnvironmentalScanPage, SWOTAnalysisPage, StakeholderAnalysisPage
-- ✅ RiskAssessmentPage, BaselineDataPage, StrategyInputPage
-- ✅ All 8 cascade generator pages
-- ✅ StrategyHub, StrategyCockpit, StrategyDrillDown
-
----
-
-## 🔐 RBAC Configuration
-
-### Roles with Strategy Access
-
-| Role | Permission | Access Level |
-|------|------------|--------------|
-| **Admin** | `*` (all) | Full access to all strategy features |
-| **Strategy Officer** | `strategy_manage`, `strategy_view`, `strategy_cascade`, `strategy_approve` | Full strategy management |
-| **GDISB Strategy Lead** | `strategy_manage`, `strategy_cascade` | Full strategy management |
-| **Executive Leadership** | `strategy_view` | View-only access |
-| **Deputyship Director/Manager/Analyst** | `strategy_view` | View-only access |
-| **Municipality Admin/Manager/Director** | `strategy_view` | View-only access |
-| **Program Director/Manager** | `strategy_view` | View-only access |
-
-### Permission Codes
-
-| Permission | Description | Used By |
-|------------|-------------|---------|
-| `strategy_manage` | Create/edit strategic plans, ownership, governance | Core strategy pages |
-| `strategy_view` | View strategies and dashboards | Hub, Templates, Public pages |
-| `strategy_cascade` | Generate entities from strategy (pilots, challenges, etc.) | Generator pages |
-| `strategy_approve` | Approve strategic plans and changes | Governance page |
-
----
-
-## 📄 Pages (21)
+## 📄 Pages (35)
 
 ### Core Strategy Pages
 
-| Page | File | Route | Hub Tab | Permission | Description |
-|------|------|-------|---------|------------|-------------|
-| **Strategy Hub** | `StrategyHub.jsx` | `/strategy-hub` | Self | `strategy_view` | **Central command center** - 6 tabs |
-| Strategy Cockpit | `StrategyCockpit.jsx` | `/strategy-cockpit` | Header | `strategy_view` | Main strategic dashboard |
-| Strategy Drill-Down | `StrategyDrillDown.jsx` | `/strategy-drill-down` | Workflow | `strategy_view` | Detailed plan analysis |
-| Strategy Alignment | `StrategyAlignment.jsx` | `/strategy-alignment` | Workflow/AI | `strategy_view` | Cross-entity alignment |
-| Strategy Review | `StrategyReviewPage.jsx` | `/strategy-review-page` | Pre-Planning | `strategy_manage` | Adjustment and reprioritization |
-| Strategy Governance | `StrategyGovernancePage.jsx` | `/strategy-governance-page` | Governance | `strategy_manage` | Approvals, versioning |
+| Page | File | Route | Permission | Parent |
+|------|------|-------|------------|--------|
+| **Strategy Hub** | `StrategyHub.jsx` | `/strategy-hub` | `strategy_view` | Self (Root) |
+| Strategy Cockpit | `StrategyCockpit.jsx` | `/strategy-cockpit` | `strategy_view` | Strategy Hub |
+| Strategy Drill-Down | `StrategyDrillDown.jsx` | `/strategy-drill-down` | `strategy_view` | Strategy Hub |
+| Strategy Alignment | `StrategyAlignment.jsx` | `/strategy-alignment` | `strategy_view` | Strategy Hub |
+| Strategy Review | `StrategyReviewPage.jsx` | `/strategy-review-page` | `strategy_manage` | Strategy Hub |
+| Strategy Governance | `StrategyGovernancePage.jsx` | `/strategy-governance-page` | `strategy_manage` | Strategy Hub |
+| Strategy Demand Dashboard | `StrategyDemandDashboardPage.jsx` | `/strategy-demand-dashboard` | `strategy_manage` | Strategy Hub |
+| Strategic Plan Builder | `StrategicPlanBuilder.jsx` | `/strategic-plan-builder` | `strategy_manage` | Strategy Hub |
+| Strategic Execution Dashboard | `StrategicExecutionDashboard.jsx` | `/strategic-execution-dashboard` | `strategy_view` | Strategy Hub |
+| Strategic Planning Progress | `StrategicPlanningProgress.jsx` | `/strategic-planning-progress` | `strategy_view` | Strategy Hub |
 
-### Strategy Creation Pages
+### Pre-Planning Pages (Phase 1)
 
-| Page | File | Route | Hub Tab | Permission | Description |
-|------|------|-------|---------|------------|-------------|
-| Strategy Ownership | `StrategyOwnershipPage.jsx` | `/strategy-ownership-page` | Governance | `strategy_manage` | Assign ownership |
-| Strategy Templates | `StrategyTemplatesPage.jsx` | `/strategy-templates-page` | Cascade | `strategy_view` | Template library |
-| National Strategy Linker | `NationalStrategyLinkerPage.jsx` | `/national-strategy-linker-page` | Cascade | `strategy_manage` | Link to national strategies |
-| Baseline Data | `BaselineDataPage.jsx` | `/baseline-data-page` | Pre-Planning | `strategy_manage` | Collect baseline data |
-| Action Plan | `ActionPlanPage.jsx` | `/action-plan-page` | Cascade | `strategy_manage` | Build action plans |
+| Page | File | Route | Permission | Parent |
+|------|------|-------|------------|--------|
+| Environmental Scan | `EnvironmentalScanPage.jsx` | `/environmental-scan-page` | `strategy_manage` | Strategy Hub |
+| SWOT Analysis | `SWOTAnalysisPage.jsx` | `/swot-analysis-page` | `strategy_manage` | Strategy Hub |
+| Stakeholder Analysis | `StakeholderAnalysisPage.jsx` | `/stakeholder-analysis-page` | `strategy_manage` | Strategy Hub |
+| Risk Assessment | `RiskAssessmentPage.jsx` | `/risk-assessment-page` | `strategy_manage` | Strategy Hub |
+| Baseline Data | `BaselineDataPage.jsx` | `/baseline-data-page` | `strategy_manage` | Strategy Hub |
+| Strategy Input | `StrategyInputPage.jsx` | `/strategy-input-page` | `strategy_manage` | Strategy Hub |
 
-### Strategy Cascade Generator Pages
+### Strategy Creation Pages (Phase 2)
 
-| Page | File | Route | Hub Tab | Permission | Description |
-|------|------|-------|---------|------------|-------------|
-| Campaign Generator | `StrategyCampaignGeneratorPage.jsx` | `/strategy-campaign-generator-page` | Cascade | `strategy_cascade` | Generate campaigns |
-| Policy Generator | `StrategyPolicyGeneratorPage.jsx` | `/strategy-policy-generator-page` | Cascade | `strategy_cascade` | Generate policies |
-| Challenge Generator | `StrategyChallengeGeneratorPage.jsx` | `/strategy-challenge-generator-page` | Cascade | `strategy_cascade` | Generate challenges |
-| R&D Call Generator | `StrategyRDCallGeneratorPage.jsx` | `/strategy-rd-call-generator-page` | Cascade | `strategy_cascade` | Generate R&D calls |
-| Pilot Generator | `StrategyPilotGeneratorPage.jsx` | `/strategy-pilot-generator-page` | Cascade | `strategy_cascade` | Generate pilots |
-| Partnership Generator | `StrategyPartnershipGeneratorPage.jsx` | `/strategy-partnership-generator-page` | Cascade | `strategy_cascade` | Find partners |
-| Event Generator | `StrategyEventGeneratorPage.jsx` | `/strategy-event-generator-page` | Cascade | `strategy_cascade` | Generate events |
-| Living Lab Generator | `StrategyLivingLabGeneratorPage.jsx` | `/strategy-living-lab-generator-page` | Cascade | `strategy_cascade` | Generate living labs |
+| Page | File | Route | Permission | Parent |
+|------|------|-------|------------|--------|
+| Strategy Timeline | `StrategyTimelinePage.jsx` | `/strategy-timeline-page` | `strategy_manage` | Strategy Hub |
+| Strategy Ownership | `StrategyOwnershipPage.jsx` | `/strategy-ownership-page` | `strategy_manage` | Strategy Hub |
+| Strategy Templates | `StrategyTemplatesPage.jsx` | `/strategy-templates-page` | `strategy_view` | Strategy Hub |
+| National Strategy Linker | `NationalStrategyLinkerPage.jsx` | `/national-strategy-linker-page` | `strategy_manage` | Strategy Hub |
+| Action Plan | `ActionPlanPage.jsx` | `/action-plan-page` | `strategy_manage` | Strategy Hub |
 
-### Strategy Communication Pages
+### Cascade Generator Pages (Phase 3)
 
-| Page | File | Route | Hub Tab | Permission | Description |
-|------|------|-------|---------|------------|-------------|
-| Communication Hub | `StrategyCommunicationPage.jsx` | `/strategy-communication-page` | Communication | `strategy_view` | Full communication management |
-| Public Dashboard | `PublicStrategyDashboardPage.jsx` | `/public-strategy-dashboard-page` | Communication | `strategy_view` | Public-facing dashboard |
-| Public View | `StrategyPublicViewPage.jsx` | `/strategy-public-view-page` | Communication | `strategy_view` | Share strategy externally |
+| Page | File | Route | Permission | Parent |
+|------|------|-------|------------|--------|
+| Policy Generator | `StrategyPolicyGeneratorPage.jsx` | `/strategy-policy-generator-page` | `strategy_cascade` | Strategy Hub |
+| Challenge Generator | `StrategyChallengeGeneratorPage.jsx` | `/strategy-challenge-generator-page` | `strategy_cascade` | Strategy Hub |
+| R&D Call Generator | `StrategyRDCallGeneratorPage.jsx` | `/strategy-rd-call-generator-page` | `strategy_cascade` | Strategy Hub |
+| Pilot Generator | `StrategyPilotGeneratorPage.jsx` | `/strategy-pilot-generator-page` | `strategy_cascade` | Strategy Hub |
+| Partnership Generator | `StrategyPartnershipGeneratorPage.jsx` | `/strategy-partnership-generator-page` | `strategy_cascade` | Strategy Hub |
+| Event Generator | `StrategyEventGeneratorPage.jsx` | `/strategy-event-generator-page` | `strategy_cascade` | Strategy Hub |
+| Living Lab Generator | `StrategyLivingLabGeneratorPage.jsx` | `/strategy-living-lab-generator-page` | `strategy_cascade` | Strategy Hub |
+| Campaign Generator | `StrategyCampaignGeneratorPage.jsx` | `/strategy-campaign-generator-page` | `strategy_cascade` | Strategy Hub |
+
+### Communication Pages (Phase 5)
+
+| Page | File | Route | Permission | Parent |
+|------|------|-------|------------|--------|
+| Communication Hub | `strategy/StrategyCommunicationPage.jsx` | `/strategy-communication-page` | `strategy_view` | Strategy Hub |
+| Public Dashboard | `strategy/PublicStrategyDashboardPage.jsx` | `/public-strategy-dashboard-page` | `strategy_view` | Strategy Hub |
+| Public View | `strategy/StrategyPublicViewPage.jsx` | `/strategy-public-view-page` | `strategy_view` | Strategy Hub |
+
+### Related Executive Pages
+
+| Page | File | Route | Permission | Parent |
+|------|------|-------|------------|--------|
+| What-If Simulator | `WhatIfSimulatorPage.jsx` | `/what-if-simulator-page` | `strategy_view` | Strategy Hub |
+| Gap Analysis Tool | `GapAnalysisTool.jsx` | `/gap-analysis-tool` | `strategy_manage` | Strategy Hub |
+| Budget Allocation | `BudgetAllocationTool.jsx` | `/budget-allocation-tool` | `strategy_manage` | Strategy Hub |
+| Strategic KPI Tracker | `StrategicKPITracker.jsx` | `/strategic-kpi-tracker` | `strategy_view` | Strategy Hub |
 
 ---
 
-## 🧩 Components (55)
+## 🧩 Components (65)
 
-### Root Strategy Components (17)
+### Root Strategy Components (18)
 **Location:** `src/components/strategy/`
 
-| Component | Description |
-|-----------|-------------|
-| `AutomatedMIICalculator.jsx` | Calculate Municipal Innovation Index scores |
-| `BottleneckDetector.jsx` | AI-powered pipeline bottleneck detection |
-| `CollaborationMapper.jsx` | Find R&D collaboration partners |
-| `GeographicCoordinationWidget.jsx` | Municipality coordination display |
-| `HistoricalComparison.jsx` | Year-over-year trend visualization |
-| `PartnershipNetwork.jsx` | Partnership network analysis |
-| `ResourceAllocationView.jsx` | Resource distribution visualization |
-| `SectorGapAnalysisWidget.jsx` | Sector coverage gap analysis |
-| `StrategicAlignmentWidget.jsx` | Display linked strategic plans |
-| `StrategicCoverageWidget.jsx` | Strategic coverage metrics |
-| `StrategicGapProgramRecommender.jsx` | Recommend programs for gaps |
-| `StrategicNarrativeGenerator.jsx` | AI narrative generation |
-| `StrategicPlanSelector.jsx` | Multi-select strategic plan picker |
-| `StrategicPlanWorkflowTab.jsx` | Workflow stage visualization |
-| `StrategyChallengeRouter.jsx` | Route challenges to tracks |
-| `StrategyToProgramGenerator.jsx` | Generate programs from strategy |
-| `WhatIfSimulator.jsx` | Budget scenario simulator |
+| Component | Description | Used By |
+|-----------|-------------|---------|
+| `ActivePlanBanner.jsx` | Active plan selector banner | All strategy pages |
+| `AutomatedMIICalculator.jsx` | MII score calculator | Strategy cockpit |
+| `BottleneckDetector.jsx` | AI pipeline bottleneck detection | Strategy cockpit |
+| `CollaborationMapper.jsx` | R&D collaboration partner finder | Strategy cockpit |
+| `GeographicCoordinationWidget.jsx` | Municipality coordination | Strategy cockpit |
+| `HistoricalComparison.jsx` | Year-over-year trends | Strategy cockpit |
+| `PartnershipNetwork.jsx` | Partnership network analysis | Strategy cockpit |
+| `ResourceAllocationView.jsx` | Resource distribution | Strategy cockpit |
+| `SectorGapAnalysisWidget.jsx` | Sector coverage gaps | Strategy cockpit |
+| `StrategicAlignmentWidget.jsx` | Display linked plans | Multiple pages |
+| `StrategicCoverageWidget.jsx` | Coverage metrics | Strategy cockpit |
+| `StrategicGapProgramRecommender.jsx` | Program gap recommendations | Strategy hub |
+| `StrategicNarrativeGenerator.jsx` | AI narrative generation | Strategy cockpit |
+| `StrategicPlanSelector.jsx` | Multi-select plan picker | All pages |
+| `StrategicPlanWorkflowTab.jsx` | Workflow visualization | Strategy hub |
+| `StrategyChallengeRouter.jsx` | Challenge track routing | Challenge pages |
+| `StrategyToProgramGenerator.jsx` | Generate programs | Strategy hub |
+| `WhatIfSimulator.jsx` | Budget scenario simulator | What-if page |
 
 ### Cascade Components (8)
 **Location:** `src/components/strategy/cascade/`
 
-| Component | Description |
-|-----------|-------------|
-| `StrategyChallengeGenerator.jsx` | Generate challenges from strategic objectives |
-| `StrategyToCampaignGenerator.jsx` | Generate awareness campaigns |
-| `StrategyToEventGenerator.jsx` | Generate strategic events |
-| `StrategyToLivingLabGenerator.jsx` | Generate living lab concepts |
-| `StrategyToPartnershipGenerator.jsx` | Find strategic partnership matches |
-| `StrategyToPilotGenerator.jsx` | Generate pilot project designs |
-| `StrategyToPolicyGenerator.jsx` | Generate policy documents |
-| `StrategyToRDCallGenerator.jsx` | Generate R&D call proposals |
+| Component | Generator Page | Description |
+|-----------|----------------|-------------|
+| `StrategyChallengeGenerator.jsx` | StrategyChallengeGeneratorPage | Generate challenges |
+| `StrategyToCampaignGenerator.jsx` | StrategyCampaignGeneratorPage | Generate campaigns |
+| `StrategyToEventGenerator.jsx` | StrategyEventGeneratorPage | Generate events |
+| `StrategyToLivingLabGenerator.jsx` | StrategyLivingLabGeneratorPage | Generate living labs |
+| `StrategyToPartnershipGenerator.jsx` | StrategyPartnershipGeneratorPage | Generate partnerships |
+| `StrategyToPilotGenerator.jsx` | StrategyPilotGeneratorPage | Generate pilots |
+| `StrategyToPolicyGenerator.jsx` | StrategyPolicyGeneratorPage | Generate policies |
+| `StrategyToRDCallGenerator.jsx` | StrategyRDCallGeneratorPage | Generate R&D calls |
 
 ### Creation Components (8)
 **Location:** `src/components/strategy/creation/`
 
 | Component | Description |
 |-----------|-------------|
-| `ActionPlanBuilder.jsx` | Build action plans with items |
-| `NationalStrategyLinker.jsx` | Link to national strategies |
-| `SectorStrategyBuilder.jsx` | Build sector-specific strategies |
+| `ActionPlanBuilder.jsx` | Build action plans |
+| `NationalStrategyLinker.jsx` | Link national strategies |
+| `SectorStrategyBuilder.jsx` | Sector strategies |
 | `StrategyObjectiveGenerator.jsx` | AI objective generation |
-| `StrategyOwnershipAssigner.jsx` | Assign owners to elements |
-| `StrategyPillarGenerator.jsx` | Generate strategic pillars |
-| `StrategyTemplateLibrary.jsx` | Browse/apply strategy templates |
-| `StrategyTimelinePlanner.jsx` | Plan strategic timelines |
+| `StrategyOwnershipAssigner.jsx` | Assign owners |
+| `StrategyPillarGenerator.jsx` | Generate pillars |
+| `StrategyTemplateLibrary.jsx` | Template library |
+| `StrategyTimelinePlanner.jsx` | Timeline planning |
 
 ### Governance Components (4)
 **Location:** `src/components/strategy/governance/`
 
 | Component | Description |
 |-----------|-------------|
-| `GovernanceMetricsDashboard.jsx` | Governance KPI dashboard |
-| `StakeholderSignoffTracker.jsx` | Track stakeholder approvals |
-| `StrategyCommitteeReview.jsx` | Committee decision management |
-| `StrategyVersionControl.jsx` | Strategy version history |
-
-### Monitoring Components (1)
-**Location:** `src/components/strategy/monitoring/`
-
-| Component | Description |
-|-----------|-------------|
-| `StrategyAlignmentScoreCard.jsx` | Alignment score with gaps/recommendations |
+| `GovernanceMetricsDashboard.jsx` | Governance KPIs |
+| `StakeholderSignoffTracker.jsx` | Track approvals |
+| `StrategyCommitteeReview.jsx` | Committee decisions |
+| `StrategyVersionControl.jsx` | Version history |
 
 ### Preplanning Components (6)
 **Location:** `src/components/strategy/preplanning/`
 
 | Component | Description |
 |-----------|-------------|
-| `BaselineDataCollector.jsx` | Collect baseline metrics |
-| `EnvironmentalScanWidget.jsx` | PESTLE environmental scanning |
-| `RiskAssessmentBuilder.jsx` | Build risk assessments |
-| `SWOTAnalysisBuilder.jsx` | SWOT analysis builder |
+| `BaselineDataCollector.jsx` | Baseline metrics |
+| `EnvironmentalScanWidget.jsx` | PESTLE scanning |
+| `RiskAssessmentBuilder.jsx` | Risk assessments |
+| `SWOTAnalysisBuilder.jsx` | SWOT analysis |
 | `StakeholderAnalysisWidget.jsx` | Stakeholder mapping |
-| `StrategyInputCollector.jsx` | Collect strategy inputs |
-
-### Evaluation Components (3)
-**Location:** `src/components/strategy/evaluation/`
-
-| Component | Description |
-|-----------|-------------|
-| `CaseStudyGenerator.jsx` | Generate case studies from outcomes |
-| `LessonsLearnedCapture.jsx` | Capture lessons learned |
-| `StrategyEvaluationPanel.jsx` | Expert evaluation panel |
-
-### Recalibration Components (6)
-**Location:** `src/components/strategy/recalibration/`
-
-| Component | Description |
-|-----------|-------------|
-| `AdjustmentDecisionMatrix.jsx` | Decision matrix for adjustments |
-| `BaselineRecalibrator.jsx` | Recalibrate baselines |
-| `FeedbackAnalysisEngine.jsx` | Analyze stakeholder feedback |
-| `MidCyclePivotManager.jsx` | Manage mid-cycle pivots |
-| `NextCycleInitializer.jsx` | Initialize next strategy cycle |
-| `PhaseModificationExecutor.jsx` | Execute phase modifications |
-
-### Review Components (3)
-**Location:** `src/components/strategy/review/`
-
-| Component | Description |
-|-----------|-------------|
-| `StrategyAdjustmentWizard.jsx` | Guided strategy adjustment |
-| `StrategyImpactAssessment.jsx` | Assess strategy impact |
-| `StrategyReprioritizer.jsx` | Reprioritize objectives |
+| `StrategyInputCollector.jsx` | Strategy inputs |
 
 ### Communication Components (6)
 **Location:** `src/components/strategy/communication/`
@@ -290,146 +166,203 @@ All strategy pages use a shared global context for maintaining the active strate
 | Component | Description |
 |-----------|-------------|
 | `CommunicationAnalyticsDashboard.jsx` | Communication metrics |
-| `ImpactStoryGenerator.jsx` | Generate impact stories |
-| `PublicStrategyDashboard.jsx` | Public-facing dashboard |
-| `StakeholderNotificationManager.jsx` | Manage notifications |
+| `ImpactStoryGenerator.jsx` | Generate stories |
+| `PublicStrategyDashboard.jsx` | Public dashboard |
+| `StakeholderNotificationManager.jsx` | Notifications |
 | `StrategyCommunicationPlanner.jsx` | Plan communications |
-| `StrategyPublicView.jsx` | Public strategy view |
+| `StrategyPublicView.jsx` | Public view |
+
+### Demand Components (5)
+**Location:** `src/components/strategy/demand/`
+
+| Component | Description |
+|-----------|-------------|
+| `AutomationControls.jsx` | Automation settings |
+| `DemandDashboard.jsx` | Demand dashboard |
+| `QueueReviewPanel.jsx` | Queue review |
+| `RejectionFeedbackAnalysis.jsx` | Rejection analysis |
+
+### Evaluation Components (3)
+**Location:** `src/components/strategy/evaluation/`
+
+| Component | Description |
+|-----------|-------------|
+| `CaseStudyGenerator.jsx` | Generate case studies |
+| `LessonsLearnedCapture.jsx` | Capture lessons |
+| `StrategyEvaluationPanel.jsx` | Expert evaluation |
+
+### Recalibration Components (6)
+**Location:** `src/components/strategy/recalibration/`
+
+| Component | Description |
+|-----------|-------------|
+| `AdjustmentDecisionMatrix.jsx` | Decision matrix |
+| `BaselineRecalibrator.jsx` | Recalibrate baselines |
+| `FeedbackAnalysisEngine.jsx` | Analyze feedback |
+| `MidCyclePivotManager.jsx` | Mid-cycle pivots |
+| `NextCycleInitializer.jsx` | Next cycle init |
+| `PhaseModificationExecutor.jsx` | Phase modifications |
+
+### Review Components (3)
+**Location:** `src/components/strategy/review/`
+
+| Component | Description |
+|-----------|-------------|
+| `StrategyAdjustmentWizard.jsx` | Adjustment wizard |
+| `StrategyImpactAssessment.jsx` | Impact assessment |
+| `StrategyReprioritizer.jsx` | Reprioritize objectives |
+
+### Monitoring Components (1)
+**Location:** `src/components/strategy/monitoring/`
+
+| Component | Description |
+|-----------|-------------|
+| `StrategyAlignmentScoreCard.jsx` | Alignment scorecard |
 
 ---
 
-## 🪝 Hooks (30)
+## 🪝 Hooks (33)
 
-### Core Strategy Hooks (3)
+### Core Hooks (3)
 **Location:** `src/hooks/`
 
 | Hook | Description |
 |------|-------------|
-| `useStrategicKPI.js` | Strategic KPI management and contribution tracking |
-| `useStrategicCascadeValidation.js` | Validate strategy cascade integrity |
-| `useStrategyAlignment.js` | Calculate entity alignment scores |
+| `useStrategicKPI.js` | KPI management |
+| `useStrategicCascadeValidation.js` | Cascade validation |
+| `useStrategyAlignment.js` | Alignment calculation |
 
-### Phase-Specific Strategy Hooks (27)
+### Phase-Specific Hooks (30)
 **Location:** `src/hooks/strategy/`
 
-#### Phase 1: Pre-Planning
+#### Phase 1: Pre-Planning (6)
 | Hook | Description |
 |------|-------------|
-| `useEnvironmentalFactors.js` | PESTLE environmental factors |
-| `useRiskAssessment.js` | Risk assessment management |
+| `useEnvironmentalFactors.js` | PESTLE factors |
+| `useRiskAssessment.js` | Risk management |
 | `useStakeholderAnalysis.js` | Stakeholder analysis |
-| `useStrategyBaselines.js` | Baseline data management |
-| `useStrategyInputs.js` | Strategy input collection |
-| `useSwotAnalysis.js` | SWOT analysis management |
+| `useStrategyBaselines.js` | Baseline data |
+| `useStrategyInputs.js` | Strategy inputs |
+| `useSwotAnalysis.js` | SWOT management |
 
-#### Phase 2: Strategy Creation
+#### Phase 2: Strategy Creation (7)
 | Hook | Description |
 |------|-------------|
-| `useActionPlans.js` | Action plan CRUD operations |
-| `useNationalAlignments.js` | National strategy alignments |
-| `useSectorStrategies.js` | Sector strategy management |
-| `useStrategyContext.js` | Aggregate strategic context |
-| `useStrategyMilestones.js` | Milestone management |
-| `useStrategyOwnership.js` | Ownership assignments |
-| `useStrategyTemplates.js` | Template management |
+| `useActionPlans.js` | Action plan CRUD |
+| `useNationalAlignments.js` | National alignments |
+| `useSectorStrategies.js` | Sector strategies |
+| `useStrategyContext.js` | Strategic context |
+| `useStrategyMilestones.js` | Milestones |
+| `useStrategyOwnership.js` | Ownership |
+| `useStrategyTemplates.js` | Templates |
 
-#### Phase 4: Governance
+#### Phase 3: Demand-Driven (4)
 | Hook | Description |
 |------|-------------|
-| `useCommitteeAI.js` | AI-assisted committee decisions |
-| `useCommitteeDecisions.js` | Committee decision tracking |
-| `useSignoffAI.js` | AI-assisted signoff analysis |
-| `useStrategySignoffs.js` | Stakeholder signoff management |
-| `useStrategyVersions.js` | Version control management |
-| `useVersionAI.js` | AI-assisted version comparison |
-| `useWorkflowAI.js` | AI-assisted workflow optimization |
+| `useDemandQueue.js` | Queue management |
+| `useGapAnalysis.js` | Gap analysis |
+| `useQueueAutoPopulation.js` | Auto-population |
+| `useQueueNotifications.js` | Queue notifications |
 
-#### Phase 5: Communication
+#### Phase 4: Governance (7)
 | Hook | Description |
 |------|-------------|
-| `useCommunicationAI.js` | AI-powered communication |
-| `useCommunicationNotifications.js` | Notification management |
-| `useCommunicationPlans.js` | Communication plan CRUD |
-| `useImpactStories.js` | Impact story management |
+| `useCommitteeAI.js` | AI committee assist |
+| `useCommitteeDecisions.js` | Decision tracking |
+| `useSignoffAI.js` | AI signoff assist |
+| `useStrategySignoffs.js` | Signoff management |
+| `useStrategyVersions.js` | Version control |
+| `useVersionAI.js` | AI version compare |
+| `useWorkflowAI.js` | AI workflow |
 
-#### Phase 7: Evaluation
+#### Phase 5: Communication (4)
 | Hook | Description |
 |------|-------------|
-| `useStrategyEvaluation.js` | Strategy evaluation and scoring |
+| `useCommunicationAI.js` | AI communication |
+| `useCommunicationNotifications.js` | Notifications |
+| `useCommunicationPlans.js` | Communication plans |
+| `useImpactStories.js` | Impact stories |
 
-#### Phase 8: Recalibration
+#### Phase 7: Evaluation (1)
 | Hook | Description |
 |------|-------------|
-| `useStrategyRecalibration.js` | Strategy recalibration operations |
+| `useStrategyEvaluation.js` | Evaluation scoring |
+
+#### Phase 8: Recalibration (1)
+| Hook | Description |
+|------|-------------|
+| `useStrategyRecalibration.js` | Recalibration ops |
 
 ---
 
-## 📊 Summary by Phase
+## 🔗 Contexts (3)
 
-| Phase | Components | Hooks | Pages |
-|-------|------------|-------|-------|
-| Phase 1: Pre-Planning | 6 | 6 | 1 |
-| Phase 2: Strategy Creation | 8 | 7 | 4 |
-| Phase 3: Cascade to Entities | 8 | 0 | 8 |
-| Phase 4: Governance | 4 | 6 | 1 |
-| Phase 5: Communication | 6 | 4 | 0 |
-| Phase 6: Monitoring | 1 + 17 root | 3 core | 3 |
-| Phase 7: Evaluation | 3 | 1 | 0 |
-| Phase 8: Recalibration | 6 | 1 | 0 |
-| **TOTAL** | **55** | **30** | **17** |
+| Context | Location | Description |
+|---------|----------|-------------|
+| `StrategicPlanContext.jsx` | `src/contexts/` | Global active plan state |
+| `index.js` | `src/hooks/strategy/` | Hook exports barrel |
 
 ---
 
-## 🔗 Related Documentation
+## 📊 Coverage by Phase
 
-- [Strategy Design](./strategy-design.md) - Architecture and design decisions
-- [Strategy Integration Matrix](./strategy-integration-matrix.md) - Entity integration mapping
-- [Plan Tracker](./plan-tracker.md) - Implementation progress tracking
-- [Phase Methodologies](./phase1-strategic-methodology.md) - Detailed phase documentation
-
----
-
-## 📁 File Structure
-
-```
-src/
-├── pages/
-│   ├── StrategyCockpit.jsx
-│   ├── StrategyDrillDown.jsx
-│   ├── StrategyAlignment.jsx
-│   ├── StrategyReviewPage.jsx
-│   ├── StrategyGovernancePage.jsx
-│   ├── StrategyOwnershipPage.jsx
-│   ├── StrategyTemplatesPage.jsx
-│   ├── NationalStrategyLinkerPage.jsx
-│   ├── BaselineDataPage.jsx
-│   ├── StrategyCampaignGeneratorPage.jsx
-│   ├── StrategyPolicyGeneratorPage.jsx
-│   ├── StrategyChallengeGeneratorPage.jsx
-│   ├── StrategyRDCallGeneratorPage.jsx
-│   ├── StrategyPilotGeneratorPage.jsx
-│   ├── StrategyPartnershipGeneratorPage.jsx
-│   ├── StrategyEventGeneratorPage.jsx
-│   └── StrategyLivingLabGeneratorPage.jsx
-├── components/
-│   └── strategy/
-│       ├── cascade/ (8 components)
-│       ├── communication/ (6 components)
-│       ├── creation/ (8 components)
-│       ├── evaluation/ (3 components)
-│       ├── governance/ (4 components)
-│       ├── monitoring/ (1 component)
-│       ├── preplanning/ (6 components)
-│       ├── recalibration/ (6 components)
-│       ├── review/ (3 components)
-│       └── [17 root components]
-└── hooks/
-    ├── useStrategicKPI.js
-    ├── useStrategicCascadeValidation.js
-    ├── useStrategyAlignment.js
-    └── strategy/ (27 hooks)
-```
+| Phase | Pages | Components | Hooks | Status |
+|-------|-------|------------|-------|--------|
+| 1. Pre-Planning | 6 | 6 | 6 | ✅ Complete |
+| 2. Creation | 5 | 8 | 7 | ✅ Complete |
+| 3. Cascade | 8 | 8 | 4 | ✅ Complete |
+| 4. Governance | 2 | 4 | 7 | ✅ Complete |
+| 5. Communication | 3 | 6 | 4 | ✅ Complete |
+| 6. Monitoring | 2 | 1 | 0 | ⚠️ Basic |
+| 7. Evaluation | 0 | 3 | 1 | ⚠️ Basic |
+| 8. Recalibration | 1 | 6 | 1 | ✅ Complete |
 
 ---
 
-*This inventory is automatically maintained and should be updated when new strategy system components are added.*
+## 🔐 RBAC Permissions
+
+| Permission | Description | Roles |
+|------------|-------------|-------|
+| `strategy_view` | View strategies | All roles |
+| `strategy_manage` | Create/edit strategies | Admin, Strategy Officer, GDISB Lead |
+| `strategy_cascade` | Generate from strategy | Admin, Strategy Officer, GDISB Lead |
+| `strategy_approve` | Approve strategies | Admin, Executive Leadership |
+
+---
+
+## 📁 Edge Functions
+
+| Function | Location | Description |
+|----------|----------|-------------|
+| `strategy-scheduled-analysis` | `supabase/functions/` | Scheduled gap analysis automation |
+
+---
+
+## 🗄️ Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `strategic_plans` | Core strategic plan data |
+| `swot_analyses` | SWOT analysis records |
+| `environmental_factors` | PESTLE factors |
+| `stakeholder_analyses` | Stakeholder mapping |
+| `strategy_risks` | Risk assessments |
+| `strategy_baselines` | Baseline metrics |
+| `strategy_inputs` | Strategy inputs |
+| `action_plans` | Action plans |
+| `action_items` | Action plan items |
+
+---
+
+## 🔄 Related Systems
+
+| System | Relationship |
+|--------|--------------|
+| Challenges | Receives generated challenges from cascade |
+| Pilots | Receives generated pilots from cascade |
+| R&D | Receives R&D calls from cascade |
+| Programs | Receives programs from cascade |
+| Partnerships | Receives partnership matches |
+| Living Labs | Receives living lab concepts |
+| Budget | Receives allocations |
+| MII | Feeds into MII calculations |
