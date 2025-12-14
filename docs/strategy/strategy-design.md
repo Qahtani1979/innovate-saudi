@@ -113,21 +113,27 @@ The Strategy System provides comprehensive strategic planning and execution mana
 | [phase7-strategic-methodology.md](./phase7-strategic-methodology.md) | Evaluation methodology | ✅ Complete |
 | [phase8-strategic-methodology.md](./phase8-strategic-methodology.md) | Recalibration methodology | ✅ Complete |
 
-### Cross-System Integration Status
+### Cross-System Integration Status (Deep Validated v2)
 
-| System | Strategy Integration | Priority Gaps |
-|--------|---------------------|---------------|
-| Challenges | ✅ 95% | None |
-| Living Labs | ✅ 95% | None |
-| Sandboxes | ✅ 95% | None |
-| Pilots | ⚠️ 60% | Missing StrategicPlanSelector in create/edit |
-| Programs | ⚠️ 70% | No StrategicPlanSelector in wizard |
-| Events | ⚠️ 50% | No create/edit integration |
-| Policies | ⚠️ 50% | No create/edit integration |
-| Budget System | ⚠️ 40% | No strategic allocation |
-| Citizen Systems | ❌ 10% | No strategy awareness |
+**Overall Platform Integration: 32%** (Strategy System internally 100% complete)
 
-See [strategy-system-gaps-analysis.md](./strategy-system-gaps-analysis.md) for full details.
+| System Category | Systems | Integration | Critical Gaps |
+|-----------------|---------|-------------|---------------|
+| **Core Entities** | Challenges, Pilots, Programs, Living Labs, Sandboxes, Partnerships | 78% | Pilots, Programs missing StrategicPlanSelector |
+| **R&D Ecosystem** | RD Calls, RD Projects, RD Proposals | 55% | No strategy UI in create/detail pages |
+| **Events & Communications** | Events, Policies, Marketing, News | 35% | No create/edit integration |
+| **Financial Systems** | Budgets, Contracts, Scaling Plans | 25% | No strategic_plan_id column, no allocation |
+| **Citizen Systems** | Ideas, Feedback, Votes, Enrollments | 10% | No strategy awareness |
+| **Support Systems** | MII, Evaluations, Notifications, Tasks | 40% | MII not linked to KPIs |
+| **Knowledge Systems** | Documents, Case Studies, Reports | 20% | No strategy context |
+
+**Priority 1 Fixes (Critical):**
+1. Add StrategicPlanSelector to PilotCreate/Edit
+2. Add StrategicPlanSelector to ProgramCreateWizard
+3. Add strategy columns to budgets table
+4. Link MII baseline data to strategy KPIs
+
+See [strategy-system-gaps-analysis.md](./strategy-system-gaps-analysis.md) for 31 identified gaps with remediation roadmap.
 
 ### Actual Implementation Status (Verified Against Codebase)
 

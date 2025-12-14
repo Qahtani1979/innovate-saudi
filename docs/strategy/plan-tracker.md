@@ -41,22 +41,33 @@
 
 ## CURRENT STATUS SUMMARY
 
-### Overall Progress: 100% Complete (Phase 1-8) | 65% Cross-System Integration
+### Overall Progress: 100% Complete (Phase 1-8) | 32% Cross-System Integration
 
-**NEW:** See [strategy-system-gaps-analysis.md](./strategy-system-gaps-analysis.md) for cross-system gaps and conflicts.
+**🔴 CRITICAL:** Cross-system integration is only 32% complete. See [strategy-system-gaps-analysis.md](./strategy-system-gaps-analysis.md) for full gap analysis (v2).
 
-| Category | Status | Coverage | Notes |
-|----------|--------|----------|-------|
-| **Phase 1 Data Collection** | ✅ 100% | 6/6 components | All widgets store data |
-| **Phase 1→2 Data Flow** | ✅ 100% | Full integration | useStrategyContext aggregates all |
-| **Phase 2 Strategy Creation** | ✅ 100% | Context-aware | Gap-driven planning enabled |
+| Category | Internal Status | Cross-System | Notes |
+|----------|----------------|--------------|-------|
+| **Phase 1 Data Collection** | ✅ 100% | N/A | All widgets store data |
+| **Phase 1→2 Data Flow** | ✅ 100% | N/A | useStrategyContext aggregates all |
+| **Phase 2 Strategy Creation** | ✅ 100% | N/A | Gap-driven planning enabled |
 | **Phase 3 Cascade** | ✅ 100% | 9/9 generators | All generators fixed |
-| **Phase 3 Database** | ✅ 100% | All columns added | Migration executed |
-| **Phase 4 Governance** | ✅ 100% | Full AI | All components + approval hook |
-| **Phase 5 Communication** | ✅ 100% | Full AI | 6 UI + 4 hooks + 1 AI + 4 tables |
-| **Phase 6 Monitoring** | ✅ 100% | 11/11 components | Complete |
-| **Phase 7 Evaluation** | ✅ 100% | 7/7 components | Complete - hook + UI components |
-| **Phase 8 Recalibration** | ✅ 100% | 6/6 components | Complete - hook + 6 UI components |
+| **Phase 3 Database** | ✅ 100% | ⚠️ 60% | Many tables missing strategy columns |
+| **Phase 4 Governance** | ✅ 100% | ⚠️ 40% | Standard create pages bypass approval |
+| **Phase 5 Communication** | ✅ 100% | ⚠️ 30% | Missing notification types |
+| **Phase 6 Monitoring** | ✅ 100% | ❌ 10% | MII/Budget not integrated |
+| **Phase 7 Evaluation** | ✅ 100% | ⚠️ 50% | Parallel evaluation systems |
+| **Phase 8 Recalibration** | ✅ 100% | ❌ 10% | Citizen feedback not linked |
+
+### Cross-System Gap Summary
+
+| System Category | Integration | Critical Gaps |
+|-----------------|-------------|---------------|
+| Core Entities (6) | 78% | Pilots, Programs missing selectors |
+| R&D Ecosystem (3) | 55% | No strategy UI in create/detail |
+| Events & Policies | 35% | No create/edit integration |
+| Financial (Budget, Contracts) | 25% | No strategic allocation |
+| Citizen Systems (5) | 10% | No strategy awareness |
+| MII System | 0% | No KPI linkage |
 
 ---
 
