@@ -12,29 +12,38 @@ import { Progress } from '@/components/ui/progress';
 
 export default function GovernanceMetricsDashboard({ planId }) {
   const { t } = useLanguage();
-  const { signoffs, isLoading: signoffsLoading } = useStrategySignoffs(planId);
-  const { versions, isLoading: versionsLoading } = useStrategyVersions(planId);
-  const { decisions, isLoading: decisionsLoading } = useCommitteeDecisions(planId);
+  
+  // Safe hook calls with default values
+  const signoffsData = useStrategySignoffs(planId);
+  const versionsData = useStrategyVersions(planId);
+  const decisionsData = useCommitteeDecisions(planId);
+  
+  const signoffs = signoffsData?.signoffs || [];
+  const signoffsLoading = signoffsData?.isLoading ?? true;
+  const versions = versionsData?.versions || [];
+  const versionsLoading = versionsData?.isLoading ?? true;
+  const decisions = decisionsData?.decisions || [];
+  const decisionsLoading = decisionsData?.isLoading ?? true;
 
   const isLoading = signoffsLoading || versionsLoading || decisionsLoading;
 
   const signoffStats = {
-    total: signoffs?.length || 0,
-    approved: signoffs?.filter(s => s.status === 'approved').length || 0,
-    pending: signoffs?.filter(s => s.status === 'pending').length || 0,
-    overdue: signoffs?.filter(s => s.status === 'pending' && s.due_date && new Date(s.due_date) < new Date()).length || 0
+    total: signoffs.length,
+    approved: signoffs.filter(s => s.status === 'approved').length,
+    pending: signoffs.filter(s => s.status === 'pending').length,
+    overdue: signoffs.filter(s => s.status === 'pending' && s.due_date && new Date(s.due_date) < new Date()).length
   };
 
   const versionStats = {
-    total: versions?.length || 0,
-    current: versions?.filter(v => v.status === 'approved').length || 0,
-    drafts: versions?.filter(v => v.status === 'draft').length || 0
+    total: versions.length,
+    current: versions.filter(v => v.status === 'approved').length,
+    drafts: versions.filter(v => v.status === 'draft').length
   };
 
   const decisionStats = {
-    total: decisions?.length || 0,
-    approvals: decisions?.filter(d => d.decision_type === 'approval').length || 0,
-    pending: decisions?.filter(d => d.decision_type === 'deferral').length || 0
+    total: decisions.length,
+    approvals: decisions.filter(d => d.decision_type === 'approval').length,
+    pending: decisions.filter(d => d.decision_type === 'deferral').length
   };
 
   const slaCompliance = signoffStats.total > 0 
