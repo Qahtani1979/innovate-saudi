@@ -429,12 +429,12 @@ CREATE TABLE public.strategy_templates (
 
 | # | Component | File Path | Status | Platform Integration |
 |---|-----------|-----------|--------|---------------------|
-| 5.1 | StrategyCommunicationPlanner | `src/components/strategy/communication/StrategyCommunicationPlanner.jsx` | ✅ With AI | citizen_profiles, municipalities, organizations |
+| 5.1 | StrategyCommunicationPlanner | `src/components/strategy/communication/StrategyCommunicationPlanner.jsx` | ✅ With AI | citizen_profiles, municipalities, organizations, events, case_studies |
 | 5.2 | ImpactStoryGenerator | `src/components/strategy/communication/ImpactStoryGenerator.jsx` | ✅ With AI | challenges, pilots, solutions, programs, partnerships, living_labs |
-| 5.3 | StakeholderNotificationManager | `src/components/strategy/communication/StakeholderNotificationManager.jsx` | ✅ Created | user_profiles, user_notification_preferences |
-| 5.4 | CommunicationAnalyticsDashboard | `src/components/strategy/communication/CommunicationAnalyticsDashboard.jsx` | ✅ Created | communication_analytics, impact_stories |
+| 5.3 | StakeholderNotificationManager | `src/components/strategy/communication/StakeholderNotificationManager.jsx` | ✅ Created | user_profiles, citizen_profiles, email_templates |
+| 5.4 | CommunicationAnalyticsDashboard | `src/components/strategy/communication/CommunicationAnalyticsDashboard.jsx` | ✅ Created | communication_analytics, impact_stories, email_logs, citizen_feedback |
 | 5.5 | PublicStrategyDashboard | `src/components/strategy/communication/PublicStrategyDashboard.jsx` | ✅ Created | strategic_plans, objectives, kpis, milestones, challenges |
-| 5.6 | StrategyPublicView | `src/components/strategy/communication/StrategyPublicView.jsx` | ✅ Created | strategic_plans, objectives, impact_stories, events, partnerships, pilots, citizen_feedback |
+| 5.6 | StrategyPublicView | `src/components/strategy/communication/StrategyPublicView.jsx` | ✅ Created | strategic_plans, objectives, impact_stories, events, partnerships, pilots, citizen_feedback, case_studies |
 
 #### Database Tables (4/4 Created ✅)
 
@@ -460,22 +460,25 @@ CREATE TABLE public.strategy_templates (
 |---|---------------|---------|--------|
 | 1 | strategy-communication-ai | Story generation, key messages, channel strategy, content calendar, engagement analysis | ✅ CREATED |
 
-#### Platform Entity Integrations (NEW)
+#### Platform Entity Integrations (COMPLETE)
 
 | # | Entity | Integration Type | Used In | Purpose |
 |---|--------|-----------------|---------|---------|
 | 1 | challenges | SELECT | ImpactStoryGenerator | Source entities for success stories |
-| 2 | pilots | SELECT | ImpactStoryGenerator | Source entities for success stories |
+| 2 | pilots | SELECT | ImpactStoryGenerator, PublicView | Source entities for success stories + counts |
 | 3 | solutions | SELECT | ImpactStoryGenerator | Source entities for success stories |
 | 4 | programs | SELECT | ImpactStoryGenerator | Source entities for success stories |
 | 5 | partnerships | SELECT + COUNT | StrategyPublicView | Display partnerships count |
 | 6 | living_labs | SELECT | ImpactStoryGenerator | Source entities for success stories |
-| 7 | events | SELECT | StrategyPublicView | Display upcoming events |
-| 8 | citizen_profiles | COUNT | StrategyCommunicationPlanner | Audience sizing |
+| 7 | events | SELECT | StrategyPublicView, Planner | Display upcoming events + calendar integration |
+| 8 | citizen_profiles | COUNT + SELECT | Planner, Notification | Audience sizing + citizen recipients |
 | 9 | municipalities | COUNT | StrategyCommunicationPlanner | Audience sizing |
 | 10 | organizations | COUNT | StrategyCommunicationPlanner | Audience sizing |
 | 11 | user_profiles | SELECT | StakeholderNotificationManager | Recipient selection by persona |
-| 12 | citizen_feedback | INSERT | StrategyPublicView | Public feedback submission |
+| 12 | citizen_feedback | INSERT + SELECT | StrategyPublicView, Analytics | Public feedback submission + metrics |
+| 13 | email_templates | SELECT | StakeholderNotificationManager | Template selection for notifications |
+| 14 | email_logs | SELECT | CommunicationAnalyticsDashboard | Email engagement metrics |
+| 15 | case_studies | SELECT | StrategyPublicView, Planner | Showcase case studies + content library |
 
 #### Routes
 

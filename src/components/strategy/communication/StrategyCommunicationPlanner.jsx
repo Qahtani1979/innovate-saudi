@@ -93,6 +93,42 @@ export default function StrategyCommunicationPlanner({ strategicPlanId }) {
     }
   });
 
+  // Fetch related events for content calendar integration
+  const { data: relatedEvents = [] } = useQuery({
+    queryKey: ['related-events-comm', strategicPlanId],
+    queryFn: async () => {
+      let query = supabase
+        .from('events')
+        .select('id, title_en, title_ar, start_date, event_type')
+        .gte('start_date', new Date().toISOString())
+        .order('start_date', { ascending: true })
+        .limit(10);
+      
+      if (strategicPlanId) {
+        query = query.contains('strategic_plan_ids', [strategicPlanId]);
+      }
+      
+      const { data, error } = await query;
+      if (error) return [];
+      return data || [];
+    }
+  });
+
+  // Fetch case studies for content library
+  const { data: caseStudies = [] } = useQuery({
+    queryKey: ['case-studies-comm', strategicPlanId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('case_studies')
+        .select('id, title_en, title_ar, is_featured, is_published')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) return [];
+      return data || [];
+    }
+  });
+
   const handleAudienceToggle = (audienceId) => {
     setPlanData(prev => ({
       ...prev,

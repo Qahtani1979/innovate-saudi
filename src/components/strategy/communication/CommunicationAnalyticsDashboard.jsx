@@ -51,6 +51,70 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
     }
   });
 
+  // Fetch email logs for email channel analytics
+  const { data: emailLogs = [] } = useQuery({
+    queryKey: ['email-logs-analytics'],
+    queryFn: async () => {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data, error } = await supabase
+        .from('email_logs')
+        .select('id, status, opened_at, clicked_at, created_at')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (error) return [];
+      return data || [];
+    }
+  });
+
+  // Fetch citizen feedback for sentiment analysis
+  const { data: citizenFeedback = [] } = useQuery({
+    queryKey: ['citizen-feedback-analytics', strategicPlanId],
+    queryFn: async () => {
+      let query = supabase
+        .from('citizen_feedback')
+        .select('id, rating, feedback_type, created_at')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      
+      if (strategicPlanId) {
+        query = query.eq('entity_id', strategicPlanId);
+      }
+      
+      const { data, error } = await query;
+      if (error) return [];
+      return data || [];
+    }
+  });
+
+  // Calculate email metrics
+  const emailMetrics = React.useMemo(() => {
+    const total = emailLogs.length;
+    const sent = emailLogs.filter(l => l.status === 'sent' || l.status === 'delivered').length;
+    const opened = emailLogs.filter(l => l.opened_at).length;
+    const clicked = emailLogs.filter(l => l.clicked_at).length;
+    return {
+      total,
+      sent,
+      opened,
+      clicked,
+      openRate: total > 0 ? ((opened / total) * 100).toFixed(1) : 0,
+      clickRate: opened > 0 ? ((clicked / opened) * 100).toFixed(1) : 0
+    };
+  }, [emailLogs]);
+
+  // Calculate feedback metrics  
+  const feedbackMetrics = React.useMemo(() => {
+    const total = citizenFeedback.length;
+    const avgRating = total > 0 
+      ? (citizenFeedback.reduce((sum, f) => sum + (f.rating || 0), 0) / total).toFixed(1)
+      : 0;
+    const positive = citizenFeedback.filter(f => f.rating >= 4).length;
+    return { total, avgRating, positive, positiveRate: total > 0 ? ((positive / total) * 100).toFixed(0) : 0 };
+  }, [citizenFeedback]);
+
   // Calculate story metrics
   const storyMetrics = {
     totalStories: stories.length,
@@ -163,15 +227,12 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t({ en: 'Engagement Rate', ar: 'معدل التفاعل' })}</p>
-                <p className="text-2xl font-bold">{avgEngagement}%</p>
+                <p className="text-sm text-muted-foreground">{t({ en: 'Email Open Rate', ar: 'معدل فتح البريد' })}</p>
+                <p className="text-2xl font-bold">{emailMetrics.openRate}%</p>
               </div>
-              {parseFloat(avgEngagement) > 0 && (
-                <div className="flex items-center text-green-600 text-sm">
-                  <ArrowUpRight className="h-4 w-4" />
-                  Tracking
-                </div>
-              )}
+              <div className="text-right text-xs text-muted-foreground">
+                {emailMetrics.opened}/{emailMetrics.total}
+              </div>
             </div>
           </Card>
           <Card className="p-4">
@@ -186,10 +247,12 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t({ en: 'Notifications Sent', ar: 'الإشعارات المرسلة' })}</p>
-                <p className="text-2xl font-bold">{notificationStats.sent}</p>
+                <p className="text-sm text-muted-foreground">{t({ en: 'Feedback Score', ar: 'درجة الملاحظات' })}</p>
+                <p className="text-2xl font-bold">{feedbackMetrics.avgRating}/5</p>
               </div>
-              <Mail className="h-5 w-5 text-muted-foreground" />
+              <div className="text-right text-xs text-muted-foreground">
+                {feedbackMetrics.positiveRate}% {t({ en: 'positive', ar: 'إيجابي' })}
+              </div>
             </div>
           </Card>
         </div>
