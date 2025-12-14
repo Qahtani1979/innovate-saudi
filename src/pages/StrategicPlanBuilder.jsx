@@ -489,33 +489,58 @@ Format as JSON with:
               <CardTitle>{t({ en: 'Plan Details', ar: 'تفاصيل الخطة' })}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Title with duplicate check */}
-              <div>
-                <label className="text-sm font-medium">{t({ en: 'Title (English)', ar: 'العنوان (إنجليزي)' })}</label>
-                <Input
-                  value={plan.title_en}
-                  onChange={(e) => setPlan({ ...plan, title_en: e.target.value })}
-                  placeholder={t({ en: 'Enter title...', ar: 'أدخل العنوان...' })}
-                  className={duplicateTitleWarning ? 'border-red-500' : ''}
-                />
-                {duplicateTitleWarning && (
-                  <p className="text-sm text-red-500 mt-1">{duplicateTitleWarning}</p>
-                )}
+              {/* Title fields - English and Arabic */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">{t({ en: 'Title (English)', ar: 'العنوان (إنجليزي)' })}</label>
+                  <Input
+                    value={plan.title_en}
+                    onChange={(e) => setPlan({ ...plan, title_en: e.target.value })}
+                    placeholder={t({ en: 'Enter title in English...', ar: 'أدخل العنوان بالإنجليزية...' })}
+                    className={duplicateTitleWarning ? 'border-red-500' : ''}
+                    dir="ltr"
+                  />
+                  {duplicateTitleWarning && (
+                    <p className="text-sm text-red-500 mt-1">{duplicateTitleWarning}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{t({ en: 'Title (Arabic)', ar: 'العنوان (عربي)' })}</label>
+                  <Input
+                    value={plan.title_ar}
+                    onChange={(e) => setPlan({ ...plan, title_ar: e.target.value })}
+                    placeholder={t({ en: 'Enter title in Arabic...', ar: 'أدخل العنوان بالعربية...' })}
+                    dir="rtl"
+                  />
+                </div>
               </div>
 
-              {/* Vision with similarity check */}
-              <div>
-                <label className="text-sm font-medium">{t({ en: 'Vision', ar: 'الرؤية' })}</label>
-                <Textarea
-                  value={plan.vision_en}
-                  onChange={(e) => setPlan({ ...plan, vision_en: e.target.value })}
-                  placeholder={t({ en: 'Enter vision statement...', ar: 'أدخل بيان الرؤية...' })}
-                  rows={4}
-                  className={similarVisionWarning ? 'border-amber-500' : ''}
-                />
-                {similarVisionWarning && (
-                  <p className="text-sm text-amber-500 mt-1">{similarVisionWarning}</p>
-                )}
+              {/* Vision fields - English and Arabic */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">{t({ en: 'Vision (English)', ar: 'الرؤية (إنجليزي)' })}</label>
+                  <Textarea
+                    value={plan.vision_en}
+                    onChange={(e) => setPlan({ ...plan, vision_en: e.target.value })}
+                    placeholder={t({ en: 'Enter vision statement in English...', ar: 'أدخل بيان الرؤية بالإنجليزية...' })}
+                    rows={4}
+                    className={similarVisionWarning ? 'border-amber-500' : ''}
+                    dir="ltr"
+                  />
+                  {similarVisionWarning && (
+                    <p className="text-sm text-amber-500 mt-1">{similarVisionWarning}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{t({ en: 'Vision (Arabic)', ar: 'الرؤية (عربي)' })}</label>
+                  <Textarea
+                    value={plan.vision_ar}
+                    onChange={(e) => setPlan({ ...plan, vision_ar: e.target.value })}
+                    placeholder={t({ en: 'Enter vision statement in Arabic...', ar: 'أدخل بيان الرؤية بالعربية...' })}
+                    rows={4}
+                    dir="rtl"
+                  />
+                </div>
               </div>
               
               {/* Objectives */}
@@ -525,7 +550,7 @@ Format as JSON with:
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setPlan({ ...plan, objectives: [...plan.objectives, { name_en: '', description_en: '' }] })}
+                    onClick={() => setPlan({ ...plan, objectives: [...plan.objectives, { name_en: '', name_ar: '', description_en: '', description_ar: '' }] })}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     {t({ en: 'Add', ar: 'إضافة' })}
@@ -535,28 +560,57 @@ Format as JSON with:
                   {plan.objectives.map((obj, i) => {
                     const warning = duplicateWarnings.find(w => w.index === i);
                     return (
-                      <div key={i} className={`p-3 border rounded-lg space-y-2 ${warning ? 'border-amber-500 bg-amber-50' : ''}`}>
+                      <div key={i} className={`p-3 border rounded-lg space-y-3 ${warning ? 'border-amber-500 bg-amber-50' : ''}`}>
                         <div className="flex items-start justify-between">
-                          <div className="flex-1 space-y-2">
-                            <Input
-                              placeholder={t({ en: 'Objective name', ar: 'اسم الهدف' })}
-                              value={obj.name_en}
-                              onChange={(e) => {
-                                const newObjs = [...plan.objectives];
-                                newObjs[i].name_en = e.target.value;
-                                setPlan({ ...plan, objectives: newObjs });
-                              }}
-                            />
-                            <Textarea
-                              placeholder={t({ en: 'Description', ar: 'الوصف' })}
-                              value={obj.description_en}
-                              onChange={(e) => {
-                                const newObjs = [...plan.objectives];
-                                newObjs[i].description_en = e.target.value;
-                                setPlan({ ...plan, objectives: newObjs });
-                              }}
-                              rows={2}
-                            />
+                          <div className="flex-1 space-y-3">
+                            {/* Objective names - English and Arabic */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <Input
+                                placeholder={t({ en: 'Objective name (English)', ar: 'اسم الهدف (إنجليزي)' })}
+                                value={obj.name_en}
+                                onChange={(e) => {
+                                  const newObjs = [...plan.objectives];
+                                  newObjs[i].name_en = e.target.value;
+                                  setPlan({ ...plan, objectives: newObjs });
+                                }}
+                                dir="ltr"
+                              />
+                              <Input
+                                placeholder={t({ en: 'Objective name (Arabic)', ar: 'اسم الهدف (عربي)' })}
+                                value={obj.name_ar || ''}
+                                onChange={(e) => {
+                                  const newObjs = [...plan.objectives];
+                                  newObjs[i].name_ar = e.target.value;
+                                  setPlan({ ...plan, objectives: newObjs });
+                                }}
+                                dir="rtl"
+                              />
+                            </div>
+                            {/* Objective descriptions - English and Arabic */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <Textarea
+                                placeholder={t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}
+                                value={obj.description_en}
+                                onChange={(e) => {
+                                  const newObjs = [...plan.objectives];
+                                  newObjs[i].description_en = e.target.value;
+                                  setPlan({ ...plan, objectives: newObjs });
+                                }}
+                                rows={2}
+                                dir="ltr"
+                              />
+                              <Textarea
+                                placeholder={t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}
+                                value={obj.description_ar || ''}
+                                onChange={(e) => {
+                                  const newObjs = [...plan.objectives];
+                                  newObjs[i].description_ar = e.target.value;
+                                  setPlan({ ...plan, objectives: newObjs });
+                                }}
+                                rows={2}
+                                dir="rtl"
+                              />
+                            </div>
                           </div>
                           <Button
                             variant="ghost"
@@ -574,7 +628,7 @@ Format as JSON with:
                               <strong>{t({ en: 'Potential duplicate:', ar: 'تكرار محتمل:' })}</strong>
                               {warning.duplicates.map((d, di) => (
                                 <div key={di} className="mt-1">
-                                  "{d.existing.name_en}" ({d.similarity}% {t({ en: 'similar', ar: 'متشابه' })}) - {d.existing.planName}
+                                  "{language === 'ar' ? d.existing.name_ar || d.existing.name_en : d.existing.name_en}" ({d.similarity}% {t({ en: 'similar', ar: 'متشابه' })}) - {d.existing.planName}
                                 </div>
                               ))}
                             </AlertDescription>
