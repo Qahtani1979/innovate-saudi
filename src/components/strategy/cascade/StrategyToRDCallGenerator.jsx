@@ -25,7 +25,7 @@ export default function StrategyToRDCallGenerator({ onRDCallCreated }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('challenges')
-        .select('id, title_en, title_ar, status, sector_id')
+        .select('id, title_en, title_ar, status, sector_id, strategic_plan_ids')
         .eq('is_deleted', false)
         .in('status', ['approved', 'published', 'open'])
         .order('created_at', { ascending: false })
@@ -72,6 +72,10 @@ export default function StrategyToRDCallGenerator({ onRDCallCreated }) {
 
   const handleSaveCall = async (call, index) => {
     try {
+      // Get strategic_plan_ids from the selected challenges
+      const selectedChallengesData = challenges?.filter(c => selectedChallenges.includes(c.id)) || [];
+      const strategicPlanIds = [...new Set(selectedChallengesData.flatMap(c => c.strategic_plan_ids || []))];
+      
       const { data, error } = await supabase
         .from('rd_calls')
         .insert({
@@ -85,6 +89,9 @@ export default function StrategyToRDCallGenerator({ onRDCallCreated }) {
           budget_max: Number(budgetMax),
           duration_months: Number(duration),
           challenge_ids: selectedChallenges,
+          strategic_plan_ids: strategicPlanIds,
+          is_strategy_derived: strategicPlanIds.length > 0,
+          strategy_derivation_date: strategicPlanIds.length > 0 ? new Date().toISOString() : null,
           status: 'draft'
         })
         .select()

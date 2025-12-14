@@ -88,6 +88,7 @@ export default function StrategyToLivingLabGenerator({ onLabCreated }) {
           municipality_id: selectedMunicipality || null,
           strategic_plan_ids: [selectedPlanId],
           is_strategy_derived: true,
+          strategy_derivation_date: new Date().toISOString(),
           status: 'planning'
         })
         .select()

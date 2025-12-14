@@ -96,6 +96,8 @@ export default function StrategyToEventGenerator({ onEventCreated }) {
           event_type: eventType,
           target_audience: targetAudience,
           strategic_plan_ids: [selectedPlanId],
+          is_strategy_derived: true,
+          strategy_derivation_date: new Date().toISOString(),
           status: 'planning',
           estimated_attendees: event.estimated_attendees,
           suggested_agenda: event.agenda

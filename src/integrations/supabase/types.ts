@@ -1302,6 +1302,7 @@ export type Database = {
           is_deleted: boolean | null
           is_featured: boolean | null
           is_published: boolean | null
+          is_strategy_derived: boolean | null
           keywords: string[] | null
           kpis: Json | null
           lessons_learned: Json | null
@@ -1338,6 +1339,7 @@ export type Database = {
           status: string | null
           strategic_goal: string | null
           strategic_plan_ids: string[] | null
+          strategy_derivation_date: string | null
           sub_sector: string | null
           submission_date: string | null
           subsector_id: string | null
@@ -1401,6 +1403,7 @@ export type Database = {
           is_deleted?: boolean | null
           is_featured?: boolean | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           keywords?: string[] | null
           kpis?: Json | null
           lessons_learned?: Json | null
@@ -1437,6 +1440,7 @@ export type Database = {
           status?: string | null
           strategic_goal?: string | null
           strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           sub_sector?: string | null
           submission_date?: string | null
           subsector_id?: string | null
@@ -1500,6 +1504,7 @@ export type Database = {
           is_deleted?: boolean | null
           is_featured?: boolean | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           keywords?: string[] | null
           kpis?: Json | null
           lessons_learned?: Json | null
@@ -1536,6 +1541,7 @@ export type Database = {
           status?: string | null
           strategic_goal?: string | null
           strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           sub_sector?: string | null
           submission_date?: string | null
           subsector_id?: string | null
@@ -6061,6 +6067,7 @@ export type Database = {
           id: string
           is_deleted: boolean | null
           is_strategic: boolean | null
+          is_strategy_derived: boolean | null
           kpis: Json | null
           linked_challenge_ids: string[] | null
           linked_pilot_ids: string[] | null
@@ -6101,6 +6108,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           is_strategic?: boolean | null
+          is_strategy_derived?: boolean | null
           kpis?: Json | null
           linked_challenge_ids?: string[] | null
           linked_pilot_ids?: string[] | null
@@ -6141,6 +6149,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           is_strategic?: boolean | null
+          is_strategy_derived?: boolean | null
           kpis?: Json | null
           linked_challenge_ids?: string[] | null
           linked_pilot_ids?: string[] | null
@@ -6668,6 +6677,7 @@ export type Database = {
           is_deleted: boolean | null
           is_flagship: boolean | null
           is_published: boolean | null
+          is_strategy_derived: boolean | null
           kpis: Json | null
           living_lab_id: string | null
           matchmaker_application_id: string | null
@@ -6696,6 +6706,8 @@ export type Database = {
           source_rd_project_id: string | null
           stage: string | null
           stakeholders: Json | null
+          strategic_plan_ids: string[] | null
+          strategy_derivation_date: string | null
           sub_sector: string | null
           success_probability: number | null
           tagline_ar: string | null
@@ -6740,6 +6752,7 @@ export type Database = {
           is_deleted?: boolean | null
           is_flagship?: boolean | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           kpis?: Json | null
           living_lab_id?: string | null
           matchmaker_application_id?: string | null
@@ -6768,6 +6781,8 @@ export type Database = {
           source_rd_project_id?: string | null
           stage?: string | null
           stakeholders?: Json | null
+          strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           sub_sector?: string | null
           success_probability?: number | null
           tagline_ar?: string | null
@@ -6812,6 +6827,7 @@ export type Database = {
           is_deleted?: boolean | null
           is_flagship?: boolean | null
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           kpis?: Json | null
           living_lab_id?: string | null
           matchmaker_application_id?: string | null
@@ -6840,6 +6856,8 @@ export type Database = {
           source_rd_project_id?: string | null
           stage?: string | null
           stakeholders?: Json | null
+          strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           sub_sector?: string | null
           success_probability?: number | null
           tagline_ar?: string | null
@@ -7865,10 +7883,13 @@ export type Database = {
           focus_areas: string[] | null
           id: string
           is_published: boolean | null
+          is_strategy_derived: boolean | null
           program_id: string | null
           sector_id: string | null
           start_date: string | null
           status: string | null
+          strategic_plan_ids: string[] | null
+          strategy_derivation_date: string | null
           timeline: Json | null
           title_ar: string | null
           title_en: string
@@ -7890,10 +7911,13 @@ export type Database = {
           focus_areas?: string[] | null
           id?: string
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           program_id?: string | null
           sector_id?: string | null
           start_date?: string | null
           status?: string | null
+          strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           timeline?: Json | null
           title_ar?: string | null
           title_en: string
@@ -7915,10 +7939,13 @@ export type Database = {
           focus_areas?: string[] | null
           id?: string
           is_published?: boolean | null
+          is_strategy_derived?: boolean | null
           program_id?: string | null
           sector_id?: string | null
           start_date?: string | null
           status?: string | null
+          strategic_plan_ids?: string[] | null
+          strategy_derivation_date?: string | null
           timeline?: Json | null
           title_ar?: string | null
           title_en?: string

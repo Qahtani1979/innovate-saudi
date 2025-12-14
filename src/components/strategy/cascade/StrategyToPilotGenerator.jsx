@@ -26,7 +26,7 @@ export default function StrategyToPilotGenerator({ onPilotCreated }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('challenges')
-        .select('id, title_en, title_ar, municipality_id')
+        .select('id, title_en, title_ar, municipality_id, strategic_plan_ids')
         .eq('is_deleted', false)
         .in('status', ['approved', 'published', 'open'])
         .order('created_at', { ascending: false })
@@ -87,6 +87,10 @@ export default function StrategyToPilotGenerator({ onPilotCreated }) {
     const challenge = challenges?.find(c => c.id === selectedChallenge);
     
     try {
+      // Get strategic_plan_ids from the challenge
+      const challengeData = challenges?.find(c => c.id === selectedChallenge);
+      const strategicPlanIds = challengeData?.strategic_plan_ids || [];
+      
       const { data, error } = await supabase
         .from('pilots')
         .insert({
@@ -102,6 +106,9 @@ export default function StrategyToPilotGenerator({ onPilotCreated }) {
           success_criteria: pilot.success_criteria,
           kpis: pilot.kpis,
           risks: pilot.risks,
+          strategic_plan_ids: strategicPlanIds,
+          is_strategy_derived: strategicPlanIds.length > 0,
+          strategy_derivation_date: strategicPlanIds.length > 0 ? new Date().toISOString() : null,
           status: 'proposed'
         })
         .select()
