@@ -41,7 +41,9 @@
 
 ## CURRENT STATUS SUMMARY
 
-### Overall Progress: 100% Complete (Phase 1-5) / 95% Complete (Strategic Integrity)
+### Overall Progress: 100% Complete (Phase 1-8) | 65% Cross-System Integration
+
+**NEW:** See [strategy-system-gaps-analysis.md](./strategy-system-gaps-analysis.md) for cross-system gaps and conflicts.
 
 | Category | Status | Coverage | Notes |
 |----------|--------|----------|-------|
