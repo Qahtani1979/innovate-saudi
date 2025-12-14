@@ -40,8 +40,11 @@ Phase 6 (Strategy Monitoring & Execution) is the **performance tracking, real-ti
 │   ╚═══════════════════════════════════════════════════════════════════════════╝ │
 │           ↓                                                                      │
 │   PHASE 7: EVALUATION ──→ Impact Assessment & Learning                          │
-│                                                                                  │
-│   [Feedback Loop: Phase 7 → Phase 1 for Next Strategic Cycle]                   │
+│           ↓                                                                      │
+│   PHASE 8: RECALIBRATION ──→ Feedback Loop & Strategic Adjustment               │
+│           │                                                                      │
+│           ├──→ [Mid-Cycle Adjustments: Phase 6 alerts → Phase 8 → Phases 2-6]   │
+│           └──→ [End-of-Cycle: Phase 8 → Phase 1 for Next Strategic Cycle]       │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
