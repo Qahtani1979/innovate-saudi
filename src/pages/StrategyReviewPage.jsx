@@ -52,4 +52,4 @@ function StrategyReviewPage() {
   );
 }
 
-export default ProtectedPage(StrategyReviewPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategyReviewPage, { requiredPermissions: ['strategy_manage'] });

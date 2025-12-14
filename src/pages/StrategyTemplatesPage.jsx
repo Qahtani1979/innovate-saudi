@@ -15,4 +15,4 @@ const StrategyTemplatesPage = () => {
   );
 };
 
-export default ProtectedPage(StrategyTemplatesPage, { requiredPermissions: ['strategy.view'] });
+export default ProtectedPage(StrategyTemplatesPage, { requiredPermissions: ['strategy_view'] });

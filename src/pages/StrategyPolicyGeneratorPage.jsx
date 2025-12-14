@@ -16,4 +16,4 @@ function StrategyPolicyGeneratorPage() {
   );
 }
 
-export default ProtectedPage(StrategyPolicyGeneratorPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategyPolicyGeneratorPage, { requiredPermissions: ['strategy_cascade'] });

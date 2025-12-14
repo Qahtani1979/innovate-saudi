@@ -16,4 +16,4 @@ function StrategyLivingLabGeneratorPage() {
   );
 }
 
-export default ProtectedPage(StrategyLivingLabGeneratorPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategyLivingLabGeneratorPage, { requiredPermissions: ['strategy_cascade'] });

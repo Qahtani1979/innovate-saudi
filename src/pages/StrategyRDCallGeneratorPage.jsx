@@ -16,4 +16,4 @@ function StrategyRDCallGeneratorPage() {
   );
 }
 
-export default ProtectedPage(StrategyRDCallGeneratorPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategyRDCallGeneratorPage, { requiredPermissions: ['strategy_cascade'] });

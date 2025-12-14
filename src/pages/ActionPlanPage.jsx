@@ -15,4 +15,4 @@ const ActionPlanPage = () => {
   );
 };
 
-export default ProtectedPage(ActionPlanPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(ActionPlanPage, { requiredPermissions: ['strategy_manage'] });

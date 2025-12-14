@@ -61,4 +61,4 @@ function StrategyGovernancePage() {
   );
 }
 
-export default ProtectedPage(StrategyGovernancePage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategyGovernancePage, { requiredPermissions: ['strategy_manage'] });

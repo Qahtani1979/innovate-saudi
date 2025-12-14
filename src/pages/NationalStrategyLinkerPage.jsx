@@ -15,4 +15,4 @@ const NationalStrategyLinkerPage = () => {
   );
 };
 
-export default ProtectedPage(NationalStrategyLinkerPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(NationalStrategyLinkerPage, { requiredPermissions: ['strategy_manage'] });

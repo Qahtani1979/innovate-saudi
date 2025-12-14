@@ -16,4 +16,4 @@ function StrategyEventGeneratorPage() {
   );
 }
 
-export default ProtectedPage(StrategyEventGeneratorPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategyEventGeneratorPage, { requiredPermissions: ['strategy_cascade'] });
