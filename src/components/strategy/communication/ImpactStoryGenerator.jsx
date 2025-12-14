@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,24 +9,26 @@ import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/components/LanguageContext';
 import { useImpactStories } from '@/hooks/strategy/useImpactStories';
 import { useCommunicationAI } from '@/hooks/strategy/useCommunicationAI';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   BookOpen, Sparkles, Save, Eye, EyeOff, Star, Loader2, 
-  Image, Video, TrendingUp, Quote, Lightbulb
+  Image, Video, TrendingUp, Quote, Lightbulb, Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ENTITY_TYPES = [
-  { value: 'pilot', label_en: 'Pilot Project', label_ar: 'مشروع تجريبي' },
-  { value: 'challenge', label_en: 'Challenge', label_ar: 'تحدي' },
-  { value: 'solution', label_en: 'Solution', label_ar: 'حل' },
-  { value: 'partnership', label_en: 'Partnership', label_ar: 'شراكة' },
-  { value: 'program', label_en: 'Program', label_ar: 'برنامج' },
-  { value: 'living_lab', label_en: 'Living Lab', label_ar: 'مختبر حي' }
+  { value: 'pilot', label_en: 'Pilot Project', label_ar: 'مشروع تجريبي', table: 'pilots' },
+  { value: 'challenge', label_en: 'Challenge', label_ar: 'تحدي', table: 'challenges' },
+  { value: 'solution', label_en: 'Solution', label_ar: 'حل', table: 'solutions' },
+  { value: 'partnership', label_en: 'Partnership', label_ar: 'شراكة', table: 'partnerships' },
+  { value: 'program', label_en: 'Program', label_ar: 'برنامج', table: 'programs' },
+  { value: 'living_lab', label_en: 'Living Lab', label_ar: 'مختبر حي', table: 'living_labs' }
 ];
 
 export default function ImpactStoryGenerator({ strategicPlanId, onSave }) {
   const { t, language } = useLanguage();
-  const { createStory, isCreating } = useImpactStories({ strategicPlanId });
+  const { stories, createStory, isCreating } = useImpactStories({ strategicPlanId });
   const { generateImpactStory, isLoading: isAILoading } = useCommunicationAI();
 
   const [storyData, setStoryData] = useState({
@@ -51,6 +53,50 @@ export default function ImpactStoryGenerator({ strategicPlanId, onSave }) {
   });
 
   const [entityDetails, setEntityDetails] = useState('');
+  const [newTag, setNewTag] = useState('');
+
+  // Fetch entities based on selected type
+  const { data: availableEntities = [], isLoading: entitiesLoading } = useQuery({
+    queryKey: ['available-entities-for-story', storyData.entity_type, strategicPlanId],
+    queryFn: async () => {
+      if (!storyData.entity_type) return [];
+      const entityConfig = ENTITY_TYPES.find(e => e.value === storyData.entity_type);
+      if (!entityConfig) return [];
+
+      let query = supabase
+        .from(entityConfig.table)
+        .select('id, title_en, title_ar, description_en, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      // Filter by strategic plan if available
+      if (strategicPlanId && ['challenges', 'pilots', 'partnerships'].includes(entityConfig.table)) {
+        query = query.contains('strategic_plan_ids', [strategicPlanId]);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error('Error fetching entities:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!storyData.entity_type
+  });
+
+  // When entity is selected, auto-populate details
+  const handleEntitySelect = (entityId) => {
+    setStoryData(prev => ({ ...prev, entity_id: entityId }));
+    const entity = availableEntities.find(e => e.id === entityId);
+    if (entity) {
+      const details = `
+Title: ${entity.title_en || 'N/A'}
+Description: ${entity.description_en || 'N/A'}
+Status: ${entity.status || 'N/A'}
+      `.trim();
+      setEntityDetails(details);
+    }
+  };
   const [newTag, setNewTag] = useState('');
 
   const handleGenerateStory = async () => {
@@ -154,12 +200,35 @@ export default function ImpactStoryGenerator({ strategicPlanId, onSave }) {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t({ en: 'Entity ID (Optional)', ar: 'معرف الكيان (اختياري)' })}</label>
-            <Input
+            <label className="text-sm font-medium">{t({ en: 'Select Entity', ar: 'اختر الكيان' })}</label>
+            <Select
               value={storyData.entity_id}
-              onChange={(e) => setStoryData(prev => ({ ...prev, entity_id: e.target.value }))}
-              placeholder="UUID"
-            />
+              onValueChange={handleEntitySelect}
+              disabled={!storyData.entity_type || entitiesLoading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={
+                  entitiesLoading 
+                    ? t({ en: 'Loading...', ar: 'جاري التحميل...' })
+                    : t({ en: 'Select an entity', ar: 'اختر كيان' })
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                {availableEntities.map(entity => (
+                  <SelectItem key={entity.id} value={entity.id}>
+                    <div className="flex items-center gap-2">
+                      <span>{language === 'ar' ? (entity.title_ar || entity.title_en) : entity.title_en}</span>
+                      <Badge variant="outline" className="text-xs">{entity.status}</Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {availableEntities.length === 0 && storyData.entity_type && !entitiesLoading && (
+              <p className="text-xs text-muted-foreground">
+                {t({ en: 'No entities found for this type', ar: 'لم يتم العثور على كيانات لهذا النوع' })}
+              </p>
+            )}
           </div>
         </div>
 

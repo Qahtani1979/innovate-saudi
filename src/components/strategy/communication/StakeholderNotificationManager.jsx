@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
 import { useCommunicationNotifications } from '@/hooks/strategy/useCommunicationNotifications';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Bell, Mail, MessageSquare, Smartphone, Send, Clock, 
   CheckCircle2, XCircle, AlertTriangle, Users, Loader2, 
-  Calendar, BarChart3
+  Calendar, BarChart3, UserCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,7 +32,14 @@ const RECIPIENT_TYPES = [
   { value: 'all', label_en: 'All Stakeholders', label_ar: 'جميع أصحاب المصلحة' }
 ];
 
-export default function StakeholderNotificationManager({ communicationPlanId }) {
+const AUDIENCE_SEGMENTS = [
+  { value: 'municipality_staff', label_en: 'Municipality Staff', label_ar: 'موظفي البلدية' },
+  { value: 'partners', label_en: 'Partners & Providers', label_ar: 'الشركاء والموردون' },
+  { value: 'leadership', label_en: 'Leadership', label_ar: 'القيادة' },
+  { value: 'citizens', label_en: 'Citizens', label_ar: 'المواطنون' }
+];
+
+export default function StakeholderNotificationManager({ communicationPlanId, strategicPlanId }) {
   const { t, language } = useLanguage();
   const { 
     notifications, 
@@ -47,11 +56,66 @@ export default function StakeholderNotificationManager({ communicationPlanId }) 
     notification_type: 'email',
     recipient_type: 'individual',
     recipient_emails: '',
+    audience_segment: '',
     subject_en: '',
     subject_ar: '',
     content_en: '',
     content_ar: '',
     scheduled_at: ''
+  });
+
+  // Fetch real user profiles for recipient selection
+  const { data: availableRecipients = [], isLoading: recipientsLoading } = useQuery({
+    queryKey: ['available-recipients', notificationData.audience_segment],
+    queryFn: async () => {
+      if (notificationData.recipient_type !== 'audience_segment' || !notificationData.audience_segment) {
+        return [];
+      }
+
+      let query = supabase
+        .from('user_profiles')
+        .select('id, user_email, first_name, last_name, persona_type')
+        .not('user_email', 'is', null)
+        .limit(100);
+
+      // Filter by persona type based on segment
+      if (notificationData.audience_segment === 'municipality_staff') {
+        query = query.in('persona_type', ['municipality_staff', 'municipality_admin', 'municipality_coordinator']);
+      } else if (notificationData.audience_segment === 'partners') {
+        query = query.in('persona_type', ['provider', 'partner']);
+      } else if (notificationData.audience_segment === 'leadership') {
+        query = query.in('persona_type', ['deputyship_admin', 'admin']);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error('Error fetching recipients:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: notificationData.recipient_type === 'audience_segment' && !!notificationData.audience_segment
+  });
+
+  // Get recipient count based on selection
+  const { data: recipientCount = 0 } = useQuery({
+    queryKey: ['recipient-count', notificationData.recipient_type, notificationData.audience_segment],
+    queryFn: async () => {
+      if (notificationData.recipient_type === 'all') {
+        const { count } = await supabase
+          .from('user_profiles')
+          .select('id', { count: 'exact', head: true })
+          .not('user_email', 'is', null);
+        return count || 0;
+      }
+      if (notificationData.recipient_type === 'audience_segment' && notificationData.audience_segment) {
+        return availableRecipients.length;
+      }
+      if (notificationData.recipient_type === 'individual') {
+        return notificationData.recipient_emails.split(',').filter(e => e.trim()).length;
+      }
+      return 0;
+    }
   });
 
   const stats = getNotificationStats();
@@ -219,6 +283,63 @@ export default function StakeholderNotificationManager({ communicationPlanId }) 
                   onChange={(e) => setNotificationData(prev => ({ ...prev, recipient_emails: e.target.value }))}
                   placeholder="email1@example.com, email2@example.com"
                 />
+              </div>
+            )}
+
+            {notificationData.recipient_type === 'audience_segment' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{t({ en: 'Audience Segment', ar: 'شريحة الجمهور' })}</label>
+                  <Select
+                    value={notificationData.audience_segment}
+                    onValueChange={(value) => setNotificationData(prev => ({ ...prev, audience_segment: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t({ en: 'Select segment', ar: 'اختر الشريحة' })} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AUDIENCE_SEGMENTS.map(seg => (
+                        <SelectItem key={seg.value} value={seg.value}>
+                          {language === 'ar' ? seg.label_ar : seg.label_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {availableRecipients.length > 0 && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <UserCheck className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">
+                        {t({ en: 'Recipients in segment:', ar: 'المستلمين في الشريحة:' })} {availableRecipients.length}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {availableRecipients.slice(0, 5).map(r => (
+                        <Badge key={r.id} variant="secondary" className="text-xs">
+                          {r.first_name || r.user_email}
+                        </Badge>
+                      ))}
+                      {availableRecipients.length > 5 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{availableRecipients.length - 5} {t({ en: 'more', ar: 'آخرين' })}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {notificationData.recipient_type === 'all' && (
+              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  <span className="text-sm">
+                    {t({ en: 'This will notify all registered stakeholders', ar: 'سيتم إشعار جميع أصحاب المصلحة المسجلين' })}
+                    {recipientCount > 0 && ` (${recipientCount})`}
+                  </span>
+                </div>
               </div>
             )}
 

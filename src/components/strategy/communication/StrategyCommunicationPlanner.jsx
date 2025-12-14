@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLanguage } from '@/components/LanguageContext';
 import { useCommunicationPlans } from '@/hooks/strategy/useCommunicationPlans';
 import { useCommunicationAI } from '@/hooks/strategy/useCommunicationAI';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Megaphone, Users, MessageSquare, Calendar, Sparkles, 
-  Plus, Save, Target, Radio, Mail, Globe, Loader2
+  Plus, Save, Target, Radio, Mail, Globe, Loader2, CheckCircle2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -49,6 +51,46 @@ export default function StrategyCommunicationPlanner({ strategicPlanId }) {
     content_calendar: [],
     master_narrative_en: '',
     master_narrative_ar: ''
+  });
+
+  // Fetch real stakeholder data for audience counts
+  const { data: stakeholderCounts = {} } = useQuery({
+    queryKey: ['stakeholder-counts', strategicPlanId],
+    queryFn: async () => {
+      const [citizensRes, municipalitiesRes, partnersRes, usersRes] = await Promise.all([
+        supabase.from('citizen_profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('municipalities').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('organizations').select('id', { count: 'exact', head: true }),
+        supabase.from('user_profiles').select('id', { count: 'exact', head: true })
+      ]);
+      
+      return {
+        citizens: citizensRes.count || 0,
+        municipalities: municipalitiesRes.count || 0,
+        partners: partnersRes.count || 0,
+        leadership: usersRes.count || 0
+      };
+    }
+  });
+
+  // Fetch existing communication plans
+  const { data: existingPlans = [] } = useQuery({
+    queryKey: ['existing-comm-plans', strategicPlanId],
+    queryFn: async () => {
+      let query = supabase
+        .from('communication_plans')
+        .select('id, name_en, name_ar, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (strategicPlanId) {
+        query = query.eq('strategic_plan_id', strategicPlanId);
+      }
+      
+      const { data, error } = await query;
+      if (error) return [];
+      return data || [];
+    }
   });
 
   const handleAudienceToggle = (audienceId) => {
