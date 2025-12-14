@@ -18,3 +18,9 @@ export { useStrategyTemplates } from './useStrategyTemplates';
 export { useStrategySignoffs } from './useStrategySignoffs';
 export { useStrategyVersions } from './useStrategyVersions';
 export { useCommitteeDecisions } from './useCommitteeDecisions';
+
+// Phase 4: AI Hooks
+export { useSignoffAI } from './useSignoffAI';
+export { useVersionAI } from './useVersionAI';
+export { useCommitteeAI } from './useCommitteeAI';
+export { useWorkflowAI } from './useWorkflowAI';

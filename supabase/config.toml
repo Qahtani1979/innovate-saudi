@@ -185,3 +185,15 @@ verify_jwt = false
 
 [functions.strategy-policy-generator]
 verify_jwt = false
+
+[functions.strategy-signoff-ai]
+verify_jwt = false
+
+[functions.strategy-version-ai]
+verify_jwt = false
+
+[functions.strategy-committee-ai]
+verify_jwt = false
+
+[functions.strategy-workflow-ai]
+verify_jwt = false
