@@ -33,7 +33,7 @@
 │   Status: ✅ 100% COMPLETE       Components: 6/6 | DB: 6/6 | Hooks: 6/6         │
 │                                                                                  │
 │   PHASE 2: STRATEGY CREATION    ──→  Plans, Objectives, Ownership               │
-│   Status: ✅ 100% COMPLETE       Components: 6/6 | DB: 6/6 | Hooks: 6/6         │
+│   Status: ✅ 100% COMPLETE + AI  Components: 8/8 | DB: 6/6 | AI: 4/4            │
 │                                                                                  │
 │   PHASE 3: CASCADE              ──→  Entity Generation & Deployment             │
 │   Status: ✅ 100% COMPLETE       Components: 9/9 | Edge Functions: 9/9          │
@@ -102,21 +102,32 @@
 
 ---
 
-## PHASE 2: STRATEGY CREATION (✅ 100% COMPLETE)
+## PHASE 2: STRATEGY CREATION (✅ 100% COMPLETE + AI)
 
 **Purpose:** Define the strategic plan with vision, objectives, KPIs, and action plans.  
 **Methodology:** See [phase2-strategic-methodology.md](./phase2-strategic-methodology.md)
 
-### UI Components (6/6 ✅)
+### UI Components (8/8 ✅)
 
-| # | Component | File Path | Status | Platform Integration |
-|---|-----------|-----------|--------|---------------------|
-| 2.1 | StrategyTimelinePlanner | `src/components/strategy/creation/StrategyTimelinePlanner.jsx` | ✅ Complete | strategy_milestones (DB) |
-| 2.2 | StrategyOwnershipAssigner | `src/components/strategy/creation/StrategyOwnershipAssigner.jsx` | ✅ Complete | user_profiles, team_members |
-| 2.3 | ActionPlanBuilder | `src/components/strategy/creation/ActionPlanBuilder.jsx` | ✅ Complete | action_plans, action_items (DB) |
-| 2.4 | NationalStrategyLinker | `src/components/strategy/creation/NationalStrategyLinker.jsx` | ✅ Complete | national_strategy_alignments (DB) |
-| 2.5 | SectorStrategyBuilder | `src/components/strategy/creation/SectorStrategyBuilder.jsx` | ✅ Complete | sectors (platform), sector_strategies (DB) |
-| 2.6 | StrategyTemplateLibrary | `src/components/strategy/creation/StrategyTemplateLibrary.jsx` | ✅ Complete | strategy_templates (DB) |
+| # | Component | File Path | Status | AI Status |
+|---|-----------|-----------|--------|-----------|
+| 2.1 | StrategyPillarGenerator | `src/components/strategy/creation/StrategyPillarGenerator.jsx` | ✅ Complete | ✅ Real AI |
+| 2.2 | StrategyObjectiveGenerator | `src/components/strategy/creation/StrategyObjectiveGenerator.jsx` | ✅ Complete | ✅ Real AI |
+| 2.3 | StrategyTimelinePlanner | `src/components/strategy/creation/StrategyTimelinePlanner.jsx` | ✅ Complete | - |
+| 2.4 | StrategyOwnershipAssigner | `src/components/strategy/creation/StrategyOwnershipAssigner.jsx` | ✅ Complete | - |
+| 2.5 | ActionPlanBuilder | `src/components/strategy/creation/ActionPlanBuilder.jsx` | ✅ Complete | ✅ Real AI |
+| 2.6 | NationalStrategyLinker | `src/components/strategy/creation/NationalStrategyLinker.jsx` | ✅ Complete | ⚠️ Mock |
+| 2.7 | SectorStrategyBuilder | `src/components/strategy/creation/SectorStrategyBuilder.jsx` | ✅ Complete | ✅ Real AI |
+| 2.8 | StrategyTemplateLibrary | `src/components/strategy/creation/StrategyTemplateLibrary.jsx` | ✅ Complete | - |
+
+### AI Edge Functions (4/4 ✅)
+
+| # | Edge Function | Purpose | Status |
+|---|---------------|---------|--------|
+| 1 | strategy-pillar-generator | Generate strategic pillars from Phase 1 analysis | ✅ DEPLOYED |
+| 2 | strategy-objective-generator | Generate SMART objectives with KPIs | ✅ DEPLOYED |
+| 3 | strategy-action-plan-generator | Generate action items for objectives | ✅ DEPLOYED |
+| 4 | strategy-sector-generator | Generate sector-specific strategies | ✅ DEPLOYED |
 
 ### Database Tables (6/6 ✅)
 

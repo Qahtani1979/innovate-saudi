@@ -147,70 +147,32 @@ const ActionPlanBuilder = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSa
   const generateActionsWithAI = async (planId) => {
     setIsGenerating(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
       const plan = actionPlans.find(p => p.id === planId);
-      const generatedActions = [
-        {
-          id: `action-${Date.now()}-1`,
-          title_en: 'Conduct Stakeholder Analysis',
-          title_ar: 'إجراء تحليل أصحاب المصلحة',
-          description: 'Identify and analyze key stakeholders for the initiative',
-          owner: '',
-          start_date: '',
-          end_date: '',
-          budget: 50000,
-          status: 'pending',
-          progress: 0,
-          deliverables: ['Stakeholder map', 'Communication plan']
-        },
-        {
-          id: `action-${Date.now()}-2`,
-          title_en: 'Develop Implementation Framework',
-          title_ar: 'تطوير إطار التنفيذ',
-          description: 'Create detailed implementation guidelines and procedures',
-          owner: '',
-          start_date: '',
-          end_date: '',
-          budget: 75000,
-          status: 'pending',
-          progress: 0,
-          deliverables: ['Framework document', 'Process flows', 'Templates']
-        },
-        {
-          id: `action-${Date.now()}-3`,
-          title_en: 'Launch Pilot Program',
-          title_ar: 'إطلاق برنامج تجريبي',
-          description: 'Execute pilot in selected municipalities',
-          owner: '',
-          start_date: '',
-          end_date: '',
-          budget: 200000,
-          status: 'pending',
-          progress: 0,
-          deliverables: ['Pilot report', 'Lessons learned', 'Recommendations']
-        },
-        {
-          id: `action-${Date.now()}-4`,
-          title_en: 'Scale and Monitor',
-          title_ar: 'التوسع والمراقبة',
-          description: 'Roll out to all municipalities and establish monitoring',
-          owner: '',
-          start_date: '',
-          end_date: '',
-          budget: 300000,
-          status: 'pending',
-          progress: 0,
-          deliverables: ['Rollout plan', 'Monitoring dashboard', 'Performance reports']
+      
+      const { data, error } = await supabase.functions.invoke('strategy-action-plan-generator', {
+        body: {
+          action_plan_id: planId,
+          objective_title: plan.objective_title,
+          objective_description: plan.description,
+          strategic_plan_id: strategicPlanId,
+          plan_context: strategicPlan?.vision_en
         }
-      ];
+      });
+
+      if (error) throw error;
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      const { action_plan } = data;
 
       setActionPlans(prev => prev.map(p => {
         if (p.id !== planId) return p;
         return {
           ...p,
-          actions: [...p.actions, ...generatedActions],
-          total_budget: p.total_budget + generatedActions.reduce((sum, a) => sum + a.budget, 0)
+          actions: [...p.actions, ...action_plan.actions],
+          total_budget: p.total_budget + action_plan.total_budget
         };
       }));
 

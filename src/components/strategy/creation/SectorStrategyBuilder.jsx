@@ -209,62 +209,35 @@ const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
   const generateWithAI = async (strategyId) => {
     setIsGenerating(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
       const strategy = sectorStrategies.find(s => s.id === strategyId);
       
-      const generatedObjectives = [
-        {
-          id: `obj-${Date.now()}-1`,
-          title_en: `Enhance ${strategy.sector_name_en} Service Quality`,
-          title_ar: `تحسين جودة خدمات ${strategy.sector_name_ar}`,
-          description: 'Improve service delivery standards and citizen satisfaction',
-          target_value: 85,
-          current_value: 65,
-          unit: '%'
-        },
-        {
-          id: `obj-${Date.now()}-2`,
-          title_en: `Accelerate ${strategy.sector_name_en} Innovation`,
-          title_ar: `تسريع الابتكار في ${strategy.sector_name_ar}`,
-          description: 'Increase innovation projects and pilot programs',
-          target_value: 20,
-          current_value: 8,
-          unit: 'projects'
+      const { data, error } = await supabase.functions.invoke('strategy-sector-generator', {
+        body: {
+          sector_id: strategy.sector_id,
+          sector_name_en: strategy.sector_name_en,
+          sector_name_ar: strategy.sector_name_ar,
+          strategic_plan_id: strategicPlanId,
+          plan_vision: parentPlan?.vision_en,
+          plan_objectives: parentPlan?.objectives
         }
-      ];
+      });
 
-      const generatedKPIs = [
-        {
-          id: `kpi-${Date.now()}-1`,
-          name_en: 'Citizen Satisfaction Score',
-          name_ar: 'درجة رضا المواطنين',
-          baseline: 65,
-          target: 85,
-          current: 70,
-          unit: '%',
-          frequency: 'quarterly'
-        },
-        {
-          id: `kpi-${Date.now()}-2`,
-          name_en: 'Innovation Projects Launched',
-          name_ar: 'مشاريع الابتكار المُطلقة',
-          baseline: 5,
-          target: 20,
-          current: 8,
-          unit: 'count',
-          frequency: 'annually'
-        }
-      ];
+      if (error) throw error;
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      const { sector_strategy } = data;
 
       setSectorStrategies(prev => prev.map(s => {
         if (s.id !== strategyId) return s;
         return {
           ...s,
-          vision_en: `To be the leading sector in innovative ${s.sector_name_en.toLowerCase()} solutions, delivering world-class services that enhance quality of life.`,
-          vision_ar: `أن نكون القطاع الرائد في حلول ${s.sector_name_ar} المبتكرة، وتقديم خدمات عالمية المستوى تعزز جودة الحياة.`,
-          objectives: [...s.objectives, ...generatedObjectives],
-          kpis: [...s.kpis, ...generatedKPIs]
+          vision_en: sector_strategy.vision_en,
+          vision_ar: sector_strategy.vision_ar,
+          objectives: [...s.objectives, ...sector_strategy.objectives],
+          kpis: [...s.kpis, ...sector_strategy.kpis]
         };
       }));
 
