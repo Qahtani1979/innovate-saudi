@@ -177,7 +177,7 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
       const { assignments: aiAssignments } = data;
 
       setAssignments(prev => prev.map((a, index) => {
-        const suggestion = aiAssignments?.find((s: any) => s.objective_index === index);
+        const suggestion = aiAssignments?.find(s => s.objective_index === index);
         if (!suggestion) return a;
         
         return {
