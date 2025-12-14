@@ -35,7 +35,6 @@ export function useEnvironmentalFactors(strategicPlanId) {
         .from('environmental_factors')
         .select('*')
         .eq('strategic_plan_id', strategicPlanId)
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -150,7 +149,7 @@ export function useEnvironmentalFactors(strategicPlanId) {
     try {
       const { error } = await supabase
         .from('environmental_factors')
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+        .delete()
         .eq('id', id);
 
       if (error) throw error;

@@ -1,6 +1,6 @@
 # Strategy System Inventory
 
-> **Version:** 1.4  
+> **Version:** 1.5  
 > **Last Updated:** 2025-12-14  
 > **Total Assets:** 123 files (21 pages, 55 components, 30 hooks + 2 context files + 15 registered routes)
 
@@ -28,6 +28,14 @@ All strategy pages use a shared global context for maintaining the active strate
 - Pages render `ActivePlanBanner` for consistent UI
 - `activePlanId` and `activePlan` are passed to child components
 - Hooks accept `strategicPlanId` parameter for database filtering
+- All hooks use correct database column names (validated 2025-12-14)
+
+### Database Schema Notes
+- `swot_analyses`: Uses individual records per item with `quadrant` field (strengths/weaknesses/opportunities/threats)
+- `stakeholder_analyses`: Uses `stakeholder_name_en`/`stakeholder_name_ar` columns
+- `strategy_risks`: Uses `category` (not `risk_category`), `owner_email` (not `owner`)
+- `strategy_baselines`: Uses `source` (not `data_source`)
+- No soft delete (`is_deleted`) columns in strategy tables - use hard delete
 
 ---
 

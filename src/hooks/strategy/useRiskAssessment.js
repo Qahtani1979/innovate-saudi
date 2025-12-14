@@ -21,7 +21,6 @@ export function useRiskAssessment(strategicPlanId) {
         .from('strategy_risks')
         .select('*')
         .eq('strategic_plan_id', strategicPlanId)
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -32,11 +31,11 @@ export function useRiskAssessment(strategicPlanId) {
         name_en: risk.name_en,
         name_ar: risk.name_ar,
         description: risk.description,
-        category: risk.risk_category,
+        category: risk.category,
         probability: risk.probability,
         impact: risk.impact,
         status: risk.status,
-        owner: risk.owner,
+        owner: risk.owner_email,
         mitigation_strategy: risk.mitigation_strategy,
         contingency_plan: risk.contingency_plan,
         triggers: risk.triggers,
@@ -70,18 +69,16 @@ export function useRiskAssessment(strategicPlanId) {
         name_en: risk.name_en,
         name_ar: risk.name_ar,
         description: risk.description,
-        risk_category: risk.category,
+        category: risk.category,
         probability: risk.probability,
         impact: risk.impact,
-        risk_score: risk.probability * risk.impact,
         status: risk.status,
-        owner: risk.owner,
+        owner_email: risk.owner,
         mitigation_strategy: risk.mitigation_strategy,
         contingency_plan: risk.contingency_plan,
         triggers: risk.triggers,
         residual_probability: risk.residual_probability,
         residual_impact: risk.residual_impact,
-        created_by_email: user.email,
         updated_at: new Date().toISOString()
       };
 
@@ -108,11 +105,11 @@ export function useRiskAssessment(strategicPlanId) {
         name_en: result.data.name_en,
         name_ar: result.data.name_ar,
         description: result.data.description,
-        category: result.data.risk_category,
+        category: result.data.category,
         probability: result.data.probability,
         impact: result.data.impact,
         status: result.data.status,
-        owner: result.data.owner,
+        owner: result.data.owner_email,
         mitigation_strategy: result.data.mitigation_strategy,
         contingency_plan: result.data.contingency_plan,
         triggers: result.data.triggers,
@@ -146,7 +143,7 @@ export function useRiskAssessment(strategicPlanId) {
     try {
       const { error } = await supabase
         .from('strategy_risks')
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+        .delete()
         .eq('id', id);
 
       if (error) throw error;
