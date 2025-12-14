@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useSectorStrategies } from '@/hooks/strategy';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Layers,
   Plus,
@@ -27,7 +29,8 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-const SECTORS = [
+// Fallback sectors if database is empty
+const FALLBACK_SECTORS = [
   { id: 'transport', name_en: 'Transportation', name_ar: 'النقل', color: 'bg-blue-500' },
   { id: 'environment', name_en: 'Environment', name_ar: 'البيئة', color: 'bg-green-500' },
   { id: 'urban', name_en: 'Urban Development', name_ar: 'التنمية الحضرية', color: 'bg-purple-500' },
@@ -35,6 +38,8 @@ const SECTORS = [
   { id: 'social', name_en: 'Social Services', name_ar: 'الخدمات الاجتماعية', color: 'bg-pink-500' },
   { id: 'infrastructure', name_en: 'Infrastructure', name_ar: 'البنية التحتية', color: 'bg-amber-500' }
 ];
+
+const SECTOR_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-cyan-500', 'bg-pink-500', 'bg-amber-500', 'bg-red-500', 'bg-indigo-500'];
 
 const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
   const { t, isRTL, language } = useLanguage();
@@ -48,6 +53,27 @@ const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
     saveBulkStrategies,
     deleteStrategy
   } = useSectorStrategies(strategicPlanId);
+
+  // Fetch sectors from database
+  const { data: platformSectors = [] } = useQuery({
+    queryKey: ['platform-sectors-for-strategy'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sectors')
+        .select('id, name_en, name_ar, code, is_active')
+        .eq('is_active', true)
+        .order('name_en');
+      if (error) return [];
+      // Add colors to sectors
+      return data?.map((s, idx) => ({
+        ...s,
+        color: SECTOR_COLORS[idx % SECTOR_COLORS.length]
+      })) || [];
+    }
+  });
+
+  // Use platform sectors if available, fallback to static
+  const SECTORS = platformSectors.length > 0 ? platformSectors : FALLBACK_SECTORS;
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedSector, setSelectedSector] = useState(null);

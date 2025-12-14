@@ -284,7 +284,7 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
                         <SelectValue placeholder={t({ en: 'Select responsible person', ar: 'اختر الشخص المسؤول' })} />
                       </SelectTrigger>
                       <SelectContent>
-                        {SAMPLE_USERS.map(user => (
+                        {availableUsers.map(user => (
                           <SelectItem key={user.email} value={user.email}>
                             {user.name} - {user.role}
                           </SelectItem>
@@ -307,7 +307,7 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
                         <SelectValue placeholder={t({ en: 'Select accountable person', ar: 'اختر الشخص المحاسب' })} />
                       </SelectTrigger>
                       <SelectContent>
-                        {SAMPLE_USERS.map(user => (
+                        {availableUsers.map(user => (
                           <SelectItem key={user.email} value={user.email}>
                             {user.name} - {user.role}
                           </SelectItem>
@@ -326,7 +326,7 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
                   <div className="flex flex-wrap gap-2 mb-2">
                     {assignment.consulted.map((email, i) => (
                       <Badge key={i} variant="secondary" className="flex items-center gap-1">
-                        {SAMPLE_USERS.find(u => u.email === email)?.name || email}
+                        {availableUsers.find(u => u.email === email)?.name || email}
                         <button onClick={() => removeFromList(assignment.objective_id, 'consulted', i)}>
                           <Trash2 className="h-3 w-3 text-red-500" />
                         </button>
@@ -342,7 +342,7 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
                         <SelectValue placeholder={t({ en: 'Add consulted', ar: 'إضافة مستشار' })} />
                       </SelectTrigger>
                       <SelectContent>
-                        {SAMPLE_USERS.filter(u => !assignment.consulted.includes(u.email)).map(user => (
+                        {availableUsers.filter(u => !assignment.consulted.includes(u.email)).map(user => (
                           <SelectItem key={user.email} value={user.email}>
                             {user.name}
                           </SelectItem>
@@ -368,7 +368,7 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
                   <div className="flex flex-wrap gap-2 mb-2">
                     {assignment.informed.map((email, i) => (
                       <Badge key={i} variant="secondary" className="flex items-center gap-1">
-                        {SAMPLE_USERS.find(u => u.email === email)?.name || email}
+                        {availableUsers.find(u => u.email === email)?.name || email}
                         <button onClick={() => removeFromList(assignment.objective_id, 'informed', i)}>
                           <Trash2 className="h-3 w-3 text-red-500" />
                         </button>
@@ -384,7 +384,7 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
                         <SelectValue placeholder={t({ en: 'Add informed', ar: 'إضافة مطلع' })} />
                       </SelectTrigger>
                       <SelectContent>
-                        {SAMPLE_USERS.filter(u => !assignment.informed.includes(u.email)).map(user => (
+                        {availableUsers.filter(u => !assignment.informed.includes(u.email)).map(user => (
                           <SelectItem key={user.email} value={user.email}>
                             {user.name}
                           </SelectItem>
