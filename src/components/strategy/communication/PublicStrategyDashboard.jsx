@@ -27,7 +27,7 @@ export default function PublicStrategyDashboard({ strategicPlanId: propPlanId })
         .from('strategic_plans')
         .select('*')
         .eq('id', strategicPlanId)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
