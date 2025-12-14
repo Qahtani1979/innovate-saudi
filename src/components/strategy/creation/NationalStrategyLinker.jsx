@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNationalAlignments } from '@/hooks/strategy';
 import {
   Link2,
   Target,
@@ -57,21 +58,36 @@ const SAMPLE_OBJECTIVES = [
 const NationalStrategyLinker = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSave }) => {
   const { t, isRTL, language } = useLanguage();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const strategicPlanId = strategicPlan?.id;
+  
+  const {
+    alignments: dbAlignments,
+    isLoading,
+    saveAlignment,
+    saveBulkAlignments,
+    deleteAlignment
+  } = useNationalAlignments(strategicPlanId);
+  
   const [isAutoLinking, setIsAutoLinking] = useState(false);
   const [activeTab, setActiveTab] = useState('vision2030');
 
-  const [alignments, setAlignments] = useState(
-    objectives.map(obj => ({
-      objective_id: obj.id,
-      objective_title: obj.title_en,
-      vision_2030: [],
-      sdg: [],
-      national_priorities: [],
-      alignment_score: 0,
-      notes: ''
-    }))
-  );
+  const [alignments, setAlignments] = useState([]);
+  
+  useEffect(() => {
+    if (dbAlignments && dbAlignments.length > 0) {
+      setAlignments(dbAlignments);
+    } else if (objectives.length > 0 && alignments.length === 0) {
+      setAlignments(objectives.map(obj => ({
+        objective_id: obj.id,
+        objective_title: obj.title_en,
+        vision_2030: [],
+        sdg: [],
+        national_priorities: [],
+        alignment_score: 0,
+        notes: ''
+      })));
+    }
+  }, [dbAlignments, objectives]);
 
   const toggleAlignment = (objectiveId, category, goalId) => {
     setAlignments(prev => prev.map(a => {
@@ -132,22 +148,15 @@ const NationalStrategyLinker = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES,
   };
 
   const handleSave = async () => {
-    setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      if (onSave) onSave(alignments);
-      toast({
-        title: t({ en: 'Alignments Saved', ar: 'تم حفظ المحاذاة' }),
-        description: t({ en: 'National strategy alignments have been saved', ar: 'تم حفظ محاذاة الاستراتيجية الوطنية' })
-      });
+      const success = await saveBulkAlignments(alignments);
+      if (success && onSave) onSave(alignments);
     } catch (error) {
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
         description: error.message,
         variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 

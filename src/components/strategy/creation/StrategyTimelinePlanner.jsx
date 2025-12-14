@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useStrategyMilestones } from '@/hooks/strategy';
 import { 
   Calendar, 
   Plus, 
@@ -29,61 +30,41 @@ import {
   Milestone,
   GitBranch,
   BarChart3,
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 
 const StrategyTimelinePlanner = ({ strategicPlan, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
+  const strategicPlanId = strategicPlan?.id;
   
-  const [milestones, setMilestones] = useState([
-    {
-      id: '1',
-      objective_id: 'obj-1',
-      title_en: 'Complete Strategic Assessment',
-      title_ar: 'إتمام التقييم الاستراتيجي',
-      start_date: '2024-01-01',
-      end_date: '2024-03-31',
-      dependencies: [],
-      owner: 'Strategy Team',
-      status: 'completed',
-      deliverables: ['SWOT Analysis', 'Stakeholder Map', 'Risk Registry'],
-      resources_required: ['Strategy Analysts', 'Data Team'],
-      progress_percentage: 100
-    },
-    {
-      id: '2',
-      objective_id: 'obj-1',
-      title_en: 'Define Strategic Objectives',
-      title_ar: 'تحديد الأهداف الاستراتيجية',
-      start_date: '2024-04-01',
-      end_date: '2024-06-30',
-      dependencies: ['1'],
-      owner: 'Leadership Team',
-      status: 'in_progress',
-      deliverables: ['Strategic Plan Draft', 'KPI Framework'],
-      resources_required: ['Executive Team', 'Consultants'],
-      progress_percentage: 65
-    },
-    {
-      id: '3',
-      objective_id: 'obj-2',
-      title_en: 'Launch Innovation Programs',
-      title_ar: 'إطلاق برامج الابتكار',
-      start_date: '2024-07-01',
-      end_date: '2024-12-31',
-      dependencies: ['2'],
-      owner: 'Innovation Department',
-      status: 'planned',
-      deliverables: ['3 Programs Launched', 'Partner Agreements'],
-      resources_required: ['Program Managers', 'Budget Allocation'],
-      progress_percentage: 0
+  const {
+    milestones: dbMilestones,
+    isLoading,
+    saveMilestone,
+    deleteMilestone,
+    saveBulkMilestones
+  } = useStrategyMilestones(strategicPlanId);
+  
+  const [milestones, setMilestones] = useState([]);
+  
+  useEffect(() => {
+    if (dbMilestones && dbMilestones.length > 0) {
+      // Transform DB milestones to component format
+      setMilestones(dbMilestones.map(m => ({
+        ...m,
+        deliverables: m.deliverables || [],
+        resources_required: m.resources_required || [],
+        dependencies: m.dependencies || []
+      })));
     }
-  ]);
+  }, [dbMilestones]);
   
   const [editingMilestone, setEditingMilestone] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState('timeline'); // timeline, gantt, list
+  const [isSaving, setIsSaving] = useState(false);
   
   const [formData, setFormData] = useState({
     title_en: '',
@@ -140,7 +121,8 @@ const StrategyTimelinePlanner = ({ strategicPlan, onSave }) => {
     setIsDialogOpen(true);
   };
 
-  const handleSaveMilestone = () => {
+  const handleSaveMilestone = async () => {
+    setIsSaving(true);
     const newMilestone = {
       id: editingMilestone?.id || `milestone-${Date.now()}`,
       objective_id: formData.objective_id || 'obj-1',
@@ -156,28 +138,23 @@ const StrategyTimelinePlanner = ({ strategicPlan, onSave }) => {
       progress_percentage: formData.status === 'completed' ? 100 : (formData.status === 'planned' ? 0 : 50)
     };
 
-    if (editingMilestone) {
-      setMilestones(prev => prev.map(m => m.id === editingMilestone.id ? newMilestone : m));
-      toast({
-        title: t({ en: 'Milestone Updated', ar: 'تم تحديث المعلم' }),
-        description: t({ en: 'The milestone has been successfully updated.', ar: 'تم تحديث المعلم بنجاح.' })
-      });
-    } else {
-      setMilestones(prev => [...prev, newMilestone]);
-      toast({
-        title: t({ en: 'Milestone Added', ar: 'تمت إضافة المعلم' }),
-        description: t({ en: 'A new milestone has been added to the timeline.', ar: 'تمت إضافة معلم جديد إلى الجدول الزمني.' })
-      });
+    const savedMilestone = await saveMilestone(newMilestone);
+    if (savedMilestone) {
+      if (editingMilestone) {
+        setMilestones(prev => prev.map(m => m.id === editingMilestone.id ? savedMilestone : m));
+      } else {
+        setMilestones(prev => [...prev, savedMilestone]);
+      }
     }
+    setIsSaving(false);
     setIsDialogOpen(false);
   };
 
-  const handleDeleteMilestone = (id) => {
-    setMilestones(prev => prev.filter(m => m.id !== id));
-    toast({
-      title: t({ en: 'Milestone Deleted', ar: 'تم حذف المعلم' }),
-      description: t({ en: 'The milestone has been removed from the timeline.', ar: 'تم حذف المعلم من الجدول الزمني.' })
-    });
+  const handleDeleteMilestone = async (id) => {
+    const success = await deleteMilestone(id);
+    if (success) {
+      setMilestones(prev => prev.filter(m => m.id !== id));
+    }
   };
 
   const calculateTimelinePosition = (startDate, endDate) => {

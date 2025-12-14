@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useSectorStrategies } from '@/hooks/strategy';
 import {
   Layers,
   Plus,
@@ -38,14 +39,29 @@ const SECTORS = [
 const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
   const { t, isRTL, language } = useLanguage();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const strategicPlanId = parentPlan?.id;
+  
+  const {
+    strategies: dbStrategies,
+    isLoading,
+    saveStrategy,
+    saveBulkStrategies,
+    deleteStrategy
+  } = useSectorStrategies(strategicPlanId);
+  
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedSector, setSelectedSector] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'detail'
 
   const [sectorStrategies, setSectorStrategies] = useState([]);
+  
+  useEffect(() => {
+    if (dbStrategies && dbStrategies.length > 0) {
+      setSectorStrategies(dbStrategies);
+    }
+  }, [dbStrategies]);
 
-  const createSectorStrategy = (sectorId) => {
+  const createSectorStrategy = async (sectorId) => {
     const sector = SECTORS.find(s => s.id === sectorId);
     if (!sector) return;
 
@@ -242,22 +258,15 @@ const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
   };
 
   const handleSave = async () => {
-    setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      if (onSave) onSave(sectorStrategies);
-      toast({
-        title: t({ en: 'Sector Strategies Saved', ar: 'تم حفظ استراتيجيات القطاعات' }),
-        description: t({ en: 'All sector strategies have been saved', ar: 'تم حفظ جميع استراتيجيات القطاعات' })
-      });
+      const success = await saveBulkStrategies(sectorStrategies);
+      if (success && onSave) onSave(sectorStrategies);
     } catch (error) {
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
         description: error.message,
         variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
