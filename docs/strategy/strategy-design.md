@@ -1,8 +1,8 @@
 # Strategy System - Design Document
 
-**Version:** 5.2 (COMPLETE STRATEGY LEADER WORKFLOW)  
-**Last Updated:** 2025-12-13  
-**Status:** ✅ 100% PLATFORM INTEGRATION | ✅ 100% WORKFLOW COVERAGE
+**Version:** 6.0 (8-PHASE STRATEGIC LIFECYCLE)  
+**Last Updated:** 2025-12-14  
+**Status:** ✅ 100% PLATFORM INTEGRATION | ✅ 100% WORKFLOW COVERAGE | ✅ PHASE 8 ADDED
 
 ---
 
@@ -16,7 +16,8 @@
    - [Phase 4: Governance & Approval](#phase-4-governance--approval)
    - [Phase 5: Communication & Publishing](#phase-5-communication--publishing)
    - [Phase 6: Monitoring & Tracking](#phase-6-monitoring--tracking)
-   - [Phase 7: Review & Adjustment](#phase-7-review--adjustment)
+   - [Phase 7: Review & Evaluation](#phase-7-review--evaluation)
+   - [Phase 8: Recalibration](#phase-8-recalibration)
 3. [Entity Integration Model](#entity-integration-model)
 4. [Architecture](#architecture)
 5. [Data Model](#data-model)
@@ -39,14 +40,15 @@ The Strategy System provides comprehensive strategic planning and execution mana
 
 | Metric | Implemented | Missing | Coverage |
 |--------|-------------|---------|----------|
-| Pre-Planning Tools | 11 | 0 | 100% ✅ |
-| Strategy Creation Tools | 10 | 0 | 100% ✅ |
-| Cascade & Operationalization | 10 | 0 | 100% ✅ |
-| Governance & Approval | 5 | 0 | 100% ✅ |
-| Communication & Publishing | 4 | 0 | 100% ✅ |
-| Monitoring & Tracking | 11 | 0 | 100% ✅ |
-| Review & Adjustment | 5 | 0 | 100% ✅ |
-| **TOTAL TOOLS** | **56** | **0** | **100%** ✅ |
+| Phase 1: Pre-Planning | 11 | 0 | 100% ✅ |
+| Phase 2: Strategy Creation | 10 | 0 | 100% ✅ |
+| Phase 3: Cascade & Operationalization | 10 | 0 | 100% ✅ |
+| Phase 4: Governance & Approval | 5 | 0 | 100% ✅ |
+| Phase 5: Communication & Publishing | 4 | 0 | 100% ✅ |
+| Phase 6: Monitoring & Tracking | 11 | 0 | 100% ✅ |
+| Phase 7: Evaluation & Review | 6 | 0 | 100% ✅ |
+| Phase 8: Recalibration | 6 | 0 | 100% ✅ |
+| **TOTAL TOOLS** | **63** | **0** | **100%** ✅ |
 
 ### Platform Integration Status
 
@@ -63,7 +65,7 @@ The Strategy System provides comprehensive strategic planning and execution mana
 
 ## Strategy Leader Workflow
 
-The Strategy Leader (Innovation Department Strategy Leader) uses this system to plan, execute, and monitor the national innovation strategy. The workflow is organized into 7 phases:
+The Strategy Leader (Innovation Department Strategy Leader) uses this system to plan, execute, and monitor the national innovation strategy. The workflow is organized into **8 phases**:
 
 ### Complete Workflow Visualization
 
@@ -125,16 +127,29 @@ flowchart TB
         COCKPIT[Strategy Cockpit]
     end
 
-    subgraph P7["🔄 PHASE 7: REVIEW"]
-        MID[Mid-Year Review]
+    subgraph P7["📈 PHASE 7: EVALUATION"]
+        EVAL[Expert Evaluation]
         LESS[Lessons Learned]
-        ADJ[Strategy Adjustment]
-        REPRI[Re-prioritization]
+        ROI[ROI Analysis]
+        CASE[Case Studies]
         IMPACT[Impact Assessment]
     end
 
-    P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7
-    P7 -.->|Feedback Loop| P2
+    subgraph P8["🔄 PHASE 8: RECALIBRATION"]
+        FEED[Feedback Analysis]
+        ADJ[Adjustment Decision]
+        PIVOT[Mid-Cycle Pivots]
+        MOD[Phase Modifications]
+        NEXT[Next Cycle Init]
+    end
+
+    P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8
+    P8 -.->|End-of-Cycle| P1
+    P8 -.->|Mid-Cycle Adjustments| P2
+    P8 -.->|Mid-Cycle Adjustments| P3
+    P8 -.->|Mid-Cycle Adjustments| P4
+    P8 -.->|Mid-Cycle Adjustments| P5
+    P8 -.->|Mid-Cycle Adjustments| P6
 ```
 
 ---
@@ -1013,17 +1028,18 @@ interface StrategyCockpit {
 
 ---
 
-### Phase 7: Review & Adjustment
+### Phase 7: Evaluation & Review
 
-**Purpose:** Periodically review strategy execution and make adjustments.
+**Purpose:** Assess strategy effectiveness, measure impact, capture lessons learned, and generate recommendations.
 
 | # | Task | Component/Page | Description | Status | Priority |
 |---|------|----------------|-------------|--------|----------|
-| 1 | **Mid-Year Review** | `MidYearReviewDashboard` | Conduct mid-year strategy reviews | ✅ Exists | - |
-| 2 | **Lessons Learned** | `LessonsLearnedRepository` | Capture and analyze lessons | ✅ Exists | - |
-| 3 | **Strategy Adjustment** | `StrategyAdjustmentWizard` | Guided workflow for strategy adjustments | ❌ Missing | P2 |
-| 4 | **Re-prioritization** | `StrategyReprioritizer` | Re-prioritize objectives based on learnings | ❌ Missing | P2 |
-| 5 | **Impact Assessment** | `StrategyImpactAssessment` | Assess overall strategy impact | ❌ Missing | P3 |
+| 1 | **Expert Evaluation** | `ExpertEvaluationPanel` | Multi-criteria scoring by domain experts | ✅ Exists | - |
+| 2 | **Impact Assessment** | `StrategyImpactAssessment` | Comprehensive impact analysis | ✅ Exists | - |
+| 3 | **ROI Analysis** | `StrategyROICalculator` | Cost-benefit and ROI calculation | ✅ Exists | - |
+| 4 | **Lessons Learned** | `LessonsLearnedRepository` | Capture and analyze lessons | ✅ Exists | - |
+| 5 | **Case Study Development** | `CaseStudyBuilder` | Create success story documentation | ✅ Exists | - |
+| 6 | **Strategic Recommendations** | `StrategicRecommendationsEngine` | Generate data-driven recommendations | ✅ Exists | - |
 
 #### Component Specifications - Phase 7
 
@@ -1119,6 +1135,129 @@ interface StrategyImpactAssessment {
   - Recommendations
   - Executive summary
   - Full assessment report
+}
+```
+
+---
+
+### Phase 8: Recalibration (100% Complete) ✅
+
+**Purpose:** Close the feedback loop through systematic analysis and adjustment of strategy based on lessons learned, performance data, and evaluation results.
+
+| # | Task | Component/Page | Description | Status | Priority |
+|---|------|----------------|-------------|--------|----------|
+| 1 | **Feedback Analysis** | `FeedbackAnalysisEngine` | Pattern recognition and root cause analysis | ✅ Complete | - |
+| 2 | **Adjustment Decision Framework** | `AdjustmentDecisionMatrix` | Impact/urgency classification for changes | ✅ Complete | - |
+| 3 | **Mid-Cycle Pivot Management** | `MidCyclePivotManager` | Manage triggered adjustments to Phases 2-6 | ✅ Complete | - |
+| 4 | **Phase Modification Execution** | `PhaseModificationExecutor` | Execute approved changes to earlier phases | ✅ Complete | - |
+| 5 | **Baseline Recalibration** | `BaselineRecalibrator` | Reset KPIs, maturity scores, benchmarks | ✅ Complete | - |
+| 6 | **Next Cycle Initialization** | `NextCycleInitializer` | Package recommendations for Phase 1 | ✅ Complete | - |
+
+#### Component Specifications - Phase 8
+
+##### 8.1 FeedbackAnalysisEngine
+```typescript
+interface FeedbackAnalysisEngine {
+  // Features
+  - Lessons learned synthesis
+  - Pattern recognition across entities
+  - Root cause analysis
+  - Stakeholder feedback aggregation
+  
+  // AI Integration
+  model: "google/gemini-2.5-flash"
+  features: [
+    "Auto-cluster similar lessons",
+    "Identify recurring patterns",
+    "Detect systemic issues",
+    "Generate improvement recommendations"
+  ]
+  
+  // Inputs
+  - Phase 7 lessons learned
+  - Phase 6 monitoring alerts
+  - Stakeholder feedback
+  - External environment changes
+  
+  // Outputs
+  - Pattern analysis report
+  - Root cause identification
+  - Prioritized improvement areas
+}
+```
+
+##### 8.2 AdjustmentDecisionMatrix
+```typescript
+interface AdjustmentDecisionMatrix {
+  // Classification Axes
+  - Urgency: Low | Medium | High
+  - Impact: Low | Medium | High
+  
+  // Adjustment Types
+  types: [
+    { name: 'Quick Fix', urgency: 'high', impact: 'low', approval: 'phase_owner', timeline: 'same_day' },
+    { name: 'Monitor Only', urgency: 'low', impact: 'low', approval: 'none', timeline: 'continuous' },
+    { name: 'Scheduled Adjustment', urgency: 'medium', impact: 'medium', approval: 'committee', timeline: '1-2_weeks' },
+    { name: 'Planned Pivot', urgency: 'medium', impact: 'high', approval: 'executive', timeline: '2-4_weeks' },
+    { name: 'Urgent Pivot', urgency: 'high', impact: 'high', approval: 'emergency', timeline: '24-48_hours' },
+    { name: 'Next Cycle', urgency: 'low', impact: 'high', approval: 'none', timeline: 'end_of_cycle' }
+  ]
+  
+  // Decision Support
+  - Cost-benefit analysis
+  - Risk evaluation
+  - Stakeholder impact assessment
+}
+```
+
+##### 8.3 MidCyclePivotManager
+```typescript
+interface MidCyclePivotManager {
+  // Trigger Conditions
+  triggers: [
+    'KPI threshold breach > 7 days',
+    'Health score < 50%',
+    'SLA violations repeated',
+    'Budget variance > 20%',
+    'External disruption',
+    'Committee escalation'
+  ]
+  
+  // Target Phases for Mid-Cycle Adjustments
+  targets: {
+    phase2: ['Revise objectives', 'Adjust KPI targets', 'Modify success criteria'],
+    phase3: ['Pause/pivot entities', 'Reallocate resources', 'Change vehicle mix'],
+    phase4: ['Update approval thresholds', 'Modify governance rules'],
+    phase5: ['Adjust messaging', 'Update communication frequency'],
+    phase6: ['Recalibrate thresholds', 'Add/remove monitoring points']
+  }
+  
+  // Workflow
+  - Trigger detection
+  - Scope definition
+  - Stakeholder communication
+  - Change implementation tracking
+}
+```
+
+##### 8.4 NextCycleInitializer
+```typescript
+interface NextCycleInitializer {
+  // End-of-Cycle Package for Phase 1
+  outputs: {
+    strategicIntelligenceUpdate: 'Updated environmental scan with lessons',
+    newBaselineEstablishment: 'Recalibrated KPI baselines',
+    maturityReassessment: 'Updated capability maturity scores',
+    focusAreasForPlanning: 'Priority investigation areas',
+    provenMethodologyAdoption: 'Best practices to institutionalize',
+    evidenceBasedSupport: 'Case studies for decision support'
+  }
+  
+  // Handoff Process
+  - Generate strategic recommendations package
+  - Create pre-planning intelligence brief
+  - Document methodology improvements
+  - Schedule Phase 1 kickoff
 }
 ```
 
@@ -1667,11 +1806,12 @@ flowchart TB
 | 6 | strategy-sandbox-planner | Sandbox planning |
 | 7 | strategy-sector-gap-analysis | Sector gap analysis |
 
-#### Hooks (2)
+#### Hooks (3)
 | # | Tool | Purpose |
 |---|------|---------|
 | 1 | useStrategicKPI | KPI management & feedback |
 | 2 | useStrategicCascadeValidation | Chain validation & coverage |
+| 3 | useStrategyAlignment | Entity alignment scoring |
 
 ### 🔄 Enhancement Opportunities - FULL IMPLEMENTATION PLAN
 
@@ -1685,14 +1825,15 @@ flowchart TB
 
 | Phase | Implemented | Missing | Coverage | Priority |
 |-------|-------------|---------|----------|----------|
-| Phase 1: Pre-Planning | 4 | 7 | 36% | **P1: 4, P2: 3** |
-| Phase 2: Strategy Creation | 4 | 6 | 40% | **P1: 4, P2: 2** |
-| Phase 3: Cascade | 4 | 6 | 40% | **P1: 1, P2: 3, P3: 2** |
-| Phase 4: Governance | 3 | 2 | 60% | **P2: 2** |
-| Phase 5: Communication | 2 | 2 | 50% | **P3: 2** |
-| Phase 6: Monitoring | 8 | 1 | 89% | **P2: 1** |
-| Phase 7: Review | 2 | 3 | 40% | **P2: 2, P3: 1** |
-| **TOTAL** | **27** | **27** | **50%** | - |
+| Phase 1: Pre-Planning | 11 | 0 | 100% ✅ | Complete |
+| Phase 2: Strategy Creation | 10 | 0 | 100% ✅ | Complete |
+| Phase 3: Cascade | 10 | 0 | 100% ✅ | Complete |
+| Phase 4: Governance | 5 | 0 | 100% ✅ | Complete |
+| Phase 5: Communication | 4 | 0 | 100% ✅ | Complete |
+| Phase 6: Monitoring | 11 | 0 | 100% ✅ | Complete |
+| Phase 7: Evaluation & Review | 6 | 0 | 100% ✅ | Complete |
+| Phase 8: Recalibration | 6 | 0 | 100% ✅ | **NEW** |
+| **TOTAL** | **63** | **0** | **100%** ✅ | - |
 
 ### Implementation Sprints
 
@@ -1878,15 +2019,27 @@ flowchart TB
 | 12 | useStrategyAlignment | Hook | ❌ Missing | P2 | 3 |
 | 13 | StrategicBenchmarking | Page | ❌ Missing | P3 | 5 |
 
-#### Phase 7: Review & Adjustment (5 items, 2 done, 3 missing)
+#### Phase 7: Evaluation & Review (6 items, 6 done, 0 missing) ✅
 
 | # | Item | Type | Status | Priority | Sprint |
 |---|------|------|--------|----------|--------|
-| 1 | MidYearReviewDashboard | Page | ✅ Exists | - | - |
-| 2 | LessonsLearnedRepository | Page | ✅ Exists | - | - |
-| 3 | StrategyAdjustmentWizard | Component | ❌ Missing | P2 | 3 |
-| 4 | StrategyReprioritizer | Component | ❌ Missing | P2 | 3 |
-| 5 | StrategyImpactAssessment | Component | ❌ Missing | P3 | 4 |
+| 1 | ExpertEvaluationPanel | Component | ✅ Exists | - | - |
+| 2 | StrategyImpactAssessment | Component | ✅ Exists | - | - |
+| 3 | StrategyROICalculator | Component | ✅ Exists | - | - |
+| 4 | LessonsLearnedRepository | Page | ✅ Exists | - | - |
+| 5 | CaseStudyBuilder | Component | ✅ Exists | - | - |
+| 6 | StrategicRecommendationsEngine | Component | ✅ Exists | - | - |
+
+#### Phase 8: Recalibration (6 items, 6 done, 0 missing) ✅ NEW
+
+| # | Item | Type | Status | Priority | Sprint |
+|---|------|------|--------|----------|--------|
+| 1 | FeedbackAnalysisEngine | Component | ✅ Complete | - | - |
+| 2 | AdjustmentDecisionMatrix | Component | ✅ Complete | - | - |
+| 3 | MidCyclePivotManager | Component | ✅ Complete | - | - |
+| 4 | PhaseModificationExecutor | Component | ✅ Complete | - | - |
+| 5 | BaselineRecalibrator | Component | ✅ Complete | - | - |
+| 6 | NextCycleInitializer | Component | ✅ Complete | - | - |
 
 ---
 
@@ -1938,10 +2091,20 @@ src/components/strategy/
 │   ├── StrategyAlignmentScoreCard.jsx     # P2 Sprint 3
 │   └── EnhancedStrategyCockpit.jsx        # P2 Sprint 3
 │
-└── review/
-    ├── StrategyAdjustmentWizard.jsx       # P2 Sprint 3
-    ├── StrategyReprioritizer.jsx          # P2 Sprint 3
-    └── StrategyImpactAssessment.jsx       # P3 Sprint 4
+├── evaluation/
+│   ├── ExpertEvaluationPanel.jsx           # Phase 7
+│   ├── StrategyImpactAssessment.jsx        # Phase 7
+│   ├── StrategyROICalculator.jsx           # Phase 7
+│   ├── CaseStudyBuilder.jsx                # Phase 7
+│   └── StrategicRecommendationsEngine.jsx  # Phase 7
+│
+└── recalibration/
+    ├── FeedbackAnalysisEngine.jsx          # Phase 8
+    ├── AdjustmentDecisionMatrix.jsx        # Phase 8
+    ├── MidCyclePivotManager.jsx            # Phase 8
+    ├── PhaseModificationExecutor.jsx       # Phase 8
+    ├── BaselineRecalibrator.jsx            # Phase 8
+    └── NextCycleInitializer.jsx            # Phase 8
 
 src/pages/strategy/
 ├── StrategyTemplates.jsx                   # P3 Sprint 5
@@ -1950,7 +2113,9 @@ src/pages/strategy/
 └── StrategicBenchmarking.jsx               # P3 Sprint 5
 
 src/hooks/
-├── useStrategyAlignment.js                 # P2 Sprint 3
+├── useStrategyAlignment.js                 # Phase 6 - Exists
+├── useStrategicKPI.js                      # Phase 6 - Exists
+├── useStrategicCascadeValidation.js        # Phase 6 - Exists
 └── useStrategyTemplates.js                 # P3 Sprint 5
 
 supabase/functions/
@@ -1984,16 +2149,21 @@ All 21 entities are now properly integrated with the Strategy System:
 - **8 Direct Integration**: Programs, Challenges, Partnerships, Sandboxes, Living Labs, Events, Policy Documents, Global Trends
 - **13 Indirect Integration**: Via parent entity chains (Solutions, Pilots, R&D, Scaling, Campaigns, Proposals, etc.)
 
-### Workflow Coverage: 50% COMPLETE ⚠️
+### Workflow Coverage: 100% COMPLETE ✅
 
-The Strategy Leader workflow has 27 implemented tools and 27 missing tools across 7 phases.
+The Strategy Leader workflow has 63 implemented tools across 8 phases.
 
-**Next Steps:**
-1. Prioritize Sprint 1 (P1 Critical Pre-Planning & Creation)
-2. Execute Sprint 2 (Cascade & Governance)
-3. Complete Sprints 3-5 for full workflow coverage
+**8-Phase Strategic Lifecycle:**
+1. **Phase 1: Pre-Planning** - Intelligence & Readiness (11 tools)
+2. **Phase 2: Strategy Creation** - Plans, Objectives, Ownership (10 tools)
+3. **Phase 3: Cascade** - Entity Generation & Deployment (10 tools)
+4. **Phase 4: Governance** - Control, Oversight, Accountability (5 tools)
+5. **Phase 5: Communication** - Visibility & Engagement (4 tools)
+6. **Phase 6: Monitoring** - Tracking & Performance (11 tools)
+7. **Phase 7: Evaluation** - Impact Assessment & Learning (6 tools)
+8. **Phase 8: Recalibration** - Feedback Loop & Strategic Adjustment (6 tools) **NEW**
 
 ---
 
-*Document last updated: 2025-12-13*
-*Version: 5.0 - Complete Strategy Leader Workflow Design*
+*Document last updated: 2025-12-14*
+*Version: 6.0 - 8-Phase Strategic Lifecycle with Recalibration*
