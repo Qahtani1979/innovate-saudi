@@ -32,35 +32,70 @@ import {
   TrendingUp,
   Settings,
   MessageSquare,
-  Eye
+  Eye,
+  Megaphone,
+  BookOpen,
+  Bell,
+  Globe,
+  ClipboardList,
+  Layers,
+  Search,
+  AlertTriangle,
+  FileBarChart
 } from 'lucide-react';
+
+// Import AI Components
+import StrategicNarrativeGenerator from '@/components/strategy/StrategicNarrativeGenerator';
+import StrategicGapProgramRecommender from '@/components/strategy/StrategicGapProgramRecommender';
+import WhatIfSimulator from '@/components/strategy/WhatIfSimulator';
+import BottleneckDetector from '@/components/strategy/BottleneckDetector';
 
 // Cascade Generator Cards
 const cascadeGenerators = [
-  { icon: Lightbulb, label: { en: 'Challenges', ar: 'التحديات' }, path: '/strategy-challenge-generator', color: 'text-orange-500' },
-  { icon: FlaskConical, label: { en: 'Pilots', ar: 'التجارب' }, path: '/strategy-pilot-generator', color: 'text-blue-500' },
-  { icon: FileText, label: { en: 'Policies', ar: 'السياسات' }, path: '/strategy-policy-generator', color: 'text-purple-500' },
-  { icon: Microscope, label: { en: 'R&D Calls', ar: 'طلبات البحث' }, path: '/strategy-rd-call-generator', color: 'text-green-500' },
-  { icon: Users, label: { en: 'Partnerships', ar: 'الشراكات' }, path: '/strategy-partnership-generator', color: 'text-pink-500' },
-  { icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' }, path: '/strategy-event-generator', color: 'text-amber-500' },
-  { icon: Building2, label: { en: 'Living Labs', ar: 'المختبرات الحية' }, path: '/strategy-living-lab-generator', color: 'text-cyan-500' },
-  { icon: MessageSquare, label: { en: 'Campaigns', ar: 'الحملات' }, path: '/strategy-campaign-generator', color: 'text-rose-500' },
+  { icon: Lightbulb, label: { en: 'Challenges', ar: 'التحديات' }, path: '/strategy-challenge-generator-page', color: 'text-orange-500' },
+  { icon: FlaskConical, label: { en: 'Pilots', ar: 'التجارب' }, path: '/strategy-pilot-generator-page', color: 'text-blue-500' },
+  { icon: FileText, label: { en: 'Policies', ar: 'السياسات' }, path: '/strategy-policy-generator-page', color: 'text-purple-500' },
+  { icon: Microscope, label: { en: 'R&D Calls', ar: 'طلبات البحث' }, path: '/strategy-rd-call-generator-page', color: 'text-green-500' },
+  { icon: Users, label: { en: 'Partnerships', ar: 'الشراكات' }, path: '/strategy-partnership-generator-page', color: 'text-pink-500' },
+  { icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' }, path: '/strategy-event-generator-page', color: 'text-amber-500' },
+  { icon: Building2, label: { en: 'Living Labs', ar: 'المختبرات الحية' }, path: '/strategy-living-lab-generator-page', color: 'text-cyan-500' },
+  { icon: MessageSquare, label: { en: 'Campaigns', ar: 'الحملات' }, path: '/strategy-campaign-generator-page', color: 'text-rose-500' },
 ];
 
-// AI Assistants
+// AI Assistants with component keys
 const aiAssistants = [
-  { icon: Brain, label: { en: 'Narrative Generator', ar: 'مولد السرد' }, desc: { en: 'Generate strategic narratives', ar: 'إنشاء سرديات استراتيجية' } },
-  { icon: Target, label: { en: 'Gap Recommender', ar: 'توصيات الفجوات' }, desc: { en: 'Find coverage gaps', ar: 'البحث عن فجوات التغطية' } },
-  { icon: TrendingUp, label: { en: 'What-If Simulator', ar: 'محاكي السيناريوهات' }, desc: { en: 'Budget scenarios', ar: 'سيناريوهات الميزانية' } },
-  { icon: Zap, label: { en: 'Bottleneck Detector', ar: 'كاشف الاختناقات' }, desc: { en: 'Find pipeline issues', ar: 'البحث عن مشاكل خط الأنابيب' } },
+  { key: 'narrative', icon: Brain, label: { en: 'Narrative Generator', ar: 'مولد السرد' }, desc: { en: 'Generate strategic narratives', ar: 'إنشاء سرديات استراتيجية' } },
+  { key: 'gap', icon: Target, label: { en: 'Gap Recommender', ar: 'توصيات الفجوات' }, desc: { en: 'Find coverage gaps', ar: 'البحث عن فجوات التغطية' } },
+  { key: 'whatif', icon: TrendingUp, label: { en: 'What-If Simulator', ar: 'محاكي السيناريوهات' }, desc: { en: 'Budget scenarios', ar: 'سيناريوهات الميزانية' } },
+  { key: 'bottleneck', icon: Zap, label: { en: 'Bottleneck Detector', ar: 'كاشف الاختناقات' }, desc: { en: 'Find pipeline issues', ar: 'البحث عن مشاكل خط الأنابيب' } },
 ];
 
 // Governance Tools
 const governanceTools = [
-  { icon: CheckCircle2, label: { en: 'Signoff Tracker', ar: 'متتبع الموافقات' }, path: '/strategy-governance', tab: 'signoff' },
-  { icon: GitBranch, label: { en: 'Version Control', ar: 'التحكم بالإصدارات' }, path: '/strategy-governance', tab: 'versions' },
-  { icon: Users, label: { en: 'Committee Review', ar: 'مراجعة اللجنة' }, path: '/strategy-governance', tab: 'committee' },
-  { icon: Settings, label: { en: 'Ownership', ar: 'الملكية' }, path: '/strategy-ownership' },
+  { icon: CheckCircle2, label: { en: 'Signoff Tracker', ar: 'متتبع الموافقات' }, path: '/strategy-governance-page', tab: 'signoff' },
+  { icon: GitBranch, label: { en: 'Version Control', ar: 'التحكم بالإصدارات' }, path: '/strategy-governance-page', tab: 'versions' },
+  { icon: Users, label: { en: 'Committee Review', ar: 'مراجعة اللجنة' }, path: '/strategy-governance-page', tab: 'committee' },
+  { icon: Settings, label: { en: 'Ownership', ar: 'الملكية' }, path: '/strategy-ownership-page' },
+];
+
+// Communication Tools
+const communicationTools = [
+  { icon: Megaphone, label: { en: 'Communication Planner', ar: 'مخطط التواصل' }, path: '/strategy-communication-page', desc: { en: 'Plan and schedule communications', ar: 'تخطيط وجدولة التواصل' } },
+  { icon: BookOpen, label: { en: 'Impact Stories', ar: 'قصص الأثر' }, path: '/strategy-communication-page?tab=stories', desc: { en: 'Generate impact narratives', ar: 'إنشاء سرديات الأثر' } },
+  { icon: Bell, label: { en: 'Notifications', ar: 'الإشعارات' }, path: '/strategy-communication-page?tab=notifications', desc: { en: 'Manage stakeholder alerts', ar: 'إدارة تنبيهات أصحاب المصلحة' } },
+  { icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' }, path: '/strategy-communication-page?tab=analytics', desc: { en: 'Communication metrics', ar: 'مقاييس التواصل' } },
+  { icon: Globe, label: { en: 'Public Dashboard', ar: 'اللوحة العامة' }, path: '/public-strategy-dashboard-page', desc: { en: 'Public-facing view', ar: 'العرض العام' } },
+  { icon: Eye, label: { en: 'Public View', ar: 'العرض العام' }, path: '/strategy-public-view-page', desc: { en: 'Share strategy externally', ar: 'مشاركة الاستراتيجية خارجياً' } },
+];
+
+// Preplanning Tools
+const preplanningTools = [
+  { icon: Search, label: { en: 'Environmental Scan', ar: 'المسح البيئي' }, path: '/environmental-scan-page', desc: { en: 'PESTLE analysis', ar: 'تحليل PESTLE' } },
+  { icon: Layers, label: { en: 'SWOT Analysis', ar: 'تحليل SWOT' }, path: '/swot-analysis-page', desc: { en: 'Strengths, weaknesses, opportunities, threats', ar: 'نقاط القوة والضعف والفرص والتهديدات' } },
+  { icon: Users, label: { en: 'Stakeholder Analysis', ar: 'تحليل أصحاب المصلحة' }, path: '/stakeholder-analysis-page', desc: { en: 'Map key stakeholders', ar: 'رسم خريطة أصحاب المصلحة' } },
+  { icon: AlertTriangle, label: { en: 'Risk Assessment', ar: 'تقييم المخاطر' }, path: '/risk-assessment-page', desc: { en: 'Identify and assess risks', ar: 'تحديد وتقييم المخاطر' } },
+  { icon: FileBarChart, label: { en: 'Baseline Data', ar: 'البيانات الأساسية' }, path: '/baseline-data-page', desc: { en: 'Collect baseline metrics', ar: 'جمع المقاييس الأساسية' } },
+  { icon: ClipboardList, label: { en: 'Strategy Inputs', ar: 'مدخلات الاستراتيجية' }, path: '/strategy-input-page', desc: { en: 'Gather strategic inputs', ar: 'جمع المدخلات الاستراتيجية' } },
 ];
 
 // Phase workflow definition
@@ -78,6 +113,7 @@ const phases = [
 function StrategyHub() {
   const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('workflow');
+  const [activeAITool, setActiveAITool] = useState(null);
 
   // Fetch strategic plans
   const { data: plans = [], isLoading: plansLoading } = useQuery({
@@ -130,6 +166,22 @@ function StrategyHub() {
   };
 
   const currentPhaseIndex = getCurrentPhase();
+
+  // Render AI Tool Component
+  const renderAITool = () => {
+    switch (activeAITool) {
+      case 'narrative':
+        return <StrategicNarrativeGenerator />;
+      case 'gap':
+        return <StrategicGapProgramRecommender />;
+      case 'whatif':
+        return <WhatIfSimulator />;
+      case 'bottleneck':
+        return <BottleneckDetector />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className={`container mx-auto py-6 px-4 ${isRTL ? 'rtl' : ''}`}>
@@ -210,7 +262,7 @@ function StrategyHub() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="workflow" className="flex items-center gap-2">
             <Workflow className="h-4 w-4" />
             <span className="hidden md:inline">{t({ en: 'Workflow', ar: 'سير العمل' })}</span>
@@ -222,6 +274,14 @@ function StrategyHub() {
           <TabsTrigger value="governance" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             <span className="hidden md:inline">{t({ en: 'Governance', ar: 'الحوكمة' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="communication" className="flex items-center gap-2">
+            <Megaphone className="h-4 w-4" />
+            <span className="hidden md:inline">{t({ en: 'Communication', ar: 'التواصل' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="preplanning" className="flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            <span className="hidden md:inline">{t({ en: 'Pre-Planning', ar: 'التخطيط المسبق' })}</span>
           </TabsTrigger>
           <TabsTrigger value="ai" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
@@ -257,11 +317,6 @@ function StrategyHub() {
                       <span className={`text-xs mt-1 text-center ${isActive ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
                         {t(phase.label)}
                       </span>
-                      {index < phases.length - 1 && (
-                        <div className={`hidden md:block absolute h-0.5 w-full top-5 left-1/2 ${
-                          isCompleted ? 'bg-green-500' : 'bg-muted'
-                        }`} style={{ width: 'calc(100% - 2.5rem)', marginLeft: '1.25rem' }} />
-                      )}
                     </div>
                   );
                 })}
@@ -370,7 +425,7 @@ function StrategyHub() {
                   </div>
                 )}
                 <Button variant="link" className="mt-3 p-0" asChild>
-                  <Link to="/strategy-governance">{t({ en: 'Manage Approvals', ar: 'إدارة الموافقات' })}</Link>
+                  <Link to="/strategy-governance-page">{t({ en: 'Manage Approvals', ar: 'إدارة الموافقات' })}</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -412,21 +467,27 @@ function StrategyHub() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/strategy-templates">
+                  <Link to="/strategy-templates-page">
                     <FileText className="h-4 w-4 mr-2" />
                     {t({ en: 'Strategy Templates', ar: 'قوالب الاستراتيجية' })}
                   </Link>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/national-strategy-linker">
+                  <Link to="/national-strategy-linker-page">
                     <Target className="h-4 w-4 mr-2" />
                     {t({ en: 'National Alignment', ar: 'المواءمة الوطنية' })}
                   </Link>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/baseline-data">
+                  <Link to="/baseline-data-page">
                     <BarChart3 className="h-4 w-4 mr-2" />
                     {t({ en: 'Baseline Data', ar: 'البيانات الأساسية' })}
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link to="/action-plan-page">
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    {t({ en: 'Action Plans', ar: 'خطط العمل' })}
                   </Link>
                 </Button>
               </CardContent>
@@ -487,7 +548,7 @@ function StrategyHub() {
             </CardHeader>
             <CardContent>
               <Button asChild>
-                <Link to="/strategy-governance">
+                <Link to="/strategy-governance-page">
                   <Shield className="h-4 w-4 mr-2" />
                   {t({ en: 'Open Full Dashboard', ar: 'فتح اللوحة الكاملة' })}
                 </Link>
@@ -496,53 +557,178 @@ function StrategyHub() {
           </Card>
         </TabsContent>
 
-        {/* AI Tools Tab */}
-        <TabsContent value="ai" className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-4">
-            {aiAssistants.map(ai => {
-              const Icon = ai.icon;
+        {/* Communication Tab */}
+        <TabsContent value="communication" className="space-y-6">
+          <div className="grid md:grid-cols-3 gap-4">
+            {communicationTools.map(tool => {
+              const Icon = tool.icon;
               return (
-                <Card key={ai.label.en} className="hover:border-primary/50 transition-colors">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20">
-                        <Icon className="h-6 w-6 text-primary" />
+                <Link key={tool.path} to={tool.path}>
+                  <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col items-center text-center gap-3">
+                        <div className="p-3 rounded-lg bg-primary/10">
+                          <Icon className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{t(tool.label)}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">{t(tool.desc)}</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{t(ai.label)}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{t(ai.desc)}</p>
-                        <Button size="sm" className="mt-3">
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          {t({ en: 'Launch', ar: 'إطلاق' })}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Link>
               );
             })}
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>{t({ en: 'AI-Powered Analysis', ar: 'التحليل بالذكاء الاصطناعي' })}</CardTitle>
-              <CardDescription>
-                {t({ en: 'Advanced strategic analysis powered by AI', ar: 'تحليل استراتيجي متقدم مدعوم بالذكاء الاصطناعي' })}
-              </CardDescription>
+              <CardTitle>{t({ en: 'Communication Hub', ar: 'مركز التواصل' })}</CardTitle>
+              <CardDescription>{t({ en: 'Manage all strategy communication from one place', ar: 'إدارة جميع اتصالات الاستراتيجية من مكان واحد' })}</CardDescription>
             </CardHeader>
-            <CardContent className="flex gap-3">
-              <Button variant="outline" asChild>
-                <Link to="/strategy-review">
-                  {t({ en: 'Strategy Review', ar: 'مراجعة الاستراتيجية' })}
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/strategy-alignment">
-                  {t({ en: 'Alignment Analysis', ar: 'تحليل المواءمة' })}
+            <CardContent>
+              <Button asChild>
+                <Link to="/strategy-communication-page">
+                  <Megaphone className="h-4 w-4 mr-2" />
+                  {t({ en: 'Open Communication Center', ar: 'فتح مركز التواصل' })}
                 </Link>
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Pre-Planning Tab */}
+        <TabsContent value="preplanning" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t({ en: 'Pre-Planning Tools', ar: 'أدوات التخطيط المسبق' })}</CardTitle>
+              <CardDescription>
+                {t({ en: 'Gather inputs and analyze the environment before strategy creation', ar: 'جمع المدخلات وتحليل البيئة قبل إنشاء الاستراتيجية' })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                {preplanningTools.map(tool => {
+                  const Icon = tool.icon;
+                  return (
+                    <Link key={tool.path} to={tool.path}>
+                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-primary/10">
+                              <Icon className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{t(tool.label)}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{t(tool.desc)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t({ en: 'Strategy Review & Adjustment', ar: 'مراجعة وتعديل الاستراتيجية' })}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex gap-3 flex-wrap">
+              <Button variant="outline" asChild>
+                <Link to="/strategy-review-page">
+                  <Settings className="h-4 w-4 mr-2" />
+                  {t({ en: 'Adjustment Wizard', ar: 'معالج التعديل' })}
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/strategy-timeline-page">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {t({ en: 'Timeline Planning', ar: 'تخطيط الجدول الزمني' })}
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/strategy-feedback-dashboard">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  {t({ en: 'Feedback Dashboard', ar: 'لوحة التعليقات' })}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* AI Tools Tab */}
+        <TabsContent value="ai" className="space-y-6">
+          {activeAITool ? (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{t(aiAssistants.find(a => a.key === activeAITool)?.label || { en: 'AI Tool', ar: 'أداة الذكاء' })}</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => setActiveAITool(null)}>
+                  {t({ en: 'Back to Tools', ar: 'العودة للأدوات' })}
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {renderAITool()}
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="grid md:grid-cols-2 gap-4">
+                {aiAssistants.map(ai => {
+                  const Icon = ai.icon;
+                  return (
+                    <Card key={ai.key} className="hover:border-primary/50 transition-colors cursor-pointer" onClick={() => setActiveAITool(ai.key)}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20">
+                            <Icon className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{t(ai.label)}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">{t(ai.desc)}</p>
+                            <Button size="sm" className="mt-3">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              {t({ en: 'Launch', ar: 'إطلاق' })}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t({ en: 'AI-Powered Analysis', ar: 'التحليل بالذكاء الاصطناعي' })}</CardTitle>
+                  <CardDescription>
+                    {t({ en: 'Advanced strategic analysis powered by AI', ar: 'تحليل استراتيجي متقدم مدعوم بالذكاء الاصطناعي' })}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex gap-3 flex-wrap">
+                  <Button variant="outline" asChild>
+                    <Link to="/strategy-review-page">
+                      {t({ en: 'Strategy Review', ar: 'مراجعة الاستراتيجية' })}
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link to="/strategy-alignment">
+                      {t({ en: 'Alignment Analysis', ar: 'تحليل المواءمة' })}
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link to="/strategy-copilot-chat">
+                      <Brain className="h-4 w-4 mr-2" />
+                      {t({ en: 'Strategy Copilot', ar: 'مساعد الاستراتيجية' })}
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>
