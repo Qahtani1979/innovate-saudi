@@ -13,14 +13,10 @@ serve(async (req) => {
 
   try {
     const { 
-      topic, 
-      sector_id, 
-      research_type,
-      // New strategic fields
-      strategic_plan_ids,
-      strategic_objective_ids,
-      living_lab_id,
-      research_priorities
+      strategic_plan_id,
+      municipality_id,
+      research_focus,
+      target_population
     } = await req.json();
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -28,24 +24,46 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log(`Strategy Lab Research Generator: ${topic}`);
+    console.log(`Generating living lab concepts for plan: ${strategic_plan_id}`);
 
-    let research_content = '';
-    let key_findings: string[] = [];
-    let recommendations: string[] = [];
+    // Fetch strategic plan
+    let plan = null;
+    if (strategic_plan_id) {
+      const { data } = await supabase
+        .from("strategic_plans")
+        .select("*")
+        .eq("id", strategic_plan_id)
+        .single();
+      plan = data;
+    }
+
+    let living_labs: Array<{
+      name_en: string;
+      name_ar: string;
+      description_en: string;
+      description_ar: string;
+      research_focus: string[];
+      target_outcomes: string[];
+    }> = [];
 
     if (LOVABLE_API_KEY) {
-      const prompt = `Generate a strategic research brief on: "${topic}"
-      
-      Research Type: ${research_type || 'general'}
-      
-      Please provide:
-      1. Executive Summary (2-3 paragraphs)
-      2. Key Findings (5 bullet points)
-      3. Strategic Recommendations (5 bullet points)
-      4. Implementation Considerations
-      
-      Focus on municipal innovation and government transformation context.`;
+      const prompt = `Generate 2-3 living lab concepts for municipal innovation.
+
+STRATEGIC PLAN: ${plan?.name_en || 'Municipal Innovation Strategy'}
+VISION: ${plan?.vision_en || plan?.description_en || ''}
+RESEARCH FOCUS: ${research_focus || 'General innovation'}
+TARGET POPULATION: ${target_population || 'General citizens'}
+
+For each living lab concept, provide:
+1. name_en & name_ar: Living lab name (bilingual)
+2. description_en & description_ar: Description (bilingual, 2-3 sentences)
+3. research_focus: Array of 3-4 research focus areas
+4. target_outcomes: Array of 3-4 expected outcomes
+
+Ensure living labs:
+- Support citizen co-creation and participation
+- Enable real-world testing of innovations
+- Align with Vision 2030 and municipal goals`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -55,84 +73,62 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
-          messages: [{ role: "user", content: prompt }],
+          messages: [
+            { role: "system", content: "You are an expert in living lab design for Saudi municipalities. Always respond with valid JSON." },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        research_content = data.choices?.[0]?.message?.content || '';
-        
-        // Extract key findings and recommendations from content
-        const lines = research_content.split('\n');
-        let inFindings = false;
-        let inRecommendations = false;
-        
-        for (const line of lines) {
-          if (line.toLowerCase().includes('key findings')) {
-            inFindings = true;
-            inRecommendations = false;
-            continue;
-          }
-          if (line.toLowerCase().includes('recommendation')) {
-            inFindings = false;
-            inRecommendations = true;
-            continue;
-          }
-          if (line.toLowerCase().includes('implementation')) {
-            inRecommendations = false;
-            continue;
-          }
-          
-          if (inFindings && line.trim().startsWith('-')) {
-            key_findings.push(line.trim().substring(1).trim());
-          }
-          if (inRecommendations && line.trim().startsWith('-')) {
-            recommendations.push(line.trim().substring(1).trim());
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          try {
+            const parsed = JSON.parse(content);
+            living_labs = parsed.living_labs || [];
+          } catch (e) {
+            console.error("Parse error:", e);
           }
         }
       }
     }
 
-    // Fallback content
-    if (!research_content) {
-      research_content = `Research brief on: ${topic}\n\nThis research explores key aspects of ${topic} in the context of municipal innovation.`;
-      key_findings = ['Finding 1', 'Finding 2', 'Finding 3'];
-      recommendations = ['Recommendation 1', 'Recommendation 2', 'Recommendation 3'];
-    }
-
-    // Save research with strategic alignment
-    const { data: research, error } = await supabase
-      .from('strategy_lab_research')
-      .insert({
-        topic,
-        sector_id,
-        research_type: research_type || 'general',
-        content: research_content,
-        key_findings,
-        recommendations,
-        status: 'draft',
-        generated_at: new Date().toISOString(),
-        // Strategic alignment fields
-        strategic_plan_ids: strategic_plan_ids || [],
-        strategic_objective_ids: strategic_objective_ids || [],
-        living_lab_id: living_lab_id || null,
-        research_priorities: research_priorities || []
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.warn('Could not save research:', error);
+    // Fallback living labs
+    if (living_labs.length === 0) {
+      living_labs = [
+        {
+          name_en: "Smart Neighborhood Lab",
+          name_ar: "مختبر الحي الذكي",
+          description_en: "A citizen-centric living lab testing smart city solutions in a real neighborhood setting, enabling co-creation with residents.",
+          description_ar: "مختبر حي يركز على المواطن لاختبار حلول المدن الذكية في بيئة حي حقيقية، مما يتيح الإبداع المشترك مع السكان.",
+          research_focus: ["Smart mobility", "Energy efficiency", "Waste management", "Community engagement"],
+          target_outcomes: ["Validated smart solutions", "Citizen feedback integration", "Scalable models", "Reduced environmental impact"]
+        },
+        {
+          name_en: "Digital Services Innovation Lab",
+          name_ar: "مختبر ابتكار الخدمات الرقمية",
+          description_en: "A testing ground for digital municipal services with direct citizen participation in design and evaluation.",
+          description_ar: "أرض اختبار للخدمات البلدية الرقمية مع مشاركة مباشرة للمواطنين في التصميم والتقييم.",
+          research_focus: ["User experience", "Service accessibility", "Process automation", "Digital inclusion"],
+          target_outcomes: ["Improved service satisfaction", "Reduced processing times", "Higher adoption rates", "Inclusive design"]
+        },
+        {
+          name_en: "Sustainable Urban Lab",
+          name_ar: "مختبر الاستدامة الحضرية",
+          description_en: "An innovation space focused on environmental sustainability solutions with community participation.",
+          description_ar: "مساحة ابتكار تركز على حلول الاستدامة البيئية مع مشاركة المجتمع.",
+          research_focus: ["Green infrastructure", "Circular economy", "Urban farming", "Water conservation"],
+          target_outcomes: ["Carbon footprint reduction", "Community ownership", "Replicable practices", "Environmental awareness"]
+        }
+      ];
     }
 
     return new Response(JSON.stringify({ 
       success: true,
-      research_id: research?.id,
-      topic,
-      content: research_content,
-      key_findings,
-      recommendations
+      living_labs,
+      strategic_plan_id
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
