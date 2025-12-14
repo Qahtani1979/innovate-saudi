@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,17 +17,29 @@ export default function PartnershipNetwork() {
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('rd_projects').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('organizations').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   // Build collaboration network

@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,22 +12,38 @@ export default function ResourceAllocationView() {
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('teams').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: labs = [] } = useQuery({
     queryKey: ['living-labs'],
-    queryFn: () => base44.entities.LivingLab.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes'],
-    queryFn: () => base44.entities.Sandbox.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('sandboxes').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const teamCapacity = teams.reduce((sum, t) => sum + (t.member_count || 0), 0);
