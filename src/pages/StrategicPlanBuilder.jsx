@@ -602,4 +602,4 @@ Format as JSON with:
   );
 }
 
-export default ProtectedPage(StrategicPlanBuilder, { requiredPermissions: [], requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead'] });
+export default ProtectedPage(StrategicPlanBuilder, { requiredPermissions: ['strategy_manage'] });
