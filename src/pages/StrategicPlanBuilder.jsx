@@ -36,8 +36,8 @@ function StrategicPlanBuilder() {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
   const [plan, setPlan] = useState({
-    title_en: '',
-    title_ar: '',
+    name_en: '',
+    name_ar: '',
     vision_en: '',
     vision_ar: '',
     objectives: []
@@ -63,12 +63,12 @@ function StrategicPlanBuilder() {
 
   // Check for duplicate title
   const duplicateTitleWarning = useMemo(() => {
-    if (!plan.title_en) return null;
+    if (!plan.name_en) return null;
     const duplicate = existingPlans.find(p => 
-      p.name_en?.toLowerCase() === plan.title_en.toLowerCase()
+      p.name_en?.toLowerCase() === plan.name_en.toLowerCase()
     );
     return duplicate ? `A plan with this title already exists: "${duplicate.name_en}"` : null;
-  }, [plan.title_en, existingPlans]);
+  }, [plan.name_en, existingPlans]);
 
   // Check for similar vision
   const similarVisionWarning = useMemo(() => {
@@ -87,11 +87,19 @@ function StrategicPlanBuilder() {
   }, [plan.vision_en, existingPlans]);
 
   const savePlan = useMutation({
-    mutationFn: (data) => base44.entities.StrategicPlan.create(data),
+    mutationFn: (data) => base44.entities.StrategicPlan.create({
+      name_en: data.name_en,
+      name_ar: data.name_ar,
+      vision_en: data.vision_en,
+      vision_ar: data.vision_ar,
+      objectives: data.objectives,
+      status: 'draft'
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries(['strategic-plans']);
+      queryClient.invalidateQueries(['strategic-plans-global']);
       queryClient.invalidateQueries(['strategy-context-plans']);
-      setPlan({ title_en: '', title_ar: '', vision_en: '', vision_ar: '', objectives: [] });
+      setPlan({ name_en: '', name_ar: '', vision_en: '', vision_ar: '', objectives: [] });
       setDuplicateWarnings([]);
       toast.success(t({ en: 'Strategic plan saved successfully', ar: 'تم حفظ الخطة الاستراتيجية بنجاح' }));
     },
@@ -105,35 +113,55 @@ function StrategicPlanBuilder() {
     // Build context-aware prompt
     const contextPrompt = buildStrategyContextPrompt(strategyContext);
     
+    // Define MoMAH sectors for sector-specific objectives
+    const momahSectors = `
+MOMAH KEY SECTORS (Generate at least one objective per sector):
+1. URBAN_PLANNING: Urban planning, master plans, zoning, building codes, land use
+2. HOUSING: Sakani program, affordable housing, real estate regulation, rental market
+3. INFRASTRUCTURE: Roads, utilities, public facilities, bridges, tunnels
+4. ENVIRONMENT: Waste management, recycling, green initiatives, pollution control
+5. SMART_CITIES: IoT, AI, digital infrastructure, sensors, smart traffic
+6. DIGITAL_SERVICES: E-services, Baladi platform, permits, licenses, digital government
+7. CITIZEN_SERVICES: Customer service, complaints, public engagement, service centers
+8. RURAL_DEVELOPMENT: Rural communities, agricultural areas, village services
+9. PUBLIC_SPACES: Parks, gardens, plazas, recreational facilities, sports venues
+10. WATER_RESOURCES: Water supply, irrigation, desalination, water conservation
+11. TRANSPORTATION: Public transit, parking, traffic management, roads
+12. HERITAGE: Heritage preservation, historical sites, cultural buildings
+`;
+
     const saudiContext = `
-SAUDI ARABIA MOMRAH CONTEXT:
-- Ministry of Municipal, Rural Affairs and Housing (MoMRAH) mandate
+SAUDI ARABIA MOMAH CONTEXT:
+- Ministry of Municipalities and Housing (MoMAH) mandate
 - 13 Administrative Regions: Riyadh, Makkah, Madinah, Eastern Province, Asir, Tabuk, Hail, Northern Borders, Jazan, Najran, Al-Baha, Al-Jouf, Qassim
 - Major Cities: Riyadh, Jeddah, Makkah Al-Mukarramah, Madinah Al-Munawwarah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif
 - 285+ municipalities and 17 major Amanats
 - Vision 2030 Programs: Quality of Life, Housing (Sakani - 70% ownership target), National Transformation, Thriving Cities
 - Focus Areas: Smart Cities, Sustainable Development, Citizen Services (Baladi), Urban Planning, Housing, Infrastructure, Rural Development, Innovation
-- Key Sectors: Transportation, Environment, Urban Planning, Digital Services, Public Safety, Infrastructure, Housing, Smart City, Waste Management, Water Resources
+
+${momahSectors}
 `;
 
     const result = await invokeAI({
-      system_prompt: `You are a senior bilingual strategic planning expert within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH). You have deep expertise in Vision 2030, Saudi municipal governance, and government strategic planning.
+      system_prompt: `You are a senior bilingual strategic planning expert within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH). You have deep expertise in Vision 2030, Saudi municipal governance, and government strategic planning.
 
 ${saudiContext}
 
 Your role is to analyze the existing strategic landscape and create comprehensive NEW strategic plans that:
 - Fill identified gaps in Saudi municipal innovation
-- Align with Vision 2030 and MoMRAH's extensive mandate
+- Align with Vision 2030 and MoMAH's extensive mandate
 - Consider all 13 Saudi regions and major cities
 - Support the Kingdom's transformation objectives
 - Address citizen needs and improve quality of life
+
+CRITICAL: Generate SECTOR-SPECIFIC objectives. Each objective MUST focus on ONE specific sector only. Do NOT mix multiple sectors in a single objective.
 
 You MUST provide ALL content in BOTH English and formal Arabic. Arabic content should be professional, official, and culturally appropriate for Saudi government documentation.`,
       prompt: `${contextPrompt}
 
 Based on the strategic context above, generate a COMPREHENSIVE strategic plan for Saudi municipalities that:
 1. Addresses ALL identified gaps thoroughly
-2. Aligns with Vision 2030 and MoMRAH priorities
+2. Aligns with Vision 2030 and MoMAH priorities
 3. Avoids duplicating existing plans
 4. Focuses on uncovered sectors and unresolved challenges across Saudi regions
 5. Considers all major Saudi cities and their unique needs
@@ -142,21 +170,25 @@ Based on the strategic context above, generate a COMPREHENSIVE strategic plan fo
 
 CRITICAL REQUIREMENTS:
 - Generate content in BOTH English AND formal Arabic (professional government language)
-- Include 6-10 strategic objectives to ensure comprehensive coverage of MoMRAH's mandate
+- Generate 12-15 strategic objectives to fully cover MoMAH's extensive mandate
+- EACH objective MUST focus on ONE specific sector (from the list above)
+- Include the sector code in each objective for tracking
+- Do NOT combine multiple sectors in one objective
 - Each objective should address a specific gap, sector, or opportunity
 - Reference relevant Vision 2030 programs where applicable
 - Consider Saudi cultural context and government protocols
 
 Format as JSON with:
-- title_en: Unique, descriptive title reflecting MoMRAH mandate (English)
+- title_en: Unique, descriptive title reflecting MoMAH mandate (English)
 - title_ar: Professional Arabic title suitable for official documents
 - vision_en: Compelling vision statement aligned with Vision 2030 (2-3 sentences, English)
 - vision_ar: Same vision in formal Arabic suitable for government documents
-- objectives: Array of 6-10 objectives, each with:
-  - name_en: Clear, actionable objective name in English
+- objectives: Array of 12-15 SECTOR-SPECIFIC objectives, each with:
+  - name_en: Clear, actionable objective name in English (focus on ONE sector)
   - name_ar: Objective name in formal Arabic
   - description_en: Detailed description with scope, expected outcomes, and Vision 2030 alignment (2-3 sentences)
-  - description_ar: Same description in formal Arabic`,
+  - description_ar: Same description in formal Arabic
+  - sector_code: One of: URBAN_PLANNING, HOUSING, INFRASTRUCTURE, ENVIRONMENT, SMART_CITIES, DIGITAL_SERVICES, CITIZEN_SERVICES, RURAL_DEVELOPMENT, PUBLIC_SPACES, WATER_RESOURCES, TRANSPORTATION, HERITAGE`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -172,9 +204,10 @@ Format as JSON with:
                 name_en: { type: "string" },
                 name_ar: { type: "string" },
                 description_en: { type: "string" },
-                description_ar: { type: "string" }
+                description_ar: { type: "string" },
+                sector_code: { type: "string" }
               },
-              required: ["name_en", "name_ar", "description_en", "description_ar"]
+              required: ["name_en", "name_ar", "description_en", "description_ar", "sector_code"]
             }
           }
         },
@@ -185,9 +218,18 @@ Format as JSON with:
     if (result.success && result.data?.response) {
       const generatedPlan = result.data.response;
       
+      // Map the generated plan to correct field names
+      const mappedPlan = {
+        name_en: generatedPlan.title_en,
+        name_ar: generatedPlan.title_ar,
+        vision_en: generatedPlan.vision_en,
+        vision_ar: generatedPlan.vision_ar,
+        objectives: generatedPlan.objectives || []
+      };
+      
       // Check generated objectives for duplicates
       const warnings = [];
-      generatedPlan.objectives?.forEach((obj, index) => {
+      mappedPlan.objectives?.forEach((obj, index) => {
         const duplicates = checkObjectiveSimilarity(obj, existingObjectives);
         if (duplicates.length > 0) {
           warnings.push({
@@ -199,7 +241,7 @@ Format as JSON with:
       });
       
       setDuplicateWarnings(warnings);
-      setPlan({ ...plan, ...generatedPlan });
+      setPlan({ ...plan, ...mappedPlan });
       
       if (warnings.length > 0) {
         toast.warning(t({ 
@@ -207,7 +249,10 @@ Format as JSON with:
           ar: `${warnings.length} أهداف قد تكون مشابهة للأهداف الحالية. راجع أدناه.`
         }));
       } else {
-        toast.success(t({ en: 'Strategic plan generated in English and Arabic', ar: 'تم إنشاء الخطة الاستراتيجية بالإنجليزية والعربية' }));
+        toast.success(t({ 
+          en: `Strategic plan generated with ${mappedPlan.objectives.length} sector-specific objectives`, 
+          ar: `تم إنشاء الخطة الاستراتيجية مع ${mappedPlan.objectives.length} هدف قطاعي محدد`
+        }));
       }
     } else {
       toast.error(t({ en: 'Failed to generate plan. Please try again.', ar: 'فشل في إنشاء الخطة. يرجى المحاولة مرة أخرى.' }));
@@ -544,8 +589,8 @@ Format as JSON with:
                 <div>
                   <label className="text-sm font-medium">{t({ en: 'Title (English)', ar: 'العنوان (إنجليزي)' })}</label>
                   <Input
-                    value={plan.title_en}
-                    onChange={(e) => setPlan({ ...plan, title_en: e.target.value })}
+                    value={plan.name_en}
+                    onChange={(e) => setPlan({ ...plan, name_en: e.target.value })}
                     placeholder={t({ en: 'Enter title in English...', ar: 'أدخل العنوان بالإنجليزية...' })}
                     className={duplicateTitleWarning ? 'border-red-500' : ''}
                     dir="ltr"
@@ -557,8 +602,8 @@ Format as JSON with:
                 <div>
                   <label className="text-sm font-medium">{t({ en: 'Title (Arabic)', ar: 'العنوان (عربي)' })}</label>
                   <Input
-                    value={plan.title_ar}
-                    onChange={(e) => setPlan({ ...plan, title_ar: e.target.value })}
+                    value={plan.name_ar}
+                    onChange={(e) => setPlan({ ...plan, name_ar: e.target.value })}
                     placeholder={t({ en: 'Enter title in Arabic...', ar: 'أدخل العنوان بالعربية...' })}
                     dir="rtl"
                   />
@@ -613,6 +658,12 @@ Format as JSON with:
                       <div key={i} className={`p-3 border rounded-lg space-y-3 ${warning ? 'border-amber-500 bg-amber-50' : ''}`}>
                         <div className="flex items-start justify-between">
                           <div className="flex-1 space-y-3">
+                            {/* Sector badge */}
+                            {obj.sector_code && (
+                              <Badge variant="outline" className="text-xs bg-primary/10">
+                                {obj.sector_code.replace(/_/g, ' ')}
+                              </Badge>
+                            )}
                             {/* Objective names - English and Arabic */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <Input
@@ -693,7 +744,7 @@ Format as JSON with:
               <Button 
                 onClick={handleSave} 
                 className="w-full" 
-                disabled={!plan.title_en || duplicateTitleWarning || savePlan.isPending}
+                disabled={!plan.name_en || duplicateTitleWarning || savePlan.isPending}
               >
                 {savePlan.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                 {t({ en: 'Save Strategic Plan', ar: 'حفظ الخطة الاستراتيجية' })}
