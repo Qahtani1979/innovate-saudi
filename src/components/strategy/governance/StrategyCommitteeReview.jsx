@@ -26,6 +26,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+// Helper to safely render AI response items that may be strings or objects
+const renderItemText = (item) => {
+  if (typeof item === 'string') return item;
+  if (item?.title) return item.title;
+  if (item?.subject) return item.subject;
+  if (item?.description) return item.description;
+  if (item?.name) return item.name;
+  if (item?.text) return item.text;
+  return JSON.stringify(item);
+};
+
 export default function StrategyCommitteeReview({ planId }) {
   const { t, language } = useLanguage();
   const { decisions, isLoading, createDecision } = useCommitteeDecisions(planId);
@@ -226,9 +237,7 @@ export default function StrategyCommitteeReview({ planId }) {
                   </p>
                   <ul className="space-y-1">
                     {actionItems.immediate_actions.map((action, idx) => (
-                      <li key={idx} className="text-sm">
-                        {typeof action === 'string' ? action : (action?.title || action?.description || JSON.stringify(action))}
-                      </li>
+                      <li key={idx} className="text-sm">{renderItemText(action)}</li>
                     ))}
                   </ul>
                 </div>
@@ -260,7 +269,7 @@ export default function StrategyCommitteeReview({ planId }) {
                     {meetingSummary.key_decisions.map((decision, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-                        {decision}
+                        {renderItemText(decision)}
                       </li>
                     ))}
                   </ul>
@@ -273,7 +282,7 @@ export default function StrategyCommitteeReview({ planId }) {
                     {meetingSummary.next_steps.map((step, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <ArrowRight className="h-4 w-4 text-blue-500 mt-0.5" />
-                        {step}
+                        {renderItemText(step)}
                       </li>
                     ))}
                   </ul>
@@ -315,7 +324,7 @@ export default function StrategyCommitteeReview({ planId }) {
                     {impactAnalysis.key_success_factors.slice(0, 4).map((factor, idx) => (
                       <li key={idx} className="text-sm flex items-center gap-2">
                         <CheckCircle2 className="h-3 w-3 text-green-500" />
-                        {factor}
+                        {renderItemText(factor)}
                       </li>
                     ))}
                   </ul>
