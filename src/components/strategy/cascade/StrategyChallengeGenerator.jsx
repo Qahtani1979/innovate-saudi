@@ -158,12 +158,12 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
             <label className="text-sm font-medium">
               {t({ en: 'Sector Focus', ar: 'القطاع المستهدف' })}
             </label>
-            <Select value={selectedSector} onValueChange={setSelectedSector}>
+            <Select value={selectedSector || "all"} onValueChange={(v) => setSelectedSector(v === "all" ? "" : v)}>
               <SelectTrigger>
                 <SelectValue placeholder={t({ en: 'All sectors', ar: 'جميع القطاعات' })} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t({ en: 'All sectors', ar: 'جميع القطاعات' })}</SelectItem>
+                <SelectItem value="all">{t({ en: 'All sectors', ar: 'جميع القطاعات' })}</SelectItem>
                 {sectors?.map(sector => (
                   <SelectItem key={sector.id} value={sector.id}>
                     {isRTL ? sector.name_ar : sector.name_en}
