@@ -440,6 +440,40 @@ AND table_name IN ('policies', 'marketing_campaigns');
 
 ## 🔴 CRITICAL: Generator Fixes
 
+### GENERATOR DATA ACCESS PATTERNS (VALIDATED)
+
+**Front-end cascade generators (React):**
+
+| Generator | Source Component | How it fetches existing data | Blind / Scoped? |
+|-----------|------------------|------------------------------|------------------|
+| Challenges | `StrategyChallengeGenerator.jsx` | Fetches **all** non-deleted `strategic_plans` and all active `sectors` (no pagination / tenant scoping) | ⚠️ Semi-blind (plan must be selected, but plan list is global) |
+| Pilots | `StrategyToPilotGenerator.jsx` | Fetches up to **50 challenges** globally (non-deleted, status in `approved/published/open`), **all** matching solutions (up to 50) | ⚠️ Partially scoped (status filter + limit, no municipality/plan scoping) |
+| Living Labs | `StrategyToLivingLabGenerator.jsx` | Fetches **all** non-deleted `strategic_plans` + **all** active `municipalities` | 🔴 Blind global fetch |
+| Events | `StrategyToEventGenerator.jsx` | Fetches **all** non-deleted `strategic_plans` | 🔴 Blind global fetch |
+| Partnerships | `StrategyToPartnershipGenerator.jsx` | Fetches **all** non-deleted `strategic_plans` | 🔴 Blind global fetch |
+| R&D Calls | `StrategyToRDCallGenerator.jsx` | Fetches up to **50 challenges** globally (non-deleted, approved/published/open) | ⚠️ Partially scoped (status + limit only) |
+| Campaigns | `StrategyToCampaignGenerator.jsx` | Fetches **all** non-deleted `strategic_plans` | 🔴 Blind global fetch |
+| Pillars | `StrategyPillarGenerator.jsx` | Calls edge function with single `strategic_plan_id`, but **does not** load or compare existing pillars | 🔴 Blind w.r.t. existing pillars |
+
+**Edge generators (backend functions):**
+
+| Function | File | Data inputs | Blind / Scoped? |
+|----------|------|------------|------------------|
+| `strategy-challenge-generator` | `supabase/functions/strategy-challenge-generator/index.ts` | Loads **one** `strategic_plan` by ID; uses only that plan's `objectives`; no knowledge of **existing challenges** | ⚠️ Scoped to plan, blind to existing entities |
+| `strategy-pilot-generator` | `supabase/functions/strategy-pilot-generator/index.ts` | Loads **one** `challenge` (and optional `solution`) by ID; no knowledge of existing pilots for that challenge | ⚠️ Scoped to challenge, blind to existing pilots |
+| `strategy-lab-research-generator` | (viewed via component) | Uses `strategic_plan_id` + municipality context; does **not** inspect existing `living_labs` | 🔴 Blind to existing labs |
+| `strategy-rd-call-generator` | (viewed via component) | Uses selected `challenge_ids`; does **not** inspect existing `rd_calls` for those challenges | 🔴 Blind to existing R&D calls |
+| `strategy-campaign-generator` | `supabase/functions/strategy-campaign-generator/index.ts` | Uses `strategic_context` + `strategic_plan_id`; no check against existing `marketing_campaigns` | 🔴 Blind to existing campaigns |
+| `strategy-pillar-generator` | (edge) | Uses `strategic_plan_id`, optional context; does **not** read existing pillars from DB | 🔴 Blind to existing pillars |
+
+**Conclusion:** All generators either:
+- Fetch **broad global sets** of source data (plans, challenges, sectors, municipalities) without scoping to user/tenant, OR
+- Generate new strategy-derived records **without checking** existing entities of the same type (no deduplication, no “already exists” awareness).
+
+This confirms the user concern: generators are effectively **blind** to existing records when creating new strategy-derived entities.
+
+---
+
 ### TASK-GEN-001: Fix StrategyChallengeGenerator
 **File:** `src/components/strategy/cascade/StrategyChallengeGenerator.jsx`  
 **Priority:** Critical  
@@ -472,7 +506,7 @@ AND table_name IN ('policies', 'marketing_campaigns');
 **Effort:** 5 min  
 **Status:** ❌ Not Started
 
-**Current (Lines 88-91):** Already sets `is_strategy_derived: true`
+**Current (Lines 79-92):** Already sets `is_strategy_derived: true`
 
 **Fix - Add `strategy_derivation_date` after line 90:**
 ```javascript
@@ -489,15 +523,20 @@ status: 'planning'
 **Effort:** 20 min  
 **Status:** ❌ Not Started
 
-**Issue 1:** Challenge query doesn't fetch `strategic_plan_ids` (Line 27-36)
-**Issue 2:** Insert doesn't set any strategy fields (Lines 92-106)
+**Issue 1:** Challenge query currently selects:
+```javascript
+.select('id, title_en, title_ar, municipality_id')
+```
+Does not load `strategic_plan_ids`, so pilots cannot inherit strategic linkage.
 
-**Fix challenges query (Line 29):**
+**Issue 2:** Insert does not set any strategy fields (lines 91-105).
+
+**Fix challenges query (Line 28-30):**
 ```javascript
 .select('id, title_en, title_ar, municipality_id, strategic_plan_ids')
 ```
 
-**Fix insert (Lines 92-106) - Add after line 105:**
+**Fix insert (Lines 91-105) - Add after line 104:**
 ```javascript
 status: 'proposed',
 strategic_plan_ids: challenge?.strategic_plan_ids || [],
@@ -513,14 +552,24 @@ strategy_derivation_date: new Date().toISOString()
 **Effort:** 10 min  
 **Status:** ❌ Not Started
 
-**Current (Lines 91-102):** Sets `strategic_plan_ids` but not the derived flags
+**Current (Lines 90-102):** Sets `strategic_plan_ids` but not derived flags.
 
-**Fix - Add after line 99:**
+**Fix - Replace insert block:**
 ```javascript
-strategic_plan_ids: [selectedPlanId],
-is_strategy_derived: true,
-strategy_derivation_date: new Date().toISOString(),
-status: 'planning',
+.insert({
+  title_en: event.title_en,
+  title_ar: event.title_ar,
+  description_en: event.description_en,
+  description_ar: event.description_ar,
+  event_type: eventType,
+  target_audience: targetAudience,
+  strategic_plan_ids: [selectedPlanId],
+  is_strategy_derived: true,
+  strategy_derivation_date: new Date().toISOString(),
+  status: 'planning',
+  estimated_attendees: event.estimated_attendees,
+  suggested_agenda: event.agenda
+})
 ```
 
 ---
@@ -531,7 +580,7 @@ status: 'planning',
 **Effort:** 5 min  
 **Status:** ❌ Not Started
 
-**Current (Lines 89-91):** Already sets `is_strategy_derived: true`
+**Current (Lines 82-91):** Already sets `is_strategy_derived: true` but no `strategy_derivation_date`.
 
 **Fix - Add `strategy_derivation_date` after line 90:**
 ```javascript
@@ -548,23 +597,21 @@ status: 'proposed'
 **Effort:** 15 min  
 **Status:** ❌ Not Started
 
-**Issue:** No strategy fields set at all. Also uses `challenge_ids` array instead of `strategic_plan_ids`.
+**Issue:** No strategy fields set at all. Also uses `challenge_ids` array but does not propagate `strategic_plan_ids`.
 
-**Current (Lines 75-89):** Missing all strategy fields
-
-**Fix - Modify to add strategic linking:**
+**Fix - Modify insert block:**
 ```javascript
 .insert({
   // ... existing fields
   challenge_ids: selectedChallenges,
-  strategic_plan_ids: [], // Need to derive from selected challenges
+  strategic_plan_ids: [], // derive from selected challenges in future task
   is_strategy_derived: true,
   strategy_derivation_date: new Date().toISOString(),
   status: 'draft'
 })
 ```
 
-**Also update challenges query to fetch `strategic_plan_ids` and aggregate them.**
+(Plus: future enhancement to load `strategic_plan_ids` from challenges and populate.)
 
 ---
 
@@ -575,30 +622,33 @@ status: 'proposed'
 **Effort:** 30 min  
 **Status:** ❌ Not Started
 
-**Issue:** Both use `strategic_plan_id` (singular) instead of `strategic_plan_ids` (array).
-Also need to verify target tables exist.
+**Issue:** Both use `strategic_plan_id` (singular) instead of `strategic_plan_ids` (array), and do not set derived flags.
 
-**StrategyToPolicyGenerator (Line 75):**
+**StrategyToPolicyGenerator (insert block):**
 ```javascript
 // Current:
 strategic_plan_id: selectedPlanId,
 
-// Should be (if column is array):
+// Should be:
 strategic_plan_ids: [selectedPlanId],
 is_strategy_derived: true,
 strategy_derivation_date: new Date().toISOString()
 ```
 
-**StrategyToCampaignGenerator (Line 75):**
+**StrategyToCampaignGenerator (insert block in `handleSaveCampaign`):**
 ```javascript
 // Current:
 strategic_plan_id: selectedPlanId,
+status: 'draft'
 
-// Should be (if column is array):
+// Should be:
 strategic_plan_ids: [selectedPlanId],
 is_strategy_derived: true,
-strategy_derivation_date: new Date().toISOString()
+strategy_derivation_date: new Date().toISOString(),
+status: 'draft'
 ```
+
+(Assumes DB tables have been updated per TASK-DB-005.)
 
 ---
 
