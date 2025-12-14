@@ -2773,6 +2773,68 @@ export type Database = {
         }
         Relationships: []
       }
+      environmental_factors: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by_email: string | null
+          date_identified: string | null
+          description_ar: string | null
+          description_en: string | null
+          id: string
+          impact_level: string | null
+          impact_type: string | null
+          source: string | null
+          strategic_plan_id: string | null
+          title_ar: string | null
+          title_en: string
+          trend: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by_email?: string | null
+          date_identified?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          impact_level?: string | null
+          impact_type?: string | null
+          source?: string | null
+          strategic_plan_id?: string | null
+          title_ar?: string | null
+          title_en: string
+          trend?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by_email?: string | null
+          date_identified?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          impact_level?: string | null
+          impact_type?: string | null
+          source?: string | null
+          strategic_plan_id?: string | null
+          title_ar?: string | null
+          title_en?: string
+          trend?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "environmental_factors_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluation_templates: {
         Row: {
           created_at: string | null
@@ -9351,6 +9413,68 @@ export type Database = {
         }
         Relationships: []
       }
+      stakeholder_analyses: {
+        Row: {
+          contact_info: string | null
+          created_at: string | null
+          created_by_email: string | null
+          current_engagement: string | null
+          engagement_strategy: string | null
+          expectations: string | null
+          id: string
+          influence_description: string | null
+          interest_level: number | null
+          power_level: number | null
+          stakeholder_name_ar: string | null
+          stakeholder_name_en: string
+          stakeholder_type: string | null
+          strategic_plan_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          contact_info?: string | null
+          created_at?: string | null
+          created_by_email?: string | null
+          current_engagement?: string | null
+          engagement_strategy?: string | null
+          expectations?: string | null
+          id?: string
+          influence_description?: string | null
+          interest_level?: number | null
+          power_level?: number | null
+          stakeholder_name_ar?: string | null
+          stakeholder_name_en: string
+          stakeholder_type?: string | null
+          strategic_plan_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          contact_info?: string | null
+          created_at?: string | null
+          created_by_email?: string | null
+          current_engagement?: string | null
+          engagement_strategy?: string | null
+          expectations?: string | null
+          id?: string
+          influence_description?: string | null
+          interest_level?: number | null
+          power_level?: number | null
+          stakeholder_name_ar?: string | null
+          stakeholder_name_en?: string
+          stakeholder_type?: string | null
+          strategic_plan_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stakeholder_analyses_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stakeholder_feedback: {
         Row: {
           comments: string | null
@@ -9761,6 +9885,195 @@ export type Database = {
           },
         ]
       }
+      strategy_baselines: {
+        Row: {
+          baseline_value: number
+          category: string | null
+          collection_date: string | null
+          created_at: string | null
+          created_by_email: string | null
+          id: string
+          kpi_name_ar: string | null
+          kpi_name_en: string
+          notes: string | null
+          source: string | null
+          status: string | null
+          strategic_plan_id: string | null
+          target_value: number | null
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          baseline_value: number
+          category?: string | null
+          collection_date?: string | null
+          created_at?: string | null
+          created_by_email?: string | null
+          id?: string
+          kpi_name_ar?: string | null
+          kpi_name_en: string
+          notes?: string | null
+          source?: string | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          baseline_value?: number
+          category?: string | null
+          collection_date?: string | null
+          created_at?: string | null
+          created_by_email?: string | null
+          id?: string
+          kpi_name_ar?: string | null
+          kpi_name_en?: string
+          notes?: string | null
+          source?: string | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_baselines_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_inputs: {
+        Row: {
+          ai_extracted_themes: string[] | null
+          created_at: string | null
+          created_by_email: string | null
+          id: string
+          input_text: string
+          input_title: string | null
+          priority_votes: number | null
+          sentiment: string | null
+          source_entity_id: string | null
+          source_name: string | null
+          source_type: string | null
+          status: string | null
+          strategic_plan_id: string | null
+          theme: string | null
+        }
+        Insert: {
+          ai_extracted_themes?: string[] | null
+          created_at?: string | null
+          created_by_email?: string | null
+          id?: string
+          input_text: string
+          input_title?: string | null
+          priority_votes?: number | null
+          sentiment?: string | null
+          source_entity_id?: string | null
+          source_name?: string | null
+          source_type?: string | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          theme?: string | null
+        }
+        Update: {
+          ai_extracted_themes?: string[] | null
+          created_at?: string | null
+          created_by_email?: string | null
+          id?: string
+          input_text?: string
+          input_title?: string | null
+          priority_votes?: number | null
+          sentiment?: string | null
+          source_entity_id?: string | null
+          source_name?: string | null
+          source_type?: string | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          theme?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_inputs_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_risks: {
+        Row: {
+          category: string | null
+          contingency_plan: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          impact: number | null
+          mitigation_strategy: string | null
+          name_ar: string | null
+          name_en: string
+          owner_email: string | null
+          probability: number | null
+          residual_impact: number | null
+          residual_probability: number | null
+          status: string | null
+          strategic_plan_id: string | null
+          triggers: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          contingency_plan?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          impact?: number | null
+          mitigation_strategy?: string | null
+          name_ar?: string | null
+          name_en: string
+          owner_email?: string | null
+          probability?: number | null
+          residual_impact?: number | null
+          residual_probability?: number | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          triggers?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          contingency_plan?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          impact?: number | null
+          mitigation_strategy?: string | null
+          name_ar?: string | null
+          name_en?: string
+          owner_email?: string | null
+          probability?: number | null
+          residual_impact?: number | null
+          residual_probability?: number | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          triggers?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_risks_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subsectors: {
         Row: {
           code: string | null
@@ -9804,6 +10117,65 @@ export type Database = {
             columns: ["sector_id"]
             isOneToOne: false
             referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      swot_analyses: {
+        Row: {
+          created_at: string | null
+          created_by_email: string | null
+          description_ar: string | null
+          description_en: string | null
+          id: string
+          impact_level: string | null
+          priority: string | null
+          quadrant: string
+          related_entity_ids: string[] | null
+          source: string | null
+          strategic_plan_id: string | null
+          title_ar: string | null
+          title_en: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by_email?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          impact_level?: string | null
+          priority?: string | null
+          quadrant: string
+          related_entity_ids?: string[] | null
+          source?: string | null
+          strategic_plan_id?: string | null
+          title_ar?: string | null
+          title_en: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by_email?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          impact_level?: string | null
+          priority?: string | null
+          quadrant?: string
+          related_entity_ids?: string[] | null
+          source?: string | null
+          strategic_plan_id?: string | null
+          title_ar?: string | null
+          title_en?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swot_analyses_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
             referencedColumns: ["id"]
           },
         ]
