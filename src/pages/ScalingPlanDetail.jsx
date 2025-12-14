@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { TrendingUp, MapPin, Target, Award, Users, FileText, Activity } from 'lucide-react';
+import { TrendingUp, MapPin, Target, Award, Users, FileText, Activity, Sparkles } from 'lucide-react';
 import ScalingExecutionDashboard from '../components/scaling/ScalingExecutionDashboard';
+import StrategicAlignmentWidget from '../components/strategy/StrategicAlignmentWidget';
 
 export default function ScalingPlanDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -121,10 +122,14 @@ export default function ScalingPlanDetail() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7 h-auto">
+        <TabsList className="grid w-full grid-cols-8 h-auto">
           <TabsTrigger value="overview" className="flex flex-col gap-1 py-3">
             <FileText className="h-4 w-4" />
             <span className="text-xs">{t({ en: 'Overview', ar: 'نظرة' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="strategy" className="flex flex-col gap-1 py-3">
+            <Target className="h-4 w-4" />
+            <span className="text-xs">{t({ en: 'Strategy', ar: 'استراتيجية' })}</span>
           </TabsTrigger>
           <TabsTrigger value="municipalities" className="flex flex-col gap-1 py-3">
             <MapPin className="h-4 w-4" />
@@ -174,6 +179,14 @@ export default function ScalingPlanDetail() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="strategy">
+          <StrategicAlignmentWidget 
+            entityType="scaling_plan"
+            entityId={planId}
+            title={t({ en: 'Strategic Alignment', ar: 'التوافق الاستراتيجي' })}
+          />
         </TabsContent>
 
         <TabsContent value="municipalities">

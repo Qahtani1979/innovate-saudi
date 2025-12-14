@@ -27,6 +27,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 
 function PilotCreatePage() {
   const { hasPermission } = usePermissions();
@@ -136,7 +137,9 @@ function PilotCreatePage() {
     image_url: '',
     gallery_urls: [],
     video_url: '',
-    tags: []
+    tags: [],
+    strategic_plan_ids: [],
+    strategic_objective_ids: []
   });
 
   const [safetyChecklistGenerated, setSafetyChecklistGenerated] = useState(false);
@@ -637,6 +640,9 @@ function PilotCreatePage() {
       video_url: clean(formData.video_url),
       gallery_urls: cleanArray(formData.gallery_urls),
       tags: cleanArray(formData.tags),
+      // Strategic alignment
+      strategic_plan_ids: cleanArray(formData.strategic_plan_ids),
+      strategic_objective_ids: cleanArray(formData.strategic_objective_ids),
       // Flags
       is_published: formData.is_published || false,
       is_flagship: formData.is_flagship || false,
@@ -923,6 +929,18 @@ function PilotCreatePage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Strategic Alignment Section */}
+            <div className="border-t pt-4 mt-4">
+              <StrategicPlanSelector
+                selectedPlanIds={formData.strategic_plan_ids || []}
+                selectedObjectiveIds={formData.strategic_objective_ids || []}
+                onPlanChange={(ids) => setFormData({...formData, strategic_plan_ids: ids})}
+                onObjectiveChange={(ids) => setFormData({...formData, strategic_objective_ids: ids})}
+                showObjectives={true}
+                label={t({ en: 'Strategic Alignment | التوافق الاستراتيجي', ar: 'التوافق الاستراتيجي' })}
+              />
             </div>
 
             {formData.challenge_id && formData.solution_id && (

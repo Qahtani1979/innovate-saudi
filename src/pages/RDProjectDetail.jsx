@@ -38,6 +38,7 @@ import PolicyImpactTracker from '../components/rd/PolicyImpactTracker';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
+import StrategicAlignmentWidget from '../components/strategy/StrategicAlignmentWidget';
 
 export default function RDProjectDetail() {
   const { hasPermission, user } = usePermissions();
@@ -632,6 +633,13 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   </CardContent>
                 </Card>
               )}
+
+              {/* Strategic Alignment Section */}
+              <StrategicAlignmentWidget 
+                entityType="rd_project"
+                entityId={projectId}
+                title={t({ en: 'Strategic Alignment', ar: 'التوافق الاستراتيجي' })}
+              />
             </TabsContent>
 
             <TabsContent value="team">
