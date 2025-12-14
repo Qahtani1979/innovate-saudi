@@ -118,14 +118,14 @@ This matrix documents all integrations required for the complete Strategy Leader
 |-----------|------------------|------------------|-----------|
 | StrategyPillarGenerator | strategy_pillars (strategy DB) | CRUD | ✅ Real AI |
 | StrategyObjectiveGenerator | strategic_objectives (strategy DB) | CRUD | ✅ Real AI |
-| StrategyTimelinePlanner | strategy_milestones (strategy DB) | CRUD | ❌ None |
-| StrategyOwnershipAssigner | user_profiles, team_members | SELECT for assignment | ❌ None |
+| StrategyTimelinePlanner | strategy_milestones (strategy DB) | CRUD | ✅ Real AI |
+| StrategyOwnershipAssigner | user_profiles, team_members | SELECT for assignment | ✅ Real AI |
 | ActionPlanBuilder | action_plans, action_items (strategy DB) | CRUD | ✅ Real AI |
-| NationalStrategyLinker | national_strategy_alignments (strategy DB) | CRUD | ⚠️ Mock |
+| NationalStrategyLinker | national_strategy_alignments (strategy DB) | CRUD | ✅ Real AI |
 | SectorStrategyBuilder | sectors (platform), sector_strategies (DB) | SELECT + CRUD | ✅ Real AI |
-| StrategyTemplateLibrary | strategy_templates (strategy DB) | CRUD | ❌ None |
+| StrategyTemplateLibrary | strategy_templates (strategy DB) | CRUD | N/A |
 
-#### AI Edge Functions
+#### AI Edge Functions (7 Functions)
 
 | Function | Purpose |
 |----------|---------|
@@ -133,6 +133,9 @@ This matrix documents all integrations required for the complete Strategy Leader
 | strategy-objective-generator | Generate SMART objectives with KPIs |
 | strategy-action-plan-generator | Generate action items for objectives |
 | strategy-sector-generator | Generate sector-specific strategies |
+| strategy-national-linker | AI-powered Vision 2030/SDG/NIS alignment suggestions |
+| strategy-timeline-generator | Generate milestone timeline with dependencies and deliverables |
+| strategy-ownership-ai | AI-powered RACI assignment suggestions based on roles |
 
 #### Database Tables
 

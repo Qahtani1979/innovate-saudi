@@ -49,18 +49,20 @@ Phase 2 (Strategy Creation) is the **formulation and articulation phase** where 
 │   ├── Milestone & Deliverable Planning                                          │
 │   └── Budget Allocation                                                         │
 │                                                                                  │
-│   PHASE 2F: GOVERNANCE & OWNERSHIP                                              │
-│   ├── RACI Matrix Development                                                   │
-│   ├── Accountability Structures                                                 │
-│   ├── Decision Rights Definition                                                │
-│   └── Escalation Pathways                                                       │
-│                                                                                  │
-│   PHASE 2G: TIMELINE & DEPENDENCIES                                             │
-│   ├── Strategic Timeline Development                                            │
-│   ├── Dependency Mapping                                                        │
-│   ├── Critical Path Identification                                              │
-│   └── Milestone Sequencing                                                      │
-│                                                                                  │
+│   PHASE 2F: GOVERNANCE & OWNERSHIP (AI-ASSISTED)                             │
+│   ├── RACI Matrix Development                                                │
+│   ├── AI-Powered Role Assignment Suggestions                                 │
+│   ├── Accountability Structures                                              │
+│   ├── Decision Rights Definition                                             │
+│   └── Escalation Pathways                                                    │
+│                                                                              │
+│   PHASE 2G: TIMELINE & DEPENDENCIES (AI-ASSISTED)                            │
+│   ├── Strategic Timeline Development                                         │
+│   ├── AI-Powered Milestone Generation                                        │
+│   ├── Dependency Mapping                                                     │
+│   ├── Critical Path Identification                                           │
+│   └── Milestone Sequencing                                                   │
+│                                                                              │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
