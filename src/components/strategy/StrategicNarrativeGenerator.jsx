@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -18,18 +19,54 @@ export default function StrategicNarrativeGenerator({ planId }) {
     fallbackData: null
   });
 
+  // Fetch real data from supabase
+  const { data: plan } = useQuery({
+    queryKey: ['strategic-plan-narrative', planId],
+    queryFn: async () => {
+      if (!planId) return null;
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('id', planId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!planId
+  });
+
+  const { data: pilots = [] } = useQuery({
+    queryKey: ['pilots-narrative'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('id, status')
+        .eq('is_deleted', false);
+      if (error) return [];
+      return data || [];
+    }
+  });
+
+  const { data: challenges = [] } = useQuery({
+    queryKey: ['challenges-narrative'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('id, status')
+        .eq('is_deleted', false);
+      if (error) return [];
+      return data || [];
+    }
+  });
+
   const generateNarrative = async () => {
     try {
-      const plan = await base44.entities.StrategicPlan.filter({ id: planId });
-      const pilots = await base44.entities.Pilot.list();
-      const challenges = await base44.entities.Challenge.list();
-
       const response = await invokeAI({
         prompt: `Write a compelling strategic narrative for this municipal innovation plan:
 
-Plan: ${plan[0]?.name_en}
-Vision: ${plan[0]?.vision_en}
-Themes: ${plan[0]?.strategic_themes?.map(t => t.name_en).join(', ')}
+Plan: ${plan?.name_en || 'Innovation Strategy'}
+Vision: ${plan?.vision_en || 'Advancing municipal innovation'}
+Themes: ${plan?.strategic_themes?.map(t => t.name_en).join(', ') || 'Innovation, Digital Transformation, Sustainability'}
 Active Pilots: ${pilots.filter(p => p.status === 'active').length}
 Resolved Challenges: ${challenges.filter(c => c.status === 'resolved').length}
 
@@ -59,7 +96,7 @@ Make it compelling, data-driven, and bilingual (English then Arabic).`,
         setNarrative(response.data);
       }
     } catch (err) {
-      toast.error(t({ en: 'Failed to load data', ar: 'فشل تحميل البيانات' }));
+      toast.error(t({ en: 'Failed to generate narrative', ar: 'فشل في إنشاء السرد' }));
     }
   };
 
@@ -107,7 +144,7 @@ Make it compelling, data-driven, and bilingual (English then Arabic).`,
         {!narrative && !isLoading && (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-muted-foreground">
               {t({ en: 'AI writes a compelling strategic story from your data', ar: 'الذكاء يكتب قصة استراتيجية مقنعة من بياناتك' })}
             </p>
           </div>
@@ -128,36 +165,36 @@ Make it compelling, data-driven, and bilingual (English then Arabic).`,
 
             <div className="prose prose-sm max-w-none">
               <div className="space-y-4">
-                <div className="p-4 bg-white rounded border">
-                  <h4 className="font-bold text-slate-900 mb-2">
+                <div className="p-4 bg-background rounded border">
+                  <h4 className="font-bold mb-2">
                     {t({ en: '🎯 Vision', ar: '🎯 الرؤية' })}
                   </h4>
                   <ReactMarkdown>{narrative.vision_section}</ReactMarkdown>
                 </div>
 
-                <div className="p-4 bg-white rounded border">
-                  <h4 className="font-bold text-slate-900 mb-2">
+                <div className="p-4 bg-background rounded border">
+                  <h4 className="font-bold mb-2">
                     {t({ en: '📍 Current State', ar: '📍 الحالة الحالية' })}
                   </h4>
                   <ReactMarkdown>{narrative.context_section}</ReactMarkdown>
                 </div>
 
-                <div className="p-4 bg-white rounded border">
-                  <h4 className="font-bold text-slate-900 mb-2">
+                <div className="p-4 bg-background rounded border">
+                  <h4 className="font-bold mb-2">
                     {t({ en: '🚀 The Journey', ar: '🚀 الرحلة' })}
                   </h4>
                   <ReactMarkdown>{narrative.journey_section}</ReactMarkdown>
                 </div>
 
-                <div className="p-4 bg-white rounded border">
-                  <h4 className="font-bold text-slate-900 mb-2">
+                <div className="p-4 bg-background rounded border">
+                  <h4 className="font-bold mb-2">
                     {t({ en: '⭐ Impact & Achievements', ar: '⭐ التأثير والإنجازات' })}
                   </h4>
                   <ReactMarkdown>{narrative.impact_section}</ReactMarkdown>
                 </div>
 
-                <div className="p-4 bg-white rounded border">
-                  <h4 className="font-bold text-slate-900 mb-2">
+                <div className="p-4 bg-background rounded border">
+                  <h4 className="font-bold mb-2">
                     {t({ en: '🔮 The Road Ahead', ar: '🔮 الطريق القادم' })}
                   </h4>
                   <ReactMarkdown>{narrative.future_section}</ReactMarkdown>

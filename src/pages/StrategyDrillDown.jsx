@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import { 
   Target, ChevronDown, ChevronRight, TrendingUp, Beaker, Shield, 
   Users, FileText, Zap, CheckCircle2, AlertCircle, Layers
@@ -29,37 +28,87 @@ function StrategyDrillDown() {
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-drill'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-drill'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-drill'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes-drill'],
-    queryFn: () => base44.entities.Sandbox.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sandboxes')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: livingLabs = [] } = useQuery({
     queryKey: ['living-labs-drill'],
-    queryFn: () => base44.entities.LivingLab.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('living_labs')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: partnerships = [] } = useQuery({
     queryKey: ['partnerships-drill'],
-    queryFn: () => base44.entities.Partnership.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('partnerships')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-drill'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const selectedPlan = strategicPlans.find(p => p.id === selectedPlanId);
@@ -96,7 +145,7 @@ function StrategyDrillDown() {
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       data: filteredData.programs,
-      linkPrefix: 'ProgramDetail'
+      linkPath: '/program-detail'
     },
     { 
       key: 'challenges', 
@@ -105,7 +154,7 @@ function StrategyDrillDown() {
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
       data: filteredData.challenges,
-      linkPrefix: 'ChallengeDetail'
+      linkPath: '/challenge-detail'
     },
     { 
       key: 'sandboxes', 
@@ -114,7 +163,7 @@ function StrategyDrillDown() {
       color: 'text-amber-600',
       bgColor: 'bg-amber-50',
       data: filteredData.sandboxes,
-      linkPrefix: 'SandboxDetail'
+      linkPath: '/sandbox-detail'
     },
     { 
       key: 'livingLabs', 
@@ -123,7 +172,7 @@ function StrategyDrillDown() {
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       data: filteredData.livingLabs,
-      linkPrefix: 'LivingLabDetail'
+      linkPath: '/living-lab-detail'
     },
     { 
       key: 'partnerships', 
@@ -132,7 +181,7 @@ function StrategyDrillDown() {
       color: 'text-teal-600',
       bgColor: 'bg-teal-50',
       data: filteredData.partnerships,
-      linkPrefix: 'PartnershipDetail'
+      linkPath: '/partnership-detail'
     },
     { 
       key: 'pilots', 
@@ -141,20 +190,20 @@ function StrategyDrillDown() {
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
       data: filteredData.pilots,
-      linkPrefix: 'PilotDetail'
+      linkPath: '/pilot-detail'
     }
   ];
 
   const totalLinked = Object.values(filteredData).reduce((sum, arr) => sum + arr.length, 0);
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-6 container mx-auto py-6 px-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">
+          <h1 className="text-3xl font-bold text-foreground">
             {t({ en: 'Strategy Drill-Down', ar: 'التفصيل الاستراتيجي' })}
           </h1>
-          <p className="text-slate-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             {t({ en: 'View all entities linked to a strategic plan', ar: 'عرض جميع الكيانات المرتبطة بخطة استراتيجية' })}
           </p>
         </div>
@@ -174,7 +223,7 @@ function StrategyDrillDown() {
                   {strategicPlans.map(plan => (
                     <SelectItem key={plan.id} value={plan.id}>
                       {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en}
-                      <span className="text-xs text-slate-500 ml-2">({plan.start_year}-{plan.end_year})</span>
+                      <span className="text-xs text-muted-foreground ml-2">({plan.start_year}-{plan.end_year})</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -200,23 +249,23 @@ function StrategyDrillDown() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
-                <p className="text-2xl font-bold text-slate-900">{selectedPlan.start_year}</p>
-                <p className="text-xs text-slate-500">{t({ en: 'Start Year', ar: 'سنة البداية' })}</p>
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-2xl font-bold">{selectedPlan.start_year}</p>
+                <p className="text-xs text-muted-foreground">{t({ en: 'Start Year', ar: 'سنة البداية' })}</p>
               </div>
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
-                <p className="text-2xl font-bold text-slate-900">{selectedPlan.end_year}</p>
-                <p className="text-xs text-slate-500">{t({ en: 'End Year', ar: 'سنة النهاية' })}</p>
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-2xl font-bold">{selectedPlan.end_year}</p>
+                <p className="text-xs text-muted-foreground">{t({ en: 'End Year', ar: 'سنة النهاية' })}</p>
               </div>
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
-                <p className="text-2xl font-bold text-slate-900">{selectedPlan.objectives?.length || 0}</p>
-                <p className="text-xs text-slate-500">{t({ en: 'Objectives', ar: 'الأهداف' })}</p>
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-2xl font-bold">{selectedPlan.objectives?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">{t({ en: 'Objectives', ar: 'الأهداف' })}</p>
               </div>
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
+              <div className="text-center p-3 bg-muted rounded-lg">
                 <Badge className={selectedPlan.status === 'active' ? 'bg-green-600' : 'bg-blue-600'}>
                   {selectedPlan.status}
                 </Badge>
-                <p className="text-xs text-slate-500 mt-1">{t({ en: 'Status', ar: 'الحالة' })}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Status', ar: 'الحالة' })}</p>
               </div>
             </div>
           </CardContent>
@@ -226,11 +275,11 @@ function StrategyDrillDown() {
       {/* Entity Sections */}
       {selectedPlanId && (
         <div className="space-y-4">
-          {entitySections.map(({ key, label, icon: Icon, color, bgColor, data, linkPrefix }) => (
+          {entitySections.map(({ key, label, icon: Icon, color, bgColor, data, linkPath }) => (
             <Card key={key}>
               <Collapsible open={expandedSections[key]} onOpenChange={() => toggleSection(key)}>
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-slate-50 transition-colors">
+                  <CardHeader className="cursor-pointer hover:bg-muted transition-colors">
                     <CardTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${bgColor}`}>
@@ -240,9 +289,9 @@ function StrategyDrillDown() {
                         <Badge variant="secondary">{data.length}</Badge>
                       </div>
                       {expandedSections[key] ? (
-                        <ChevronDown className="h-5 w-5 text-slate-400" />
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
                       ) : (
-                        <ChevronRight className="h-5 w-5 text-slate-400" />
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
                       )}
                     </CardTitle>
                   </CardHeader>
@@ -252,11 +301,11 @@ function StrategyDrillDown() {
                     {data.length > 0 ? (
                       <div className="space-y-2">
                         {data.map(item => (
-                          <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                          <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
                             <div className="flex items-center gap-3">
                               <CheckCircle2 className="h-4 w-4 text-green-600" />
                               <div>
-                                <p className="font-medium text-slate-900">
+                                <p className="font-medium">
                                   {language === 'ar' && item.name_ar ? item.name_ar : (item.name_en || item.title_en || item.name || 'Untitled')}
                                 </p>
                                 {item.status && (
@@ -264,7 +313,7 @@ function StrategyDrillDown() {
                                 )}
                               </div>
                             </div>
-                            <Link to={createPageUrl(`${linkPrefix}?id=${item.id}`)}>
+                            <Link to={`${linkPath}?id=${item.id}`}>
                               <Button variant="ghost" size="sm">
                                 {t({ en: 'View', ar: 'عرض' })}
                               </Button>
@@ -273,8 +322,8 @@ function StrategyDrillDown() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-slate-500">
-                        <AlertCircle className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                      <div className="text-center py-8 text-muted-foreground">
+                        <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p>{t({ en: 'No entities linked', ar: 'لا توجد كيانات مرتبطة' })}</p>
                       </div>
                     )}
@@ -289,8 +338,8 @@ function StrategyDrillDown() {
       {!selectedPlanId && (
         <Card className="border-dashed border-2">
           <CardContent className="py-12 text-center">
-            <Layers className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-            <p className="text-lg text-slate-500">
+            <Layers className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <p className="text-lg text-muted-foreground">
               {t({ en: 'Select a strategic plan to view linked entities', ar: 'اختر خطة استراتيجية لعرض الكيانات المرتبطة' })}
             </p>
           </CardContent>
@@ -300,4 +349,4 @@ function StrategyDrillDown() {
   );
 }
 
-export default ProtectedPage(StrategyDrillDown, { requiredPermissions: [] });
+export default ProtectedPage(StrategyDrillDown, { requiredPermissions: ['strategy_view'] });

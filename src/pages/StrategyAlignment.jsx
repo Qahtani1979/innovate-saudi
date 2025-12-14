@@ -1,61 +1,78 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Target, Network, AlertCircle, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Target, Network, AlertCircle, CheckCircle2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function StrategyAlignment() {
   const { t } = useLanguage();
 
-  const { data: links = [], isLoading } = useQuery({
-    queryKey: ['strategic-plan-challenge-links'],
-    queryFn: () => base44.entities.StrategicPlanChallengeLink.list()
+  const { data: plans = [], isLoading: plansLoading } = useQuery({
+    queryKey: ['strategic-plans-alignment'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const { data: plans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+  const { data: challenges = [], isLoading: challengesLoading } = useQuery({
+    queryKey: ['challenges-alignment'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('id, title_en, title_ar, strategic_plan_ids, status')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const isLoading = plansLoading || challengesLoading;
 
-  const alignedChallenges = links.filter(l => l.alignment_status === 'aligned').length;
-  const misalignedChallenges = links.filter(l => l.alignment_status === 'misaligned').length;
+  // Calculate alignment from strategic_plan_ids on challenges
+  const linkedChallenges = challenges.filter(c => c.strategic_plan_ids?.length > 0);
+  const alignedChallenges = linkedChallenges.filter(c => c.status === 'approved' || c.status === 'active' || c.status === 'in_progress');
+  const misalignedChallenges = linkedChallenges.filter(c => c.status === 'rejected' || c.status === 'archived');
 
   const byPlan = plans.map(plan => ({
-    name: plan.title_en || plan.title_ar,
-    linked: links.filter(l => l.strategic_plan_id === plan.id).length,
-    aligned: links.filter(l => l.strategic_plan_id === plan.id && l.alignment_status === 'aligned').length
+    id: plan.id,
+    name: plan.name_en || plan.title_en,
+    linked: challenges.filter(c => c.strategic_plan_ids?.includes(plan.id)).length,
+    aligned: challenges.filter(c => 
+      c.strategic_plan_ids?.includes(plan.id) && 
+      (c.status === 'approved' || c.status === 'active' || c.status === 'in_progress')
+    ).length
   })).filter(p => p.linked > 0);
 
   const stats = {
-    total_links: links.length,
-    aligned: alignedChallenges,
-    misaligned: misalignedChallenges,
-    coverage: plans.length > 0 ? (links.length / challenges.length) * 100 : 0
+    total_links: linkedChallenges.length,
+    aligned: alignedChallenges.length,
+    misaligned: misalignedChallenges.length,
+    coverage: challenges.length > 0 ? (linkedChallenges.length / challenges.length) * 100 : 0
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 container mx-auto py-6 px-4">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">
+        <h1 className="text-3xl font-bold">
           {t({ en: 'Strategy Alignment', ar: 'التوافق الاستراتيجي' })}
         </h1>
-        <p className="text-slate-600 mt-1">
+        <p className="text-muted-foreground mt-1">
           {t({ en: 'Strategic plans ↔ Challenge alignment tracking', ar: 'تتبع توافق الخطط الاستراتيجية مع التحديات' })}
         </p>
       </div>
@@ -65,7 +82,7 @@ function StrategyAlignment() {
           <CardContent className="pt-6 text-center">
             <Network className="h-10 w-10 text-blue-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-blue-600">{stats.total_links}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Total Links', ar: 'إجمالي الروابط' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Total Links', ar: 'إجمالي الروابط' })}</p>
           </CardContent>
         </Card>
 
@@ -73,7 +90,7 @@ function StrategyAlignment() {
           <CardContent className="pt-6 text-center">
             <CheckCircle2 className="h-10 w-10 text-green-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-green-600">{stats.aligned}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Aligned', ar: 'متوافق' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Aligned', ar: 'متوافق' })}</p>
           </CardContent>
         </Card>
 
@@ -81,15 +98,15 @@ function StrategyAlignment() {
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-10 w-10 text-amber-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-amber-600">{stats.misaligned}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Misaligned', ar: 'غير متوافق' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Misaligned', ar: 'غير متوافق' })}</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
+        <Card className="bg-gradient-to-br from-purple-50 to-background">
           <CardContent className="pt-6 text-center">
             <Target className="h-10 w-10 text-purple-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-purple-600">{stats.coverage.toFixed(0)}%</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Coverage', ar: 'التغطية' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Coverage', ar: 'التغطية' })}</p>
           </CardContent>
         </Card>
       </div>
@@ -99,26 +116,33 @@ function StrategyAlignment() {
           <CardTitle>{t({ en: 'Alignment by Strategic Plan', ar: 'التوافق حسب الخطة الاستراتيجية' })}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {byPlan.map((plan, idx) => (
-              <div key={idx} className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-slate-900">{plan.name}</h3>
-                  <Badge className="bg-green-600">
-                    {plan.aligned} / {plan.linked} {t({ en: 'aligned', ar: 'متوافق' })}
-                  </Badge>
+          {byPlan.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>{t({ en: 'No challenges linked to strategic plans yet', ar: 'لا توجد تحديات مرتبطة بالخطط الاستراتيجية بعد' })}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {byPlan.map((plan) => (
+                <div key={plan.id} className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold">{plan.name}</h3>
+                    <Badge className="bg-green-600">
+                      {plan.aligned} / {plan.linked} {t({ en: 'aligned', ar: 'متوافق' })}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{t({ en: 'Linked challenges:', ar: 'التحديات المربوطة:' })}</span>
+                    <span className="font-medium">{plan.linked}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <span>{t({ en: 'Linked challenges:', ar: 'التحديات المربوطة:' })}</span>
-                  <span className="font-medium">{plan.linked}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
 
-export default ProtectedPage(StrategyAlignment, { requireAdmin: true });
+export default ProtectedPage(StrategyAlignment, { requiredPermissions: ['strategy_view'] });
