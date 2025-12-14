@@ -21,15 +21,18 @@ export function useChallengesWithVisibility(options = {}) {
     publishedOnly = false
   } = options;
 
-  const { isAdmin, hasRole, userId } = usePermissions();
+  const permissionsData = usePermissions();
+  const { isAdmin = false, hasRole = () => false, userId = null } = permissionsData || {};
+  
+  const visibilityData = useVisibilitySystem();
   const { 
-    isNational, 
-    sectorIds, 
-    userMunicipalityId, 
-    nationalMunicipalityIds,
-    hasFullVisibility,
-    isLoading: visibilityLoading 
-  } = useVisibilitySystem();
+    isNational = false, 
+    sectorIds = [], 
+    userMunicipalityId = null, 
+    nationalMunicipalityIds = [],
+    hasFullVisibility = false,
+    isLoading: visibilityLoading = true 
+  } = visibilityData || {};
 
   const isStaffUser = hasRole('municipality_staff') || 
                       hasRole('municipality_admin') || 

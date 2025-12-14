@@ -52,7 +52,7 @@
  * - is_national_entity(p_municipality_id) - Check if municipality is in NATIONAL region
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
@@ -60,16 +60,19 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * Core visibility hook that provides all visibility context
  */
 export function useVisibilitySystem() {
+  // Get permissions data first - this hook handles auth state gracefully
+  const permissionsData = usePermissions();
+  
   const { 
-    userId, 
-    isAdmin, 
-    hasRole, 
-    hasPermission,
-    isDeputyship,
-    isMunicipality,
-    isStaffUser,
-    userMunicipality
-  } = usePermissions();
+    userId = null, 
+    isAdmin = false, 
+    hasRole = () => false, 
+    hasPermission = () => false,
+    isDeputyship = false,
+    isMunicipality = false,
+    isStaffUser = false,
+    userMunicipality = null
+  } = permissionsData || {};
 
   // Check for full-visibility permissions
   const hasFullMunicipalityVisibility = hasPermission('visibility_all_municipalities');
