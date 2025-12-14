@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
 import {
   Target,
@@ -112,10 +113,11 @@ const phases = [
 ];
 
 function StrategyHub() {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { hasPermission, isAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState('workflow');
   const [activeAITool, setActiveAITool] = useState(null);
+  const [selectedPlanId, setSelectedPlanId] = useState('all');
 
   // Filter tools based on permissions
   const filterByPermission = (items) => {
@@ -164,17 +166,24 @@ function StrategyHub() {
     }
   });
 
-  // Calculate metrics
+  // Filter plans based on selection
+  const filteredPlans = selectedPlanId === 'all' 
+    ? plans 
+    : plans.filter(p => p.id === selectedPlanId);
+  
+  // Calculate metrics (based on all plans for overall stats)
   const activePlans = plans.filter(p => p.status === 'active').length;
   const draftPlans = plans.filter(p => p.status === 'draft').length;
-  const avgProgress = plans.length > 0
-    ? Math.round(plans.reduce((acc, p) => acc + (p.progress_percentage || 0), 0) / plans.length)
+  const avgProgress = filteredPlans.length > 0
+    ? Math.round(filteredPlans.reduce((acc, p) => acc + (p.progress_percentage || 0), 0) / filteredPlans.length)
     : 0;
 
-  // Determine current phase based on active plans
+  // Determine current phase based on selected plan
   const getCurrentPhase = () => {
-    if (plans.length === 0) return 0;
-    const activePlan = plans.find(p => p.status === 'active');
+    if (filteredPlans.length === 0) return 0;
+    const activePlan = selectedPlanId !== 'all' 
+      ? filteredPlans[0] 
+      : filteredPlans.find(p => p.status === 'active');
     if (!activePlan) return 1;
     // Simple heuristic based on progress
     if (activePlan.progress_percentage < 15) return 2;
@@ -216,7 +225,20 @@ function StrategyHub() {
             {t({ en: 'Central command for strategic planning and execution', ar: 'مركز القيادة للتخطيط والتنفيذ الاستراتيجي' })}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder={t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })}</SelectItem>
+              {plans.map(plan => (
+                <SelectItem key={plan.id} value={plan.id}>
+                  {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button variant="outline" asChild>
             <Link to="/strategy-cockpit">
               <BarChart3 className="h-4 w-4 mr-2" />
