@@ -8,6 +8,9 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useGapAnalysis } from '@/hooks/strategy/useGapAnalysis';
 import { useDemandQueue } from '@/hooks/strategy/useDemandQueue';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
+import CoverageHeatmap from './CoverageHeatmap';
+import QueueByTypeChart from './QueueByTypeChart';
+import BatchGenerationControls from './BatchGenerationControls';
 import { 
   BarChart3, 
   Target, 
@@ -18,7 +21,9 @@ import {
   Clock,
   AlertTriangle,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  Zap,
+  Eye
 } from 'lucide-react';
 
 export default function DemandDashboard() {
@@ -32,7 +37,8 @@ export default function DemandDashboard() {
     isGeneratingQueue,
     hasAnalysis 
   } = useGapAnalysis(activePlanId);
-  const { queueItems, stats, clearPendingItems, refetch } = useDemandQueue(activePlanId);
+  const { queueItems, stats, byType, clearPendingItems, refetch } = useDemandQueue(activePlanId);
+  const [activeTab, setActiveTab] = useState('analysis');
 
   if (!activePlanId) {
     return (
@@ -65,18 +71,22 @@ export default function DemandDashboard() {
         </Badge>
       </div>
 
-      <Tabs defaultValue="analysis" className="space-y-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid grid-cols-3 w-full max-w-md">
           <TabsTrigger value="analysis" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
-            {t({ en: 'Coverage Analysis', ar: 'تحليل التغطية' })}
+            {t({ en: 'Analysis', ar: 'التحليل' })}
           </TabsTrigger>
           <TabsTrigger value="queue" className="flex items-center gap-2">
             <ListOrdered className="h-4 w-4" />
-            {t({ en: 'Generation Queue', ar: 'قائمة التوليد' })}
+            {t({ en: 'Queue', ar: 'القائمة' })}
             {stats.pending > 0 && (
-              <Badge variant="secondary" className="ml-1">{stats.pending}</Badge>
+              <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 justify-center">{stats.pending}</Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="batch" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            {t({ en: 'Batch', ar: 'دفعة' })}
           </TabsTrigger>
         </TabsList>
 
@@ -126,7 +136,7 @@ export default function DemandDashboard() {
 
                   {/* Entity Coverage Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {Object.entries(analysis?.entity_coverage || {}).map(([type, data]: [string, any]) => (
+                    {Object.entries(analysis?.entity_coverage || {}).map(([type, data]) => (
                       <Card key={type} className="p-4">
                         <div className="text-sm font-medium capitalize mb-2">{type}</div>
                         <div className="flex items-center justify-between">
@@ -174,6 +184,14 @@ export default function DemandDashboard() {
               )}
             </CardContent>
           </Card>
+
+          {/* Coverage Heatmap */}
+          {hasAnalysis && (
+            <CoverageHeatmap 
+              analysis={analysis} 
+              objectives={activePlan?.objectives || []} 
+            />
+          )}
         </TabsContent>
 
         {/* Queue Tab */}
@@ -201,6 +219,9 @@ export default function DemandDashboard() {
               <div className="text-2xl font-bold text-purple-700">{stats.review}</div>
             </Card>
           </div>
+
+          {/* Queue Charts */}
+          <QueueByTypeChart queueItems={queueItems} byType={byType} />
 
           {/* Queue Items */}
           <Card>
@@ -285,6 +306,11 @@ export default function DemandDashboard() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Batch Generation Tab */}
+        <TabsContent value="batch" className="space-y-4">
+          <BatchGenerationControls strategicPlanId={activePlanId} />
         </TabsContent>
       </Tabs>
     </div>
