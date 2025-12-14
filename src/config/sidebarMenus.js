@@ -77,6 +77,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'AdminPortal', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'StrategyHub', icon: Target, label: { en: 'Strategy Hub', ar: 'مركز الاستراتيجية' } },
       { name: 'UserManagementHub', icon: Users, label: { en: 'Users', ar: 'المستخدمين' } },
       { name: 'RolePermissionManager', icon: UserCheck, label: { en: 'Roles & Permissions', ar: 'الأدوار والصلاحيات' } },
       { name: 'RBACHub', icon: Shield, label: { en: 'RBAC Dashboard', ar: 'لوحة الصلاحيات' } },
@@ -84,7 +85,6 @@ export const SIDEBAR_MENUS = {
       { name: 'DataManagementHub', icon: Database, label: { en: 'Data Management', ar: 'إدارة البيانات' } },
       { name: 'ImportExportHub', icon: Layers, label: { en: 'Import & Export', ar: 'الاستيراد والتصدير' } },
       { name: 'ExpertRegistry', icon: GraduationCap, label: { en: 'Expert Registry', ar: 'سجل الخبراء' } },
-      
       { name: 'MediaLibrary', icon: Image, label: { en: 'Media Library', ar: 'مكتبة الوسائط' } },
       { name: 'BrandingSettings', icon: Palette, label: { en: 'Branding Settings', ar: 'إعدادات العلامة' } },
       { name: 'TaxonomyBuilder', icon: Tags, label: { en: 'Taxonomy Builder', ar: 'منشئ التصنيف' } },
@@ -111,7 +111,8 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'ExecutiveDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
-      { name: 'StrategyCockpit', icon: Gauge, label: { en: 'Strategy Cockpit', ar: 'قمرة الاستراتيجية' } },
+      { name: 'StrategyHub', icon: Target, label: { en: 'Strategy Hub', ar: 'مركز الاستراتيجية' }, permission: 'strategy_view' },
+      { name: 'StrategyCockpit', icon: Gauge, label: { en: 'Strategy Cockpit', ar: 'قمرة الاستراتيجية' }, permission: 'strategy_view' },
       { name: 'OKRManagementSystem', icon: Target, label: { en: 'OKR Management', ar: 'إدارة الأهداف' } },
       { name: 'Portfolio', icon: FolderKanban, label: { en: 'Portfolio Management', ar: 'إدارة المحفظة' } },
       { name: 'StrategicPlans', icon: FileBarChart, label: { en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' } },
@@ -141,6 +142,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'ExecutiveDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'StrategyHub', icon: Target, label: { en: 'Strategy Hub', ar: 'مركز الاستراتيجية' }, permission: 'strategy_view' },
       { name: 'RegionalDashboard', icon: Map, label: { en: 'Regional Dashboard', ar: 'لوحة إقليمية' } },
       { name: 'SectorDashboard', icon: PieChart, label: { en: 'Sector Dashboard', ar: 'لوحة القطاع' } },
       { name: 'MultiCityOrchestration', icon: Network, label: { en: 'Multi-City Orchestration', ar: 'تنسيق متعدد المدن' } },
