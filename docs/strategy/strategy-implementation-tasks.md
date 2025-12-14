@@ -1,8 +1,8 @@
 # Strategy System - Implementation Tasks
 
 **Generated:** 2025-12-14  
-**Updated:** 2025-12-14 (Deep Validation Pass)  
-**Based on:** Code analysis of all 9 generators vs actual database schema  
+**Updated:** 2025-12-14 (Deep Validation Pass + Phase 2 Analysis)  
+**Based on:** Code analysis of all 9 generators, Phase 2 (Strategy Creation), and database schema  
 **Priority:** Critical → High → Medium → Low
 
 ---
@@ -15,8 +15,296 @@ After deep validation against existing code and database:
 |---------|--------|--------|
 | Database schema gaps | 🔴 4 tables missing columns | Entities can't be tracked as strategy-derived |
 | Generator field gaps | 🔴 6/8 generators incomplete | Records created without proper strategy flags |
-| Target table mismatches | 🔴 1 generator uses wrong table | Data saved to wrong entity type |
+| Phase 2 methodology gaps | 🔴 Strategy creation blind to existing data | Duplicate plans, no gap-driven planning |
 | Approval integration | 🟠 None implemented | Drafts don't appear in ApprovalCenter |
+
+---
+
+## 🆕 SECTION: PHASE 2 (STRATEGY CREATION) DEEP ANALYSIS
+
+### Current Phase 2 Implementation Status
+
+| Component | File | Purpose | Considers Existing Plans? | Considers Existing Entities? | Avoids Duplicates? |
+|-----------|------|---------|:-------------------------:|:---------------------------:|:------------------:|
+| `StrategicPlanBuilder` | `pages/StrategicPlanBuilder.jsx` | Create new strategic plans | ❌ NO | ❌ NO | ❌ NO |
+| `StrategicGapProgramRecommender` | `strategy/StrategicGapProgramRecommender.jsx` | Recommend programs from gaps | ✅ PARTIAL | ✅ YES - challenges, programs | ❌ NO |
+| `SectorGapAnalysisWidget` | `strategy/SectorGapAnalysisWidget.jsx` | Sector coverage analysis | ✅ YES | ✅ YES - counts entities | ❌ N/A |
+| `StrategyObjectiveGenerator` | `strategy/creation/StrategyObjectiveGenerator.jsx` | Generate strategic objectives | ❌ NO | ❌ NO | ❌ NO - Appends blindly |
+| `StrategyPillarGenerator` | `strategy/creation/StrategyPillarGenerator.jsx` | Generate strategy pillars | ❌ NO | ❌ NO | ❌ NO |
+| `EnvironmentalScanWidget` | `strategy/preplanning/EnvironmentalScanWidget.jsx` | PESTLE analysis | ❌ NO | ✅ YES - fetches global_trends | ❌ N/A |
+| `StrategyInputCollector` | `strategy/preplanning/StrategyInputCollector.jsx` | Stakeholder inputs | ❌ N/A | ❌ N/A | ❌ N/A |
+| `SWOTAnalysisBuilder` | `strategy/preplanning/SWOTAnalysisBuilder.jsx` | SWOT analysis | ❌ NO | ❌ NO | ❌ NO |
+| `BaselineDataCollector` | `strategy/preplanning/BaselineDataCollector.jsx` | Baseline metrics | ❌ NO | ❌ NO | ❌ NO |
+
+### CRITICAL PHASE 2 GAPS IDENTIFIED
+
+#### GAP-P2-001: Strategy Creation Ignores Existing Plans
+**Severity:** 🔴 CRITICAL  
+**Component:** `StrategicPlanBuilder.jsx`  
+**Issue:** 
+- AI prompt does NOT receive existing strategic plans data
+- No duplicate title/vision checking
+- No analysis of what sectors/themes are already covered
+- Creates plans in isolation without context
+
+**Current AI Prompt (Line 36-40):**
+```javascript
+prompt: `Generate a strategic plan for a municipal innovation initiative. Include:
+1. Vision statement
+2. 3-5 strategic objectives
+3. Key focus areas
+
+Format as JSON with title_en, vision_en, and objectives array.`
+```
+
+**Expected AI Prompt:**
+```javascript
+prompt: `Analyze the existing strategic landscape and generate a NEW strategic plan that fills identified gaps:
+
+EXISTING STRATEGIC PLANS:
+${existingPlans.map(p => `- ${p.name_en}: ${p.vision_en} (Status: ${p.status})`).join('\n')}
+
+EXISTING COVERAGE:
+- Sectors covered: ${coveredSectors.join(', ')}
+- Sectors with gaps: ${uncoveredSectors.join(', ')}
+- Active challenges: ${challenges.length}
+- Unaddressed challenges: ${unresolvedChallenges.length}
+
+IDENTIFIED GAPS:
+${gaps.map(g => `- ${g.title}: ${g.description}`).join('\n')}
+
+Generate a strategic plan that:
+1. Addresses the identified gaps
+2. Avoids duplicating existing plans
+3. Focuses on uncovered sectors
+4. Builds on existing objectives where possible`
+```
+
+---
+
+#### GAP-P2-002: Objective Generator Creates Duplicates
+**Severity:** 🔴 CRITICAL  
+**Component:** `StrategyObjectiveGenerator.jsx`  
+**Issue:**
+- `saveObjectives()` at line 94 simply appends new objectives to existing ones
+- No similarity check against existing objectives
+- No cross-plan deduplication
+- Objectives may duplicate existing ones verbatim
+
+**Current Code (Lines 94-96):**
+```javascript
+const existingObjectives = strategicPlan?.objectives || [];
+const updatedObjectives = [...existingObjectives, ...objectives];
+```
+
+**Missing Logic:**
+- No title similarity check
+- No description overlap analysis
+- No KPI target conflict detection
+- No notification about potential duplicates
+
+---
+
+#### GAP-P2-003: No Entity Analysis Before Plan Creation
+**Severity:** 🔴 CRITICAL  
+**Component:** Multiple preplanning widgets  
+**Issue:**
+The preplanning phase collects PESTLE factors, SWOT analysis, and stakeholder inputs, but this data is NOT fed into:
+- Strategic plan creation
+- Objective generation
+- Pillar generation
+- Gap analysis
+
+**Flow Should Be:**
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PHASE 2: STRATEGY CREATION (EXPECTED)                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────┐    ┌──────────────┐    ┌──────────────┐                   │
+│  │  EXISTING   │    │   EXISTING   │    │   GAP        │                   │
+│  │  PLANS      │───▶│   ENTITIES   │───▶│   ANALYSIS   │                   │
+│  │  (5 plans)  │    │  (500+ items)│    │  (automated) │                   │
+│  └─────────────┘    └──────────────┘    └──────────────┘                   │
+│         │                   │                   │                           │
+│         ▼                   ▼                   ▼                           │
+│  ┌──────────────────────────────────────────────────────┐                   │
+│  │         PRE-PLANNING DATA AGGREGATION                 │                   │
+│  │  • PESTLE factors (EnvironmentalScanWidget)           │                   │
+│  │  • SWOT analysis (SWOTAnalysisBuilder)                │                   │
+│  │  • Stakeholder inputs (StrategyInputCollector)        │                   │
+│  │  • Baseline metrics (BaselineDataCollector)           │                   │
+│  │  • Risk assessment (RiskAssessmentBuilder)            │                   │
+│  └──────────────────────────────────────────────────────┘                   │
+│                            │                                                 │
+│                            ▼                                                 │
+│  ┌──────────────────────────────────────────────────────┐                   │
+│  │            AI-POWERED STRATEGY SYNTHESIS              │                   │
+│  │  • Analyze all inputs + gaps                          │                   │
+│  │  • Check for existing plan overlaps                   │                   │
+│  │  • Recommend focus areas based on gaps                │                   │
+│  │  • Generate objectives that fill identified gaps      │                   │
+│  │  • Deduplicate against existing objectives            │                   │
+│  └──────────────────────────────────────────────────────┘                   │
+│                            │                                                 │
+│                            ▼                                                 │
+│  ┌──────────────────────────────────────────────────────┐                   │
+│  │              NEW STRATEGIC PLAN                       │                   │
+│  │  • Vision addressing gaps                             │                   │
+│  │  • Pillars for uncovered sectors                      │                   │
+│  │  • Objectives with deduplication check                │                   │
+│  │  • KPIs avoiding target conflicts                     │                   │
+│  └──────────────────────────────────────────────────────┘                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Current Flow (BROKEN):**
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PHASE 2: STRATEGY CREATION (CURRENT)                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────┐    ┌──────────────┐    ┌──────────────┐                   │
+│  │  EXISTING   │    │   EXISTING   │    │   GAP        │                   │
+│  │  PLANS      │    │   ENTITIES   │    │   ANALYSIS   │                   │
+│  │  (IGNORED)  │    │  (IGNORED)   │    │  (ISOLATED)  │                   │
+│  └─────────────┘    └──────────────┘    └──────────────┘                   │
+│         ✗                   ✗                   ✗                           │
+│         │                   │                   │                           │
+│         └───────────────────┼───────────────────┘                           │
+│                             │                                               │
+│                    NOT CONNECTED                                            │
+│                             │                                               │
+│                             ▼                                               │
+│  ┌──────────────────────────────────────────────────────┐                   │
+│  │         PRE-PLANNING WIDGETS (ISOLATED)               │                   │
+│  │  • PESTLE ──▶ Stores in DB (NOT USED)                 │                   │
+│  │  • SWOT ──▶ Stores in DB (NOT USED)                   │                   │
+│  │  • Inputs ──▶ Stores in DB (NOT USED)                 │                   │
+│  │  • Baseline ──▶ Stores in DB (NOT USED)               │                   │
+│  └──────────────────────────────────────────────────────┘                   │
+│                             │                                               │
+│                    NOT CONNECTED                                            │
+│                             │                                               │
+│                             ▼                                               │
+│  ┌──────────────────────────────────────────────────────┐                   │
+│  │         STRATEGIC PLAN BUILDER (BLIND)                │                   │
+│  │  • Generic AI prompt (no context)                     │                   │
+│  │  • Creates plan without existing data                 │                   │
+│  │  • No duplicate checking                              │                   │
+│  │  • No gap-driven focus                                │                   │
+│  └──────────────────────────────────────────────────────┘                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### PHASE 2 IMPLEMENTATION TASKS
+
+#### TASK-P2-001: Create Strategy Context Aggregator Hook
+**Priority:** 🔴 CRITICAL  
+**Effort:** 2h  
+**Status:** ❌ Not Started
+
+Create `useStrategyContext.js` hook that fetches and aggregates:
+- All existing strategic plans
+- Entity counts by sector
+- Unresolved challenges
+- Gap analysis results
+- PESTLE factors
+- SWOT data
+- Stakeholder inputs
+
+```javascript
+// src/hooks/useStrategyContext.js
+export function useStrategyContext() {
+  const { data: plans } = useQuery(['strategic-plans'], fetchPlans);
+  const { data: challenges } = useQuery(['challenges'], fetchChallenges);
+  const { data: sectors } = useQuery(['sectors'], fetchSectors);
+  const { data: pestle } = useQuery(['environmental-factors'], fetchPESTLE);
+  const { data: swot } = useQuery(['swot-analyses'], fetchSWOT);
+  
+  const aggregateContext = useMemo(() => ({
+    existingPlans: plans || [],
+    coveredSectors: calculateCoveredSectors(plans, challenges),
+    uncoveredSectors: calculateGaps(sectors, challenges),
+    unresolvedChallenges: challenges?.filter(c => c.status !== 'resolved') || [],
+    environmentalFactors: pestle || [],
+    swotAnalysis: swot || [],
+    gaps: identifyGaps(plans, challenges, sectors)
+  }), [plans, challenges, sectors, pestle, swot]);
+  
+  return aggregateContext;
+}
+```
+
+---
+
+#### TASK-P2-002: Enhance StrategicPlanBuilder with Context
+**Priority:** 🔴 CRITICAL  
+**Effort:** 1.5h  
+**Status:** ❌ Not Started
+
+Update `StrategicPlanBuilder.jsx` to:
+1. Use `useStrategyContext()` hook
+2. Display existing plans summary
+3. Show gap analysis before creation
+4. Pass context to AI prompt
+5. Add duplicate title/vision check before save
+
+---
+
+#### TASK-P2-003: Add Deduplication to StrategyObjectiveGenerator
+**Priority:** 🔴 CRITICAL  
+**Effort:** 1h  
+**Status:** ❌ Not Started
+
+Update `StrategyObjectiveGenerator.jsx` to:
+1. Fetch all existing objectives across all plans
+2. Calculate similarity score for generated objectives
+3. Flag potential duplicates before save
+4. Allow user to merge or skip duplicates
+
+---
+
+#### TASK-P2-004: Connect Preplanning Widgets to Plan Creation
+**Priority:** 🟠 HIGH  
+**Effort:** 2h  
+**Status:** ❌ Not Started
+
+Create orchestration layer that:
+1. Aggregates PESTLE, SWOT, inputs, baseline data
+2. Feeds into plan creation AI prompt
+3. Tracks which inputs influenced which plan elements
+
+---
+
+#### TASK-P2-005: Create Gap-Driven Plan Recommendation Engine
+**Priority:** 🟠 HIGH  
+**Effort:** 3h  
+**Status:** ❌ Not Started
+
+New component that:
+1. Analyzes all entity gaps (sectors, challenges, solutions)
+2. Cross-references with existing plan objectives
+3. Recommends new plan focus areas
+4. Suggests regenerating similar plans if gaps identified
+
+---
+
+## REVISED TASK SUMMARY
+
+| Priority | Category | Tasks | Effort |
+|----------|----------|-------|--------|
+| 🔴 Critical | Phase 2 Methodology | 5 | 9.5h |
+| 🔴 Critical | Database Schema | 5 | 1.5h |
+| 🔴 Critical | Generator Fixes | 7 | 2h |
+| 🟠 High | Approval Integration | 3 | 3h |
+| 🟡 Medium | UI Enhancements | 4 | 4h |
+| 🟢 Low | Documentation | 2 | 1h |
+| **TOTAL** | | **26 tasks** | **~21h** |
 
 ---
 
@@ -50,19 +338,6 @@ After deep validation against existing code and database:
 | StrategyToPartnershipGenerator | `cascade/` folder | `partnerships` | ✅ YES (line 90) | ❌ NO | ✅ YES (line 89) | **NEEDS FIX** |
 | StrategyToRDCallGenerator | `cascade/` folder | `rd_calls` | ❌ NO | ❌ NO | ❌ NO | **NEEDS FIX + DB** |
 | StrategyToCampaignGenerator | `cascade/` folder | `marketing_campaigns` | ❌ NO | ❌ NO | uses `strategic_plan_id` (single) | **NEEDS FIX + DB** |
-
----
-
-## TASK SUMMARY (REVISED)
-
-| Priority | Category | Tasks | Effort |
-|----------|----------|-------|--------|
-| 🔴 Critical | Database Schema | 5 | 1.5h |
-| 🔴 Critical | Generator Fixes | 7 | 2h |
-| 🟠 High | Approval Integration | 3 | 3h |
-| 🟡 Medium | UI Enhancements | 4 | 4h |
-| 🟢 Low | Documentation | 2 | 1h |
-| **TOTAL** | | **21 tasks** | **~11.5h** |
 
 ---
 
