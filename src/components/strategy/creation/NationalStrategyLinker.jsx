@@ -132,7 +132,7 @@ const NationalStrategyLinker = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES,
       const { alignments: aiAlignments } = data;
 
       setAlignments(prev => prev.map((a, index) => {
-        const suggestion = aiAlignments?.find((s: any) => s.objective_index === index);
+        const suggestion = aiAlignments?.find(s => s.objective_index === index);
         if (!suggestion) return a;
         
         const newVision = [...new Set([...a.vision_2030, ...(suggestion.vision_2030 || [])])];
