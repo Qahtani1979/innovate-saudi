@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/components/LanguageContext';
 import { useStrategySignoffs } from '@/hooks/strategy/useStrategySignoffs';
+import { useSignoffAI } from '@/hooks/strategy/useSignoffAI';
 import { 
   UserCheck, Clock, CheckCircle2, XCircle, AlertCircle, 
-  Send, Bell, FileSignature, Plus, Trash2, Loader2 
+  Send, Bell, FileSignature, Plus, Trash2, Loader2, Sparkles, TrendingUp, AlertTriangle
 } from 'lucide-react';
 import {
   Dialog,
@@ -27,7 +28,14 @@ import {
 export default function StakeholderSignoffTracker({ planId }) {
   const { t, language } = useLanguage();
   const { signoffs, isLoading, createSignoff, updateSignoff, deleteSignoff, sendReminder } = useStrategySignoffs(planId);
+  const { suggestStakeholders, predictApprovalRisk, optimizeReminders, analyzeSentiment } = useSignoffAI();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [riskAnalysis, setRiskAnalysis] = useState(null);
+  const [selectedSignoffForRisk, setSelectedSignoffForRisk] = useState(null);
+  
   const [newSignoff, setNewSignoff] = useState({
     stakeholder_name: '',
     stakeholder_role: '',
@@ -59,6 +67,47 @@ export default function StakeholderSignoffTracker({ planId }) {
       }
     };
     return configs[status] || configs.pending;
+  };
+
+  const handleAISuggest = async () => {
+    const result = await suggestStakeholders.mutateAsync({
+      documentType: 'Strategic Plan',
+      planData: { planId, signoffsCount: signoffs?.length || 0 }
+    });
+    setAiSuggestions(result);
+    setIsAIDialogOpen(true);
+  };
+
+  const handleAddFromSuggestion = async (suggestion) => {
+    await createSignoff.mutateAsync({
+      strategic_plan_id: planId,
+      stakeholder_name: suggestion.name,
+      stakeholder_role: suggestion.role,
+      stakeholder_email: '',
+      due_date: new Date(Date.now() + (suggestion.sla_days || 14) * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'pending',
+      reminder_count: 0
+    });
+  };
+
+  const handlePredictRisk = async (signoff) => {
+    setSelectedSignoffForRisk(signoff);
+    const result = await predictApprovalRisk.mutateAsync({
+      stakeholderData: signoff,
+      planData: { planId },
+      context: { pending_count: signoffs?.filter(s => s.status === 'pending').length }
+    });
+    setRiskAnalysis(result);
+  };
+
+  const handleOptimizeReminders = async () => {
+    const pendingSignoffs = signoffs?.filter(s => s.status === 'pending') || [];
+    if (pendingSignoffs.length === 0) return;
+    
+    await optimizeReminders.mutateAsync({
+      stakeholderData: pendingSignoffs,
+      context: { total: signoffs?.length }
+    });
   };
 
   const handleAddSignoff = async () => {
@@ -111,6 +160,38 @@ export default function StakeholderSignoffTracker({ planId }) {
 
   return (
     <div className="space-y-6">
+      {/* AI Actions Bar */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="font-medium">{t({ en: 'AI Assistance', ar: 'المساعدة الذكية' })}</span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleAISuggest}
+                disabled={suggestStakeholders.isPending}
+              >
+                {suggestStakeholders.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserCheck className="h-4 w-4 mr-2" />}
+                {t({ en: 'Suggest Stakeholders', ar: 'اقتراح أصحاب المصلحة' })}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleOptimizeReminders}
+                disabled={optimizeReminders.isPending || stats.pending === 0}
+              >
+                {optimizeReminders.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Bell className="h-4 w-4 mr-2" />}
+                {t({ en: 'Optimize Reminders', ar: 'تحسين التذكيرات' })}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -158,6 +239,88 @@ export default function StakeholderSignoffTracker({ planId }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Suggestions Dialog */}
+      <Dialog open={isAIDialogOpen} onOpenChange={setIsAIDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              {t({ en: 'AI Suggested Stakeholders', ar: 'أصحاب المصلحة المقترحون' })}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4 max-h-96 overflow-y-auto">
+            {Array.isArray(aiSuggestions) && aiSuggestions.map((suggestion, idx) => (
+              <div key={idx} className="p-4 border rounded-lg hover:bg-muted/50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium">{suggestion.name}</p>
+                    <p className="text-sm text-muted-foreground">{suggestion.role}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{suggestion.rationale}</p>
+                    <div className="flex gap-2 mt-2">
+                      <Badge variant="outline">SLA: {suggestion.sla_days} days</Badge>
+                      <Badge variant={suggestion.authority_level === 'high' ? 'destructive' : 'secondary'}>
+                        {suggestion.authority_level}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={() => handleAddFromSuggestion(suggestion)}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    {t({ en: 'Add', ar: 'إضافة' })}
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {!Array.isArray(aiSuggestions) && aiSuggestions && (
+              <p className="text-muted-foreground text-center py-4">
+                {t({ en: 'Could not parse suggestions', ar: 'تعذر تحليل الاقتراحات' })}
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Risk Analysis Dialog */}
+      <Dialog open={!!riskAnalysis} onOpenChange={() => setRiskAnalysis(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              {t({ en: 'Approval Risk Analysis', ar: 'تحليل مخاطر الموافقة' })}
+            </DialogTitle>
+          </DialogHeader>
+          {riskAnalysis && (
+            <div className="space-y-4 pt-4">
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <span>{t({ en: 'Approval Probability', ar: 'احتمالية الموافقة' })}</span>
+                <span className="text-2xl font-bold">{riskAnalysis.approval_probability}%</span>
+              </div>
+              <div>
+                <p className="font-medium mb-2">{t({ en: 'Key Concerns', ar: 'المخاوف الرئيسية' })}</p>
+                <div className="space-y-1">
+                  {riskAnalysis.key_concerns?.map((concern, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm">
+                      <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                      {concern}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="font-medium mb-2">{t({ en: 'Recommendations', ar: 'التوصيات' })}</p>
+                <div className="space-y-1">
+                  {riskAnalysis.recommendations?.map((rec, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm">
+                      <CheckCircle2 className="h-3 w-3 text-green-500" />
+                      {rec}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Main Tracker Card */}
       <Card>
@@ -275,6 +438,14 @@ export default function StakeholderSignoffTracker({ planId }) {
                     
                     {signoff.status === 'pending' && (
                       <>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handlePredictRisk(signoff)}
+                          disabled={predictApprovalRisk.isPending}
+                        >
+                          <TrendingUp className="h-4 w-4" />
+                        </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
