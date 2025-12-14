@@ -105,32 +105,58 @@ function StrategicPlanBuilder() {
     // Build context-aware prompt
     const contextPrompt = buildStrategyContextPrompt(strategyContext);
     
+    const saudiContext = `
+SAUDI ARABIA MOMRAH CONTEXT:
+- Ministry of Municipal, Rural Affairs and Housing (MoMRAH) mandate
+- 13 Administrative Regions: Riyadh, Makkah, Madinah, Eastern Province, Asir, Tabuk, Hail, Northern Borders, Jazan, Najran, Al-Baha, Al-Jouf, Qassim
+- Major Cities: Riyadh, Jeddah, Makkah Al-Mukarramah, Madinah Al-Munawwarah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif
+- 285+ municipalities and 17 major Amanats
+- Vision 2030 Programs: Quality of Life, Housing (Sakani - 70% ownership target), National Transformation, Thriving Cities
+- Focus Areas: Smart Cities, Sustainable Development, Citizen Services (Baladi), Urban Planning, Housing, Infrastructure, Rural Development, Innovation
+- Key Sectors: Transportation, Environment, Urban Planning, Digital Services, Public Safety, Infrastructure, Housing, Smart City, Waste Management, Water Resources
+`;
+
     const result = await invokeAI({
-      system_prompt: `You are a bilingual strategic planning expert for municipal innovation in Saudi Arabia. You analyze existing strategic landscape and create comprehensive NEW plans that fill identified gaps while avoiding duplication. You MUST provide content in BOTH English and Arabic. Arabic content should be professional, formal, and culturally appropriate for Saudi government context. Generate thorough and complete strategic plans with sufficient objectives to cover all identified gaps.`,
+      system_prompt: `You are a senior bilingual strategic planning expert within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH). You have deep expertise in Vision 2030, Saudi municipal governance, and government strategic planning.
+
+${saudiContext}
+
+Your role is to analyze the existing strategic landscape and create comprehensive NEW strategic plans that:
+- Fill identified gaps in Saudi municipal innovation
+- Align with Vision 2030 and MoMRAH's extensive mandate
+- Consider all 13 Saudi regions and major cities
+- Support the Kingdom's transformation objectives
+- Address citizen needs and improve quality of life
+
+You MUST provide ALL content in BOTH English and formal Arabic. Arabic content should be professional, official, and culturally appropriate for Saudi government documentation.`,
       prompt: `${contextPrompt}
 
-Based on the strategic context above, generate a COMPREHENSIVE strategic plan that:
+Based on the strategic context above, generate a COMPREHENSIVE strategic plan for Saudi municipalities that:
 1. Addresses ALL identified gaps thoroughly
-2. Avoids duplicating existing plans
-3. Focuses on uncovered sectors and unresolved challenges
-4. Builds on SWOT strengths and opportunities
-5. Provides complete coverage for the strategic landscape
+2. Aligns with Vision 2030 and MoMRAH priorities
+3. Avoids duplicating existing plans
+4. Focuses on uncovered sectors and unresolved challenges across Saudi regions
+5. Considers all major Saudi cities and their unique needs
+6. Builds on SWOT strengths and opportunities
+7. Supports smart city and digital transformation initiatives
 
-IMPORTANT: 
-- Generate content in BOTH English AND Arabic
-- Include 6-10 strategic objectives to ensure comprehensive coverage
-- Each objective should address a specific gap or opportunity
+CRITICAL REQUIREMENTS:
+- Generate content in BOTH English AND formal Arabic (professional government language)
+- Include 6-10 strategic objectives to ensure comprehensive coverage of MoMRAH's mandate
+- Each objective should address a specific gap, sector, or opportunity
+- Reference relevant Vision 2030 programs where applicable
+- Consider Saudi cultural context and government protocols
 
 Format as JSON with:
-- title_en: Unique, descriptive title in English
-- title_ar: Same title translated to formal Arabic
-- vision_en: Compelling vision statement in English (2-3 sentences)
-- vision_ar: Same vision statement in formal Arabic
+- title_en: Unique, descriptive title reflecting MoMRAH mandate (English)
+- title_ar: Professional Arabic title suitable for official documents
+- vision_en: Compelling vision statement aligned with Vision 2030 (2-3 sentences, English)
+- vision_ar: Same vision in formal Arabic suitable for government documents
 - objectives: Array of 6-10 objectives, each with:
   - name_en: Clear, actionable objective name in English
-  - name_ar: Objective name in Arabic
-  - description_en: Detailed description explaining the objective scope and expected outcomes (2-3 sentences)
-  - description_ar: Description in Arabic`,
+  - name_ar: Objective name in formal Arabic
+  - description_en: Detailed description with scope, expected outcomes, and Vision 2030 alignment (2-3 sentences)
+  - description_ar: Same description in formal Arabic`,
       response_json_schema: {
         type: "object",
         properties: {

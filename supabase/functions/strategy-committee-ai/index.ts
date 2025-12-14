@@ -6,6 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SAUDI_CONTEXT = `Saudi Arabia Ministry of Municipal, Rural Affairs and Housing (MoMRAH) Context:
+- 13 Regions, 285+ municipalities, 17 major Amanats
+- Vision 2030: Quality of Life, Housing, National Transformation, Smart Cities
+- Committee types: Strategy Board, Innovation Committee, Budget Committee, Technical Committee
+- Decision-making aligned with Saudi government protocols and Vision 2030 objectives`;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,7 +34,11 @@ serve(async (req) => {
 
     switch (action) {
       case 'prioritize_agenda':
-        systemPrompt = `You are an expert in executive committee management and meeting facilitation. Prioritize agenda items based on strategic importance, urgency, and dependencies.`;
+        systemPrompt = `You are an expert in Saudi government executive committee management and meeting facilitation within MoMRAH (Ministry of Municipal, Rural Affairs and Housing).
+
+${SAUDI_CONTEXT}
+
+Prioritize agenda items based on Vision 2030 strategic importance, urgency, stakeholder impact, and dependencies. Consider Saudi business protocols and decision-making culture.`;
         userPrompt = `Agenda Items: ${JSON.stringify(agendaItems)}
 Committee Type: ${committeeData?.type || 'Strategy Board'}
 Meeting Duration: ${meetingContext?.duration_minutes || 120} minutes

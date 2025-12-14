@@ -5,6 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH):
+- 13 Regions, 285+ municipalities across the Kingdom
+- Major cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Eastern Province cities
+- Vision 2030: Quality of Life, Housing (Sakani), National Transformation, Smart Cities
+- Currency: Saudi Riyal (SAR)
+- Stakeholders: Citizens, Amanats, Municipalities, Private Sector, Academia, Startups`;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,23 +27,28 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert project manager and strategic planner specializing in municipal innovation initiatives.
-Your role is to generate detailed, actionable action items that will help achieve strategic objectives.
+    const systemPrompt = `You are an expert project manager and strategic planner within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH), specializing in municipal innovation initiatives.
+
+${SAUDI_CONTEXT}
+
+Your role is to generate detailed, actionable action items that will help achieve strategic objectives aligned with Vision 2030 and MoMRAH's mandate.
 
 For each action item, you must provide:
-1. Clear, action-oriented title (in both English and Arabic)
+1. Clear, action-oriented title (in both English and formal Arabic)
 2. Detailed description of what needs to be done
-3. Realistic budget estimate (in SAR)
+3. Realistic budget estimate (in SAR - Saudi Riyals)
 4. Suggested status (always 'pending' for new items)
 5. List of key deliverables
+6. Timeline consideration (accounting for Saudi fiscal year, Ramadan, Hajj seasons)
 
 Guidelines:
 - Actions should be specific and measurable
-- Budget estimates should be realistic for Saudi municipal context
-- Deliverables should be tangible outputs
-- Consider dependencies between actions
+- Budget estimates should be realistic for Saudi municipal context (government contracting rates)
+- Deliverables should be tangible outputs aligned with government documentation standards
+- Consider dependencies between actions and government approval processes
 - Include both quick wins and longer-term initiatives
-- Ensure actions cover planning, implementation, and monitoring phases`;
+- Ensure actions cover planning, stakeholder engagement, implementation, and monitoring phases
+- Align with Baladi platform and e-government initiatives where applicable`;
 
     const userPrompt = `Generate 4-5 detailed action items for the following objective:
 
