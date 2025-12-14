@@ -2475,6 +2475,56 @@ export type Database = {
           },
         ]
       }
+      coverage_snapshots: {
+        Row: {
+          created_at: string
+          entity_coverage: Json
+          fully_covered_objectives: number | null
+          gap_analysis: Json
+          id: string
+          objective_coverage: Json
+          overall_coverage_pct: number | null
+          snapshot_date: string
+          strategic_plan_id: string | null
+          total_gap_items: number | null
+          total_objectives: number | null
+        }
+        Insert: {
+          created_at?: string
+          entity_coverage?: Json
+          fully_covered_objectives?: number | null
+          gap_analysis?: Json
+          id?: string
+          objective_coverage?: Json
+          overall_coverage_pct?: number | null
+          snapshot_date?: string
+          strategic_plan_id?: string | null
+          total_gap_items?: number | null
+          total_objectives?: number | null
+        }
+        Update: {
+          created_at?: string
+          entity_coverage?: Json
+          fully_covered_objectives?: number | null
+          gap_analysis?: Json
+          id?: string
+          objective_coverage?: Json
+          overall_coverage_pct?: number | null
+          snapshot_date?: string
+          strategic_plan_id?: string | null
+          total_gap_items?: number | null
+          total_objectives?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coverage_snapshots_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_entries: {
         Row: {
           created_at: string | null
@@ -2633,6 +2683,86 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      demand_queue: {
+        Row: {
+          attempts: number
+          batch_id: string | null
+          created_at: string
+          created_by: string | null
+          entity_type: string
+          generated_entity_id: string | null
+          generated_entity_type: string | null
+          generator_component: string
+          id: string
+          last_attempt_at: string | null
+          max_attempts: number
+          objective_id: string | null
+          pillar_id: string | null
+          prefilled_spec: Json
+          priority_factors: Json | null
+          priority_score: number
+          quality_feedback: Json | null
+          quality_score: number | null
+          status: string
+          strategic_plan_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_type: string
+          generated_entity_id?: string | null
+          generated_entity_type?: string | null
+          generator_component: string
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number
+          objective_id?: string | null
+          pillar_id?: string | null
+          prefilled_spec?: Json
+          priority_factors?: Json | null
+          priority_score?: number
+          quality_feedback?: Json | null
+          quality_score?: number | null
+          status?: string
+          strategic_plan_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_type?: string
+          generated_entity_id?: string | null
+          generated_entity_type?: string | null
+          generator_component?: string
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number
+          objective_id?: string | null
+          pillar_id?: string | null
+          prefilled_spec?: Json
+          priority_factors?: Json | null
+          priority_score?: number
+          quality_feedback?: Json | null
+          quality_score?: number | null
+          status?: string
+          strategic_plan_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demand_queue_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       demo_requests: {
         Row: {
@@ -3790,6 +3920,78 @@ export type Database = {
           notify_on_updates?: boolean | null
         }
         Relationships: []
+      }
+      generation_history: {
+        Row: {
+          attempt_number: number
+          completion_tokens: number | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          error_message: string | null
+          generation_time_ms: number | null
+          id: string
+          input_spec: Json | null
+          outcome: string
+          output_entity: Json | null
+          overall_score: number | null
+          prompt_tokens: number | null
+          quality_assessment: Json | null
+          queue_item_id: string | null
+          strategic_plan_id: string | null
+        }
+        Insert: {
+          attempt_number?: number
+          completion_tokens?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          error_message?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          input_spec?: Json | null
+          outcome: string
+          output_entity?: Json | null
+          overall_score?: number | null
+          prompt_tokens?: number | null
+          quality_assessment?: Json | null
+          queue_item_id?: string | null
+          strategic_plan_id?: string | null
+        }
+        Update: {
+          attempt_number?: number
+          completion_tokens?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          error_message?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          input_spec?: Json | null
+          outcome?: string
+          output_entity?: Json | null
+          overall_score?: number | null
+          prompt_tokens?: number | null
+          quality_assessment?: Json | null
+          queue_item_id?: string | null
+          strategic_plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_history_queue_item_id_fkey"
+            columns: ["queue_item_id"]
+            isOneToOne: false
+            referencedRelation: "demand_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generation_history_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       global_trends: {
         Row: {
@@ -10464,6 +10666,7 @@ export type Database = {
       }
       strategic_plans: {
         Row: {
+          cascade_config: Json | null
           created_at: string | null
           description_ar: string | null
           description_en: string | null
@@ -10482,6 +10685,7 @@ export type Database = {
           vision_en: string | null
         }
         Insert: {
+          cascade_config?: Json | null
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
@@ -10500,6 +10704,7 @@ export type Database = {
           vision_en?: string | null
         }
         Update: {
+          cascade_config?: Json | null
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
