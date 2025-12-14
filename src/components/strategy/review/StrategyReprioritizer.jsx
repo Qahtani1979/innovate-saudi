@@ -8,7 +8,9 @@ import {
   Users, DollarSign, Save, RotateCcw
 } from 'lucide-react';
 
-export default function StrategyReprioritizer({ objectives = [], onSave }) {
+export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, planId, objectives = [], onSave }) {
+  // Support both prop naming conventions
+  const activePlanId = strategicPlanId || planId;
   const { t, language } = useLanguage();
   
   const [items, setItems] = useState([

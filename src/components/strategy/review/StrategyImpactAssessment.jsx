@@ -10,7 +10,9 @@ import {
   Download, RefreshCw, Target, Leaf, Building2, Users, Lightbulb
 } from 'lucide-react';
 
-export default function StrategyImpactAssessment({ planId }) {
+export default function StrategyImpactAssessment({ strategicPlanId, strategicPlan, planId }) {
+  // Support both prop naming conventions
+  const activePlanId = strategicPlanId || planId;
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
 

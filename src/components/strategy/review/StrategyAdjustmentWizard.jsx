@@ -27,7 +27,9 @@ const STEPS = [
   { id: 'confirm', label: { en: 'Confirm', ar: 'تأكيد' }, icon: CheckCircle2 }
 ];
 
-export default function StrategyAdjustmentWizard({ planId, onComplete }) {
+export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPlan, planId, onComplete }) {
+  // Support both prop naming conventions
+  const activePlanId = strategicPlanId || planId;
   const { t, language } = useLanguage();
   const [currentStep, setCurrentStep] = useState(0);
   const [adjustmentData, setAdjustmentData] = useState({

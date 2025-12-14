@@ -1,8 +1,8 @@
 # Strategy System Inventory
 
-> **Version:** 1.3  
+> **Version:** 1.4  
 > **Last Updated:** 2025-12-14  
-> **Total Assets:** 121 files (21 pages, 55 components, 30 hooks + 15 registered routes)
+> **Total Assets:** 123 files (21 pages, 55 components, 30 hooks + 2 context files + 15 registered routes)
 
 ---
 
@@ -11,6 +11,23 @@
 The Strategy System is the core strategic planning and execution framework that spans all 8 phases of the strategic methodology. This document provides a complete inventory of all pages, components, and hooks that comprise the system.
 
 **All pages are now registered in `pages.config.js` and accessible from the Strategy Hub.**
+
+---
+
+## 🌐 Global Active Plan Context
+
+All strategy pages use a shared global context for maintaining the active strategic plan selection:
+
+| File | Description |
+|------|-------------|
+| `src/contexts/StrategicPlanContext.jsx` | Global context with localStorage persistence |
+| `src/components/strategy/ActivePlanBanner.jsx` | Reusable banner component showing active plan selector |
+
+### Usage Pattern
+- All strategy pages import `useActivePlan` from the context
+- Pages render `ActivePlanBanner` for consistent UI
+- `activePlanId` and `activePlan` are passed to child components
+- Hooks accept `strategicPlanId` parameter for database filtering
 
 ---
 
