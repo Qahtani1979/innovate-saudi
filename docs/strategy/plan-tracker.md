@@ -113,14 +113,14 @@
 |---|-----------|-----------|--------|-----------|
 | 2.1 | StrategyPillarGenerator | `src/components/strategy/creation/StrategyPillarGenerator.jsx` | ✅ Complete | ✅ Real AI |
 | 2.2 | StrategyObjectiveGenerator | `src/components/strategy/creation/StrategyObjectiveGenerator.jsx` | ✅ Complete | ✅ Real AI |
-| 2.3 | StrategyTimelinePlanner | `src/components/strategy/creation/StrategyTimelinePlanner.jsx` | ✅ Complete | - |
-| 2.4 | StrategyOwnershipAssigner | `src/components/strategy/creation/StrategyOwnershipAssigner.jsx` | ✅ Complete | - |
+| 2.3 | StrategyTimelinePlanner | `src/components/strategy/creation/StrategyTimelinePlanner.jsx` | ✅ Complete | ✅ Real AI |
+| 2.4 | StrategyOwnershipAssigner | `src/components/strategy/creation/StrategyOwnershipAssigner.jsx` | ✅ Complete | ✅ Real AI |
 | 2.5 | ActionPlanBuilder | `src/components/strategy/creation/ActionPlanBuilder.jsx` | ✅ Complete | ✅ Real AI |
-| 2.6 | NationalStrategyLinker | `src/components/strategy/creation/NationalStrategyLinker.jsx` | ✅ Complete | ⚠️ Mock |
+| 2.6 | NationalStrategyLinker | `src/components/strategy/creation/NationalStrategyLinker.jsx` | ✅ Complete | ✅ Real AI |
 | 2.7 | SectorStrategyBuilder | `src/components/strategy/creation/SectorStrategyBuilder.jsx` | ✅ Complete | ✅ Real AI |
-| 2.8 | StrategyTemplateLibrary | `src/components/strategy/creation/StrategyTemplateLibrary.jsx` | ✅ Complete | - |
+| 2.8 | StrategyTemplateLibrary | `src/components/strategy/creation/StrategyTemplateLibrary.jsx` | ✅ Complete | N/A (Library) |
 
-### AI Edge Functions (4/4 ✅)
+### AI Edge Functions (6/6 ✅)
 
 | # | Edge Function | Purpose | Status |
 |---|---------------|---------|--------|
@@ -128,6 +128,9 @@
 | 2 | strategy-objective-generator | Generate SMART objectives with KPIs | ✅ DEPLOYED |
 | 3 | strategy-action-plan-generator | Generate action items for objectives | ✅ DEPLOYED |
 | 4 | strategy-sector-generator | Generate sector-specific strategies | ✅ DEPLOYED |
+| 5 | strategy-national-linker | AI-powered Vision 2030/SDG alignment suggestions | ✅ DEPLOYED |
+| 6 | strategy-timeline-generator | Generate milestone timeline with dependencies | ✅ DEPLOYED |
+| 7 | strategy-ownership-ai | AI-powered RACI assignment suggestions | ✅ DEPLOYED |
 
 ### Database Tables (6/6 ✅)
 

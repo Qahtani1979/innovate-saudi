@@ -29,7 +29,8 @@ import {
   Building2,
   Target,
   ArrowRight,
-  Loader2
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 
 const RACI_ROLES = [
@@ -151,6 +152,58 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
     ));
   };
 
+  const [isSuggestingAI, setIsSuggestingAI] = useState(false);
+
+  const suggestWithAI = async () => {
+    setIsSuggestingAI(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('strategy-ownership-ai', {
+        body: {
+          objectives: assignments.map(a => ({
+            objective_id: a.objective_id,
+            title_en: a.objective_title
+          })),
+          available_users: availableUsers,
+          strategic_plan_context: strategicPlan?.vision_en || 'Municipal Innovation Strategy'
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      const { assignments: aiAssignments } = data;
+
+      setAssignments(prev => prev.map((a, index) => {
+        const suggestion = aiAssignments?.find((s: any) => s.objective_index === index);
+        if (!suggestion) return a;
+        
+        return {
+          ...a,
+          responsible: suggestion.responsible || a.responsible,
+          accountable: suggestion.accountable || a.accountable,
+          consulted: [...new Set([...a.consulted, ...(suggestion.consulted || [])])],
+          informed: [...new Set([...a.informed, ...(suggestion.informed || [])])]
+        };
+      }));
+
+      toast({
+        title: t({ en: 'AI Suggestions Applied', ar: 'تم تطبيق اقتراحات الذكاء الاصطناعي' }),
+        description: t({ en: 'RACI assignments suggested based on roles and objectives', ar: 'تم اقتراح تعيينات RACI بناءً على الأدوار والأهداف' })
+      });
+    } catch (error) {
+      toast({
+        title: t({ en: 'Suggestion Failed', ar: 'فشل الاقتراح' }),
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSuggestingAI(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       // Validate all objectives have at least responsible and accountable
@@ -208,6 +261,18 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
                 <p className="text-sm text-slate-500">{t({ en: 'Completion', ar: 'الاكتمال' })}</p>
                 <p className="text-2xl font-bold text-indigo-600">{status.percentage}%</p>
               </div>
+              <Button 
+                variant="outline" 
+                onClick={suggestWithAI}
+                disabled={isSuggestingAI}
+              >
+                {isSuggestingAI ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2 text-amber-500" />
+                )}
+                {t({ en: 'AI Suggest', ar: 'اقتراح ذكي' })}
+              </Button>
               <Button onClick={handleSave} disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-700">
                 {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                 {t({ en: 'Save Assignments', ar: 'حفظ التعيينات' })}
