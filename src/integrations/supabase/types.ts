@@ -2147,6 +2147,189 @@ export type Database = {
           },
         ]
       }
+      communication_analytics: {
+        Row: {
+          channel: string
+          communication_plan_id: string | null
+          created_at: string | null
+          date: string
+          id: string
+          metadata: Json | null
+          metric_type: string
+          metric_value: number | null
+        }
+        Insert: {
+          channel: string
+          communication_plan_id?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          metric_value?: number | null
+        }
+        Update: {
+          channel?: string
+          communication_plan_id?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          metric_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_analytics_communication_plan_id_fkey"
+            columns: ["communication_plan_id"]
+            isOneToOne: false
+            referencedRelation: "communication_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_notifications: {
+        Row: {
+          communication_plan_id: string | null
+          content_ar: string | null
+          content_en: string | null
+          created_at: string | null
+          created_by: string | null
+          delivery_stats: Json | null
+          error_message: string | null
+          id: string
+          notification_type: string
+          recipient_audience_id: string | null
+          recipient_emails: string[] | null
+          recipient_type: string
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string | null
+          subject_ar: string | null
+          subject_en: string | null
+        }
+        Insert: {
+          communication_plan_id?: string | null
+          content_ar?: string | null
+          content_en?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivery_stats?: Json | null
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          recipient_audience_id?: string | null
+          recipient_emails?: string[] | null
+          recipient_type: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject_ar?: string | null
+          subject_en?: string | null
+        }
+        Update: {
+          communication_plan_id?: string | null
+          content_ar?: string | null
+          content_en?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivery_stats?: Json | null
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          recipient_audience_id?: string | null
+          recipient_emails?: string[] | null
+          recipient_type?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject_ar?: string | null
+          subject_en?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_notifications_communication_plan_id_fkey"
+            columns: ["communication_plan_id"]
+            isOneToOne: false
+            referencedRelation: "communication_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_plans: {
+        Row: {
+          channel_strategy: Json | null
+          content_calendar: Json | null
+          created_at: string | null
+          created_by: string | null
+          description_ar: string | null
+          description_en: string | null
+          end_date: string | null
+          id: string
+          key_messages: Json | null
+          master_narrative_ar: string | null
+          master_narrative_en: string | null
+          name_ar: string | null
+          name_en: string
+          owner_email: string | null
+          start_date: string | null
+          status: string | null
+          strategic_plan_id: string | null
+          target_audiences: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          channel_strategy?: Json | null
+          content_calendar?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          end_date?: string | null
+          id?: string
+          key_messages?: Json | null
+          master_narrative_ar?: string | null
+          master_narrative_en?: string | null
+          name_ar?: string | null
+          name_en: string
+          owner_email?: string | null
+          start_date?: string | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          target_audiences?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          channel_strategy?: Json | null
+          content_calendar?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          end_date?: string | null
+          id?: string
+          key_messages?: Json | null
+          master_narrative_ar?: string | null
+          master_narrative_en?: string | null
+          name_ar?: string | null
+          name_en?: string
+          owner_email?: string | null
+          start_date?: string | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          target_audiences?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_plans_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           contract_code: string
@@ -3691,6 +3874,104 @@ export type Database = {
             columns: ["idea_id"]
             isOneToOne: false
             referencedRelation: "citizen_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      impact_stories: {
+        Row: {
+          after_situation: string | null
+          before_situation: string | null
+          created_at: string | null
+          created_by: string | null
+          entity_id: string | null
+          entity_type: string
+          full_story_ar: string | null
+          full_story_en: string | null
+          gallery_urls: string[] | null
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          is_published: boolean | null
+          key_metrics: Json | null
+          lessons_learned: string[] | null
+          published_date: string | null
+          share_count: number | null
+          strategic_plan_id: string | null
+          summary_ar: string | null
+          summary_en: string | null
+          tags: string[] | null
+          testimonials: Json | null
+          title_ar: string | null
+          title_en: string
+          updated_at: string | null
+          video_url: string | null
+          view_count: number | null
+        }
+        Insert: {
+          after_situation?: string | null
+          before_situation?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type: string
+          full_story_ar?: string | null
+          full_story_en?: string | null
+          gallery_urls?: string[] | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          key_metrics?: Json | null
+          lessons_learned?: string[] | null
+          published_date?: string | null
+          share_count?: number | null
+          strategic_plan_id?: string | null
+          summary_ar?: string | null
+          summary_en?: string | null
+          tags?: string[] | null
+          testimonials?: Json | null
+          title_ar?: string | null
+          title_en: string
+          updated_at?: string | null
+          video_url?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          after_situation?: string | null
+          before_situation?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          full_story_ar?: string | null
+          full_story_en?: string | null
+          gallery_urls?: string[] | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          key_metrics?: Json | null
+          lessons_learned?: string[] | null
+          published_date?: string | null
+          share_count?: number | null
+          strategic_plan_id?: string | null
+          summary_ar?: string | null
+          summary_en?: string | null
+          tags?: string[] | null
+          testimonials?: Json | null
+          title_ar?: string | null
+          title_en?: string
+          updated_at?: string | null
+          video_url?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_stories_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
             referencedColumns: ["id"]
           },
         ]
