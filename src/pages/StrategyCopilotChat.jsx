@@ -159,4 +159,4 @@ Use data-driven insights when possible.`
   );
 }
 
-export default ProtectedPage(StrategyCopilotChat, { requiredPermissions: [], requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead'] });
+export default ProtectedPage(StrategyCopilotChat, { requiredPermissions: ['strategy_view'] });
