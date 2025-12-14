@@ -7,11 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, CalendarDays, Loader2, CheckCircle2, Plus, Users, MapPin } from 'lucide-react';
+import { Sparkles, CalendarDays, Loader2, CheckCircle2, Plus, Users, MapPin, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
 export default function StrategyToEventGenerator({ onEventCreated }) {
   const { t, isRTL } = useLanguage();
+  const { createApprovalRequest } = useApprovalRequest();
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [eventType, setEventType] = useState('workshop');
   const [targetAudience, setTargetAudience] = useState([]);
@@ -84,7 +86,7 @@ export default function StrategyToEventGenerator({ onEventCreated }) {
     }
   };
 
-  const handleSaveEvent = async (event, index) => {
+  const handleSaveEvent = async (event, index, submitForApproval = false) => {
     try {
       const { data, error } = await supabase
         .from('events')
@@ -98,7 +100,7 @@ export default function StrategyToEventGenerator({ onEventCreated }) {
           strategic_plan_ids: [selectedPlanId],
           is_strategy_derived: true,
           strategy_derivation_date: new Date().toISOString(),
-          status: 'planning',
+          status: submitForApproval ? 'pending' : 'planning',
           estimated_attendees: event.estimated_attendees,
           suggested_agenda: event.agenda
         })
@@ -107,11 +109,30 @@ export default function StrategyToEventGenerator({ onEventCreated }) {
 
       if (error) throw error;
 
+      // Create approval request if submitting (Phase 4 integration)
+      if (submitForApproval) {
+        await createApprovalRequest({
+          entityType: 'event',
+          entityId: data.id,
+          entityTitle: event.title_en,
+          isStrategyDerived: true,
+          strategicPlanIds: [selectedPlanId],
+          metadata: {
+            event_type: eventType,
+            target_audience: targetAudience,
+            source: 'cascade_generator'
+          }
+        });
+      }
+
       const updated = [...generatedEvents];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id };
+      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
       setGeneratedEvents(updated);
       
-      toast.success(t({ en: 'Event saved successfully', ar: 'تم حفظ الفعالية بنجاح' }));
+      toast.success(t({ 
+        en: submitForApproval ? 'Event saved and submitted for approval' : 'Event saved successfully', 
+        ar: submitForApproval ? 'تم حفظ الفعالية وإرسالها للموافقة' : 'تم حفظ الفعالية بنجاح' 
+      }));
       onEventCreated?.(data);
     } catch (error) {
       console.error('Save error:', error);
@@ -238,15 +259,23 @@ export default function StrategyToEventGenerator({ onEventCreated }) {
                       </CardDescription>
                     </div>
                     {event.saved ? (
-                      <Badge variant="outline" className="bg-green-100 text-green-700">
+                      <Badge variant="outline" className={event.submitted ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        {t({ en: 'Saved', ar: 'محفوظ' })}
+                        {event.submitted 
+                          ? t({ en: 'Submitted', ar: 'مُرسل' })
+                          : t({ en: 'Saved', ar: 'محفوظ' })}
                       </Badge>
                     ) : (
-                      <Button size="sm" onClick={() => handleSaveEvent(event, idx)}>
-                        <Plus className="h-3 w-3 mr-1" />
-                        {t({ en: 'Save', ar: 'حفظ' })}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" onClick={() => handleSaveEvent(event, idx, false)}>
+                          <Plus className="h-3 w-3 mr-1" />
+                          {t({ en: 'Save', ar: 'حفظ' })}
+                        </Button>
+                        <Button size="sm" onClick={() => handleSaveEvent(event, idx, true)}>
+                          <Send className="h-3 w-3 mr-1" />
+                          {t({ en: 'Save & Submit', ar: 'حفظ وإرسال' })}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardHeader>
