@@ -2073,6 +2073,80 @@ export type Database = {
           },
         ]
       }
+      committee_decisions: {
+        Row: {
+          action_items: Json | null
+          committee_name: string
+          conditions: string[] | null
+          created_at: string | null
+          created_by: string | null
+          decision_text: string | null
+          decision_type: string | null
+          due_date: string | null
+          id: string
+          meeting_date: string | null
+          rationale: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          responsible_email: string | null
+          strategic_plan_id: string | null
+          subject: string
+          vote_abstain: number | null
+          vote_against: number | null
+          vote_for: number | null
+        }
+        Insert: {
+          action_items?: Json | null
+          committee_name: string
+          conditions?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          decision_text?: string | null
+          decision_type?: string | null
+          due_date?: string | null
+          id?: string
+          meeting_date?: string | null
+          rationale?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          responsible_email?: string | null
+          strategic_plan_id?: string | null
+          subject: string
+          vote_abstain?: number | null
+          vote_against?: number | null
+          vote_for?: number | null
+        }
+        Update: {
+          action_items?: Json | null
+          committee_name?: string
+          conditions?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          decision_text?: string | null
+          decision_type?: string | null
+          due_date?: string | null
+          id?: string
+          meeting_date?: string | null
+          rationale?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          responsible_email?: string | null
+          strategic_plan_id?: string | null
+          subject?: string
+          vote_abstain?: number | null
+          vote_against?: number | null
+          vote_for?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "committee_decisions_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           contract_code: string
@@ -10434,6 +10508,118 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "strategy_risks_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_signoffs: {
+        Row: {
+          comments: string | null
+          conditions: string[] | null
+          created_at: string | null
+          created_by: string | null
+          delegate_email: string | null
+          due_date: string | null
+          id: string
+          reminder_count: number | null
+          requested_date: string | null
+          signed_date: string | null
+          stakeholder_email: string | null
+          stakeholder_name: string
+          stakeholder_role: string
+          status: string | null
+          strategic_plan_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          comments?: string | null
+          conditions?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          delegate_email?: string | null
+          due_date?: string | null
+          id?: string
+          reminder_count?: number | null
+          requested_date?: string | null
+          signed_date?: string | null
+          stakeholder_email?: string | null
+          stakeholder_name: string
+          stakeholder_role: string
+          status?: string | null
+          strategic_plan_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          comments?: string | null
+          conditions?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          delegate_email?: string | null
+          due_date?: string | null
+          id?: string
+          reminder_count?: number | null
+          requested_date?: string | null
+          signed_date?: string | null
+          stakeholder_email?: string | null
+          stakeholder_name?: string
+          stakeholder_role?: string
+          status?: string | null
+          strategic_plan_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_signoffs_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_versions: {
+        Row: {
+          change_summary: string | null
+          changes: Json | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          snapshot_data: Json | null
+          status: string | null
+          strategic_plan_id: string | null
+          version_label: string | null
+          version_number: string
+        }
+        Insert: {
+          change_summary?: string | null
+          changes?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          snapshot_data?: Json | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          version_label?: string | null
+          version_number: string
+        }
+        Update: {
+          change_summary?: string | null
+          changes?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          snapshot_data?: Json | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          version_label?: string | null
+          version_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_versions_strategic_plan_id_fkey"
             columns: ["strategic_plan_id"]
             isOneToOne: false
             referencedRelation: "strategic_plans"

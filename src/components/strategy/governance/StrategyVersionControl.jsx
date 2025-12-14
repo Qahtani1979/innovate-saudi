@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/components/LanguageContext';
+import { useStrategyVersions } from '@/hooks/strategy/useStrategyVersions';
 import { 
   GitBranch, Clock, CheckCircle2, FileEdit, RotateCcw, 
-  Eye, Plus, ArrowRight, User, Calendar
+  Eye, Plus, ArrowRight, User, Calendar, Loader2
 } from 'lucide-react';
 import {
   Dialog,
@@ -15,56 +16,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 
 export default function StrategyVersionControl({ planId }) {
   const { t, language } = useLanguage();
-  const [versions, setVersions] = useState([
-    {
-      id: '1',
-      version_number: '2.1.0',
-      version_label: 'Q1 2024 Update',
-      created_at: '2024-01-20T10:30:00Z',
-      created_by: 'Ahmed Al-Rashid',
-      change_summary: 'Updated KPIs and added new strategic objective for digital transformation',
-      status: 'approved',
-      changes: [
-        { field_path: 'objectives[3]', change_type: 'added', old_value: null, new_value: 'Digital Transformation Initiative', reason: 'Align with Vision 2030' },
-        { field_path: 'kpis.innovation_rate', change_type: 'modified', old_value: '15%', new_value: '20%', reason: 'More ambitious target' },
-        { field_path: 'budget.r&d', change_type: 'modified', old_value: '5M SAR', new_value: '7M SAR', reason: 'Increased R&D allocation' }
-      ]
-    },
-    {
-      id: '2',
-      version_number: '2.0.0',
-      version_label: 'Major Revision',
-      created_at: '2023-12-15T14:00:00Z',
-      created_by: 'Sarah Al-Faisal',
-      change_summary: 'Complete strategy refresh with new vision and restructured objectives',
-      status: 'superseded',
-      changes: [
-        { field_path: 'vision', change_type: 'modified', old_value: 'Previous vision statement', new_value: 'New vision statement', reason: 'Strategic pivot' },
-        { field_path: 'objectives', change_type: 'modified', old_value: '5 objectives', new_value: '7 objectives', reason: 'Expanded scope' }
-      ]
-    },
-    {
-      id: '3',
-      version_number: '1.5.0',
-      version_label: 'Budget Adjustment',
-      created_at: '2023-10-01T09:00:00Z',
-      created_by: 'Mohammed Al-Qahtani',
-      change_summary: 'Adjusted budget allocations based on Q3 review',
-      status: 'superseded',
-      changes: [
-        { field_path: 'budget.total', change_type: 'modified', old_value: '50M SAR', new_value: '55M SAR', reason: 'Additional funding secured' }
-      ]
-    }
-  ]);
+  const { versions, isLoading, createVersion, restoreVersion, getNextVersionNumber } = useStrategyVersions(planId);
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newVersion, setNewVersion] = useState({ label: '', summary: '' });
@@ -89,34 +44,24 @@ export default function StrategyVersionControl({ planId }) {
     }
   };
 
-  const handleCreateVersion = () => {
+  const handleCreateVersion = async () => {
     if (!newVersion.label || !newVersion.summary) return;
     
-    const lastVersion = versions[0]?.version_number || '1.0.0';
-    const [major, minor] = lastVersion.split('.').map(Number);
-    const newVersionNumber = `${major}.${minor + 1}.0`;
-    
-    setVersions([{
-      id: Date.now().toString(),
-      version_number: newVersionNumber,
+    await createVersion.mutateAsync({
+      strategic_plan_id: planId,
+      version_number: getNextVersionNumber(),
       version_label: newVersion.label,
-      created_at: new Date().toISOString(),
-      created_by: 'Current User',
       change_summary: newVersion.summary,
       status: 'draft',
       changes: []
-    }, ...versions]);
+    });
     
     setNewVersion({ label: '', summary: '' });
     setIsCreateDialogOpen(false);
   };
 
-  const handleRestore = (versionId) => {
-    // Mark current as superseded, restore selected as current
-    setVersions(versions.map(v => ({
-      ...v,
-      status: v.id === versionId ? 'approved' : (v.status === 'approved' ? 'superseded' : v.status)
-    })));
+  const handleRestore = async (versionId) => {
+    await restoreVersion.mutateAsync(versionId);
   };
 
   const formatDate = (dateString) => {
@@ -128,6 +73,14 @@ export default function StrategyVersionControl({ planId }) {
       minute: '2-digit'
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -167,7 +120,11 @@ export default function StrategyVersionControl({ planId }) {
                     rows={3}
                   />
                 </div>
-                <Button onClick={handleCreateVersion} className="w-full">
+                <div className="text-sm text-muted-foreground">
+                  {t({ en: 'Next version:', ar: 'الإصدار التالي:' })} <span className="font-mono font-bold">v{getNextVersionNumber()}</span>
+                </div>
+                <Button onClick={handleCreateVersion} className="w-full" disabled={createVersion.isPending}>
+                  {createVersion.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                   {t({ en: 'Create Version', ar: 'إنشاء الإصدار' })}
                 </Button>
               </div>
@@ -177,11 +134,14 @@ export default function StrategyVersionControl({ planId }) {
         <CardContent>
           <div className="relative">
             {/* Timeline line */}
-            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+            {versions && versions.length > 0 && (
+              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+            )}
             
             <div className="space-y-6">
-              {versions.map((version, index) => {
+              {versions?.map((version, index) => {
                 const config = getStatusConfig(version.status);
+                const changes = Array.isArray(version.changes) ? version.changes : [];
                 
                 return (
                   <div key={version.id} className="relative pl-10">
@@ -208,6 +168,7 @@ export default function StrategyVersionControl({ planId }) {
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => handleRestore(version.id)}
+                                disabled={restoreVersion.isPending}
                               >
                                 <RotateCcw className="h-4 w-4 mr-1" />
                                 {t({ en: 'Restore', ar: 'استعادة' })}
@@ -229,7 +190,7 @@ export default function StrategyVersionControl({ planId }) {
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <User className="h-3 w-3" />
-                            {version.created_by}
+                            {version.created_by || 'System'}
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -238,11 +199,11 @@ export default function StrategyVersionControl({ planId }) {
                         </div>
                         
                         {/* Expanded changes */}
-                        {selectedVersion === version.id && version.changes.length > 0 && (
+                        {selectedVersion === version.id && changes.length > 0 && (
                           <div className="mt-4 pt-4 border-t">
                             <p className="text-sm font-medium mb-2">{t({ en: 'Changes', ar: 'التغييرات' })}</p>
                             <div className="space-y-2">
-                              {version.changes.map((change, i) => (
+                              {changes.map((change, i) => (
                                 <div key={i} className="flex items-start gap-2 text-sm p-2 bg-muted/50 rounded">
                                   {getChangeTypeIcon(change.change_type)}
                                   <div className="flex-1">
@@ -270,6 +231,12 @@ export default function StrategyVersionControl({ planId }) {
                   </div>
                 );
               })}
+
+              {(!versions || versions.length === 0) && (
+                <div className="text-center py-8 text-muted-foreground">
+                  {t({ en: 'No versions created yet', ar: 'لم يتم إنشاء إصدارات بعد' })}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
