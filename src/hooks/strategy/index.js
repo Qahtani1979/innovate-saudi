@@ -34,3 +34,6 @@ export { useCommunicationAI } from './useCommunicationAI';
 
 // Phase 7: Evaluation Hooks
 export { useStrategyEvaluation } from './useStrategyEvaluation';
+
+// Phase 8: Recalibration Hooks
+export { useStrategyRecalibration } from './useStrategyRecalibration';
