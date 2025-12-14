@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/components/LanguageContext';
 import { useCommitteeDecisions } from '@/hooks/strategy/useCommitteeDecisions';
+import { useCommitteeAI } from '@/hooks/strategy/useCommitteeAI';
 import { 
   Users, Calendar, CheckCircle2, XCircle, Clock, 
-  Plus, Loader2, Gavel, FileText, ArrowRight
+  Plus, Loader2, Gavel, FileText, ArrowRight, Sparkles, ListTodo, FileOutput
 } from 'lucide-react';
 import {
   Dialog,
@@ -28,7 +29,13 @@ import {
 export default function StrategyCommitteeReview({ planId }) {
   const { t, language } = useLanguage();
   const { decisions, isLoading, createDecision } = useCommitteeDecisions(planId);
+  const { prioritizeAgenda, predictDecisionImpact, generateActionItems, summarizeMeeting } = useCommitteeAI();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [impactAnalysis, setImpactAnalysis] = useState(null);
+  const [actionItems, setActionItems] = useState(null);
+  const [meetingSummary, setMeetingSummary] = useState(null);
+  
   const [newDecision, setNewDecision] = useState({
     committee_name: '',
     meeting_date: '',
@@ -69,6 +76,38 @@ export default function StrategyCommitteeReview({ planId }) {
     return configs[type] || configs.direction;
   };
 
+  const handlePredictImpact = async (decision) => {
+    const result = await predictDecisionImpact.mutateAsync({
+      decisions: decision,
+      committeeData: { type: decision.committee_name },
+      meetingContext: { plan_context: { planId } }
+    });
+    setImpactAnalysis(result);
+  };
+
+  const handleGenerateActionItems = async () => {
+    if (!decisions || decisions.length === 0) return;
+    const recentDecisions = decisions.slice(0, 5);
+    const result = await generateActionItems.mutateAsync({
+      decisions: recentDecisions,
+      committeeData: { members: [] },
+      meetingContext: { planId }
+    });
+    setActionItems(result);
+  };
+
+  const handleSummarizeMeeting = async () => {
+    if (!decisions || decisions.length === 0) return;
+    const recentDecisions = decisions.slice(0, 10);
+    const result = await summarizeMeeting.mutateAsync({
+      decisions: recentDecisions,
+      agendaItems: recentDecisions.map(d => ({ subject: d.subject })),
+      committeeData: {},
+      meetingContext: { planId }
+    });
+    setMeetingSummary(result);
+  };
+
   const handleAddDecision = async () => {
     if (!newDecision.committee_name || !newDecision.subject) return;
     
@@ -88,17 +127,9 @@ export default function StrategyCommitteeReview({ planId }) {
     });
     
     setNewDecision({
-      committee_name: '',
-      meeting_date: '',
-      decision_type: '',
-      subject: '',
-      decision_text: '',
-      rationale: '',
-      vote_for: 0,
-      vote_against: 0,
-      vote_abstain: 0,
-      responsible_email: '',
-      due_date: ''
+      committee_name: '', meeting_date: '', decision_type: '', subject: '',
+      decision_text: '', rationale: '', vote_for: 0, vote_against: 0,
+      vote_abstain: 0, responsible_email: '', due_date: ''
     });
     setIsDialogOpen(false);
   };
@@ -128,6 +159,171 @@ export default function StrategyCommitteeReview({ planId }) {
 
   return (
     <div className="space-y-6">
+      {/* AI Actions Bar */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="font-medium">{t({ en: 'AI Committee Assistant', ar: 'مساعد اللجان الذكي' })}</span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleGenerateActionItems}
+                disabled={generateActionItems.isPending || stats.total === 0}
+              >
+                {generateActionItems.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ListTodo className="h-4 w-4 mr-2" />}
+                {t({ en: 'Generate Actions', ar: 'إنشاء المهام' })}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSummarizeMeeting}
+                disabled={summarizeMeeting.isPending || stats.total === 0}
+              >
+                {summarizeMeeting.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileOutput className="h-4 w-4 mr-2" />}
+                {t({ en: 'Meeting Summary', ar: 'ملخص الاجتماع' })}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Generated Action Items Dialog */}
+      <Dialog open={!!actionItems} onOpenChange={() => setActionItems(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListTodo className="h-5 w-5 text-primary" />
+              {t({ en: 'AI Generated Action Items', ar: 'المهام المنشأة ذكياً' })}
+            </DialogTitle>
+          </DialogHeader>
+          {actionItems && (
+            <div className="space-y-4 pt-4 max-h-96 overflow-y-auto">
+              {actionItems.action_items?.map((item, idx) => (
+                <div key={idx} className="p-3 border rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                    </div>
+                    <Badge variant={item.priority === 'high' ? 'destructive' : item.priority === 'medium' ? 'default' : 'secondary'}>
+                      {item.priority}
+                    </Badge>
+                  </div>
+                  <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                    <span>{t({ en: 'Owner:', ar: 'المسؤول:' })} {item.responsible_role}</span>
+                    <span>{t({ en: 'Due:', ar: 'الاستحقاق:' })} +{item.due_date_offset_days} days</span>
+                  </div>
+                </div>
+              ))}
+              {actionItems.immediate_actions?.length > 0 && (
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+                  <p className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                    {t({ en: 'Immediate Actions (24h)', ar: 'إجراءات فورية (24 ساعة)' })}
+                  </p>
+                  <ul className="space-y-1">
+                    {actionItems.immediate_actions.map((action, idx) => (
+                      <li key={idx} className="text-sm">{action}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Meeting Summary Dialog */}
+      <Dialog open={!!meetingSummary} onOpenChange={() => setMeetingSummary(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileOutput className="h-5 w-5 text-primary" />
+              {t({ en: 'AI Meeting Summary', ar: 'ملخص الاجتماع الذكي' })}
+            </DialogTitle>
+          </DialogHeader>
+          {meetingSummary && (
+            <div className="space-y-4 pt-4 max-h-96 overflow-y-auto">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-medium mb-2">{t({ en: 'Executive Summary', ar: 'الملخص التنفيذي' })}</p>
+                <p className="text-sm">{meetingSummary.executive_summary}</p>
+              </div>
+              {meetingSummary.key_decisions?.length > 0 && (
+                <div>
+                  <p className="font-medium mb-2">{t({ en: 'Key Decisions', ar: 'القرارات الرئيسية' })}</p>
+                  <ul className="space-y-1">
+                    {meetingSummary.key_decisions.map((decision, idx) => (
+                      <li key={idx} className="text-sm flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
+                        {decision}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {meetingSummary.next_steps?.length > 0 && (
+                <div>
+                  <p className="font-medium mb-2">{t({ en: 'Next Steps', ar: 'الخطوات التالية' })}</p>
+                  <ul className="space-y-1">
+                    {meetingSummary.next_steps.map((step, idx) => (
+                      <li key={idx} className="text-sm flex items-start gap-2">
+                        <ArrowRight className="h-4 w-4 text-blue-500 mt-0.5" />
+                        {step}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {meetingSummary.arabic_summary && (
+                <div className="p-4 bg-primary/5 rounded-lg" dir="rtl">
+                  <p className="font-medium mb-2">الملخص بالعربية</p>
+                  <p className="text-sm">{meetingSummary.arabic_summary}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Impact Analysis Dialog */}
+      <Dialog open={!!impactAnalysis} onOpenChange={() => setImpactAnalysis(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t({ en: 'Decision Impact Analysis', ar: 'تحليل تأثير القرار' })}</DialogTitle>
+          </DialogHeader>
+          {impactAnalysis && (
+            <div className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-muted rounded-lg text-center">
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Success Probability', ar: 'احتمالية النجاح' })}</p>
+                  <p className="text-2xl font-bold">{impactAnalysis.success_probability}%</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg text-center">
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Complexity', ar: 'التعقيد' })}</p>
+                  <p className="text-lg font-bold capitalize">{impactAnalysis.implementation_complexity}</p>
+                </div>
+              </div>
+              {impactAnalysis.key_success_factors?.length > 0 && (
+                <div>
+                  <p className="font-medium mb-2">{t({ en: 'Success Factors', ar: 'عوامل النجاح' })}</p>
+                  <ul className="space-y-1">
+                    {impactAnalysis.key_success_factors.slice(0, 4).map((factor, idx) => (
+                      <li key={idx} className="text-sm flex items-center gap-2">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        {factor}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -197,45 +393,25 @@ export default function StrategyCommitteeReview({ planId }) {
               <div className="grid grid-cols-2 gap-4 pt-4">
                 <div>
                   <label className="text-sm font-medium">{t({ en: 'Committee', ar: 'اللجنة' })}</label>
-                  <Select 
-                    value={newDecision.committee_name}
-                    onValueChange={(value) => setNewDecision({ ...newDecision, committee_name: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t({ en: 'Select committee', ar: 'اختر اللجنة' })} />
-                    </SelectTrigger>
+                  <Select value={newDecision.committee_name} onValueChange={(value) => setNewDecision({ ...newDecision, committee_name: value })}>
+                    <SelectTrigger><SelectValue placeholder={t({ en: 'Select committee', ar: 'اختر اللجنة' })} /></SelectTrigger>
                     <SelectContent>
-                      {committees.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{t(c.name)}</SelectItem>
-                      ))}
+                      {committees.map(c => (<SelectItem key={c.id} value={c.id}>{t(c.name)}</SelectItem>))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t({ en: 'Meeting Date', ar: 'تاريخ الاجتماع' })}</label>
-                  <Input 
-                    type="datetime-local"
-                    value={newDecision.meeting_date}
-                    onChange={(e) => setNewDecision({ ...newDecision, meeting_date: e.target.value })}
-                  />
+                  <Input type="datetime-local" value={newDecision.meeting_date} onChange={(e) => setNewDecision({ ...newDecision, meeting_date: e.target.value })} />
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium">{t({ en: 'Subject', ar: 'الموضوع' })}</label>
-                  <Input 
-                    value={newDecision.subject}
-                    onChange={(e) => setNewDecision({ ...newDecision, subject: e.target.value })}
-                    placeholder={t({ en: 'Enter subject', ar: 'أدخل الموضوع' })}
-                  />
+                  <Input value={newDecision.subject} onChange={(e) => setNewDecision({ ...newDecision, subject: e.target.value })} placeholder={t({ en: 'Enter subject', ar: 'أدخل الموضوع' })} />
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t({ en: 'Decision Type', ar: 'نوع القرار' })}</label>
-                  <Select 
-                    value={newDecision.decision_type}
-                    onValueChange={(value) => setNewDecision({ ...newDecision, decision_type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t({ en: 'Select type', ar: 'اختر النوع' })} />
-                    </SelectTrigger>
+                  <Select value={newDecision.decision_type} onValueChange={(value) => setNewDecision({ ...newDecision, decision_type: value })}>
+                    <SelectTrigger><SelectValue placeholder={t({ en: 'Select type', ar: 'اختر النوع' })} /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="approval">{t({ en: 'Approval', ar: 'موافقة' })}</SelectItem>
                       <SelectItem value="rejection">{t({ en: 'Rejection', ar: 'رفض' })}</SelectItem>
@@ -247,66 +423,32 @@ export default function StrategyCommitteeReview({ planId }) {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <label className="text-sm font-medium">{t({ en: 'For', ar: 'مع' })}</label>
-                    <Input 
-                      type="number"
-                      min="0"
-                      value={newDecision.vote_for}
-                      onChange={(e) => setNewDecision({ ...newDecision, vote_for: e.target.value })}
-                    />
+                    <Input type="number" min="0" value={newDecision.vote_for} onChange={(e) => setNewDecision({ ...newDecision, vote_for: e.target.value })} />
                   </div>
                   <div className="flex-1">
                     <label className="text-sm font-medium">{t({ en: 'Against', ar: 'ضد' })}</label>
-                    <Input 
-                      type="number"
-                      min="0"
-                      value={newDecision.vote_against}
-                      onChange={(e) => setNewDecision({ ...newDecision, vote_against: e.target.value })}
-                    />
+                    <Input type="number" min="0" value={newDecision.vote_against} onChange={(e) => setNewDecision({ ...newDecision, vote_against: e.target.value })} />
                   </div>
                   <div className="flex-1">
                     <label className="text-sm font-medium">{t({ en: 'Abstain', ar: 'امتناع' })}</label>
-                    <Input 
-                      type="number"
-                      min="0"
-                      value={newDecision.vote_abstain}
-                      onChange={(e) => setNewDecision({ ...newDecision, vote_abstain: e.target.value })}
-                    />
+                    <Input type="number" min="0" value={newDecision.vote_abstain} onChange={(e) => setNewDecision({ ...newDecision, vote_abstain: e.target.value })} />
                   </div>
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium">{t({ en: 'Decision Text', ar: 'نص القرار' })}</label>
-                  <Textarea 
-                    value={newDecision.decision_text}
-                    onChange={(e) => setNewDecision({ ...newDecision, decision_text: e.target.value })}
-                    placeholder={t({ en: 'Enter exact decision wording...', ar: 'أدخل صياغة القرار...' })}
-                    rows={2}
-                  />
+                  <Textarea value={newDecision.decision_text} onChange={(e) => setNewDecision({ ...newDecision, decision_text: e.target.value })} rows={2} />
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium">{t({ en: 'Rationale', ar: 'المبررات' })}</label>
-                  <Textarea 
-                    value={newDecision.rationale}
-                    onChange={(e) => setNewDecision({ ...newDecision, rationale: e.target.value })}
-                    placeholder={t({ en: 'Enter reasoning behind decision...', ar: 'أدخل أسباب القرار...' })}
-                    rows={2}
-                  />
+                  <Textarea value={newDecision.rationale} onChange={(e) => setNewDecision({ ...newDecision, rationale: e.target.value })} rows={2} />
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t({ en: 'Responsible Person', ar: 'الشخص المسؤول' })}</label>
-                  <Input 
-                    type="email"
-                    value={newDecision.responsible_email}
-                    onChange={(e) => setNewDecision({ ...newDecision, responsible_email: e.target.value })}
-                    placeholder={t({ en: 'Enter email', ar: 'أدخل البريد الإلكتروني' })}
-                  />
+                  <Input type="email" value={newDecision.responsible_email} onChange={(e) => setNewDecision({ ...newDecision, responsible_email: e.target.value })} />
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t({ en: 'Due Date', ar: 'تاريخ الاستحقاق' })}</label>
-                  <Input 
-                    type="date"
-                    value={newDecision.due_date}
-                    onChange={(e) => setNewDecision({ ...newDecision, due_date: e.target.value })}
-                  />
+                  <Input type="date" value={newDecision.due_date} onChange={(e) => setNewDecision({ ...newDecision, due_date: e.target.value })} />
                 </div>
                 <div className="col-span-2">
                   <Button onClick={handleAddDecision} className="w-full" disabled={createDecision.isPending}>
@@ -326,10 +468,7 @@ export default function StrategyCommitteeReview({ planId }) {
               const committee = committees.find(c => c.id === decision.committee_name);
               
               return (
-                <div 
-                  key={decision.id} 
-                  className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
+                <div key={decision.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -337,15 +476,18 @@ export default function StrategyCommitteeReview({ planId }) {
                       </div>
                       <div>
                         <p className="font-medium">{decision.subject}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {committee ? t(committee.name) : decision.committee_name}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{committee ? t(committee.name) : decision.committee_name}</p>
                       </div>
                     </div>
-                    <Badge className={config.color}>
-                      <DecisionIcon className="h-3 w-3 mr-1" />
-                      {t(config.label)}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handlePredictImpact(decision)} disabled={predictDecisionImpact.isPending}>
+                        <Sparkles className="h-4 w-4" />
+                      </Button>
+                      <Badge className={config.color}>
+                        <DecisionIcon className="h-3 w-3 mr-1" />
+                        {t(config.label)}
+                      </Badge>
+                    </div>
                   </div>
                   
                   {decision.decision_text && (
