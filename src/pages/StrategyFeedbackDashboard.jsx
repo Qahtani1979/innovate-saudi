@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,8 +9,6 @@ import {
   AlertTriangle, ArrowRight, BarChart3, Users 
 } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import StrategyToProgramGenerator from '../components/strategy/StrategyToProgramGenerator';
 import StrategicGapProgramRecommender from '../components/strategy/StrategicGapProgramRecommender';
@@ -18,20 +16,33 @@ import { useStrategicKPI } from '../hooks/useStrategicKPI';
 
 function StrategyFeedbackDashboardPage() {
   const { language, isRTL, t } = useLanguage();
-  const { strategicPlans, strategicKPIs, getStrategicCoverage, isLoading } = useStrategicKPI();
+  const { strategicPlans, strategicKPIs, getStrategicCoverage, isLoading: kpiLoading } = useStrategicKPI();
 
-  const { data: programs = [] } = useQuery({
+  const { data: programs = [], isLoading: programsLoading } = useQuery({
     queryKey: ['programs-feedback'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: events = [] } = useQuery({
     queryKey: ['events-feedback'],
     queryFn: async () => {
-      const { data } = await base44.entities.Event?.list?.() || { data: [] };
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, title_en, title_ar, status')
+        .eq('is_deleted', false);
+      if (error) return [];
       return data || [];
     }
   });
+
+  const isLoading = kpiLoading || programsLoading;
 
   // Calculate metrics
   const programsWithStrategicLink = programs.filter(p => 
@@ -62,64 +73,64 @@ function StrategyFeedbackDashboardPage() {
   }
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-6 container mx-auto py-6 px-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">
+        <h1 className="text-3xl font-bold">
           {t({ en: 'Strategy ↔ Programs Dashboard', ar: 'لوحة الاستراتيجية ↔ البرامج' })}
         </h1>
-        <p className="text-slate-600 mt-1">
+        <p className="text-muted-foreground mt-1">
           {t({ en: 'Bidirectional integration between strategic planning and program execution', ar: 'التكامل ثنائي الاتجاه بين التخطيط الاستراتيجي وتنفيذ البرامج' })}
         </p>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <Card className="bg-gradient-to-br from-indigo-50 to-white">
+        <Card className="bg-gradient-to-br from-indigo-50 to-background">
           <CardContent className="pt-4 text-center">
             <Target className="h-6 w-6 text-indigo-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-indigo-600">{strategicPlans.length}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' })}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-green-50 to-white">
+        <Card className="bg-gradient-to-br from-green-50 to-background">
           <CardContent className="pt-4 text-center">
             <CheckCircle2 className="h-6 w-6 text-green-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-green-600">{coverage.planCoverage}%</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Plan Coverage', ar: 'تغطية الخطط' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Plan Coverage', ar: 'تغطية الخطط' })}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
+        <Card className="bg-gradient-to-br from-purple-50 to-background">
           <CardContent className="pt-4 text-center">
             <BarChart3 className="h-6 w-6 text-purple-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-purple-600">{strategicKPIs.length}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Strategic KPIs', ar: 'مؤشرات الأداء' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Strategic KPIs', ar: 'مؤشرات الأداء' })}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-blue-50 to-white">
+        <Card className="bg-gradient-to-br from-blue-50 to-background">
           <CardContent className="pt-4 text-center">
             <Users className="h-6 w-6 text-blue-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-blue-600">{programsWithStrategicLink.length}/{programs.length}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Linked Programs', ar: 'برامج مرتبطة' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Linked Programs', ar: 'برامج مرتبطة' })}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-amber-50 to-white">
+        <Card className="bg-gradient-to-br from-amber-50 to-background">
           <CardContent className="pt-4 text-center">
             <Lightbulb className="h-6 w-6 text-amber-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-amber-600">{strategyDerivedPrograms.length}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Strategy-Derived', ar: 'مشتق من الاستراتيجية' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Strategy-Derived', ar: 'مشتق من الاستراتيجية' })}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-teal-50 to-white">
+        <Card className="bg-gradient-to-br from-teal-50 to-background">
           <CardContent className="pt-4 text-center">
             <BookOpen className="h-6 w-6 text-teal-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-teal-600">{allLessons.length}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Lessons Captured', ar: 'دروس مسجلة' })}</p>
+            <p className="text-xs text-muted-foreground">{t({ en: 'Lessons Captured', ar: 'دروس مسجلة' })}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Bidirectional Flow Diagram */}
-      <Card className="bg-gradient-to-r from-slate-50 to-indigo-50">
+      <Card className="bg-gradient-to-r from-muted to-indigo-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-indigo-600" />
@@ -128,10 +139,10 @@ function StrategyFeedbackDashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center gap-4 py-6">
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm min-w-[140px]">
+            <div className="text-center p-4 bg-background rounded-lg shadow-sm min-w-[140px]">
               <Target className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-              <p className="font-semibold text-slate-800">{t({ en: 'Strategy', ar: 'الاستراتيجية' })}</p>
-              <p className="text-xs text-slate-500">{strategicPlans.length} {t({ en: 'plans', ar: 'خطط' })}</p>
+              <p className="font-semibold">{t({ en: 'Strategy', ar: 'الاستراتيجية' })}</p>
+              <p className="text-xs text-muted-foreground">{strategicPlans.length} {t({ en: 'plans', ar: 'خطط' })}</p>
             </div>
             
             <div className="flex flex-col items-center gap-2">
@@ -145,10 +156,10 @@ function StrategyFeedbackDashboardPage() {
               </div>
             </div>
             
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm min-w-[140px]">
+            <div className="text-center p-4 bg-background rounded-lg shadow-sm min-w-[140px]">
               <BookOpen className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-              <p className="font-semibold text-slate-800">{t({ en: 'Programs', ar: 'البرامج' })}</p>
-              <p className="text-xs text-slate-500">{programs.length} {t({ en: 'programs', ar: 'برنامج' })}</p>
+              <p className="font-semibold">{t({ en: 'Programs', ar: 'البرامج' })}</p>
+              <p className="text-xs text-muted-foreground">{programs.length} {t({ en: 'programs', ar: 'برنامج' })}</p>
             </div>
             
             <div className="flex flex-col items-center gap-2">
@@ -158,10 +169,10 @@ function StrategyFeedbackDashboardPage() {
               </div>
             </div>
             
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm min-w-[140px]">
+            <div className="text-center p-4 bg-background rounded-lg shadow-sm min-w-[140px]">
               <BarChart3 className="h-8 w-8 text-teal-600 mx-auto mb-2" />
-              <p className="font-semibold text-slate-800">{t({ en: 'KPIs', ar: 'المؤشرات' })}</p>
-              <p className="text-xs text-slate-500">{coverage.kpiCoverage}% {t({ en: 'tracked', ar: 'متابع' })}</p>
+              <p className="font-semibold">{t({ en: 'KPIs', ar: 'المؤشرات' })}</p>
+              <p className="text-xs text-muted-foreground">{coverage.kpiCoverage}% {t({ en: 'tracked', ar: 'متابع' })}</p>
             </div>
           </div>
         </CardContent>
@@ -191,7 +202,7 @@ function StrategyFeedbackDashboardPage() {
             </CardHeader>
             <CardContent>
               {allLessons.length === 0 ? (
-                <div className="text-center py-8 text-slate-500">
+                <div className="text-center py-8 text-muted-foreground">
                   <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>{t({ en: 'No lessons captured yet', ar: 'لم يتم تسجيل دروس بعد' })}</p>
                   <p className="text-sm mt-1">{t({ en: 'Add lessons from individual program pages', ar: 'أضف الدروس من صفحات البرامج الفردية' })}</p>
@@ -210,8 +221,8 @@ function StrategyFeedbackDashboardPage() {
                               {lesson.program?.name_en || 'Unknown Program'}
                             </Badge>
                           </div>
-                          <p className="text-sm text-slate-800">{lesson.description}</p>
-                          <p className="text-xs text-slate-500 mt-2">
+                          <p className="text-sm">{lesson.description}</p>
+                          <p className="text-xs text-muted-foreground mt-2">
                             {new Date(lesson.created_at).toLocaleDateString()}
                           </p>
                         </div>
@@ -231,7 +242,7 @@ function StrategyFeedbackDashboardPage() {
             </CardHeader>
             <CardContent>
               {allFeedback.length === 0 ? (
-                <div className="text-center py-8 text-slate-500">
+                <div className="text-center py-8 text-muted-foreground">
                   <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>{t({ en: 'No feedback submitted yet', ar: 'لم يتم إرسال ملاحظات بعد' })}</p>
                   <p className="text-sm mt-1">{t({ en: 'Generate and send feedback from program lesson pages', ar: 'قم بتوليد وإرسال الملاحظات من صفحات دروس البرامج' })}</p>
@@ -252,7 +263,7 @@ function StrategyFeedbackDashboardPage() {
                         </Badge>
                       </div>
                       {feedback.strategy_refinements?.length > 0 && (
-                        <div className="text-sm text-slate-700">
+                        <div className="text-sm">
                           <p className="font-medium mb-1">{t({ en: 'Refinements:', ar: 'التحسينات:' })}</p>
                           <ul className="list-disc list-inside">
                             {feedback.strategy_refinements.slice(0, 2).map((r, i) => (
@@ -261,7 +272,7 @@ function StrategyFeedbackDashboardPage() {
                           </ul>
                         </div>
                       )}
-                      <p className="text-xs text-slate-500 mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         {new Date(feedback.feedback_date).toLocaleDateString()}
                       </p>
                     </div>
@@ -276,4 +287,4 @@ function StrategyFeedbackDashboardPage() {
   );
 }
 
-export default ProtectedPage(StrategyFeedbackDashboardPage, { requiredPermissions: [] });
+export default ProtectedPage(StrategyFeedbackDashboardPage, { requiredPermissions: ['strategy_view'] });

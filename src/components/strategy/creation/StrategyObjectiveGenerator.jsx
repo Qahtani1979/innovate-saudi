@@ -11,7 +11,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useLanguage } from '@/components/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useStrategyContext, checkObjectiveSimilarity } from '@/hooks/strategy/useStrategyContext';
 import { 
@@ -23,7 +22,6 @@ import {
   Calendar,
   AlertTriangle,
   CheckCircle,
-  Plus,
   Trash2,
   Save,
   Info
@@ -41,10 +39,18 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
   // Fetch strategic context for deduplication
   const { existingObjectives, isLoading: contextLoading } = useStrategyContext();
 
-  // Fetch strategic plan with pillars
+  // Fetch strategic plan with pillars using Supabase
   const { data: strategicPlan } = useQuery({
-    queryKey: ['strategic-plan', strategicPlanId],
-    queryFn: () => base44.entities.StrategicPlan.get(strategicPlanId),
+    queryKey: ['strategic-plan-objectives', strategicPlanId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('id', strategicPlanId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
     enabled: !!strategicPlanId
   });
 
@@ -74,7 +80,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
           vision_statement: strategicPlan?.vision_en,
           objectives_per_pillar: objectivesPerPillar,
           include_kpis: true,
-          // Pass existing objectives for AI to avoid
           existing_objectives: existingObjectives.map(o => ({
             name: o.name_en,
             plan: o.planName
@@ -85,7 +90,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
       if (error) throw error;
 
       if (data?.objectives) {
-        // Check each generated objective for duplicates
         const warnings = [];
         data.objectives.forEach((obj, index) => {
           const duplicates = checkObjectiveSimilarity(obj, existingObjectives, 0.5);
@@ -139,7 +143,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
       return;
     }
 
-    // Filter out objectives marked as duplicates that user didn't review
     const highSimilarityCount = duplicateWarnings.filter(w => 
       w.duplicates.some(d => d.similarity >= 70)
     ).length;
@@ -157,7 +160,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
     try {
       const existingPlanObjectives = strategicPlan?.objectives || [];
       
-      // Add metadata to new objectives for tracking
       const newObjectivesWithMeta = objectives.map(obj => ({
         ...obj,
         _added_at: new Date().toISOString(),
@@ -177,7 +179,7 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
 
       if (error) throw error;
 
-      queryClient.invalidateQueries(['strategic-plan', strategicPlanId]);
+      queryClient.invalidateQueries(['strategic-plan-objectives', strategicPlanId]);
       queryClient.invalidateQueries(['strategic-plans']);
       queryClient.invalidateQueries(['strategy-context-plans']);
       
@@ -188,13 +190,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
       console.error('Error saving objectives:', error);
       toast.error(t({ en: 'Failed to save objectives', ar: 'فشل في حفظ الأهداف' }));
     }
-  };
-
-  const getProgressColor = (baseline, current, target) => {
-    const progress = ((current - baseline) / (target - baseline)) * 100;
-    if (progress >= 80) return 'bg-green-500';
-    if (progress >= 50) return 'bg-yellow-500';
-    return 'bg-red-500';
   };
 
   return (
@@ -255,13 +250,15 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
         </div>
 
         {pillars.length === 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
-            <AlertTriangle className="h-4 w-4 inline mr-2" />
-            {t({ 
-              en: 'No pillars found. Generate strategic pillars first for better objective alignment.', 
-              ar: 'لم يتم العثور على ركائز. قم بإنشاء الركائز الاستراتيجية أولاً لتحسين توافق الأهداف.' 
-            })}
-          </div>
+          <Alert className="bg-yellow-50 border-yellow-200">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              {t({ 
+                en: 'No pillars found. Generate strategic pillars first for better objective alignment.', 
+                ar: 'لم يتم العثور على ركائز. قم بإنشاء الركائز الاستراتيجية أولاً لتحسين توافق الأهداف.' 
+              })}
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Generated Objectives */}
@@ -303,7 +300,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4">
                     <div className="space-y-4">
-                      {/* Objective Details */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-sm font-medium">{t({ en: 'Name (EN)', ar: 'الاسم (EN)' })}</label>
@@ -331,7 +327,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
                         />
                       </div>
 
-                      {/* Progress Bar */}
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Baseline: {objective.baseline_value}</span>
@@ -340,7 +335,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
                         <Progress value={((objective.baseline_value / objective.target_value) * 100)} className="h-2" />
                       </div>
 
-                      {/* KPIs */}
                       {objective.kpis?.length > 0 && (
                         <div className="bg-muted/50 rounded-lg p-4">
                           <h4 className="font-medium mb-3 flex items-center gap-2">
@@ -369,7 +363,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
                         </div>
                       )}
 
-                      {/* Milestones */}
                       {objective.milestones?.length > 0 && (
                         <div>
                           <h4 className="font-medium mb-2 flex items-center gap-2">
@@ -386,7 +379,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
                         </div>
                       )}
 
-                      {/* Risks & Enablers */}
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <h5 className="font-medium text-red-600 mb-1">{t({ en: 'Risks', ar: 'المخاطر' })}</h5>
@@ -410,13 +402,6 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
                 </AccordionItem>
               ))}
             </Accordion>
-          </div>
-        )}
-
-        {objectives.length === 0 && !isGenerating && (
-          <div className="text-center py-8 text-muted-foreground">
-            <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>{t({ en: 'Select options and click Generate to create strategic objectives with KPIs', ar: 'حدد الخيارات وانقر على إنشاء لإنشاء الأهداف الاستراتيجية مع مؤشرات الأداء' })}</p>
           </div>
         )}
       </CardContent>

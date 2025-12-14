@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,15 @@ export default function StrategicPlanSelector({
 
   const { data: strategicPlans = [], isLoading } = useQuery({
     queryKey: ['strategic-plans-selector'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const handlePlanToggle = (planId) => {
@@ -49,7 +57,7 @@ export default function StrategicPlanSelector({
   };
 
   if (isLoading) {
-    return <div className="animate-pulse h-10 bg-slate-100 rounded" />;
+    return <div className="animate-pulse h-10 bg-muted rounded" />;
   }
 
   return (
@@ -91,14 +99,14 @@ export default function StrategicPlanSelector({
         <CollapsibleContent className="mt-2">
           <ScrollArea className="h-64 border rounded-md p-2">
             {strategicPlans.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-4">
+              <p className="text-sm text-muted-foreground text-center py-4">
                 {t({ en: 'No strategic plans available', ar: 'لا توجد خطط استراتيجية' })}
               </p>
             ) : (
               <div className="space-y-3">
                 {strategicPlans.map(plan => (
                   <div key={plan.id} className="space-y-2">
-                    <div className="flex items-center space-x-2 p-2 hover:bg-slate-50 rounded">
+                    <div className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
                       <Checkbox
                         id={`plan-${plan.id}`}
                         checked={selectedPlanIds.includes(plan.id)}
@@ -119,7 +127,7 @@ export default function StrategicPlanSelector({
 
                     {showObjectives && selectedPlanIds.includes(plan.id) && plan.objectives?.length > 0 && (
                       <div className="ml-6 pl-4 border-l-2 border-indigo-200 space-y-1">
-                        <p className="text-xs text-slate-500 mb-1">
+                        <p className="text-xs text-muted-foreground mb-1">
                           {t({ en: 'Objectives:', ar: 'الأهداف:' })}
                         </p>
                         {plan.objectives.map(obj => (
@@ -148,7 +156,7 @@ export default function StrategicPlanSelector({
       </Collapsible>
 
       {selectedObjectiveIds.length > 0 && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           {t({ 
             en: `${selectedObjectiveIds.length} objective(s) selected`,
             ar: `تم اختيار ${selectedObjectiveIds.length} هدف` 
