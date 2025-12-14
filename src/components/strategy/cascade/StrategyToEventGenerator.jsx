@@ -39,8 +39,6 @@ export default function StrategyToEventGenerator({ strategicPlanId, strategicPla
     { value: 'citizens', label: { en: 'Citizens', ar: 'المواطنون' } },
     { value: 'government', label: { en: 'Government', ar: 'الحكومة' } }
   ];
-    }
-  });
 
   const handleAudienceToggle = (audience) => {
     setTargetAudience(prev => 
@@ -149,42 +147,22 @@ export default function StrategyToEventGenerator({ strategicPlanId, strategicPla
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })}
-              </label>
-              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t({ en: 'Select a plan', ar: 'اختر خطة' })} />
-                </SelectTrigger>
-                <SelectContent>
-                  {strategicPlans?.map(plan => (
-                    <SelectItem key={plan.id} value={plan.id}>
-                      {isRTL ? plan.name_ar : plan.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {t({ en: 'Event Type', ar: 'نوع الفعالية' })}
-              </label>
-              <Select value={eventType} onValueChange={setEventType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {eventTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {isRTL ? type.label.ar : type.label.en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {t({ en: 'Event Type', ar: 'نوع الفعالية' })}
+            </label>
+            <Select value={eventType} onValueChange={setEventType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {eventTypes.map(type => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {isRTL ? type.label.ar : type.label.en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-3">
