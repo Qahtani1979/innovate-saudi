@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH):
+const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH):
 - 13 Regions, 285+ municipalities across the Kingdom
 - Major cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Eastern Province cities
 - Vision 2030: Quality of Life, Housing (Sakani), National Transformation, Smart Cities
@@ -27,11 +27,11 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert project manager and strategic planner within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH), specializing in municipal innovation initiatives.
+    const systemPrompt = `You are an expert project manager and strategic planner within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH), specializing in municipal innovation initiatives.
 
 ${SAUDI_CONTEXT}
 
-Your role is to generate detailed, actionable action items that will help achieve strategic objectives aligned with Vision 2030 and MoMRAH's mandate.
+Your role is to generate detailed, actionable action items that will help achieve strategic objectives aligned with Vision 2030 and MoMAH's mandate.
 
 For each action item, you must provide:
 1. Clear, action-oriented title (in both English and formal Arabic)

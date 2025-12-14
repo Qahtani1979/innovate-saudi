@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH):
+const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH):
 - 13 Regions, 285+ municipalities, 17 Amanats across Saudi Arabia
 - Major cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Eastern Province
 - Vision 2030 alignment: Quality of Life, Housing, Smart Cities, Sustainability
@@ -28,7 +28,7 @@ serve(async (req) => {
 
     switch (action) {
       case 'optimize_workflow':
-        systemPrompt = `You are an expert in workflow optimization and process improvement for Saudi Arabian government strategic planning within MoMRAH (Ministry of Municipal, Rural Affairs and Housing).
+        systemPrompt = `You are an expert in workflow optimization and process improvement for Saudi Arabian government strategic planning within MoMAH (Ministry of Municipalities and Housing).
 
 ${SAUDI_CONTEXT}
 

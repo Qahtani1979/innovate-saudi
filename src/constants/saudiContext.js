@@ -1,16 +1,16 @@
 /**
- * Saudi Arabia Ministry of Municipal, Rural Affairs and Housing (MoMRAH) Context
+ * Saudi Arabia Ministry of Municipalities and Housing (MoMAH) Context
  * 
  * This module provides comprehensive context for AI systems about Saudi Arabia's
- * municipal and housing sector, Vision 2030 alignment, and MoMRAH's mandate.
+ * municipal and housing sector, Vision 2030 alignment, and MoMAH's mandate.
  */
 
-export const SAUDI_MOMRAH_CONTEXT = {
+export const SAUDI_MOMAH_CONTEXT = {
   en: `
-## CONTEXT: Kingdom of Saudi Arabia - Ministry of Municipal, Rural Affairs and Housing (MoMRAH)
+## CONTEXT: Kingdom of Saudi Arabia - Ministry of Municipalities and Housing (MoMAH)
 
-### About MoMRAH
-The Ministry of Municipal, Rural Affairs and Housing (MoMRAH) is the Saudi government ministry responsible for:
+### About MoMAH
+The Ministry of Municipalities and Housing (MoMAH) is the Saudi government ministry responsible for:
 - Overseeing municipal services across the Kingdom's 13 administrative regions
 - Managing urban planning and development for cities and rural areas
 - Housing sector development and regulation
@@ -25,7 +25,7 @@ The Ministry of Municipal, Rural Affairs and Housing (MoMRAH) is the Saudi gover
 - Municipalities: 285+ municipalities and 17 Amanats (major city municipalities)
 
 ### Vision 2030 Alignment
-MoMRAH plays a critical role in achieving Saudi Vision 2030 objectives:
+MoMAH plays a critical role in achieving Saudi Vision 2030 objectives:
 1. **Quality of Life Program**: Enhancing urban livability, green spaces, entertainment, and cultural facilities
 2. **Housing Program**: Achieving 70% home ownership among Saudi citizens
 3. **National Transformation Program**: Digitizing government services and improving efficiency
@@ -60,10 +60,10 @@ MoMRAH plays a critical role in achieving Saudi Vision 2030 objectives:
 - Other Government Ministries (MHRSD, MCIT, MOT, etc.)
 `,
   ar: `
-## السياق: المملكة العربية السعودية - وزارة الشؤون البلدية والقروية والإسكان
+## السياق: المملكة العربية السعودية - وزارة البلديات والإسكان
 
 ### عن الوزارة
-وزارة الشؤون البلدية والقروية والإسكان هي الجهة الحكومية المسؤولة عن:
+وزارة البلديات والإسكان هي الجهة الحكومية المسؤولة عن:
 - الإشراف على الخدمات البلدية في مناطق المملكة الـ 13
 - إدارة التخطيط والتطوير الحضري للمدن والمناطق الريفية
 - تطوير وتنظيم قطاع الإسكان
@@ -97,14 +97,14 @@ MoMRAH plays a critical role in achieving Saudi Vision 2030 objectives:
 `
 };
 
-export const SAUDI_CONTEXT_PROMPT_EN = SAUDI_MOMRAH_CONTEXT.en;
-export const SAUDI_CONTEXT_PROMPT_AR = SAUDI_MOMRAH_CONTEXT.ar;
+export const SAUDI_CONTEXT_PROMPT_EN = SAUDI_MOMAH_CONTEXT.en;
+export const SAUDI_CONTEXT_PROMPT_AR = SAUDI_MOMAH_CONTEXT.ar;
 
 /**
  * Get a compact version of the context for AI prompts
  */
 export const getCompactSaudiContext = () => `
-You are operating within the context of the Kingdom of Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH).
+You are operating within the context of the Kingdom of Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
 KEY CONTEXT:
 - 13 Regions, 285+ municipalities, 17 major Amanats
@@ -114,7 +114,7 @@ KEY CONTEXT:
 
 STAKEHOLDERS: Citizens, Municipalities, Private Sector, Academia, Startups, Government Partners
 
-Always consider Saudi cultural context, Vision 2030 goals, and MoMRAH's mandate in your responses.
+Always consider Saudi cultural context, Vision 2030 goals, and MoMAH's mandate in your responses.
 `;
 
-export default SAUDI_MOMRAH_CONTEXT;
+export default SAUDI_MOMAH_CONTEXT;
