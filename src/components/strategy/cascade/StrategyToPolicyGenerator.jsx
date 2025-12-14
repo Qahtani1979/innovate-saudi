@@ -5,7 +5,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollText, Sparkles, Loader2, Scale, FileText, AlertTriangle, CheckCircle2, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,7 +18,7 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
   const [policies, setPolicies] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Use the passed strategicPlanId from context
+  // Use the passed strategicPlanId from global context
   const selectedPlanId = strategicPlanId;
 
   const handleGenerate = async () => {
@@ -27,15 +26,15 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
       toast.error(t({ en: 'Please select a strategic plan', ar: 'الرجاء اختيار خطة استراتيجية' }));
       return;
     }
-    
+
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('strategy-policy-generator', {
         body: {
           strategic_plan_id: selectedPlanId,
           strategic_context: additionalContext,
-          policy_count: policyCount
-        }
+          policy_count: policyCount,
+        },
       });
 
       if (error) throw error;
@@ -66,7 +65,7 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
           strategic_plan_ids: [selectedPlanId],
           is_strategy_derived: true,
           strategy_derivation_date: new Date().toISOString(),
-          status: submitForApproval ? 'pending' : 'draft'
+          status: submitForApproval ? 'pending' : 'draft',
         })
         .select()
         .single();
@@ -84,19 +83,21 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
           metadata: {
             policy_type: policy.type,
             risk_level: policy.risk_level,
-            source: 'cascade_generator'
-          }
+            source: 'cascade_generator',
+          },
         });
       }
 
       const updated = [...policies];
       updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
       setPolicies(updated);
-      
-      toast.success(t({ 
-        en: submitForApproval ? 'Policy saved and submitted for approval' : 'Policy saved successfully', 
-        ar: submitForApproval ? 'تم حفظ السياسة وإرسالها للموافقة' : 'تم حفظ السياسة بنجاح' 
-      }));
+
+      toast.success(
+        t({
+          en: submitForApproval ? 'Policy saved and submitted for approval' : 'Policy saved successfully',
+          ar: submitForApproval ? 'تم حفظ السياسة وإرسالها للموافقة' : 'تم حفظ السياسة بنجاح',
+        }),
+      );
       onPolicyCreated?.(data);
     } catch (error) {
       console.error('Save error:', error);
@@ -106,9 +107,12 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
 
   const getRiskColor = (level) => {
     switch (level) {
-      case 'High': return 'destructive';
-      case 'Medium': return 'secondary';
-      default: return 'outline';
+      case 'High':
+        return 'destructive';
+      case 'Medium':
+        return 'secondary';
+      default:
+        return 'outline';
     }
   };
 
@@ -121,30 +125,27 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
             {t({ en: 'Strategic Policy Generator', ar: 'مولد السياسات الاستراتيجية' })}
           </CardTitle>
           <CardDescription>
-            {t({ en: 'Generate governance policies aligned with strategic priorities', ar: 'إنشاء سياسات الحوكمة المتوافقة مع الأولويات الاستراتيجية' })}
+            {t({
+              en: 'Generate governance policies aligned with strategic priorities',
+              ar: 'إنشاء سياسات الحوكمة المتوافقة مع الأولويات الاستراتيجية',
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              {t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })}
-            </label>
-            <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t({ en: 'Select a plan', ar: 'اختر خطة' })} />
-              </SelectTrigger>
-              <SelectContent>
-                {strategicPlans?.map(plan => (
-                  <SelectItem key={plan.id} value={plan.id}>
-                    {isRTL ? plan.name_ar : plan.name_en}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {strategicPlan && (
+            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+              <p className="text-sm text-indigo-700">
+                <span className="font-medium">{t({ en: 'Active Plan:', ar: 'الخطة النشطة:' })}</span>{' '}
+                {isRTL && strategicPlan.name_ar ? strategicPlan.name_ar : strategicPlan.name_en}
+              </p>
+            </div>
+          )}
 
           <Textarea
-            placeholder={t({ en: 'Enter strategic priorities and governance requirements...', ar: 'أدخل الأولويات الاستراتيجية ومتطلبات الحوكمة...' })}
+            placeholder={t({
+              en: 'Enter strategic priorities and governance requirements...',
+              ar: 'أدخل الأولويات الاستراتيجية ومتطلبات الحوكمة...',
+            })}
             value={additionalContext}
             onChange={(e) => setAdditionalContext(e.target.value)}
             rows={3}
@@ -158,8 +159,10 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -167,7 +170,11 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
             </div>
 
             <Button onClick={handleGenerate} disabled={isGenerating || !selectedPlanId}>
-              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              {isGenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
               {t({ en: 'Generate Policies', ar: 'توليد السياسات' })}
             </Button>
           </div>
@@ -186,16 +193,21 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
               <Card key={idx} className={policy.saved ? 'border-green-500/50 bg-green-50/50' : ''}>
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg">{isRTL ? policy.title_ar : policy.title_en}</CardTitle>
+                    <CardTitle className="text-lg">
+                      {isRTL ? policy.title_ar : policy.title_en}
+                    </CardTitle>
                     <div className="flex items-center gap-2">
                       <Badge variant={getRiskColor(policy.risk_level)}>
                         <AlertTriangle className="h-3 w-3 mr-1" />
                         {policy.risk_level}
                       </Badge>
                       {policy.saved ? (
-                        <Badge variant="outline" className={policy.submitted ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
+                        <Badge
+                          variant="outline"
+                          className={policy.submitted ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}
+                        >
                           <CheckCircle2 className="h-3 w-3 mr-1" />
-                          {policy.submitted 
+                          {policy.submitted
                             ? t({ en: 'Submitted', ar: 'مُرسل' })
                             : t({ en: 'Saved', ar: 'محفوظ' })}
                         </Badge>
@@ -221,7 +233,9 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
                     <span className="text-sm text-muted-foreground">• {policy.scope}</span>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">{t({ en: 'Objectives', ar: 'الأهداف' })}</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {t({ en: 'Objectives', ar: 'الأهداف' })}
+                    </p>
                     <ul className="text-sm space-y-1">
                       {policy.objectives?.map((obj, i) => (
                         <li key={i} className="flex items-center gap-2">
@@ -232,10 +246,14 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
                     </ul>
                   </div>
                   <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground mb-1">{t({ en: 'Stakeholders', ar: 'أصحاب المصلحة' })}</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {t({ en: 'Stakeholders', ar: 'أصحاب المصلحة' })}
+                    </p>
                     <div className="flex flex-wrap gap-1">
                       {policy.stakeholders?.map((s) => (
-                        <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
+                        <Badge key={s} variant="secondary" className="text-xs">
+                          {s}
+                        </Badge>
                       ))}
                     </div>
                   </div>

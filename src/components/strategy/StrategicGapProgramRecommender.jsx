@@ -24,12 +24,12 @@ export default function StrategicGapProgramRecommender({ onProgramCreated }) {
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-gap'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
+      const { data, error } = await supabase.from('strategic_plans').select('*');
       if (error) throw error;
       return data || [];
     }
   });
-
+ 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-gap'],
     queryFn: async () => {
@@ -38,7 +38,7 @@ export default function StrategicGapProgramRecommender({ onProgramCreated }) {
       return data || [];
     }
   });
-
+ 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-gap'],
     queryFn: async () => {
