@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Communications](../communications/communications-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Startups & Academia →](../personas/startups-academia-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Knowledge System manages the platform's knowledge base including documents, case studies, best practices, policy library, and learning resources.

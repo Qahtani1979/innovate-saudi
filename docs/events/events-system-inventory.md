@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Scaling](../scaling/scaling-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Matchmaker →](../matchmaker/matchmaker-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Events System manages innovation events including conferences, workshops, hackathons, and demo days with registration, attendance tracking, and strategic alignment.

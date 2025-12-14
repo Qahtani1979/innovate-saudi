@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬆️ Parent | ➡️ Next |
+|-----------|---------|
+| [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Challenges →](../challenges/challenges-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Strategy System is the core strategic planning and execution framework spanning all 8 phases of the strategic methodology. This document provides a complete inventory of all pages, components, hooks, and their relationships.

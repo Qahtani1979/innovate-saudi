@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Portfolio & Analytics](../portfolio/portfolio-analytics-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Orphans →](../orphans/orphan-files-inventory.md) |
+
+---
+
 ## Overview
 
 The Approvals System manages all approval workflows, gates, and SLA tracking across the platform.

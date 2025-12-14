@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Municipalities](../municipalities/municipalities-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Partnerships →](../partnerships/partnerships-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Citizens System enables citizen participation in innovation through idea submission, voting, feedback, pilot enrollment, and living lab participation.

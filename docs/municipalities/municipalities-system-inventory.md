@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Sandboxes & Living Labs](../sandboxes-livinglabs/sandboxes-livinglabs-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Citizens →](../citizens/citizens-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Municipalities System manages municipal entities, regional coordination, MII scoring, peer learning, and geographic innovation tracking.

@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Events](../events/events-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Admin →](../admin/admin-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Matchmaker System facilitates matching between challenges, solutions, providers, and municipalities with AI-powered recommendations and quality gates.

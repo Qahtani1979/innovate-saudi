@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Challenges](../challenges/challenges-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Programs →](../programs/programs-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Pilots System manages the full lifecycle of innovation pilots from design through evaluation, scaling, and policy impact. It includes stage-gate workflows, monitoring dashboards, and scaling preparation.

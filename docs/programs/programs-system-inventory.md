@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Pilots](../pilots/pilots-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [R&D →](../rd/rd-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Programs System manages innovation programs including accelerators, incubators, training programs, and challenge-based programs. It handles applications, cohort management, mentorship, and alumni tracking.

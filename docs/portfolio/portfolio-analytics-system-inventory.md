@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Startups & Academia](../personas/startups-academia-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Approvals →](../approvals/approvals-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Portfolio & Analytics System provides portfolio management, predictive analytics, custom reporting, and strategic intelligence across the innovation ecosystem.

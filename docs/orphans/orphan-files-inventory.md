@@ -6,6 +6,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Approvals](../approvals/approvals-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Strategy →](../strategy/strategy-system-inventory.md) |
+
+---
+
 ## 📄 Orphan Pages (Not in Any System Inventory)
 
 ### Public Pages

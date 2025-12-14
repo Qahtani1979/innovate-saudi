@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Strategy](../strategy/strategy-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Pilots →](../pilots/pilots-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Challenges System manages the full lifecycle of innovation challenges from creation through resolution. This includes challenge intake, review, matching, and tracking through to pilot/solution resolution.

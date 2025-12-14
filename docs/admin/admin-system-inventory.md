@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Matchmaker](../matchmaker/matchmaker-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Communications →](../communications/communications-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Admin System provides platform administration including user management, RBAC, data management, system configuration, monitoring, and compliance.
