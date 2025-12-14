@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useRiskAssessment } from '@/hooks/strategy/useRiskAssessment';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -426,31 +427,51 @@ export default function RiskAssessmentBuilder({
   const { language, t } = useLanguage();
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
   
+  // Database integration hook
+  const { 
+    risks: dbRisks, 
+    loading: dbLoading, 
+    saving: dbSaving, 
+    saveRisk: saveToDb,
+    deleteRisk: deleteFromDb 
+  } = useRiskAssessment(strategicPlanId);
+  
   const [risks, setRisks] = useState(initialData?.risks || []);
   const [dialogState, setDialogState] = useState({ open: false, risk: null });
   const [selectedRisk, setSelectedRisk] = useState(null);
   const [contextInput, setContextInput] = useState('');
 
-  // Handle save risk
-  const handleSaveRisk = useCallback((risk) => {
-    setRisks(prev => {
-      const existingIndex = prev.findIndex(r => r.id === risk.id);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = risk;
-        return updated;
-      }
-      return [...prev, risk];
-    });
-    toast.success(t({ en: 'Risk saved', ar: 'تم حفظ المخاطر' }));
-  }, [t]);
+  // Sync with database data when loaded
+  useEffect(() => {
+    if (dbRisks && !dbLoading && dbRisks.length > 0) {
+      setRisks(dbRisks);
+    }
+  }, [dbRisks, dbLoading]);
 
-  // Handle delete
-  const handleDeleteRisk = useCallback((id) => {
-    setRisks(prev => prev.filter(r => r.id !== id));
-    setSelectedRisk(null);
-    toast.success(t({ en: 'Risk deleted', ar: 'تم حذف المخاطر' }));
-  }, [t]);
+  // Handle save risk with database
+  const handleSaveRisk = useCallback(async (risk) => {
+    const result = await saveToDb(risk);
+    if (result) {
+      setRisks(prev => {
+        const existingIndex = prev.findIndex(r => r.id === result.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = result;
+          return updated;
+        }
+        return [...prev, result];
+      });
+    }
+  }, [saveToDb]);
+
+  // Handle delete with database
+  const handleDeleteRisk = useCallback(async (id) => {
+    const success = await deleteFromDb(id);
+    if (success) {
+      setRisks(prev => prev.filter(r => r.id !== id));
+      setSelectedRisk(null);
+    }
+  }, [deleteFromDb]);
 
   // Generate AI suggestions
   const generateAISuggestions = async () => {

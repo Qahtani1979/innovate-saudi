@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useStrategyBaselines } from '@/hooks/strategy/useStrategyBaselines';
 import { 
   Database, 
   Plus, 
@@ -27,9 +28,18 @@ import {
   Sparkles
 } from 'lucide-react';
 
-const BaselineDataCollector = ({ onSave }) => {
+const BaselineDataCollector = ({ strategicPlanId, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
+  
+  // Database integration hook
+  const { 
+    baselines: dbBaselines, 
+    loading: dbLoading, 
+    saving: dbSaving, 
+    saveBaseline: saveToDb,
+    deleteBaseline: deleteFromDb 
+  } = useStrategyBaselines(strategicPlanId);
 
   const kpiCategories = [
     { id: 'innovation', label: { en: 'Innovation Index', ar: 'مؤشر الابتكار' }, color: 'bg-blue-500' },
@@ -40,86 +50,14 @@ const BaselineDataCollector = ({ onSave }) => {
     { id: 'pipeline', label: { en: 'Innovation Pipeline', ar: 'خط الابتكار' }, color: 'bg-teal-500' }
   ];
 
-  const [baselines, setBaselines] = useState([
-    {
-      id: '1',
-      category: 'innovation',
-      kpi_name_en: 'National MII Average Score',
-      kpi_name_ar: 'متوسط درجة مؤشر الابتكار البلدي',
-      baseline_value: 68.5,
-      unit: 'score',
-      target_value: 85,
-      collection_date: '2024-01-01',
-      source: 'MII Dashboard',
-      status: 'validated',
-      notes: 'Based on Q4 2023 assessment'
-    },
-    {
-      id: '2',
-      category: 'challenges',
-      kpi_name_en: 'Challenge Resolution Rate',
-      kpi_name_ar: 'معدل حل التحديات',
-      baseline_value: 42,
-      unit: 'percentage',
-      target_value: 75,
-      collection_date: '2024-01-01',
-      source: 'Challenge Registry',
-      status: 'validated',
-      notes: 'Challenges resolved within target timeframe'
-    },
-    {
-      id: '3',
-      category: 'pilots',
-      kpi_name_en: 'Pilot to Scale Conversion',
-      kpi_name_ar: 'تحويل التجارب إلى توسع',
-      baseline_value: 28,
-      unit: 'percentage',
-      target_value: 50,
-      collection_date: '2024-01-01',
-      source: 'Pilot Management System',
-      status: 'validated',
-      notes: 'Pilots successfully scaled to full implementation'
-    },
-    {
-      id: '4',
-      category: 'partnerships',
-      kpi_name_en: 'Active Strategic Partnerships',
-      kpi_name_ar: 'الشراكات الاستراتيجية النشطة',
-      baseline_value: 45,
-      unit: 'count',
-      target_value: 80,
-      collection_date: '2024-01-01',
-      source: 'Partnership Registry',
-      status: 'validated',
-      notes: 'Partnerships with defined deliverables'
-    },
-    {
-      id: '5',
-      category: 'budget',
-      kpi_name_en: 'Innovation Budget Utilization',
-      kpi_name_ar: 'استخدام ميزانية الابتكار',
-      baseline_value: 72,
-      unit: 'percentage',
-      target_value: 90,
-      collection_date: '2024-01-01',
-      source: 'Finance System',
-      status: 'pending',
-      notes: 'Awaiting final Q4 reconciliation'
-    },
-    {
-      id: '6',
-      category: 'pipeline',
-      kpi_name_en: 'Active Challenges in Pipeline',
-      kpi_name_ar: 'التحديات النشطة في خط الأنابيب',
-      baseline_value: 156,
-      unit: 'count',
-      target_value: 200,
-      collection_date: '2024-01-01',
-      source: 'Challenge Registry',
-      status: 'validated',
-      notes: 'Challenges in active processing stages'
+  const [baselines, setBaselines] = useState([]);
+
+  // Sync with database data when loaded
+  useEffect(() => {
+    if (dbBaselines && !dbLoading && dbBaselines.length > 0) {
+      setBaselines(dbBaselines);
     }
-  ]);
+  }, [dbBaselines, dbLoading]);
 
   const [editingBaseline, setEditingBaseline] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -174,35 +112,34 @@ const BaselineDataCollector = ({ onSave }) => {
     setIsDialogOpen(true);
   };
 
-  const handleSaveBaseline = () => {
+  const handleSaveBaseline = async () => {
     const newBaseline = {
       id: editingBaseline?.id || `baseline-${Date.now()}`,
       ...formData,
       collection_date: editingBaseline?.collection_date || new Date().toISOString().split('T')[0]
     };
 
-    if (editingBaseline) {
-      setBaselines(prev => prev.map(b => b.id === editingBaseline.id ? newBaseline : b));
-      toast({
-        title: t({ en: 'Baseline Updated', ar: 'تم تحديث الخط الأساسي' }),
-        description: t({ en: 'Baseline data updated successfully.', ar: 'تم تحديث بيانات الخط الأساسي بنجاح.' })
-      });
-    } else {
-      setBaselines(prev => [...prev, newBaseline]);
-      toast({
-        title: t({ en: 'Baseline Added', ar: 'تمت إضافة الخط الأساسي' }),
-        description: t({ en: 'New baseline data collected.', ar: 'تم جمع بيانات خط أساسي جديدة.' })
+    // Save to database
+    const result = await saveToDb(newBaseline);
+    if (result) {
+      setBaselines(prev => {
+        const existingIndex = prev.findIndex(b => b.id === result.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = result;
+          return updated;
+        }
+        return [...prev, result];
       });
     }
     setIsDialogOpen(false);
   };
 
-  const handleDeleteBaseline = (id) => {
-    setBaselines(prev => prev.filter(b => b.id !== id));
-    toast({
-      title: t({ en: 'Baseline Deleted', ar: 'تم حذف الخط الأساسي' }),
-      description: t({ en: 'Baseline data removed.', ar: 'تم إزالة بيانات الخط الأساسي.' })
-    });
+  const handleDeleteBaseline = async (id) => {
+    const success = await deleteFromDb(id);
+    if (success) {
+      setBaselines(prev => prev.filter(b => b.id !== id));
+    }
   };
 
   const handleRefreshData = async () => {
