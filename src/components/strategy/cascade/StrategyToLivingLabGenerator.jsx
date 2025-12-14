@@ -129,42 +129,22 @@ export default function StrategyToLivingLabGenerator({ strategicPlanId, strategi
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })}
-              </label>
-              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t({ en: 'Select a plan', ar: 'اختر خطة' })} />
-                </SelectTrigger>
-                <SelectContent>
-                  {strategicPlans?.map(plan => (
-                    <SelectItem key={plan.id} value={plan.id}>
-                      {isRTL ? plan.name_ar : plan.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {t({ en: 'Host Municipality', ar: 'البلدية المضيفة' })}
-              </label>
-              <Select value={selectedMunicipality} onValueChange={setSelectedMunicipality}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t({ en: 'Select municipality', ar: 'اختر البلدية' })} />
-                </SelectTrigger>
-                <SelectContent>
-                  {municipalities?.map(mun => (
-                    <SelectItem key={mun.id} value={mun.id}>
-                      {isRTL ? mun.name_ar : mun.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {t({ en: 'Host Municipality', ar: 'البلدية المضيفة' })}
+            </label>
+            <Select value={selectedMunicipality} onValueChange={setSelectedMunicipality}>
+              <SelectTrigger>
+                <SelectValue placeholder={t({ en: 'Select municipality', ar: 'اختر البلدية' })} />
+              </SelectTrigger>
+              <SelectContent>
+                {municipalities?.map(mun => (
+                  <SelectItem key={mun.id} value={mun.id}>
+                    {isRTL ? mun.name_ar : mun.name_en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
