@@ -224,7 +224,7 @@ function StrategyHub() {
             </Link>
           </Button>
           <Button asChild>
-            <Link to="/strategic-planning">
+            <Link to="/strategic-plan-builder">
               <Sparkles className="h-4 w-4 mr-2" />
               {t({ en: 'New Strategy', ar: 'استراتيجية جديدة' })}
             </Link>
@@ -367,7 +367,7 @@ function StrategyHub() {
                   <Target className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-2" />
                   <p className="text-muted-foreground">{t({ en: 'No strategic plans yet', ar: 'لا توجد خطط استراتيجية بعد' })}</p>
                   <Button className="mt-4" asChild>
-                    <Link to="/strategic-planning">{t({ en: 'Create First Plan', ar: 'إنشاء الخطة الأولى' })}</Link>
+                    <Link to="/strategic-plan-builder">{t({ en: 'Create First Plan', ar: 'إنشاء الخطة الأولى' })}</Link>
                   </Button>
                 </div>
               ) : (
