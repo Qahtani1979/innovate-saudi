@@ -12,6 +12,64 @@ Phase 3 (Strategy Cascade) is the **operationalization and deployment phase** wh
 
 ---
 
+## ⚠️ CRITICAL IMPLEMENTATION GAPS IDENTIFIED
+
+Based on deep code validation (see [strategy-implementation-tasks.md](../strategy/strategy-implementation-tasks.md)):
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    PHASE 3 CRITICAL GAPS                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  DATABASE SCHEMA GAPS (4 tables):                                               │
+│  ├── pilots: Missing is_strategy_derived, strategy_derivation_date, plan_ids   │
+│  ├── challenges: Missing is_strategy_derived, strategy_derivation_date         │
+│  ├── rd_calls: Missing all 3 strategy columns                                  │
+│  └── partnerships: Missing is_strategy_derived                                 │
+│                                                                                  │
+│  GENERATOR TRACKING GAPS (6/8 incomplete):                                      │
+│  ├── StrategyChallengeGenerator: Missing derived flags                          │
+│  ├── StrategyToPilotGenerator: Missing all strategy fields + DB columns        │
+│  ├── StrategyToLivingLabGenerator: Missing strategy_derivation_date            │
+│  ├── StrategyToEventGenerator: Missing derived flags                            │
+│  ├── StrategyToPartnershipGenerator: Missing strategy_derivation_date          │
+│  ├── StrategyToRDCallGenerator: Missing all strategy fields + DB columns       │
+│  ├── StrategyToPolicyGenerator: Uses singular strategic_plan_id                │
+│  └── StrategyToCampaignGenerator: Uses singular strategic_plan_id              │
+│                                                                                  │
+│  ALL GENERATORS BLIND TO EXISTING DATA:                                          │
+│  ├── Fetch global data without tenant/plan scoping                              │
+│  ├── No deduplication against existing entities                                 │
+│  └── May create duplicate entities                                              │
+│                                                                                  │
+│  APPROVAL INTEGRATION MISSING:                                                   │
+│  ├── No automatic approval_request creation                                     │
+│  └── Entities don't appear in ApprovalCenter                                    │
+│                                                                                  │
+│  REQUIRED FIXES (See strategy-implementation-tasks.md):                          │
+│  ├── TASK-DB-001 to TASK-DB-005: Database schema fixes                          │
+│  ├── TASK-GEN-001 to TASK-GEN-007: Generator logic fixes                        │
+│  └── TASK-APPR-001 to TASK-APPR-003: Approval integration                       │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Generator Status Summary
+
+| Generator | `is_strategy_derived` | `strategy_derivation_date` | `strategic_plan_ids` | Existing Data Awareness | Status |
+|-----------|:---------------------:|:--------------------------:|:--------------------:|:-----------------------:|--------|
+| StrategyToProgramGenerator | ✅ | ✅ | ✅ | ❌ | **COMPLETE** |
+| StrategyChallengeGenerator | ❌ | ❌ | ✅ | ❌ | **NEEDS FIX** |
+| StrategyToPilotGenerator | ❌ | ❌ | ❌ | ❌ | **NEEDS FIX + DB** |
+| StrategyToLivingLabGenerator | ✅ | ❌ | ✅ | ❌ | **NEEDS FIX** |
+| StrategyToEventGenerator | ❌ | ❌ | ✅ | ❌ | **NEEDS FIX** |
+| StrategyToPartnershipGenerator | ✅ | ❌ | ✅ | ❌ | **NEEDS FIX** |
+| StrategyToRDCallGenerator | ❌ | ❌ | ❌ | ❌ | **NEEDS FIX + DB** |
+| StrategyToPolicyGenerator | ❌ | ❌ | singular | ❌ | **NEEDS FIX + DB** |
+| StrategyToCampaignGenerator | ❌ | ❌ | singular | ❌ | **NEEDS FIX + DB** |
+
+---
+
 ## The Strategy Cascade Framework
 
 ```
@@ -33,6 +91,10 @@ Phase 3 (Strategy Cascade) is the **operationalization and deployment phase** wh
 │   ┌─────────────────────────────────────────────────────────────────────┐       │
 │   │                 INNOVATION VEHICLES (CASCADE OUTPUTS)                │       │
 │   ├─────────────────────────────────────────────────────────────────────┤       │
+│   │  ⚠️ REQUIRED: Each entity MUST set:                                  │       │
+│   │  • is_strategy_derived: true                                         │       │
+│   │  • strategy_derivation_date: timestamp                               │       │
+│   │  • strategic_plan_ids: [array of plan UUIDs]                         │       │
 │   │                                                                      │       │
 │   │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐       │       │
 │   │  │ CHALLENGES │ │   PILOTS   │ │PARTNERSHIPS│ │LIVING LABS │       │       │
@@ -57,30 +119,30 @@ Phase 3 (Strategy Cascade) is the **operationalization and deployment phase** wh
 
 ### Inputs FROM Phase 1 & 2
 
-| Source Phase | Output | How It Informs Phase 3 | Priority |
-|--------------|--------|------------------------|----------|
-| **Phase 1** | SWOT Analysis | Identifies strengths to leverage, gaps to fill | High |
-| **Phase 1** | Stakeholder Map | Partners to engage, citizen needs | High |
-| **Phase 1** | Risk Register | Risks to mitigate in cascade design | Medium |
-| **Phase 1** | Baseline KPIs | Starting points for initiative targets | High |
-| **Phase 2** | Strategic Objectives | Primary input - what to cascade | Critical |
-| **Phase 2** | Sector Strategies | Sector-specific cascade requirements | Critical |
-| **Phase 2** | Action Plans | Initiatives to translate to entities | Critical |
-| **Phase 2** | RACI Matrix | Ownership for cascaded entities | High |
-| **Phase 2** | National Alignment | Alignment requirements for entities | High |
+| Source Phase | Output | How It Informs Phase 3 | Priority | Current Status |
+|--------------|--------|------------------------|----------|----------------|
+| **Phase 1** | SWOT Analysis | Identifies strengths to leverage, gaps to fill | High | ⚠️ Not Connected |
+| **Phase 1** | Stakeholder Map | Partners to engage, citizen needs | High | ⚠️ Not Connected |
+| **Phase 1** | Risk Register | Risks to mitigate in cascade design | Medium | ⚠️ Not Connected |
+| **Phase 1** | Baseline KPIs | Starting points for initiative targets | High | ⚠️ Not Connected |
+| **Phase 2** | Strategic Objectives | Primary input - what to cascade | Critical | ✅ Connected |
+| **Phase 2** | Sector Strategies | Sector-specific cascade requirements | Critical | ✅ Connected |
+| **Phase 2** | Action Plans | Initiatives to translate to entities | Critical | ⚠️ Partial |
+| **Phase 2** | RACI Matrix | Ownership for cascaded entities | High | ⚠️ Not Connected |
+| **Phase 2** | National Alignment | Alignment requirements for entities | High | ⚠️ Not Connected |
 
 ### Outputs TO Subsequent Phases
 
-| Phase 3 Output | Used By | Purpose |
-|----------------|---------|---------|
-| **Challenges** | Phase 4 (Governance), Phase 6 (Monitoring) | Track resolution, measure impact |
-| **Pilots** | Phase 6 (Monitoring), Phase 7 (Review) | Monitor progress, evaluate success |
-| **Partnerships** | Phase 4 (Governance), Phase 5 (Communication) | Manage relationships, communicate value |
-| **Living Labs** | Phase 6 (Monitoring), Phase 7 (Review) | Research outcomes, lessons learned |
-| **R&D Calls** | Phase 6 (Monitoring) | Track research progress |
-| **Events** | Phase 5 (Communication) | Stakeholder engagement execution |
-| **Policies** | Phase 4 (Governance) | Policy implementation tracking |
-| **Campaigns** | Phase 5 (Communication) | Communication execution |
+| Phase 3 Output | Used By | Purpose | Current Status |
+|----------------|---------|---------|----------------|
+| **Challenges** | Phase 4 (Governance), Phase 6 (Monitoring) | Track resolution, measure impact | ⚠️ Missing strategy flags |
+| **Pilots** | Phase 6 (Monitoring), Phase 7 (Review) | Monitor progress, evaluate success | 🔴 Missing DB columns + flags |
+| **Partnerships** | Phase 4 (Governance), Phase 5 (Communication) | Manage relationships, communicate value | ⚠️ Missing derivation date |
+| **Living Labs** | Phase 6 (Monitoring), Phase 7 (Review) | Research outcomes, lessons learned | ⚠️ Missing derivation date |
+| **R&D Calls** | Phase 6 (Monitoring) | Track research progress | 🔴 Missing DB columns + flags |
+| **Events** | Phase 5 (Communication) | Stakeholder engagement execution | ⚠️ Missing strategy flags |
+| **Policies** | Phase 4 (Governance) | Policy implementation tracking | 🔴 Uses singular plan_id |
+| **Campaigns** | Phase 5 (Communication) | Communication execution | 🔴 Uses singular plan_id |
 
 ---
 

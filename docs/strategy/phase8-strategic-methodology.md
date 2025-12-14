@@ -12,6 +12,23 @@ Phase 8 (Strategy Recalibration) is the **dedicated feedback loop and adjustment
 
 ---
 
+## ❌ IMPLEMENTATION STATUS: 0% (Design Only)
+
+**ALL 6 components are missing:**
+
+| Component | Purpose | Priority |
+|-----------|---------|----------|
+| FeedbackAnalysisEngine | Aggregate Phase 7 feedback | P1 |
+| AdjustmentDecisionMatrix | Decision support for pivots | P1 |
+| MidCyclePivotManager | Track strategic pivots | P2 |
+| PhaseModificationExecutor | Execute cross-phase changes | P2 |
+| BaselineRecalibrator | Update baselines | P3 |
+| NextCycleInitializer | Cycle handoff | P3 |
+
+See [plan-tracker.md](./plan-tracker.md) for implementation priority and details.
+
+---
+
 ## Phase Positioning in Strategic Lifecycle
 
 ```

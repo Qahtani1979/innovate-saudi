@@ -1,8 +1,36 @@
 # Strategy System - Integration Matrix
 
-**Last Updated:** 2025-12-14 (DEEP IMPLEMENTATION ANALYSIS)  
-**Status:** ✅ Platform Integration 100% | ✅ Database Integration 95% | 🟡 Overall 85%  
+**Last Updated:** 2025-12-14 (DEEP VALIDATION + CRITICAL GAPS IDENTIFIED)  
+**Status:** ✅ Platform Integration 100% | 🔴 Generator Logic 40% | 🔴 Database Schema 75% | 🟡 Overall 65%  
 **Section G Added:** Deep implementation analysis - schema consistency, entity creation verification, approval workflow gaps
+
+---
+
+## ⚠️ CRITICAL INTEGRATION GAPS IDENTIFIED
+
+Based on deep code validation (see [strategy-implementation-tasks.md](./strategy-implementation-tasks.md)):
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    GENERATOR DATA ACCESS PATTERNS                                │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ALL GENERATORS ARE BLIND TO EXISTING ENTITIES:                                  │
+│                                                                                  │
+│  Front-end generators:                                                           │
+│  ├── Challenges: Fetches ALL plans globally (no tenant scoping)                 │
+│  ├── Pilots: Fetches up to 50 challenges globally                               │
+│  ├── Living Labs: Fetches ALL plans + ALL municipalities (blind global)         │
+│  ├── Events: Fetches ALL plans (blind global)                                   │
+│  ├── Partnerships: Fetches ALL plans (blind global)                             │
+│  └── R&D Calls: Fetches 50 challenges globally                                  │
+│                                                                                  │
+│  Edge generators:                                                                │
+│  ├── All scoped to specific plan/challenge but BLIND to existing entities       │
+│  └── No deduplication against existing records                                  │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -12,19 +40,20 @@ This matrix documents all integrations required for the complete Strategy Leader
 
 ### IMPLEMENTATION STATUS OVERVIEW
 
-| Dimension | Complete | Partial | Missing | Coverage |
-|-----------|----------|---------|---------|----------|
-| **Platform Entity Integration** | 35+ | 0 | 0 | ✅ 100% |
-| **Phase 1: Pre-Planning** | 6/6 | 0 | 0 | ✅ 100% |
-| **Phase 2: Strategy Creation** | 6/6 | 0 | 0 | ✅ 100% |
-| **Phase 3: Cascade** | 9/9 | 0 | 0 | ✅ 100% |
-| **Phase 4: Governance** | 4/4 | 0 | 0 | ✅ 100% |
-| **Phase 5: Communication** | 6/6 | 0 | 0 | ✅ 100% |
-| **Phase 6: Monitoring** | 11/11 | 0 | 0 | ✅ 100% |
-| **Phase 7: Evaluation** | 3/6 | 0 | 3 | 🟡 50% |
-| **Phase 8: Recalibration** | 0/6 | 0 | 6 | ❌ 0% |
-| **Database Tables** | 19/20 | 0 | 1 | ✅ 95% |
-| **AI Integration** | 5/5 | 0 | 0 | ✅ 100% |
+| Dimension | Complete | Partial | Missing | Coverage | Issues |
+|-----------|----------|---------|---------|----------|--------|
+| **Platform Entity Integration** | 35+ | 0 | 0 | ✅ 100% | None |
+| **Phase 1: Pre-Planning** | 6/6 | 0 | 0 | ✅ 100% | None |
+| **Phase 2: Strategy Creation** | 6/6 UI | - | - | 🔴 LOGIC GAP | Ignores existing plans |
+| **Phase 3: Cascade** | 9/9 UI | 6 | 0 | 🔴 40% LOGIC | 6/8 generators incomplete |
+| **Phase 4: Governance** | 4/4 | 0 | 0 | 🟠 90% | Missing cascade integration |
+| **Phase 5: Communication** | 6/6 | 0 | 0 | ✅ 100% | None |
+| **Phase 6: Monitoring** | 11/11 | 0 | 0 | ✅ 100% | None |
+| **Phase 7: Evaluation** | 3/6 | 0 | 3 | 🟡 50% | 3 components missing |
+| **Phase 8: Recalibration** | 0/6 | 0 | 6 | ❌ 0% | All missing |
+| **Database Tables** | 16/20 | 4 | 0 | 🔴 80% | 4 tables missing strategy columns |
+| **AI Integration** | 5/5 | 0 | 0 | ✅ 100% | None |
+| **Existing Data Awareness** | 0/9 | 0 | 9 | 🔴 0% | All generators blind |
 
 ---
 
@@ -151,23 +180,32 @@ This matrix documents all integrations required for the complete Strategy Leader
 
 ---
 
-### B.3 PHASE 3: CASCADE (✅ 100% INTEGRATED)
+### B.3 PHASE 3: CASCADE (🔴 CRITICAL LOGIC GAPS)
 
 **Methodology:** [phase3-strategic-methodology.md](./phase3-strategic-methodology.md)
 
-#### Components & Entity Generation
+#### 🔴 CRITICAL ISSUES (See strategy-implementation-tasks.md)
 
-| Component | Entity Generated | Integration |
-|-----------|-----------------|-------------|
-| StrategyToProgramGenerator | programs | INSERT with strategic_plan_ids[] |
-| StrategyChallengeGenerator | challenges | INSERT with strategic_plan_ids[] |
-| StrategyToPilotGenerator | pilots | INSERT with challenge linkage |
-| StrategyToPartnershipGenerator | partnerships | INSERT with strategic_plan_ids[] |
-| StrategyToLivingLabGenerator | living_labs | INSERT with strategic_plan_ids[] |
-| StrategyToRDCallGenerator | rd_calls | INSERT with program/challenge links |
-| StrategyToEventGenerator | events | INSERT with strategic_plan_ids[] |
-| StrategyToCampaignGenerator | email_campaigns | INSERT with program_id |
-| StrategyToPolicyGenerator | policy_documents | INSERT with strategic_plan_ids[] |
+| Issue | Impact | Tasks to Fix |
+|-------|--------|--------------|
+| 6/8 generators don't set all strategy fields | Entities can't be tracked as strategy-derived | TASK-GEN-001 to TASK-GEN-007 |
+| All generators blind to existing entities | Duplicate entities may be created | Requires new deduplication logic |
+| 4 tables missing columns | Can't store strategy tracking data | TASK-DB-001 to TASK-DB-004 |
+| No approval_request creation | Entities don't appear in ApprovalCenter | TASK-APPR-001 to TASK-APPR-003 |
+
+#### Components & Entity Generation (With Gap Status)
+
+| Component | Entity Generated | `is_strategy_derived` | `strategy_derivation_date` | `strategic_plan_ids` | Status |
+|-----------|-----------------|:---------------------:|:--------------------------:|:--------------------:|--------|
+| StrategyToProgramGenerator | programs | ✅ | ✅ | ✅ | **COMPLETE** |
+| StrategyChallengeGenerator | challenges | ❌ | ❌ | ✅ | **NEEDS FIX** |
+| StrategyToPilotGenerator | pilots | ❌ | ❌ | ❌ | **NEEDS FIX + DB** |
+| StrategyToPartnershipGenerator | partnerships | ✅ | ❌ | ✅ | **NEEDS FIX** |
+| StrategyToLivingLabGenerator | living_labs | ✅ | ❌ | ✅ | **NEEDS FIX** |
+| StrategyToRDCallGenerator | rd_calls | ❌ | ❌ | ❌ | **NEEDS FIX + DB** |
+| StrategyToEventGenerator | events | ❌ | ❌ | ✅ | **NEEDS FIX** |
+| StrategyToCampaignGenerator | email_campaigns | ❌ | ❌ | singular | **NEEDS FIX + DB** |
+| StrategyToPolicyGenerator | policy_documents | ❌ | ❌ | singular | **NEEDS FIX + DB** |
 
 ---
 

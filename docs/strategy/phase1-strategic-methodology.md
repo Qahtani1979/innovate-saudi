@@ -12,6 +12,16 @@ Phase 1 (Pre-Planning) is the **intelligence gathering and foundation-building p
 
 ---
 
+## ⚠️ IMPLEMENTATION NOTE
+
+Phase 1 components are **100% complete** (6 UI components + 6 DB tables + 6 hooks).
+
+**However**, there is a critical gap: Phase 1 data (PESTLE, SWOT, Stakeholder Analysis, Risk Assessment, Inputs, Baselines) is collected and stored but **NOT automatically fed into Phase 2 (Strategy Creation)**. 
+
+See [strategy-implementation-tasks.md](./strategy-implementation-tasks.md) for fix: **TASK-P2-004: Connect Preplanning Widgets to Plan Creation**.
+
+---
+
 ## The Pre-Planning Framework
 
 ```
