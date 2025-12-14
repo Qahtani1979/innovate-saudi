@@ -1,66 +1,101 @@
-import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// AI helpers for stakeholder sign-offs governance
+// API compatible with React Query's useMutation objects: { isPending, mutateAsync }
 export function useSignoffAI() {
   const { toast } = useToast();
 
-  const suggestStakeholders = useMutation({
-    mutationFn: async ({ documentType, planData }) => {
-      const { data, error } = await supabase.functions.invoke('strategy-signoff-ai', {
-        body: { action: 'suggest_stakeholders', documentType, planData }
-      });
-      if (error) throw error;
-      return data.result;
-    },
-    onError: (error) => {
-      toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
-    }
-  });
+  const [suggestPending, setSuggestPending] = useState(false);
+  const [riskPending, setRiskPending] = useState(false);
+  const [remindersPending, setRemindersPending] = useState(false);
+  const [sentimentPending, setSentimentPending] = useState(false);
 
-  const predictApprovalRisk = useMutation({
-    mutationFn: async ({ stakeholderData, planData, context }) => {
-      const { data, error } = await supabase.functions.invoke('strategy-signoff-ai', {
-        body: { action: 'predict_approval_risk', stakeholderData, planData, context }
-      });
-      if (error) throw error;
-      return data.result;
+  const suggestStakeholders = {
+    isPending: suggestPending,
+    mutateAsync: async ({ documentType, planData }) => {
+      setSuggestPending(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('strategy-signoff-ai', {
+          body: { action: 'suggest_stakeholders', documentType, planData },
+        });
+        if (error) throw error;
+        return data.result;
+      } catch (error) {
+        console.error('AI suggestStakeholders error', error);
+        toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
+        throw error;
+      } finally {
+        setSuggestPending(false);
+      }
     },
-    onError: (error) => {
-      toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
-    }
-  });
+  };
 
-  const optimizeReminders = useMutation({
-    mutationFn: async ({ stakeholderData, context }) => {
-      const { data, error } = await supabase.functions.invoke('strategy-signoff-ai', {
-        body: { action: 'optimize_reminders', stakeholderData, context }
-      });
-      if (error) throw error;
-      return data.result;
+  const predictApprovalRisk = {
+    isPending: riskPending,
+    mutateAsync: async ({ stakeholderData, planData, context }) => {
+      setRiskPending(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('strategy-signoff-ai', {
+          body: { action: 'predict_approval_risk', stakeholderData, planData, context },
+        });
+        if (error) throw error;
+        return data.result;
+      } catch (error) {
+        console.error('AI predictApprovalRisk error', error);
+        toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
+        throw error;
+      } finally {
+        setRiskPending(false);
+      }
     },
-    onError: (error) => {
-      toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
-    }
-  });
+  };
 
-  const analyzeSentiment = useMutation({
-    mutationFn: async ({ stakeholderData, documentType }) => {
-      const { data, error } = await supabase.functions.invoke('strategy-signoff-ai', {
-        body: { action: 'analyze_sentiment', stakeholderData, documentType }
-      });
-      if (error) throw error;
-      return data.result;
+  const optimizeReminders = {
+    isPending: remindersPending,
+    mutateAsync: async ({ stakeholderData, context }) => {
+      setRemindersPending(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('strategy-signoff-ai', {
+          body: { action: 'optimize_reminders', stakeholderData, context },
+        });
+        if (error) throw error;
+        return data.result;
+      } catch (error) {
+        console.error('AI optimizeReminders error', error);
+        toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
+        throw error;
+      } finally {
+        setRemindersPending(false);
+      }
     },
-    onError: (error) => {
-      toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
-    }
-  });
+  };
+
+  const analyzeSentiment = {
+    isPending: sentimentPending,
+    mutateAsync: async ({ stakeholderData, documentType }) => {
+      setSentimentPending(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('strategy-signoff-ai', {
+          body: { action: 'analyze_sentiment', stakeholderData, documentType },
+        });
+        if (error) throw error;
+        return data.result;
+      } catch (error) {
+        console.error('AI analyzeSentiment error', error);
+        toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
+        throw error;
+      } finally {
+        setSentimentPending(false);
+      }
+    },
+  };
 
   return {
     suggestStakeholders,
     predictApprovalRisk,
     optimizeReminders,
-    analyzeSentiment
+    analyzeSentiment,
   };
 }
