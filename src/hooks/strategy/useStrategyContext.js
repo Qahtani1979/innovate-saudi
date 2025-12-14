@@ -21,6 +21,7 @@ export function useStrategyContext(strategicPlanId = null) {
     baselines: [],
     programs: [],
     pilots: [],
+    nationalAlignments: [],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -128,6 +129,14 @@ export function useStrategyContext(strategicPlanId = null) {
           .select('id, title_en, title_ar, sector, stage, challenge_id')
           .eq('is_deleted', false);
 
+        // National Strategy Alignments
+        const alignmentsQuery = supabase
+          .from('national_strategy_alignments')
+          .select('id, strategic_plan_id, objective_id, national_strategy_type, national_goal_code, national_goal_name_en, national_goal_name_ar, alignment_score');
+        if (strategicPlanId) {
+          alignmentsQuery.eq('strategic_plan_id', strategicPlanId);
+        }
+
         const [
           plansRes,
           challengesRes,
@@ -140,6 +149,7 @@ export function useStrategyContext(strategicPlanId = null) {
           baselinesRes,
           programsRes,
           pilotsRes,
+          alignmentsRes,
         ] = await Promise.all([
           plansPromise,
           challengesPromise,
@@ -152,6 +162,7 @@ export function useStrategyContext(strategicPlanId = null) {
           baselinesQuery.order('created_at', { ascending: false }).limit(50),
           programsPromise,
           pilotsPromise,
+          alignmentsQuery,
         ]);
 
         if (cancelled) return;
@@ -196,6 +207,8 @@ export function useStrategyContext(strategicPlanId = null) {
           name_en: p.title_en,
           status: p.stage,
         }));
+        
+        const nationalAlignments = alignmentsRes.data || [];
 
         setState({
           plans,
@@ -209,6 +222,7 @@ export function useStrategyContext(strategicPlanId = null) {
           baselines,
           programs,
           pilots,
+          nationalAlignments,
         });
       } catch (error) {
         console.error('Error loading strategy context', error);
@@ -238,6 +252,7 @@ export function useStrategyContext(strategicPlanId = null) {
     baselines,
     programs,
     pilots,
+    nationalAlignments,
   } = state;
 
   // Calculate aggregated context
@@ -379,6 +394,21 @@ export function useStrategyContext(strategicPlanId = null) {
       })),
     };
 
+    // National Alignments Summary
+    const alignmentsSummary = {
+      total: nationalAlignments.length,
+      vision2030: nationalAlignments.filter(a => a.national_strategy_type === 'vision_2030'),
+      sdg: nationalAlignments.filter(a => a.national_strategy_type === 'sdg'),
+      nationalPriorities: nationalAlignments.filter(a => a.national_strategy_type === 'national_priorities'),
+      byPlan: nationalAlignments.reduce((acc, a) => {
+        acc[a.strategic_plan_id] = (acc[a.strategic_plan_id] || 0) + 1;
+        return acc;
+      }, {}),
+      averageScore: nationalAlignments.length > 0 
+        ? Math.round(nationalAlignments.reduce((sum, a) => sum + (a.alignment_score || 0), 0) / nationalAlignments.length)
+        : 0,
+    };
+
     return {
       // PHASE 2: Existing Strategic Data
       existingPlans: plans,
@@ -413,6 +443,10 @@ export function useStrategyContext(strategicPlanId = null) {
       inputsSummary,
       baselines,
       baselineSummary,
+
+      // National Strategy Alignments
+      nationalAlignments,
+      alignmentsSummary,
 
       // Gaps
       gaps,
@@ -474,6 +508,7 @@ export function useStrategyContext(strategicPlanId = null) {
     riskAssessments,
     strategyInputs,
     baselines,
+    nationalAlignments,
   ]);
 
   return {

@@ -56,37 +56,58 @@ const SAMPLE_OBJECTIVES = [
   { id: '4', title_en: 'Improve Municipal MII Scores', title_ar: 'تحسين درجات مؤشر الابتكار البلدي' }
 ];
 
-const NationalStrategyLinker = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSave }) => {
+const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, objectives = SAMPLE_OBJECTIVES, onSave }) => {
   const { t, isRTL, language } = useLanguage();
   const { toast } = useToast();
-  const strategicPlanId = strategicPlan?.id;
+  const strategicPlanId = propPlanId || strategicPlan?.id;
   
   const {
     alignments: dbAlignments,
     isLoading,
     saveAlignment,
-    saveBulkAlignments,
     deleteAlignment
   } = useNationalAlignments(strategicPlanId);
   
   const [isAutoLinking, setIsAutoLinking] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('vision2030');
 
   const [alignments, setAlignments] = useState([]);
   
+  // Initialize alignments from objectives and merge with DB data
   useEffect(() => {
-    if (dbAlignments && dbAlignments.length > 0) {
-      setAlignments(dbAlignments);
-    } else if (objectives.length > 0 && alignments.length === 0) {
-      setAlignments(objectives.map(obj => ({
-        objective_id: obj.id,
-        objective_title: obj.title_en,
-        vision_2030: [],
-        sdg: [],
-        national_priorities: [],
-        alignment_score: 0,
-        notes: ''
-      })));
+    if (objectives.length > 0) {
+      const newAlignments = objectives.map(obj => {
+        // Find existing DB alignments for this objective
+        const existingAlignments = dbAlignments?.filter(a => a.objective_id === obj.id) || [];
+        
+        // Extract vision_2030, sdg, national_priorities from existing alignments
+        const vision_2030 = existingAlignments
+          .filter(a => a.national_strategy_type === 'vision_2030')
+          .map(a => a.national_goal_code);
+        const sdg = existingAlignments
+          .filter(a => a.national_strategy_type === 'sdg')
+          .map(a => a.national_goal_code);
+        const national_priorities = existingAlignments
+          .filter(a => a.national_strategy_type === 'national_priorities')
+          .map(a => a.national_goal_code);
+        
+        // Calculate score
+        const totalLinks = vision_2030.length + sdg.length + national_priorities.length;
+        const maxPossible = VISION_2030_GOALS.length + SDG_GOALS.length + NATIONAL_PRIORITIES.length;
+        const score = maxPossible > 0 ? Math.round((totalLinks / maxPossible) * 100) : 0;
+        
+        return {
+          objective_id: obj.id,
+          objective_title: obj.title_en || obj.name_en || 'Untitled',
+          vision_2030,
+          sdg,
+          national_priorities,
+          alignment_score: score,
+          notes: ''
+        };
+      });
+      setAlignments(newAlignments);
     }
   }, [dbAlignments, objectives]);
 
@@ -167,15 +188,110 @@ const NationalStrategyLinker = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES,
   };
 
   const handleSave = async () => {
+    if (!strategicPlanId) {
+      toast({
+        title: t({ en: 'Error', ar: 'خطأ' }),
+        description: t({ en: 'No strategic plan selected', ar: 'لم يتم تحديد خطة استراتيجية' }),
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      const success = await saveBulkAlignments(alignments);
-      if (success && onSave) onSave(alignments);
+      // First, delete existing alignments for this plan
+      const { data: existingAlignments } = await supabase
+        .from('national_strategy_alignments')
+        .select('id')
+        .eq('strategic_plan_id', strategicPlanId);
+      
+      if (existingAlignments && existingAlignments.length > 0) {
+        await supabase
+          .from('national_strategy_alignments')
+          .delete()
+          .eq('strategic_plan_id', strategicPlanId);
+      }
+
+      // Build individual alignment records for each goal linked to each objective
+      const records = [];
+      
+      for (const alignment of alignments) {
+        // Vision 2030 alignments
+        for (const goalId of alignment.vision_2030) {
+          const goal = VISION_2030_GOALS.find(g => g.id === goalId);
+          if (goal) {
+            records.push({
+              strategic_plan_id: strategicPlanId,
+              objective_id: alignment.objective_id,
+              national_strategy_type: 'vision_2030',
+              national_goal_code: goal.id,
+              national_goal_name_en: goal.name_en,
+              national_goal_name_ar: goal.name_ar,
+              alignment_score: alignment.alignment_score
+            });
+          }
+        }
+        
+        // SDG alignments
+        for (const goalId of alignment.sdg) {
+          const goal = SDG_GOALS.find(g => g.id === goalId);
+          if (goal) {
+            records.push({
+              strategic_plan_id: strategicPlanId,
+              objective_id: alignment.objective_id,
+              national_strategy_type: 'sdg',
+              national_goal_code: goal.id,
+              national_goal_name_en: goal.name_en,
+              national_goal_name_ar: goal.name_ar,
+              alignment_score: alignment.alignment_score
+            });
+          }
+        }
+        
+        // National Priorities alignments
+        for (const goalId of alignment.national_priorities) {
+          const goal = NATIONAL_PRIORITIES.find(g => g.id === goalId);
+          if (goal) {
+            records.push({
+              strategic_plan_id: strategicPlanId,
+              objective_id: alignment.objective_id,
+              national_strategy_type: 'national_priorities',
+              national_goal_code: goal.id,
+              national_goal_name_en: goal.name_en,
+              national_goal_name_ar: goal.name_ar,
+              alignment_score: alignment.alignment_score
+            });
+          }
+        }
+      }
+
+      // Insert all records
+      if (records.length > 0) {
+        const { error } = await supabase
+          .from('national_strategy_alignments')
+          .insert(records);
+        
+        if (error) throw error;
+      }
+
+      toast({
+        title: t({ en: 'Saved Successfully', ar: 'تم الحفظ بنجاح' }),
+        description: t({ 
+          en: `${records.length} alignments saved`, 
+          ar: `تم حفظ ${records.length} ارتباط` 
+        })
+      });
+      
+      if (onSave) onSave(alignments);
     } catch (error) {
+      console.error('Save error:', error);
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
         description: error.message,
         variant: 'destructive'
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -241,8 +357,8 @@ const NationalStrategyLinker = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES,
                 )}
                 {t({ en: 'Auto-Link with AI', ar: 'ربط تلقائي بالذكاء الاصطناعي' })}
               </Button>
-              <Button onClick={handleSave} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
-                {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              <Button onClick={handleSave} disabled={isSaving || !strategicPlanId} className="bg-blue-600 hover:bg-blue-700">
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                 {t({ en: 'Save Alignments', ar: 'حفظ المحاذاة' })}
               </Button>
             </div>
