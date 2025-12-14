@@ -758,6 +758,7 @@ export type Database = {
           fiscal_year: number | null
           id: string
           is_deleted: boolean | null
+          is_strategy_allocated: boolean | null
           line_items: Json | null
           name_ar: string | null
           name_en: string
@@ -765,6 +766,8 @@ export type Database = {
           remaining_amount: number | null
           spent_amount: number | null
           status: string | null
+          strategic_objective_id: string | null
+          strategic_plan_id: string | null
           total_amount: number
           updated_at: string | null
         }
@@ -783,6 +786,7 @@ export type Database = {
           fiscal_year?: number | null
           id?: string
           is_deleted?: boolean | null
+          is_strategy_allocated?: boolean | null
           line_items?: Json | null
           name_ar?: string | null
           name_en: string
@@ -790,6 +794,8 @@ export type Database = {
           remaining_amount?: number | null
           spent_amount?: number | null
           status?: string | null
+          strategic_objective_id?: string | null
+          strategic_plan_id?: string | null
           total_amount: number
           updated_at?: string | null
         }
@@ -808,6 +814,7 @@ export type Database = {
           fiscal_year?: number | null
           id?: string
           is_deleted?: boolean | null
+          is_strategy_allocated?: boolean | null
           line_items?: Json | null
           name_ar?: string | null
           name_en?: string
@@ -815,10 +822,20 @@ export type Database = {
           remaining_amount?: number | null
           spent_amount?: number | null
           status?: string | null
+          strategic_objective_id?: string | null
+          strategic_plan_id?: string | null
           total_amount?: number
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "budgets_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaign_recipients: {
         Row: {
