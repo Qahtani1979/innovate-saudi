@@ -5,21 +5,30 @@ import { supabase } from '@/integrations/supabase/client';
 /**
  * useStrategyContext Hook
  * 
- * Aggregates all strategic context data for informed strategy creation:
+ * Aggregates ALL strategic context data for informed strategy creation:
+ * 
+ * PHASE 1 DATA (Pre-Planning):
+ * - PESTLE factors (environmental scan)
+ * - SWOT analysis
+ * - Stakeholder analysis
+ * - Risk assessment
+ * - Strategy inputs (stakeholder feedback)
+ * - Baseline metrics
+ * 
+ * PHASE 2 DATA (Existing Strategy):
  * - Existing strategic plans
+ * - Existing objectives and pillars
  * - Entity counts by sector
  * - Unresolved challenges
  * - Gap analysis results
- * - PESTLE factors (environmental scan)
- * - SWOT data
- * - Stakeholder inputs
- * - Baseline metrics
  * 
  * This hook ensures Phase 2 (Strategy Creation) considers all existing data
  * to avoid duplicates and fill identified gaps.
  */
 export function useStrategyContext(strategicPlanId = null) {
-  // Fetch all existing strategic plans
+  // ============================================
+  // PHASE 2 DATA: Existing Strategic Plans
+  // ============================================
   const { data: plans = [], isLoading: plansLoading } = useQuery({
     queryKey: ['strategy-context-plans'],
     queryFn: async () => {
@@ -63,20 +72,24 @@ export function useStrategyContext(strategicPlanId = null) {
     staleTime: 60000,
   });
 
+  // ============================================
+  // PHASE 1 DATA: Pre-Planning Inputs
+  // ============================================
+  
   // Fetch PESTLE environmental factors
   const { data: pestleFactors = [], isLoading: pestleLoading } = useQuery({
     queryKey: ['strategy-context-pestle', strategicPlanId],
     queryFn: async () => {
       let query = supabase
         .from('environmental_factors')
-        .select('id, category, title_en, impact_type, impact_level, strategic_plan_id')
+        .select('id, category, title_en, title_ar, description_en, impact_type, impact_level, trend, strategic_plan_id')
         .eq('is_deleted', false);
       
       if (strategicPlanId) {
         query = query.eq('strategic_plan_id', strategicPlanId);
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
       if (error && error.code !== 'PGRST116') throw error;
       return data || [];
     },
@@ -89,7 +102,7 @@ export function useStrategyContext(strategicPlanId = null) {
     queryFn: async () => {
       let query = supabase
         .from('swot_analyses')
-        .select('id, strengths, weaknesses, opportunities, threats, strategic_plan_id');
+        .select('id, strengths, weaknesses, opportunities, threats, strategic_plan_id, created_at');
       
       if (strategicPlanId) {
         query = query.eq('strategic_plan_id', strategicPlanId);
@@ -102,6 +115,86 @@ export function useStrategyContext(strategicPlanId = null) {
     staleTime: 30000,
   });
 
+  // Fetch Stakeholder Analysis
+  const { data: stakeholderAnalyses = [], isLoading: stakeholderLoading } = useQuery({
+    queryKey: ['strategy-context-stakeholders', strategicPlanId],
+    queryFn: async () => {
+      let query = supabase
+        .from('stakeholder_analyses')
+        .select('id, stakeholder_name, stakeholder_type, power_level, interest_level, influence_strategy, strategic_plan_id');
+      
+      if (strategicPlanId) {
+        query = query.eq('strategic_plan_id', strategicPlanId);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
+      if (error && error.code !== 'PGRST116') throw error;
+      return data || [];
+    },
+    staleTime: 30000,
+  });
+
+  // Fetch Risk Assessment
+  const { data: riskAssessments = [], isLoading: riskLoading } = useQuery({
+    queryKey: ['strategy-context-risks', strategicPlanId],
+    queryFn: async () => {
+      let query = supabase
+        .from('strategy_risks')
+        .select('id, risk_title, risk_category, probability, impact, risk_score, mitigation_strategy, strategic_plan_id');
+      
+      if (strategicPlanId) {
+        query = query.eq('strategic_plan_id', strategicPlanId);
+      }
+      
+      const { data, error } = await query.order('risk_score', { ascending: false }).limit(50);
+      if (error && error.code !== 'PGRST116') throw error;
+      return data || [];
+    },
+    staleTime: 30000,
+  });
+
+  // Fetch Strategy Inputs (stakeholder feedback)
+  const { data: strategyInputs = [], isLoading: inputsLoading } = useQuery({
+    queryKey: ['strategy-context-inputs', strategicPlanId],
+    queryFn: async () => {
+      let query = supabase
+        .from('strategy_inputs')
+        .select('id, source_type, source_name, input_text, theme, sentiment, priority, strategic_plan_id');
+      
+      if (strategicPlanId) {
+        query = query.eq('strategic_plan_id', strategicPlanId);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
+      if (error && error.code !== 'PGRST116') throw error;
+      return data || [];
+    },
+    staleTime: 30000,
+  });
+
+  // Fetch Baseline Metrics
+  const { data: baselines = [], isLoading: baselinesLoading } = useQuery({
+    queryKey: ['strategy-context-baselines', strategicPlanId],
+    queryFn: async () => {
+      let query = supabase
+        .from('strategy_baselines')
+        .select('id, kpi_name, kpi_category, baseline_value, target_value, unit, measurement_date, strategic_plan_id');
+      
+      if (strategicPlanId) {
+        query = query.eq('strategic_plan_id', strategicPlanId);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
+      if (error && error.code !== 'PGRST116') throw error;
+      return data || [];
+    },
+    staleTime: 30000,
+  });
+
+  // ============================================
+  // EXISTING ENTITIES (for gap analysis)
+  // ============================================
+  
   // Fetch existing programs
   const { data: programs = [], isLoading: programsLoading } = useQuery({
     queryKey: ['strategy-context-programs'],
@@ -200,8 +293,74 @@ export function useStrategyContext(strategicPlanId = null) {
       unresolvedChallenges
     });
 
+    // ============================================
+    // PHASE 1 DATA SUMMARIES
+    // ============================================
+    
+    // Stakeholder Analysis Summary
+    const stakeholderSummary = {
+      total: stakeholderAnalyses.length,
+      highPower: stakeholderAnalyses.filter(s => s.power_level === 'high'),
+      highInterest: stakeholderAnalyses.filter(s => s.interest_level === 'high'),
+      keyPlayers: stakeholderAnalyses.filter(s => s.power_level === 'high' && s.interest_level === 'high'),
+      byType: stakeholderAnalyses.reduce((acc, s) => {
+        acc[s.stakeholder_type] = (acc[s.stakeholder_type] || 0) + 1;
+        return acc;
+      }, {})
+    };
+
+    // Risk Assessment Summary
+    const riskSummary = {
+      total: riskAssessments.length,
+      highRisk: riskAssessments.filter(r => r.risk_score >= 15),
+      mediumRisk: riskAssessments.filter(r => r.risk_score >= 8 && r.risk_score < 15),
+      lowRisk: riskAssessments.filter(r => r.risk_score < 8),
+      byCategory: riskAssessments.reduce((acc, r) => {
+        acc[r.risk_category] = (acc[r.risk_category] || 0) + 1;
+        return acc;
+      }, {}),
+      topRisks: riskAssessments.slice(0, 5)
+    };
+
+    // Strategy Inputs Summary
+    const inputsSummary = {
+      total: strategyInputs.length,
+      positive: strategyInputs.filter(i => i.sentiment === 'positive'),
+      negative: strategyInputs.filter(i => i.sentiment === 'negative'),
+      neutral: strategyInputs.filter(i => i.sentiment === 'neutral'),
+      bySource: strategyInputs.reduce((acc, i) => {
+        acc[i.source_type] = (acc[i.source_type] || 0) + 1;
+        return acc;
+      }, {}),
+      byTheme: strategyInputs.reduce((acc, i) => {
+        if (i.theme) acc[i.theme] = (acc[i.theme] || 0) + 1;
+        return acc;
+      }, {}),
+      highPriority: strategyInputs.filter(i => i.priority === 'high')
+    };
+
+    // Baseline Metrics Summary
+    const baselineSummary = {
+      total: baselines.length,
+      byCategory: baselines.reduce((acc, b) => {
+        acc[b.kpi_category] = (acc[b.kpi_category] || 0) + 1;
+        return acc;
+      }, {}),
+      withTargets: baselines.filter(b => b.target_value != null),
+      gapAnalysis: baselines.map(b => ({
+        kpi: b.kpi_name,
+        baseline: b.baseline_value,
+        target: b.target_value,
+        gap: b.target_value ? b.target_value - b.baseline_value : null,
+        gapPercent: b.target_value && b.baseline_value ? 
+          Math.round(((b.target_value - b.baseline_value) / b.baseline_value) * 100) : null
+      }))
+    };
+
     return {
-      // Existing data
+      // ============================================
+      // PHASE 2: Existing Strategic Data
+      // ============================================
       existingPlans: plans,
       existingObjectives: allExistingObjectives,
       existingPillars: allExistingPillars,
@@ -221,17 +380,44 @@ export function useStrategyContext(strategicPlanId = null) {
       programs,
       pilots,
       
-      // Preplanning data
+      // ============================================
+      // PHASE 1: Pre-Planning Data
+      // ============================================
+      
+      // PESTLE (Environmental Scan)
       pestleFactors,
       pestleSummary,
+      
+      // SWOT Analysis
       swotAnalyses,
       swotSummary,
       
-      // Gaps
+      // Stakeholder Analysis
+      stakeholderAnalyses,
+      stakeholderSummary,
+      
+      // Risk Assessment
+      riskAssessments,
+      riskSummary,
+      
+      // Strategy Inputs
+      strategyInputs,
+      inputsSummary,
+      
+      // Baseline Metrics
+      baselines,
+      baselineSummary,
+      
+      // ============================================
+      // GAP ANALYSIS
+      // ============================================
       gaps,
       
-      // Summary stats
+      // ============================================
+      // SUMMARY STATS
+      // ============================================
       stats: {
+        // Phase 2 stats
         totalPlans: plans.length,
         activePlans: plans.filter(p => p.status === 'active').length,
         totalChallenges: challenges.length,
@@ -240,13 +426,39 @@ export function useStrategyContext(strategicPlanId = null) {
         uncoveredSectorCount: uncoveredSectors.length,
         totalObjectives: allExistingObjectives.length,
         totalPrograms: programs.length,
-        totalPilots: pilots.length
+        totalPilots: pilots.length,
+        
+        // Phase 1 stats
+        pestleFactorCount: pestleFactors.length,
+        swotAnalysisCount: swotAnalyses.length,
+        stakeholderCount: stakeholderAnalyses.length,
+        riskCount: riskAssessments.length,
+        highRiskCount: riskAssessments.filter(r => r.risk_score >= 15).length,
+        inputCount: strategyInputs.length,
+        baselineCount: baselines.length
+      },
+      
+      // ============================================
+      // PHASE 1 COMPLETENESS CHECK
+      // ============================================
+      phase1Completeness: {
+        pestle: pestleFactors.length > 0,
+        swot: swotAnalyses.length > 0,
+        stakeholders: stakeholderAnalyses.length > 0,
+        risks: riskAssessments.length > 0,
+        inputs: strategyInputs.length > 0,
+        baselines: baselines.length > 0,
+        completionPercent: Math.round(
+          ([pestleFactors, swotAnalyses, stakeholderAnalyses, riskAssessments, strategyInputs, baselines]
+            .filter(arr => arr.length > 0).length / 6) * 100
+        )
       }
     };
-  }, [plans, challenges, sectors, programs, pilots, pestleFactors, swotAnalyses]);
+  }, [plans, challenges, sectors, programs, pilots, pestleFactors, swotAnalyses, stakeholderAnalyses, riskAssessments, strategyInputs, baselines]);
 
   const isLoading = plansLoading || challengesLoading || sectorsLoading || 
-                    pestleLoading || swotLoading || programsLoading || pilotsLoading;
+                    pestleLoading || swotLoading || programsLoading || pilotsLoading ||
+                    stakeholderLoading || riskLoading || inputsLoading || baselinesLoading;
 
   return {
     ...aggregatedContext,
@@ -381,61 +593,162 @@ function calculateTextSimilarity(text1, text2) {
  * Build context prompt for AI-driven strategy creation
  */
 export function buildStrategyContextPrompt(context) {
-  const { existingPlans, gaps, unresolvedChallenges, uncoveredSectors, pestleSummary, swotSummary, stats } = context;
+  const { 
+    existingPlans, gaps, unresolvedChallenges, uncoveredSectors, 
+    pestleSummary, swotSummary, stakeholderSummary, riskSummary, 
+    inputsSummary, baselineSummary, stats, phase1Completeness 
+  } = context;
   
   let prompt = `STRATEGIC CONTEXT ANALYSIS\n\n`;
   
-  // Existing plans summary
-  prompt += `EXISTING STRATEGIC PLANS (${stats.totalPlans} total, ${stats.activePlans} active):\n`;
-  existingPlans.slice(0, 5).forEach(p => {
+  // Phase 1 Completeness Check
+  prompt += `PRE-PLANNING DATA STATUS: ${phase1Completeness?.completionPercent || 0}% Complete\n`;
+  prompt += `- PESTLE Analysis: ${phase1Completeness?.pestle ? '✓' : '✗'}\n`;
+  prompt += `- SWOT Analysis: ${phase1Completeness?.swot ? '✓' : '✗'}\n`;
+  prompt += `- Stakeholder Analysis: ${phase1Completeness?.stakeholders ? '✓' : '✗'}\n`;
+  prompt += `- Risk Assessment: ${phase1Completeness?.risks ? '✓' : '✗'}\n`;
+  prompt += `- Strategy Inputs: ${phase1Completeness?.inputs ? '✓' : '✗'}\n`;
+  prompt += `- Baseline Metrics: ${phase1Completeness?.baselines ? '✓' : '✗'}\n\n`;
+  
+  // ============================================
+  // PHASE 2: Existing plans summary
+  // ============================================
+  prompt += `EXISTING STRATEGIC PLANS (${stats?.totalPlans || 0} total, ${stats?.activePlans || 0} active):\n`;
+  (existingPlans || []).slice(0, 5).forEach(p => {
     prompt += `- ${p.name_en}: ${p.vision_en?.substring(0, 100) || 'No vision'}... (Status: ${p.status})\n`;
   });
   
   // Coverage analysis
   prompt += `\nSECTOR COVERAGE:\n`;
-  prompt += `- Covered: ${stats.coveredSectorCount} sectors\n`;
-  prompt += `- Uncovered: ${stats.uncoveredSectorCount} sectors\n`;
-  if (uncoveredSectors.length > 0) {
+  prompt += `- Covered: ${stats?.coveredSectorCount || 0} sectors\n`;
+  prompt += `- Uncovered: ${stats?.uncoveredSectorCount || 0} sectors\n`;
+  if (uncoveredSectors?.length > 0) {
     prompt += `- Gaps: ${uncoveredSectors.map(s => s.name_en).join(', ')}\n`;
   }
   
   // Unresolved challenges
-  prompt += `\nUNRESOLVED CHALLENGES (${stats.unresolvedChallenges}):\n`;
-  unresolvedChallenges.slice(0, 5).forEach(c => {
+  prompt += `\nUNRESOLVED CHALLENGES (${stats?.unresolvedChallenges || 0}):\n`;
+  (unresolvedChallenges || []).slice(0, 5).forEach(c => {
     prompt += `- ${c.title_en} (Priority: ${c.priority || 'Not set'})\n`;
   });
   
+  // ============================================
+  // PHASE 1: Pre-Planning Insights
+  // ============================================
+  
   // PESTLE insights
-  if (pestleSummary.opportunities.length > 0 || pestleSummary.threats.length > 0) {
+  if (pestleSummary?.opportunities?.length > 0 || pestleSummary?.threats?.length > 0) {
     prompt += `\nENVIRONMENTAL FACTORS (PESTLE):\n`;
     prompt += `- Opportunities: ${pestleSummary.opportunities.length}\n`;
     prompt += `- Threats: ${pestleSummary.threats.length}\n`;
-    prompt += `- High Impact: ${pestleSummary.highImpact.length}\n`;
+    prompt += `- High Impact: ${pestleSummary.highImpact?.length || 0}\n`;
+    
+    // Add top opportunities
+    if (pestleSummary.opportunities.length > 0) {
+      prompt += `Top Opportunities:\n`;
+      pestleSummary.opportunities.slice(0, 3).forEach(o => {
+        prompt += `  - ${o.title_en}\n`;
+      });
+    }
+    
+    // Add top threats
+    if (pestleSummary.threats.length > 0) {
+      prompt += `Top Threats:\n`;
+      pestleSummary.threats.slice(0, 3).forEach(t => {
+        prompt += `  - ${t.title_en}\n`;
+      });
+    }
   }
   
   // SWOT insights
-  if (swotSummary.strengths.length > 0 || swotSummary.weaknesses.length > 0) {
+  if (swotSummary?.strengths?.length > 0 || swotSummary?.weaknesses?.length > 0) {
     prompt += `\nSWOT SUMMARY:\n`;
     prompt += `- Strengths: ${swotSummary.strengths.length} identified\n`;
     prompt += `- Weaknesses: ${swotSummary.weaknesses.length} identified\n`;
-    prompt += `- Opportunities: ${swotSummary.opportunities.length} identified\n`;
-    prompt += `- Threats: ${swotSummary.threats.length} identified\n`;
+    prompt += `- Opportunities: ${swotSummary.opportunities?.length || 0} identified\n`;
+    prompt += `- Threats: ${swotSummary.threats?.length || 0} identified\n`;
+    
+    // Add key strengths to build on
+    if (swotSummary.strengths.length > 0) {
+      prompt += `Key Strengths to Leverage:\n`;
+      swotSummary.strengths.slice(0, 3).forEach(s => {
+        prompt += `  - ${typeof s === 'string' ? s : s.text_en || JSON.stringify(s)}\n`;
+      });
+    }
+  }
+  
+  // Stakeholder insights
+  if (stakeholderSummary?.total > 0) {
+    prompt += `\nSTAKEHOLDER ANALYSIS:\n`;
+    prompt += `- Total Stakeholders Mapped: ${stakeholderSummary.total}\n`;
+    prompt += `- Key Players (High Power + High Interest): ${stakeholderSummary.keyPlayers?.length || 0}\n`;
+  }
+  
+  // Risk insights
+  if (riskSummary?.total > 0) {
+    prompt += `\nRISK ASSESSMENT:\n`;
+    prompt += `- Total Risks Identified: ${riskSummary.total}\n`;
+    prompt += `- High Risks: ${riskSummary.highRisk?.length || 0}\n`;
+    prompt += `- Medium Risks: ${riskSummary.mediumRisk?.length || 0}\n`;
+    
+    if (riskSummary.topRisks?.length > 0) {
+      prompt += `Top Risks to Address:\n`;
+      riskSummary.topRisks.slice(0, 3).forEach(r => {
+        prompt += `  - ${r.risk_title} (Score: ${r.risk_score})\n`;
+      });
+    }
+  }
+  
+  // Strategy inputs insights
+  if (inputsSummary?.total > 0) {
+    prompt += `\nSTAKEHOLDER INPUTS:\n`;
+    prompt += `- Total Inputs Collected: ${inputsSummary.total}\n`;
+    prompt += `- Positive Sentiment: ${inputsSummary.positive?.length || 0}\n`;
+    prompt += `- Negative Sentiment: ${inputsSummary.negative?.length || 0}\n`;
+    prompt += `- High Priority: ${inputsSummary.highPriority?.length || 0}\n`;
+    
+    // Common themes
+    const themes = Object.entries(inputsSummary.byTheme || {}).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    if (themes.length > 0) {
+      prompt += `Common Themes: ${themes.map(([t, c]) => `${t} (${c})`).join(', ')}\n`;
+    }
+  }
+  
+  // Baseline metrics
+  if (baselineSummary?.total > 0) {
+    prompt += `\nBASELINE METRICS:\n`;
+    prompt += `- KPIs with Baselines: ${baselineSummary.total}\n`;
+    prompt += `- KPIs with Targets: ${baselineSummary.withTargets?.length || 0}\n`;
+    
+    // Show key baseline gaps
+    const significantGaps = baselineSummary.gapAnalysis?.filter(g => g.gapPercent && Math.abs(g.gapPercent) > 20).slice(0, 3);
+    if (significantGaps?.length > 0) {
+      prompt += `Key Performance Gaps:\n`;
+      significantGaps.forEach(g => {
+        prompt += `  - ${g.kpi}: ${g.baseline} → ${g.target} (${g.gapPercent > 0 ? '+' : ''}${g.gapPercent}%)\n`;
+      });
+    }
   }
   
   // Identified gaps
-  if (gaps.length > 0) {
-    prompt += `\nIDENTIFIED GAPS:\n`;
+  if (gaps?.length > 0) {
+    prompt += `\nIDENTIFIED STRATEGIC GAPS:\n`;
     gaps.forEach(g => {
       prompt += `- [${g.severity.toUpperCase()}] ${g.title}: ${g.description}\n`;
     });
   }
   
-  prompt += `\nREQUIREMENTS:\n`;
+  // Requirements
+  prompt += `\n${'='.repeat(50)}\n`;
+  prompt += `REQUIREMENTS FOR NEW STRATEGIC PLAN:\n`;
   prompt += `1. Address the identified gaps above\n`;
   prompt += `2. Avoid duplicating existing plan objectives\n`;
-  prompt += `3. Focus on uncovered sectors: ${uncoveredSectors.map(s => s.name_en).join(', ') || 'None'}\n`;
+  prompt += `3. Focus on uncovered sectors: ${uncoveredSectors?.map(s => s.name_en).join(', ') || 'None identified'}\n`;
   prompt += `4. Build on existing strengths from SWOT analysis\n`;
-  prompt += `5. Consider PESTLE opportunities and threats\n`;
+  prompt += `5. Consider PESTLE opportunities and mitigate threats\n`;
+  prompt += `6. Address high-priority stakeholder inputs\n`;
+  prompt += `7. Include mitigation strategies for high-risk items\n`;
+  prompt += `8. Set objectives that close baseline metric gaps\n`;
   
   return prompt;
 }
