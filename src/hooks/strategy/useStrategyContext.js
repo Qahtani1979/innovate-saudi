@@ -34,8 +34,7 @@ export function useStrategyContext(strategicPlanId = null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('strategic_plans')
-        .select('id, name_en, name_ar, vision_en, vision_ar, status, pillars, objectives, sector_id, municipality_id, created_at')
-        .eq('is_deleted', false)
+        .select('id, name_en, name_ar, vision_en, vision_ar, status, pillars, objectives, municipality_id, created_at')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
@@ -82,8 +81,7 @@ export function useStrategyContext(strategicPlanId = null) {
     queryFn: async () => {
       let query = supabase
         .from('environmental_factors')
-        .select('id, category, title_en, title_ar, description_en, impact_type, impact_level, trend, strategic_plan_id')
-        .eq('is_deleted', false);
+        .select('id, category, title_en, title_ar, description_en, impact_type, impact_level, trend, strategic_plan_id');
       
       if (strategicPlanId) {
         query = query.eq('strategic_plan_id', strategicPlanId);
@@ -96,19 +94,19 @@ export function useStrategyContext(strategicPlanId = null) {
     staleTime: 30000,
   });
 
-  // Fetch SWOT analyses
+  // Fetch SWOT analyses - table uses quadrant/title_en structure, not strengths/weaknesses arrays
   const { data: swotAnalyses = [], isLoading: swotLoading } = useQuery({
     queryKey: ['strategy-context-swot', strategicPlanId],
     queryFn: async () => {
       let query = supabase
         .from('swot_analyses')
-        .select('id, strengths, weaknesses, opportunities, threats, strategic_plan_id, created_at');
+        .select('id, quadrant, title_en, title_ar, description_en, description_ar, impact_level, priority, strategic_plan_id, created_at');
       
       if (strategicPlanId) {
         query = query.eq('strategic_plan_id', strategicPlanId);
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false }).limit(5);
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
       if (error && error.code !== 'PGRST116') throw error;
       return data || [];
     },
@@ -121,7 +119,7 @@ export function useStrategyContext(strategicPlanId = null) {
     queryFn: async () => {
       let query = supabase
         .from('stakeholder_analyses')
-        .select('id, stakeholder_name, stakeholder_type, power_level, interest_level, influence_strategy, strategic_plan_id');
+        .select('id, stakeholder_name_en, stakeholder_name_ar, stakeholder_type, power_level, interest_level, engagement_strategy, strategic_plan_id');
       
       if (strategicPlanId) {
         query = query.eq('strategic_plan_id', strategicPlanId);
@@ -140,15 +138,21 @@ export function useStrategyContext(strategicPlanId = null) {
     queryFn: async () => {
       let query = supabase
         .from('strategy_risks')
-        .select('id, risk_title, risk_category, probability, impact, risk_score, mitigation_strategy, strategic_plan_id');
+        .select('id, name_en, name_ar, category, probability, impact, mitigation_strategy, strategic_plan_id');
       
       if (strategicPlanId) {
         query = query.eq('strategic_plan_id', strategicPlanId);
       }
       
-      const { data, error } = await query.order('risk_score', { ascending: false }).limit(50);
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
       if (error && error.code !== 'PGRST116') throw error;
-      return data || [];
+      // Add computed risk_score
+      return (data || []).map(r => ({
+        ...r,
+        risk_score: (r.probability || 0) * (r.impact || 0),
+        risk_title: r.name_en,
+        risk_category: r.category
+      }));
     },
     staleTime: 30000,
   });
@@ -159,7 +163,7 @@ export function useStrategyContext(strategicPlanId = null) {
     queryFn: async () => {
       let query = supabase
         .from('strategy_inputs')
-        .select('id, source_type, source_name, input_text, theme, sentiment, priority, strategic_plan_id');
+        .select('id, source_type, source_name, input_text, theme, sentiment, priority_votes, strategic_plan_id');
       
       if (strategicPlanId) {
         query = query.eq('strategic_plan_id', strategicPlanId);
@@ -167,7 +171,8 @@ export function useStrategyContext(strategicPlanId = null) {
       
       const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
       if (error && error.code !== 'PGRST116') throw error;
-      return data || [];
+      // Map priority_votes to priority for compatibility
+      return (data || []).map(d => ({ ...d, priority: d.priority_votes > 5 ? 'high' : d.priority_votes > 2 ? 'medium' : 'low' }));
     },
     staleTime: 30000,
   });
@@ -178,7 +183,7 @@ export function useStrategyContext(strategicPlanId = null) {
     queryFn: async () => {
       let query = supabase
         .from('strategy_baselines')
-        .select('id, kpi_name, kpi_category, baseline_value, target_value, unit, measurement_date, strategic_plan_id');
+        .select('id, kpi_name_en, kpi_name_ar, category, baseline_value, target_value, unit, collection_date, strategic_plan_id');
       
       if (strategicPlanId) {
         query = query.eq('strategic_plan_id', strategicPlanId);
@@ -186,7 +191,8 @@ export function useStrategyContext(strategicPlanId = null) {
       
       const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
       if (error && error.code !== 'PGRST116') throw error;
-      return data || [];
+      // Map for compatibility
+      return (data || []).map(d => ({ ...d, kpi_name: d.kpi_name_en, kpi_category: d.category, measurement_date: d.collection_date }));
     },
     staleTime: 30000,
   });
@@ -215,10 +221,11 @@ export function useStrategyContext(strategicPlanId = null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('pilots')
-        .select('id, name_en, sector_id, status, challenge_id')
+        .select('id, title_en, title_ar, sector, stage, challenge_id')
         .eq('is_deleted', false);
       if (error) throw error;
-      return data || [];
+      // Map for compatibility
+      return (data || []).map(p => ({ ...p, name_en: p.title_en, status: p.stage }));
     },
     staleTime: 30000,
   });
@@ -273,12 +280,12 @@ export function useStrategyContext(strategicPlanId = null) {
       }, {})
     };
 
-    // SWOT summary (combine all analyses)
+    // SWOT summary (group by quadrant)
     const swotSummary = {
-      strengths: swotAnalyses.flatMap(s => s.strengths || []),
-      weaknesses: swotAnalyses.flatMap(s => s.weaknesses || []),
-      opportunities: swotAnalyses.flatMap(s => s.opportunities || []),
-      threats: swotAnalyses.flatMap(s => s.threats || [])
+      strengths: swotAnalyses.filter(s => s.quadrant === 'strengths'),
+      weaknesses: swotAnalyses.filter(s => s.quadrant === 'weaknesses'),
+      opportunities: swotAnalyses.filter(s => s.quadrant === 'opportunities'),
+      threats: swotAnalyses.filter(s => s.quadrant === 'threats')
     };
 
     // Identify gaps
