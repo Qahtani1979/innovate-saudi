@@ -1,8 +1,8 @@
 # Strategy System Inventory
 
-> **Version:** 1.0  
+> **Version:** 1.1  
 > **Last Updated:** 2025-01-14  
-> **Total Assets:** 102 files (17 pages, 55 components, 30 hooks)
+> **Total Assets:** 103 files (18 pages, 55 components, 30 hooks)
 
 ---
 
@@ -18,6 +18,7 @@ The Strategy System is the core strategic planning and execution framework that 
 
 | Page | File | Route | Description |
 |------|------|-------|-------------|
+| **Strategy Hub** | `StrategyHub.jsx` | `/strategy-hub` | **Central command center** - tabbed dashboard with workflow, cascade, governance, AI tools |
 | Strategy Cockpit | `StrategyCockpit.jsx` | `/strategy-cockpit` | Main strategic dashboard with portfolio overview |
 | Strategy Drill-Down | `StrategyDrillDown.jsx` | `/strategy-drill-down` | Detailed strategic plan analysis |
 | Strategy Alignment | `StrategyAlignment.jsx` | `/strategy-alignment` | Cross-entity alignment visualization |
