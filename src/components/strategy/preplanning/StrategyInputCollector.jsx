@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useStrategyInputs } from '@/hooks/strategy/useStrategyInputs';
 import { 
   MessageSquare, 
   Plus, 
@@ -32,9 +33,19 @@ import {
   Send
 } from 'lucide-react';
 
-const StrategyInputCollector = ({ onSave }) => {
+const StrategyInputCollector = ({ strategicPlanId, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
+  
+  // Database integration hook
+  const { 
+    inputs: dbInputs, 
+    loading: dbLoading, 
+    saving: dbSaving, 
+    saveInput: saveToDb,
+    voteOnInput,
+    deleteInput: deleteFromDb 
+  } = useStrategyInputs(strategicPlanId);
 
   const sourceTypes = [
     { id: 'municipality', label: { en: 'Municipality', ar: 'البلدية' }, icon: Building2, color: 'bg-blue-500' },
@@ -44,52 +55,14 @@ const StrategyInputCollector = ({ onSave }) => {
     { id: 'stakeholder', label: { en: 'Stakeholder', ar: 'أصحاب المصلحة' }, icon: Users, color: 'bg-red-500' }
   ];
 
-  const [inputs, setInputs] = useState([
-    {
-      id: '1',
-      source_type: 'municipality',
-      source_name: 'Riyadh Municipality',
-      input_text: 'Need better integration between challenge management and pilot tracking systems',
-      theme: 'Digital Integration',
-      sentiment: 'neutral',
-      priority_votes: 15,
-      ai_extracted_themes: ['Digital Transformation', 'System Integration', 'Process Improvement'],
-      created_at: '2024-01-15'
-    },
-    {
-      id: '2',
-      source_type: 'citizen',
-      source_name: 'Public Feedback',
-      input_text: 'Municipal services should be accessible through a single mobile app',
-      theme: 'Service Delivery',
-      sentiment: 'positive',
-      priority_votes: 28,
-      ai_extracted_themes: ['Mobile Services', 'User Experience', 'Accessibility'],
-      created_at: '2024-01-18'
-    },
-    {
-      id: '3',
-      source_type: 'expert',
-      source_name: 'Dr. Ahmed Al-Rashid',
-      input_text: 'Innovation metrics should include sustainability and long-term impact measures',
-      theme: 'Performance Measurement',
-      sentiment: 'positive',
-      priority_votes: 22,
-      ai_extracted_themes: ['KPIs', 'Sustainability', 'Impact Assessment'],
-      created_at: '2024-01-20'
-    },
-    {
-      id: '4',
-      source_type: 'department',
-      source_name: 'IT Department',
-      input_text: 'Legacy systems are creating bottlenecks in data sharing between departments',
-      theme: 'Technical Infrastructure',
-      sentiment: 'negative',
-      priority_votes: 19,
-      ai_extracted_themes: ['Legacy Systems', 'Data Sharing', 'Infrastructure'],
-      created_at: '2024-01-22'
+  const [inputs, setInputs] = useState([]);
+
+  // Sync with database data when loaded
+  useEffect(() => {
+    if (dbInputs && !dbLoading && dbInputs.length > 0) {
+      setInputs(dbInputs);
     }
-  ]);
+  }, [dbInputs, dbLoading]);
 
   const [editingInput, setEditingInput] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -118,7 +91,7 @@ const StrategyInputCollector = ({ onSave }) => {
     setIsDialogOpen(true);
   };
 
-  const handleSaveInput = () => {
+  const handleSaveInput = async () => {
     const newInput = {
       id: editingInput?.id || `input-${Date.now()}`,
       ...formData,
@@ -127,31 +100,31 @@ const StrategyInputCollector = ({ onSave }) => {
       created_at: editingInput?.created_at || new Date().toISOString().split('T')[0]
     };
 
-    if (editingInput) {
-      setInputs(prev => prev.map(i => i.id === editingInput.id ? newInput : i));
-      toast({
-        title: t({ en: 'Input Updated', ar: 'تم تحديث المدخل' }),
-        description: t({ en: 'Strategy input updated successfully.', ar: 'تم تحديث المدخل الاستراتيجي بنجاح.' })
-      });
-    } else {
-      setInputs(prev => [...prev, newInput]);
-      toast({
-        title: t({ en: 'Input Added', ar: 'تمت إضافة المدخل' }),
-        description: t({ en: 'New strategy input collected.', ar: 'تم جمع مدخل استراتيجي جديد.' })
+    // Save to database
+    const result = await saveToDb(newInput);
+    if (result) {
+      setInputs(prev => {
+        const existingIndex = prev.findIndex(i => i.id === result.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = result;
+          return updated;
+        }
+        return [...prev, result];
       });
     }
     setIsDialogOpen(false);
   };
 
-  const handleDeleteInput = (id) => {
-    setInputs(prev => prev.filter(i => i.id !== id));
-    toast({
-      title: t({ en: 'Input Deleted', ar: 'تم حذف المدخل' }),
-      description: t({ en: 'Strategy input removed.', ar: 'تم إزالة المدخل الاستراتيجي.' })
-    });
+  const handleDeleteInput = async (id) => {
+    const success = await deleteFromDb(id);
+    if (success) {
+      setInputs(prev => prev.filter(i => i.id !== id));
+    }
   };
 
-  const handleVote = (id, direction) => {
+  const handleVote = async (id, direction) => {
+    await voteOnInput(id, direction);
     setInputs(prev => prev.map(i => 
       i.id === id 
         ? { ...i, priority_votes: i.priority_votes + (direction === 'up' ? 1 : -1) }

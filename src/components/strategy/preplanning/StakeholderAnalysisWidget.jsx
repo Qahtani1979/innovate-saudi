@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useStakeholderAnalysis } from '@/hooks/strategy/useStakeholderAnalysis';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -374,31 +375,78 @@ export default function StakeholderAnalysisWidget({
   const { language, t } = useLanguage();
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
   
+  // Database integration hook
+  const { 
+    stakeholders: dbStakeholders, 
+    loading: dbLoading, 
+    saving: dbSaving, 
+    saveStakeholder: saveToDb,
+    deleteStakeholder: deleteFromDb 
+  } = useStakeholderAnalysis(strategicPlanId);
+  
   const [stakeholders, setStakeholders] = useState(initialData?.stakeholders || []);
   const [dialogState, setDialogState] = useState({ open: false, stakeholder: null });
   const [selectedStakeholder, setSelectedStakeholder] = useState(null);
   const [contextInput, setContextInput] = useState('');
 
-  // Handle add/edit stakeholder
-  const handleSaveStakeholder = useCallback((stakeholder) => {
-    setStakeholders(prev => {
-      const existingIndex = prev.findIndex(s => s.id === stakeholder.id);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = stakeholder;
-        return updated;
-      }
-      return [...prev, stakeholder];
-    });
-    toast.success(t({ en: 'Stakeholder saved', ar: 'تم حفظ أصحاب المصلحة' }));
-  }, [t]);
+  // Sync with database data when loaded
+  useEffect(() => {
+    if (dbStakeholders && !dbLoading && dbStakeholders.length > 0) {
+      // Map database fields to component fields
+      const mapped = dbStakeholders.map(s => ({
+        id: s.id,
+        name_en: s.name_en,
+        name_ar: s.name_ar,
+        type: s.stakeholder_type,
+        power: s.power_level,
+        interest: s.interest_level,
+        influence: s.influence_description,
+        expectations: s.expectations,
+        engagement_strategy: s.engagement_strategy,
+        contact_info: s.contact_info
+      }));
+      setStakeholders(mapped);
+    }
+  }, [dbStakeholders, dbLoading]);
 
-  // Handle delete
-  const handleDeleteStakeholder = useCallback((id) => {
-    setStakeholders(prev => prev.filter(s => s.id !== id));
-    setSelectedStakeholder(null);
-    toast.success(t({ en: 'Stakeholder deleted', ar: 'تم حذف أصحاب المصلحة' }));
-  }, [t]);
+  // Handle add/edit stakeholder with database save
+  const handleSaveStakeholder = useCallback(async (stakeholder) => {
+    // Save to database
+    const result = await saveToDb(stakeholder);
+    if (result) {
+      // Update local state with returned data
+      setStakeholders(prev => {
+        const mapped = {
+          id: result.id,
+          name_en: result.name_en,
+          name_ar: result.name_ar,
+          type: result.stakeholder_type,
+          power: result.power_level,
+          interest: result.interest_level,
+          influence: result.influence_description,
+          expectations: result.expectations,
+          engagement_strategy: result.engagement_strategy,
+          contact_info: result.contact_info
+        };
+        const existingIndex = prev.findIndex(s => s.id === result.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = mapped;
+          return updated;
+        }
+        return [...prev, mapped];
+      });
+    }
+  }, [saveToDb]);
+
+  // Handle delete with database delete
+  const handleDeleteStakeholder = useCallback(async (id) => {
+    const success = await deleteFromDb(id);
+    if (success) {
+      setStakeholders(prev => prev.filter(s => s.id !== id));
+      setSelectedStakeholder(null);
+    }
+  }, [deleteFromDb]);
 
   // Generate AI suggestions
   const generateAISuggestions = async () => {

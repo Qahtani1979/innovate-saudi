@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useSwotAnalysis } from '@/hooks/strategy/useSwotAnalysis';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -326,6 +327,15 @@ export default function SWOTAnalysisBuilder({
   const { language, t } = useLanguage();
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
   
+  // Database integration hook
+  const { 
+    swotData: dbSwotData, 
+    setSwotData: setDbSwotData,
+    loading: dbLoading, 
+    saving: dbSaving, 
+    saveSwotAnalysis 
+  } = useSwotAnalysis(strategicPlanId);
+  
   const [swotData, setSwotData] = useState(initialData || {
     strengths: [],
     weaknesses: [],
@@ -338,9 +348,24 @@ export default function SWOTAnalysisBuilder({
     }
   });
   
+  // Sync with database data when loaded
+  useEffect(() => {
+    if (dbSwotData && !dbLoading && (dbSwotData.strengths?.length > 0 || dbSwotData.weaknesses?.length > 0 || dbSwotData.opportunities?.length > 0 || dbSwotData.threats?.length > 0)) {
+      setSwotData(dbSwotData);
+    }
+  }, [dbSwotData, dbLoading]);
+  
   const [dialogState, setDialogState] = useState({ open: false, category: null, item: null });
   const [contextInput, setContextInput] = useState('');
   const [activeView, setActiveView] = useState('grid');
+  
+  // Save to database
+  const handleSaveToDatabase = useCallback(async () => {
+    const success = await saveSwotAnalysis(swotData);
+    if (success && onSave) {
+      onSave(swotData);
+    }
+  }, [swotData, saveSwotAnalysis, onSave]);
 
   // Add item to category
   const handleAddItem = useCallback((category) => {

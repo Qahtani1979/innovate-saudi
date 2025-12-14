@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';
 import { 
   Globe, 
   Plus, 
@@ -34,9 +35,18 @@ import {
   Search
 } from 'lucide-react';
 
-const EnvironmentalScanWidget = ({ onSave }) => {
+const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
+  
+  // Database integration hook
+  const { 
+    factors: dbFactors, 
+    loading: dbLoading, 
+    saving: dbSaving, 
+    saveFactor: saveToDb,
+    deleteFactor: deleteFromDb 
+  } = useEnvironmentalFactors(strategicPlanId);
   
   const pestleCategories = [
     { id: 'political', label: { en: 'Political', ar: 'سياسي' }, icon: Building2, color: 'bg-red-500' },
@@ -47,73 +57,14 @@ const EnvironmentalScanWidget = ({ onSave }) => {
     { id: 'environmental', label: { en: 'Environmental', ar: 'بيئي' }, icon: Leaf, color: 'bg-emerald-500' }
   ];
 
-  const [factors, setFactors] = useState([
-    {
-      id: '1',
-      category: 'political',
-      title_en: 'Vision 2030 Digital Transformation Push',
-      title_ar: 'دفع التحول الرقمي في رؤية 2030',
-      description_en: 'Strong government commitment to digital transformation and smart city initiatives',
-      description_ar: 'التزام حكومي قوي بالتحول الرقمي ومبادرات المدن الذكية',
-      impact_type: 'opportunity',
-      impact_level: 'high',
-      trend: 'increasing',
-      source: 'Government Policy',
-      date_identified: '2024-01-15'
-    },
-    {
-      id: '2',
-      category: 'economic',
-      title_en: 'Increased Innovation Budget Allocation',
-      title_ar: 'زيادة مخصصات ميزانية الابتكار',
-      description_en: 'Municipal innovation budgets increased by 25% in the current fiscal year',
-      description_ar: 'زادت ميزانيات الابتكار البلدية بنسبة 25٪ في السنة المالية الحالية',
-      impact_type: 'opportunity',
-      impact_level: 'high',
-      trend: 'increasing',
-      source: 'Budget Report 2024',
-      date_identified: '2024-02-01'
-    },
-    {
-      id: '3',
-      category: 'technological',
-      title_en: 'AI and Machine Learning Adoption',
-      title_ar: 'اعتماد الذكاء الاصطناعي والتعلم الآلي',
-      description_en: 'Rapid advancement in AI tools enabling new service delivery models',
-      description_ar: 'تقدم سريع في أدوات الذكاء الاصطناعي تمكن نماذج جديدة لتقديم الخدمات',
-      impact_type: 'opportunity',
-      impact_level: 'high',
-      trend: 'increasing',
-      source: 'Tech Trends Report',
-      date_identified: '2024-01-20'
-    },
-    {
-      id: '4',
-      category: 'social',
-      title_en: 'Rising Citizen Expectations',
-      title_ar: 'ارتفاع توقعات المواطنين',
-      description_en: 'Citizens expect digital-first services comparable to private sector',
-      description_ar: 'يتوقع المواطنون خدمات رقمية أولاً مماثلة للقطاع الخاص',
-      impact_type: 'threat',
-      impact_level: 'medium',
-      trend: 'increasing',
-      source: 'Citizen Survey 2024',
-      date_identified: '2024-03-01'
-    },
-    {
-      id: '5',
-      category: 'legal',
-      title_en: 'New Data Protection Regulations',
-      title_ar: 'لوائح حماية البيانات الجديدة',
-      description_en: 'Stricter data privacy laws requiring compliance updates',
-      description_ar: 'قوانين خصوصية بيانات أكثر صرامة تتطلب تحديثات الامتثال',
-      impact_type: 'threat',
-      impact_level: 'medium',
-      trend: 'stable',
-      source: 'Regulatory Updates',
-      date_identified: '2024-02-15'
+  const [factors, setFactors] = useState([]);
+
+  // Sync with database data when loaded
+  useEffect(() => {
+    if (dbFactors && !dbLoading && dbFactors.length > 0) {
+      setFactors(dbFactors);
     }
-  ]);
+  }, [dbFactors, dbLoading]);
 
   const [editingFactor, setEditingFactor] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -155,35 +106,34 @@ const EnvironmentalScanWidget = ({ onSave }) => {
     setIsDialogOpen(true);
   };
 
-  const handleSaveFactor = () => {
+  const handleSaveFactor = async () => {
     const newFactor = {
       id: editingFactor?.id || `factor-${Date.now()}`,
       ...formData,
       date_identified: editingFactor?.date_identified || new Date().toISOString().split('T')[0]
     };
 
-    if (editingFactor) {
-      setFactors(prev => prev.map(f => f.id === editingFactor.id ? newFactor : f));
-      toast({
-        title: t({ en: 'Factor Updated', ar: 'تم تحديث العامل' }),
-        description: t({ en: 'Environmental factor updated successfully.', ar: 'تم تحديث العامل البيئي بنجاح.' })
-      });
-    } else {
-      setFactors(prev => [...prev, newFactor]);
-      toast({
-        title: t({ en: 'Factor Added', ar: 'تمت إضافة العامل' }),
-        description: t({ en: 'New environmental factor added.', ar: 'تمت إضافة عامل بيئي جديد.' })
+    // Save to database
+    const result = await saveToDb(newFactor);
+    if (result) {
+      setFactors(prev => {
+        const existingIndex = prev.findIndex(f => f.id === result.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = result;
+          return updated;
+        }
+        return [...prev, result];
       });
     }
     setIsDialogOpen(false);
   };
 
-  const handleDeleteFactor = (id) => {
-    setFactors(prev => prev.filter(f => f.id !== id));
-    toast({
-      title: t({ en: 'Factor Deleted', ar: 'تم حذف العامل' }),
-      description: t({ en: 'Environmental factor removed.', ar: 'تم إزالة العامل البيئي.' })
-    });
+  const handleDeleteFactor = async (id) => {
+    const success = await deleteFromDb(id);
+    if (success) {
+      setFactors(prev => prev.filter(f => f.id !== id));
+    }
   };
 
   const handleAIGenerate = async () => {
