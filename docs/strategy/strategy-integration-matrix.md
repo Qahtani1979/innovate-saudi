@@ -1,8 +1,8 @@
 # Strategy System - Integration Matrix
 
-**Last Updated:** 2025-12-14 (IMPLEMENTATION PATTERNS UPDATE)  
+**Last Updated:** 2025-12-14 (APPROVAL WORKFLOW DOCUMENTATION)  
 **Status:** ✅ Platform Integration 100% | ✅ Database Integration 95% | 🟡 Overall 85%  
-**Section E Added:** Complete implementation patterns and I/O specifications
+**Section F Added:** Complete strategy-derived entity approval workflow and unified approval system integration
 
 ---
 
@@ -731,7 +731,272 @@ Strategic Plan KPI: "Reduce service time by 30%"
 
 ---
 
-## SECTION F: TECHNICAL INTEGRATION DETAILS
+## SECTION F: STRATEGY-DERIVED ENTITY APPROVAL WORKFLOW
+
+This section documents how strategy-derived entities flow from AI generation → draft queues → approval → active records, integrating with the Unified Approval System.
+
+### F.1 Lifecycle Overview
+
+```mermaid
+flowchart TD
+    subgraph GENERATION["Phase 1: AI Generation"]
+        SP[Strategic Plan] --> GEN[Cascade Generator]
+        GEN --> |AI Creates| DRAFT[Draft Entity]
+    end
+    
+    subgraph DRAFT_STATE["Phase 2: Draft Queue"]
+        DRAFT --> |status: 'draft'| QUEUE[Entity List/Queue]
+        QUEUE --> |User Reviews| EDIT[Edit & Refine]
+        EDIT --> SUBMIT[Submit for Approval]
+    end
+    
+    subgraph APPROVAL["Phase 3: Unified Approval System"]
+        SUBMIT --> |Creates| AR[ApprovalRequest Record]
+        AR --> |Appears in| AC[ApprovalCenter Queue]
+        AC --> |Reviewer| DECISION{Decision}
+        DECISION --> |Approved| APPROVED[approved]
+        DECISION --> |Rejected| REJECTED[rejected]
+        DECISION --> |Conditional| COND[conditional]
+    end
+    
+    subgraph ACTIVE["Phase 4: Execution"]
+        APPROVED --> |status update| ACTIVE_ENT[Active Entity]
+        ACTIVE_ENT --> |Lifecycle| PROGRESS[In Progress → Completed]
+        PROGRESS --> |KPI Data| FEEDBACK[Strategy Feedback Loop]
+    end
+```
+
+### F.2 Draft Entity Creation
+
+When a cascade generator creates an entity, it sets these fields:
+
+| Field | Value | Purpose |
+|-------|-------|---------|
+| `status` | `'draft'` | Marks as pending review |
+| `is_strategy_derived` | `true` | Flags as AI-generated from strategy |
+| `strategy_derivation_date` | `now()` | Timestamp of generation |
+| `strategic_plan_ids[]` | `[selected_plan_id]` | Links back to source plan |
+| `strategic_objective_ids[]` | `[objective_ids]` | Links to specific objectives |
+| `created_by` | `current_user.email` | Tracks who generated it |
+
+**Example - Program Creation:**
+```javascript
+await supabase.from('programs').insert({
+  title_en: aiGeneratedContent.title_en,
+  title_ar: aiGeneratedContent.title_ar,
+  description_en: aiGeneratedContent.description,
+  status: 'draft',                           // ← Draft status
+  is_strategy_derived: true,                 // ← Strategy flag
+  strategy_derivation_date: new Date().toISOString(),
+  strategic_plan_ids: [selectedPlanId],
+  strategic_objective_ids: [objectiveId],
+  created_by: user.email
+});
+```
+
+### F.3 Where Drafts Appear
+
+Strategy-derived drafts appear in multiple locations:
+
+| Location | What Shows | User Action |
+|----------|------------|-------------|
+| **Entity List Page** (e.g., /programs) | All entities including drafts with "Draft" badge | Filter by status, click to edit |
+| **Entity Detail Page** | Full entity with Workflow & Approval Tab | Edit content, submit for approval |
+| **ApprovalCenter** | Only entities WITH `ApprovalRequest` created | Review and decide |
+| **My Tasks** | Assigned drafts for review | Quick access to assigned items |
+| **Strategy Cascade Dashboard** | Entities linked to each plan | Monitor derivation coverage |
+
+### F.4 Making Drafts Actionable
+
+A draft becomes actionable when the user clicks "Submit for Approval" in the entity detail page:
+
+**Step 1: User Triggers Submission**
+```jsx
+// In UnifiedWorkflowApprovalTab.jsx
+const handleSubmitForApproval = async (gateName) => {
+  await supabase.from('approval_requests').insert({
+    entity_type: 'program',              // Type of entity
+    entity_id: entityId,                 // UUID of the entity
+    gate_name: gateName,                 // e.g., 'initial_review', 'budget_approval'
+    gate_type: 'review',                 
+    workflow_stage: entityData.status,   // Current status (draft)
+    requester_email: currentUser.email,
+    status: 'pending',                   // ← Triggers appearance in ApprovalCenter
+    sla_due_date: calculateSLA(3),       // 3-day SLA
+    priority: 'medium'
+  });
+};
+```
+
+**Step 2: ApprovalRequest Record Created**
+
+| Column | Value | Purpose |
+|--------|-------|---------|
+| `id` | UUID | Unique identifier |
+| `entity_type` | `'program'` | Links to entity table |
+| `entity_id` | UUID | Links to specific record |
+| `request_type` | `'initial_review'` | Type of approval needed |
+| `requester_email` | `user@gov.sa` | Who submitted |
+| `approval_status` | `'pending'` | Queue status |
+| `sla_due_date` | `timestamp` | Deadline for review |
+| `escalation_level` | `0` | Auto-increments if overdue |
+| `metadata` | JSON | Additional context |
+
+### F.5 ApprovalCenter Integration
+
+The ApprovalCenter (`/ApprovalCenter`) fetches all pending requests:
+
+```javascript
+// Fetch program approvals
+const { data: programApprovals } = useQuery({
+  queryKey: ['program-entity-approvals'],
+  queryFn: async () => {
+    const approvals = await supabase
+      .from('approval_requests')
+      .select('*')
+      .eq('entity_type', 'program')
+      .in('approval_status', ['pending', 'under_review']);
+    
+    // Join with entity data for display
+    const programs = await supabase.from('programs').select('*');
+    return approvals.map(a => ({ 
+      ...a, 
+      programData: programs.find(p => p.id === a.entity_id) 
+    }));
+  }
+});
+```
+
+**ApprovalCenter Tabs by Entity Type:**
+- Challenges, Pilots, Programs, Solutions
+- R&D Proposals, Program Applications
+- Events, Citizen Ideas, Innovation Proposals
+- Policy Recommendations
+
+### F.6 Reviewer Decision Flow
+
+When a reviewer makes a decision via `InlineApprovalWizard`:
+
+```javascript
+const handleDecision = async (decision) => {
+  // 1. Update ApprovalRequest status
+  await supabase.from('approval_requests').update({
+    approval_status: decision,         // 'approved', 'rejected', 'conditional'
+    approver_email: currentUser.email,
+    approved_at: new Date().toISOString(),
+    rejection_reason: decision === 'rejected' ? comments : null
+  }).eq('id', approvalRequest.id);
+
+  // 2. Trigger email notification
+  await triggerEmail(`approval.${decision}`, {
+    entityType: 'program',
+    entityId: approvalRequest.entity_id,
+    recipientEmail: approvalRequest.requester_email,
+    variables: { decision, comments }
+  });
+
+  // 3. Optionally update entity status
+  if (decision === 'approved') {
+    await supabase.from('programs').update({
+      status: 'approved',              // ← Entity becomes active
+      approval_date: new Date().toISOString(),
+      approved_by: currentUser.email
+    }).eq('id', approvalRequest.entity_id);
+  }
+};
+```
+
+### F.7 Status Transition Matrix
+
+| Initial Status | Action | ApprovalRequest Status | Entity Status | What Happens |
+|----------------|--------|------------------------|---------------|--------------|
+| `draft` | Submit for Approval | `pending` | `draft` | Appears in ApprovalCenter |
+| `draft` | Reviewer Approves | `approved` | `approved` | Entity becomes active |
+| `draft` | Reviewer Rejects | `rejected` | `draft` (or `rejected`) | Requester notified, can edit & resubmit |
+| `draft` | Conditional Approval | `conditional` | `pending_conditions` | Must satisfy conditions |
+| `approved` | Next Gate Triggered | New `pending` | `approved` | Multi-gate workflow continues |
+| `approved` | Implementation Starts | N/A | `in_progress` | Entity enters execution phase |
+
+### F.8 Multi-Gate Approval Workflows
+
+Some entities require multiple approval gates:
+
+**Example: Program (4 Gates)**
+```
+Gate 1: initial_review     → Policy Officer
+Gate 2: budget_approval    → Finance Officer
+Gate 3: legal_review       → Legal Counsel
+Gate 4: executive_approval → Deputy Minister
+```
+
+Each gate creates a separate `ApprovalRequest` record. The entity only becomes fully `approved` when all required gates are cleared.
+
+```mermaid
+flowchart LR
+    DRAFT[Draft] --> G1[Gate 1: Initial Review]
+    G1 --> |Approved| G2[Gate 2: Budget]
+    G2 --> |Approved| G3[Gate 3: Legal]
+    G3 --> |Approved| G4[Gate 4: Executive]
+    G4 --> |Approved| ACTIVE[Approved & Active]
+    
+    G1 --> |Rejected| DRAFT
+    G2 --> |Rejected| DRAFT
+    G3 --> |Rejected| DRAFT
+    G4 --> |Rejected| DRAFT
+```
+
+### F.9 Visibility in Entity Lists
+
+After approval, the entity appears normally in lists:
+
+| Entity State | Badge Shown | Filter Status | Visible To |
+|--------------|-------------|---------------|------------|
+| Draft (new) | "Draft" | `status=draft` | Creator only |
+| Pending Approval | "Pending Approval" | `status=draft` + has ApprovalRequest | Creator + Reviewers |
+| Approved | "Active" / None | `status=approved` | Everyone |
+| In Progress | "In Progress" | `status=in_progress` | Everyone |
+| Completed | "Completed" | `status=completed` | Everyone |
+
+### F.10 Strategy Derivation Tracking
+
+Strategy-derived entities are trackable through:
+
+1. **Entity Detail Page** - Shows "Strategy Derived" badge with link to source plan
+2. **Strategy Cascade Dashboard** - Lists all entities derived from each plan
+3. **Objective Coverage Report** - Shows which objectives have derived entities
+4. **Strategy Feedback Dashboard** - Aggregates KPI contributions from all derived entities
+
+**Query to Find All Strategy-Derived Entities:**
+```sql
+-- All programs derived from strategy
+SELECT * FROM programs 
+WHERE is_strategy_derived = true
+  AND status = 'approved';
+
+-- Programs linked to specific plan
+SELECT * FROM programs
+WHERE 'plan-uuid' = ANY(strategic_plan_ids)
+  AND status != 'draft';
+```
+
+### F.11 Workflow Configuration by Entity Type
+
+| Entity | Gates Required | Auto-Submit | SLA Days | Escalation |
+|--------|----------------|-------------|----------|------------|
+| Program | 4 | No | 3 per gate | Level +1 after SLA |
+| Challenge | 4 | No | 5 | Level +1 after SLA |
+| Pilot | 4 | No | 5 | Level +1 after SLA |
+| Solution | 3 | No | 3 | Level +1 after SLA |
+| Event | 2 | Yes (if budget < threshold) | 2 | Level +1 after SLA |
+| Partnership | 3 | No | 5 | Level +1 after SLA |
+| Living Lab | 2 | No | 5 | Level +1 after SLA |
+| Sandbox | 2 | No | 3 | Level +1 after SLA |
+| Policy Document | 4 | No | 7 | Level +1 after SLA |
+| Campaign | 1 | Yes (for small campaigns) | 1 | None |
+
+---
+
+## SECTION G: TECHNICAL INTEGRATION DETAILS
 
 ### D.1 Database Hooks Summary
 
