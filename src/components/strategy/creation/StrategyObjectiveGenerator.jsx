@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLanguage } from '@/components/LanguageContext';
@@ -12,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import { useStrategyContext, checkObjectiveSimilarity } from '@/hooks/strategy/useStrategyContext';
 import { 
   Sparkles, 
   Loader2, 
@@ -23,7 +25,8 @@ import {
   CheckCircle,
   Plus,
   Trash2,
-  Save
+  Save,
+  Info
 } from 'lucide-react';
 
 export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectivesGenerated }) {
@@ -33,6 +36,10 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
   const [objectives, setObjectives] = useState([]);
   const [selectedPillar, setSelectedPillar] = useState('');
   const [objectivesPerPillar, setObjectivesPerPillar] = useState(3);
+  const [duplicateWarnings, setDuplicateWarnings] = useState([]);
+
+  // Fetch strategic context for deduplication
+  const { existingObjectives, isLoading: contextLoading } = useStrategyContext();
 
   // Fetch strategic plan with pillars
   const { data: strategicPlan } = useQuery({
@@ -43,6 +50,20 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
 
   const pillars = strategicPlan?.pillars || [];
 
+  // Check for duplicates when objectives change
+  const objectivesWithDuplicateCheck = useMemo(() => {
+    if (!objectives.length || !existingObjectives.length) return objectives;
+    
+    return objectives.map((obj, index) => {
+      const duplicates = checkObjectiveSimilarity(obj, existingObjectives, 0.5);
+      return {
+        ...obj,
+        _duplicates: duplicates,
+        _hasDuplicates: duplicates.length > 0
+      };
+    });
+  }, [objectives, existingObjectives]);
+
   const generateObjectives = async () => {
     setIsGenerating(true);
     try {
@@ -52,18 +73,45 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
           pillar_name: selectedPillar || undefined,
           vision_statement: strategicPlan?.vision_en,
           objectives_per_pillar: objectivesPerPillar,
-          include_kpis: true
+          include_kpis: true,
+          // Pass existing objectives for AI to avoid
+          existing_objectives: existingObjectives.map(o => ({
+            name: o.name_en,
+            plan: o.planName
+          }))
         }
       });
 
       if (error) throw error;
 
       if (data?.objectives) {
+        // Check each generated objective for duplicates
+        const warnings = [];
+        data.objectives.forEach((obj, index) => {
+          const duplicates = checkObjectiveSimilarity(obj, existingObjectives, 0.5);
+          if (duplicates.length > 0) {
+            warnings.push({
+              index,
+              objective: obj.name_en,
+              duplicates: duplicates.slice(0, 3)
+            });
+          }
+        });
+        
+        setDuplicateWarnings(warnings);
         setObjectives(data.objectives);
-        toast.success(t({ 
-          en: `Generated ${data.objectives.length} strategic objectives with KPIs`, 
-          ar: `تم إنشاء ${data.objectives.length} أهداف استراتيجية مع مؤشرات الأداء` 
-        }));
+        
+        if (warnings.length > 0) {
+          toast.warning(t({ 
+            en: `${warnings.length} objectives may be similar to existing ones. Review highlighted items.`, 
+            ar: `${warnings.length} أهداف قد تكون مشابهة للأهداف الحالية. راجع العناصر المميزة.` 
+          }));
+        } else {
+          toast.success(t({ 
+            en: `Generated ${data.objectives.length} unique strategic objectives with KPIs`, 
+            ar: `تم إنشاء ${data.objectives.length} أهداف استراتيجية فريدة مع مؤشرات الأداء` 
+          }));
+        }
         onObjectivesGenerated?.(data.objectives);
       }
     } catch (error) {
@@ -82,6 +130,7 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
 
   const removeObjective = (index) => {
     setObjectives(objectives.filter((_, i) => i !== index));
+    setDuplicateWarnings(duplicateWarnings.filter(w => w.index !== index));
   };
 
   const saveObjectives = async () => {
@@ -90,9 +139,33 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
       return;
     }
 
+    // Filter out objectives marked as duplicates that user didn't review
+    const highSimilarityCount = duplicateWarnings.filter(w => 
+      w.duplicates.some(d => d.similarity >= 70)
+    ).length;
+    
+    if (highSimilarityCount > 0) {
+      const confirmed = window.confirm(
+        t({ 
+          en: `${highSimilarityCount} objectives have high similarity (>70%) with existing ones. Continue anyway?`,
+          ar: `${highSimilarityCount} أهداف لها تشابه عالي (>70%) مع الأهداف الحالية. المتابعة على أي حال؟`
+        })
+      );
+      if (!confirmed) return;
+    }
+
     try {
-      const existingObjectives = strategicPlan?.objectives || [];
-      const updatedObjectives = [...existingObjectives, ...objectives];
+      const existingPlanObjectives = strategicPlan?.objectives || [];
+      
+      // Add metadata to new objectives for tracking
+      const newObjectivesWithMeta = objectives.map(obj => ({
+        ...obj,
+        _added_at: new Date().toISOString(),
+        _source: 'ai_generated',
+        _dedup_checked: true
+      }));
+      
+      const updatedObjectives = [...existingPlanObjectives, ...newObjectivesWithMeta];
 
       const { error } = await supabase
         .from('strategic_plans')
@@ -106,7 +179,11 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
 
       queryClient.invalidateQueries(['strategic-plan', strategicPlanId]);
       queryClient.invalidateQueries(['strategic-plans']);
+      queryClient.invalidateQueries(['strategy-context-plans']);
+      
       toast.success(t({ en: 'Objectives saved successfully', ar: 'تم حفظ الأهداف بنجاح' }));
+      setObjectives([]);
+      setDuplicateWarnings([]);
     } catch (error) {
       console.error('Error saving objectives:', error);
       toast.error(t({ en: 'Failed to save objectives', ar: 'فشل في حفظ الأهداف' }));

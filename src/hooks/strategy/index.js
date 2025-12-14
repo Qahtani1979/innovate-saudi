@@ -7,6 +7,7 @@ export { useStrategyBaselines } from './useStrategyBaselines';
 export { useStrategyInputs } from './useStrategyInputs';
 
 // Phase 2: Strategy Creation Hooks
+export { useStrategyContext, checkObjectiveSimilarity, buildStrategyContextPrompt } from './useStrategyContext';
 export { useStrategyMilestones } from './useStrategyMilestones';
 export { useStrategyOwnership } from './useStrategyOwnership';
 export { useActionPlans } from './useActionPlans';
