@@ -1,18 +1,23 @@
 import React from 'react';
 import StakeholderAnalysisWidget from '@/components/strategy/preplanning/StakeholderAnalysisWidget';
+import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 
 function StakeholderAnalysisPage() {
   const { t } = useLanguage();
+  const { activePlanId, activePlan } = useActivePlan();
 
   const handleSave = (data) => {
     console.log('Stakeholder Analysis saved:', data);
   };
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-6">
+    <div className="container mx-auto py-6 px-4 space-y-6">
+      <ActivePlanBanner />
+      
+      <div>
         <h1 className="text-2xl font-bold">
           {t({ en: 'Stakeholder Analysis', ar: 'تحليل أصحاب المصلحة' })}
         </h1>
@@ -24,7 +29,11 @@ function StakeholderAnalysisPage() {
         </p>
       </div>
       
-      <StakeholderAnalysisWidget onSave={handleSave} />
+      <StakeholderAnalysisWidget 
+        strategicPlanId={activePlanId}
+        strategicPlan={activePlan}
+        onSave={handleSave} 
+      />
     </div>
   );
 }
