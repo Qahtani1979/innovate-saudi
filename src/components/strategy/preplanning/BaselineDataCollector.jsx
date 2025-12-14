@@ -44,11 +44,12 @@ const BaselineDataCollector = ({ strategicPlanId, onSave }) => {
   } = useStrategyBaselines(strategicPlanId);
 
   // Fetch actual MII scores and platform metrics for baseline
+  // Gap Fix: Phase 1 specifies MII should feed into strategy KPIs - linking MII dimension scores
   const { data: platformMetrics } = useQuery({
     queryKey: ['baseline-platform-metrics', strategicPlanId],
     queryFn: async () => {
       const [miiRes, challengesRes, pilotsRes, partnershipsRes] = await Promise.all([
-        supabase.from('mii_results').select('overall_score, municipality_id').eq('is_published', true).limit(50),
+        supabase.from('mii_results').select('overall_score, municipality_id, dimension_scores').eq('is_published', true).limit(50),
         supabase.from('challenges').select('id, status').eq('is_deleted', false),
         supabase.from('pilots').select('id, status, success_score'),
         supabase.from('partnerships').select('id, status')
@@ -62,12 +63,35 @@ const BaselineDataCollector = ({ strategicPlanId, onSave }) => {
         Math.round(pilotsRes.data.reduce((sum, p) => sum + (p.success_score || 0), 0) / pilotsRes.data.length) : 0;
       const activePartnerships = partnershipsRes.data?.filter(p => p.status === 'active').length || 0;
       
-      return { avgMII, challengeResolutionRate, avgPilotSuccess, activePartnerships };
+      // Extract MII dimension scores for strategic KPI baseline mapping
+      const miiDimensionAverages = {};
+      const dimensionNames = ['leadership', 'culture', 'resources', 'processes', 'outcomes', 'technology'];
+      dimensionNames.forEach(dim => {
+        const scores = miiRes.data?.map(m => m.dimension_scores?.[dim] || 0).filter(s => s > 0) || [];
+        miiDimensionAverages[dim] = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+      });
+      
+      return { 
+        avgMII, 
+        challengeResolutionRate, 
+        avgPilotSuccess, 
+        activePartnerships,
+        miiDimensionAverages,
+        miiDataCount: miiRes.data?.length || 0
+      };
     }
   });
 
+  // KPI categories now include MII dimension mapping for strategic alignment
+  // Gap Fix: MII-to-KPI mapping per Phase 1 and Phase 6 monitoring
   const kpiCategories = [
-    { id: 'innovation', label: { en: 'Innovation Index', ar: 'مؤشر الابتكار' }, color: 'bg-blue-500', platformValue: platformMetrics?.avgMII },
+    { id: 'innovation', label: { en: 'Innovation Index (MII)', ar: 'مؤشر الابتكار' }, color: 'bg-blue-500', platformValue: platformMetrics?.avgMII, miiLinked: true },
+    { id: 'mii_leadership', label: { en: 'MII: Leadership', ar: 'مؤشر: القيادة' }, color: 'bg-indigo-500', platformValue: platformMetrics?.miiDimensionAverages?.leadership, miiLinked: true },
+    { id: 'mii_culture', label: { en: 'MII: Culture', ar: 'مؤشر: الثقافة' }, color: 'bg-violet-500', platformValue: platformMetrics?.miiDimensionAverages?.culture, miiLinked: true },
+    { id: 'mii_resources', label: { en: 'MII: Resources', ar: 'مؤشر: الموارد' }, color: 'bg-cyan-500', platformValue: platformMetrics?.miiDimensionAverages?.resources, miiLinked: true },
+    { id: 'mii_processes', label: { en: 'MII: Processes', ar: 'مؤشر: العمليات' }, color: 'bg-sky-500', platformValue: platformMetrics?.miiDimensionAverages?.processes, miiLinked: true },
+    { id: 'mii_outcomes', label: { en: 'MII: Outcomes', ar: 'مؤشر: النتائج' }, color: 'bg-emerald-500', platformValue: platformMetrics?.miiDimensionAverages?.outcomes, miiLinked: true },
+    { id: 'mii_technology', label: { en: 'MII: Technology', ar: 'مؤشر: التقنية' }, color: 'bg-fuchsia-500', platformValue: platformMetrics?.miiDimensionAverages?.technology, miiLinked: true },
     { id: 'challenges', label: { en: 'Challenge Resolution', ar: 'حل التحديات' }, color: 'bg-green-500', platformValue: platformMetrics?.challengeResolutionRate },
     { id: 'pilots', label: { en: 'Pilot Success', ar: 'نجاح التجارب' }, color: 'bg-purple-500', platformValue: platformMetrics?.avgPilotSuccess },
     { id: 'partnerships', label: { en: 'Partnerships', ar: 'الشراكات' }, color: 'bg-amber-500', platformValue: platformMetrics?.activePartnerships },
