@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/components/LanguageContext';
+import { useStrategySignoffs } from '@/hooks/strategy/useStrategySignoffs';
 import { 
   UserCheck, Clock, CheckCircle2, XCircle, AlertCircle, 
-  Send, Bell, FileSignature, Plus, Trash2 
+  Send, Bell, FileSignature, Plus, Trash2, Loader2 
 } from 'lucide-react';
 import {
   Dialog,
@@ -26,45 +26,12 @@ import {
 
 export default function StakeholderSignoffTracker({ planId }) {
   const { t, language } = useLanguage();
-  const [signoffs, setSignoffs] = useState([
-    {
-      id: '1',
-      stakeholder_name: 'Ahmed Al-Rashid',
-      stakeholder_role: 'Deputy Minister',
-      requested_date: '2024-01-15',
-      due_date: '2024-01-30',
-      status: 'approved',
-      signed_date: '2024-01-28',
-      comments: 'Approved with minor recommendations',
-      reminder_count: 0
-    },
-    {
-      id: '2',
-      stakeholder_name: 'Sarah Al-Faisal',
-      stakeholder_role: 'Innovation Director',
-      requested_date: '2024-01-15',
-      due_date: '2024-01-30',
-      status: 'pending',
-      signed_date: null,
-      comments: '',
-      reminder_count: 2
-    },
-    {
-      id: '3',
-      stakeholder_name: 'Mohammed Al-Qahtani',
-      stakeholder_role: 'Finance Director',
-      requested_date: '2024-01-15',
-      due_date: '2024-01-25',
-      status: 'changes_requested',
-      signed_date: null,
-      comments: 'Budget allocation needs revision',
-      reminder_count: 1
-    }
-  ]);
+  const { signoffs, isLoading, createSignoff, updateSignoff, deleteSignoff, sendReminder } = useStrategySignoffs(planId);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newSignoff, setNewSignoff] = useState({
     stakeholder_name: '',
     stakeholder_role: '',
+    stakeholder_email: '',
     due_date: ''
   });
 
@@ -94,38 +61,53 @@ export default function StakeholderSignoffTracker({ planId }) {
     return configs[status] || configs.pending;
   };
 
-  const handleAddSignoff = () => {
+  const handleAddSignoff = async () => {
     if (!newSignoff.stakeholder_name || !newSignoff.stakeholder_role) return;
     
-    setSignoffs([...signoffs, {
-      id: Date.now().toString(),
-      ...newSignoff,
-      requested_date: new Date().toISOString().split('T')[0],
+    await createSignoff.mutateAsync({
+      strategic_plan_id: planId,
+      stakeholder_name: newSignoff.stakeholder_name,
+      stakeholder_role: newSignoff.stakeholder_role,
+      stakeholder_email: newSignoff.stakeholder_email,
+      due_date: newSignoff.due_date ? new Date(newSignoff.due_date).toISOString() : null,
       status: 'pending',
-      signed_date: null,
-      comments: '',
       reminder_count: 0
-    }]);
-    setNewSignoff({ stakeholder_name: '', stakeholder_role: '', due_date: '' });
+    });
+    
+    setNewSignoff({ stakeholder_name: '', stakeholder_role: '', stakeholder_email: '', due_date: '' });
     setIsDialogOpen(false);
   };
 
-  const handleSendReminder = (id) => {
-    setSignoffs(signoffs.map(s => 
-      s.id === id ? { ...s, reminder_count: s.reminder_count + 1 } : s
-    ));
+  const handleSendReminder = async (id) => {
+    await sendReminder.mutateAsync(id);
   };
 
-  const handleRemove = (id) => {
-    setSignoffs(signoffs.filter(s => s.id !== id));
+  const handleRemove = async (id) => {
+    await deleteSignoff.mutateAsync(id);
+  };
+
+  const handleApprove = async (id) => {
+    await updateSignoff.mutateAsync({
+      id,
+      status: 'approved',
+      signed_date: new Date().toISOString()
+    });
   };
 
   const stats = {
-    total: signoffs.length,
-    approved: signoffs.filter(s => s.status === 'approved').length,
-    pending: signoffs.filter(s => s.status === 'pending').length,
-    changes: signoffs.filter(s => s.status === 'changes_requested').length
+    total: signoffs?.length || 0,
+    approved: signoffs?.filter(s => s.status === 'approved').length || 0,
+    pending: signoffs?.filter(s => s.status === 'pending').length || 0,
+    changes: signoffs?.filter(s => s.status === 'changes_requested').length || 0
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -205,6 +187,15 @@ export default function StakeholderSignoffTracker({ planId }) {
                   />
                 </div>
                 <div>
+                  <label className="text-sm font-medium">{t({ en: 'Email', ar: 'البريد الإلكتروني' })}</label>
+                  <Input 
+                    type="email"
+                    value={newSignoff.stakeholder_email}
+                    onChange={(e) => setNewSignoff({ ...newSignoff, stakeholder_email: e.target.value })}
+                    placeholder={t({ en: 'Enter email', ar: 'أدخل البريد الإلكتروني' })}
+                  />
+                </div>
+                <div>
                   <label className="text-sm font-medium">{t({ en: 'Role', ar: 'الدور' })}</label>
                   <Select 
                     value={newSignoff.stakeholder_role}
@@ -231,8 +222,8 @@ export default function StakeholderSignoffTracker({ planId }) {
                     onChange={(e) => setNewSignoff({ ...newSignoff, due_date: e.target.value })}
                   />
                 </div>
-                <Button onClick={handleAddSignoff} className="w-full">
-                  <Send className="h-4 w-4 mr-2" />
+                <Button onClick={handleAddSignoff} className="w-full" disabled={createSignoff.isPending}>
+                  {createSignoff.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                   {t({ en: 'Send Request', ar: 'إرسال الطلب' })}
                 </Button>
               </div>
@@ -241,7 +232,7 @@ export default function StakeholderSignoffTracker({ planId }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {signoffs.map((signoff) => {
+            {signoffs?.map((signoff) => {
               const config = getStatusConfig(signoff.status);
               const StatusIcon = config.icon;
               
@@ -257,17 +248,22 @@ export default function StakeholderSignoffTracker({ planId }) {
                     <div>
                       <p className="font-medium">{signoff.stakeholder_name}</p>
                       <p className="text-sm text-muted-foreground">{signoff.stakeholder_role}</p>
+                      {signoff.stakeholder_email && (
+                        <p className="text-xs text-muted-foreground">{signoff.stakeholder_email}</p>
+                      )}
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <div className="text-right hidden md:block">
-                      <p className="text-sm text-muted-foreground">
-                        {t({ en: 'Due:', ar: 'الاستحقاق:' })} {signoff.due_date}
-                      </p>
+                      {signoff.due_date && (
+                        <p className="text-sm text-muted-foreground">
+                          {t({ en: 'Due:', ar: 'الاستحقاق:' })} {new Date(signoff.due_date).toLocaleDateString()}
+                        </p>
+                      )}
                       {signoff.signed_date && (
                         <p className="text-xs text-green-600">
-                          {t({ en: 'Signed:', ar: 'موقع:' })} {signoff.signed_date}
+                          {t({ en: 'Signed:', ar: 'موقع:' })} {new Date(signoff.signed_date).toLocaleDateString()}
                         </p>
                       )}
                     </div>
@@ -278,15 +274,25 @@ export default function StakeholderSignoffTracker({ planId }) {
                     </Badge>
                     
                     {signoff.status === 'pending' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleSendReminder(signoff.id)}
-                      >
-                        <Bell className="h-4 w-4 mr-1" />
-                        {signoff.reminder_count > 0 && <span className="mr-1">({signoff.reminder_count})</span>}
-                        {t({ en: 'Remind', ar: 'تذكير' })}
-                      </Button>
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleApprove(signoff.id)}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                          {t({ en: 'Approve', ar: 'موافقة' })}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleSendReminder(signoff.id)}
+                        >
+                          <Bell className="h-4 w-4 mr-1" />
+                          {signoff.reminder_count > 0 && <span className="mr-1">({signoff.reminder_count})</span>}
+                          {t({ en: 'Remind', ar: 'تذكير' })}
+                        </Button>
+                      </>
                     )}
                     
                     <Button 
@@ -301,7 +307,7 @@ export default function StakeholderSignoffTracker({ planId }) {
               );
             })}
             
-            {signoffs.length === 0 && (
+            {(!signoffs || signoffs.length === 0) && (
               <div className="text-center py-8 text-muted-foreground">
                 {t({ en: 'No sign-off requests yet', ar: 'لا توجد طلبات توقيع بعد' })}
               </div>

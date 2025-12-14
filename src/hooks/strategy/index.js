@@ -13,3 +13,8 @@ export { useActionPlans } from './useActionPlans';
 export { useNationalAlignments } from './useNationalAlignments';
 export { useSectorStrategies } from './useSectorStrategies';
 export { useStrategyTemplates } from './useStrategyTemplates';
+
+// Phase 4: Governance Hooks
+export { useStrategySignoffs } from './useStrategySignoffs';
+export { useStrategyVersions } from './useStrategyVersions';
+export { useCommitteeDecisions } from './useCommitteeDecisions';
