@@ -618,72 +618,76 @@ STRATEGIC PLAN DOCUMENT STRUCTURE
 
 ---
 
-# SECTION 4: AI INTEGRATION OPPORTUNITIES
+# SECTION 4: AI INTEGRATION
 
 ## 4.1 Current Component Status
 
-| Component | AI Status | Current Implementation | Gap |
-|-----------|-----------|----------------------|-----|
-| **ActionPlanBuilder** | ⚠️ MOCK | setTimeout + hardcoded actions | Needs real AI |
-| **NationalStrategyLinker** | ⚠️ MOCK | setTimeout + hardcoded alignments | Needs real AI |
-| **SectorStrategyBuilder** | ⚠️ MOCK | setTimeout + hardcoded objectives | Needs real AI |
-| **StrategyTimelinePlanner** | ❌ NONE | No AI integration | Needs AI |
-| **StrategyTemplateLibrary** | ❌ NONE | No AI integration | Needs AI |
-| **StrategyOwnershipAssigner** | ❌ NONE | No AI integration | Consider AI |
+| Component | AI Status | Edge Function | Gap |
+|-----------|-----------|---------------|-----|
+| **StrategyPillarGenerator** | ✅ REAL AI | `strategy-pillar-generator` | - |
+| **StrategyObjectiveGenerator** | ✅ REAL AI | `strategy-objective-generator` | - |
+| **ActionPlanBuilder** | ✅ REAL AI | `strategy-action-plan-generator` | - |
+| **SectorStrategyBuilder** | ✅ REAL AI | `strategy-sector-generator` | - |
+| **NationalStrategyLinker** | ⚠️ MOCK | - | Needs real AI |
+| **StrategyTimelinePlanner** | ❌ NONE | - | Consider AI |
+| **StrategyTemplateLibrary** | ❌ NONE | - | Consider AI |
+| **StrategyOwnershipAssigner** | ❌ NONE | - | Consider AI |
 
-## 4.2 AI Value-Add Opportunities
+## 4.2 AI Edge Functions
 
-### A. Action Plan Generation
+### A. strategy-pillar-generator
+**Purpose:** Generate strategic pillars from Phase 1 analysis
+**Features:**
+- Analyzes SWOT, PESTLE, and baseline data
+- Generates 4-6 strategic pillars with titles (EN/AR)
+- Includes descriptions and focus areas
+- Links pillars to national strategy alignments
 
-**Current Mock Implementation:**
-```javascript
-// Simulates AI with setTimeout and hardcoded data
-const generateActionsWithAI = async (planId) => {
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  const generatedActions = [/* hardcoded */];
-  ...
-};
-```
+### B. strategy-objective-generator
+**Purpose:** Generate SMART objectives for each pillar
+**Features:**
+- Creates objectives aligned to pillar themes
+- Defines measurable KPIs with baselines and targets
+- Suggests appropriate measurement frequency
+- Links to Vision 2030 and SDG goals
 
-**Real AI Implementation Should:**
-- Analyze objective text for context
-- Consider Phase 1 data (SWOT, risks, stakeholders)
-- Generate contextually relevant action items
-- Estimate realistic budgets based on similar initiatives
-- Suggest appropriate timelines and dependencies
+### C. strategy-action-plan-generator
+**Purpose:** Generate detailed action items for objectives
+**Features:**
+- Analyzes objective text for context
+- Generates 4-5 actionable items with deliverables
+- Estimates realistic budgets (in SAR)
+- Suggests priority levels and durations
+- Creates bilingual titles (EN/AR)
 
-### B. National Strategy Alignment
+### D. strategy-sector-generator
+**Purpose:** Generate sector-specific strategies
+**Features:**
+- Creates sector vision statements (EN/AR)
+- Generates 2-3 sector objectives with targets
+- Defines 3-4 sector-specific KPIs
+- Aligns with overall strategic plan vision
+- Considers sector-unique challenges
 
-**AI Can Provide:**
+## 4.3 Remaining AI Opportunities
+
+### National Strategy Alignment
+**Potential AI Features:**
 - Automated mapping of objectives to V2030/SDG goals
 - Alignment strength scoring
 - Gap identification (unmapped national goals)
-- Suggestions for better alignment
 - Natural language rationale for each link
 
-### C. Sector Strategy Generation
-
-**AI Can Provide:**
-- Sector-specific vision statements
-- Objectives tailored to sector context
-- KPIs appropriate for sector domain
-- Cross-sector synergy identification
-- Resource estimation by sector
-
-### D. Timeline Optimization
-
-**AI Can Provide:**
+### Timeline Optimization
+**Potential AI Features:**
 - Dependency analysis and suggestions
 - Critical path identification
 - Resource conflict detection
-- Schedule optimization recommendations
 - Risk-based timeline adjustments
 
-### E. Template Recommendation
-
-**AI Can Provide:**
+### Template Recommendation
+**Potential AI Features:**
 - Template matching based on context
-- Template customization suggestions
 - Success pattern identification
 - Best practice recommendations
 
@@ -950,19 +954,30 @@ Phase 2 transforms Phase 1 intelligence into actionable strategy through:
 
 ## Implementation Status
 
-**Overall: 60% Implemented** 🟡
+**Overall: 90% Implemented** ✅
 
-| Component | Location | Status |
-|-----------|----------|--------|
-| `ActionPlanBuilder` | `src/components/strategy/creation/` | ✅ Implemented |
-| `NationalStrategyLinker` | `src/components/strategy/creation/` | ✅ Implemented |
-| `SectorStrategyBuilder` | `src/components/strategy/creation/` | ✅ Implemented |
-| `StrategyOwnershipAssigner` | `src/components/strategy/creation/` | ✅ Implemented |
-| `StrategyTemplateLibrary` | `src/components/strategy/creation/` | ✅ Implemented |
-| `StrategyTimelinePlanner` | `src/components/strategy/creation/` | ✅ Implemented |
-| `StrategicPlanBuilder` | Page-level | 🟡 Not in creation/ |
-| `BudgetAllocationTool` | - | ❌ Not found |
-| `useStrategicKPI` | `src/hooks/` | ✅ Hook implemented |
+| Component | Location | Status | AI |
+|-----------|----------|--------|-----|
+| `StrategyPillarGenerator` | `src/components/strategy/creation/` | ✅ Implemented | ✅ Real AI |
+| `StrategyObjectiveGenerator` | `src/components/strategy/creation/` | ✅ Implemented | ✅ Real AI |
+| `ActionPlanBuilder` | `src/components/strategy/creation/` | ✅ Implemented | ✅ Real AI |
+| `SectorStrategyBuilder` | `src/components/strategy/creation/` | ✅ Implemented | ✅ Real AI |
+| `NationalStrategyLinker` | `src/components/strategy/creation/` | ✅ Implemented | ⚠️ Mock |
+| `StrategyOwnershipAssigner` | `src/components/strategy/creation/` | ✅ Implemented | ❌ None |
+| `StrategyTemplateLibrary` | `src/components/strategy/creation/` | ✅ Implemented | ❌ None |
+| `StrategyTimelinePlanner` | `src/components/strategy/creation/` | ✅ Implemented | ❌ None |
+| `StrategicPlanBuilder` | Page-level | 🟡 Not in creation/ | - |
+| `BudgetAllocationTool` | - | ❌ Not found | - |
+| `useStrategicKPI` | `src/hooks/` | ✅ Hook implemented | - |
+
+### AI Edge Functions
+
+| Function | Purpose | Status |
+|----------|---------|--------|
+| `strategy-pillar-generator` | Generate strategic pillars | ✅ Deployed |
+| `strategy-objective-generator` | Generate objectives & KPIs | ✅ Deployed |
+| `strategy-action-plan-generator` | Generate action items | ✅ Deployed |
+| `strategy-sector-generator` | Generate sector strategies | ✅ Deployed |
 
 *Last verified: 2025-12-14*
 

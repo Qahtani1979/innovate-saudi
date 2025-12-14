@@ -108,20 +108,31 @@ This matrix documents all integrations required for the complete Strategy Leader
 
 ---
 
-### B.2 PHASE 2: STRATEGY CREATION (✅ 100% INTEGRATED)
+### B.2 PHASE 2: STRATEGY CREATION (✅ 100% INTEGRATED + AI)
 
 **Methodology:** [phase2-strategic-methodology.md](./phase2-strategic-methodology.md)
 
 #### Components & Platform Integration
 
-| Component | Platform Entities | Integration Type |
-|-----------|------------------|------------------|
-| StrategyTimelinePlanner | strategy_milestones (strategy DB) | CRUD |
-| StrategyOwnershipAssigner | user_profiles, team_members | SELECT for assignment |
-| ActionPlanBuilder | action_plans, action_items (strategy DB) | CRUD |
-| NationalStrategyLinker | national_strategy_alignments (strategy DB) | CRUD |
-| SectorStrategyBuilder | sectors (platform), sector_strategies (DB) | SELECT + CRUD |
-| StrategyTemplateLibrary | strategy_templates (strategy DB) | CRUD |
+| Component | Platform Entities | Integration Type | AI Status |
+|-----------|------------------|------------------|-----------|
+| StrategyPillarGenerator | strategy_pillars (strategy DB) | CRUD | ✅ Real AI |
+| StrategyObjectiveGenerator | strategic_objectives (strategy DB) | CRUD | ✅ Real AI |
+| StrategyTimelinePlanner | strategy_milestones (strategy DB) | CRUD | ❌ None |
+| StrategyOwnershipAssigner | user_profiles, team_members | SELECT for assignment | ❌ None |
+| ActionPlanBuilder | action_plans, action_items (strategy DB) | CRUD | ✅ Real AI |
+| NationalStrategyLinker | national_strategy_alignments (strategy DB) | CRUD | ⚠️ Mock |
+| SectorStrategyBuilder | sectors (platform), sector_strategies (DB) | SELECT + CRUD | ✅ Real AI |
+| StrategyTemplateLibrary | strategy_templates (strategy DB) | CRUD | ❌ None |
+
+#### AI Edge Functions
+
+| Function | Purpose |
+|----------|---------|
+| strategy-pillar-generator | Generate strategic pillars from Phase 1 analysis |
+| strategy-objective-generator | Generate SMART objectives with KPIs |
+| strategy-action-plan-generator | Generate action items for objectives |
+| strategy-sector-generator | Generate sector-specific strategies |
 
 #### Database Tables
 
@@ -355,13 +366,17 @@ This matrix documents all integrations required for the complete Strategy Leader
 
 | Function | Phase | Purpose |
 |----------|-------|---------|
+| strategy-pillar-generator | P2 | Generate strategic pillars from Phase 1 analysis |
+| strategy-objective-generator | P2 | Generate SMART objectives with KPIs |
+| strategy-action-plan-generator | P2 | Generate action items for objectives |
+| strategy-sector-generator | P2 | Generate sector-specific strategies |
 | strategy-signoff-ai | P4 | Stakeholder suggestions, risk prediction |
 | strategy-version-ai | P4 | Change impact analysis, categorization |
 | strategy-committee-ai | P4 | Agenda prioritization, decision impact |
 | strategy-workflow-ai | P4 | Workflow optimization, bottleneck prediction |
 | strategy-communication-ai | P5 | Story generation, key messages, translation |
 | strategic-priority-scoring | P6 | Priority scoring algorithm |
-| **TOTAL** | | **6 functions** |
+| **TOTAL** | | **10 functions** |
 
 ---
 

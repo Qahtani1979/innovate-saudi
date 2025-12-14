@@ -41,7 +41,7 @@ The Strategy System provides comprehensive strategic planning and execution mana
 | Metric | Documented | Implemented | Coverage | Status |
 |--------|------------|-------------|----------|--------|
 | Phase 1: Pre-Planning | 6 | 6 UI + 6 DB + 6 Hooks | 100% | ✅ COMPLETE |
-| Phase 2: Strategy Creation | 6 | 6 UI + 6 DB + 6 Hooks | 100% | ✅ COMPLETE |
+| Phase 2: Strategy Creation | 8 | 8 UI + 6 DB + 6 Hooks + 4 AI | 100% | ✅ COMPLETE + AI |
 | Phase 3: Cascade & Operationalization | 9 | 9 UI + 9 Edge Functions | 100% | ✅ COMPLETE |
 | Phase 4: Governance & Approval | 4 | 4 UI + 3 DB + 4 AI Functions + 4 AI Hooks | 100% | ✅ COMPLETE + AI |
 | Phase 5: Communication & Publishing | 6 | 6 UI + 4 DB + 1 AI + 4 Hooks | 100% | ✅ COMPLETE + AI |
@@ -70,7 +70,8 @@ The Strategy System provides comprehensive strategic planning and execution mana
 | Category | Path | Count | Details |
 |----------|------|-------|---------|
 | Phase 1: Pre-Planning | `src/components/strategy/preplanning/` | 6 | BaselineDataCollector, EnvironmentalScanWidget, RiskAssessmentBuilder, SWOTAnalysisBuilder, StakeholderAnalysisWidget, StrategyInputCollector |
-| Phase 2: Strategy Creation | `src/components/strategy/creation/` | 6 | ActionPlanBuilder, NationalStrategyLinker, SectorStrategyBuilder, StrategyOwnershipAssigner, StrategyTemplateLibrary, StrategyTimelinePlanner |
+| Phase 2: Strategy Creation | `src/components/strategy/creation/` | 8 | ActionPlanBuilder, NationalStrategyLinker, SectorStrategyBuilder, StrategyOwnershipAssigner, StrategyTemplateLibrary, StrategyTimelinePlanner, StrategyPillarGenerator, StrategyObjectiveGenerator |
+| Phase 2: AI Functions | `supabase/functions/` | 4 | strategy-pillar-generator, strategy-objective-generator, strategy-action-plan-generator, strategy-sector-generator |
 | Phase 3: Cascade | `src/components/strategy/cascade/` | 8 | StrategyChallengeGenerator, StrategyToCampaignGenerator, StrategyToEventGenerator, StrategyToLivingLabGenerator, StrategyToPartnershipGenerator, StrategyToPilotGenerator, StrategyToPolicyGenerator, StrategyToRDCallGenerator |
 | Phase 4: Governance | `src/components/strategy/governance/` | 2 | StakeholderSignoffTracker, StrategyVersionControl |
 | Phase 5: Communication | `src/components/strategy/communication/` | 2 | PublicStrategyDashboard, StrategyPublicView |
