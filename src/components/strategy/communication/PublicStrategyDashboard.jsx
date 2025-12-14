@@ -1,79 +1,151 @@
 import React from 'react';
+import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, Target, TrendingUp, CheckCircle2, Clock, 
-  AlertTriangle, Activity, Calendar, ArrowUpRight, ArrowDownRight
+  AlertTriangle, Activity, Calendar, ArrowUpRight, ArrowDownRight,
+  Loader2, RefreshCw
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-export default function PublicStrategyDashboard() {
+export default function PublicStrategyDashboard({ strategicPlanId: propPlanId }) {
   const { t, language } = useLanguage();
+  const { id: paramPlanId } = useParams();
+  const strategicPlanId = propPlanId || paramPlanId;
 
-  const dashboardData = {
-    overallProgress: 62,
-    lastUpdated: '2024-01-20',
-    kpis: [
-      { 
-        name: language === 'ar' ? 'معدل الابتكار' : 'Innovation Rate',
-        current: 18,
-        target: 25,
-        unit: '%',
-        trend: 'up',
-        change: '+3%'
-      },
-      { 
-        name: language === 'ar' ? 'التحول الرقمي' : 'Digital Adoption',
-        current: 72,
-        target: 100,
-        unit: '%',
-        trend: 'up',
-        change: '+8%'
-      },
-      { 
-        name: language === 'ar' ? 'رضا المواطنين' : 'Citizen Satisfaction',
-        current: 4.2,
-        target: 4.5,
-        unit: '/5',
-        trend: 'up',
-        change: '+0.3'
-      },
-      { 
-        name: language === 'ar' ? 'كفاءة الإنفاق' : 'Budget Efficiency',
-        current: 89,
-        target: 95,
-        unit: '%',
-        trend: 'down',
-        change: '-2%'
-      }
-    ],
-    milestones: [
-      { name: language === 'ar' ? 'إطلاق البوابة الرقمية' : 'Digital Portal Launch', status: 'completed', date: '2023-06-15' },
-      { name: language === 'ar' ? 'برنامج تدريب الموظفين' : 'Staff Training Program', status: 'completed', date: '2023-09-30' },
-      { name: language === 'ar' ? 'إطلاق المختبرات الحية' : 'Living Labs Launch', status: 'in_progress', date: '2024-03-01' },
-      { name: language === 'ar' ? 'توسيع الشراكات' : 'Partnership Expansion', status: 'upcoming', date: '2024-06-15' },
-      { name: language === 'ar' ? 'التقييم السنوي' : 'Annual Review', status: 'upcoming', date: '2024-12-31' }
-    ],
-    objectives: [
-      { name: language === 'ar' ? 'تحسين الخدمات الرقمية' : 'Enhance Digital Services', progress: 72, status: 'on_track' },
-      { name: language === 'ar' ? 'تعزيز الشراكات' : 'Strengthen Partnerships', progress: 55, status: 'on_track' },
-      { name: language === 'ar' ? 'تطوير القدرات' : 'Capacity Building', progress: 48, status: 'at_risk' },
-      { name: language === 'ar' ? 'الابتكار المستدام' : 'Sustainable Innovation', progress: 65, status: 'on_track' }
-    ],
-    activityFeed: [
-      { type: 'milestone', message: language === 'ar' ? 'تم إكمال المرحلة الثانية من التحول الرقمي' : 'Digital Transformation Phase 2 Completed', date: '2024-01-18' },
-      { type: 'kpi', message: language === 'ar' ? 'تحسن معدل رضا المواطنين بنسبة 5%' : 'Citizen Satisfaction improved by 5%', date: '2024-01-15' },
-      { type: 'partnership', message: language === 'ar' ? 'توقيع شراكة جديدة مع شركة تقنية' : 'New partnership signed with tech company', date: '2024-01-10' }
-    ]
-  };
+  // Fetch strategic plan
+  const { data: plan, isLoading: planLoading } = useQuery({
+    queryKey: ['strategic-plan-public', strategicPlanId],
+    queryFn: async () => {
+      if (!strategicPlanId) return null;
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('id', strategicPlanId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!strategicPlanId
+  });
+
+  // Fetch objectives
+  const { data: objectives = [] } = useQuery({
+    queryKey: ['strategic-objectives-public', strategicPlanId],
+    queryFn: async () => {
+      if (!strategicPlanId) return [];
+      const { data, error } = await supabase
+        .from('strategic_objectives')
+        .select('*')
+        .eq('strategic_plan_id', strategicPlanId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!strategicPlanId
+  });
+
+  // Fetch KPIs
+  const { data: kpis = [] } = useQuery({
+    queryKey: ['strategic-kpis-public', strategicPlanId],
+    queryFn: async () => {
+      if (!strategicPlanId) return [];
+      const { data, error } = await supabase
+        .from('strategic_kpis')
+        .select('*')
+        .eq('strategic_plan_id', strategicPlanId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!strategicPlanId
+  });
+
+  // Fetch milestones
+  const { data: milestones = [] } = useQuery({
+    queryKey: ['strategy-milestones-public', strategicPlanId],
+    queryFn: async () => {
+      if (!strategicPlanId) return [];
+      const { data, error } = await supabase
+        .from('strategy_milestones')
+        .select('*')
+        .eq('strategic_plan_id', strategicPlanId)
+        .order('end_date', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!strategicPlanId
+  });
+
+  // Fetch related entities for activity
+  const { data: recentChallenges = [] } = useQuery({
+    queryKey: ['recent-challenges-public', strategicPlanId],
+    queryFn: async () => {
+      if (!strategicPlanId) return [];
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('id, title_en, title_ar, status, created_at')
+        .contains('strategic_plan_ids', [strategicPlanId])
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!strategicPlanId
+  });
+
+  // Calculate overall progress
+  const overallProgress = objectives.length > 0
+    ? Math.round(objectives.reduce((sum, obj) => sum + (obj.progress_percentage || 0), 0) / objectives.length)
+    : 0;
+
+  // Process KPIs for display
+  const displayKpis = kpis.slice(0, 4).map(kpi => ({
+    name: language === 'ar' ? (kpi.name_ar || kpi.name_en) : kpi.name_en,
+    current: kpi.current_value || 0,
+    target: kpi.target_value || 100,
+    unit: kpi.unit || '%',
+    trend: (kpi.current_value || 0) >= (kpi.baseline_value || 0) ? 'up' : 'down',
+    change: kpi.baseline_value ? `${((kpi.current_value - kpi.baseline_value) / kpi.baseline_value * 100).toFixed(1)}%` : 'N/A'
+  }));
+
+  // Process objectives for display
+  const displayObjectives = objectives.map(obj => ({
+    name: language === 'ar' ? (obj.title_ar || obj.title_en) : obj.title_en,
+    progress: obj.progress_percentage || 0,
+    status: obj.status === 'completed' ? 'on_track' 
+      : (obj.progress_percentage || 0) >= 50 ? 'on_track' 
+      : (obj.progress_percentage || 0) >= 25 ? 'at_risk' 
+      : 'off_track'
+  }));
+
+  // Process milestones for display
+  const displayMilestones = milestones.slice(0, 5).map(m => ({
+    name: language === 'ar' ? (m.title_ar || m.title_en) : m.title_en,
+    status: m.status,
+    date: m.end_date
+  }));
+
+  // Activity feed from challenges
+  const activityFeed = recentChallenges.map(ch => ({
+    type: 'challenge',
+    message: language === 'ar' 
+      ? `تم إنشاء تحدي: ${ch.title_ar || ch.title_en}`
+      : `Challenge created: ${ch.title_en}`,
+    date: new Date(ch.created_at).toLocaleDateString()
+  }));
 
   const getStatusIcon = (status) => {
     switch (status) {
       case 'completed': return <CheckCircle2 className="h-4 w-4 text-green-600" />;
       case 'in_progress': return <Clock className="h-4 w-4 text-blue-600" />;
-      case 'upcoming': return <Calendar className="h-4 w-4 text-muted-foreground" />;
-      default: return null;
+      case 'delayed': return <AlertTriangle className="h-4 w-4 text-amber-600" />;
+      default: return <Calendar className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -86,6 +158,25 @@ export default function PublicStrategyDashboard() {
     }
   };
 
+  if (planLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!plan && strategicPlanId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 mx-auto text-amber-500 mb-4" />
+          <p className="text-lg">{t({ en: 'Strategic plan not found', ar: 'الخطة الاستراتيجية غير موجودة' })}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       {/* Header */}
@@ -94,7 +185,10 @@ export default function PublicStrategyDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">
-                {t({ en: 'Strategy Progress Dashboard', ar: 'لوحة متابعة تقدم الاستراتيجية' })}
+                {plan 
+                  ? (language === 'ar' ? (plan.title_ar || plan.title_en) : plan.title_en)
+                  : t({ en: 'Strategy Progress Dashboard', ar: 'لوحة متابعة تقدم الاستراتيجية' })
+                }
               </h1>
               <p className="opacity-80">
                 {t({ en: 'Real-time tracking of strategic objectives and KPIs', ar: 'متابعة حية للأهداف الاستراتيجية ومؤشرات الأداء' })}
@@ -102,7 +196,7 @@ export default function PublicStrategyDashboard() {
             </div>
             <div className="text-right">
               <p className="text-sm opacity-70">{t({ en: 'Last Updated', ar: 'آخر تحديث' })}</p>
-              <p className="font-semibold">{dashboardData.lastUpdated}</p>
+              <p className="font-semibold">{plan?.updated_at ? new Date(plan.updated_at).toLocaleDateString() : new Date().toLocaleDateString()}</p>
             </div>
           </div>
         </div>
@@ -117,45 +211,47 @@ export default function PublicStrategyDashboard() {
                 <BarChart3 className="h-6 w-6 text-primary" />
                 <h2 className="text-xl font-bold">{t({ en: 'Overall Strategy Progress', ar: 'تقدم الاستراتيجية الكلي' })}</h2>
               </div>
-              <span className="text-3xl font-bold text-primary">{dashboardData.overallProgress}%</span>
+              <span className="text-3xl font-bold text-primary">{overallProgress}%</span>
             </div>
-            <Progress value={dashboardData.overallProgress} className="h-4" />
+            <Progress value={overallProgress} className="h-4" />
           </CardContent>
         </Card>
 
         {/* KPIs Grid */}
-        <div>
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            {t({ en: 'Key Performance Indicators', ar: 'مؤشرات الأداء الرئيسية' })}
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {dashboardData.kpis.map((kpi, index) => (
-              <Card key={index}>
-                <CardContent className="pt-6">
-                  <p className="text-sm text-muted-foreground mb-2">{kpi.name}</p>
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <span className="text-3xl font-bold">{kpi.current}</span>
-                      <span className="text-muted-foreground">{kpi.unit}</span>
+        {displayKpis.length > 0 && (
+          <div>
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              {t({ en: 'Key Performance Indicators', ar: 'مؤشرات الأداء الرئيسية' })}
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {displayKpis.map((kpi, index) => (
+                <Card key={index}>
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-muted-foreground mb-2">{kpi.name}</p>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <span className="text-3xl font-bold">{kpi.current}</span>
+                        <span className="text-muted-foreground">{kpi.unit}</span>
+                      </div>
+                      <div className={`flex items-center gap-1 text-sm ${kpi.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                        {kpi.trend === 'up' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                        {kpi.change}
+                      </div>
                     </div>
-                    <div className={`flex items-center gap-1 text-sm ${kpi.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                      {kpi.trend === 'up' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-                      {kpi.change}
+                    <div className="mt-3">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>{t({ en: 'Progress', ar: 'التقدم' })}</span>
+                        <span>{t({ en: 'Target:', ar: 'الهدف:' })} {kpi.target}{kpi.unit}</span>
+                      </div>
+                      <Progress value={Math.min((kpi.current / kpi.target) * 100, 100)} className="h-2" />
                     </div>
-                  </div>
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                      <span>{t({ en: 'Progress', ar: 'التقدم' })}</span>
-                      <span>{t({ en: 'Target:', ar: 'الهدف:' })} {kpi.target}{kpi.unit}</span>
-                    </div>
-                    <Progress value={(kpi.current / kpi.target) * 100} className="h-2" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Objectives Progress */}
@@ -167,7 +263,7 @@ export default function PublicStrategyDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {dashboardData.objectives.map((objective, index) => (
+              {displayObjectives.length > 0 ? displayObjectives.map((objective, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">{objective.name}</span>
@@ -185,7 +281,11 @@ export default function PublicStrategyDashboard() {
                     <span className="text-sm text-muted-foreground w-10">{objective.progress}%</span>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-muted-foreground text-center py-4">
+                  {t({ en: 'No objectives defined yet', ar: 'لم يتم تحديد أهداف بعد' })}
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -199,7 +299,7 @@ export default function PublicStrategyDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {dashboardData.milestones.map((milestone, index) => (
+                {displayMilestones.length > 0 ? displayMilestones.map((milestone, index) => (
                   <div key={index} className="flex items-center gap-3">
                     {getStatusIcon(milestone.status)}
                     <div className="flex-1">
@@ -213,38 +313,46 @@ export default function PublicStrategyDashboard() {
                         ? t({ en: 'Done', ar: 'مكتمل' })
                         : milestone.status === 'in_progress'
                         ? t({ en: 'Active', ar: 'نشط' })
+                        : milestone.status === 'delayed'
+                        ? t({ en: 'Delayed', ar: 'متأخر' })
                         : t({ en: 'Upcoming', ar: 'قادم' })
                       }
                     </Badge>
                   </div>
-                ))}
+                )) : (
+                  <p className="text-muted-foreground text-center py-4">
+                    {t({ en: 'No milestones defined yet', ar: 'لم يتم تحديد معالم بعد' })}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Activity Feed */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              {t({ en: 'Recent Activity', ar: 'النشاط الأخير' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {dashboardData.activityFeed.map((activity, index) => (
-                <div key={index} className="flex items-start gap-3 pb-4 border-b last:border-0">
-                  <div className="h-2 w-2 rounded-full bg-primary mt-2" />
-                  <div className="flex-1">
-                    <p>{activity.message}</p>
-                    <p className="text-xs text-muted-foreground">{activity.date}</p>
+        {activityFeed.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                {t({ en: 'Recent Activity', ar: 'النشاط الأخير' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {activityFeed.map((activity, index) => (
+                  <div key={index} className="flex items-start gap-3 pb-4 border-b last:border-0">
+                    <div className="h-2 w-2 rounded-full bg-primary mt-2" />
+                    <div className="flex-1">
+                      <p>{activity.message}</p>
+                      <p className="text-xs text-muted-foreground">{activity.date}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

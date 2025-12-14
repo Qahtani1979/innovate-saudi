@@ -1,18 +1,18 @@
 # Strategy System - Implementation Plan Tracker
 
 **Project:** Strategy System  
-**Last Audit:** 2025-12-14 (PHASE 4 GOVERNANCE + AI COMPLETE)  
+**Last Audit:** 2025-12-14 (PHASE 5 COMMUNICATION COMPLETE)  
 **Target Completion:** Complete 8-Phase Strategic Lifecycle  
-**Status:** ✅ Platform Integration 100% | 🟡 UI Components 88% | ✅ Database Integration 100%
+**Status:** ✅ Platform Integration 100% | 🟡 UI Components 90% | ✅ Database Integration 100%
 
 ---
 
 ## CURRENT STATUS SUMMARY (2025-12-14)
 
 ### Platform Integration: 100% COMPLETE ✅
-### UI Components: 88% COMPLETE 🟡
-### Database Integration: 100% COMPLETE ✅ (Phase 1-4 Fully Integrated)
-### AI Integration: PHASE 4 AI COMPLETE ✅
+### UI Components: 90% COMPLETE 🟡
+### Database Integration: 100% COMPLETE ✅ (Phase 1-5 Fully Integrated)
+### AI Integration: PHASE 4-5 AI COMPLETE ✅
 
 | Category | UI Implemented | DB Tables | Edge Functions | AI Functions | Coverage |
 |----------|----------------|-----------|----------------|--------------|----------|
@@ -20,11 +20,11 @@
 | **Phase 2: Strategy Creation** | 6/6 ✅ | 6/6 ✅ | 6/6 ✅ | N/A | ✅ 100% COMPLETE |
 | **Phase 3: Cascade** | 9/9 ✅ | N/A | 9/9 ✅ | N/A | ✅ 100% COMPLETE |
 | **Phase 4: Governance** | 4/4 ✅ | 3/3 ✅ | 4/4 ✅ | 4/4 ✅ | ✅ 100% COMPLETE + AI |
-| **Phase 5: Communication** | 4/4 ✅ | N/A | N/A | N/A | ✅ 100% |
+| **Phase 5: Communication** | 6/6 ✅ | 4/4 ✅ | 1/1 ✅ | 1/1 ✅ | ✅ 100% COMPLETE + AI |
 | **Phase 6: Monitoring** | 11/11 ✅ | N/A | N/A | N/A | ✅ 100% |
 | **Phase 7: Evaluation** | 3/6 🟡 | 0/1 ❌ | 0/1 ❌ | N/A | 🟡 50% |
 | **Phase 8: Recalibration** | 0/6 ❌ | N/A | N/A | N/A | ❌ 0% |
-| **TOTAL** | **47/56** | **15/16** | **25/26** | **4/4** | **🟡 90%** |
+| **TOTAL** | **49/58** | **19/20** | **26/27** | **5/5** | **🟡 92%** |
 
 ---
 
@@ -38,7 +38,7 @@
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  PHASE 5        PHASE 6         PHASE 7        PHASE 8                      │
 │  COMMUNICATION → MONITORING  → EVALUATION  → RECALIBRATION                  │
-│  (✅ 100%)       (✅ 100%)       (🟡 50%)       (❌ 0%)                        │
+│  (✅ 100% + AI)  (✅ 100%)       (🟡 50%)       (❌ 0%)                        │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -81,131 +81,6 @@
 | 5 | useStrategyBaselines | `src/hooks/strategy/useStrategyBaselines.js` | ✅ CREATED |
 | 6 | useStrategyInputs | `src/hooks/strategy/useStrategyInputs.js` | ✅ CREATED |
 
-### Implementation Tasks - Phase 1
-
-#### Task 1.1: EnvironmentalScanWidget (8 hrs)
-```
-File: src/components/strategy/pre-planning/EnvironmentalScanWidget.jsx
-
-Features:
-- PESTLE Analysis (Political, Economic, Social, Tech, Legal, Environmental)
-- Trend monitoring dashboard
-- AI-powered news aggregation
-- Opportunity/threat identification
-- Export to strategy inputs
-
-AI Integration:
-- Model: google/gemini-2.5-flash
-- Prompt: "Analyze current trends in municipal innovation..."
-
-Data Sources:
-- Global trends table
-- Policy documents
-- International reports
-```
-
-#### Task 1.2: SWOTAnalysisBuilder (8 hrs)
-```
-File: src/components/strategy/pre-planning/SWOTAnalysisBuilder.jsx
-
-Features:
-- Quadrant builder (S/W/O/T)
-- AI-assisted factor identification
-- Stakeholder input collection
-- Cross-reference with challenges
-- Historical SWOT comparison
-- Export to strategic plan
-
-Data Model:
-- id: string
-- quadrant: 'strength' | 'weakness' | 'opportunity' | 'threat'
-- title_en/title_ar: string
-- description_en/description_ar: string
-- impact_level: 'high' | 'medium' | 'low'
-- related_entities: string[]
-- source: 'ai' | 'manual' | 'stakeholder'
-```
-
-#### Task 1.3: StakeholderAnalysisWidget (6 hrs)
-```
-File: src/components/strategy/pre-planning/StakeholderAnalysisWidget.jsx
-
-Features:
-- Stakeholder registry
-- Power/Interest matrix visualization
-- Influence mapping
-- Engagement strategy builder
-- Communication plan generator
-
-Data Model:
-- id, name_en, name_ar: string
-- type: 'government' | 'private' | 'academic' | 'civil_society' | 'international'
-- power_level: 1-10
-- interest_level: 1-10
-- current_engagement: 'champion' | 'supporter' | 'neutral' | 'critic' | 'blocker'
-- engagement_tactics: string[]
-- communication_frequency: 'weekly' | 'monthly' | 'quarterly'
-```
-
-#### Task 1.4: RiskAssessmentBuilder (6 hrs)
-```
-File: src/components/strategy/pre-planning/RiskAssessmentBuilder.jsx
-
-Features:
-- Risk registry
-- Probability x Impact matrix
-- Mitigation plan builder
-- Risk monitoring dashboard
-- Early warning system
-
-Data Model:
-- id, title_en, title_ar: string
-- category: 'political' | 'financial' | 'operational' | 'technological' | 'reputational'
-- probability: 1-5
-- impact: 1-5
-- risk_score: number (probability * impact)
-- mitigation_strategy: string
-- contingency_plan: string
-- owner: string
-- status: 'identified' | 'mitigating' | 'accepted' | 'resolved'
-```
-
-#### Task 1.5: StrategyInputCollector (6 hrs)
-```
-File: src/components/strategy/pre-planning/StrategyInputCollector.jsx
-
-Features:
-- Multi-source input collection (municipalities, departments, citizens)
-- Survey builder
-- Input aggregation
-- Theme extraction (AI)
-- Priority voting
-
-AI Integration:
-- Theme clustering from inputs
-- Sentiment analysis
-- Priority recommendations
-```
-
-#### Task 1.6: BaselineDataCollector (5 hrs)
-```
-File: src/components/strategy/pre-planning/BaselineDataCollector.jsx
-
-Features:
-- KPI baseline capture
-- Current state documentation
-- Benchmark establishment
-- Data validation
-
-Data Points:
-- Current MII scores by municipality
-- Challenge resolution rates
-- Pilot success rates
-- Partnership metrics
-- Budget utilization
-- Innovation pipeline health
-```
-
 ---
 
 ## PHASE 2: STRATEGY CREATION (✅ 100% COMPLETE - FULLY INTEGRATED)
@@ -245,148 +120,6 @@ Data Points:
 | 5 | useSectorStrategies | `src/hooks/strategy/useSectorStrategies.js` | ✅ CREATED |
 | 6 | useStrategyTemplates | `src/hooks/strategy/useStrategyTemplates.js` | ✅ CREATED |
 
-### Implementation Tasks - Phase 2
-
-#### Task 2.1: StrategyTimelinePlanner (8 hrs)
-```
-File: src/components/strategy/creation/StrategyTimelinePlanner.jsx
-
-Features:
-- Gantt chart visualization
-- Milestone definition
-- Dependency mapping
-- Critical path analysis
-- Resource loading view
-- Export to PDF/PPT
-
-Data Model:
-- id, objective_id: string
-- title_en, title_ar: string
-- start_date, end_date: date
-- dependencies: string[] (milestone IDs)
-- owner: string
-- status: 'planned' | 'in_progress' | 'completed' | 'delayed'
-- deliverables: string[]
-- resources_required: string[]
-```
-
-#### Task 2.2: StrategyOwnershipAssigner (6 hrs)
-```
-File: src/components/strategy/creation/StrategyOwnershipAssigner.jsx
-
-Features:
-- Objective-to-owner mapping
-- RACI matrix builder
-- Delegation rules
-- Notification configuration
-- Performance accountability
-
-Data Model:
-- objective_id: string
-- responsible: string (User/Role who does the work)
-- accountable: string (User who is ultimately accountable)
-- consulted: string[] (Users to be consulted)
-- informed: string[] (Users to be informed)
-- delegation_rules: DelegationRule[]
-```
-
-#### Task 2.3: ActionPlanBuilder (10 hrs)
-```
-File: src/components/strategy/creation/ActionPlanBuilder.jsx
-
-Features:
-- Action item creation
-- Task breakdown structure
-- Resource assignment
-- Timeline assignment
-- Budget linkage
-- Progress tracking
-
-AI Integration:
-- Auto-generate action plans from objectives
-- Suggest tasks based on similar objectives
-- Risk identification for action items
-
-Data Model (ActionPlan):
-- id, objective_id: string
-- title_en, title_ar: string
-- actions: ActionItem[]
-- total_budget: number
-- start_date, end_date: date
-- status: 'draft' | 'approved' | 'in_progress' | 'completed'
-
-Data Model (ActionItem):
-- id, action_plan_id: string
-- title_en, title_ar, description: string
-- owner: string
-- start_date, end_date: date
-- budget: number
-- dependencies, deliverables: string[]
-- status: 'pending' | 'in_progress' | 'completed' | 'blocked'
-- progress_percentage: number
-```
-
-#### Task 2.4: NationalStrategyLinker (6 hrs)
-```
-File: src/components/strategy/creation/NationalStrategyLinker.jsx
-
-Features:
-- Vision 2030 goal mapping
-- SDG alignment
-- National priority linking
-- Alignment scoring
-- Gap identification
-
-Data Sources:
-- Vision 2030 goals database
-- SDG targets
-- National Innovation Strategy
-- Sector-specific national strategies
-
-AI Integration:
-- Auto-suggest alignments based on objective text
-- Identify unmapped national priorities
-```
-
-#### Task 2.5: SectorStrategyBuilder (8 hrs)
-```
-File: src/components/strategy/creation/SectorStrategyBuilder.jsx
-
-Features:
-- Sector-specific strategy creation
-- Parent strategy inheritance
-- Sector KPI definition
-- Cross-sector coordination
-
-Data Model:
-- id, parent_plan_id, sector_id: string
-- name_en, name_ar: string
-- vision_en, vision_ar: string
-- objectives: SectorObjective[]
-- kpis: SectorKPI[]
-- owner: string
-- status: 'draft' | 'approved' | 'active'
-```
-
-#### Task 2.6: StrategyTemplateLibrary (7 hrs)
-```
-File: src/components/strategy/creation/StrategyTemplateLibrary.jsx
-
-Features:
-- Template catalog
-- Template creation from existing plans
-- Template customization
-- Template sharing
-- Version management
-
-Template Types:
-- Innovation strategy template
-- Digital transformation template
-- Sustainability strategy template
-- Sector-specific templates
-- Municipality-scale templates
-```
-
 ---
 
 ## PHASE 3: CASCADE & OPERATIONALIZATION (✅ 100%)
@@ -406,211 +139,6 @@ Template Types:
 | 3.7 | StrategyToEventGenerator | `src/components/strategy/cascade/StrategyToEventGenerator.jsx` | ✅ Exists |
 | 3.8 | StrategyToCampaignGenerator | `src/components/strategy/cascade/StrategyToCampaignGenerator.jsx` | ✅ Exists |
 | 3.9 | StrategyToPolicyGenerator | `src/components/strategy/cascade/StrategyToPolicyGenerator.jsx` | ✅ Exists |
-
-### Implementation Tasks - Phase 3
-
-#### Task 3.1: strategy-challenge-generator (4 hrs)
-```
-File: supabase/functions/strategy-challenge-generator/index.ts
-
-Inputs:
-- strategic_objective_ids: string[]
-- sector_id: string
-- municipality_id?: string
-- challenge_count: number
-
-Outputs:
-- challenges: Array<{
-    title_en, title_ar: string
-    description_en, description_ar: string
-    problem_statement_en, problem_statement_ar: string
-    desired_outcome_en, desired_outcome_ar: string
-    kpis: KPI[]
-    strategic_plan_ids: string[]
-  }>
-
-AI Prompt:
-"Generate innovation challenges that address the following 
-strategic objectives: {objectives}. 
-Focus on sector: {sector}. 
-Each challenge should have clear problem statement, 
-desired outcome, and measurable KPIs."
-```
-
-#### Task 3.2: StrategyChallengeGenerator UI (8 hrs)
-```
-File: src/components/strategy/cascade/StrategyChallengeGenerator.jsx
-
-Features:
-- Strategic plan selector
-- Objective multi-selector
-- Sector filter
-- AI generation trigger
-- Preview and edit
-- Batch creation
-- Direct save to database
-```
-
-#### Task 3.3: StrategyToLivingLabGenerator (6 hrs)
-```
-File: src/components/strategy/cascade/StrategyToLivingLabGenerator.jsx
-
-Features:
-- Strategic plan selector
-- Research focus areas input
-- Municipality selector
-- AI generation trigger
-- Preview and customize
-
-Uses: strategy-lab-research-generator (existing)
-```
-
-#### Task 3.4: StrategyToRDCallGenerator (5 hrs)
-```
-File: src/components/strategy/cascade/StrategyToRDCallGenerator.jsx
-
-Features:
-- Challenge selector (multi)
-- Budget range input
-- Timeline selector
-- AI generation trigger
-- Preview and edit
-
-Uses: strategy-rd-call-generator (existing)
-```
-
-#### Task 3.5: strategy-partnership-matcher (4 hrs)
-```
-File: supabase/functions/strategy-partnership-matcher/index.ts
-
-Inputs:
-- strategic_plan_id: string
-- capability_needs: string[]
-- partnership_types: string[]
-
-Outputs:
-- partner_recommendations: Array<{
-    organization_id: string
-    match_score: number
-    capability_match: string[]
-    strategic_alignment: string
-    recommended_partnership_type: string
-    suggested_activities: string[]
-  }>
-```
-
-#### Task 3.6: StrategyToPartnershipGenerator (6 hrs)
-```
-File: src/components/strategy/cascade/StrategyToPartnershipGenerator.jsx
-
-Features:
-- Strategic goal input
-- Capability needs identifier
-- Partner recommendation engine
-- Match scoring display
-- Outreach planning
-```
-
-#### Task 3.7: strategy-event-planner (3 hrs)
-```
-File: supabase/functions/strategy-event-planner/index.ts
-
-Inputs:
-- strategic_plan_id: string
-- event_type: 'conference' | 'workshop' | 'hackathon' | 'exhibition'
-- target_objectives: string[]
-- target_audience: string[]
-
-Outputs:
-- event_plan: {
-    title_en, title_ar: string
-    description: string
-    suggested_date_range: { start: date; end: date }
-    agenda: AgendaItem[]
-    speakers_needed: string[]
-    kpis: EventKPI[]
-    estimated_budget: number
-  }
-```
-
-#### Task 3.8: StrategyToEventGenerator (5 hrs)
-```
-File: src/components/strategy/cascade/StrategyToEventGenerator.jsx
-
-Features:
-- Event type selector
-- Strategic objective linking
-- Audience definition
-- AI event planning
-- Calendar integration
-```
-
-#### Task 3.9: strategy-campaign-planner (3 hrs)
-```
-File: supabase/functions/strategy-campaign-planner/index.ts
-
-Inputs:
-- strategic_plan_id: string
-- campaign_objective: string
-- target_audience: string[]
-- channels: string[]
-- budget: number
-
-Outputs:
-- campaign_plan: {
-    name: string
-    key_messages: { en: string; ar: string }[]
-    channel_strategy: ChannelPlan[]
-    timeline: CampaignPhase[]
-    content_calendar: ContentItem[]
-    kpis: CampaignKPI[]
-  }
-```
-
-#### Task 3.10: StrategyToCampaignGenerator (5 hrs)
-```
-File: src/components/strategy/cascade/StrategyToCampaignGenerator.jsx
-
-Features:
-- Campaign objective selector
-- Audience targeting
-- Message generation
-- Channel planning
-- Timeline creation
-```
-
-#### Task 3.11: strategy-policy-deriver (4 hrs)
-```
-File: supabase/functions/strategy-policy-deriver/index.ts
-
-Inputs:
-- strategic_plan_id: string
-- policy_area: string
-- target_objectives: string[]
-
-Outputs:
-- policy_draft: {
-    title_en, title_ar: string
-    executive_summary: string
-    policy_statement: string
-    rationale: string
-    implementation_steps: string[]
-    stakeholder_impacts: StakeholderImpact[]
-    success_metrics: PolicyMetric[]
-  }
-```
-
-#### Task 3.12: StrategyToPolicyGenerator (6 hrs)
-```
-File: src/components/strategy/cascade/StrategyToPolicyGenerator.jsx
-
-Features:
-- Policy area selector
-- Strategic alignment display
-- Policy draft generation
-- Stakeholder impact analysis
-- Approval workflow initiation
-```
 
 ---
 
@@ -661,233 +189,85 @@ Features:
 | 3 | useCommitteeAI | `src/hooks/strategy/useCommitteeAI.js` | ✅ CREATED |
 | 4 | useWorkflowAI | `src/hooks/strategy/useWorkflowAI.js` | ✅ CREATED |
 
-### Phase 4 AI Features Implemented
-
-| Feature | Component | Description |
-|---------|-----------|-------------|
-| Smart Stakeholder Suggestion | StakeholderSignoffTracker | AI suggests appropriate stakeholders based on document type |
-| Approval Risk Prediction | StakeholderSignoffTracker | Predicts likelihood of approval with concerns and recommendations |
-| Reminder Optimization | StakeholderSignoffTracker | Optimizes reminder timing and approach per stakeholder |
-| Change Impact Analysis | StrategyVersionControl | Analyzes impact of changes before creating new version |
-| Auto-Categorization | StrategyVersionControl | AI suggests version type (major/minor/patch) and labels |
-| Version Comparison | StrategyVersionControl | AI-powered comparison between versions |
-| Rollback Risk Prediction | StrategyVersionControl | Predicts impact before restoring old version |
-| Agenda Prioritization | StrategyCommitteeReview | Prioritizes meeting agenda items by importance |
-| Decision Impact Prediction | StrategyCommitteeReview | Predicts impact of proposed committee decisions |
-| Action Item Generation | StrategyCommitteeReview | Auto-generates action items from decisions |
-| Meeting Summaries | StrategyCommitteeReview | Generates comprehensive meeting summaries (EN/AR) |
-
-### Implementation Tasks - Phase 4
-
-#### Task 4.1: StakeholderSignoffTracker (6 hrs) ✅ COMPLETE
-```
-File: src/components/strategy/governance/StakeholderSignoffTracker.jsx
-
-Features:
-- Signoff request management
-- Status tracking dashboard
-- Reminder automation
-- AI stakeholder suggestions
-- Approval risk prediction
-- Audit trail
-
-Data Model:
-- id, strategic_plan_id: string
-- stakeholder_id, stakeholder_name, stakeholder_role: string
-- requested_date, due_date: timestamp
-- status: 'pending' | 'approved' | 'rejected' | 'changes_requested'
-- signed_date?: timestamp
-- signature_url?: string
-- comments: string
-- reminder_count: number
-```
-
-#### Task 4.2: StrategyVersionControl (8 hrs)
-```
-File: src/components/strategy/governance/StrategyVersionControl.jsx
-
-Features:
-- Version history
-- Change comparison (diff)
-- Version restoration
-- Change annotations
-- Approval per version
-
-Data Model (StrategyVersion):
-- id, strategic_plan_id: string
-- version_number: string (semver)
-- version_label: string
-- created_at: timestamp
-- created_by: string
-- change_summary: string
-- changes: ChangeRecord[]
-- status: 'draft' | 'in_review' | 'approved' | 'superseded'
-- snapshot: JSON (full plan snapshot)
-
-Data Model (ChangeRecord):
-- field_path: string
-- old_value, new_value: any
-- change_type: 'added' | 'modified' | 'removed'
-- reason: string
-```
-
 ---
 
-## PHASE 5: COMMUNICATION & PUBLISHING (100% Complete) ✅
+## PHASE 5: COMMUNICATION & PUBLISHING (✅ 100% COMPLETE + AI)
 
 **Purpose:** Communicate the strategy internally and externally.
 
-### Status Table
+### UI Components Status (6/6 Implemented ✅)
 
-| # | Task | Component | Type | Status | Priority | Sprint |
-|---|------|-----------|------|--------|----------|--------|
-| 5.1 | Internal Communication | `CommunicationsHub` | Page | ✅ Exists | - | - |
-| 5.2 | Stakeholder Notification | `email-trigger-hub` | Edge Function | ✅ Exists | - | - |
-| 5.3 | Strategy Publishing | `StrategyPublicView` | Page | ✅ Complete | - | - |
-| 5.4 | Public Dashboard | `PublicStrategyDashboard` | Page | ✅ Complete | - | - |
+| # | Component | File Path | Status |
+|---|-----------|-----------|--------|
+| 5.1 | StrategyCommunicationPlanner | `src/components/strategy/communication/StrategyCommunicationPlanner.jsx` | ✅ With AI |
+| 5.2 | ImpactStoryGenerator | `src/components/strategy/communication/ImpactStoryGenerator.jsx` | ✅ With AI |
+| 5.3 | StakeholderNotificationManager | `src/components/strategy/communication/StakeholderNotificationManager.jsx` | ✅ Created |
+| 5.4 | CommunicationAnalyticsDashboard | `src/components/strategy/communication/CommunicationAnalyticsDashboard.jsx` | ✅ Created |
+| 5.5 | PublicStrategyDashboard | `src/components/strategy/communication/PublicStrategyDashboard.jsx` | ✅ With Real Data |
+| 5.6 | StrategyPublicView | `src/components/strategy/communication/StrategyPublicView.jsx` | ✅ With Real Data |
 
-### Implementation Tasks - Phase 5
+### Database Tables Status (4/4 Created ✅)
 
-#### Task 5.1: StrategyPublicView (6 hrs)
-```
-File: src/pages/strategy/StrategyPublicView.jsx
-Route: /strategy/public/:id
+| # | Table | Purpose | Status |
+|---|-------|---------|--------|
+| 1 | `communication_plans` | Store communication strategy plans | ✅ CREATED |
+| 2 | `impact_stories` | Store impact stories and success narratives | ✅ CREATED |
+| 3 | `communication_notifications` | Store stakeholder notifications | ✅ CREATED |
+| 4 | `communication_analytics` | Store communication metrics | ✅ CREATED |
 
-Features:
-- Public-facing strategy summary
-- Vision and objectives display
-- Progress visualization
-- Key achievements
-- Contact/feedback form
+### Database Integration Hooks (4/4 Created ✅)
 
-Content:
-- Executive summary
-- Strategic pillars
-- Key objectives
-- Progress indicators
-- Success stories
-- Upcoming initiatives
+| # | Hook | File Path | Status |
+|---|------|-----------|--------|
+| 1 | useCommunicationPlans | `src/hooks/strategy/useCommunicationPlans.js` | ✅ CREATED |
+| 2 | useImpactStories | `src/hooks/strategy/useImpactStories.js` | ✅ CREATED |
+| 3 | useCommunicationNotifications | `src/hooks/strategy/useCommunicationNotifications.js` | ✅ CREATED |
+| 4 | useCommunicationAI | `src/hooks/strategy/useCommunicationAI.js` | ✅ CREATED |
 
-Access Control:
-- No authentication required
-- Rate limiting
-- Optional password protection
-```
+### AI Edge Functions (1/1 Created ✅)
 
-#### Task 5.2: PublicStrategyDashboard (6 hrs)
-```
-File: src/pages/strategy/PublicStrategyDashboard.jsx
-Route: /strategy/dashboard/:id
+| # | Edge Function | Purpose | Status |
+|---|---------------|---------|--------|
+| 1 | strategy-communication-ai | Story generation, key messages, channel strategy, content calendar, engagement analysis, translation | ✅ CREATED |
 
-Features:
-- Real-time KPI display
-- Progress charts
-- Milestone tracker
-- News/updates feed
-- Interactive elements
+### Phase 5 Page
 
-Widgets:
-- KPI progress cards
-- Timeline visualization
-- Entity counts (programs, pilots, etc.)
-- Geographic distribution map
-- Sector coverage chart
+| # | Page | File Path | Status |
+|---|------|-----------|--------|
+| 1 | StrategyCommunicationPage | `src/pages/strategy/StrategyCommunicationPage.jsx` | ✅ CREATED |
 
-Refresh:
-- Auto-refresh every 5 minutes
-- Manual refresh button
-```
+### Phase 5 AI Features Implemented
+
+| Feature | Component | Description |
+|---------|-----------|-------------|
+| Impact Story Generation | ImpactStoryGenerator | AI generates compelling impact stories from strategy data |
+| Key Message Generation | StrategyCommunicationPlanner | AI suggests key messages and master narrative for audiences |
+| Channel Strategy Suggestion | StrategyCommunicationPlanner | AI recommends optimal channels per audience segment |
+| Content Calendar Generation | StrategyCommunicationPlanner | AI creates content calendar with scheduled posts |
+| Engagement Analysis | CommunicationAnalyticsDashboard | AI analyzes communication effectiveness |
+| Content Translation | strategy-communication-ai | AI translates content between English and Arabic |
 
 ---
 
-## PHASE 6: MONITORING & TRACKING (100% Complete) ✅
+## PHASE 6: MONITORING & TRACKING (✅ 100% Complete)
 
 **Purpose:** Monitor strategy execution and track progress against KPIs.
 
-### Status Table
+### UI Components Status (11/11 Implemented ✅)
 
-| # | Task | Component | Type | Status | Priority | Sprint |
-|---|------|-----------|------|--------|----------|--------|
-| 6.1 | KPI Tracking | `useStrategicKPI` | Hook | ✅ Exists | - | - |
-| 6.2 | Progress Monitoring | `StrategicCoverageWidget` | Component | ✅ Exists | - | - |
-| 6.3 | Coverage Analysis | `useStrategicCascadeValidation` | Hook | ✅ Exists | - | - |
-| 6.4 | What-If Simulation | `WhatIfSimulator` | Component | ✅ Exists | - | - |
-| 6.5 | Gap Analysis | `SectorGapAnalysisWidget` | Component | ✅ Exists | - | - |
-| 6.6 | Strategic Reports | `StrategicNarrativeGenerator` | Component | ✅ Exists | - | - |
-| 6.7 | Alignment Scoring | `strategic-priority-scoring` | Edge Function | ✅ Exists | - | - |
-| 6.8 | Bottleneck Detection | `BottleneckDetector` | Component | ✅ Exists | - | - |
-| 6.9 | Strategy Cockpit Enhancement | `StrategyCockpit` | Page | ✅ Exists | - | - |
-| 6.10 | Alignment ScoreCard | `StrategyAlignmentScoreCard` | Component | ✅ Complete | - | - |
-| 6.11 | Alignment Hook | `useStrategyAlignment` | Hook | ✅ Complete | - | - |
-| 6.12 | Benchmarking Page | `StrategicBenchmarkingPage` | Page | ✅ Complete | - | - |
-
-### Implementation Tasks - Phase 6
-
-#### Task 6.1: StrategyCockpit Enhancement (8 hrs)
-```
-File: src/pages/StrategyCockpit.jsx (enhancement)
-
-New Features:
-- Real-time KPI gauges
-- Predictive alerts
-- Cross-entity drill-down
-- Executive summary generator
-- Export to executive briefing
-- Mobile-optimized view
-- Customizable widget layout
-- Alert configuration
-- Trend analysis
-- Comparative view (vs targets)
-
-Widget Library:
-- kpi_gauge
-- entity_pipeline
-- coverage_heatmap
-- risk_radar
-- milestone_timeline
-- bottleneck_alert
-- trend_chart
-- comparison_bar
-```
-
-#### Task 6.2: strategy-alignment-scorer (3 hrs)
-```
-File: supabase/functions/strategy-alignment-scorer/index.ts
-
-Inputs:
-- entity_type: string
-- entity_id: string
-
-Outputs:
-- alignment_score: number (0-100)
-- gaps: AlignmentGap[]
-- recommendations: string[]
-- linked_objectives: string[]
-```
-
-#### Task 6.3: StrategyAlignmentScoreCard (4 hrs)
-```
-File: src/components/strategy/monitoring/StrategyAlignmentScoreCard.jsx
-
-Features:
-- Real-time alignment score display
-- Gap visualization
-- Recommendation cards
-- Drill-down to specific issues
-- Comparison across entities
-```
-
-#### Task 6.4: useStrategyAlignment (4 hrs)
-```
-File: src/hooks/useStrategyAlignment.js
-
-Features:
-- Fetch alignment scores
-- Real-time updates
-- Caching
-- Batch operations
-- Gap tracking
-```
+| # | Component | File Path | Status |
+|---|-----------|-----------|--------|
+| 6.1 | useStrategicKPI | `src/hooks/useStrategicKPI.js` | ✅ Hook |
+| 6.2 | StrategicCoverageWidget | `src/components/strategy/StrategicCoverageWidget.jsx` | ✅ Component |
+| 6.3 | useStrategicCascadeValidation | `src/hooks/useStrategicCascadeValidation.js` | ✅ Hook |
+| 6.4 | WhatIfSimulator | `src/components/strategy/WhatIfSimulator.jsx` | ✅ Component |
+| 6.5 | SectorGapAnalysisWidget | `src/components/strategy/SectorGapAnalysisWidget.jsx` | ✅ Component |
+| 6.6 | StrategicNarrativeGenerator | `src/components/strategy/StrategicNarrativeGenerator.jsx` | ✅ Component |
+| 6.7 | strategic-priority-scoring | Edge Function | ✅ Edge Function |
+| 6.8 | BottleneckDetector | `src/components/strategy/BottleneckDetector.jsx` | ✅ Component |
+| 6.9 | StrategyCockpit | `src/pages/StrategyCockpit.jsx` | ✅ Page |
+| 6.10 | StrategyAlignmentScoreCard | `src/components/strategy/monitoring/StrategyAlignmentScoreCard.jsx` | ✅ Component |
+| 6.11 | useStrategyAlignment | `src/hooks/useStrategyAlignment.js` | ✅ Hook |
 
 ---
 
@@ -899,298 +279,69 @@ Features:
 
 | # | Component | File Path | Status |
 |---|-----------|-----------|--------|
-| 7.1 | StrategyAdjustmentWizard | `src/components/strategy/review/StrategyAdjustmentWizard.jsx` | ✅ Exists |
+| 7.1 | StrategyImpactAssessment | `src/components/strategy/review/StrategyImpactAssessment.jsx` | ✅ Exists |
 | 7.2 | StrategyReprioritizer | `src/components/strategy/review/StrategyReprioritizer.jsx` | ✅ Exists |
-| 7.3 | StrategyImpactAssessment | `src/components/strategy/review/StrategyImpactAssessment.jsx` | ✅ Exists |
-| 7.4 | LessonsLearnedRepository | Strategy-specific version | ❌ NOT IN STRATEGY FOLDER |
-| 7.5 | ExpertEvaluationPanel | Expert scoring interface | ❌ NOT CREATED |
-| 7.6 | StrategyROICalculator | ROI/value analysis tool | ❌ NOT CREATED |
+| 7.3 | StrategyAdjustmentWizard | `src/components/strategy/review/StrategyAdjustmentWizard.jsx` | ✅ Exists |
+| 7.4 | StrategyEvaluationPanel | - | ❌ MISSING |
+| 7.5 | ROICalculator | - | ❌ MISSING |
+| 7.6 | CaseStudyGenerator | - | ❌ MISSING |
+
+### Database Tables Status (0/1 Created ❌)
+
+| # | Table | Purpose | Status |
+|---|-------|---------|--------|
+| 1 | `strategy_evaluations` | Store evaluation results and lessons learned | ❌ MISSING |
 
 ---
 
 ## PHASE 8: RECALIBRATION (❌ 0%)
 
-**Purpose:** Feedback loop and strategic adjustment for mid-cycle pivots and next-cycle initialization.
+**Purpose:** Adjust strategy based on learnings and changing conditions.
 
 ### UI Components Status (0/6 Implemented ❌)
 
-| # | Component | Documented Purpose | Status |
-|---|-----------|-------------------|--------|
-| 8.1 | FeedbackAnalysisEngine | Synthesize lessons learned, identify patterns | ❌ NOT CREATED |
-| 8.2 | AdjustmentDecisionMatrix | Evaluate impact/urgency of proposed changes | ❌ NOT CREATED |
-| 8.3 | MidCyclePivotManager | Handle mid-cycle strategic pivots | ❌ NOT CREATED |
-| 8.4 | PhaseModificationExecutor | Execute approved modifications to phases 2-6 | ❌ NOT CREATED |
-| 8.5 | BaselineRecalibrator | Reset baselines after significant changes | ❌ NOT CREATED |
-| 8.6 | NextCycleInitializer | Package recommendations for next cycle | ❌ NOT CREATED |
-
-### Implementation Tasks - Phase 7
-
-#### Task 7.1: StrategyAdjustmentWizard (8 hrs)
-```
-File: src/components/strategy/review/StrategyAdjustmentWizard.jsx
-
-Features:
-- Guided adjustment workflow
-- Change justification capture
-- Impact analysis
-- Stakeholder notification
-- Version creation
-
-Wizard Steps:
-1. select_elements (What to adjust)
-2. define_changes (New values)
-3. justify_changes (Rationale)
-4. impact_analysis (Auto-analyze downstream impact)
-5. approval_routing (Who needs to approve)
-6. communication_plan (How to communicate)
-7. confirm_execute (Final confirmation)
-
-Change Types:
-- Objective modification
-- KPI target adjustment
-- Timeline extension/compression
-- Resource reallocation
-- Priority change
-- Scope expansion/reduction
-```
-
-#### Task 7.2: StrategyReprioritizer (6 hrs)
-```
-File: src/components/strategy/review/StrategyReprioritizer.jsx
-
-Features:
-- Priority scoring matrix
-- Drag-drop reordering
-- Impact visualization
-- Resource rebalancing
-- Notification generation
-
-Prioritization Criteria:
-- strategic_importance
-- resource_availability
-- quick_wins_potential
-- risk_level
-- stakeholder_demand
-- external_dependencies
-
-Visualizations:
-- Priority matrix (effort vs impact)
-- Before/after comparison
-- Resource allocation shift
-- Timeline impact
-```
-
-#### Task 7.3: StrategyImpactAssessment (5 hrs)
-```
-File: src/components/strategy/review/StrategyImpactAssessment.jsx
-
-Features:
-- Comprehensive impact analysis
-- Multi-dimensional scoring
-- Benchmark comparison
-- Trend visualization
-- Report generation
-
-Impact Dimensions:
-- economic_impact
-- social_impact
-- environmental_impact
-- institutional_impact
-- innovation_capacity_impact
-
-Data Sources:
-- KPI achievements
-- Pilot outcomes
-- Solution adoptions
-- Partnership results
-- Citizen feedback
-- MII improvements
-
-Outputs:
-- Impact scorecard
-- Trend analysis
-- Recommendations
-- Executive summary
-- Full assessment report
-```
+| # | Component | File Path | Status |
+|---|-----------|-----------|--------|
+| 8.1 | FeedbackAnalysisEngine | - | ❌ MISSING |
+| 8.2 | AdjustmentDecisionMatrix | - | ❌ MISSING |
+| 8.3 | MidCyclePivotManager | - | ❌ MISSING |
+| 8.4 | PhaseModificationExecutor | - | ❌ MISSING |
+| 8.5 | BaselineRecalibrator | - | ❌ MISSING |
+| 8.6 | NextCycleInitializer | - | ❌ MISSING |
 
 ---
 
-## SPRINT PLAN
+## NEXT STEPS
 
-### Sprint 1: P1 Critical (2 weeks) - 64 hrs
-**Focus:** Pre-Planning & Strategy Creation Core
+### Immediate Priority (Phase 7 Completion)
+1. Create `StrategyEvaluationPanel` component
+2. Create `ROICalculator` component  
+3. Create `CaseStudyGenerator` component
+4. Create `strategy_evaluations` database table
 
-| # | Item | Type | Phase | Effort |
-|---|------|------|-------|--------|
-| 1 | SWOTAnalysisBuilder | Component | P1 | 8hr |
-| 2 | StakeholderAnalysisWidget | Component | P1 | 6hr |
-| 3 | RiskAssessmentBuilder | Component | P1 | 6hr |
-| 4 | EnvironmentalScanWidget | Component | P1 | 8hr |
-| 5 | StrategyTimelinePlanner | Component | P2 | 8hr |
-| 6 | StrategyOwnershipAssigner | Component | P2 | 6hr |
-| 7 | ActionPlanBuilder | Component | P2 | 10hr |
-| 8 | strategy-challenge-generator | Edge Function | P3 | 4hr |
-| 9 | StrategyChallengeGenerator | Component | P3 | 8hr |
-
-### Sprint 2: P2 Cascade & Governance (2 weeks) - 52 hrs
-**Focus:** Cascade Generators, Governance Tracking
-
-| # | Item | Type | Phase | Effort |
-|---|------|------|-------|--------|
-| 1 | StrategyInputCollector | Component | P1 | 6hr |
-| 2 | BaselineDataCollector | Component | P1 | 5hr |
-| 3 | StrategyToLivingLabGenerator | Component | P3 | 6hr |
-| 4 | StrategyToRDCallGenerator | Component | P3 | 5hr |
-| 5 | strategy-partnership-matcher | Edge Function | P3 | 4hr |
-| 6 | StrategyToPartnershipGenerator | Component | P3 | 6hr |
-| 7 | StakeholderSignoffTracker | Component | P4 | 6hr |
-| 8 | StrategyVersionControl | Component | P4 | 8hr |
-| 9 | NationalStrategyLinker | Component | P2 | 6hr |
-
-### Sprint 3: P3 Monitoring & Review (2 weeks) - 48 hrs
-**Focus:** Enhanced Monitoring, Review Workflow
-
-| # | Item | Type | Phase | Effort |
-|---|------|------|-------|--------|
-| 1 | SectorStrategyBuilder | Component | P2 | 8hr |
-| 2 | StrategyCockpit Enhancement | Page | P6 | 8hr |
-| 3 | StrategyAdjustmentWizard | Component | P7 | 8hr |
-| 4 | StrategyReprioritizer | Component | P7 | 6hr |
-| 5 | strategy-alignment-scorer | Edge Function | P6 | 3hr |
-| 6 | StrategyAlignmentScoreCard | Component | P6 | 4hr |
-| 7 | useStrategyAlignment | Hook | P6 | 4hr |
-| 8 | StrategyTemplateLibrary | Component | P2 | 7hr |
-
-### Sprint 4: P4 Communication & Polish (1 week) - 33 hrs
-**Focus:** Public Views, Event/Campaign Generation
-
-| # | Item | Type | Phase | Effort |
-|---|------|------|-------|--------|
-| 1 | StrategyPublicView | Page | P5 | 6hr |
-| 2 | PublicStrategyDashboard | Page | P5 | 6hr |
-| 3 | strategy-event-planner | Edge Function | P3 | 3hr |
-| 4 | StrategyToEventGenerator | Component | P3 | 5hr |
-| 5 | strategy-campaign-planner | Edge Function | P3 | 3hr |
-| 6 | StrategyToCampaignGenerator | Component | P3 | 5hr |
-| 7 | StrategyImpactAssessment | Component | P7 | 5hr |
-
-### Sprint 5: P5 Templates & Advanced (1 week) - 27 hrs
-**Focus:** Templates, Policy Generation, Benchmarking
-
-| # | Item | Type | Phase | Effort |
-|---|------|------|-------|--------|
-| 1 | StrategyTemplates | Page | P2 | 8hr |
-| 2 | useStrategyTemplates | Hook | P2 | 3hr |
-| 3 | strategy-policy-deriver | Edge Function | P3 | 4hr |
-| 4 | StrategyToPolicyGenerator | Component | P3 | 6hr |
-| 5 | StrategicBenchmarking | Page | P6 | 6hr |
+### Future Priority (Phase 8 Implementation)
+1. Design and implement all 6 Phase 8 components
+2. Create necessary database tables for recalibration
+3. Implement AI features for feedback analysis
 
 ---
 
-## FILE STRUCTURE
+## CHANGELOG
 
-```
-src/components/strategy/
-├── pre-planning/
-│   ├── EnvironmentalScanWidget.jsx        # Sprint 1
-│   ├── SWOTAnalysisBuilder.jsx            # Sprint 1
-│   ├── StakeholderAnalysisWidget.jsx      # Sprint 1
-│   ├── RiskAssessmentBuilder.jsx          # Sprint 1
-│   ├── StrategyInputCollector.jsx         # Sprint 2
-│   └── BaselineDataCollector.jsx          # Sprint 2
-│
-├── creation/
-│   ├── StrategyTimelinePlanner.jsx        # Sprint 1
-│   ├── StrategyOwnershipAssigner.jsx      # Sprint 1
-│   ├── ActionPlanBuilder.jsx              # Sprint 1
-│   ├── NationalStrategyLinker.jsx         # Sprint 2
-│   ├── SectorStrategyBuilder.jsx          # Sprint 3
-│   └── StrategyTemplateLibrary.jsx        # Sprint 3
-│
-├── cascade/
-│   ├── StrategyChallengeGenerator.jsx     # Sprint 1
-│   ├── StrategyToLivingLabGenerator.jsx   # Sprint 2
-│   ├── StrategyToRDCallGenerator.jsx      # Sprint 2
-│   ├── StrategyToPartnershipGenerator.jsx # Sprint 2
-│   ├── StrategyToEventGenerator.jsx       # Sprint 4
-│   ├── StrategyToCampaignGenerator.jsx    # Sprint 4
-│   └── StrategyToPolicyGenerator.jsx      # Sprint 5
-│
-├── governance/
-│   ├── StakeholderSignoffTracker.jsx      # Sprint 2
-│   └── StrategyVersionControl.jsx         # Sprint 2
-│
-├── monitoring/
-│   ├── StrategyAlignmentScoreCard.jsx     # Sprint 3
-│   └── EnhancedStrategyCockpit.jsx        # Sprint 3
-│
-└── review/
-    ├── StrategyAdjustmentWizard.jsx       # Sprint 3
-    ├── StrategyReprioritizer.jsx          # Sprint 3
-    └── StrategyImpactAssessment.jsx       # Sprint 4
+### 2025-12-14 - Phase 5 Complete
+- Created 4 new database tables (communication_plans, impact_stories, communication_notifications, communication_analytics)
+- Created 4 database hooks (useCommunicationPlans, useImpactStories, useCommunicationNotifications, useCommunicationAI)
+- Created strategy-communication-ai edge function with 6 AI features
+- Created StrategyCommunicationPlanner component with AI integration
+- Created ImpactStoryGenerator component with AI story generation
+- Created StakeholderNotificationManager component
+- Created CommunicationAnalyticsDashboard component
+- Updated PublicStrategyDashboard to use real data from database
+- Updated StrategyPublicView to use real data from database
+- Created StrategyCommunicationPage to unify all Phase 5 components
+- Phase 5 now 100% complete with AI integration
 
-src/pages/strategy/
-├── StrategyTemplates.jsx                   # Sprint 5
-├── StrategyPublicView.jsx                  # Sprint 4
-├── PublicStrategyDashboard.jsx             # Sprint 4
-└── StrategicBenchmarking.jsx               # Sprint 5
-
-src/hooks/
-├── useStrategyAlignment.js                 # Sprint 3
-└── useStrategyTemplates.js                 # Sprint 5
-
-supabase/functions/
-├── strategy-challenge-generator/           # Sprint 1
-├── strategy-partnership-matcher/           # Sprint 2
-├── strategy-alignment-scorer/              # Sprint 3
-├── strategy-event-planner/                 # Sprint 4
-├── strategy-campaign-planner/              # Sprint 4
-└── strategy-policy-deriver/                # Sprint 5
-```
-
----
-
-## EFFORT SUMMARY
-
-| Sprint | Duration | Effort | Key Deliverables |
-|--------|----------|--------|-----------------|
-| Sprint 1 | 2 weeks | 64 hr | Pre-planning tools, Strategy creation core |
-| Sprint 2 | 2 weeks | 52 hr | Cascade generators, Governance tracking |
-| Sprint 3 | 2 weeks | 48 hr | Monitoring enhancement, Review workflow |
-| Sprint 4 | 1 week | 33 hr | Public views, Event/Campaign generation |
-| Sprint 5 | 1 week | 27 hr | Templates, Policy generation, Benchmarking |
-| **TOTAL** | **8 weeks** | **224 hr** | **Complete Strategy Leader Workflow** |
-
----
-
-## OVERALL SCORE (Verified 2025-12-14)
-
-### Platform Integration: **100/100** ✅
-### UI Components: **77/100** 🟡
-### Database Tables: **0/100** ❌
-
-| Category | UI Implemented | UI Missing | DB Tables | Status |
-|----------|----------------|------------|-----------|--------|
-| Phase 1: Pre-Planning | 6 | 0 | 0/4 | 🟡 UI ✅ DB ❌ |
-| Phase 2: Strategy Creation | 6 | 0 | 0/6 | 🟡 UI ✅ DB ❌ |
-| Phase 3: Cascade | 9 | 0 | N/A | ✅ 100% |
-| Phase 4: Governance | 2 | 3 | 0/2 | 🟡 40% |
-| Phase 5: Communication | 4 | 0 | N/A | ✅ 100% |
-| Phase 6: Monitoring | 11 | 0 | N/A | ✅ 100% |
-| Phase 7: Evaluation | 3 | 3 | 0/1 | 🟡 50% |
-| Phase 8: Recalibration | 0 | 6 | N/A | ❌ 0% |
-| **TOTAL** | **41** | **12** | **0/13** | **🟡 77%** |
-
----
-
-## NEXT STEPS (Priority Order)
-
-1. **Create Database Tables** - All 13 documented tables are missing
-2. **Complete Phase 8** - All 6 recalibration components need to be created
-3. **Complete Phase 7** - 3 missing components (LessonsLearned, ExpertEvaluation, ROI)
-4. **Complete Phase 4** - 3 missing governance components
-
----
-
-*Tracker last updated: 2025-12-14 (VERIFIED AGAINST CODEBASE)*
+### 2025-12-14 - Phase 4 AI Complete
+- Added 4 AI edge functions for governance
+- Added 4 AI hooks for governance components
+- Integrated AI into all Phase 4 components
