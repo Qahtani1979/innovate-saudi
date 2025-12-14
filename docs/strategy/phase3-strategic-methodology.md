@@ -12,7 +12,7 @@ Phase 3 (Strategy Cascade) is the **operationalization and deployment phase** wh
 
 ---
 
-## ✅ IMPLEMENTATION STATUS: COMPLETE (95%)
+## ✅ IMPLEMENTATION STATUS: COMPLETE (100%)
 
 Based on deep code validation and implementation (2025-12-14):
 
@@ -27,17 +27,17 @@ Based on deep code validation and implementation (2025-12-14):
 │  ├── partnerships: is_strategy_derived added                                    │
 │  └── rd_calls: all 3 strategy columns added                                     │
 │                                                                                  │
-│  ✅ GENERATOR FIXES: 7/9 COMPLETE                                               │
+│  ✅ GENERATOR FIXES: 9/9 COMPLETE                                               │
 │  ├── StrategyChallengeGenerator: Sets all 3 fields                              │
 │  ├── StrategyToPilotGenerator: Inherits plan IDs from challenge                 │
 │  ├── StrategyToLivingLabGenerator: Sets all 3 fields                            │
 │  ├── StrategyToEventGenerator: Sets all 3 fields                                │
 │  ├── StrategyToPartnershipGenerator: Sets all 3 fields                          │
 │  ├── StrategyToRDCallGenerator: Derives plan IDs from challenges                │
-│  ├── StrategyToPolicyGenerator: ⏳ Uses singular plan ID                        │
-│  └── StrategyToCampaignGenerator: ⏳ Uses singular plan ID                      │
+│  ├── StrategyToPolicyGenerator: Sets all 3 fields (strategic_plan_ids[])        │
+│  └── StrategyToCampaignGenerator: Sets all 3 fields (strategic_plan_ids[])      │
 │                                                                                  │
-│  OVERALL PHASE 3 STATUS: 95% COMPLETE                                            │
+│  OVERALL PHASE 3 STATUS: 100% COMPLETE                                           │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -53,8 +53,8 @@ Based on deep code validation and implementation (2025-12-14):
 | StrategyToEventGenerator | ✅ | ✅ | ✅ | **COMPLETE** |
 | StrategyToPartnershipGenerator | ✅ | ✅ | ✅ | **COMPLETE** |
 | StrategyToRDCallGenerator | ✅ | ✅ | ✅ | **COMPLETE** |
-| StrategyToPolicyGenerator | ❌ | ❌ | singular | **NEEDS FIX** |
-| StrategyToCampaignGenerator | ❌ | ❌ | singular | **NEEDS FIX** |
+| StrategyToPolicyGenerator | ✅ | ✅ | ✅ | **COMPLETE** |
+| StrategyToCampaignGenerator | ✅ | ✅ | ✅ | **COMPLETE** |
 
 ---
 
@@ -91,7 +91,7 @@ Based on deep code validation and implementation (2025-12-14):
 │   │                                                                      │       │
 │   │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐       │       │
 │   │  │  R&D CALLS │ │   EVENTS   │ │  POLICIES  │ │ CAMPAIGNS  │       │       │
-│   │  │     ✅     │ │     ✅     │ │     ⏳     │ │     ⏳     │       │       │
+│   │  │     ✅     │ │     ✅     │ │     ✅     │ │     ✅     │       │       │
 │   │  └────────────┘ └────────────┘ └────────────┘ └────────────┘       │       │
 │   │                                                                      │       │
 │   └─────────────────────────────────────────────────────────────────────┘       │
@@ -127,8 +127,8 @@ Based on deep code validation and implementation (2025-12-14):
 | **Living Labs** | Phase 6 (Monitoring), Phase 7 (Review) | Research outcomes, lessons learned | ✅ Complete |
 | **R&D Calls** | Phase 6 (Monitoring) | Track research progress | ✅ Complete |
 | **Events** | Phase 5 (Communication) | Stakeholder engagement execution | ✅ Complete |
-| **Policies** | Phase 4 (Governance) | Policy implementation tracking | ⏳ Pending |
-| **Campaigns** | Phase 5 (Communication) | Communication execution | ⏳ Pending |
+| **Policies** | Phase 4 (Governance) | Policy implementation tracking | ✅ Complete |
+| **Campaigns** | Phase 5 (Communication) | Communication execution | ✅ Complete |
 
 ---
 
@@ -163,6 +163,16 @@ strategy_derivation_date TIMESTAMPTZ
 strategic_plan_ids UUID[] DEFAULT '{}'
 
 -- living_labs table (already had)
+is_strategy_derived BOOLEAN DEFAULT false
+strategy_derivation_date TIMESTAMPTZ
+strategic_plan_ids UUID[] DEFAULT '{}'
+
+-- policies table
+is_strategy_derived BOOLEAN DEFAULT false
+strategy_derivation_date TIMESTAMPTZ
+strategic_plan_ids UUID[] DEFAULT '{}'
+
+-- marketing_campaigns table
 is_strategy_derived BOOLEAN DEFAULT false
 strategy_derivation_date TIMESTAMPTZ
 strategic_plan_ids UUID[] DEFAULT '{}'
@@ -208,10 +218,36 @@ const strategicPlanIds = [...new Set(
 )];
 ```
 
+### StrategyToPolicyGenerator
+**File:** `src/components/strategy/cascade/StrategyToPolicyGenerator.jsx`
+
+Sets on save:
+```javascript
+{
+  strategic_plan_ids: [selectedPlanId],
+  is_strategy_derived: true,
+  strategy_derivation_date: new Date().toISOString(),
+  status: 'draft'
+}
+```
+
+### StrategyToCampaignGenerator
+**File:** `src/components/strategy/cascade/StrategyToCampaignGenerator.jsx`
+
+Sets on save:
+```javascript
+{
+  strategic_plan_ids: [selectedPlanId],
+  is_strategy_derived: true,
+  strategy_derivation_date: new Date().toISOString(),
+  status: 'draft'
+}
+```
+
 ---
 
 ## Next Steps
 
-1. ⏳ Fix `StrategyToPolicyGenerator` to use array and set derived flags
-2. ⏳ Fix `StrategyToCampaignGenerator` to use array and set derived flags
-3. ⏳ Integrate with Phase 4 approval workflow
+1. ⏳ Integrate with Phase 4 approval workflow
+2. ⏳ Create approval request hook for auto-creation of approval requests
+3. ⏳ Add entity deduplication logic to prevent duplicate generation

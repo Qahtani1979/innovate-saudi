@@ -72,7 +72,9 @@ export default function StrategyToCampaignGenerator({ onCampaignCreated }) {
           duration: campaign.duration,
           channels: campaign.channels,
           kpis: campaign.kpis,
-          strategic_plan_id: selectedPlanId,
+          strategic_plan_ids: [selectedPlanId],
+          is_strategy_derived: true,
+          strategy_derivation_date: new Date().toISOString(),
           status: 'draft'
         })
         .select()
