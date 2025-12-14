@@ -486,6 +486,7 @@ import StartupOnboarding from './pages/StartupOnboarding';
 import DeputyshipOnboarding from './pages/DeputyshipOnboarding';
 import Onboarding from './pages/Onboarding';
 import StrategyFeedbackDashboard from './pages/StrategyFeedbackDashboard';
+import StrategyHub from './pages/StrategyHub';
 import __Layout from './Layout.jsx';
 
 
@@ -513,6 +514,7 @@ export const PAGES = {
     "OrganizationDetail": OrganizationDetail,
     "Approvals": Approvals,
     "StrategyCockpit": StrategyCockpit,
+    "StrategyHub": StrategyHub,
     "Portfolio": Portfolio,
     "SandboxDetail": SandboxDetail,
     "Settings": Settings,
