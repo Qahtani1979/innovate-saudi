@@ -1,9 +1,10 @@
 /**
  * Hook for AI calls with graceful degradation
  * Handles rate limits, failures, and provides fallback behavior
- * @version 2.0.0
+ * @version 2.1.0
  */
 
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -28,12 +29,8 @@ function getSessionId() {
 }
 
 /**
- * Lightweight, non-reactive AI helper.
- *
- * NOTE: This is intentionally NOT a real React hook anymore to avoid
- * duplicate-React / invalid hook call issues in the current bundle.
- * It keeps the same API shape so existing callers keep working,
- * but `status`/`isLoading` etc. are not reactive (no re-renders).
+ * React hook for AI invocation with rate limiting and error handling.
+ * Provides reactive state for status, loading, and errors.
  */
 export function useAIWithFallback(options = {}) {
   const {
@@ -43,24 +40,11 @@ export function useAIWithFallback(options = {}) {
     onError = null
   } = options;
 
-  // Internal mutable state (non-reactive)
-  let status = AI_STATUS.IDLE;
-  let error = null;
-  let rateLimitInfo = null;
+  const [status, setStatus] = useState(AI_STATUS.IDLE);
+  const [error, setError] = useState(null);
+  const [rateLimitInfo, setRateLimitInfo] = useState(null);
 
-  const setStatus = (nextStatus) => {
-    status = nextStatus;
-  };
-
-  const setError = (nextError) => {
-    error = nextError;
-  };
-
-  const setRateLimitInfo = (info) => {
-    rateLimitInfo = info;
-  };
-
-  const invokeAI = async ({ prompt, response_json_schema, system_prompt }) => {
+  const invokeAI = useCallback(async ({ prompt, response_json_schema, system_prompt }) => {
     setStatus(AI_STATUS.LOADING);
     setError(null);
 
@@ -95,7 +79,10 @@ export function useAIWithFallback(options = {}) {
       }
 
       setStatus(AI_STATUS.SUCCESS);
-      return { success: true, data: result, fallback: false };
+      
+      // Extract the response data properly
+      const responseData = result?.response || result;
+      return { success: true, data: { response: responseData }, fallback: false };
     } catch (err) {
       console.error('AI invocation error:', err);
 
@@ -129,13 +116,13 @@ export function useAIWithFallback(options = {}) {
 
       return { success: false, data: fallbackData, fallback: true, error: err };
     }
-  };
+  }, [showToasts, fallbackData, onRateLimited, onError]);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setStatus(AI_STATUS.IDLE);
     setError(null);
     setRateLimitInfo(null);
-  };
+  }, []);
 
   return {
     invokeAI,
