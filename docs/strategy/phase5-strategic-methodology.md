@@ -41,7 +41,7 @@ Phase 5 (Strategy Communication) is the **visibility, engagement, and knowledge-
 │           ↓                                                                      │
 │   PHASE 7: EVALUATION ──→ Impact Assessment & Learning                          │
 │                                                                                  │
-│   [Feedback Loop: Phase 7 → Phase 1 for next cycle]                             │
+│   [Feedback Loop: Phase 7 → Phase 1 for Next Strategic Cycle]                   │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1016,7 +1016,59 @@ CONVERSION METRICS
 
 ---
 
-**Document Version:** 1.0.0
-**Last Updated:** December 2024
-**Owner:** Strategy Office
-**Next Review:** Quarterly
+## Connection to Other Phases
+
+### Inputs FROM Previous Phases
+
+| Source Phase | Output | How It Informs Phase 5 | Priority |
+|--------------|--------|------------------------|----------|
+| **Phase 1** | Stakeholder mapping | Define communication audiences | Critical |
+| **Phase 1** | Citizen voice data | Understand community priorities | High |
+| **Phase 1** | Environmental scan | Context for messaging | Medium |
+| **Phase 1** | Baseline KPIs | Starting point for impact stories | High |
+| **Phase 2** | Vision & mission | Core messaging foundation | Critical |
+| **Phase 2** | Strategic objectives | Key talking points | Critical |
+| **Phase 2** | Strategic plan documents | Content for public sharing | High |
+| **Phase 2** | Ownership assignments | Spokesperson identification | Medium |
+| **Phase 3** | Generated entities | Content for showcase | Critical |
+| **Phase 3** | Entity relationships | System-level storytelling | High |
+| **Phase 3** | Innovation vehicles | Portfolio categories | High |
+| **Phase 4** | Approval statuses | Milestone announcements | High |
+| **Phase 4** | Version history | Transparency documentation | Medium |
+| **Phase 4** | Committee decisions | Decision communication | High |
+| **Phase 4** | Sign-off completion | Authority endorsement | Medium |
+
+### Outputs TO Subsequent Phases
+
+| Phase 5 Output | Used By | Purpose |
+|----------------|---------|---------|
+| **Citizen Feedback** | Phase 6 (Monitoring), Phase 7 (Evaluation) | Sentiment monitoring, impact assessment |
+| **Engagement Metrics** | Phase 6 (Monitoring), Phase 7 (Evaluation) | Communication effectiveness, outreach evaluation |
+| **Campaign Performance** | Phase 6 (Monitoring), Phase 7 (Evaluation) | Campaign ROI tracking, communication assessment |
+| **Portal Analytics** | Phase 6 (Monitoring), Phase 7 (Evaluation) | User behavior monitoring, engagement trends |
+| **Public Portal Content** | Phase 6 (Monitoring) | Real-time status updates |
+| **Success Stories** | Phase 7 (Evaluation) | Case study development |
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2024-12-14 | Initial comprehensive methodology |
+| 1.1 | 2024-12-14 | Added phase interconnection mapping, fixed feedback loop |
+
+---
+
+## References
+
+- Vision 2030 Strategic Planning Guidelines
+- Municipal Innovation Index Framework
+- ISO 56002:2019 Innovation Management
+- Strategic Communications Framework (IABC)
+- Digital Government Communication Guidelines
+- Storytelling with Data (Nussbaumer Knaflic)
+
+---
+
+*See [README.md](./README.md) for complete phase interconnection documentation.*
