@@ -9,7 +9,10 @@ const SAUDI_CONTEXT = `Saudi Arabia Ministry of Municipalities and Housing (MoMA
 - 13 Regions, 285+ municipalities, 17 major Amanats
 - Vision 2030 pillars: Vibrant Society, Thriving Economy, Ambitious Nation
 - Key Programs: Quality of Life, Housing (Sakani), National Transformation, Thriving Cities
-- MoMAH Mandate: Municipal services, urban planning, housing, infrastructure, environment, citizen services`;
+- MoMAH Mandate: Municipal services, urban planning, housing, infrastructure, environment, citizen services
+- INNOVATION PRIORITY: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems, Robotics
+- Emerging Tech: GovTech, PropTech, CleanTech, Smart City platforms, predictive analytics
+- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration, tech scouting`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

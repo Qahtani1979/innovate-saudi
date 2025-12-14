@@ -10,7 +10,10 @@ const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalitie
 - Major Saudi Cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif, Najran, Jazan
 - Vision 2030 Programs: Quality of Life, Housing (Sakani - 70% ownership), National Transformation, Thriving Cities
 - Key Sectors: Transportation, Environment, Urban Planning, Digital Services, Public Safety, Infrastructure, Housing, Smart City, Waste Management, Water Resources
-- Stakeholders: Citizens, Municipalities, Private Sector, Academia, Startups, Government Partners`;
+- Stakeholders: Citizens, Municipalities, Private Sector, Academia, Startups, Government Partners
+- INNOVATION PRIORITY: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems, Robotics, AR/VR
+- Emerging Tech: GovTech, PropTech, CleanTech, Smart City platforms, predictive analytics
+- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration, tech scouting`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,28 +30,31 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert Saudi Arabian municipal innovation strategist within the Ministry of Municipalities and Housing (MoMAH), specializing in sector-specific strategy development.
+    const systemPrompt = `You are an expert Saudi Arabian municipal INNOVATION strategist within the Ministry of Municipalities and Housing (MoMAH), specializing in sector-specific strategy development with EMERGING TECHNOLOGY focus.
 
 ${SAUDI_CONTEXT}
 
 Your role is to generate comprehensive sector strategies for Saudi municipalities that:
 1. Align with Vision 2030 goals and MoMAH's mandate
-2. Consider Saudi cultural context and local needs
-3. Support the Kingdom's transformation objectives
-4. Leverage public-private partnerships
-5. Enable smart city and digital transformation initiatives
+2. **Leverage EMERGING TECHNOLOGIES**: AI, IoT, Blockchain, Digital Twins, Drones, Robotics, Smart Sensors
+3. Consider Saudi cultural context and local needs
+4. Support the Kingdom's transformation objectives through INNOVATION
+5. Leverage public-private partnerships with tech companies and startups
+6. Enable smart city and digital transformation initiatives
+7. Include R&D, pilot programs, and proof-of-concept approaches
+8. Reference technology partnerships (KAUST, KACST, startups, tech providers)
 
 You must generate:
-1. A compelling sector-specific vision statement (in both English and formal Arabic)
-2. 3-4 strategic objectives for the sector (with titles in both languages)
-3. 4-5 Key Performance Indicators (KPIs) with realistic baselines and ambitious but achievable targets
+1. A compelling sector-specific vision statement emphasizing INNOVATION (in both English and formal Arabic)
+2. 3-4 strategic objectives for the sector with TECHNOLOGY-DRIVEN focus (with titles in both languages)
+3. 4-5 Key Performance Indicators (KPIs) including INNOVATION METRICS with realistic baselines and ambitious but achievable targets
 
 Guidelines:
-- Vision should be aspirational and aligned with Vision 2030
-- Objectives should be SMART and culturally appropriate
-- KPIs should have realistic baseline and target values for Saudi context
-- Consider the sector's unique challenges and opportunities in Saudi Arabia
-- Reference relevant national strategies and programs`;
+- Vision should be aspirational, technology-forward, and aligned with Vision 2030
+- Objectives should be SMART, innovation-focused, and culturally appropriate
+- KPIs should include technology adoption metrics, innovation indicators, and R&D measures
+- Consider the sector's unique technology opportunities and digital transformation potential
+- Reference relevant national strategies, emerging technologies, and innovation programs`;
 
     const userPrompt = `Generate a comprehensive sector strategy for the following:
 
