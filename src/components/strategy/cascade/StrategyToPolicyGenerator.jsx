@@ -7,11 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ScrollText, Sparkles, Loader2, Scale, FileText, AlertTriangle, CheckCircle2, Plus } from 'lucide-react';
+import { ScrollText, Sparkles, Loader2, Scale, FileText, AlertTriangle, CheckCircle2, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
 export default function StrategyToPolicyGenerator({ onPolicyCreated }) {
   const { t, isRTL } = useLanguage();
+  const { createApprovalRequest } = useApprovalRequest();
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [additionalContext, setAdditionalContext] = useState('');
   const [policyCount, setPolicyCount] = useState(2);
@@ -58,7 +60,7 @@ export default function StrategyToPolicyGenerator({ onPolicyCreated }) {
     }
   };
 
-  const handleSavePolicy = async (policy, index) => {
+  const handleSavePolicy = async (policy, index, submitForApproval = false) => {
     try {
       const { data, error } = await supabase
         .from('policies')
@@ -75,18 +77,37 @@ export default function StrategyToPolicyGenerator({ onPolicyCreated }) {
           strategic_plan_ids: [selectedPlanId],
           is_strategy_derived: true,
           strategy_derivation_date: new Date().toISOString(),
-          status: 'draft'
+          status: submitForApproval ? 'pending' : 'draft'
         })
         .select()
         .single();
 
       if (error) throw error;
 
+      // Create approval request if submitting (Phase 4 integration)
+      if (submitForApproval) {
+        await createApprovalRequest({
+          entityType: 'policy',
+          entityId: data.id,
+          entityTitle: policy.title_en,
+          isStrategyDerived: true,
+          strategicPlanIds: [selectedPlanId],
+          metadata: {
+            policy_type: policy.type,
+            risk_level: policy.risk_level,
+            source: 'cascade_generator'
+          }
+        });
+      }
+
       const updated = [...policies];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id };
+      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
       setPolicies(updated);
       
-      toast.success(t({ en: 'Policy saved successfully', ar: 'تم حفظ السياسة بنجاح' }));
+      toast.success(t({ 
+        en: submitForApproval ? 'Policy saved and submitted for approval' : 'Policy saved successfully', 
+        ar: submitForApproval ? 'تم حفظ السياسة وإرسالها للموافقة' : 'تم حفظ السياسة بنجاح' 
+      }));
       onPolicyCreated?.(data);
     } catch (error) {
       console.error('Save error:', error);
@@ -183,15 +204,23 @@ export default function StrategyToPolicyGenerator({ onPolicyCreated }) {
                         {policy.risk_level}
                       </Badge>
                       {policy.saved ? (
-                        <Badge variant="outline" className="bg-green-100 text-green-700">
+                        <Badge variant="outline" className={policy.submitted ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
                           <CheckCircle2 className="h-3 w-3 mr-1" />
-                          {t({ en: 'Saved', ar: 'محفوظ' })}
+                          {policy.submitted 
+                            ? t({ en: 'Submitted', ar: 'مُرسل' })
+                            : t({ en: 'Saved', ar: 'محفوظ' })}
                         </Badge>
                       ) : (
-                        <Button size="sm" onClick={() => handleSavePolicy(policy, idx)}>
-                          <Plus className="h-3 w-3 mr-1" />
-                          {t({ en: 'Save', ar: 'حفظ' })}
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" onClick={() => handleSavePolicy(policy, idx, false)}>
+                            <Plus className="h-3 w-3 mr-1" />
+                            {t({ en: 'Save', ar: 'حفظ' })}
+                          </Button>
+                          <Button size="sm" onClick={() => handleSavePolicy(policy, idx, true)}>
+                            <Send className="h-3 w-3 mr-1" />
+                            {t({ en: 'Save & Submit', ar: 'حفظ وإرسال' })}
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>

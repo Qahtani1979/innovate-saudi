@@ -7,11 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Megaphone, Sparkles, Loader2, Target, Calendar, Users, CheckCircle2, Plus } from 'lucide-react';
+import { Megaphone, Sparkles, Loader2, Target, Calendar, Users, CheckCircle2, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
 export default function StrategyToCampaignGenerator({ onCampaignCreated }) {
   const { t, isRTL } = useLanguage();
+  const { createApprovalRequest } = useApprovalRequest();
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [additionalContext, setAdditionalContext] = useState('');
   const [campaignCount, setCampaignCount] = useState(3);
@@ -58,7 +60,7 @@ export default function StrategyToCampaignGenerator({ onCampaignCreated }) {
     }
   };
 
-  const handleSaveCampaign = async (campaign, index) => {
+  const handleSaveCampaign = async (campaign, index, submitForApproval = false) => {
     try {
       const { data, error } = await supabase
         .from('marketing_campaigns')
@@ -75,18 +77,36 @@ export default function StrategyToCampaignGenerator({ onCampaignCreated }) {
           strategic_plan_ids: [selectedPlanId],
           is_strategy_derived: true,
           strategy_derivation_date: new Date().toISOString(),
-          status: 'draft'
+          status: submitForApproval ? 'pending' : 'draft'
         })
         .select()
         .single();
 
       if (error) throw error;
 
+      // Create approval request if submitting (Phase 4 integration)
+      if (submitForApproval) {
+        await createApprovalRequest({
+          entityType: 'campaign',
+          entityId: data.id,
+          entityTitle: campaign.name_en,
+          isStrategyDerived: true,
+          strategicPlanIds: [selectedPlanId],
+          metadata: {
+            channels: campaign.channels,
+            source: 'cascade_generator'
+          }
+        });
+      }
+
       const updated = [...campaigns];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id };
+      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
       setCampaigns(updated);
       
-      toast.success(t({ en: 'Campaign saved successfully', ar: 'تم حفظ الحملة بنجاح' }));
+      toast.success(t({ 
+        en: submitForApproval ? 'Campaign saved and submitted for approval' : 'Campaign saved successfully', 
+        ar: submitForApproval ? 'تم حفظ الحملة وإرسالها للموافقة' : 'تم حفظ الحملة بنجاح' 
+      }));
       onCampaignCreated?.(data);
     } catch (error) {
       console.error('Save error:', error);
@@ -170,15 +190,23 @@ export default function StrategyToCampaignGenerator({ onCampaignCreated }) {
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-lg">{isRTL ? campaign.name_ar : campaign.name_en}</CardTitle>
                     {campaign.saved ? (
-                      <Badge variant="outline" className="bg-green-100 text-green-700">
+                      <Badge variant="outline" className={campaign.submitted ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        {t({ en: 'Saved', ar: 'محفوظ' })}
+                        {campaign.submitted 
+                          ? t({ en: 'Submitted', ar: 'مُرسل' })
+                          : t({ en: 'Saved', ar: 'محفوظ' })}
                       </Badge>
                     ) : (
-                      <Button size="sm" onClick={() => handleSaveCampaign(campaign, idx)}>
-                        <Plus className="h-3 w-3 mr-1" />
-                        {t({ en: 'Save', ar: 'حفظ' })}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" onClick={() => handleSaveCampaign(campaign, idx, false)}>
+                          <Plus className="h-3 w-3 mr-1" />
+                          {t({ en: 'Save', ar: 'حفظ' })}
+                        </Button>
+                        <Button size="sm" onClick={() => handleSaveCampaign(campaign, idx, true)}>
+                          <Send className="h-3 w-3 mr-1" />
+                          {t({ en: 'Save & Submit', ar: 'حفظ وإرسال' })}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardHeader>

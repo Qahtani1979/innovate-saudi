@@ -17,8 +17,16 @@ Phase 4 (Strategy Governance) is the **control, oversight, and accountability ph
 Phase 4 integration is now **100% complete**:
 
 - **TASK-APPR-001:** ✅ Created `src/hooks/useApprovalRequest.js` shared hook
-- **TASK-APPR-002:** ✅ All cascade generators now have "Save & Submit" option
-- **TASK-APPR-003:** ✅ Gate configs added for: living_lab, sandbox, partnership, rd_call, campaign
+- **TASK-APPR-002:** ✅ All 8 cascade generators now have "Save & Submit" option:
+  - StrategyChallengeGenerator ✅
+  - StrategyToPilotGenerator ✅
+  - StrategyToLivingLabGenerator ✅
+  - StrategyToPartnershipGenerator ✅
+  - StrategyToRDCallGenerator ✅
+  - StrategyToPolicyGenerator ✅
+  - StrategyToCampaignGenerator ✅
+  - StrategyToEventGenerator ✅
+- **TASK-APPR-003:** ✅ Gate configs added for all entity types in ApprovalGateConfig.jsx
 
 Strategy-derived entities generated in Phase 3 can now automatically create approval_requests via the "Save & Submit" button.
 
