@@ -1,0 +1,106 @@
+# Communications System Inventory
+
+> **Version:** 1.0  
+> **Last Updated:** 2025-12-14  
+> **Total Assets:** 32 files (12 pages, 17 components, 3 hooks)  
+> **Parent System:** Communications & Messaging  
+> **Hub Page:** `/communications-hub`
+
+---
+
+## Overview
+
+The Communications System manages platform communications including email campaigns, notifications, announcements, messaging, and stakeholder communications.
+
+---
+
+## 📄 Pages (12)
+
+| Page | File | Route | Permission | Parent |
+|------|------|-------|------------|--------|
+| **Communications Hub** | `CommunicationsHub.jsx` | `/communications-hub` | `communications_manage` | Self (Root) |
+| Strategic Communications Hub | `StrategicCommunicationsHub.jsx` | `/strategic-communications-hub` | `communications_manage` | Communications Hub |
+| Campaign Planner | `CampaignPlanner.jsx` | `/campaign-planner` | `communications_manage` | Communications Hub |
+| Email Template Manager | `EmailTemplateManager.jsx` | `/email-template-manager` | `communications_manage` | Communications Hub |
+| Messaging | `Messaging.jsx` | `/messaging` | `authenticated` | Personal |
+| Announcement System | `AnnouncementSystem.jsx` | `/announcement-system` | `communications_manage` | Communications Hub |
+| Notification Center | `NotificationCenter.jsx` | `/notification-center` | `authenticated` | Personal |
+| Notification Preferences | `NotificationPreferences.jsx` | `/notification-preferences` | `authenticated` | Settings |
+| Communications Coverage Report | `CommunicationsCoverageReport.jsx` | `/communications-coverage-report` | `admin` | Admin |
+
+### Strategy Communication Pages
+
+| Page | File | Route | Permission | Parent |
+|------|------|-------|------------|--------|
+| Strategy Communication Page | `strategy/StrategyCommunicationPage.jsx` | `/strategy-communication-page` | `strategy_view` | Strategy Hub |
+| Public Strategy Dashboard Page | `strategy/PublicStrategyDashboardPage.jsx` | `/public-strategy-dashboard-page` | `strategy_view` | Strategy Hub |
+| Strategy Public View Page | `strategy/StrategyPublicViewPage.jsx` | `/strategy-public-view-page` | `strategy_view` | Strategy Hub |
+
+---
+
+## 🧩 Components (17)
+
+**Location:** `src/components/communications/`
+
+| Component | Description | Used By |
+|-----------|-------------|---------|
+| `AIMessageComposer.jsx` | AI message composition | Messaging |
+| `AIMessageComposerWidget.jsx` | Message composer widget | Messaging |
+| `AINotificationRouter.jsx` | AI notification routing | Notifications |
+| `AINotificationRouterPanel.jsx` | Routing panel | Admin |
+| `AnnouncementTargeting.jsx` | Announcement targeting | Announcements |
+| `AutomatedStakeholderNotifier.jsx` | Stakeholder notifications | All entities |
+| `CampaignAIHelpers.jsx` | Campaign AI helpers | Campaigns |
+| `CampaignManager.jsx` | Campaign management | Campaigns |
+| `CommunicationAnalytics.jsx` | Communication analytics | Analytics |
+| `ConversationIntelligence.jsx` | Conversation intelligence | Messaging |
+| `EmailAnalyticsDashboard.jsx` | Email analytics | Email Hub |
+| `EmailLogsViewer.jsx` | Email logs | Email Hub |
+| `EmailSettingsEditor.jsx` | Email settings | Email Hub |
+| `EmailTemplateEditorContent.jsx` | Template editor | Email Hub |
+| `MessagingEnhancements.jsx` | Messaging features | Messaging |
+| `UpdateDigestGenerator.jsx` | Digest generation | Notifications |
+| `UserPreferencesOverview.jsx` | User preferences | Settings |
+
+### Root-Level Components
+**Location:** `src/components/`
+
+| Component | Description |
+|-----------|-------------|
+| `AutoNotification.jsx` | Auto notifications |
+| `DeadlineAlerts.jsx` | Deadline alerts |
+| `EmailTemplateManager.jsx` | Email templates |
+| `NotificationRulesBuilder.jsx` | Notification rules |
+| `ScheduledReports.jsx` | Scheduled reports |
+
+---
+
+## 🗄️ Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `email_campaigns` | Campaign data |
+| `campaign_recipients` | Campaign recipients |
+| `email_logs` | Email logs |
+| `citizen_notifications` | Citizen notifications |
+| `announcements` | Announcements |
+
+---
+
+## 🔐 RBAC Permissions
+
+| Permission | Description |
+|------------|-------------|
+| `communications_view` | View communications |
+| `communications_manage` | Manage communications |
+| `notifications_manage` | Manage notifications |
+
+---
+
+## 🔄 Related Systems
+
+| System | Relationship |
+|--------|--------------|
+| Strategy | Strategy communications |
+| Citizens | Citizen notifications |
+| All Entities | Stakeholder notifications |
