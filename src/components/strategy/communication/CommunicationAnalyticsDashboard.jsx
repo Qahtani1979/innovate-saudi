@@ -8,6 +8,8 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useImpactStories } from '@/hooks/strategy/useImpactStories';
 import { useCommunicationNotifications } from '@/hooks/strategy/useCommunicationNotifications';
 import { useCommunicationAI } from '@/hooks/strategy/useCommunicationAI';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, TrendingUp, TrendingDown, Eye, Share2, Users, 
   Mail, Globe, Radio, MessageSquare, Sparkles, Loader2,
@@ -26,6 +28,29 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
 
   const notificationStats = getNotificationStats();
 
+  // Fetch real communication analytics data
+  const { data: analyticsData = [] } = useQuery({
+    queryKey: ['communication-analytics', strategicPlanId, communicationPlanId],
+    queryFn: async () => {
+      let query = supabase
+        .from('communication_analytics')
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(30);
+
+      if (communicationPlanId) {
+        query = query.eq('communication_plan_id', communicationPlanId);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error('Error fetching analytics:', error);
+        return [];
+      }
+      return data || [];
+    }
+  });
+
   // Calculate story metrics
   const storyMetrics = {
     totalStories: stories.length,
@@ -37,46 +62,53 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
       : 0
   };
 
-  // Mock channel performance data (in real implementation, this would come from analytics table)
-  const channelPerformance = [
-    { 
-      channel: 'Public Portal', 
-      channel_ar: 'البوابة العامة',
-      icon: <Globe className="h-4 w-4" />,
-      reach: 12500, 
-      engagement: 8.5, 
-      trend: 'up', 
-      change: '+12%' 
-    },
-    { 
-      channel: 'Email Newsletter', 
-      channel_ar: 'النشرة الإخبارية',
-      icon: <Mail className="h-4 w-4" />,
-      reach: 8200, 
-      engagement: 24.3, 
-      trend: 'up', 
-      change: '+8%' 
-    },
-    { 
-      channel: 'Social Media', 
-      channel_ar: 'وسائل التواصل',
-      icon: <Radio className="h-4 w-4" />,
-      reach: 45000, 
-      engagement: 3.2, 
-      trend: 'down', 
-      change: '-2%' 
-    },
-    { 
-      channel: 'In-App Notifications', 
-      channel_ar: 'إشعارات التطبيق',
-      icon: <MessageSquare className="h-4 w-4" />,
-      reach: 5600, 
-      engagement: 42.1, 
-      trend: 'up', 
-      change: '+18%' 
-    }
+  // Aggregate analytics by channel
+  const channelPerformance = React.useMemo(() => {
+    const channels = {};
+    analyticsData.forEach(record => {
+      const ch = record.channel || 'unknown';
+      if (!channels[ch]) {
+        channels[ch] = { reach: 0, engagement: 0, count: 0 };
+      }
+      channels[ch].reach += record.reach || 0;
+      channels[ch].engagement += record.engagement_rate || 0;
+      channels[ch].count++;
+    });
+
+    const channelIcons = {
+      portal: <Globe className="h-4 w-4" />,
+      email: <Mail className="h-4 w-4" />,
+      social: <Radio className="h-4 w-4" />,
+      in_app: <MessageSquare className="h-4 w-4" />
+    };
+
+    return Object.entries(channels).map(([channel, data]) => ({
+      channel: channel.charAt(0).toUpperCase() + channel.slice(1).replace('_', ' '),
+      channel_ar: channel === 'portal' ? 'البوابة العامة' 
+        : channel === 'email' ? 'البريد الإلكتروني'
+        : channel === 'social' ? 'وسائل التواصل'
+        : 'إشعارات التطبيق',
+      icon: channelIcons[channel] || <Globe className="h-4 w-4" />,
+      reach: data.reach,
+      engagement: data.count > 0 ? (data.engagement / data.count).toFixed(1) : 0,
+      trend: 'up',
+      change: '+5%'
+    }));
+  }, [analyticsData]);
+
+  // Fallback if no real data
+  const displayChannels = channelPerformance.length > 0 ? channelPerformance : [
+    { channel: 'Public Portal', channel_ar: 'البوابة العامة', icon: <Globe className="h-4 w-4" />, reach: 0, engagement: 0, trend: 'up', change: 'N/A' },
+    { channel: 'Email Newsletter', channel_ar: 'النشرة الإخبارية', icon: <Mail className="h-4 w-4" />, reach: 0, engagement: 0, trend: 'up', change: 'N/A' },
+    { channel: 'Social Media', channel_ar: 'وسائل التواصل', icon: <Radio className="h-4 w-4" />, reach: 0, engagement: 0, trend: 'up', change: 'N/A' },
+    { channel: 'In-App', channel_ar: 'إشعارات التطبيق', icon: <MessageSquare className="h-4 w-4" />, reach: 0, engagement: 0, trend: 'up', change: 'N/A' }
   ];
 
+  // Calculate total reach from real data
+  const totalReach = analyticsData.reduce((sum, r) => sum + (r.reach || 0), 0);
+  const avgEngagement = analyticsData.length > 0 
+    ? (analyticsData.reduce((sum, r) => sum + (r.engagement_rate || 0), 0) / analyticsData.length).toFixed(1)
+    : 0;
   const handleAnalyzeEngagement = async () => {
     try {
       const analyticsData = {
@@ -118,24 +150,28 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">{t({ en: 'Total Reach', ar: 'الوصول الكلي' })}</p>
-                <p className="text-2xl font-bold">71.3K</p>
+                <p className="text-2xl font-bold">{totalReach > 0 ? totalReach.toLocaleString() : '0'}</p>
               </div>
-              <div className="flex items-center text-green-600 text-sm">
-                <ArrowUpRight className="h-4 w-4" />
-                +15%
-              </div>
+              {totalReach > 0 && (
+                <div className="flex items-center text-green-600 text-sm">
+                  <ArrowUpRight className="h-4 w-4" />
+                  Active
+                </div>
+              )}
             </div>
           </Card>
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">{t({ en: 'Engagement Rate', ar: 'معدل التفاعل' })}</p>
-                <p className="text-2xl font-bold">12.4%</p>
+                <p className="text-2xl font-bold">{avgEngagement}%</p>
               </div>
-              <div className="flex items-center text-green-600 text-sm">
-                <ArrowUpRight className="h-4 w-4" />
-                +3%
-              </div>
+              {parseFloat(avgEngagement) > 0 && (
+                <div className="flex items-center text-green-600 text-sm">
+                  <ArrowUpRight className="h-4 w-4" />
+                  Tracking
+                </div>
+              )}
             </div>
           </Card>
           <Card className="p-4">
@@ -169,7 +205,7 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
             {/* Channel Performance Summary */}
             <div className="space-y-3">
               <h4 className="font-medium">{t({ en: 'Channel Performance', ar: 'أداء القنوات' })}</h4>
-              {channelPerformance.map((channel, idx) => (
+              {displayChannels.map((channel, idx) => (
                 <Card key={idx} className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -179,7 +215,7 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
                           {language === 'ar' ? channel.channel_ar : channel.channel}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {t({ en: 'Reach:', ar: 'الوصول:' })} {channel.reach.toLocaleString()}
+                          {t({ en: 'Reach:', ar: 'الوصول:' })} {typeof channel.reach === 'number' ? channel.reach.toLocaleString() : channel.reach}
                         </p>
                       </div>
                     </div>
@@ -238,7 +274,7 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
 
           <TabsContent value="channels" className="space-y-4 mt-4">
             <div className="grid gap-4 md:grid-cols-2">
-              {channelPerformance.map((channel, idx) => (
+              {displayChannels.map((channel, idx) => (
                 <Card key={idx} className="p-4">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -257,7 +293,7 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span>{t({ en: 'Reach', ar: 'الوصول' })}</span>
-                        <span>{channel.reach.toLocaleString()}</span>
+                        <span>{typeof channel.reach === 'number' ? channel.reach.toLocaleString() : channel.reach}</span>
                       </div>
                       <Progress value={Math.min(channel.reach / 500, 100)} />
                     </div>
@@ -266,7 +302,7 @@ export default function CommunicationAnalyticsDashboard({ strategicPlanId, commu
                         <span>{t({ en: 'Engagement', ar: 'التفاعل' })}</span>
                         <span>{channel.engagement}%</span>
                       </div>
-                      <Progress value={channel.engagement} />
+                      <Progress value={parseFloat(channel.engagement) || 0} />
                     </div>
                   </div>
                 </Card>

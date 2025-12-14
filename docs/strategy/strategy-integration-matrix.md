@@ -423,21 +423,67 @@ CREATE TABLE public.strategy_templates (
 
 ### B.5 PHASE 5: COMMUNICATION INTEGRATIONS (100% Complete) ✅
 
-**Purpose:** Publish and communicate strategy
+**Purpose:** Publish and communicate strategy with full platform entity integration
 
-| # | Integration | Type | Components | Edge Functions | Data Sources | Status |
-|---|-------------|------|------------|----------------|--------------|--------|
-| 5.1 | Internal Comms | Component | `CommunicationsHub` | - | email_campaigns | ✅ Complete |
-| 5.2 | Notifications | Function | - | `email-trigger-hub` | email_logs | ✅ Complete |
-| 5.3 | Public Strategy View | Page | `StrategyPublicView` | - | strategic_plans | ✅ Complete |
-| 5.4 | Public Dashboard | Page | `PublicStrategyDashboard` | - | Multiple | ✅ Complete |
+#### UI Components (6/6 Implemented ✅)
 
-#### New Routes Required for Phase 5
+| # | Component | File Path | Status | Platform Integration |
+|---|-----------|-----------|--------|---------------------|
+| 5.1 | StrategyCommunicationPlanner | `src/components/strategy/communication/StrategyCommunicationPlanner.jsx` | ✅ With AI | citizen_profiles, municipalities, organizations |
+| 5.2 | ImpactStoryGenerator | `src/components/strategy/communication/ImpactStoryGenerator.jsx` | ✅ With AI | challenges, pilots, solutions, programs, partnerships, living_labs |
+| 5.3 | StakeholderNotificationManager | `src/components/strategy/communication/StakeholderNotificationManager.jsx` | ✅ Created | user_profiles, user_notification_preferences |
+| 5.4 | CommunicationAnalyticsDashboard | `src/components/strategy/communication/CommunicationAnalyticsDashboard.jsx` | ✅ Created | communication_analytics, impact_stories |
+| 5.5 | PublicStrategyDashboard | `src/components/strategy/communication/PublicStrategyDashboard.jsx` | ✅ Created | strategic_plans, objectives, kpis, milestones, challenges |
+| 5.6 | StrategyPublicView | `src/components/strategy/communication/StrategyPublicView.jsx` | ✅ Created | strategic_plans, objectives, impact_stories, events, partnerships, pilots, citizen_feedback |
+
+#### Database Tables (4/4 Created ✅)
+
+| # | Table | Purpose | Status |
+|---|-------|---------|--------|
+| 1 | `communication_plans` | Store communication strategy plans | ✅ CREATED |
+| 2 | `impact_stories` | Store success narratives | ✅ CREATED |
+| 3 | `communication_notifications` | Store notification history | ✅ CREATED |
+| 4 | `communication_analytics` | Store engagement metrics | ✅ CREATED |
+
+#### Database Integration Hooks (4/4 Created ✅)
+
+| # | Hook | File Path | Status |
+|---|------|-----------|--------|
+| 1 | useCommunicationPlans | `src/hooks/strategy/useCommunicationPlans.js` | ✅ CREATED |
+| 2 | useImpactStories | `src/hooks/strategy/useImpactStories.js` | ✅ CREATED |
+| 3 | useCommunicationNotifications | `src/hooks/strategy/useCommunicationNotifications.js` | ✅ CREATED |
+| 4 | useCommunicationAI | `src/hooks/strategy/useCommunicationAI.js` | ✅ CREATED |
+
+#### AI Edge Functions (1/1 Created ✅)
+
+| # | Edge Function | Purpose | Status |
+|---|---------------|---------|--------|
+| 1 | strategy-communication-ai | Story generation, key messages, channel strategy, content calendar, engagement analysis | ✅ CREATED |
+
+#### Platform Entity Integrations (NEW)
+
+| # | Entity | Integration Type | Used In | Purpose |
+|---|--------|-----------------|---------|---------|
+| 1 | challenges | SELECT | ImpactStoryGenerator | Source entities for success stories |
+| 2 | pilots | SELECT | ImpactStoryGenerator | Source entities for success stories |
+| 3 | solutions | SELECT | ImpactStoryGenerator | Source entities for success stories |
+| 4 | programs | SELECT | ImpactStoryGenerator | Source entities for success stories |
+| 5 | partnerships | SELECT + COUNT | StrategyPublicView | Display partnerships count |
+| 6 | living_labs | SELECT | ImpactStoryGenerator | Source entities for success stories |
+| 7 | events | SELECT | StrategyPublicView | Display upcoming events |
+| 8 | citizen_profiles | COUNT | StrategyCommunicationPlanner | Audience sizing |
+| 9 | municipalities | COUNT | StrategyCommunicationPlanner | Audience sizing |
+| 10 | organizations | COUNT | StrategyCommunicationPlanner | Audience sizing |
+| 11 | user_profiles | SELECT | StakeholderNotificationManager | Recipient selection by persona |
+| 12 | citizen_feedback | INSERT | StrategyPublicView | Public feedback submission |
+
+#### Routes
 
 | # | Route | Page Component | Purpose | Priority |
 |---|-------|----------------|---------|----------|
-| 1 | `/strategy/public/:id` | `StrategyPublicView` | Public-facing strategy page | P3 |
-| 2 | `/strategy/dashboard/public` | `PublicStrategyDashboard` | Public progress dashboard | P3 |
+| 1 | `/strategy/communication` | `StrategyCommunicationPage` | Main communication hub | P1 |
+| 2 | `/strategy/public/:id` | `StrategyPublicView` | Public-facing strategy page | P3 |
+| 3 | `/strategy/dashboard/public` | `PublicStrategyDashboard` | Public progress dashboard | P3 |
 
 ---
 
