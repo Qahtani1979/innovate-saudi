@@ -1,13 +1,13 @@
 # Strategy System - Cross-System Gaps & Conflicts Analysis
 
 **Generated:** 2025-12-14  
-**Last Updated:** 2025-12-14 (Complete Platform Audit v6 - Implementation Started)  
+**Last Updated:** 2025-12-14 (Complete Platform Audit v7 - Sprint 1 & 2 Complete)  
 **Purpose:** Exhaustive identification of gaps and conflicts between the Strategy System and ALL platform systems  
-**Status:** ✅ IMPLEMENTATION IN PROGRESS - Sprint 1 Critical Gaps
+**Status:** ✅ IMPLEMENTATION IN PROGRESS - Sprint 2 UI Gaps Complete
 
 ---
 
-## IMPLEMENTATION STATUS (v6)
+## IMPLEMENTATION STATUS (v7)
 
 ### Critical Gaps COMPLETED (Sprint 1):
 
@@ -19,11 +19,22 @@
 | 4 | **KPI Alert Config thresholds** | ✅ DONE | `KPIAlertConfig.jsx` updated - strategic KPI thresholds with auto-escalation |
 | 5 | **Approval Matrix chains** | ✅ DONE | `ApprovalMatrixEditor.jsx` updated - Phase 4 gate-based strategic approval chains implemented |
 
-### Enhancement COMPLETED:
+### UI Gaps COMPLETED (Sprint 2):
+
+| # | Gap | Status | Implementation |
+|---|-----|--------|----------------|
+| 6 | **PilotCreate selector** | ✅ DONE | `PilotCreate.jsx` updated - `StrategicPlanSelector` added in Step 1, formData includes `strategic_plan_ids` |
+| 7 | **ProgramCreateWizard selector** | ✅ ALREADY DONE | Step 7 already has strategic plan selector UI |
+| 8 | **EventCreate selector** | ✅ DONE | `EventCreate.jsx` updated - `StrategicPlanSelector` added in Settings tab |
+| 9 | **ScalingPlanDetail section** | ✅ DONE | New Strategy tab added with `StrategicAlignmentWidget` |
+| 10 | **RDProjectDetail section** | ✅ DONE | `StrategicAlignmentWidget` added to Overview tab |
+
+### Enhancements COMPLETED:
 
 | # | Enhancement | Status | Implementation |
 |---|-------------|--------|----------------|
 | 1 | **SLA strategic tiers** | ✅ DONE | `SLARuleBuilder.jsx` updated - priority multipliers for strategy-derived entities |
+| 2 | **Generic StrategicAlignmentWidget** | ✅ DONE | New `src/components/strategy/StrategicAlignmentWidget.jsx` - works with any entity type |
 
 ---
 
@@ -776,30 +787,30 @@ After validating against design documents, the remediation roadmap is **signific
 | 5 | **Approval Matrix chains** | Phase 4 Governance | Add strategic approval chains | 4h |
 | **TOTAL P1** | | | | **28h** |
 
-### Priority 2: UI Missing for Design-Specified Integration (Sprint 2-3)
+### Priority 2: UI Missing for Design-Specified Integration (Sprint 2-3) - ✅ COMPLETED
 
-| # | Gap | Design Requirement | Fix | Effort |
+| # | Gap | Design Requirement | Fix | Status |
 |---|-----|-------------------|-----|--------|
-| 6 | **PilotCreate selector** | Matrix A.2 (INDIRECT via challenge) | Add StrategicPlanSelector | 2h |
-| 7 | **ProgramCreateWizard selector** | Matrix A.2 (DIRECT) | Add StrategicPlanSelector step | 3h |
-| 8 | **EventCreate selector** | Matrix A.2 (DIRECT) | Add UI | 2h |
-| 9 | **PolicyCreate selector** | Matrix A.2 (DIRECT) | Add UI | 2h |
-| 10 | **ScalingPlanDetail section** | Matrix A.2 (INDIRECT) | Add display component | 3h |
-| 11 | **RDProjectDetail section** | Matrix A.2 (INDIRECT) | Add display component | 3h |
-| **TOTAL P2** | | | | **15h** |
+| 6 | **PilotCreate selector** | Matrix A.2 (INDIRECT via challenge) | Add StrategicPlanSelector | ✅ DONE |
+| 7 | **ProgramCreateWizard selector** | Matrix A.2 (DIRECT) | Add StrategicPlanSelector step | ✅ ALREADY EXISTS |
+| 8 | **EventCreate selector** | Matrix A.2 (DIRECT) | Add UI | ✅ DONE |
+| 9 | **PolicyCreate selector** | Matrix A.2 (DIRECT) | Add UI | 🟡 PENDING |
+| 10 | **ScalingPlanDetail section** | Matrix A.2 (INDIRECT) | Add display component | ✅ DONE |
+| 11 | **RDProjectDetail section** | Matrix A.2 (INDIRECT) | Add display component | ✅ DONE |
+| **TOTAL P2** | | | | **5/6 DONE** |
 
 ### Priority 3: ENHANCEMENTS (Optional - Q1 2025)
 
 These are NOT required by design but would improve user experience:
 
-| # | Enhancement | Benefit | Effort |
+| # | Enhancement | Benefit | Status |
 |---|-------------|---------|--------|
-| 12 | Visibility hooks strategy filter | Filter entities by plan | 8h |
-| 13 | AI Assistant strategy context | Better recommendations | 8h |
-| 14 | Regional strategic priorities | Geographic planning | 4h |
-| 15 | SLA strategic tiers | Priority escalation | 3h |
-| 16 | Webhook strategic triggers | External integrations | 3h |
-| **TOTAL P3** | | | **26h** |
+| 12 | Visibility hooks strategy filter | Filter entities by plan | 🟡 PENDING |
+| 13 | AI Assistant strategy context | Better recommendations | 🟡 PENDING |
+| 14 | Regional strategic priorities | Geographic planning | 🟡 PENDING |
+| 15 | SLA strategic tiers | Priority escalation | ✅ DONE |
+| 16 | Webhook strategic triggers | External integrations | 🟡 PENDING |
+| **TOTAL P3** | | | **1/5 DONE** |
 
 ### 9.1 Items Removed from Roadmap (BY DESIGN)
 
@@ -839,14 +850,14 @@ The following were previously marked as gaps but are **BY DESIGN**:
 
 *83% = (Integrated + Partial + By Design) / Total
 
-### 10.2 Gap Breakdown After Validation
+### 10.2 Gap Breakdown After Implementation (v7)
 
-| Category | Previous Count | After Validation | Status |
-|----------|----------------|------------------|--------|
-| 🔴 Critical Gaps | 12 | 5 | -58% |
-| 🟡 High Gaps | 28 | 6 | -79% |
-| 🟢 Enhancements | 58 | 5 | Deprioritized |
-| ✅ By Design | 0 | 82 | Newly classified |
+| Category | Original | After Sprint 1 | After Sprint 2 | Status |
+|----------|----------|----------------|----------------|--------|
+| 🔴 Critical Gaps | 5 | 0 | 0 | ✅ ALL DONE |
+| 🟡 High UI Gaps | 6 | 6 | 1 | ✅ 5/6 DONE |
+| 🟢 Enhancements | 5 | 4 | 4 | 1/5 DONE |
+| ✅ By Design | 82 | 82 | 82 | N/A |
 
 ### 10.3 Revised Effort Estimation
 

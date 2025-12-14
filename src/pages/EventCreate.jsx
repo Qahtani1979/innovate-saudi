@@ -19,6 +19,7 @@ import ProtectedPage from '@/components/permissions/ProtectedPage';
 import MediaFieldWithPicker from '@/components/media/MediaFieldWithPicker';
 import { AIConflictDetector } from '@/components/ai/AIConflictDetector';
 import { AIEventOptimizer } from '@/components/ai/AIEventOptimizer';
+import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 import { 
   Calendar, 
   MapPin, 
@@ -64,7 +65,9 @@ function EventCreate() {
     status: 'draft',
     is_published: false,
     program_id: programId || '',
-    municipality_id: municipalityId || ''
+    municipality_id: municipalityId || '',
+    strategic_plan_ids: [],
+    strategic_objective_ids: []
   });
 
   const { data: programs = [] } = useQuery({
@@ -453,6 +456,17 @@ function EventCreate() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Strategic Alignment Section */}
+              <div className="border-t pt-4 mt-4">
+                <StrategicPlanSelector
+                  selectedPlanIds={formData.strategic_plan_ids || []}
+                  selectedObjectiveIds={formData.strategic_objective_ids || []}
+                  onPlanChange={(ids) => handleChange('strategic_plan_ids', ids)}
+                  onObjectiveChange={(ids) => handleChange('strategic_objective_ids', ids)}
+                  showObjectives={true}
+                />
               </div>
             </CardContent>
           </Card>
