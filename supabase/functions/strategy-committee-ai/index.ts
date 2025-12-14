@@ -16,6 +16,12 @@ serve(async (req) => {
     console.log(`Strategy Committee AI - Action: ${action}`);
 
     const apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+
+    if (!lovableApiKey) {
+      console.error('LOVABLE_API_KEY not configured');
+      throw new Error('AI service not configured');
+    }
 
     let systemPrompt = "";
     let userPrompt = "";
@@ -148,7 +154,10 @@ Return as JSON object with these exact fields.`;
     
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${lovableApiKey}`
+      },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
