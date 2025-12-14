@@ -12,6 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Globe, 
   Plus, 
@@ -71,6 +73,36 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Fetch global trends for AI context
+  const { data: globalTrends = [] } = useQuery({
+    queryKey: ['global-trends-for-scan'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('global_trends')
+        .select('id, trend_name_en, trend_name_ar, category, impact_level, description_en')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) return [];
+      return data || [];
+    }
+  });
+
+  // Fetch policy documents for legal/political factors
+  const { data: policyDocs = [] } = useQuery({
+    queryKey: ['policy-docs-for-scan'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('policy_documents')
+        .select('id, title_en, policy_type, status')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) return [];
+      return data || [];
+    }
+  });
 
   const [formData, setFormData] = useState({
     category: 'political',
