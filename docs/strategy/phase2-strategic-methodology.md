@@ -889,6 +889,15 @@ WEEK 10: Approval & Handoff
 | **Capability Assessment** | Guides realistic objective setting | High |
 | **Strategic Themes** | Foundation for objectives hierarchy | Critical |
 
+### Inputs FROM Phase 8 (Mid-Cycle Adjustments)
+
+| Phase 8 Output | How It Informs Phase 2 | Trigger Condition |
+|----------------|------------------------|-------------------|
+| **Objective Revisions** | Update objectives based on performance data | Strategic misalignment detected |
+| **KPI Target Recalibrations** | Adjust targets based on sustained over/underperformance | Threshold breach > 7 days |
+| **Timeline Modifications** | Adjust milestones based on resource constraints | Budget variance > 20% |
+| **Budget Reallocations** | Move resources between objectives | Priority shift or performance data |
+
 ### Outputs TO Subsequent Phases
 
 | Phase 2 Output | Used By | Purpose |
@@ -924,6 +933,7 @@ Phase 2 transforms Phase 1 intelligence into actionable strategy through:
 |---------|------|---------|
 | 1.0 | 2024-12-14 | Initial comprehensive methodology |
 | 1.1 | 2024-12-14 | Added phase interconnection mapping |
+| 2.0 | 2024-12-14 | Added Phase 8 mid-cycle adjustment inputs |
 
 ---
 

@@ -1200,16 +1200,25 @@ Please take action to prevent escalation.
 | **Phase 5** | Campaign performance | Campaign ROI tracking | Medium |
 | **Phase 5** | Portal analytics | User behavior monitoring | Medium |
 
+### Inputs FROM Phase 8 (Mid-Cycle Adjustments)
+
+| Phase 8 Output | How It Informs Phase 6 | Trigger Condition |
+|----------------|------------------------|-------------------|
+| **Threshold Recalibrations** | Adjust alert levels based on learning | False positives/negatives identified |
+| **Dashboard Enhancements** | Add new metrics, views, drill-downs | Missing visibility reported |
+| **Reporting Frequency Changes** | Increase/decrease reporting cycles | Decision-making needs change |
+| **New Monitoring Points** | Add tracking for adjusted entities | Entity pivots from Phase 3 |
+
 ### Outputs TO Subsequent Phases
 
 | Phase 6 Output | Used By | Purpose |
 |----------------|---------|---------|
-| **KPI Actuals** | Phase 7 (Evaluation) | Compare to targets, calculate achievement rates |
-| **Health Scores** | Phase 7 (Evaluation) | Track entity performance, aggregate portfolio health |
-| **Alert History** | Phase 7 (Evaluation) | Identify problem patterns, root cause analysis |
-| **SLA Compliance** | Phase 7 (Evaluation) | Measure process efficiency, operational effectiveness |
+| **KPI Actuals** | Phase 7 (Evaluation), Phase 8 (Recalibration) | Compare to targets, trigger mid-cycle adjustments |
+| **Health Scores** | Phase 7 (Evaluation), Phase 8 (Recalibration) | Track entity performance, trigger pivots |
+| **Alert History** | Phase 7 (Evaluation), Phase 8 (Recalibration) | Identify problem patterns, trigger adjustments |
+| **SLA Compliance** | Phase 7 (Evaluation), Phase 8 (Recalibration) | Measure process efficiency, governance updates |
 | **Trend Data** | Phase 7 (Evaluation) | Forecast future performance |
-| **Anomaly Detection** | Phase 7 (Evaluation) | Identify systemic issues |
+| **Anomaly Detection** | Phase 7 (Evaluation), Phase 8 (Recalibration) | Identify systemic issues, trigger pivots |
 
 ---
 
@@ -1219,6 +1228,7 @@ Please take action to prevent escalation.
 |---------|------|---------|
 | 1.0 | 2024-12-14 | Initial comprehensive methodology |
 | 1.1 | 2024-12-14 | Added phase interconnection mapping, fixed feedback loop |
+| 2.0 | 2024-12-14 | Added Phase 8 mid-cycle adjustment inputs/outputs, updated lifecycle |
 
 ---
 

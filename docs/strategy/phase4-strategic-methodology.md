@@ -20,11 +20,11 @@ Phase 4 (Strategy Governance) is the **control, oversight, and accountability ph
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
 │   PHASE 1: PRE-PLANNING ──→ Intelligence & Readiness Assessment                │
-│           ↓                                                                      │
-│   PHASE 2: STRATEGY CREATION ──→ Plans, Objectives, Ownership                   │
-│           ↓                                                                      │
-│   PHASE 3: STRATEGY CASCADE ──→ Entity Generation & Deployment                  │
-│           ↓                                                                      │
+│           ↓                        ↑ (End-of-Cycle from Phase 8)                │
+│   PHASE 2: STRATEGY CREATION ──→ Plans, Objectives, Ownership                  │
+│           ↓                        ↑ (Mid-Cycle Adjustments from Phase 8)       │
+│   PHASE 3: STRATEGY CASCADE ──→ Entity Generation & Deployment                 │
+│           ↓                        ↑ (Mid-Cycle Adjustments from Phase 8)       │
 │   ╔═══════════════════════════════════════════════════════════════════════════╗ │
 │   ║   PHASE 4: STRATEGY GOVERNANCE ──→ Control, Oversight, Accountability     ║ │
 │   ║   ├── Sign-off & Authorization Management                                 ║ │
@@ -34,14 +34,14 @@ Phase 4 (Strategy Governance) is the **control, oversight, and accountability ph
 │   ║   ├── Committee & Decision-Making Governance                              ║ │
 │   ║   └── Continuous Improvement & Learning                                   ║ │
 │   ╚═══════════════════════════════════════════════════════════════════════════╝ │
+│           ↓                        ↑ (Mid-Cycle Adjustments from Phase 8)       │
+│   PHASE 5: STRATEGY COMMUNICATION ──→ Visibility & Engagement                  │
 │           ↓                                                                      │
-│   PHASE 5: STRATEGY COMMUNICATION ──→ Visibility & Engagement                   │
+│   PHASE 6: MONITORING & EXECUTION ──→ Tracking & Performance                   │
 │           ↓                                                                      │
-│   PHASE 6: MONITORING & EXECUTION ──→ Tracking & Performance                    │
+│   PHASE 7: EVALUATION & REVIEW ──→ Impact Assessment & Learning                │
 │           ↓                                                                      │
-│   PHASE 7: EVALUATION & REVIEW ──→ Impact Assessment & Learning                 │
-│                                                                                  │
-│   [Feedback Loop: Phase 7 → Phase 1 for next cycle]                             │
+│   PHASE 8: RECALIBRATION ──→ Feedback Loop & Strategic Adjustment              │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -891,6 +891,15 @@ ONGOING: CONTINUOUS IMPROVEMENT
 | **Phase 3** | Resource requirements | Trigger budget approvals | Medium |
 | **Phase 3** | Risk profiles | Determine gate stringency | High |
 
+### Inputs FROM Phase 8 (Mid-Cycle Adjustments)
+
+| Phase 8 Output | How It Informs Phase 4 | Trigger Condition |
+|----------------|------------------------|-------------------|
+| **Approval Threshold Changes** | Modify $ limits, escalation rules | Bottleneck or over-approval detected |
+| **Workflow Simplification** | Remove steps, consolidate approvers | Excessive delays identified |
+| **Committee Structure Updates** | Add/remove committees, change membership | Governance gaps found |
+| **SLA Adjustments** | Modify SLA targets based on performance | Repeated SLA violations |
+
 ### Outputs TO Subsequent Phases
 
 | Phase 4 Output | Used By | Purpose |
@@ -911,6 +920,7 @@ ONGOING: CONTINUOUS IMPROVEMENT
 |---------|------|---------|
 | 1.0 | 2024-12-14 | Initial comprehensive methodology |
 | 1.1 | 2024-12-14 | Added phase interconnection mapping, fixed lifecycle diagram |
+| 2.0 | 2024-12-14 | Added Phase 8 mid-cycle adjustment inputs, updated lifecycle |
 
 ---
 

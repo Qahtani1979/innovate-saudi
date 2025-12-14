@@ -928,6 +928,15 @@ living_labs (1) ──┬──── (M) pilots
 | **Phase 2** | RACI Matrix | Ownership for cascaded entities | High |
 | **Phase 2** | National Alignment | Alignment requirements for entities | High |
 
+### Inputs FROM Phase 8 (Mid-Cycle Adjustments)
+
+| Phase 8 Output | How It Informs Phase 3 | Trigger Condition |
+|----------------|------------------------|-------------------|
+| **Entity Pause Instructions** | Suspend underperforming entities | Health score < 50% sustained |
+| **Entity Pivot Instructions** | Modify scope, outcomes, approach | Direction change needed |
+| **Resource Reallocations** | Move staff/budget between entities | Portfolio rebalancing decision |
+| **Vehicle Mix Changes** | Shift to better-performing vehicle types | Performance data shows vehicle type underperformance |
+
 ### Outputs TO Subsequent Phases
 
 | Phase 3 Output | Used By | Purpose |
@@ -972,6 +981,7 @@ Phase 3 operationalizes strategy through systematic cascade to innovation vehicl
 |---------|------|---------|
 | 1.0 | 2024-12-14 | Initial comprehensive methodology |
 | 1.1 | 2024-12-14 | Added phase interconnection mapping |
+| 2.0 | 2024-12-14 | Added Phase 8 mid-cycle adjustment inputs |
 
 ---
 
