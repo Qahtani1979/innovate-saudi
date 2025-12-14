@@ -12,7 +12,7 @@ import { Sparkles, GraduationCap, Loader2, CheckCircle2, Plus, DollarSign, Calen
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
-export default function StrategyToRDCallGenerator({ onRDCallCreated }) {
+export default function StrategyToRDCallGenerator({ strategicPlanId, strategicPlan, onRDCallCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
   const [selectedChallenges, setSelectedChallenges] = useState([]);
@@ -22,8 +22,9 @@ export default function StrategyToRDCallGenerator({ onRDCallCreated }) {
   const [generatedCalls, setGeneratedCalls] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Filter challenges by strategic plan
   const { data: challenges } = useQuery({
-    queryKey: ['challenges-for-rd-gen'],
+    queryKey: ['challenges-for-rd-gen', strategicPlanId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('challenges')
@@ -33,6 +34,11 @@ export default function StrategyToRDCallGenerator({ onRDCallCreated }) {
         .order('created_at', { ascending: false })
         .limit(50);
       if (error) throw error;
+      
+      // Filter by strategic plan if one is selected
+      if (strategicPlanId) {
+        return (data || []).filter(c => c.strategic_plan_ids?.includes(strategicPlanId));
+      }
       return data || [];
     }
   });

@@ -12,28 +12,17 @@ import { Sparkles, FlaskConical, Loader2, CheckCircle2, Plus, MapPin, Send } fro
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
-export default function StrategyToLivingLabGenerator({ onLabCreated }) {
+export default function StrategyToLivingLabGenerator({ strategicPlanId, strategicPlan, onLabCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
-  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
   const [researchFocus, setResearchFocus] = useState('');
   const [targetPopulation, setTargetPopulation] = useState('');
   const [generatedLabs, setGeneratedLabs] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const { data: strategicPlans } = useQuery({
-    queryKey: ['strategic-plans-for-lab-gen'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar, objectives')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use the passed strategicPlanId from context
+  const selectedPlanId = strategicPlanId;
 
   const { data: municipalities } = useQuery({
     queryKey: ['municipalities-for-lab-gen'],

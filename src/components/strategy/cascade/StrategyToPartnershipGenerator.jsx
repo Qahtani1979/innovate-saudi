@@ -13,14 +13,16 @@ import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
-export default function StrategyToPartnershipGenerator({ onPartnershipCreated }) {
+export default function StrategyToPartnershipGenerator({ strategicPlanId, strategicPlan, onPartnershipCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
-  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [capabilityNeeds, setCapabilityNeeds] = useState('');
   const [partnershipTypes, setPartnershipTypes] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Use the passed strategicPlanId from context
+  const selectedPlanId = strategicPlanId;
 
   const partnershipTypeOptions = [
     { value: 'research', label: { en: 'Research Partnership', ar: 'شراكة بحثية' } },
@@ -29,19 +31,6 @@ export default function StrategyToPartnershipGenerator({ onPartnershipCreated })
     { value: 'funding', label: { en: 'Funding/Investment', ar: 'تمويل/استثمار' } },
     { value: 'knowledge', label: { en: 'Knowledge Exchange', ar: 'تبادل المعرفة' } }
   ];
-
-  const { data: strategicPlans } = useQuery({
-    queryKey: ['strategic-plans-for-partnership-gen'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar, objectives')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
 
   const handleTypeToggle = (type) => {
     setPartnershipTypes(prev => 

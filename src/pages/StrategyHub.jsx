@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
@@ -9,8 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
+import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import {
   Target,
   Workflow,
@@ -114,10 +115,13 @@ const phases = [
 
 function StrategyHub() {
   const { t, isRTL, language } = useLanguage();
+  const { activePlanId, activePlan, strategicPlans: plans } = useActivePlan();
   const { hasPermission, isAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState('workflow');
   const [activeAITool, setActiveAITool] = useState(null);
-  const [selectedPlanId, setSelectedPlanId] = useState('all');
+  
+  // Use activePlanId from context
+  const selectedPlanId = activePlanId || 'all';
 
   // Filter tools based on permissions
   const filterByPermission = (items) => {
@@ -137,19 +141,7 @@ function StrategyHub() {
   const canManageStrategy = isAdmin || hasPermission('strategy_manage');
   const canCascadeStrategy = isAdmin || hasPermission('strategy_cascade');
 
-  // Fetch strategic plans
-  const { data: plans = [], isLoading: plansLoading } = useQuery({
-    queryKey: ['strategic-plans-hub'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // plans are now provided by context via useActivePlan
 
   // Fetch approval requests for pending actions
   const { data: pendingApprovals = [] } = useQuery({
@@ -213,9 +205,11 @@ function StrategyHub() {
   };
 
   return (
-    <div className={`container mx-auto py-6 px-4 ${isRTL ? 'rtl' : ''}`}>
+    <div className={`container mx-auto py-6 px-4 space-y-6 ${isRTL ? 'rtl' : ''}`}>
+      <ActivePlanBanner />
+      
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Target className="h-8 w-8 text-primary" />
@@ -226,19 +220,6 @@ function StrategyHub() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-            <SelectTrigger className="w-56">
-              <SelectValue placeholder={t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })}</SelectItem>
-              {plans.map(plan => (
-                <SelectItem key={plan.id} value={plan.id}>
-                  {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Button variant="outline" asChild>
             <Link to="/strategy-cockpit">
               <BarChart3 className="h-4 w-4 mr-2" />
