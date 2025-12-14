@@ -12,6 +12,44 @@ Phase 2 (Strategy Creation) is the **formulation and articulation phase** where 
 
 ---
 
+## ⚠️ CRITICAL IMPLEMENTATION GAPS IDENTIFIED
+
+Based on deep code validation (see [strategy-implementation-tasks.md](../strategy/strategy-implementation-tasks.md)):
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    PHASE 2 CRITICAL GAPS                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  GAP-P2-001: STRATEGY CREATION IGNORES EXISTING PLANS                           │
+│  ├── StrategicPlanBuilder creates plans in ISOLATION                            │
+│  ├── AI prompt does NOT receive existing strategic plans data                   │
+│  ├── No duplicate title/vision checking                                         │
+│  └── No analysis of covered vs uncovered sectors/themes                         │
+│                                                                                  │
+│  GAP-P2-002: OBJECTIVE GENERATOR CREATES DUPLICATES                             │
+│  ├── StrategyObjectiveGenerator appends without similarity check                │
+│  ├── No cross-plan deduplication                                                │
+│  └── May duplicate existing objectives verbatim                                 │
+│                                                                                  │
+│  GAP-P2-003: PREPLANNING DATA NOT CONNECTED                                     │
+│  ├── PESTLE factors stored in DB but NOT used in plan creation                  │
+│  ├── SWOT analysis stored but NOT fed to AI prompts                             │
+│  ├── Stakeholder inputs stored but NOT integrated                               │
+│  └── Gap analysis results NOT used for plan focus                               │
+│                                                                                  │
+│  REQUIRED FIXES (See strategy-implementation-tasks.md):                          │
+│  ├── TASK-P2-001: Create useStrategyContext hook                                │
+│  ├── TASK-P2-002: Enhance StrategicPlanBuilder with context                     │
+│  ├── TASK-P2-003: Add deduplication to StrategyObjectiveGenerator               │
+│  ├── TASK-P2-004: Connect preplanning widgets to plan creation                  │
+│  └── TASK-P2-005: Create gap-driven plan recommendation engine                  │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## The Strategy Creation Framework
 
 ```
@@ -24,12 +62,14 @@ Phase 2 (Strategy Creation) is the **formulation and articulation phase** where 
 │   ├── Mission Articulation                                                      │
 │   ├── Strategic Themes Identification                                           │
 │   └── Value Proposition Definition                                              │
+│   ⚠️ CURRENT GAP: Does not consider existing plans                              │
 │                                                                                  │
 │   PHASE 2B: STRATEGIC OBJECTIVES FORMULATION                                    │
 │   ├── Objective Hierarchy (Goals → Objectives → Initiatives)                    │
 │   ├── SMART Criteria Application                                                │
 │   ├── KPI Definition & Target Setting                                           │
 │   └── Baseline & Benchmark Integration                                          │
+│   ⚠️ CURRENT GAP: No deduplication against existing objectives                  │
 │                                                                                  │
 │   PHASE 2C: NATIONAL & GLOBAL ALIGNMENT                                         │
 │   ├── Vision 2030 Mapping                                                       │
@@ -49,20 +89,26 @@ Phase 2 (Strategy Creation) is the **formulation and articulation phase** where 
 │   ├── Milestone & Deliverable Planning                                          │
 │   └── Budget Allocation                                                         │
 │                                                                                  │
-│   PHASE 2F: GOVERNANCE & OWNERSHIP (AI-ASSISTED)                             │
-│   ├── RACI Matrix Development                                                │
-│   ├── AI-Powered Role Assignment Suggestions                                 │
-│   ├── Accountability Structures                                              │
-│   ├── Decision Rights Definition                                             │
-│   └── Escalation Pathways                                                    │
-│                                                                              │
-│   PHASE 2G: TIMELINE & DEPENDENCIES (AI-ASSISTED)                            │
-│   ├── Strategic Timeline Development                                         │
-│   ├── AI-Powered Milestone Generation                                        │
-│   ├── Dependency Mapping                                                     │
-│   ├── Critical Path Identification                                           │
-│   └── Milestone Sequencing                                                   │
-│                                                                              │
+│   PHASE 2F: GOVERNANCE & OWNERSHIP (AI-ASSISTED)                                │
+│   ├── RACI Matrix Development                                                   │
+│   ├── AI-Powered Role Assignment Suggestions                                    │
+│   ├── Accountability Structures                                                 │
+│   ├── Decision Rights Definition                                                │
+│   └── Escalation Pathways                                                       │
+│                                                                                  │
+│   PHASE 2G: TIMELINE & DEPENDENCIES (AI-ASSISTED)                               │
+│   ├── Strategic Timeline Development                                            │
+│   ├── AI-Powered Milestone Generation                                           │
+│   ├── Dependency Mapping                                                        │
+│   ├── Critical Path Identification                                              │
+│   └── Milestone Sequencing                                                      │
+│                                                                                  │
+│   🆕 PHASE 2H: EXISTING DATA INTEGRATION (REQUIRED - NOT IMPLEMENTED)           │
+│   ├── Existing Plans Analysis                                                   │
+│   ├── Gap Identification from Phase 1 Data                                      │
+│   ├── Preplanning Data Synthesis                                                │
+│   └── Duplicate Prevention                                                      │
+│                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
