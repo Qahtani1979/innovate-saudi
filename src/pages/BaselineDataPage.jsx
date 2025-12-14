@@ -1,18 +1,23 @@
 import React from 'react';
 import BaselineDataCollector from '@/components/strategy/preplanning/BaselineDataCollector';
+import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 
 function BaselineDataPage() {
   const { t } = useLanguage();
+  const { activePlanId, activePlan } = useActivePlan();
 
   const handleSave = (data) => {
     console.log('Baseline Data saved:', data);
   };
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-6">
+    <div className="container mx-auto py-6 px-4 space-y-6">
+      <ActivePlanBanner />
+      
+      <div>
         <h1 className="text-2xl font-bold">
           {t({ en: 'Baseline Data Collection', ar: 'جمع البيانات الأساسية' })}
         </h1>
@@ -24,7 +29,11 @@ function BaselineDataPage() {
         </p>
       </div>
       
-      <BaselineDataCollector onSave={handleSave} />
+      <BaselineDataCollector 
+        strategicPlanId={activePlanId}
+        strategicPlan={activePlan}
+        onSave={handleSave} 
+      />
     </div>
   );
 }

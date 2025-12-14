@@ -1,22 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../components/LanguageContext';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { Link } from 'react-router-dom';
 import { 
   Target, ChevronDown, ChevronRight, TrendingUp, Beaker, Shield, 
-  Users, FileText, Zap, CheckCircle2, AlertCircle, Layers
+  Users, Zap, CheckCircle2, AlertCircle, Layers
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 
 function StrategyDrillDown() {
   const { language, isRTL, t } = useLanguage();
-  const [selectedPlanId, setSelectedPlanId] = useState(null);
+  const { activePlanId, activePlan } = useActivePlan();
   const [expandedSections, setExpandedSections] = useState({
     programs: true,
     challenges: true,
@@ -24,19 +25,6 @@ function StrategyDrillDown() {
     livingLabs: false,
     partnerships: false,
     pilots: false
-  });
-
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-drill'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
   });
 
   const { data: programs = [] } = useQuery({
@@ -111,18 +99,16 @@ function StrategyDrillDown() {
     }
   });
 
-  const selectedPlan = strategicPlans.find(p => p.id === selectedPlanId);
-
-  // Filter entities by selected plan
-  const filteredData = selectedPlanId ? {
-    programs: programs.filter(p => p.strategic_plan_ids?.includes(selectedPlanId)),
-    challenges: challenges.filter(c => c.strategic_plan_ids?.includes(selectedPlanId)),
-    sandboxes: sandboxes.filter(s => s.strategic_plan_ids?.includes(selectedPlanId)),
-    livingLabs: livingLabs.filter(l => l.strategic_plan_ids?.includes(selectedPlanId)),
-    partnerships: partnerships.filter(p => p.strategic_plan_ids?.includes(selectedPlanId)),
+  // Filter entities by active plan from context
+  const filteredData = activePlanId ? {
+    programs: programs.filter(p => p.strategic_plan_ids?.includes(activePlanId)),
+    challenges: challenges.filter(c => c.strategic_plan_ids?.includes(activePlanId)),
+    sandboxes: sandboxes.filter(s => s.strategic_plan_ids?.includes(activePlanId)),
+    livingLabs: livingLabs.filter(l => l.strategic_plan_ids?.includes(activePlanId)),
+    partnerships: partnerships.filter(p => p.strategic_plan_ids?.includes(activePlanId)),
     pilots: pilots.filter(p => {
       const linkedChallenge = challenges.find(c => c.id === p.challenge_id);
-      return linkedChallenge?.strategic_plan_ids?.includes(selectedPlanId);
+      return linkedChallenge?.strategic_plan_ids?.includes(activePlanId) || p.strategic_plan_ids?.includes(activePlanId);
     })
   } : {
     programs: [],
@@ -185,7 +171,7 @@ function StrategyDrillDown() {
     },
     { 
       key: 'pilots', 
-      label: { en: 'Pilots (via Challenges)', ar: 'التجارب (عبر التحديات)' },
+      label: { en: 'Pilots', ar: 'التجارب' },
       icon: Zap,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
@@ -198,72 +184,50 @@ function StrategyDrillDown() {
 
   return (
     <div className="space-y-6 container mx-auto py-6 px-4" dir={isRTL ? 'rtl' : 'ltr'}>
+      <ActivePlanBanner />
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
             {t({ en: 'Strategy Drill-Down', ar: 'التفصيل الاستراتيجي' })}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t({ en: 'View all entities linked to a strategic plan', ar: 'عرض جميع الكيانات المرتبطة بخطة استراتيجية' })}
+            {t({ en: 'View all entities linked to the active strategic plan', ar: 'عرض جميع الكيانات المرتبطة بالخطة الاستراتيجية النشطة' })}
           </p>
         </div>
+        {activePlanId && (
+          <Badge variant="secondary" className="text-lg px-4 py-2">
+            {totalLinked} {t({ en: 'entities linked', ar: 'كيان مرتبط' })}
+          </Badge>
+        )}
       </div>
 
-      {/* Plan Selector */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <Layers className="h-5 w-5 text-primary" />
-            <div className="flex-1">
-              <Select value={selectedPlanId || ''} onValueChange={setSelectedPlanId}>
-                <SelectTrigger className="w-full md:w-96">
-                  <SelectValue placeholder={t({ en: 'Select a Strategic Plan', ar: 'اختر خطة استراتيجية' })} />
-                </SelectTrigger>
-                <SelectContent>
-                  {strategicPlans.map(plan => (
-                    <SelectItem key={plan.id} value={plan.id}>
-                      {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en}
-                      <span className="text-xs text-muted-foreground ml-2">({plan.start_year}-{plan.end_year})</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {selectedPlanId && (
-              <Badge variant="secondary" className="text-lg px-4 py-2">
-                {totalLinked} {t({ en: 'entities linked', ar: 'كيان مرتبط' })}
-              </Badge>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Plan Details */}
-      {selectedPlan && (
+      {activePlan && (
         <Card className="border-2 border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              {language === 'ar' && selectedPlan.name_ar ? selectedPlan.name_ar : selectedPlan.name_en}
+              {language === 'ar' && activePlan.name_ar ? activePlan.name_ar : activePlan.name_en}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-3 bg-muted rounded-lg">
-                <p className="text-2xl font-bold">{selectedPlan.start_year}</p>
+                <p className="text-2xl font-bold">{activePlan.start_year}</p>
                 <p className="text-xs text-muted-foreground">{t({ en: 'Start Year', ar: 'سنة البداية' })}</p>
               </div>
               <div className="text-center p-3 bg-muted rounded-lg">
-                <p className="text-2xl font-bold">{selectedPlan.end_year}</p>
+                <p className="text-2xl font-bold">{activePlan.end_year}</p>
                 <p className="text-xs text-muted-foreground">{t({ en: 'End Year', ar: 'سنة النهاية' })}</p>
               </div>
               <div className="text-center p-3 bg-muted rounded-lg">
-                <p className="text-2xl font-bold">{selectedPlan.objectives?.length || 0}</p>
+                <p className="text-2xl font-bold">{activePlan.objectives?.length || 0}</p>
                 <p className="text-xs text-muted-foreground">{t({ en: 'Objectives', ar: 'الأهداف' })}</p>
               </div>
               <div className="text-center p-3 bg-muted rounded-lg">
-                <Badge className={selectedPlan.status === 'active' ? 'bg-green-600' : 'bg-blue-600'}>
-                  {selectedPlan.status}
+                <Badge className={activePlan.status === 'active' ? 'bg-green-600' : 'bg-blue-600'}>
+                  {activePlan.status}
                 </Badge>
                 <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Status', ar: 'الحالة' })}</p>
               </div>
@@ -273,7 +237,7 @@ function StrategyDrillDown() {
       )}
 
       {/* Entity Sections */}
-      {selectedPlanId && (
+      {activePlanId && (
         <div className="space-y-4">
           {entitySections.map(({ key, label, icon: Icon, color, bgColor, data, linkPath }) => (
             <Card key={key}>
@@ -335,12 +299,12 @@ function StrategyDrillDown() {
         </div>
       )}
 
-      {!selectedPlanId && (
+      {!activePlanId && (
         <Card className="border-dashed border-2">
           <CardContent className="py-12 text-center">
             <Layers className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p className="text-lg text-muted-foreground">
-              {t({ en: 'Select a strategic plan to view linked entities', ar: 'اختر خطة استراتيجية لعرض الكيانات المرتبطة' })}
+              {t({ en: 'Select a strategic plan above to view linked entities', ar: 'اختر خطة استراتيجية أعلاه لعرض الكيانات المرتبطة' })}
             </p>
           </CardContent>
         </Card>

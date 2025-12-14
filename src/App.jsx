@@ -9,6 +9,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/components/LanguageContext';
+import { StrategicPlanProvider } from '@/contexts/StrategicPlanContext';
 import LanguagePersistence from '@/components/ui/LanguagePersistence';
 import PublicLayout from '@/components/layout/PublicLayout';
 import PublicPortal from './pages/PublicPortal';
@@ -146,14 +147,16 @@ function App() {
     <QueryClientProvider client={queryClientInstance}>
       <LanguageProvider>
         <LanguagePersistence />
-        <AuthProvider>
-          <Router>
-            <NavigationTracker />
-            <AuthenticatedApp />
-            <Toaster />
-          </Router>
-          <VisualEditAgent />
-        </AuthProvider>
+        <StrategicPlanProvider>
+          <AuthProvider>
+            <Router>
+              <NavigationTracker />
+              <AuthenticatedApp />
+              <Toaster />
+            </Router>
+            <VisualEditAgent />
+          </AuthProvider>
+        </StrategicPlanProvider>
       </LanguageProvider>
     </QueryClientProvider>
   )
