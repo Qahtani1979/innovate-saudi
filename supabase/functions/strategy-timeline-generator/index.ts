@@ -10,7 +10,10 @@ const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalitie
 - Major Cities: Riyadh, Jeddah, Makkah Al-Mukarramah, Madinah Al-Munawwarah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif
 - 285+ municipalities and 17 Amanats
 - Vision 2030: Quality of Life Program, Housing Program (70% ownership), National Transformation, Smart Cities
-- Focus: Municipal services, urban planning, housing (Sakani), infrastructure, environment, citizen services, innovation`;
+- Focus: Municipal services, urban planning, housing (Sakani), infrastructure, environment, citizen services, innovation
+- INNOVATION PRIORITY: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems, Robotics
+- Emerging Tech: GovTech, PropTech, CleanTech, Smart City platforms, predictive analytics
+- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,19 +30,22 @@ serve(async (req) => {
 
     console.log('Generating timeline milestones for objectives:', objectives?.length);
 
-    const systemPrompt = `You are an expert strategic planner specializing in Saudi Arabian municipal innovation and government transformation projects within the Ministry of Municipalities and Housing (MoMAH).
+    const systemPrompt = `You are an expert INNOVATION strategist specializing in Saudi Arabian municipal TECHNOLOGY transformation and government innovation projects within the Ministry of Municipalities and Housing (MoMAH).
 
 ${SAUDI_CONTEXT}
 
-Your task is to generate realistic implementation timelines with milestones for strategic objectives. Consider:
+Your task is to generate realistic implementation timelines with milestones for strategic objectives with INNOVATION & EMERGING TECHNOLOGY focus. Consider:
 1. Saudi government project timelines and procurement processes
 2. Fiscal year alignment (Saudi fiscal year)
 3. Logical sequencing and dependencies between milestones
-4. Key deliverables for each milestone aligned with Vision 2030
-5. Resource requirements considering local capacity
+4. Key deliverables including TECHNOLOGY POCs, PILOTS, and DIGITAL SOLUTIONS
+5. Resource requirements considering local capacity and TECH PARTNERSHIPS
 6. Risk factors, buffer time, and Ramadan/Hajj considerations
+7. **Innovation lifecycle phases**: Ideation → PoC → Pilot → Scale → Citywide deployment
+8. **Technology adoption milestones**: Vendor selection, integration, testing, training, go-live
+9. **R&D partnerships**: University collaboration, startup engagement, tech scouting activities
 
-Generate milestones that are SMART (Specific, Measurable, Achievable, Relevant, Time-bound) and aligned with MoMAH priorities.`;
+Generate milestones that are SMART (Specific, Measurable, Achievable, Relevant, Time-bound), INNOVATION-FOCUSED, and aligned with MoMAH priorities and emerging technology adoption.`;
 
     const userPrompt = `Generate a strategic implementation timeline for these objectives:
 

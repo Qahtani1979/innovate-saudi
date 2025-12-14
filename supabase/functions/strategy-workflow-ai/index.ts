@@ -10,7 +10,10 @@ const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalitie
 - 13 Regions, 285+ municipalities, 17 Amanats across Saudi Arabia
 - Major cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Eastern Province
 - Vision 2030 alignment: Quality of Life, Housing, Smart Cities, Sustainability
-- Focus: Municipal services, urban planning, housing, infrastructure, citizen services, innovation`;
+- Focus: Municipal services, urban planning, housing, infrastructure, citizen services, innovation
+- INNOVATION PRIORITY: AI, IoT, Blockchain, Digital Twins, Drones, Smart Sensors, Robotics
+- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration
+- Always consider technology-driven solutions and emerging tech integration opportunities`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

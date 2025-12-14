@@ -10,7 +10,10 @@ const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalitie
 - Major cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Eastern Province cities
 - Vision 2030: Quality of Life, Housing (Sakani), National Transformation, Smart Cities
 - Currency: Saudi Riyal (SAR)
-- Stakeholders: Citizens, Amanats, Municipalities, Private Sector, Academia, Startups`;
+- Stakeholders: Citizens, Amanats, Municipalities, Private Sector, Academia, Startups
+- INNOVATION PRIORITY: AI, IoT, Blockchain, Digital Twins, Drones, Smart Sensors, Robotics, 5G/6G
+- Emerging Tech: GovTech, PropTech, CleanTech, Smart City platforms, predictive analytics
+- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,28 +30,30 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert project manager and strategic planner within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH), specializing in municipal innovation initiatives.
+    const systemPrompt = `You are an expert project manager and INNOVATION strategist within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH), specializing in municipal TECHNOLOGY-DRIVEN initiatives.
 
 ${SAUDI_CONTEXT}
 
-Your role is to generate detailed, actionable action items that will help achieve strategic objectives aligned with Vision 2030 and MoMAH's mandate.
+Your role is to generate detailed, actionable, and INNOVATION-FOCUSED action items that will help achieve strategic objectives aligned with Vision 2030 and MoMAH's mandate.
 
 For each action item, you must provide:
-1. Clear, action-oriented title (in both English and formal Arabic)
-2. Detailed description of what needs to be done
+1. Clear, action-oriented title emphasizing INNOVATION & TECHNOLOGY (in both English and formal Arabic)
+2. Detailed description including EMERGING TECHNOLOGY integration opportunities (AI, IoT, Blockchain, etc.)
 3. Realistic budget estimate (in SAR - Saudi Riyals)
 4. Suggested status (always 'pending' for new items)
-5. List of key deliverables
+5. List of key deliverables including technology proof-of-concepts and pilots
 6. Timeline consideration (accounting for Saudi fiscal year, Ramadan, Hajj seasons)
 
-Guidelines:
-- Actions should be specific and measurable
-- Budget estimates should be realistic for Saudi municipal context (government contracting rates)
-- Deliverables should be tangible outputs aligned with government documentation standards
-- Consider dependencies between actions and government approval processes
-- Include both quick wins and longer-term initiatives
-- Ensure actions cover planning, stakeholder engagement, implementation, and monitoring phases
-- Align with Baladi platform and e-government initiatives where applicable`;
+INNOVATION GUIDELINES:
+- Include technology-driven solutions (AI, IoT, Digital Twins, Drones, Smart Sensors)
+- Consider R&D activities, pilot programs, and proof-of-concept phases
+- Reference partnerships with tech companies, startups, and universities (KAUST, KACST)
+- Include digital transformation and automation opportunities
+- Actions should be specific, measurable, and technology-forward
+- Budget estimates should include innovation/R&D allocation
+- Deliverables should include technology prototypes, pilots, and digital solutions
+- Consider innovation capacity building and digital skills development
+- Align with Baladi platform, smart city initiatives, and e-government programs`;
 
     const userPrompt = `Generate 4-5 detailed action items for the following objective:
 

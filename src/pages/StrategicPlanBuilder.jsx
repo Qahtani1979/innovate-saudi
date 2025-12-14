@@ -138,35 +138,50 @@ SAUDI ARABIA MOMAH CONTEXT:
 - 285+ municipalities and 17 major Amanats
 - Vision 2030 Programs: Quality of Life, Housing (Sakani - 70% ownership target), National Transformation, Thriving Cities
 - Focus Areas: Smart Cities, Sustainable Development, Citizen Services (Baladi), Urban Planning, Housing, Infrastructure, Rural Development, Innovation
+- MEGAPROJECTS: NEOM, The Line, Oxagon, King Abdullah Financial District (KAFD)
+
+INNOVATION & EMERGING TECHNOLOGY PRIORITY:
+- Emerging Technologies: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems, Robotics, AR/VR
+- GovTech: Digital permits, AI chatbots, automated compliance, predictive analytics
+- PropTech: Smart buildings, BIM, construction automation, smart homes
+- CleanTech: Renewable energy, smart waste management, water recycling, carbon capture
+- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration
+- Smart City Platforms: Integrated city management, digital twins, real-time monitoring
 
 ${momahSectors}
 `;
 
     const result = await invokeAI({
-      system_prompt: `You are a senior bilingual strategic planning expert within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH). You have deep expertise in Vision 2030, Saudi municipal governance, and government strategic planning.
+      system_prompt: `You are a senior bilingual strategic planning and innovation expert within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH). You have deep expertise in Vision 2030, Saudi municipal governance, government strategic planning, and EMERGING TECHNOLOGIES.
 
 ${saudiContext}
 
 Your role is to analyze the existing strategic landscape and create comprehensive NEW strategic plans that:
-- Fill identified gaps in Saudi municipal innovation
+- Fill identified gaps in Saudi municipal innovation WITH TECHNOLOGY-DRIVEN SOLUTIONS
+- Leverage emerging technologies: AI, IoT, Blockchain, Digital Twins, Drones, Robotics, 5G/6G
 - Align with Vision 2030 and MoMAH's extensive mandate
 - Consider all 13 Saudi regions and major cities
-- Support the Kingdom's transformation objectives
-- Address citizen needs and improve quality of life
+- Support the Kingdom's transformation objectives through INNOVATION
+- Address citizen needs and improve quality of life with SMART SOLUTIONS
+- Include R&D, pilot programs, and proof-of-concept approaches
+- Consider partnerships with startups, universities (KAUST, KACST), and tech companies
 
-CRITICAL: Generate SECTOR-SPECIFIC objectives. Each objective MUST focus on ONE specific sector only. Do NOT mix multiple sectors in a single objective.
+CRITICAL: Generate SECTOR-SPECIFIC objectives with INNOVATION FOCUS. Each objective MUST focus on ONE specific sector only and incorporate relevant emerging technologies. Do NOT mix multiple sectors in a single objective.
 
 You MUST provide ALL content in BOTH English and formal Arabic. Arabic content should be professional, official, and culturally appropriate for Saudi government documentation.`,
       prompt: `${contextPrompt}
 
-Based on the strategic context above, generate a COMPREHENSIVE strategic plan for Saudi municipalities that:
-1. Addresses ALL identified gaps thoroughly
-2. Aligns with Vision 2030 and MoMAH priorities
-3. Avoids duplicating existing plans
-4. Focuses on uncovered sectors and unresolved challenges across Saudi regions
-5. Considers all major Saudi cities and their unique needs
-6. Builds on SWOT strengths and opportunities
-7. Supports smart city and digital transformation initiatives
+Based on the strategic context above, generate a COMPREHENSIVE and INNOVATION-FOCUSED strategic plan for Saudi municipalities that:
+1. Addresses ALL identified gaps with TECHNOLOGY-DRIVEN SOLUTIONS
+2. Incorporates emerging technologies: AI, IoT, Blockchain, Digital Twins, Drones, Smart Sensors
+3. Aligns with Vision 2030, MoMAH priorities, and INNOVATION AGENDA
+4. Avoids duplicating existing plans
+5. Focuses on uncovered sectors and unresolved challenges across Saudi regions
+6. Considers all major Saudi cities and their unique technology needs
+7. Builds on SWOT strengths and opportunities for INNOVATION
+8. Supports smart city, digital transformation, and R&D initiatives
+9. Includes innovation KPIs, technology adoption metrics, and pilot approaches
+10. References relevant startups, university partnerships, and tech providers
 
 CRITICAL REQUIREMENTS:
 - Generate content in BOTH English AND formal Arabic (professional government language)

@@ -10,7 +10,10 @@ const SAUDI_CONTEXT = `Saudi Arabia Ministry of Municipalities and Housing (MoMA
 - 13 Regions, 285+ municipalities, 17 major Amanats
 - Vision 2030: Quality of Life, Housing, National Transformation, Smart Cities
 - Committee types: Strategy Board, Innovation Committee, Budget Committee, Technical Committee
-- Decision-making aligned with Saudi government protocols and Vision 2030 objectives`;
+- Decision-making aligned with Saudi government protocols and Vision 2030 objectives
+- INNOVATION PRIORITY: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems
+- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration
+- Committees should prioritize technology adoption, innovation initiatives, and digital transformation`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
