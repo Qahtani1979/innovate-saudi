@@ -377,15 +377,21 @@ export default function SWOTAnalysisBuilder({
     setDialogState({ open: true, category: item.category, item });
   }, []);
 
-  // Delete item
-  const handleDeleteItem = useCallback((category, itemId) => {
-    setSwotData(prev => ({
-      ...prev,
-      [category]: prev[category].filter(item => item.id !== itemId),
-      metadata: { ...prev.metadata, updated_at: new Date().toISOString() }
-    }));
-    toast.success(t({ en: 'Item deleted', ar: 'تم حذف العنصر' }));
-  }, [t]);
+  // Delete item and auto-save to database
+  const handleDeleteItem = useCallback(async (category, itemId) => {
+    const newData = {
+      ...swotData,
+      [category]: swotData[category].filter(item => item.id !== itemId),
+      metadata: { ...swotData.metadata, updated_at: new Date().toISOString() }
+    };
+    setSwotData(newData);
+    
+    // Auto-save to database after deletion
+    const success = await saveSwotAnalysis(newData);
+    if (success) {
+      toast.success(t({ en: 'Item deleted', ar: 'تم حذف العنصر' }));
+    }
+  }, [swotData, saveSwotAnalysis, t]);
 
   // Save item from dialog
   const handleSaveItem = useCallback((item) => {
