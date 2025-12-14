@@ -7,10 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/components/LanguageContext';
 import { useGapAnalysis } from '@/hooks/strategy/useGapAnalysis';
 import { useDemandQueue } from '@/hooks/strategy/useDemandQueue';
+import { useQueueNotifications } from '@/hooks/strategy/useQueueNotifications';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import CoverageHeatmap from './CoverageHeatmap';
 import QueueByTypeChart from './QueueByTypeChart';
 import BatchGenerationControls from './BatchGenerationControls';
+import QueueReviewPanel from './QueueReviewPanel';
+import RejectionFeedbackAnalysis from './RejectionFeedbackAnalysis';
+import AutomationControls from './AutomationControls';
 import { 
   BarChart3, 
   Target, 
@@ -23,7 +27,9 @@ import {
   Sparkles,
   TrendingUp,
   Zap,
-  Eye
+  Eye,
+  Bell,
+  Settings2
 } from 'lucide-react';
 
 export default function DemandDashboard() {
@@ -38,6 +44,7 @@ export default function DemandDashboard() {
     hasAnalysis 
   } = useGapAnalysis(activePlanId);
   const { queueItems, stats, byType, clearPendingItems, refetch } = useDemandQueue(activePlanId);
+  const { reviewCount } = useQueueNotifications(activePlanId);
   const [activeTab, setActiveTab] = useState('analysis');
 
   if (!activePlanId) {
@@ -72,21 +79,32 @@ export default function DemandDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
-          <TabsTrigger value="analysis" className="flex items-center gap-2">
+        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+          <TabsTrigger value="analysis" className="flex items-center gap-1">
             <Target className="h-4 w-4" />
             {t({ en: 'Analysis', ar: 'التحليل' })}
           </TabsTrigger>
-          <TabsTrigger value="queue" className="flex items-center gap-2">
+          <TabsTrigger value="queue" className="flex items-center gap-1">
             <ListOrdered className="h-4 w-4" />
             {t({ en: 'Queue', ar: 'القائمة' })}
             {stats.pending > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 justify-center">{stats.pending}</Badge>
+              <Badge variant="secondary" className="ml-1 h-5 min-w-5 p-0 justify-center text-xs">{stats.pending}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="batch" className="flex items-center gap-2">
+          <TabsTrigger value="review" className="flex items-center gap-1">
+            <Bell className="h-4 w-4" />
+            {t({ en: 'Review', ar: 'مراجعة' })}
+            {reviewCount > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-5 p-0 justify-center text-xs">{reviewCount}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="batch" className="flex items-center gap-1">
             <Zap className="h-4 w-4" />
             {t({ en: 'Batch', ar: 'دفعة' })}
+          </TabsTrigger>
+          <TabsTrigger value="automation" className="flex items-center gap-1">
+            <Settings2 className="h-4 w-4" />
+            {t({ en: 'Auto', ar: 'آلي' })}
           </TabsTrigger>
         </TabsList>
 
@@ -308,9 +326,22 @@ export default function DemandDashboard() {
           </Card>
         </TabsContent>
 
+        {/* Review Tab */}
+        <TabsContent value="review" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <QueueReviewPanel strategicPlanId={activePlanId} />
+            <RejectionFeedbackAnalysis strategicPlanId={activePlanId} />
+          </div>
+        </TabsContent>
+
         {/* Batch Generation Tab */}
         <TabsContent value="batch" className="space-y-4">
           <BatchGenerationControls strategicPlanId={activePlanId} />
+        </TabsContent>
+
+        {/* Automation Tab */}
+        <TabsContent value="automation" className="space-y-4">
+          <AutomationControls />
         </TabsContent>
       </Tabs>
     </div>

@@ -233,3 +233,6 @@ verify_jwt = false
 
 [functions.strategy-objective-generator]
 verify_jwt = false
+
+[functions.strategy-scheduled-analysis]
+verify_jwt = false
