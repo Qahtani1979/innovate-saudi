@@ -30,7 +30,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-const BaselineDataCollector = ({ strategicPlanId, onSave }) => {
+const BaselineDataCollector = ({ strategicPlanId, strategicPlan, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
   

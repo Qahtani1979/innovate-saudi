@@ -45,10 +45,10 @@ const STATUS_OPTIONS = [
   { value: 'blocked', label: { en: 'Blocked', ar: 'محظور' }, color: 'bg-red-500' }
 ];
 
-const ActionPlanBuilder = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSave }) => {
+const ActionPlanBuilder = ({ strategicPlanId, strategicPlan, objectives = SAMPLE_OBJECTIVES, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
-  const strategicPlanId = strategicPlan?.id;
+  const planId = strategicPlanId || strategicPlan?.id;
   
   const { 
     actionPlans: dbPlans, 
@@ -56,7 +56,7 @@ const ActionPlanBuilder = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSa
     saveActionPlan, 
     saveBulkActionPlans,
     deleteActionPlan 
-  } = useActionPlans(strategicPlanId);
+  } = useActionPlans(planId);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('builder');
@@ -155,7 +155,7 @@ const ActionPlanBuilder = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSa
           action_plan_id: planId,
           objective_title: plan.objective_title,
           objective_description: plan.description,
-          strategic_plan_id: strategicPlanId,
+          strategic_plan_id: planId,
           plan_context: strategicPlan?.vision_en
         }
       });

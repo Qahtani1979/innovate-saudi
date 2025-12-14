@@ -47,10 +47,10 @@ const SAMPLE_OBJECTIVES = [
   { id: '4', title_en: 'Improve Municipal MII Scores', title_ar: 'تحسين درجات مؤشر الابتكار البلدي' }
 ];
 
-const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSave }) => {
+const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives = SAMPLE_OBJECTIVES, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
-  const strategicPlanId = strategicPlan?.id;
+  const planId = strategicPlanId || strategicPlan?.id;
   
   const {
     assignments: dbAssignments,
@@ -58,7 +58,7 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
     saveAssignment,
     saveBulkAssignments,
     deleteAssignment
-  } = useStrategyOwnership(strategicPlanId);
+  } = useStrategyOwnership(planId);
 
   // Fetch real users from the platform for assignment selection
   const { data: platformUsers = [] } = useQuery({
