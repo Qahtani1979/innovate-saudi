@@ -147,16 +147,16 @@ function App() {
     <QueryClientProvider client={queryClientInstance}>
       <LanguageProvider>
         <LanguagePersistence />
-        <StrategicPlanProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <StrategicPlanProvider>
             <Router>
               <NavigationTracker />
               <AuthenticatedApp />
               <Toaster />
             </Router>
             <VisualEditAgent />
-          </AuthProvider>
-        </StrategicPlanProvider>
+          </StrategicPlanProvider>
+        </AuthProvider>
       </LanguageProvider>
     </QueryClientProvider>
   )
