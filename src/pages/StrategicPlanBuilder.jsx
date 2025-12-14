@@ -106,26 +106,30 @@ function StrategicPlanBuilder() {
     const contextPrompt = buildStrategyContextPrompt(strategyContext);
     
     const result = await invokeAI({
-      system_prompt: `You are a bilingual strategic planning expert for municipal innovation in Saudi Arabia. You analyze existing strategic landscape and create NEW plans that fill identified gaps while avoiding duplication. You MUST provide content in BOTH English and Arabic. Arabic content should be professional, formal, and culturally appropriate for Saudi government context.`,
+      system_prompt: `You are a bilingual strategic planning expert for municipal innovation in Saudi Arabia. You analyze existing strategic landscape and create comprehensive NEW plans that fill identified gaps while avoiding duplication. You MUST provide content in BOTH English and Arabic. Arabic content should be professional, formal, and culturally appropriate for Saudi government context. Generate thorough and complete strategic plans with sufficient objectives to cover all identified gaps.`,
       prompt: `${contextPrompt}
 
-Based on the strategic context above, generate a NEW strategic plan that:
-1. Addresses identified gaps
+Based on the strategic context above, generate a COMPREHENSIVE strategic plan that:
+1. Addresses ALL identified gaps thoroughly
 2. Avoids duplicating existing plans
 3. Focuses on uncovered sectors and unresolved challenges
 4. Builds on SWOT strengths and opportunities
+5. Provides complete coverage for the strategic landscape
 
-IMPORTANT: Generate content in BOTH English AND Arabic.
+IMPORTANT: 
+- Generate content in BOTH English AND Arabic
+- Include 6-10 strategic objectives to ensure comprehensive coverage
+- Each objective should address a specific gap or opportunity
 
 Format as JSON with:
 - title_en: Unique, descriptive title in English
 - title_ar: Same title translated to formal Arabic
-- vision_en: Compelling vision statement in English
+- vision_en: Compelling vision statement in English (2-3 sentences)
 - vision_ar: Same vision statement in formal Arabic
-- objectives: Array of 3-5 objectives, each with:
-  - name_en: Objective name in English
+- objectives: Array of 6-10 objectives, each with:
+  - name_en: Clear, actionable objective name in English
   - name_ar: Objective name in Arabic
-  - description_en: Description in English
+  - description_en: Detailed description explaining the objective scope and expected outcomes (2-3 sentences)
   - description_ar: Description in Arabic`,
       response_json_schema: {
         type: "object",
