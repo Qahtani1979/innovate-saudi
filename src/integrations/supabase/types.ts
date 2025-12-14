@@ -226,6 +226,130 @@ export type Database = {
         }
         Relationships: []
       }
+      action_items: {
+        Row: {
+          action_plan_id: string | null
+          budget: number | null
+          created_at: string | null
+          deliverables: string[] | null
+          dependencies: string[] | null
+          description: string | null
+          end_date: string | null
+          id: string
+          owner_email: string | null
+          progress_percentage: number | null
+          start_date: string | null
+          status: string | null
+          title_ar: string | null
+          title_en: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_plan_id?: string | null
+          budget?: number | null
+          created_at?: string | null
+          deliverables?: string[] | null
+          dependencies?: string[] | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          owner_email?: string | null
+          progress_percentage?: number | null
+          start_date?: string | null
+          status?: string | null
+          title_ar?: string | null
+          title_en: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_plan_id?: string | null
+          budget?: number | null
+          created_at?: string | null
+          deliverables?: string[] | null
+          dependencies?: string[] | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          owner_email?: string | null
+          progress_percentage?: number | null
+          start_date?: string | null
+          status?: string | null
+          title_ar?: string | null
+          title_en?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_items_action_plan_id_fkey"
+            columns: ["action_plan_id"]
+            isOneToOne: false
+            referencedRelation: "action_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_plans: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          end_date: string | null
+          id: string
+          objective_id: string | null
+          objective_title: string | null
+          owner_email: string | null
+          start_date: string | null
+          status: string | null
+          strategic_plan_id: string | null
+          title_ar: string | null
+          title_en: string
+          total_budget: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          end_date?: string | null
+          id?: string
+          objective_id?: string | null
+          objective_title?: string | null
+          owner_email?: string | null
+          start_date?: string | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          title_ar?: string | null
+          title_en: string
+          total_budget?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          end_date?: string | null
+          id?: string
+          objective_id?: string | null
+          objective_title?: string | null
+          owner_email?: string | null
+          start_date?: string | null
+          status?: string | null
+          strategic_plan_id?: string | null
+          title_ar?: string | null
+          title_en?: string
+          total_budget?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plans_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_analysis_cache: {
         Row: {
           created_at: string
@@ -5221,6 +5345,59 @@ export type Database = {
           },
         ]
       }
+      national_strategy_alignments: {
+        Row: {
+          alignment_notes: string | null
+          alignment_score: number | null
+          contribution_type: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          national_goal_code: string | null
+          national_goal_name_ar: string | null
+          national_goal_name_en: string | null
+          national_strategy_type: string | null
+          objective_id: string | null
+          strategic_plan_id: string | null
+        }
+        Insert: {
+          alignment_notes?: string | null
+          alignment_score?: number | null
+          contribution_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          national_goal_code?: string | null
+          national_goal_name_ar?: string | null
+          national_goal_name_en?: string | null
+          national_strategy_type?: string | null
+          objective_id?: string | null
+          strategic_plan_id?: string | null
+        }
+        Update: {
+          alignment_notes?: string | null
+          alignment_score?: number | null
+          contribution_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          national_goal_code?: string | null
+          national_goal_name_ar?: string | null
+          national_goal_name_en?: string | null
+          national_strategy_type?: string | null
+          objective_id?: string | null
+          strategic_plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "national_strategy_alignments_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_articles: {
         Row: {
           author: string | null
@@ -8755,6 +8932,72 @@ export type Database = {
           },
         ]
       }
+      sector_strategies: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          kpis: Json | null
+          name_ar: string | null
+          name_en: string
+          objectives: Json | null
+          owner_email: string | null
+          parent_plan_id: string | null
+          sector_id: string | null
+          status: string | null
+          updated_at: string | null
+          vision_ar: string | null
+          vision_en: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          kpis?: Json | null
+          name_ar?: string | null
+          name_en: string
+          objectives?: Json | null
+          owner_email?: string | null
+          parent_plan_id?: string | null
+          sector_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vision_ar?: string | null
+          vision_en?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          kpis?: Json | null
+          name_ar?: string | null
+          name_en?: string
+          objectives?: Json | null
+          owner_email?: string | null
+          parent_plan_id?: string | null
+          sector_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vision_ar?: string | null
+          vision_en?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sector_strategies_parent_plan_id_fkey"
+            columns: ["parent_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_strategies_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sectors: {
         Row: {
           code: string | null
@@ -9999,6 +10242,130 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "strategy_inputs_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_milestones: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deliverables: string[] | null
+          dependencies: string[] | null
+          end_date: string
+          id: string
+          objective_id: string | null
+          owner_email: string | null
+          progress_percentage: number | null
+          resources_required: string[] | null
+          start_date: string
+          status: string | null
+          strategic_plan_id: string | null
+          title_ar: string | null
+          title_en: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          deliverables?: string[] | null
+          dependencies?: string[] | null
+          end_date: string
+          id?: string
+          objective_id?: string | null
+          owner_email?: string | null
+          progress_percentage?: number | null
+          resources_required?: string[] | null
+          start_date: string
+          status?: string | null
+          strategic_plan_id?: string | null
+          title_ar?: string | null
+          title_en: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          deliverables?: string[] | null
+          dependencies?: string[] | null
+          end_date?: string
+          id?: string
+          objective_id?: string | null
+          owner_email?: string | null
+          progress_percentage?: number | null
+          resources_required?: string[] | null
+          start_date?: string
+          status?: string | null
+          strategic_plan_id?: string | null
+          title_ar?: string | null
+          title_en?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_milestones_strategic_plan_id_fkey"
+            columns: ["strategic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_ownership: {
+        Row: {
+          accountable_email: string | null
+          consulted_emails: string[] | null
+          created_at: string | null
+          created_by: string | null
+          delegation_allowed: boolean | null
+          escalation_path: string | null
+          id: string
+          informed_emails: string[] | null
+          notifications_enabled: boolean | null
+          objective_id: string | null
+          objective_title: string | null
+          responsible_email: string | null
+          strategic_plan_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accountable_email?: string | null
+          consulted_emails?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          delegation_allowed?: boolean | null
+          escalation_path?: string | null
+          id?: string
+          informed_emails?: string[] | null
+          notifications_enabled?: boolean | null
+          objective_id?: string | null
+          objective_title?: string | null
+          responsible_email?: string | null
+          strategic_plan_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accountable_email?: string | null
+          consulted_emails?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          delegation_allowed?: boolean | null
+          escalation_path?: string | null
+          id?: string
+          informed_emails?: string[] | null
+          notifications_enabled?: boolean | null
+          objective_id?: string | null
+          objective_title?: string | null
+          responsible_email?: string | null
+          strategic_plan_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_ownership_strategic_plan_id_fkey"
             columns: ["strategic_plan_id"]
             isOneToOne: false
             referencedRelation: "strategic_plans"
