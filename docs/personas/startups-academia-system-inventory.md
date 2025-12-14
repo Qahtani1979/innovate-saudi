@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Knowledge](../knowledge/knowledge-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Portfolio & Analytics →](../portfolio/portfolio-analytics-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Startups & Academia System manages specialized dashboards and features for startup and academic institution personas in the innovation ecosystem.

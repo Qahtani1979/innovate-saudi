@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Admin](../admin/admin-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Knowledge →](../knowledge/knowledge-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Communications System manages platform communications including email campaigns, notifications, announcements, messaging, and stakeholder communications.

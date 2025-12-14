@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Citizens](../citizens/citizens-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Scaling →](../scaling/scaling-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Partnerships System manages strategic partnerships, organization profiles, MOU tracking, and collaboration networks across the innovation ecosystem.

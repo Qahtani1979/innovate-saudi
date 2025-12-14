@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Solutions](../solutions/solutions-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Municipalities →](../municipalities/municipalities-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Sandboxes & Living Labs System manages regulatory sandboxes for testing innovations in controlled environments and living labs for real-world experimentation with citizens.

@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← R&D](../rd/rd-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Sandboxes & Living Labs →](../sandboxes-livinglabs/sandboxes-livinglabs-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Solutions System manages the innovation solutions marketplace including solution registration, verification, matching, deployment tracking, and marketplace analytics.

@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Partnerships](../partnerships/partnerships-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Events →](../events/events-system-inventory.md) |
+
+---
+
 ## Overview
 
 The Scaling System manages the transition of successful pilots to full-scale implementation across municipalities, including readiness assessment, rollout planning, and success monitoring.

@@ -8,6 +8,14 @@
 
 ---
 
+## 🔗 Navigation
+
+| ⬅️ Previous | ⬆️ Parent | ➡️ Next |
+|-------------|-----------|---------|
+| [← Programs](../programs/programs-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Solutions →](../solutions/solutions-system-inventory.md) |
+
+---
+
 ## Overview
 
 The R&D System manages the complete research and development lifecycle including R&D calls, proposals, projects, and technology transfer. It supports the innovation ecosystem by connecting challenges to research outputs.
