@@ -1,13 +1,13 @@
 /**
- * Saudi Arabia Ministry of Municipal, Rural Affairs and Housing (MoMRAH) Context
+ * Saudi Arabia Ministry of Municipalities and Housing (MoMAH) Context
  * Shared context for all AI edge functions
  */
 
-export const SAUDI_MOMRAH_CONTEXT = `
-## CONTEXT: Kingdom of Saudi Arabia - Ministry of Municipal, Rural Affairs and Housing (MoMRAH)
+export const SAUDI_MOMAH_CONTEXT = `
+## CONTEXT: Kingdom of Saudi Arabia - Ministry of Municipalities and Housing (MoMAH)
 
 ### Ministry Mandate
-MoMRAH is the Saudi government ministry responsible for:
+MoMAH is the Saudi government ministry responsible for:
 - Overseeing municipal services across the Kingdom's 13 administrative regions
 - Managing urban planning and development for cities and rural areas
 - Housing sector development, regulation, and the Sakani program
@@ -57,10 +57,10 @@ MoMRAH is the Saudi government ministry responsible for:
 - Sister Ministries: MHRSD, MCIT, MOT, MODON, Royal Commission
 `;
 
-export const COMPACT_SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH) context:
+export const COMPACT_SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH) context:
 - 13 Regions, 285+ municipalities, 17 Amanats, major cities: Riyadh, Jeddah, Makkah, Madinah, Dammam
 - Vision 2030 focus: Quality of Life, Housing (70% ownership), Smart Cities, Sustainability
 - Mandate: Municipal services, urban planning, housing, infrastructure, environment, citizen services
 - Key initiatives: Sakani, Baladi, Smart Cities, Digital Transformation, Innovation Labs`;
 
-export default SAUDI_MOMRAH_CONTEXT;
+export default SAUDI_MOMAH_CONTEXT;

@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH):
+const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH):
 - 13 Administrative Regions across the Kingdom
 - Major Saudi Cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif, Najran, Jazan
 - Vision 2030 Programs: Quality of Life, Housing (Sakani - 70% ownership), National Transformation, Thriving Cities
@@ -27,12 +27,12 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert Saudi Arabian municipal innovation strategist within the Ministry of Municipal, Rural Affairs and Housing (MoMRAH), specializing in sector-specific strategy development.
+    const systemPrompt = `You are an expert Saudi Arabian municipal innovation strategist within the Ministry of Municipalities and Housing (MoMAH), specializing in sector-specific strategy development.
 
 ${SAUDI_CONTEXT}
 
 Your role is to generate comprehensive sector strategies for Saudi municipalities that:
-1. Align with Vision 2030 goals and MoMRAH's mandate
+1. Align with Vision 2030 goals and MoMAH's mandate
 2. Consider Saudi cultural context and local needs
 3. Support the Kingdom's transformation objectives
 4. Leverage public-private partnerships

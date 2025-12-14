@@ -5,11 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SAUDI_CONTEXT = `Saudi Arabia Ministry of Municipal, Rural Affairs and Housing (MoMRAH) Context:
+const SAUDI_CONTEXT = `Saudi Arabia Ministry of Municipalities and Housing (MoMAH) Context:
 - 13 Regions, 285+ municipalities, 17 major Amanats
 - Vision 2030 pillars: Vibrant Society, Thriving Economy, Ambitious Nation
 - Key Programs: Quality of Life, Housing (Sakani), National Transformation, Thriving Cities
-- MoMRAH Mandate: Municipal services, urban planning, housing, infrastructure, environment, citizen services`;
+- MoMAH Mandate: Municipal services, urban planning, housing, infrastructure, environment, citizen services`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,7 +26,7 @@ serve(async (req) => {
 
     console.log('Generating national strategy alignments for objectives:', objectives?.length);
 
-    const systemPrompt = `You are an expert in Saudi Arabian national strategies, Vision 2030, and the Ministry of Municipal, Rural Affairs and Housing (MoMRAH) mandate.
+    const systemPrompt = `You are an expert in Saudi Arabian national strategies, Vision 2030, and the Ministry of Municipalities and Housing (MoMAH) mandate.
 
 ${SAUDI_CONTEXT}
 
@@ -51,7 +51,7 @@ Your task is to analyze strategic objectives and suggest precise alignments with
    - SDG 13: Climate Action
    - SDG 17: Partnerships for the Goals
 
-4. **MoMRAH National Innovation Priorities**:
+4. **MoMAH National Innovation Priorities**:
    - NIS-1: Digital Government & E-Services (Baladi platform)
    - NIS-2: Smart Cities & Urban Innovation
    - NIS-3: Innovation Ecosystem & Startups

@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipal, Rural Affairs and Housing (MoMRAH):
+const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH):
 - 13 Regions: Riyadh, Makkah, Madinah, Eastern Province, Asir, Tabuk, Hail, Northern Borders, Jazan, Najran, Al-Baha, Al-Jouf, Qassim
 - Major Cities: Riyadh, Jeddah, Makkah Al-Mukarramah, Madinah Al-Munawwarah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif
 - 285+ municipalities and 17 Amanats
@@ -27,7 +27,7 @@ serve(async (req) => {
 
     console.log('Generating timeline milestones for objectives:', objectives?.length);
 
-    const systemPrompt = `You are an expert strategic planner specializing in Saudi Arabian municipal innovation and government transformation projects within the Ministry of Municipal, Rural Affairs and Housing (MoMRAH).
+    const systemPrompt = `You are an expert strategic planner specializing in Saudi Arabian municipal innovation and government transformation projects within the Ministry of Municipalities and Housing (MoMAH).
 
 ${SAUDI_CONTEXT}
 
@@ -39,7 +39,7 @@ Your task is to generate realistic implementation timelines with milestones for 
 5. Resource requirements considering local capacity
 6. Risk factors, buffer time, and Ramadan/Hajj considerations
 
-Generate milestones that are SMART (Specific, Measurable, Achievable, Relevant, Time-bound) and aligned with MoMRAH priorities.`;
+Generate milestones that are SMART (Specific, Measurable, Achievable, Relevant, Time-bound) and aligned with MoMAH priorities.`;
 
     const userPrompt = `Generate a strategic implementation timeline for these objectives:
 
