@@ -1,7 +1,8 @@
 # Strategy System - Integration Matrix
 
-**Last Updated:** 2025-12-14 (COMPREHENSIVE DOCUMENTATION UPDATE)  
-**Status:** ✅ Platform Integration 100% | ✅ Database Integration 95% | 🟡 Overall 85%
+**Last Updated:** 2025-12-14 (IMPLEMENTATION PATTERNS UPDATE)  
+**Status:** ✅ Platform Integration 100% | ✅ Database Integration 95% | 🟡 Overall 85%  
+**Section E Added:** Complete implementation patterns and I/O specifications
 
 ---
 
@@ -482,7 +483,255 @@ erDiagram
 
 ---
 
-## SECTION E: TECHNICAL INTEGRATION DETAILS
+## SECTION E: IMPLEMENTATION PATTERNS & DATA FLOW
+
+### E.1 How Strategy Generates Entities (Cascade Generators)
+
+The system uses **AI-powered generators** to create new entities from strategic plans. Here's exactly what happens:
+
+#### E.1.1 Entity Generation Pattern
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        ENTITY GENERATION WORKFLOW                                │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   USER INPUT                                                                     │
+│   ├── Select Strategic Plan                                                      │
+│   ├── Select Objectives (optional filter)                                        │
+│   ├── Select Sector (optional filter)                                            │
+│   └── Additional Context (optional)                                              │
+│                   │                                                              │
+│                   ▼                                                              │
+│   AI EDGE FUNCTION                                                               │
+│   ├── Fetches strategic plan from DB                                             │
+│   ├── Analyzes objectives, KPIs, sector focus                                    │
+│   ├── Generates entity suggestions (3-5 typically)                               │
+│   └── Returns structured JSON with bilingual content                             │
+│                   │                                                              │
+│                   ▼                                                              │
+│   USER REVIEW                                                                    │
+│   ├── AI suggestions displayed as cards                                          │
+│   ├── User selects which to save                                                 │
+│   └── User can edit before saving                                                │
+│                   │                                                              │
+│                   ▼                                                              │
+│   DATABASE INSERT                                                                │
+│   ├── Entity created with strategic_plan_ids[] = [selectedPlanId]               │
+│   ├── is_strategy_derived = true                                                 │
+│   ├── strategy_derivation_date = now()                                           │
+│   ├── status = 'draft'                                                           │
+│   └── Related links created (e.g., strategic_plan_challenge_links)              │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### E.1.2 Generator Components & Their Outputs
+
+| Generator | Entity Created | Key Fields Set | Status |
+|-----------|----------------|----------------|--------|
+| **StrategyToProgramGenerator** | `programs` | strategic_plan_ids[], is_strategy_derived, objectives, target_outcomes | draft |
+| **StrategyChallengeGenerator** | `challenges` | strategic_plan_ids[], problem_statement, desired_outcome, source='ai_generated' | draft |
+| **StrategyToPilotGenerator** | `pilots` | challenge_id, source_program_id, strategic_plan_ids[] (via challenge) | planning |
+| **StrategyToPartnershipGenerator** | `partnerships` | strategic_plan_ids[], is_strategy_derived, partnership_type | proposed |
+| **StrategyToLivingLabGenerator** | `living_labs` | strategic_plan_ids[], is_strategy_derived, target_outcomes | planning |
+| **StrategyToSandboxGenerator** | `sandboxes` | strategic_plan_ids[], is_strategy_derived, strategic_gaps_addressed | planning |
+| **StrategyToEventGenerator** | `events` | strategic_plan_ids[], program_id, event_type | draft |
+| **StrategyToPolicyGenerator** | `policy_documents` | strategic_plan_ids[], is_strategy_derived, policy_type | draft |
+| **StrategyToRDCallGenerator** | `rd_calls` | challenge_ids[], program_id, focus_areas | draft |
+| **StrategyToCampaignGenerator** | `email_campaigns` | program_id, challenge_id (indirect link) | draft |
+
+### E.2 Input/Output Specification by Entity
+
+#### E.2.1 Programs (Direct Linkage)
+
+```
+INPUT (What AI receives):
+├── strategic_plan_id: UUID of selected plan
+├── strategic_goals: Array of objectives from plan
+├── sector_focus: Sector ID or 'general'
+└── vision_statement: Plan vision for context
+
+OUTPUT (What is created):
+└── programs table INSERT:
+    ├── name_en, name_ar: Bilingual titles
+    ├── description_en, description_ar: Bilingual descriptions
+    ├── program_type: 'capacity_building' | 'innovation_challenge' | 'mentorship' | etc.
+    ├── strategic_plan_ids: [selected_plan_id]
+    ├── strategic_objective_ids: [linked_objective_ids]
+    ├── objectives: Array of program objectives
+    ├── target_outcomes: Array of {description, target, current}
+    ├── is_strategy_derived: true
+    ├── strategy_derivation_date: timestamp
+    └── status: 'draft'
+```
+
+#### E.2.2 Challenges (Direct Linkage)
+
+```
+INPUT (What AI receives):
+├── strategic_plan_id: UUID of selected plan
+├── objective_ids: Array of selected objective indices
+├── sector_id: Optional sector filter
+├── challenge_count: 1-5
+└── additional_context: Free text context
+
+OUTPUT (What is created):
+└── challenges table INSERT:
+    ├── title_en, title_ar: Bilingual titles
+    ├── description_en, description_ar: Bilingual descriptions
+    ├── problem_statement_en, problem_statement_ar: Problem definition
+    ├── desired_outcome_en, desired_outcome_ar: Target outcomes
+    ├── strategic_plan_ids: [selected_plan_id]
+    ├── sector_id: Sector if specified
+    ├── source: 'ai_generated'
+    └── status: 'draft'
+
+ALSO CREATED:
+└── strategic_plan_challenge_links table INSERT:
+    ├── strategic_plan_id
+    ├── challenge_id
+    ├── contribution_type: 'addresses'
+    └── alignment_status: 'pending'
+```
+
+#### E.2.3 Pilots (Indirect via Challenge)
+
+```
+INPUT (What AI receives):
+├── challenge_id: Parent challenge UUID
+├── solution_id: Optional linked solution
+├── strategic_context: Derived from challenge's strategic_plan_ids
+└── municipality_id: Target municipality
+
+OUTPUT (What is created):
+└── pilots table INSERT:
+    ├── name_en, name_ar: Bilingual titles
+    ├── description_en, description_ar: Bilingual descriptions
+    ├── challenge_id: Links to parent challenge
+    ├── solution_id: Links to solution being piloted
+    ├── municipality_id: Implementation location
+    ├── stage: 'planning'
+    └── status: 'draft'
+
+STRATEGIC LINK (Indirect):
+├── Pilot.challenge_id → challenges.id
+├── challenges.strategic_plan_ids[] → strategic_plans.id
+└── Therefore: Pilot is INDIRECTLY linked to strategy via challenge
+```
+
+#### E.2.4 Living Labs & Sandboxes (Direct Linkage)
+
+```
+INPUT:
+├── strategic_plan_id
+├── selected_objectives: Array of objective IDs
+├── municipality_id: Host municipality
+└── focus_area: Innovation focus
+
+OUTPUT (living_labs/sandboxes):
+├── name_en, name_ar
+├── description_en, description_ar
+├── strategic_plan_ids: [selected_plan_id]
+├── strategic_objective_ids: [objective_ids]
+├── is_strategy_derived: true
+├── strategy_derivation_date: timestamp
+├── target_outcomes: Array of outcomes
+└── status: 'planning'
+```
+
+### E.3 Manual vs Automatic Linking
+
+| Scenario | Behavior | User Action |
+|----------|----------|-------------|
+| **AI Generator** | Automatic `strategic_plan_ids` injection | Select plan, review, save |
+| **Manual Entity Creation** | Optional strategic alignment | Use StrategicAlignmentSelector component |
+| **Edit Existing Entity** | Add/remove strategic links | Use StrategicAlignmentSelector component |
+| **Indirect Entities** | No direct link field | Link via parent entity (challenge, program) |
+
+### E.4 What Gets Injected vs What You Select
+
+#### Automatic Injection (By Generators)
+- `strategic_plan_ids[]` - Always set to [selected_plan_id]
+- `is_strategy_derived` - Always set to `true`
+- `strategy_derivation_date` - Always set to current timestamp
+- `status` - Always set to 'draft' or 'planning'
+- `source` - Set to 'ai_generated' for challenges
+
+#### User Selection Required
+- Which generated entities to save (multi-select)
+- Sector filter (optional)
+- Municipality assignment (optional)
+- Additional context for AI
+- Which objectives to address (for focused generation)
+
+#### Post-Creation (Manual Linking)
+- Additional strategic plans can be linked via StrategicAlignmentSelector
+- Alignment status can be updated (pending → aligned → verified)
+- Contribution type can be refined (addresses, enables, supports)
+
+### E.5 Relationship Chain Examples
+
+#### Example 1: Complete Strategy-to-Scale Chain
+```
+Strategic Plan: "Digital Municipality 2030"
+    │
+    ├── GENERATES (AI) ──► Program: "Smart Services Accelerator"
+    │                           │
+    │                           └── SPAWNS ──► R&D Call: "AI Municipal Solutions"
+    │                                               │
+    │                                               └── PRODUCES ──► R&D Project: "Chatbot for Citizens"
+    │
+    ├── GENERATES (AI) ──► Challenge: "Long Queue Times at Service Centers"
+    │                           │
+    │                           ├── MATCHES ──► Solution: "AI Queue Management"
+    │                           │
+    │                           └── TESTS ──► Pilot: "Riyadh Queue Pilot"
+    │                                               │
+    │                                               └── SCALES ──► Scaling Plan: "National Rollout"
+    │
+    └── GENERATES (AI) ──► Partnership: "Tech Company Innovation Lab"
+                                │
+                                └── HOSTS ──► Living Lab: "Smart City Testing Center"
+```
+
+#### Example 2: Data Flow for KPI Tracking
+```
+Strategic Plan KPI: "Reduce service time by 30%"
+    │
+    ├── TRACKED BY ──► Program Outcome: "Average processing time"
+    │                       current: 45 min, target: 31.5 min
+    │
+    ├── VALIDATED BY ──► Pilot Results: "Actual time reduction achieved"
+    │                       measured: 28% reduction
+    │
+    └── AGGREGATED IN ──► Strategy Cockpit: "KPI Achievement Dashboard"
+                              showing: 28/30% = 93.3% achieved
+```
+
+### E.6 What You Should Expect
+
+#### As a Strategy Creator:
+1. **Input**: Create strategic plan with objectives and KPIs
+2. **Process**: Use cascade generators to create execution entities
+3. **Output**: Programs, challenges, partnerships, etc. all linked to your plan
+4. **Tracking**: Monitor KPI progress across all derived entities
+
+#### As an Entity Manager:
+1. **Receive**: Strategy-derived entities appear in your queue (status: draft)
+2. **Review**: Validate AI-generated content, edit as needed
+3. **Execute**: Move through lifecycle (draft → active → completed)
+4. **Report**: Progress automatically flows back to strategy monitoring
+
+#### As an Administrator:
+1. **Visibility**: See all entities linked to each strategic plan
+2. **Coverage**: Track which objectives have derived entities
+3. **Gaps**: Identify objectives without execution entities
+4. **Health**: Monitor overall strategic execution health
+
+---
+
+## SECTION F: TECHNICAL INTEGRATION DETAILS
 
 ### D.1 Database Hooks Summary
 
