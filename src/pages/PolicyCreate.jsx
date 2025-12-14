@@ -16,6 +16,7 @@ import { Link } from 'react-router-dom';
 import SimilarPolicyDetector from '../components/policy/SimilarPolicyDetector';
 import PolicyTemplateLibrary from '../components/policy/PolicyTemplateLibrary';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
@@ -55,7 +56,9 @@ function PolicyCreate() {
     success_metrics: [],
     affected_stakeholders: [],
     stakeholder_involvement_ar: '',
-    attachment_urls: []
+    attachment_urls: [],
+    strategic_plan_ids: [],
+    strategic_objective_ids: []
   });
 
   // Auto-save draft every 30 seconds
@@ -978,6 +981,16 @@ CRITICAL: All text fields must be in ARABIC. This is for Saudi government use.`,
               rows={4}
               placeholder="وزارة الشؤون البلدية، اللجنة القانونية، المجلس البلدي..."
               dir="rtl"
+            />
+          </div>
+
+          {/* Strategic Alignment Section */}
+          <div className="border-t pt-4 mt-4">
+            <StrategicPlanSelector
+              selectedPlanIds={formData.strategic_plan_ids || []}
+              selectedObjectiveIds={formData.strategic_objective_ids || []}
+              onPlanChange={(ids) => setFormData({...formData, strategic_plan_ids: ids})}
+              onObjectiveChange={(ids) => setFormData({...formData, strategic_objective_ids: ids})}
             />
           </div>
 

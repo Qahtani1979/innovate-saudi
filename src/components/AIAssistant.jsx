@@ -32,6 +32,14 @@ export default function AIAssistant({ context = {} }) {
     { 
       label: { en: 'Generate report', ar: 'أنشئ تقرير' },
       prompt: 'Generate a summary report'
+    },
+    { 
+      label: { en: 'Strategic alignment', ar: 'التوافق الاستراتيجي' },
+      prompt: 'How does this align with our strategic plans? What objectives should this be linked to?'
+    },
+    { 
+      label: { en: 'Strategy gaps', ar: 'فجوات الاستراتيجية' },
+      prompt: 'What are the current gaps in strategic alignment across our challenges and pilots?'
     }
   ];
 
@@ -43,14 +51,23 @@ export default function AIAssistant({ context = {} }) {
     setPrompt('');
 
     try {
-      // Semantic search across platform entities
-      const [challenges, pilots, solutions, rdProjects, programs] = await Promise.all([
+      // Semantic search across platform entities including strategic data
+      const [challenges, pilots, solutions, rdProjects, programs, strategicPlans] = await Promise.all([
         base44.entities.Challenge.list(),
         base44.entities.Pilot.list(),
         base44.entities.Solution.list(),
         base44.entities.RDProject.list(),
-        base44.entities.Program.list()
+        base44.entities.Program.list(),
+        base44.entities.StrategicPlan.list()
       ]);
+
+      // Calculate strategy-derived metrics
+      const strategyDerivedChallenges = challenges.filter(c => c.is_strategy_derived).length;
+      const strategyDerivedPilots = pilots.filter(p => p.is_strategy_derived).length;
+      const strategyDerivedPrograms = programs.filter(p => p.is_strategy_derived).length;
+      
+      // Get active strategic plans
+      const activeStrategicPlans = strategicPlans.filter(p => p.status === 'approved' || p.status === 'active');
 
       const platformContext = {
         page: context.page,
@@ -59,25 +76,56 @@ export default function AIAssistant({ context = {} }) {
         total_solutions: solutions.length,
         total_rd_projects: rdProjects.length,
         total_programs: programs.length,
+        strategic_context: {
+          total_strategic_plans: strategicPlans.length,
+          active_plans: activeStrategicPlans.length,
+          active_plan_names: activeStrategicPlans.slice(0, 3).map(p => p.name_en),
+          strategy_derived_challenges: strategyDerivedChallenges,
+          strategy_derived_pilots: strategyDerivedPilots,
+          strategy_derived_programs: strategyDerivedPrograms,
+          strategy_alignment_percentage: challenges.length > 0 
+            ? Math.round((strategyDerivedChallenges / challenges.length) * 100) 
+            : 0
+        },
         recent_items: {
-          challenges: challenges.slice(0, 3).map(c => ({ code: c.code, title: c.title_en, sector: c.sector })),
-          pilots: pilots.slice(0, 3).map(p => ({ code: p.code, title: p.title_en, stage: p.stage })),
+          challenges: challenges.slice(0, 3).map(c => ({ 
+            code: c.code, 
+            title: c.title_en, 
+            sector: c.sector,
+            is_strategy_derived: c.is_strategy_derived,
+            strategic_plan_ids: c.strategic_plan_ids 
+          })),
+          pilots: pilots.slice(0, 3).map(p => ({ 
+            code: p.code, 
+            title: p.title_en, 
+            stage: p.stage,
+            is_strategy_derived: p.is_strategy_derived 
+          })),
           solutions: solutions.slice(0, 3).map(s => ({ name: s.name_en, provider: s.provider_name }))
         }
       };
 
       const response = await invokeAI({
-        prompt: `You are the Saudi Innovates Platform AI Assistant with semantic search.
+        prompt: `You are the Saudi Innovates Platform AI Assistant with semantic search AND STRATEGIC AWARENESS.
 Context: User is on page "${context.page}".
+
+STRATEGIC CONTEXT (IMPORTANT - Use this to guide recommendations):
+- Active Strategic Plans: ${platformContext.strategic_context.active_plan_names.join(', ') || 'None'}
+- Strategy Alignment: ${platformContext.strategic_context.strategy_alignment_percentage}% of challenges are strategy-derived
+- Strategy-derived entities: ${platformContext.strategic_context.strategy_derived_challenges} challenges, ${platformContext.strategic_context.strategy_derived_pilots} pilots, ${platformContext.strategic_context.strategy_derived_programs} programs
+
 Platform Data: ${JSON.stringify(platformContext)}
 
 User question: ${prompt}
 
 Provide:
-- Context-aware, actionable guidance
+- Context-aware, actionable guidance with STRATEGIC ALIGNMENT recommendations
+- When relevant, suggest linking entities to strategic plans
+- Recommend strategic objectives that align with user's query
 - Search platform data when relevant
 - Suggest specific pages or entities
-- Be concise and bilingual when helpful (AR/EN)`
+- Be concise and bilingual when helpful (AR/EN)
+- If user asks about strategy, reference the active plans and alignment metrics`
       });
 
       if (response.success && response.data) {
