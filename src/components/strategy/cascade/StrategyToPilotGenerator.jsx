@@ -12,7 +12,7 @@ import { Sparkles, Rocket, Loader2, CheckCircle2, Plus, Clock, Users, Send } fro
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
-export default function StrategyToPilotGenerator({ onPilotCreated }) {
+export default function StrategyToPilotGenerator({ strategicPlanId, strategicPlan, onPilotCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
   const [selectedChallenge, setSelectedChallenge] = useState('');
@@ -23,17 +23,25 @@ export default function StrategyToPilotGenerator({ onPilotCreated }) {
   const [generatedPilots, setGeneratedPilots] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Filter challenges by strategic plan
   const { data: challenges } = useQuery({
-    queryKey: ['challenges-for-pilot-gen'],
+    queryKey: ['challenges-for-pilot-gen', strategicPlanId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('challenges')
         .select('id, title_en, title_ar, municipality_id, strategic_plan_ids')
         .eq('is_deleted', false)
         .in('status', ['approved', 'published', 'open'])
         .order('created_at', { ascending: false })
         .limit(50);
+      
+      const { data, error } = await query;
       if (error) throw error;
+      
+      // Filter by strategic plan if one is selected
+      if (strategicPlanId) {
+        return (data || []).filter(c => c.strategic_plan_ids?.includes(strategicPlanId));
+      }
       return data || [];
     }
   });

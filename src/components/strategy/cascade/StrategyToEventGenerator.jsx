@@ -11,14 +11,16 @@ import { Sparkles, CalendarDays, Loader2, CheckCircle2, Plus, Users, MapPin, Sen
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
-export default function StrategyToEventGenerator({ onEventCreated }) {
+export default function StrategyToEventGenerator({ strategicPlanId, strategicPlan, onEventCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
-  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [eventType, setEventType] = useState('workshop');
   const [targetAudience, setTargetAudience] = useState([]);
   const [generatedEvents, setGeneratedEvents] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Use the passed strategicPlanId from context
+  const selectedPlanId = strategicPlanId;
 
   const eventTypes = [
     { value: 'conference', label: { en: 'Conference', ar: 'مؤتمر' } },
@@ -37,17 +39,6 @@ export default function StrategyToEventGenerator({ onEventCreated }) {
     { value: 'citizens', label: { en: 'Citizens', ar: 'المواطنون' } },
     { value: 'government', label: { en: 'Government', ar: 'الحكومة' } }
   ];
-
-  const { data: strategicPlans } = useQuery({
-    queryKey: ['strategic-plans-for-event-gen'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar, objectives')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
     }
   });
 

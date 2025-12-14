@@ -12,10 +12,9 @@ import { Sparkles, Target, Loader2, CheckCircle2, AlertTriangle, Plus, Send } fr
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
-export default function StrategyChallengeGenerator({ onChallengeCreated }) {
+export default function StrategyChallengeGenerator({ strategicPlanId, strategicPlan, onChallengeCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
-  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [selectedObjectives, setSelectedObjectives] = useState([]);
   const [selectedSector, setSelectedSector] = useState('');
   const [challengeCount, setChallengeCount] = useState(3);
@@ -23,18 +22,9 @@ export default function StrategyChallengeGenerator({ onChallengeCreated }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [additionalContext, setAdditionalContext] = useState('');
 
-  const { data: strategicPlans } = useQuery({
-    queryKey: ['strategic-plans-for-challenge-gen'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar, objectives, status')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use the passed strategicPlanId from context
+  const selectedPlanId = strategicPlanId;
+  const objectives = strategicPlan?.objectives || [];
 
   const { data: sectors } = useQuery({
     queryKey: ['sectors-for-challenge-gen'],
@@ -48,9 +38,6 @@ export default function StrategyChallengeGenerator({ onChallengeCreated }) {
       return data || [];
     }
   });
-
-  const selectedPlan = strategicPlans?.find(p => p.id === selectedPlanId);
-  const objectives = selectedPlan?.objectives || [];
 
   const handleObjectiveToggle = (objectiveId) => {
     setSelectedObjectives(prev => 
@@ -160,24 +147,17 @@ export default function StrategyChallengeGenerator({ onChallengeCreated }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {strategicPlan && (
+            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+              <p className="text-sm text-indigo-700">
+                <span className="font-medium">{t({ en: 'Active Plan:', ar: 'الخطة النشطة:' })}</span>{' '}
+                {isRTL && strategicPlan.name_ar ? strategicPlan.name_ar : strategicPlan.name_en}
+              </p>
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })}
-              </label>
-              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t({ en: 'Select a plan', ar: 'اختر خطة' })} />
-                </SelectTrigger>
-                <SelectContent>
-                  {strategicPlans?.map(plan => (
-                    <SelectItem key={plan.id} value={plan.id}>
-                      {isRTL ? plan.name_ar : plan.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">

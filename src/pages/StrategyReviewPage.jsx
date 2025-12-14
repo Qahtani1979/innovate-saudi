@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/components/LanguageContext';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
+import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import StrategyAdjustmentWizard from '@/components/strategy/review/StrategyAdjustmentWizard';
 import StrategyReprioritizer from '@/components/strategy/review/StrategyReprioritizer';
 import StrategyImpactAssessment from '@/components/strategy/review/StrategyImpactAssessment';
@@ -9,11 +11,14 @@ import { Settings, ArrowUpDown, BarChart3 } from 'lucide-react';
 
 function StrategyReviewPage() {
   const { t } = useLanguage();
+  const { activePlanId, activePlan } = useActivePlan();
   const [activeTab, setActiveTab] = useState('adjustment');
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-6">
+    <div className="container mx-auto py-6 px-4 space-y-6">
+      <ActivePlanBanner />
+      
+      <div>
         <h1 className="text-2xl font-bold">{t({ en: 'Strategy Review & Adjustment', ar: 'مراجعة وتعديل الاستراتيجية' })}</h1>
         <p className="text-muted-foreground mt-1">
           {t({ en: 'Review strategy execution, reprioritize objectives, and assess impact', ar: 'مراجعة تنفيذ الاستراتيجية وإعادة ترتيب الأولويات وتقييم الأثر' })}
@@ -37,15 +42,24 @@ function StrategyReviewPage() {
         </TabsList>
 
         <TabsContent value="adjustment">
-          <StrategyAdjustmentWizard />
+          <StrategyAdjustmentWizard 
+            strategicPlanId={activePlanId}
+            strategicPlan={activePlan}
+          />
         </TabsContent>
 
         <TabsContent value="reprioritize">
-          <StrategyReprioritizer />
+          <StrategyReprioritizer 
+            strategicPlanId={activePlanId}
+            strategicPlan={activePlan}
+          />
         </TabsContent>
 
         <TabsContent value="impact">
-          <StrategyImpactAssessment />
+          <StrategyImpactAssessment 
+            strategicPlanId={activePlanId}
+            strategicPlan={activePlan}
+          />
         </TabsContent>
       </Tabs>
     </div>

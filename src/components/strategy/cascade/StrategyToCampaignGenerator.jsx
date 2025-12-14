@@ -11,27 +11,16 @@ import { Megaphone, Sparkles, Loader2, Target, Calendar, Users, CheckCircle2, Pl
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 
-export default function StrategyToCampaignGenerator({ onCampaignCreated }) {
+export default function StrategyToCampaignGenerator({ strategicPlanId, strategicPlan, onCampaignCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
-  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [additionalContext, setAdditionalContext] = useState('');
   const [campaignCount, setCampaignCount] = useState(3);
   const [campaigns, setCampaigns] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const { data: strategicPlans } = useQuery({
-    queryKey: ['strategic-plans-for-campaign-gen'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar, objectives')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use the passed strategicPlanId from context
+  const selectedPlanId = strategicPlanId;
 
   const handleGenerate = async () => {
     if (!selectedPlanId) {

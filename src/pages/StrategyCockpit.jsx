@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { 
   Target, TrendingUp, Users, Zap, AlertTriangle, CheckCircle2, 
-  Sparkles, Loader2, X, ArrowRight, Eye, Clock, FileText,
+  Sparkles, Loader2, X, ArrowRight, Clock,
   ExternalLink, ChevronRight, BarChart3, DollarSign, Layers
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,15 +18,19 @@ import ResourceAllocationView from '../components/strategy/ResourceAllocationVie
 import PartnershipNetwork from '../components/strategy/PartnershipNetwork';
 import BottleneckDetector from '../components/strategy/BottleneckDetector';
 import StrategicCoverageWidget from '../components/strategy/StrategicCoverageWidget';
+import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 
 function StrategyCockpitPage() {
   const { language, isRTL, t } = useLanguage();
+  const { activePlanId, activePlan } = useActivePlan();
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const [selectedPlanId, setSelectedPlanId] = useState('all');
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
+  
+  // Use activePlanId from context, default to 'all' for filtering
+  const selectedPlanId = activePlanId || 'all';
 
   const { data: trendData = [] } = useQuery({
     queryKey: ['strategy-trends'],
@@ -82,14 +86,7 @@ function StrategyCockpitPage() {
     }
   });
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-cockpit'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // strategicPlans are now provided by context via activePlan
 
   const { data: approvals = [] } = useQuery({
     queryKey: ['pending-approvals'],
@@ -219,8 +216,10 @@ Provide insights in format:
   );
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header with filters */}
+    <div className="space-y-6 container mx-auto py-6 px-4" dir={isRTL ? 'rtl' : 'ltr'}>
+      <ActivePlanBanner />
+      
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
@@ -230,25 +229,10 @@ Provide insights in format:
             {t({ en: 'Real-time strategic monitoring & decision support', ar: 'المراقبة الاستراتيجية الفورية ودعم القرار' })}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder={t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })}</SelectItem>
-              {strategicPlans.map(plan => (
-                <SelectItem key={plan.id} value={plan.id}>
-                  {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
-            <Sparkles className="h-4 w-4" />
-            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-          </Button>
-        </div>
+        <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
+          <Sparkles className="h-4 w-4" />
+          {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+        </Button>
       </div>
 
       {/* Quick Actions Bar */}

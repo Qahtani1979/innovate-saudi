@@ -4,26 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { Target, Network, AlertCircle, CheckCircle2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 
 function StrategyAlignment() {
   const { t } = useLanguage();
+  const { activePlanId, activePlan } = useActivePlan();
 
-  const { data: plans = [], isLoading: plansLoading } = useQuery({
-    queryKey: ['strategic-plans-alignment'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [], isLoading: challengesLoading } = useQuery({
-    queryKey: ['challenges-alignment'],
+  const { data: challenges = [], isLoading } = useQuery({
+    queryKey: ['challenges-alignment', activePlanId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('challenges')
@@ -34,22 +25,13 @@ function StrategyAlignment() {
     }
   });
 
-  const isLoading = plansLoading || challengesLoading;
-
-  // Calculate alignment from strategic_plan_ids on challenges
-  const linkedChallenges = challenges.filter(c => c.strategic_plan_ids?.length > 0);
+  // Filter challenges by active plan
+  const linkedChallenges = activePlanId 
+    ? challenges.filter(c => c.strategic_plan_ids?.includes(activePlanId))
+    : challenges.filter(c => c.strategic_plan_ids?.length > 0);
+  
   const alignedChallenges = linkedChallenges.filter(c => c.status === 'approved' || c.status === 'active' || c.status === 'in_progress');
   const misalignedChallenges = linkedChallenges.filter(c => c.status === 'rejected' || c.status === 'archived');
-
-  const byPlan = plans.map(plan => ({
-    id: plan.id,
-    name: plan.name_en || plan.title_en,
-    linked: challenges.filter(c => c.strategic_plan_ids?.includes(plan.id)).length,
-    aligned: challenges.filter(c => 
-      c.strategic_plan_ids?.includes(plan.id) && 
-      (c.status === 'approved' || c.status === 'active' || c.status === 'in_progress')
-    ).length
-  })).filter(p => p.linked > 0);
 
   const stats = {
     total_links: linkedChallenges.length,
@@ -68,12 +50,14 @@ function StrategyAlignment() {
 
   return (
     <div className="space-y-6 container mx-auto py-6 px-4">
+      <ActivePlanBanner />
+      
       <div>
         <h1 className="text-3xl font-bold">
           {t({ en: 'Strategy Alignment', ar: 'التوافق الاستراتيجي' })}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {t({ en: 'Strategic plans ↔ Challenge alignment tracking', ar: 'تتبع توافق الخطط الاستراتيجية مع التحديات' })}
+          {t({ en: 'Strategic plan ↔ Challenge alignment tracking', ar: 'تتبع توافق الخطة الاستراتيجية مع التحديات' })}
         </p>
       </div>
 
@@ -111,36 +95,38 @@ function StrategyAlignment() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t({ en: 'Alignment by Strategic Plan', ar: 'التوافق حسب الخطة الاستراتيجية' })}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {byPlan.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>{t({ en: 'No challenges linked to strategic plans yet', ar: 'لا توجد تحديات مرتبطة بالخطط الاستراتيجية بعد' })}</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {byPlan.map((plan) => (
-                <div key={plan.id} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold">{plan.name}</h3>
-                    <Badge className="bg-green-600">
-                      {plan.aligned} / {plan.linked} {t({ en: 'aligned', ar: 'متوافق' })}
+      {activePlan && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              {t({ en: 'Linked Challenges', ar: 'التحديات المرتبطة' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {linkedChallenges.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>{t({ en: 'No challenges linked to this strategic plan yet', ar: 'لا توجد تحديات مرتبطة بهذه الخطة الاستراتيجية بعد' })}</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {linkedChallenges.map((challenge) => (
+                  <div key={challenge.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <span className="font-medium">{challenge.title_en}</span>
+                    <Badge className={
+                      challenge.status === 'approved' || challenge.status === 'active' ? 'bg-green-600' :
+                      challenge.status === 'rejected' ? 'bg-red-600' : 'bg-slate-500'
+                    }>
+                      {challenge.status}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{t({ en: 'Linked challenges:', ar: 'التحديات المربوطة:' })}</span>
-                    <span className="font-medium">{plan.linked}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
