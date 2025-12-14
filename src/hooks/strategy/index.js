@@ -31,3 +31,6 @@ export { useCommunicationPlans } from './useCommunicationPlans';
 export { useImpactStories } from './useImpactStories';
 export { useCommunicationNotifications } from './useCommunicationNotifications';
 export { useCommunicationAI } from './useCommunicationAI';
+
+// Phase 7: Evaluation Hooks
+export { useStrategyEvaluation } from './useStrategyEvaluation';
