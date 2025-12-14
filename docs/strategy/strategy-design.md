@@ -103,6 +103,7 @@ The Strategy System provides comprehensive strategic planning and execution mana
 |----------|---------|--------|
 | [plan-tracker.md](./plan-tracker.md) | Implementation tracking | ✅ Updated |
 | [strategy-integration-matrix.md](./strategy-integration-matrix.md) | Platform integrations | ✅ Updated |
+| [strategy-system-gaps-analysis.md](./strategy-system-gaps-analysis.md) | Cross-system gaps & conflicts | ✅ NEW |
 | [phase1-strategic-methodology.md](./phase1-strategic-methodology.md) | Pre-Planning methodology | ✅ Complete |
 | [phase2-strategic-methodology.md](./phase2-strategic-methodology.md) | Strategy Creation methodology | ✅ Complete |
 | [phase3-strategic-methodology.md](./phase3-strategic-methodology.md) | Cascade methodology | ✅ Complete |
@@ -111,6 +112,22 @@ The Strategy System provides comprehensive strategic planning and execution mana
 | [phase6-strategic-methodology.md](./phase6-strategic-methodology.md) | Monitoring methodology | ✅ Complete |
 | [phase7-strategic-methodology.md](./phase7-strategic-methodology.md) | Evaluation methodology | ✅ Complete |
 | [phase8-strategic-methodology.md](./phase8-strategic-methodology.md) | Recalibration methodology | ✅ Complete |
+
+### Cross-System Integration Status
+
+| System | Strategy Integration | Priority Gaps |
+|--------|---------------------|---------------|
+| Challenges | ✅ 95% | None |
+| Living Labs | ✅ 95% | None |
+| Sandboxes | ✅ 95% | None |
+| Pilots | ⚠️ 60% | Missing StrategicPlanSelector in create/edit |
+| Programs | ⚠️ 70% | No StrategicPlanSelector in wizard |
+| Events | ⚠️ 50% | No create/edit integration |
+| Policies | ⚠️ 50% | No create/edit integration |
+| Budget System | ⚠️ 40% | No strategic allocation |
+| Citizen Systems | ❌ 10% | No strategy awareness |
+
+See [strategy-system-gaps-analysis.md](./strategy-system-gaps-analysis.md) for full details.
 
 ### Actual Implementation Status (Verified Against Codebase)
 
