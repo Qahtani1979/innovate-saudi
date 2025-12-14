@@ -1,9 +1,9 @@
 # Strategy System Inventory
 
-> **Version:** 1.7  
+> **Version:** 1.8  
 > **Last Updated:** 2025-12-14  
 > **Total Assets:** 123 files (21 pages, 55 components, 30 hooks + 2 context files + 15 registered routes)
-> **Schema Audit:** ✅ All hooks and components verified against database schema
+> **Schema Audit:** ✅ Complete deep audit performed - all hooks, components, and queries verified
 
 ---
 
@@ -31,21 +31,45 @@ All strategy pages use a shared global context for maintaining the active strate
 - Hooks accept `strategicPlanId` parameter for database filtering
 - All hooks use correct database column names (validated 2025-12-14)
 
-### ✅ Database Schema Verification (2025-12-14)
+---
 
-| Table | Verified Columns | Notes |
-|-------|------------------|-------|
-| `strategic_plans` | `id`, `name_en`, `name_ar`, `status`, `vision_en`, `pillars`, `objectives` | No `is_deleted` column |
-| `swot_analyses` | `quadrant`, `title_en`, `title_ar`, `description_en`, `impact_level`, `priority` | Individual records per SWOT item |
-| `environmental_factors` | `category`, `title_en`, `impact_type`, `impact_level`, `trend`, `source` | No `is_deleted` column |
+## ✅ Complete Database Schema Audit (2025-12-14)
+
+### Tables WITH `is_deleted` Column (Use Soft Delete)
+| Table | Verified | Notes |
+|-------|----------|-------|
+| `pilots` | ✅ | Has `is_deleted`, filter in queries |
+| `challenges` | ✅ | Has `is_deleted`, filter in queries |
+| `programs` | ✅ | Has `is_deleted`, filter in queries |
+| `partnerships` | ✅ | Has `is_deleted`, filter in queries |
+| `policy_documents` | ✅ | Has `is_deleted`, filter in queries |
+
+### Tables WITHOUT `is_deleted` Column (No Filter Needed)
+| Table | Verified | Notes |
+|-------|----------|-------|
+| `strategic_plans` | ✅ | NO `is_deleted` - do NOT filter |
+| `living_labs` | ✅ | NO `is_deleted` - do NOT filter |
+| `sandboxes` | ✅ | NO `is_deleted` - do NOT filter |
+| `swot_analyses` | ✅ | NO `is_deleted` - hard delete only |
+| `environmental_factors` | ✅ | NO `is_deleted` - hard delete only |
+| `stakeholder_analyses` | ✅ | NO `is_deleted` - hard delete only |
+| `strategy_risks` | ✅ | NO `is_deleted` - hard delete only |
+| `strategy_baselines` | ✅ | NO `is_deleted` - hard delete only |
+| `strategy_inputs` | ✅ | NO `is_deleted` - hard delete only |
+
+### Strategy Table Column Mappings (Verified)
+| Table | Correct Columns | Common Mistakes to Avoid |
+|-------|-----------------|--------------------------|
+| `swot_analyses` | `quadrant`, `title_en`, `title_ar`, `description_en`, `impact_level`, `priority` | Not array-based, individual records |
+| `environmental_factors` | `category`, `title_en`, `impact_type`, `impact_level`, `trend`, `source` | |
 | `stakeholder_analyses` | `stakeholder_name_en`, `stakeholder_name_ar`, `stakeholder_type`, `power_level`, `interest_level` | Not `name_en` |
-| `strategy_risks` | `name_en`, `category`, `probability`, `impact`, `owner_email`, `mitigation_strategy` | Not `risk_category` or `owner` |
+| `strategy_risks` | `name_en`, `category`, `probability`, `impact`, `owner_email`, `mitigation_strategy` | Not `risk_category`, not `owner` |
 | `strategy_baselines` | `kpi_name_en`, `category`, `baseline_value`, `target_value`, `source`, `collection_date` | Not `data_source` |
 | `strategy_inputs` | `source_type`, `source_name`, `input_text`, `theme`, `sentiment`, `priority_votes` | Not `priority` |
 
-### Delete Strategy
-- **No soft delete**: Strategy tables do NOT have `is_deleted` columns
-- All hooks use **hard delete** (`.delete()`) instead of soft delete
+### Delete Strategy Summary
+- **Strategy preplanning tables**: Use **hard delete** (`.delete()`)
+- **Core entity tables with is_deleted**: Use **soft delete** (`.update({ is_deleted: true })`)
 
 ### Component Field Mappings (Fixed 2025-12-14)
 | Component | DB Field → Component Field |
@@ -54,10 +78,26 @@ All strategy pages use a shared global context for maintaining the active strate
 | `StakeholderAnalysisWidget` | `stakeholder_name_en` → `name_en`, `power_level` → `power` |
 | `RiskAssessmentBuilder` | `owner_email` → `owner`, `category` (not `risk_category`) |
 
-### Pages Using Global Context (All 6 Preplanning + All Generator Pages)
+### Files Fixed in Deep Audit
+| File | Issue Fixed |
+|------|-------------|
+| `useStrategicCascadeValidation.js` | Removed `is_deleted` filter for `strategic_plans`, `sandboxes`, `living_labs` |
+| `ResourceAllocationView.jsx` | Removed `is_deleted` filter for `living_labs`, `sandboxes` |
+| `StrategyToProgramGenerator.jsx` | Removed `is_deleted` filter for `strategic_plans` |
+| `SLARuleBuilder.jsx` | Removed `is_deleted` filter for `strategic_plans` |
+| `StrategicPlanContext.jsx` | Removed `is_deleted` filter for `strategic_plans` |
+| `useEnvironmentalFactors.js` | Switched to hard delete |
+| `useRiskAssessment.js` | Fixed column names, switched to hard delete |
+| `useStrategyBaselines.js` | Fixed column names, switched to hard delete |
+| `useStrategyInputs.js` | Switched to hard delete |
+| `useStakeholderAnalysis.js` | Fixed column names, switched to hard delete |
+| `useSwotAnalysis.js` | Complete rewrite for correct schema |
+
+### Pages Using Global Context (All Verified)
 - ✅ EnvironmentalScanPage, SWOTAnalysisPage, StakeholderAnalysisPage
 - ✅ RiskAssessmentPage, BaselineDataPage, StrategyInputPage
 - ✅ All 8 cascade generator pages
+- ✅ StrategyHub, StrategyCockpit, StrategyDrillDown
 
 ---
 

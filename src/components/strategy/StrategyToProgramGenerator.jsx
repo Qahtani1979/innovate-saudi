@@ -23,7 +23,7 @@ export default function StrategyToProgramGenerator({ onProgramCreated }) {
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-generator'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
+      const { data, error } = await supabase.from('strategic_plans').select('*');
       if (error) throw error;
       return data || [];
     }

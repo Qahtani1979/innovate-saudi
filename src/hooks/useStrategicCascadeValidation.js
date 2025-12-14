@@ -9,7 +9,7 @@ export function useStrategicCascadeValidation() {
   const { data: strategicPlans = [], isLoading: plansLoading } = useQuery({
     queryKey: ['strategic-plans-cascade'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
+      const { data, error } = await supabase.from('strategic_plans').select('*');
       if (error) throw error;
       return data || [];
     }
@@ -36,7 +36,7 @@ export function useStrategicCascadeValidation() {
   const { data: sandboxes = [], isLoading: sandboxesLoading } = useQuery({
     queryKey: ['sandboxes-cascade'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('sandboxes').select('*').eq('is_deleted', false);
+      const { data, error } = await supabase.from('sandboxes').select('*');
       if (error) throw error;
       return data || [];
     }
@@ -45,7 +45,7 @@ export function useStrategicCascadeValidation() {
   const { data: livingLabs = [], isLoading: labsLoading } = useQuery({
     queryKey: ['living-labs-cascade'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
+      const { data, error } = await supabase.from('living_labs').select('*');
       if (error) throw error;
       return data || [];
     }
