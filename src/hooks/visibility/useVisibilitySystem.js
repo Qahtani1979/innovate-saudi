@@ -415,6 +415,43 @@ export function useVisibilitySystem() {
     return data || [];
   };
 
+  /**
+   * Filter entities by strategic plan IDs (client-side helper)
+   * @param {Array} entities - Array of entities to filter
+   * @param {Array} strategicPlanIds - Strategic plan IDs to filter by
+   * @param {string} columnName - Column name containing strategic plan IDs
+   */
+  const filterByStrategicPlan = (entities, strategicPlanIds, columnName = 'strategic_plan_ids') => {
+    if (!strategicPlanIds?.length) return entities;
+    return entities.filter(entity => {
+      const entityPlanIds = entity[columnName] || [];
+      return strategicPlanIds.some(id => entityPlanIds.includes(id));
+    });
+  };
+
+  /**
+   * Filter entities by strategic objective IDs (client-side helper)
+   * @param {Array} entities - Array of entities to filter
+   * @param {Array} objectiveIds - Strategic objective IDs to filter by
+   * @param {string} columnName - Column name containing objective IDs
+   */
+  const filterByStrategicObjective = (entities, objectiveIds, columnName = 'strategic_objective_ids') => {
+    if (!objectiveIds?.length) return entities;
+    return entities.filter(entity => {
+      const entityObjectiveIds = entity[columnName] || [];
+      return objectiveIds.some(id => entityObjectiveIds.includes(id));
+    });
+  };
+
+  /**
+   * Filter to only strategy-derived entities (client-side helper)
+   * @param {Array} entities - Array of entities to filter
+   * @param {string} columnName - Column name for is_strategy_derived flag
+   */
+  const filterStrategyDerived = (entities, columnName = 'is_strategy_derived') => {
+    return entities.filter(entity => entity[columnName] === true);
+  };
+
   return {
     // Loading state
     isLoading,
@@ -437,7 +474,12 @@ export function useVisibilitySystem() {
     getVisibilityLevel,
     getVisibilityParams,
     buildVisibilityQuery,
-    fetchWithVisibility
+    fetchWithVisibility,
+    
+    // Strategic filtering helpers
+    filterByStrategicPlan,
+    filterByStrategicObjective,
+    filterStrategyDerived
   };
 }
 
