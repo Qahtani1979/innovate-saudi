@@ -195,12 +195,12 @@ export default function StrategyToPilotGenerator({ strategicPlanId, strategicPla
               <label className="text-sm font-medium">
                 {t({ en: 'Solution (Optional)', ar: 'الحل (اختياري)' })}
               </label>
-              <Select value={selectedSolution} onValueChange={setSelectedSolution}>
+              <Select value={selectedSolution || "none"} onValueChange={(v) => setSelectedSolution(v === "none" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder={t({ en: 'Select a solution', ar: 'اختر حلاً' })} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t({ en: 'No specific solution', ar: 'بدون حل محدد' })}</SelectItem>
+                  <SelectItem value="none">{t({ en: 'No specific solution', ar: 'بدون حل محدد' })}</SelectItem>
                   {solutions?.map(solution => (
                     <SelectItem key={solution.id} value={solution.id}>
                       {isRTL ? solution.name_ar : solution.name_en}
