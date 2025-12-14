@@ -212,3 +212,24 @@ verify_jwt = false
 
 [functions.strategy-ownership-ai]
 verify_jwt = false
+
+[functions.strategy-gap-analysis]
+verify_jwt = false
+
+[functions.strategy-demand-queue-generator]
+verify_jwt = false
+
+[functions.strategy-quality-assessor]
+verify_jwt = false
+
+[functions.strategy-batch-generator]
+verify_jwt = false
+
+[functions.strategy-communication-ai]
+verify_jwt = false
+
+[functions.strategy-pillar-generator]
+verify_jwt = false
+
+[functions.strategy-objective-generator]
+verify_jwt = false
