@@ -41,7 +41,10 @@ Phase 7 (Strategy Evaluation & Review) is the **assessment, learning, and contin
 │   ║   └── Strategic Recommendations for Next Cycle                            ║ │
 │   ╚═══════════════════════════════════════════════════════════════════════════╝ │
 │           ↓                                                                      │
-│   [FEEDBACK LOOP: Phase 7 → Phase 1 for Next Strategic Cycle]                   │
+│   PHASE 8: RECALIBRATION ──→ Feedback Loop & Strategic Adjustment               │
+│           │                                                                      │
+│           ├──→ [Mid-Cycle Adjustments to Phases 2-6]                            │
+│           └──→ [End-of-Cycle to Phase 1 for Next Strategic Cycle]               │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1295,17 +1298,17 @@ Phase 1 (Next Cycle):
 | **Phase 6** | Alert history | Identify problem patterns | High |
 | **Phase 6** | SLA compliance | Measure process efficiency | High |
 
-### Outputs TO Phase 1 (Feedback Loop)
+### Outputs TO Phase 8 (Recalibration)
 
-| Phase 7 Output | Purpose in Next Phase 1 |
-|----------------|------------------------|
-| **Lessons Learned** | Inform next cycle's pre-planning with practical insights |
-| **Strategic Recommendations** | Shape focus areas for next strategy cycle |
-| **Gap Analysis** | Identify areas needing deeper analysis |
-| **Best Practices** | Establish proven approaches to replicate |
-| **Case Studies** | Provide evidence base for next cycle decisions |
-| **Impact Data** | New baseline for next cycle comparison |
-| **Capability Assessment** | Updated maturity levels for next assessment |
+| Phase 7 Output | Purpose in Phase 8 |
+|----------------|-------------------|
+| **Lessons Learned** | Pattern analysis input for adjustment decisions |
+| **Strategic Recommendations** | Prioritization of adjustments |
+| **Gap Analysis** | Focus area identification |
+| **Best Practices** | Methodology improvements |
+| **Case Studies** | Evidence for change decisions |
+| **Impact Data** | Baseline recalibration |
+| **Capability Assessment** | Maturity level updates |
 
 ---
 
@@ -1316,17 +1319,22 @@ Phase 1 (Next Cycle):
 │                        CONTINUOUS IMPROVEMENT LOOP                               │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
-│   PHASE 7 OUTPUTS          →          PHASE 1 INPUTS                            │
+│   PHASE 7 OUTPUTS          →          PHASE 8: RECALIBRATION                    │
 │   ───────────────────────────────────────────────────────────────────────────   │
-│   Lessons Learned          →          Strategic Intelligence                    │
-│   Impact Data              →          New Baselines                             │
-│   Capability Assessment    →          Maturity Reassessment                     │
-│   Strategic Recommendations→          Focus Areas for Planning                  │
-│   Gap Analysis             →          Priority Investigation Areas              │
-│   Best Practices           →          Proven Methodologies                      │
-│   Case Studies             →          Evidence for Decision-Making              │
+│   Lessons Learned          →          Pattern Analysis                          │
+│   Impact Data              →          Baseline Recalibration                    │
+│   Capability Assessment    →          Maturity Updates                          │
+│   Strategic Recommendations→          Adjustment Prioritization                 │
+│   Gap Analysis             →          Focus Areas                               │
+│   Best Practices           →          Methodology Improvements                  │
+│   Case Studies             →          Evidence for Decisions                    │
 │                                                                                  │
-│   This feedback loop ensures continuous improvement across strategic cycles.    │
+│   PHASE 8 OUTPUTS:                                                              │
+│   ───────────────────────────────────────────────────────────────────────────   │
+│   → Phase 1 (Next Cycle): Updated baselines, strategic intelligence brief      │
+│   → Phases 2-6 (Mid-Cycle): Objective revisions, pivots, threshold changes     │
+│                                                                                  │
+│   This two-path feedback enables both end-of-cycle and mid-cycle adjustments.  │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1338,11 +1346,24 @@ Phase 1 (Next Cycle):
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2024-12-14 | Initial comprehensive methodology |
-| 1.1 | 2024-12-14 | Added phase interconnection mapping, feedback loop documentation |
+| 1.1 | 2024-12-14 | Added phase interconnection mapping |
+| 2.0 | 2024-12-14 | Updated to reference Phase 8 (Recalibration) as feedback destination |
 
 ---
 
 ## References
+
+- Vision 2030 Strategic Planning Guidelines
+- Municipal Innovation Index Framework
+- ISO 56002:2019 Innovation Management
+- ROI Methodology (Phillips & Phillips)
+- The Fifth Discipline (Senge) - Organizational Learning
+- Lessons Learned Best Practices (PMI)
+- Impact Evaluation Methods (World Bank)
+
+---
+
+*See [README.md](./README.md) for complete phase interconnection documentation.*
 
 - Vision 2030 Strategic Planning Guidelines
 - Municipal Innovation Index Framework
