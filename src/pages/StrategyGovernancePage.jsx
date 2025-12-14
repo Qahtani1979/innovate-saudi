@@ -22,7 +22,6 @@ function StrategyGovernancePage() {
       const { data, error } = await supabase
         .from('strategic_plans')
         .select('id, name_en, name_ar')
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
