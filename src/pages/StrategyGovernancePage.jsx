@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
+import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import StakeholderSignoffTracker from '@/components/strategy/governance/StakeholderSignoffTracker';
 import StrategyVersionControl from '@/components/strategy/governance/StrategyVersionControl';
 import StrategyCommitteeReview from '@/components/strategy/governance/StrategyCommitteeReview';
@@ -12,46 +11,19 @@ import GovernanceMetricsDashboard from '@/components/strategy/governance/Governa
 import { FileSignature, GitBranch, Users, BarChart3 } from 'lucide-react';
 
 function StrategyGovernancePage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
+  const { activePlanId } = useActivePlan();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedPlanId, setSelectedPlanId] = useState('all');
-
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-governance'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const planId = selectedPlanId === 'all' ? null : selectedPlanId;
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{t({ en: 'Strategy Governance', ar: 'حوكمة الاستراتيجية' })}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t({ en: 'Manage approvals, sign-offs, version control, and committee decisions for strategic plans', ar: 'إدارة الموافقات والتوقيعات والتحكم في الإصدارات وقرارات اللجان للخطط الاستراتيجية' })}
-          </p>
-        </div>
-        <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-          <SelectTrigger className="w-64">
-            <SelectValue placeholder={t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })}</SelectItem>
-            {strategicPlans.map(plan => (
-              <SelectItem key={plan.id} value={plan.id}>
-                {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="container mx-auto py-6 px-4 space-y-6">
+      <ActivePlanBanner />
+      
+      <div>
+        <h1 className="text-2xl font-bold">{t({ en: 'Strategy Governance', ar: 'حوكمة الاستراتيجية' })}</h1>
+        <p className="text-muted-foreground mt-1">
+          {t({ en: 'Manage approvals, sign-offs, version control, and committee decisions for strategic plans', ar: 'إدارة الموافقات والتوقيعات والتحكم في الإصدارات وقرارات اللجان للخطط الاستراتيجية' })}
+        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -75,19 +47,19 @@ function StrategyGovernancePage() {
         </TabsList>
 
         <TabsContent value="dashboard">
-          <GovernanceMetricsDashboard planId={planId} />
+          <GovernanceMetricsDashboard planId={activePlanId} />
         </TabsContent>
 
         <TabsContent value="signoff">
-          <StakeholderSignoffTracker planId={planId} />
+          <StakeholderSignoffTracker planId={activePlanId} />
         </TabsContent>
 
         <TabsContent value="versions">
-          <StrategyVersionControl planId={planId} />
+          <StrategyVersionControl planId={activePlanId} />
         </TabsContent>
 
         <TabsContent value="committee">
-          <StrategyCommitteeReview planId={planId} />
+          <StrategyCommitteeReview planId={activePlanId} />
         </TabsContent>
       </Tabs>
     </div>
