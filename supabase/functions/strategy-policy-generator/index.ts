@@ -24,14 +24,15 @@ Generate ${policy_count || 3} policy recommendations based on:
 STRATEGIC CONTEXT:
 ${strategic_context || 'Municipal innovation governance and regulatory framework'}
 
-For each policy, provide:
-1. name_en & name_ar: Policy name
-2. type: Policy type (regulatory/operational/governance/incentive)
-3. scope_en & scope_ar: What the policy covers
-4. objectives: Array of policy objectives
-5. stakeholders: Array of affected stakeholders
-6. risk_level: low/medium/high
-7. implementation_timeframe: Suggested timeframe
+For each policy, provide (MUST use these exact field names):
+1. title_en & title_ar: Policy title/name (bilingual)
+2. description_en & description_ar: Policy description (bilingual)
+3. type: Policy type (regulatory/operational/governance/incentive)
+4. scope: What the policy covers (single string)
+5. objectives: Array of policy objectives (strings)
+6. stakeholders: Array of affected stakeholders (strings)
+7. risk_level: Low/Medium/High
+8. implementation_timeframe: Suggested timeframe
 
 Ensure policies:
 - Align with Saudi governance frameworks
@@ -72,15 +73,16 @@ Ensure policies:
       }
     }
 
-    // Fallback policies
+    // Fallback policies - mapped to UI expected fields (title_en, description_en, scope)
     if (policies.length === 0) {
       policies = [
         {
-          name_en: "Open Innovation Framework",
-          name_ar: "إطار الابتكار المفتوح",
+          title_en: "Open Innovation Framework",
+          title_ar: "إطار الابتكار المفتوح",
+          description_en: "Guidelines for external innovation partnerships and collaborations",
+          description_ar: "إرشادات للشراكات والتعاون في مجال الابتكار الخارجي",
           type: "governance",
-          scope_en: "Guidelines for external innovation partnerships and collaborations",
-          scope_ar: "إرشادات للشراكات والتعاون في مجال الابتكار الخارجي",
+          scope: "External partnerships and collaboration governance",
           objectives: [
             "Enable public-private innovation partnerships",
             "Establish IP sharing frameworks",
@@ -91,11 +93,12 @@ Ensure policies:
           implementation_timeframe: "6-12 months"
         },
         {
-          name_en: "Digital Service Standards",
-          name_ar: "معايير الخدمات الرقمية",
+          title_en: "Digital Service Standards",
+          title_ar: "معايير الخدمات الرقمية",
+          description_en: "Minimum standards for digital municipal service delivery",
+          description_ar: "الحد الأدنى من المعايير لتقديم الخدمات البلدية الرقمية",
           type: "regulatory",
-          scope_en: "Minimum standards for digital municipal service delivery",
-          scope_ar: "الحد الأدنى من المعايير لتقديم الخدمات البلدية الرقمية",
+          scope: "Digital municipal service delivery standards",
           objectives: [
             "Ensure consistent digital experience",
             "Mandate accessibility compliance",
@@ -106,11 +109,12 @@ Ensure policies:
           implementation_timeframe: "3-6 months"
         },
         {
-          name_en: "Innovation Incentive Program",
-          name_ar: "برنامج حوافز الابتكار",
+          title_en: "Innovation Incentive Program",
+          title_ar: "برنامج حوافز الابتكار",
+          description_en: "Rewards and recognition for municipal innovation contributions",
+          description_ar: "المكافآت والتقدير للمساهمات في الابتكار البلدي",
           type: "incentive",
-          scope_en: "Rewards and recognition for municipal innovation contributions",
-          scope_ar: "المكافآت والتقدير للمساهمات في الابتكار البلدي",
+          scope: "Municipal innovation rewards and recognition",
           objectives: [
             "Motivate employee innovation",
             "Recognize citizen contributions",
