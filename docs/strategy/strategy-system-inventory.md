@@ -1,8 +1,8 @@
 # Strategy System Inventory
 
-> **Version:** 1.1  
-> **Last Updated:** 2025-01-14  
-> **Total Assets:** 103 files (18 pages, 55 components, 30 hooks)
+> **Version:** 1.2  
+> **Last Updated:** 2025-12-14  
+> **Total Assets:** 121 files (21 pages, 55 components, 30 hooks + 15 registered routes)
 
 ---
 
@@ -10,42 +10,53 @@
 
 The Strategy System is the core strategic planning and execution framework that spans all 8 phases of the strategic methodology. This document provides a complete inventory of all pages, components, and hooks that comprise the system.
 
+**All pages are now registered in `pages.config.js` and accessible from the Strategy Hub.**
+
 ---
 
-## 📄 Pages (17)
+## 📄 Pages (21)
 
 ### Core Strategy Pages
 
-| Page | File | Route | Description |
-|------|------|-------|-------------|
-| **Strategy Hub** | `StrategyHub.jsx` | `/strategy-hub` | **Central command center** - tabbed dashboard with workflow, cascade, governance, AI tools |
-| Strategy Cockpit | `StrategyCockpit.jsx` | `/strategy-cockpit` | Main strategic dashboard with portfolio overview |
-| Strategy Drill-Down | `StrategyDrillDown.jsx` | `/strategy-drill-down` | Detailed strategic plan analysis |
-| Strategy Alignment | `StrategyAlignment.jsx` | `/strategy-alignment` | Cross-entity alignment visualization |
-| Strategy Review | `StrategyReviewPage.jsx` | `/strategy-review` | Strategy adjustment and reprioritization |
-| Strategy Governance | `StrategyGovernancePage.jsx` | `/strategy-governance` | Approvals, versioning, committee review |
+| Page | File | Route | Hub Tab | Description |
+|------|------|-------|---------|-------------|
+| **Strategy Hub** | `StrategyHub.jsx` | `/strategy-hub` | Self | **Central command center** - 6 tabs: Workflow, Cascade, Governance, Communication, Pre-Planning, AI Tools |
+| Strategy Cockpit | `StrategyCockpit.jsx` | `/strategy-cockpit` | Header | Main strategic dashboard with portfolio overview |
+| Strategy Drill-Down | `StrategyDrillDown.jsx` | `/strategy-drill-down` | Workflow | Detailed strategic plan analysis |
+| Strategy Alignment | `StrategyAlignment.jsx` | `/strategy-alignment` | Workflow/AI | Cross-entity alignment visualization |
+| Strategy Review | `StrategyReviewPage.jsx` | `/strategy-review-page` | Pre-Planning | Strategy adjustment and reprioritization |
+| Strategy Governance | `StrategyGovernancePage.jsx` | `/strategy-governance-page` | Governance | Approvals, versioning, committee review |
 
 ### Strategy Creation Pages
 
-| Page | File | Route | Description |
-|------|------|-------|-------------|
-| Strategy Ownership | `StrategyOwnershipPage.jsx` | `/strategy-ownership` | Assign ownership to strategic elements |
-| Strategy Templates | `StrategyTemplatesPage.jsx` | `/strategy-templates` | Template library for strategy creation |
-| National Strategy Linker | `NationalStrategyLinkerPage.jsx` | `/national-strategy-linker` | Link to national/federal strategies |
-| Baseline Data | `BaselineDataPage.jsx` | `/baseline-data` | Collect pre-planning baseline data |
+| Page | File | Route | Hub Tab | Description |
+|------|------|-------|---------|-------------|
+| Strategy Ownership | `StrategyOwnershipPage.jsx` | `/strategy-ownership-page` | Governance | Assign ownership to strategic elements |
+| Strategy Templates | `StrategyTemplatesPage.jsx` | `/strategy-templates-page` | Cascade | Template library for strategy creation |
+| National Strategy Linker | `NationalStrategyLinkerPage.jsx` | `/national-strategy-linker-page` | Cascade | Link to national/federal strategies |
+| Baseline Data | `BaselineDataPage.jsx` | `/baseline-data-page` | Pre-Planning | Collect pre-planning baseline data |
+| Action Plan | `ActionPlanPage.jsx` | `/action-plan-page` | Cascade | Build and manage action plans |
 
 ### Strategy Cascade Generator Pages
 
-| Page | File | Route | Description |
-|------|------|-------|-------------|
-| Campaign Generator | `StrategyCampaignGeneratorPage.jsx` | `/strategy-campaign-generator` | Generate campaigns from objectives |
-| Policy Generator | `StrategyPolicyGeneratorPage.jsx` | `/strategy-policy-generator` | Generate policies from priorities |
-| Challenge Generator | `StrategyChallengeGeneratorPage.jsx` | `/strategy-challenge-generator` | Generate challenges from objectives |
-| R&D Call Generator | `StrategyRDCallGeneratorPage.jsx` | `/strategy-rd-call-generator` | Generate R&D calls from gaps |
-| Pilot Generator | `StrategyPilotGeneratorPage.jsx` | `/strategy-pilot-generator` | Generate pilots from challenges |
-| Partnership Generator | `StrategyPartnershipGeneratorPage.jsx` | `/strategy-partnership-generator` | Find strategic partners |
-| Event Generator | `StrategyEventGeneratorPage.jsx` | `/strategy-event-generator` | Generate strategic events |
-| Living Lab Generator | `StrategyLivingLabGeneratorPage.jsx` | `/strategy-living-lab-generator` | Generate living lab concepts |
+| Page | File | Route | Hub Tab | Description |
+|------|------|-------|---------|-------------|
+| Campaign Generator | `StrategyCampaignGeneratorPage.jsx` | `/strategy-campaign-generator-page` | Cascade | Generate campaigns from objectives |
+| Policy Generator | `StrategyPolicyGeneratorPage.jsx` | `/strategy-policy-generator-page` | Cascade | Generate policies from priorities |
+| Challenge Generator | `StrategyChallengeGeneratorPage.jsx` | `/strategy-challenge-generator-page` | Cascade | Generate challenges from objectives |
+| R&D Call Generator | `StrategyRDCallGeneratorPage.jsx` | `/strategy-rd-call-generator-page` | Cascade | Generate R&D calls from gaps |
+| Pilot Generator | `StrategyPilotGeneratorPage.jsx` | `/strategy-pilot-generator-page` | Cascade | Generate pilots from challenges |
+| Partnership Generator | `StrategyPartnershipGeneratorPage.jsx` | `/strategy-partnership-generator-page` | Cascade | Find strategic partners |
+| Event Generator | `StrategyEventGeneratorPage.jsx` | `/strategy-event-generator-page` | Cascade | Generate strategic events |
+| Living Lab Generator | `StrategyLivingLabGeneratorPage.jsx` | `/strategy-living-lab-generator-page` | Cascade | Generate living lab concepts |
+
+### Strategy Communication Pages
+
+| Page | File | Route | Hub Tab | Description |
+|------|------|-------|---------|-------------|
+| Communication Hub | `StrategyCommunicationPage.jsx` | `/strategy-communication-page` | Communication | Full communication management (6 sub-tabs) |
+| Public Dashboard | `PublicStrategyDashboardPage.jsx` | `/public-strategy-dashboard-page` | Communication | Public-facing dashboard |
+| Public View | `StrategyPublicViewPage.jsx` | `/strategy-public-view-page` | Communication | Share strategy externally |
 
 ---
 

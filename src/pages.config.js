@@ -487,6 +487,24 @@ import DeputyshipOnboarding from './pages/DeputyshipOnboarding';
 import Onboarding from './pages/Onboarding';
 import StrategyFeedbackDashboard from './pages/StrategyFeedbackDashboard';
 import StrategyHub from './pages/StrategyHub';
+// Strategy System Pages
+import StrategyReviewPage from './pages/StrategyReviewPage';
+import StrategyGovernancePage from './pages/StrategyGovernancePage';
+import StrategyOwnershipPage from './pages/StrategyOwnershipPage';
+import StrategyTemplatesPage from './pages/StrategyTemplatesPage';
+import NationalStrategyLinkerPage from './pages/NationalStrategyLinkerPage';
+import StrategyCampaignGeneratorPage from './pages/StrategyCampaignGeneratorPage';
+import StrategyPolicyGeneratorPage from './pages/StrategyPolicyGeneratorPage';
+import StrategyChallengeGeneratorPage from './pages/StrategyChallengeGeneratorPage';
+import StrategyRDCallGeneratorPage from './pages/StrategyRDCallGeneratorPage';
+import StrategyPilotGeneratorPage from './pages/StrategyPilotGeneratorPage';
+import StrategyPartnershipGeneratorPage from './pages/StrategyPartnershipGeneratorPage';
+import StrategyEventGeneratorPage from './pages/StrategyEventGeneratorPage';
+import StrategyLivingLabGeneratorPage from './pages/StrategyLivingLabGeneratorPage';
+import StrategyCommunicationPage from './pages/strategy/StrategyCommunicationPage';
+import StrategyPublicViewPage from './pages/strategy/StrategyPublicViewPage';
+import PublicStrategyDashboardPage from './pages/strategy/PublicStrategyDashboardPage';
+import ActionPlanPage from './pages/ActionPlanPage';
 import __Layout from './Layout.jsx';
 
 
@@ -992,6 +1010,24 @@ export const PAGES = {
     "BaselineDataPage": BaselineDataPage,
     "Auth": Auth,
     "ResetPassword": ResetPassword,
+    // Strategy System Pages
+    "StrategyReviewPage": StrategyReviewPage,
+    "StrategyGovernancePage": StrategyGovernancePage,
+    "StrategyOwnershipPage": StrategyOwnershipPage,
+    "StrategyTemplatesPage": StrategyTemplatesPage,
+    "NationalStrategyLinkerPage": NationalStrategyLinkerPage,
+    "StrategyCampaignGeneratorPage": StrategyCampaignGeneratorPage,
+    "StrategyPolicyGeneratorPage": StrategyPolicyGeneratorPage,
+    "StrategyChallengeGeneratorPage": StrategyChallengeGeneratorPage,
+    "StrategyRDCallGeneratorPage": StrategyRDCallGeneratorPage,
+    "StrategyPilotGeneratorPage": StrategyPilotGeneratorPage,
+    "StrategyPartnershipGeneratorPage": StrategyPartnershipGeneratorPage,
+    "StrategyEventGeneratorPage": StrategyEventGeneratorPage,
+    "StrategyLivingLabGeneratorPage": StrategyLivingLabGeneratorPage,
+    "StrategyCommunicationPage": StrategyCommunicationPage,
+    "StrategyPublicViewPage": StrategyPublicViewPage,
+    "PublicStrategyDashboardPage": PublicStrategyDashboardPage,
+    "ActionPlanPage": ActionPlanPage,
 }
 
 export const pagesConfig = {

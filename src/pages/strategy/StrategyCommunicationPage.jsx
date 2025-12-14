@@ -113,5 +113,5 @@ function StrategyCommunicationPage() {
 }
 
 export default ProtectedPage(StrategyCommunicationPage, {
-  requiredPermissions: ['manage:strategy']
+  requiredPermissions: ['strategy_view']
 });
