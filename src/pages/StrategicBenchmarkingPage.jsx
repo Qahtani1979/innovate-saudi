@@ -215,4 +215,4 @@ function StrategicBenchmarkingPage() {
   );
 }
 
-export default ProtectedPage(StrategicBenchmarkingPage, { requiredPermissions: ['strategy.manage'] });
+export default ProtectedPage(StrategicBenchmarkingPage, { requiredPermissions: ['strategy_manage'] });
