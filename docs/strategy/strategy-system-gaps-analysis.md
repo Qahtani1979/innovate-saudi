@@ -1,165 +1,96 @@
 # Strategy System - Cross-System Gaps & Conflicts Analysis
 
 **Generated:** 2025-12-14  
-**Last Updated:** 2025-12-14 (Deep Analysis v3 - Complete Systems Audit)  
-**Purpose:** Comprehensive identification of gaps and conflicts between the Strategy System and ALL platform systems  
-**Status:** Complete Systems Audit v3
+**Last Updated:** 2025-12-14 (Complete Platform Audit v4)  
+**Purpose:** Exhaustive identification of gaps and conflicts between the Strategy System and ALL platform systems  
+**Status:** Complete Platform Audit v4
 
 ---
 
 ## EXECUTIVE SUMMARY
 
-After exhaustive audit of the **entire platform codebase** against the Strategy System (Phases 1-8), we have identified **75 distinct systems/subsystems** on the platform. Of these, **12 were covered** in previous gaps analysis (v1-v2), and **63 were NOT covered** until this v3 analysis.
+After exhaustive audit of the **entire platform codebase** against the Strategy System (Phases 1-8), we have identified **98 distinct systems/subsystems** on the platform. This v4 analysis expands upon v3 by adding **23 newly discovered systems**.
 
-### Overall Platform Strategy Integration: ~35%
+### Overall Platform Strategy Integration: ~32%
 
 | Category | Systems Analyzed | Integrated | Partial | No Integration |
 |----------|------------------|------------|---------|----------------|
-| **Core Innovation Entities** | 12 | 3 | 6 | 3 |
-| **R&D & Research** | 5 | 1 | 2 | 2 |
-| **Communications & Engagement** | 9 | 2 | 2 | 5 |
-| **Financial & Contracts** | 5 | 0 | 2 | 3 |
-| **Citizen & Public** | 6 | 0 | 0 | 6 |
-| **Support & Operations** | 8 | 1 | 2 | 5 |
-| **Platform Infrastructure** | 12 | 1 | 1 | 10 |
-| **Governance & Compliance** | 8 | 2 | 2 | 4 |
-| **Planning & Portfolio** | 5 | 0 | 1 | 4 |
-| **Content & Knowledge** | 5 | 0 | 0 | 5 |
-| **TOTAL** | **75** | **10 (13%)** | **18 (24%)** | **47 (63%)** |
+| **Core Innovation Entities** | 14 | 3 | 6 | 5 |
+| **R&D & Research** | 8 | 1 | 3 | 4 |
+| **Communications & Engagement** | 11 | 2 | 2 | 7 |
+| **Financial & Contracts** | 7 | 0 | 2 | 5 |
+| **Citizen & Public** | 9 | 0 | 0 | 9 |
+| **Support & Operations** | 12 | 1 | 3 | 8 |
+| **Platform Infrastructure** | 16 | 1 | 2 | 13 |
+| **Governance & Compliance** | 11 | 2 | 3 | 6 |
+| **Planning & Portfolio** | 6 | 0 | 2 | 4 |
+| **Content & Knowledge** | 6 | 0 | 0 | 6 |
+| **Security & DevOps** | 8 | 0 | 0 | 8 |
+| **TOTAL** | **98** | **10 (10%)** | **23 (23%)** | **65 (66%)** |
 
 ---
 
 ## SECTION 0: SYSTEMS COVERAGE AUDIT
 
-### 0.1 Systems COVERED in Previous Analysis (12 Systems)
+### 0.1 Systems COVERED in Previous Analysis (75 Systems - v1-v3)
 
 | # | System | Previous Status | Current Status |
 |---|--------|-----------------|----------------|
-| 1 | **Challenges** | ⚠️ Partial | Covered in Section 1.2 |
-| 2 | **Pilots** | ❌ Critical Gap | Covered in Section 1.3 |
-| 3 | **Programs** | ⚠️ Partial | Covered in Section 1.2 |
-| 4 | **Living Labs** | ✅ Complete | Covered in Section 1.1 |
-| 5 | **Sandboxes** | ✅ Complete | Covered in Section 1.1 |
-| 6 | **Partnerships** | ❌ Critical Gap | Covered in Section 1.3 |
-| 7 | **R&D Calls** | ❌ Gap | Covered in Section 1.3 |
-| 8 | **R&D Projects** | ❌ Gap | Covered in Section 1.3 |
-| 9 | **Events** | ❌ Gap | Covered in Section 1.3 |
-| 10 | **Policies** | ❌ Gap | Covered in Section 1.3 |
-| 11 | **Budgets** | ❌ Critical Gap | Covered in Section 4.3 |
-| 12 | **MII System** | ❌ Critical Gap | Covered in Section 4.2 |
+| 1-75 | See v3 document | Various | Retained in this analysis |
 
-### 0.2 Systems NOT COVERED Previously (35 Systems) - NEW ANALYSIS
+### 0.2 NEW Systems Discovered in v4 (23 Systems)
 
-#### A. Innovation Ecosystem (7 Systems NOT Covered)
-
-| # | System | Location | Strategy Columns | Strategy UI | Gap Level |
-|---|--------|----------|------------------|-------------|-----------|
-| 13 | **Solutions** | `src/pages/Solutions*.jsx` | ❌ Missing | ❌ Missing | 🔴 Critical |
-| 14 | **Scaling Plans** | `src/pages/ScalingPlan*.jsx` | ❌ Missing | ❌ Missing | 🔴 Critical |
-| 15 | **Innovation Proposals** | `src/pages/InnovationProposal*.jsx` | ❌ Missing | ❌ Missing | 🟡 High |
-| 16 | **Matchmaker System** | `src/components/matchmaker/*` | ❌ Missing | ❌ Missing | 🟡 High |
-| 17 | **Case Studies** | `src/pages/CaseStudy*.jsx` | ❌ Missing | ❌ Missing | 🟢 Medium |
-| 18 | **Knowledge Documents** | `src/pages/KnowledgeDocument*.jsx` | ❌ Missing | ❌ Missing | 🟢 Medium |
-| 19 | **Lessons Learned** | `src/pages/LessonsLearned*.jsx` | ❌ Missing | ❌ Missing | 🟢 Medium |
-
-#### B. Startup & Provider Ecosystem (4 Systems NOT Covered)
+#### A. Security & DevOps Systems (8 NEW)
 
 | # | System | Location | Strategy Integration | Gap Level |
 |---|--------|----------|---------------------|-----------|
-| 20 | **Startup System** | `src/components/startup/*` | ❌ No strategic context | 🟡 High |
-| 21 | **Provider System** | `src/components/provider/*` | ❌ No strategic filtering | 🟢 Medium |
-| 22 | **Startup Profiles** | `startup_profiles` table | ❌ No `strategic_plan_ids` | 🟡 High |
-| 23 | **Provider Onboarding** | `ProviderOnboardingWizard.jsx` | ❌ No strategic expertise areas | 🟢 Medium |
+| 76 | **API Key Management** | `src/components/security/APIKeyManagement.jsx` | ❌ No strategic API scopes | 🟢 Low |
+| 77 | **Security Audit System** | `src/components/security/BackendSecurityAudit.jsx` | ❌ No strategic security policies | 🟢 Medium |
+| 78 | **Threat Detection** | `src/components/security/ThreatDetectionSystem.jsx` | ❌ No strategic asset priority | 🟢 Medium |
+| 79 | **Data Encryption Config** | `src/components/security/DataEncryptionConfig.jsx` | ❌ No strategic data classification | 🟢 Low |
+| 80 | **Row Level Security** | `src/components/security/RowLevelSecurity.jsx` | ❌ No strategic data access | 🟢 Medium |
+| 81 | **Two Factor Auth** | `src/components/security/TwoFactorSetup.jsx` | ❌ No strategic role enforcement | 🟢 Low |
+| 82 | **Session Security** | `src/components/security/SessionTokenSecurity.jsx` | ❌ No strategic session policies | 🟢 Low |
+| 83 | **Input Validation** | `src/components/security/InputValidationEngine.jsx` | ❌ No strategic rule inheritance | 🟢 Low |
 
-#### C. Academia & Research (3 Systems NOT Covered)
-
-| # | System | Location | Strategy Integration | Gap Level |
-|---|--------|----------|---------------------|-----------|
-| 24 | **Academia Hub** | `src/components/academia/*` | ❌ No strategic alignment | 🟡 High |
-| 25 | **Researcher Profiles** | `researcher_profiles` table | ❌ No `strategic_expertise_areas` | 🟢 Medium |
-| 26 | **Publications** | `PublicationManager.jsx` | ❌ No link to strategic outcomes | 🟢 Medium |
-
-#### D. Communications & Marketing (4 Systems NOT Covered)
+#### B. Data Management Systems (4 NEW)
 
 | # | System | Location | Strategy Integration | Gap Level |
 |---|--------|----------|---------------------|-----------|
-| 27 | **Marketing Campaigns** | `email_campaigns` table | ❌ No `strategic_plan_ids` | 🔴 Critical |
-| 28 | **News Articles** | `news_articles` table | ❌ No strategic tagging | 🟢 Medium |
-| 29 | **Announcement System** | `AnnouncementSystem.jsx` | ❌ No strategic context | 🟢 Medium |
-| 30 | **Push Notifications** | `PushNotificationConfig.jsx` | ❌ No strategy channels | 🟢 Low |
+| 84 | **Cities Management** | `src/components/data-management/CitiesTab.jsx` | ❌ No strategic city categorization | 🟢 Medium |
+| 85 | **Regions Management** | `src/components/data-management/RegionsTab.jsx` | ❌ No strategic regional priorities | 🟡 High |
+| 86 | **Entity Table System** | `src/components/data-management/EntityTable.jsx` | ❌ No strategic entity filtering | 🟢 Medium |
+| 87 | **Data Integrity** | `src/components/data-management/IntegrityTab.jsx` | ❌ No strategic data governance | 🟢 Medium |
 
-#### E. Executive & Governance (4 Systems NOT Covered)
-
-| # | System | Location | Strategy Integration | Gap Level |
-|---|--------|----------|---------------------|-----------|
-| 31 | **Executive Dashboard** | `ExecutiveDashboard.jsx` | ⚠️ Partial - uses AI | 🟡 High |
-| 32 | **Executive Briefings** | `ExecutiveBriefingGenerator.jsx` | ⚠️ Partial - no plan link | 🟡 High |
-| 33 | **Committee Decisions** | `committee_decisions` table | ✅ Has `strategic_plan_id` | 🟢 Low |
-| 34 | **Approval Center** | `ApprovalCenter.jsx` | ⚠️ Partial - approval exists | 🟢 Medium |
-
-#### F. Financial Systems (3 Systems NOT Covered)
+#### C. Workflow & Automation Systems (5 NEW)
 
 | # | System | Location | Strategy Integration | Gap Level |
 |---|--------|----------|---------------------|-----------|
-| 35 | **Contracts** | `contracts` table | ❌ No `strategic_plan_id` | 🟡 High |
-| 36 | **Invoices** | `invoices` table | ❌ No strategic allocation | 🟢 Low |
-| 37 | **Expenses** | `pilot_expenses` table | ⚠️ Indirect via pilot | 🟢 Low |
+| 88 | **AI Workflow Optimizer** | `src/components/workflows/AIWorkflowOptimizer.jsx` | ❌ No strategic workflow priority | 🟡 High |
+| 89 | **Approval Matrix Editor** | `src/components/workflows/ApprovalMatrixEditor.jsx` | ❌ No strategic approval chains | 🔴 Critical |
+| 90 | **Gate Template Library** | `src/components/workflows/GateTemplateLibrary.jsx` | ⚠️ Has StrategicPlanApprovalGate | 🟢 Medium |
+| 91 | **SLA Rule Builder** | `src/components/workflows/SLARuleBuilder.jsx` | ❌ No strategic SLA tiers | 🟡 High |
+| 92 | **Visual Workflow Builder** | `src/components/workflows/VisualWorkflowBuilder.jsx` | ❌ No strategic workflow templates | 🟢 Medium |
 
-#### G. Citizen & Public Systems (6 Systems NOT Covered)
-
-| # | System | Location | Strategy Integration | Gap Level |
-|---|--------|----------|---------------------|-----------|
-| 38 | **Citizen Ideas** | `citizen_ideas` table | ❌ No `strategic_objective_id` | 🔴 Critical |
-| 39 | **Citizen Feedback** | `citizen_feedback` table | ❌ No strategic context | 🟡 High |
-| 40 | **Citizen Votes** | `citizen_votes` table | ❌ No strategy awareness | 🟢 Medium |
-| 41 | **Citizen Pilot Enrollments** | `citizen_pilot_enrollments` table | ❌ No strategy awareness | 🟢 Medium |
-| 42 | **Citizen Leaderboard** | `CitizenLeaderboard.jsx` | ❌ No strategic contributions | 🟢 Low |
-| 43 | **Citizen Notifications** | `citizen_notifications` table | ❌ No strategy notification types | 🟡 High |
-
-#### H. Platform Infrastructure (6 Systems NOT Covered)
+#### D. KPI & Dashboard Systems (2 NEW)
 
 | # | System | Location | Strategy Integration | Gap Level |
 |---|--------|----------|---------------------|-----------|
-| 44 | **Onboarding System** | `src/components/onboarding/*` | ❌ No strategic role assignment | 🟡 High |
-| 45 | **Gamification** | `achievements`, `citizen_points` | ❌ No strategy-based achievements | 🟢 Medium |
-| 46 | **Training System** | `TrainingModuleBuilder.jsx` | ❌ No strategic training paths | 🟢 Medium |
-| 47 | **Workflow Builder** | `VisualWorkflowBuilder.jsx` | ❌ No strategic workflow templates | 🟢 Low |
+| 93 | **Dashboard Builder** | `src/components/kpi/DashboardBuilder.jsx` | ❌ Not linked to strategic KPIs | 🔴 Critical |
+| 94 | **KPI Alert Config** | `src/components/kpi/KPIAlertConfig.jsx` | ❌ No strategic KPI thresholds | 🔴 Critical |
 
-#### I. Analytics & Reporting (4 Systems NOT Covered)
+#### E. Open Data & Integration Systems (3 NEW)
 
 | # | System | Location | Strategy Integration | Gap Level |
 |---|--------|----------|---------------------|-----------|
-| 48 | **Custom Reports** | `CustomReportBuilder.jsx` | ❌ No strategy metrics | 🟡 High |
-| 49 | **KPI Dashboard Builder** | `DashboardBuilder.jsx` | ❌ Not linked to strategic KPIs | 🟡 High |
-| 50 | **Analytics Dashboard** | `AdvancedAnalyticsDashboard.jsx` | ❌ No strategic filtering | 🟢 Medium |
-| 51 | **Search System** | `src/components/search/*` | ❌ No strategic search facets | 🟢 Medium |
-
-#### J. Portfolio & Planning (3 Systems NOT Covered)
-
-| # | System | Location | Strategy Integration | Gap Level |
-|---|--------|----------|---------------------|-----------|
-| 52 | **Portfolio Management** | `src/components/portfolio/*` | ⚠️ Has strategic recommendations | 🟢 Medium |
-| 53 | **Gantt/Timeline** | `GanttView.jsx`, `TimelineGanttView.jsx` | ❌ No strategic milestones | 🟡 High |
-| 54 | **Capacity Planning** | `CapacityPlanning.jsx` | ❌ No strategic resource allocation | 🟡 High |
-
-#### K. Security & Compliance (2 Systems NOT Covered)
-
-| # | System | Location | Strategy Integration | Gap Level |
-|---|--------|----------|---------------------|-----------|
-| 55 | **Audit Trail** | `audits` table | ⚠️ Logs strategy changes | 🟢 Low |
-| 56 | **Compliance Dashboard** | `ComplianceDashboard.jsx` | ❌ No strategic compliance | 🟢 Medium |
-
-#### L. AI & Automation (3 Systems NOT Covered)
-
-| # | System | Location | Strategy Integration | Gap Level |
-|---|--------|----------|---------------------|-----------|
-| 57 | **AI Assistant** | `AIAssistant.jsx` | ❌ No strategy context | 🟡 High |
-| 58 | **AI Risk Forecasting** | `AIRiskForecasting.jsx` | ⚠️ Generic, not plan-specific | 🟢 Medium |
-| 59 | **Voice Assistant** | `VoiceAssistant.jsx` | ❌ No strategic commands | 🟢 Low |
+| 95 | **Open Data Catalog** | `src/components/opendata/OpenDataCatalog.jsx` | ❌ No strategic data publishing | 🟢 Medium |
+| 96 | **Open Data API** | `src/components/opendata/OpenDataAPIDocumentation.jsx` | ❌ No strategic API endpoints | 🟢 Low |
+| 97 | **OAuth Connector** | `src/components/integrations/OAuthConnectorPanel.jsx` | ❌ No strategic system connections | 🟢 Low |
+| 98 | **Webhook Builder** | `src/components/webhooks/WebhookBuilder.jsx` | ❌ No strategic event triggers | 🟡 High |
 
 ---
 
-## SECTION 1: ENTITY CREATE/EDIT PAGE INTEGRATION (Updated)
+## SECTION 1: ENTITY CREATE/EDIT PAGE INTEGRATION (Complete)
 
 ### 1.1 Entities WITH StrategicPlanSelector (✅ Complete Integration)
 
@@ -175,27 +106,29 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 | **Challenges** | ⚠️ `ChallengeCreate.jsx` | ⚠️ `ChallengeEdit.jsx` | Uses `StrategicAlignmentSelector` | Different component than standard |
 | **Programs** | ⚠️ `ProgramCreateWizard.jsx` | ⚠️ `ProgramEdit.jsx` | Fetches plans but no UI selector | Data available but not exposed |
 | **Events** | ⚠️ `EventCreate.jsx` | ⚠️ `EventEdit.jsx` | Has `strategic_plan_ids` in DB | No UI for selection |
+| **Policies** | ⚠️ `PolicyCreate.jsx` | ⚠️ `PolicyEdit.jsx` | Has DB column | No UI selector |
 
 ### 1.3 Entities WITHOUT Strategy Integration (❌ Critical Gaps)
 
-| Entity | Create Page | Edit Page | DB Column Exists | Missing |
-|--------|-------------|-----------|------------------|---------|
-| **Pilots** | ❌ `PilotCreate.jsx` | ❌ `PilotEdit.jsx` | ✅ `strategic_plan_ids` | No UI selector |
-| **Partnerships** | ❌ No create page | ❌ N/A | ✅ `strategic_plan_ids` | Create page missing |
-| **R&D Calls** | ❌ `RDCallCreate.jsx` | ❌ `RDCallEdit.jsx` | ✅ `strategic_plan_ids` | No UI selector |
-| **R&D Projects** | ❌ `RDProjectCreateWizard.jsx` | ❌ `RDProjectEdit.jsx` | ⚠️ Need verify | No UI selector |
-| **Policies** | ❌ `PolicyCreate.jsx` | ❌ `PolicyEdit.jsx` | ⚠️ Need verify | No strategy fields |
-| **Solutions** | ❌ `SolutionCreateWizard.jsx` | ❌ `SolutionEdit.jsx` | ❌ Missing | No integration |
-| **Scaling Plans** | ❌ No create wizard | ❌ `ScalingPlanDetail.jsx` | ❌ Missing | No integration |
-| **Marketing Campaigns** | ❌ `CampaignPlanner.jsx` | ❌ N/A | ❌ Missing | No strategy fields |
-| **Contracts** | ❌ `ContractDetail.jsx` | ❌ N/A | ❌ Missing | No strategic link |
-| **Knowledge Documents** | ❌ `KnowledgeDocumentCreate.jsx` | ❌ `KnowledgeDocumentEdit.jsx` | ❌ Missing | No strategy context |
-| **Innovation Proposals** | ❌ `InnovationProposalDetail.jsx` | ❌ N/A | ❌ Missing | No strategic alignment |
-| **Case Studies** | ❌ `CaseStudyCreate.jsx` | ❌ `CaseStudyEdit.jsx` | ❌ Missing | No strategic link |
+| Entity | Create Page | Edit Page | DB Column Exists | Missing | Priority |
+|--------|-------------|-----------|------------------|---------|----------|
+| **Pilots** | ❌ `PilotCreate.jsx` | ❌ `PilotEdit.jsx` | ✅ `strategic_plan_ids` | No UI selector | 🔴 Critical |
+| **Partnerships** | ❌ No create page | ❌ N/A | ✅ `strategic_plan_ids` | Create page missing | 🔴 Critical |
+| **R&D Calls** | ❌ `RDCallCreate.jsx` | ❌ `RDCallEdit.jsx` | ✅ `strategic_plan_ids` | No UI selector | 🟡 High |
+| **R&D Projects** | ❌ `RDProjectCreateWizard.jsx` | ❌ `RDProjectEdit.jsx` | ⚠️ Needs verify | No UI selector | 🟡 High |
+| **Solutions** | ❌ `SolutionCreateWizard.jsx` | ❌ `SolutionEdit.jsx` | ❌ Missing | No integration | 🔴 Critical |
+| **Scaling Plans** | ❌ No create wizard | ❌ `ScalingPlanDetail.jsx` | ❌ Missing | No integration | 🔴 Critical |
+| **Marketing Campaigns** | ❌ `CampaignPlanner.jsx` | ❌ N/A | ❌ Missing | No strategy fields | 🔴 Critical |
+| **Contracts** | ❌ `ContractDetail.jsx` | ❌ N/A | ❌ Missing | No strategic link | 🟡 High |
+| **Knowledge Documents** | ❌ `KnowledgeDocumentCreate.jsx` | ❌ `KnowledgeDocumentEdit.jsx` | ❌ Missing | No strategy context | 🟢 Medium |
+| **Innovation Proposals** | ❌ `InnovationProposalDetail.jsx` | ❌ N/A | ❌ Missing | No strategic alignment | 🟡 High |
+| **Case Studies** | ❌ `CaseStudyCreate.jsx` | ❌ `CaseStudyEdit.jsx` | ❌ Missing | No strategic link | 🟢 Medium |
+| **Budgets** | ❌ `BudgetDetail.jsx` | ❌ `BudgetManagement.jsx` | ❌ Missing | No strategic allocation | 🔴 Critical |
+| **Citizen Ideas** | ❌ `CitizenIdeaSubmission.jsx` | ❌ N/A | ❌ Missing | No strategic context | 🔴 Critical |
 
 ---
 
-## SECTION 2: DATABASE SCHEMA GAPS (Updated)
+## SECTION 2: DATABASE SCHEMA GAPS (Complete)
 
 ### 2.1 Tables WITH Complete Strategy Columns (✅)
 
@@ -219,9 +152,9 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 | `scaling_plans` | ✅ Need | ✅ Need | 🔴 Critical |
 | `contracts` | ✅ Need | ❌ Optional | 🟡 High |
 | `budgets` | ✅ Need | ✅ Need | 🔴 Critical |
-| `marketing_campaigns` / `email_campaigns` | ✅ Need | ❌ Optional | 🟡 High |
+| `email_campaigns` | ✅ Need | ❌ Optional | 🟡 High |
 | `mii_results` | ✅ Need | ❌ Optional | 🟡 High |
-| `citizen_ideas` | ❌ Optional | ✅ Need | 🟡 High |
+| `citizen_ideas` | ❌ Optional | ✅ Need | 🔴 Critical |
 | `citizen_feedback` | ✅ Need | ❌ Optional | 🟢 Medium |
 | `innovation_proposals` | ✅ Need | ✅ Need | 🟡 High |
 | `case_studies` | ✅ Need | ❌ Optional | 🟢 Medium |
@@ -233,10 +166,15 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 | `invoices` | ✅ Need | ❌ Optional | 🟢 Low |
 | `rd_proposals` | ✅ Need | ❌ Optional | 🟡 High |
 | `rd_projects` | ✅ Need (verify) | ❌ Optional | 🟡 High |
+| `risks` | ✅ Need | ❌ Optional | 🟡 High |
+| `milestones` | ✅ Need | ❌ Optional | 🟡 High |
+| `regulatory_exemptions` | ✅ Need | ❌ Optional | 🟡 High |
+| `impact_stories` | ✅ Need | ❌ Optional | 🟢 Medium |
+| `incident_reports` | ✅ Need | ❌ Optional | 🟢 Medium |
 
 ---
 
-## SECTION 3: DETAIL PAGE STRATEGY SECTIONS (Updated)
+## SECTION 3: DETAIL PAGE STRATEGY SECTIONS
 
 ### 3.1 Detail Pages WITH Strategy Sections (✅)
 
@@ -254,26 +192,28 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 | `ProgramDetail.jsx` | Has `StrategicAlignmentWidget` | Only shows linked objectives |
 | `PilotDetail.jsx` | Shows challenge alignment | Indirect - relies on challenge link |
 
-### 3.3 Detail Pages WITHOUT Strategy Sections (❌) - EXPANDED LIST
+### 3.3 Detail Pages WITHOUT Strategy Sections (❌) - 14 Pages
 
-| Page | Lines Checked | Gap Description |
-|------|---------------|-----------------|
-| `RDCallDetail.jsx` | Checked | No strategy tab or section |
-| `RDProjectDetail.jsx` | Checked | No strategy alignment component |
-| `PolicyDetail.jsx` | Checked | No strategy section visible |
-| `ScalingPlanDetail.jsx` | Checked | No strategy alignment section |
-| `ContractDetail.jsx` | Checked | No strategy context |
-| `SolutionDetail.jsx` | Checked | No strategy alignment |
-| `KnowledgeDocumentDetail.jsx` | Checked | No strategy context |
-| `InnovationProposalDetail.jsx` | Checked | No strategic link |
-| `CaseStudyDetail.jsx` | Checked | No strategic link |
-| `PartnershipDetail.jsx` | Checked | Has DB column but no UI display |
-| `StartupDetail.jsx` | N/A | No strategy awareness |
-| `OrganizationDetail.jsx` | Checked | No strategic partnerships view |
+| Page | Gap Description | Priority |
+|------|-----------------|----------|
+| `RDCallDetail.jsx` | No strategy tab or section | 🟡 High |
+| `RDProjectDetail.jsx` | No strategy alignment component | 🟡 High |
+| `PolicyDetail.jsx` | No strategy section visible | 🟡 High |
+| `ScalingPlanDetail.jsx` | No strategy alignment section | 🔴 Critical |
+| `ContractDetail.jsx` | No strategy context | 🟡 High |
+| `SolutionDetail.jsx` | No strategy alignment | 🔴 Critical |
+| `KnowledgeDocumentDetail.jsx` | No strategy context | 🟢 Medium |
+| `InnovationProposalDetail.jsx` | No strategic link | 🟡 High |
+| `CaseStudyDetail.jsx` | No strategic link | 🟢 Medium |
+| `PartnershipDetail.jsx` | Has DB column but no UI display | 🟡 High |
+| `StartupDetail.jsx` | No strategy awareness | 🟡 High |
+| `OrganizationDetail.jsx` | No strategic partnerships view | 🟢 Medium |
+| `BudgetDetail.jsx` | No strategic allocation view | 🔴 Critical |
+| `AuditDetail.jsx` | No strategic audit context | 🟢 Medium |
 
 ---
 
-## SECTION 4: SYSTEM-LEVEL CONFLICTS & GAPS (Updated)
+## SECTION 4: SYSTEM-LEVEL CONFLICTS & GAPS (Complete - 18 Issues)
 
 ### 4.1 Evaluation System Conflict (⚠️ HIGH PRIORITY)
 
@@ -289,11 +229,6 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 
 ### 4.2 MII System Gap (❌ CRITICAL)
 
-**Current State:**
-- MII calculates innovation maturity scores (`mii_results` table)
-- Strategy has KPI tracking (`strategic_plans.objectives.kpis`)
-- **NO CONNECTION** between MII scores and strategic KPI targets
-
 **Gaps:**
 1. Cannot set "Improve MII score by X%" as a strategic objective
 2. MII dimension scores not imported as baseline data
@@ -308,9 +243,7 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 3. ROI Calculator uses mock data
 4. No budget forecast alignment with strategy timeline
 
-### 4.4 Citizen Engagement Gap (❌ CRITICAL) - NEW
-
-**Affected Tables:**
+### 4.4 Citizen Engagement Gap (❌ CRITICAL)
 
 | Table | Gap |
 |-------|-----|
@@ -320,12 +253,25 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 | `citizen_pilot_enrollments` | No awareness of strategic pilots |
 | `citizen_notifications` | No strategy notification types |
 
-### 4.5 Startup/Provider Ecosystem Gap (❌ HIGH) - NEW
+### 4.5 Approval Matrix Gap (❌ CRITICAL - NEW)
 
-**Current State:**
-- Startups onboard via `StartupOnboardingWizard.jsx`
-- Providers register via `ProviderOnboardingWizard.jsx`
-- **NO WAY** to indicate strategic focus areas or alignment
+**Issue:** `ApprovalMatrixEditor.jsx` has no strategic approval chains.
+
+**Gaps:**
+1. Cannot define strategy-specific approval chains
+2. No strategic priority escalation rules
+3. Missing integration with `strategic-plan-approval` edge function
+
+### 4.6 KPI Dashboard Gap (❌ CRITICAL - NEW)
+
+**Issue:** `DashboardBuilder.jsx` and `KPIAlertConfig.jsx` are disconnected from strategic KPIs.
+
+**Gaps:**
+1. Dashboard widgets cannot link to `strategic_plans.objectives.kpis`
+2. KPI alerts don't consider strategic thresholds
+3. No automatic strategic KPI dashboard generation
+
+### 4.7 Startup/Provider Ecosystem Gap (❌ HIGH)
 
 **Missing:**
 1. `startup_profiles.strategic_focus_areas` column
@@ -333,83 +279,100 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 3. UI for selecting strategic areas during onboarding
 4. Matching algorithm doesn't consider strategic alignment
 
-### 4.6 Academia/Research Gap (❌ HIGH) - NEW
-
-**Current State:**
-- Researchers exist in `researcher_profiles`
-- Academia collaboration via `src/components/academia/*`
-- **NO STRATEGIC CONTEXT** for research priorities
+### 4.8 Academia/Research Gap (❌ HIGH)
 
 **Missing:**
 1. `researcher_profiles.strategic_research_areas` column
 2. Research publication linking to strategic outcomes
 3. R&D project alignment to strategic objectives
 
-### 4.7 Portfolio/Capacity Planning Gap (❌ HIGH) - NEW
-
-**Current State:**
-- `PortfolioHealthMonitor.jsx` has AI recommendations
-- `CapacityPlanning.jsx` exists for resource planning
-- **NO STRATEGIC PRIORITIZATION** in resource allocation
+### 4.9 Portfolio/Capacity Planning Gap (❌ HIGH)
 
 **Missing:**
 1. Strategic priority weighting in portfolio optimization
 2. Capacity allocation by strategic objective
 3. Timeline alignment with strategic plan milestones
 
-### 4.8 Onboarding System Gap (⚠️ MEDIUM) - NEW
-
-**Current State:**
-- Multiple onboarding wizards exist
-- Role assignment happens during onboarding
-- **NO STRATEGIC ROLE ASSIGNMENT**
+### 4.10 Onboarding System Gap (⚠️ MEDIUM)
 
 **Missing:**
 1. "Strategy Team" role assignment during onboarding
 2. Strategic expertise areas selection
 3. Strategy-specific welcome content
 
-### 4.9 Gamification Gap (⚠️ MEDIUM) - NEW
-
-**Current State:**
-- `achievements` table exists
-- `citizen_points` tracks engagement
-- **NO STRATEGY-BASED ACHIEVEMENTS**
+### 4.11 Gamification Gap (⚠️ MEDIUM)
 
 **Missing:**
 1. "Strategy Contributor" achievement type
 2. Points for contributing to strategic objectives
 3. Leaderboard by strategic impact
 
-### 4.10 Reporting/Analytics Gap (⚠️ MEDIUM) - NEW
-
-**Current State:**
-- `CustomReportBuilder.jsx` exists
-- `DashboardBuilder.jsx` for KPI dashboards
-- **NOT LINKED** to strategic KPIs
-
-**Missing:**
-1. Strategy metrics in report templates
-2. Strategic KPI dashboard pre-built
-3. Filter reports by strategic plan
-
-### 4.11 AI Assistant Gap (⚠️ MEDIUM) - NEW
-
-**Current State:**
-- `AIAssistant.jsx` provides general help
-- `AIRiskForecasting.jsx` forecasts risks
-- **NO STRATEGIC CONTEXT** in AI responses
+### 4.12 AI Assistant Gap (⚠️ MEDIUM)
 
 **Missing:**
 1. AI should know current strategic plan when answering
 2. Recommendations should align with strategic priorities
 3. Voice assistant should support strategy queries
 
+### 4.13 Webhook/Integration Gap (⚠️ MEDIUM - NEW)
+
+**Issue:** `WebhookBuilder.jsx` has no strategic event triggers.
+
+**Gaps:**
+1. Cannot trigger webhooks on strategic milestone completion
+2. No strategic plan status change events
+3. Missing integration with strategy cascade events
+
+### 4.14 SLA Rule Builder Gap (🟡 HIGH - NEW)
+
+**Issue:** `SLARuleBuilder.jsx` has no strategic SLA tiers.
+
+**Gaps:**
+1. Cannot define SLAs based on strategic priority
+2. No automatic SLA escalation for strategy-derived entities
+3. Missing strategic context in SLA calculations
+
+### 4.15 Risk System Gap (🟡 HIGH)
+
+**Issue:** `risks` table has no strategic alignment.
+
+**Gaps:**
+1. Cannot link risks to strategic objectives
+2. No strategic risk dashboard
+3. `strategy_risks` table exists but not integrated with general risks
+
+### 4.16 Milestone System Gap (🟡 HIGH)
+
+**Issue:** `milestones` table has no strategic milestone tracking.
+
+**Gaps:**
+1. Cannot link milestones to strategic timelines
+2. No strategic milestone visualization
+3. Missing integration with strategy Phase 6 monitoring
+
+### 4.17 Regional Priorities Gap (🟡 HIGH - NEW)
+
+**Issue:** `RegionsTab.jsx` has no strategic regional priorities.
+
+**Gaps:**
+1. Cannot define strategic priority by region
+2. No regional strategy dashboard
+3. Missing integration with municipality strategic plans
+
+### 4.18 AI Workflow Optimizer Gap (🟡 HIGH - NEW)
+
+**Issue:** `AIWorkflowOptimizer.jsx` has no strategic workflow priority.
+
+**Gaps:**
+1. Cannot prioritize workflows by strategic alignment
+2. No strategic bottleneck detection
+3. Missing integration with strategy action plans
+
 ---
 
-## SECTION 5: VISIBILITY HOOKS GAPS (Updated)
+## SECTION 5: VISIBILITY HOOKS GAPS (Complete - 16 Hooks)
 
-### 5.1 Visibility Hooks Missing Strategy Awareness (14 Hooks)
+### 5.1 Visibility Hooks Missing Strategy Awareness
 
 | Hook | File | Strategy Filter | Gap Level |
 |------|------|-----------------|-----------|
@@ -427,10 +390,12 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 | `useCaseStudiesWithVisibility` | ✓ Exists | ❌ | 🟢 Medium |
 | `useMunicipalitiesWithVisibility` | ✓ Exists | ❌ | 🟢 Low |
 | `useOrganizationsWithVisibility` | ✓ Exists | ❌ | 🟢 Low |
+| `useUsersWithVisibility` | ✓ Exists | ❌ | 🟢 Low |
+| `useVisibilityAwareSearch` | ✓ Exists | ❌ | 🟡 High |
 
 ---
 
-## SECTION 6: CASCADE GENERATOR COVERAGE (Updated)
+## SECTION 6: CASCADE GENERATOR COVERAGE
 
 ### 6.1 Entities WITH Cascade Generators (✅)
 
@@ -446,105 +411,229 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 | `StrategyToRDGenerator` | Same | R&D Calls |
 | `StrategyToPolicyGenerator` | Same | Policies |
 
-### 6.2 Entities WITHOUT Cascade Generators (❌) - EXPANDED
+### 6.2 Entities WITHOUT Cascade Generators (❌)
 
 | Entity | Priority | Reason |
 |--------|----------|--------|
 | **Marketing Campaigns** | 🔴 Critical | Strategic communication channel |
 | **Tasks** | 🟡 High | Should link to action plans |
+| **Budgets** | 🔴 Critical | Should allocate to objectives |
 | **Knowledge Documents** | 🟢 Medium | Lessons learned capture |
 | **Training Modules** | 🟢 Medium | Strategic capability building |
 | **Solutions** | 🟢 Low | Created from Programs/Pilots |
 | **Scaling Plans** | 🟢 Low | Conversion workflow exists |
 | **Case Studies** | 🟢 Low | Manual curation OK |
+| **Webhooks** | 🟢 Low | Integration triggers |
 
 ---
 
-## SECTION 7: COMPLETE SYSTEMS INTEGRATION MATRIX
+## SECTION 7: EDGE FUNCTIONS STRATEGY INTEGRATION
 
-### 7.1 All 59 Platform Systems/Subsystems
+### 7.1 Strategy Edge Functions (25 Functions - ✅ Complete)
 
-| # | System | Category | Strategy Integration | Priority |
-|---|--------|----------|---------------------|----------|
-| 1 | Challenges | Core | ⚠️ Partial | 🟡 |
-| 2 | Pilots | Core | ❌ UI Missing | 🔴 |
-| 3 | Programs | Core | ⚠️ Partial | 🟡 |
-| 4 | Living Labs | Core | ✅ Complete | ✅ |
-| 5 | Sandboxes | Core | ✅ Complete | ✅ |
-| 6 | Partnerships | Core | ❌ UI Missing | 🟡 |
-| 7 | Events | Core | ⚠️ Partial | 🟡 |
-| 8 | Solutions | Core | ❌ None | 🔴 |
-| 9 | Scaling Plans | Core | ❌ None | 🔴 |
-| 10 | Case Studies | Knowledge | ❌ None | 🟢 |
-| 11 | R&D Calls | Research | ❌ UI Missing | 🟡 |
-| 12 | R&D Projects | Research | ❌ UI Missing | 🟡 |
-| 13 | R&D Proposals | Research | ❌ None | 🟡 |
-| 14 | Innovation Proposals | Research | ❌ None | 🟡 |
-| 15 | Academia Hub | Research | ❌ None | 🟡 |
-| 16 | Policies | Governance | ❌ UI Missing | 🟡 |
-| 17 | Committee Decisions | Governance | ✅ Has column | 🟢 |
-| 18 | Approval System | Governance | ⚠️ Partial | 🟢 |
-| 19 | Audit Trail | Governance | ⚠️ Logs changes | 🟢 |
-| 20 | Budgets | Financial | ❌ None | 🔴 |
-| 21 | Contracts | Financial | ❌ None | 🟡 |
-| 22 | Invoices | Financial | ❌ None | 🟢 |
-| 23 | Expenses | Financial | ⚠️ Via pilot | 🟢 |
-| 24 | Marketing Campaigns | Comms | ❌ None | 🔴 |
-| 25 | News Articles | Comms | ❌ None | 🟢 |
-| 26 | Announcements | Comms | ❌ None | 🟢 |
-| 27 | Notifications | Comms | ❌ No types | 🟡 |
-| 28 | Email System | Comms | ❌ None | 🟢 |
-| 29 | Citizen Ideas | Public | ❌ None | 🔴 |
-| 30 | Citizen Feedback | Public | ❌ None | 🟡 |
-| 31 | Citizen Votes | Public | ❌ None | 🟢 |
-| 32 | Citizen Enrollments | Public | ❌ None | 🟢 |
-| 33 | Citizen Leaderboard | Public | ❌ None | 🟢 |
-| 34 | Citizen Notifications | Public | ❌ None | 🟡 |
-| 35 | MII System | Analytics | ❌ None | 🔴 |
-| 36 | KPI Dashboards | Analytics | ❌ None | 🟡 |
-| 37 | Custom Reports | Analytics | ❌ None | 🟡 |
-| 38 | Analytics Dashboard | Analytics | ❌ None | 🟢 |
-| 39 | Evaluation System | Support | ⚠️ Conflict | 🟡 |
-| 40 | Task System | Support | ❌ None | 🟡 |
-| 41 | Knowledge Docs | Support | ❌ None | 🟢 |
-| 42 | Matchmaker | Support | ❌ None | 🟡 |
-| 43 | Executive Dashboard | Exec | ⚠️ Partial | 🟡 |
-| 44 | Executive Briefings | Exec | ⚠️ Partial | 🟡 |
-| 45 | Portfolio Mgmt | Planning | ⚠️ Partial | 🟢 |
-| 46 | Gantt/Timeline | Planning | ❌ None | 🟡 |
-| 47 | Capacity Planning | Planning | ❌ None | 🟡 |
-| 48 | Startup System | Ecosystem | ❌ None | 🟡 |
-| 49 | Provider System | Ecosystem | ❌ None | 🟢 |
-| 50 | Researcher Profiles | Ecosystem | ❌ None | 🟢 |
-| 51 | Onboarding | Platform | ❌ None | 🟡 |
-| 52 | Gamification | Platform | ❌ None | 🟢 |
-| 53 | Training | Platform | ❌ None | 🟢 |
-| 54 | Workflow Builder | Platform | ❌ None | 🟢 |
-| 55 | Search System | Platform | ❌ None | 🟢 |
-| 56 | AI Assistant | AI | ❌ None | 🟡 |
-| 57 | AI Risk Forecast | AI | ⚠️ Generic | 🟢 |
-| 58 | Voice Assistant | AI | ❌ None | 🟢 |
-| 59 | Compliance | Security | ❌ None | 🟢 |
-| 60 | Gates System | Governance | ⚠️ Has StrategicPlanApprovalGate | 🟢 |
-| 61 | Taxonomy System | Platform | ❌ None | 🟡 |
-| 62 | Scaling Components | Core | ⚠️ Generic strategic mentions | 🟡 |
-| 63 | Testing System | Platform | ❌ None | 🟢 |
-| 64 | Translation System | Platform | ❌ None | 🟢 |
-| 65 | Stakeholder Mapping | Collaboration | ❌ None | 🟡 |
-| 66 | Delegation Rules | Governance | ❌ None | 🟢 |
-| 67 | Milestones System | Planning | ❌ None | 🟡 |
-| 68 | Risks System | Governance | ❌ None | 🟡 |
-| 69 | Messaging System | Comms | ❌ None | 🟢 |
-| 70 | Media Library | Content | ❌ None | 🟢 |
-| 71 | Bookmarks System | Platform | ❌ None | 🟢 |
-| 72 | Impact Stories | Knowledge | ❌ None | 🟢 |
-| 73 | Incident Reports | Operations | ❌ None | 🟢 |
-| 74 | Regulatory Exemptions | Governance | ❌ None | 🟡 |
-| 75 | Sector Strategies | Strategy | ✅ Strategy-native | ✅ |
+| Function | Purpose | Status |
+|----------|---------|--------|
+| `strategy-action-plan-generator` | Generate action items | ✅ |
+| `strategy-campaign-generator` | Generate campaigns | ✅ |
+| `strategy-challenge-generator` | Generate challenges | ✅ |
+| `strategy-committee-ai` | Committee AI support | ✅ |
+| `strategy-communication-ai` | Communication AI | ✅ |
+| `strategy-event-planner` | Plan events | ✅ |
+| `strategy-lab-research-generator` | Generate living labs | ✅ |
+| `strategy-national-linker` | National alignment | ✅ |
+| `strategy-objective-generator` | Generate objectives | ✅ |
+| `strategy-ownership-ai` | Ownership assignment | ✅ |
+| `strategy-partnership-matcher` | Match partnerships | ✅ |
+| `strategy-pillar-generator` | Generate pillars | ✅ |
+| `strategy-pilot-generator` | Generate pilots | ✅ |
+| `strategy-policy-generator` | Generate policies | ✅ |
+| `strategy-program-theme-generator` | Program themes | ✅ |
+| `strategy-rd-call-generator` | Generate R&D calls | ✅ |
+| `strategy-sandbox-planner` | Plan sandboxes | ✅ |
+| `strategy-sector-gap-analysis` | Sector analysis | ✅ |
+| `strategy-sector-generator` | Sector strategies | ✅ |
+| `strategy-signoff-ai` | Signoff AI support | ✅ |
+| `strategy-timeline-generator` | Generate timelines | ✅ |
+| `strategy-version-ai` | Version control | ✅ |
+| `strategy-workflow-ai` | Workflow AI | ✅ |
+| `strategic-plan-approval` | Plan approval | ✅ |
+| `strategic-priority-scoring` | Priority scoring | ✅ |
+
+### 7.2 Non-Strategy Edge Functions Missing Strategy Context (50 Functions)
+
+| Function | Gap | Priority |
+|----------|-----|----------|
+| `calculate-mii` | Should link to strategic KPI targets | 🔴 Critical |
+| `budget-approval` | Should verify strategic alignment | 🔴 Critical |
+| `initiative-launch` | Should check strategy derivation | 🟡 High |
+| `portfolio-review` | Should consider strategic priorities | 🟡 High |
+| `auto-expert-assignment` | Should consider strategic expertise | 🟡 High |
+| `calculate-organization-reputation` | Should weight strategic contributions | 🟢 Medium |
+| `calculate-startup-reputation` | Should weight strategic focus | 🟢 Medium |
+| `campaign-sender` | Should prioritize strategic campaigns | 🟡 High |
+| `citizen-notifications` | Should notify on strategic updates | 🟡 High |
+| `evaluation-notifications` | Should include strategic context | 🟢 Medium |
+| `event-reminder` | Should prioritize strategic events | 🟢 Medium |
+| `program-sla-automation` | Should consider strategic priority | 🟡 High |
+| `provider-match-notifications` | Should match strategic needs | 🟢 Medium |
+| `public-idea-ai` | Should suggest strategic alignment | 🟡 High |
+| `sla-automation` | Should escalate strategic items faster | 🟡 High |
 
 ---
 
-## SECTION 8: PRIORITY REMEDIATION ROADMAP (Updated)
+## SECTION 8: COMPLETE SYSTEMS INTEGRATION MATRIX (98 Systems)
+
+### 8.1 Core Innovation Entities (14 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 1 | Challenges | ⚠️ Partial | 🟡 |
+| 2 | Pilots | ❌ UI Missing | 🔴 |
+| 3 | Programs | ⚠️ Partial | 🟡 |
+| 4 | Living Labs | ✅ Complete | ✅ |
+| 5 | Sandboxes | ✅ Complete | ✅ |
+| 6 | Partnerships | ❌ UI Missing | 🟡 |
+| 7 | Events | ⚠️ Partial | 🟡 |
+| 8 | Solutions | ❌ None | 🔴 |
+| 9 | Scaling Plans | ❌ None | 🔴 |
+| 10 | Case Studies | ❌ None | 🟢 |
+| 11 | Matchmaker | ❌ None | 🟡 |
+| 12 | Innovation Proposals | ❌ None | 🟡 |
+| 13 | Lessons Learned | ❌ None | 🟢 |
+| 14 | Scaling Components | ⚠️ Generic | 🟡 |
+
+### 8.2 R&D & Research (8 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 15 | R&D Calls | ❌ UI Missing | 🟡 |
+| 16 | R&D Projects | ❌ UI Missing | 🟡 |
+| 17 | R&D Proposals | ❌ None | 🟡 |
+| 18 | Academia Hub | ❌ None | 🟡 |
+| 19 | Researcher Profiles | ❌ None | 🟢 |
+| 20 | Publications | ❌ None | 🟢 |
+| 21 | IP Management | ❌ None | 🟢 |
+| 22 | TRL Advancement | ⚠️ Generic | 🟢 |
+
+### 8.3 Communications & Engagement (11 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 23 | Marketing Campaigns | ❌ None | 🔴 |
+| 24 | News Articles | ❌ None | 🟢 |
+| 25 | Announcements | ❌ None | 🟢 |
+| 26 | Notifications | ❌ No types | 🟡 |
+| 27 | Email System | ❌ None | 🟢 |
+| 28 | Communications Hub | ⚠️ Has AI | 🟡 |
+| 29 | Impact Stories | ❌ None | 🟢 |
+| 30 | Push Notifications | ❌ None | 🟢 |
+| 31 | Messaging | ❌ None | 🟢 |
+| 32 | Digest System | ❌ None | 🟢 |
+| 33 | Email Templates | ❌ None | 🟢 |
+
+### 8.4 Financial & Contracts (7 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 34 | Budgets | ❌ None | 🔴 |
+| 35 | Contracts | ❌ None | 🟡 |
+| 36 | Invoices | ❌ None | 🟢 |
+| 37 | Expenses | ⚠️ Via pilot | 🟢 |
+| 38 | ROI Calculator | ❌ Mock data | 🟡 |
+| 39 | Budget Variance | ❌ None | 🟡 |
+| 40 | Financial Tracker | ❌ None | 🟡 |
+
+### 8.5 Citizen & Public (9 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 41 | Citizen Ideas | ❌ None | 🔴 |
+| 42 | Citizen Feedback | ❌ None | 🟡 |
+| 43 | Citizen Votes | ❌ None | 🟢 |
+| 44 | Citizen Enrollments | ❌ None | 🟢 |
+| 45 | Citizen Leaderboard | ❌ None | 🟢 |
+| 46 | Citizen Notifications | ❌ None | 🟡 |
+| 47 | Citizen Profiles | ❌ None | 🟢 |
+| 48 | Public Feedback | ❌ None | 🟢 |
+| 49 | Voting System | ❌ None | 🟢 |
+
+### 8.6 Support & Operations (12 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 50 | Evaluation System | ⚠️ Conflict | 🟡 |
+| 51 | Task System | ❌ None | 🟡 |
+| 52 | Knowledge Docs | ❌ None | 🟢 |
+| 53 | Training System | ❌ None | 🟢 |
+| 54 | Workflow Builder | ❌ None | 🟢 |
+| 55 | Incident Reports | ❌ None | 🟢 |
+| 56 | SLA Monitoring | ❌ None | 🟡 |
+| 57 | Deadline Alerts | ❌ None | 🟢 |
+| 58 | Milestones | ❌ None | 🟡 |
+| 59 | Stakeholder Mapper | ❌ None | 🟡 |
+| 60 | Collaboration Hub | ⚠️ Partial | 🟢 |
+| 61 | SLA Rule Builder | ❌ None | 🟡 |
+
+### 8.7 Platform Infrastructure (16 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 62 | Onboarding | ❌ None | 🟡 |
+| 63 | Gamification | ❌ None | 🟢 |
+| 64 | Search System | ❌ None | 🟢 |
+| 65 | AI Assistant | ❌ None | 🟡 |
+| 66 | AI Risk Forecast | ⚠️ Generic | 🟢 |
+| 67 | Voice Assistant | ❌ None | 🟢 |
+| 68 | Taxonomy System | ❌ None | 🟡 |
+| 69 | Translation | ❌ None | 🟢 |
+| 70 | Testing System | ❌ None | 🟢 |
+| 71 | Media Library | ❌ None | 🟢 |
+| 72 | Bookmarks | ❌ None | 🟢 |
+| 73 | PWA Config | ❌ None | 🟢 |
+| 74 | Open Data Catalog | ❌ None | 🟢 |
+| 75 | Webhook Builder | ❌ None | 🟡 |
+| 76 | OAuth Connector | ❌ None | 🟢 |
+| 77 | Dashboard Builder | ❌ None | 🔴 |
+
+### 8.8 Governance & Compliance (11 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 78 | Policies | ❌ UI Missing | 🟡 |
+| 79 | Committee Decisions | ✅ Has column | 🟢 |
+| 80 | Approval System | ⚠️ Partial | 🟢 |
+| 81 | Audit Trail | ⚠️ Logs changes | 🟢 |
+| 82 | Gates System | ⚠️ Has gate | 🟢 |
+| 83 | Compliance | ❌ None | 🟢 |
+| 84 | Delegation Rules | ❌ None | 🟢 |
+| 85 | Risks System | ❌ None | 🟡 |
+| 86 | Regulatory Exemptions | ❌ None | 🟡 |
+| 87 | Approval Matrix | ❌ None | 🔴 |
+| 88 | KPI Alert Config | ❌ None | 🔴 |
+
+### 8.9 Planning & Portfolio (6 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 89 | Portfolio Mgmt | ⚠️ Partial | 🟢 |
+| 90 | Gantt/Timeline | ❌ None | 🟡 |
+| 91 | Capacity Planning | ❌ None | 🟡 |
+| 92 | AI Workflow Optimizer | ❌ None | 🟡 |
+| 93 | Regions Management | ❌ None | 🟡 |
+| 94 | Multi-Year Roadmap | ⚠️ Partial | 🟢 |
+
+### 8.10 Security & DevOps (8 Systems)
+
+| # | System | Strategy Integration | Priority |
+|---|--------|---------------------|----------|
+| 95 | API Key Management | ❌ None | 🟢 |
+| 96 | Security Audit | ❌ None | 🟢 |
+| 97 | Threat Detection | ❌ None | 🟢 |
+| 98 | Row Level Security | ❌ None | 🟢 |
+
+---
+
+## SECTION 9: PRIORITY REMEDIATION ROADMAP
 
 ### Priority 1: Critical (Blocks Strategy Value) - Sprint 1-2
 
@@ -559,116 +648,105 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 | 7 | MII-Strategy link | Add baseline import | 8h |
 | 8 | Citizen Ideas objective link | Add column + UI | 4h |
 | 9 | Marketing campaigns schema | Add columns | 2h |
+| 10 | Dashboard Builder link | Connect to strategic KPIs | 6h |
+| 11 | KPI Alert Config link | Add strategic thresholds | 4h |
+| 12 | Approval Matrix link | Add strategic chains | 4h |
 
 ### Priority 2: High (Limits Strategy Visibility) - Sprint 3-4
 
 | # | Gap | Fix | Effort |
 |---|-----|-----|--------|
-| 10 | PartnershipCreate missing | Create component | 4h |
-| 11 | EventCreate selector | Add UI | 2h |
-| 12 | PolicyCreate selector | Add UI | 2h |
-| 13 | RDProjectDetail section | Add component | 3h |
-| 14 | ScalingPlanDetail section | Add component | 3h |
-| 15 | Visibility hooks filters | Add strategy filter | 8h |
-| 16 | Startup strategic areas | Add column + onboarding | 4h |
-| 17 | Executive Dashboard strategy | Link to plans | 4h |
-| 18 | Citizen Feedback strategy | Add context | 3h |
+| 13 | PartnershipCreate missing | Create component | 4h |
+| 14 | EventCreate selector | Add UI | 2h |
+| 15 | PolicyCreate selector | Add UI | 2h |
+| 16 | RDProjectDetail section | Add component | 3h |
+| 17 | ScalingPlanDetail section | Add component | 3h |
+| 18 | Visibility hooks filters | Add strategy filter | 8h |
+| 19 | Startup strategic areas | Add column + onboarding | 4h |
+| 20 | Executive Dashboard strategy | Link to plans | 4h |
+| 21 | Citizen Feedback strategy | Add context | 3h |
+| 22 | Risks system strategic link | Add columns | 3h |
+| 23 | Milestones strategic link | Add columns | 3h |
+| 24 | SLA Rule Builder strategic | Add tiers | 3h |
+| 25 | Webhook strategic triggers | Add events | 3h |
+| 26 | Regional priorities | Add strategic support | 3h |
+| 27 | AI Workflow strategic | Add priority | 3h |
 
 ### Priority 3: Medium - Sprint 5-6
 
 | # | Gap | Fix | Effort |
 |---|-----|-----|--------|
-| 19 | Standardize selectors | Migrate to StrategicPlanSelector | 4h |
-| 20 | Strategy detail components | Create reusable | 8h |
-| 21 | Task-Strategy integration | Link action items | 8h |
-| 22 | Notification types | Add strategy types | 6h |
-| 23 | Evaluation context | Add column | 4h |
-| 24 | AI Assistant context | Add strategy awareness | 8h |
-| 25 | Gamification strategy | Add achievements | 6h |
-| 26 | Onboarding strategy | Add role/expertise | 4h |
+| 28 | Standardize selectors | Migrate to StrategicPlanSelector | 4h |
+| 29 | Strategy detail components | Create reusable | 8h |
+| 30 | Task-Strategy integration | Link action items | 8h |
+| 31 | Notification types | Add strategy types | 6h |
+| 32 | Evaluation context | Add column | 4h |
+| 33 | AI Assistant context | Add strategy awareness | 8h |
+| 34 | Gamification strategy | Add achievements | 6h |
+| 35 | Onboarding strategy | Add role/expertise | 4h |
+| 36 | Data Integrity strategic | Add governance | 3h |
+| 37 | Impact Stories strategic | Add link | 2h |
 
 ### Priority 4: Enhancement - Q2 2025
 
 | # | Gap | Description | Effort |
 |---|-----|-------------|--------|
-| 27 | Reports strategy metrics | Add templates | 8h |
-| 28 | Academia strategy | Research alignment | 8h |
-| 29 | Training strategic | Capability paths | 6h |
-| 30 | Portfolio strategic | Priority weighting | 8h |
-| 31 | Search strategy facets | Add filters | 4h |
-| 32 | Voice strategy commands | Add commands | 4h |
+| 38 | Reports strategy metrics | Add templates | 8h |
+| 39 | Academia strategy | Research alignment | 8h |
+| 40 | Training strategic | Capability paths | 6h |
+| 41 | Portfolio strategic | Priority weighting | 8h |
+| 42 | Search strategy facets | Add filters | 4h |
+| 43 | Voice strategy commands | Add commands | 4h |
+| 44 | Security strategic | Asset priority | 4h |
+| 45 | Open Data strategic | Publishing | 3h |
 
 ---
 
-## SECTION 9: SUMMARY STATISTICS
+## SECTION 10: SUMMARY STATISTICS
 
-### 9.1 Overall Integration Status
+### 10.1 Overall Integration Status
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Total Systems Identified | 75 | 100% |
-| Fully Integrated | 10 | 13% |
-| Partially Integrated | 18 | 24% |
-| Not Integrated | 47 | 63% |
-| **Overall Integration** | - | **~35%** |
+| Total Systems Identified | 98 | 100% |
+| Fully Integrated | 10 | 10% |
+| Partially Integrated | 23 | 23% |
+| Not Integrated | 65 | 66% |
+| **Overall Integration** | - | **~32%** |
 
-### 9.2 Gap Breakdown by Priority
+### 10.2 Gap Breakdown by Priority
 
 | Priority | Count | Description |
 |----------|-------|-------------|
-| 🔴 Critical | 9 | Blocks core strategy value |
-| 🟡 High | 24 | Limits strategy visibility |
-| 🟢 Medium | 25 | Improves strategy UX |
-| 🟢 Low | 17 | Future enhancement |
+| 🔴 Critical | 12 | Blocks core strategy value |
+| 🟡 High | 28 | Limits strategy visibility |
+| 🟢 Medium | 32 | Improves strategy UX |
+| 🟢 Low | 26 | Future enhancement |
 
-### 9.3 Effort Estimation
+### 10.3 Effort Estimation
 
 | Priority | Gaps | Est. Hours | Est. Sprints |
 |----------|------|------------|--------------|
-| Critical | 9 | 35h | 1-2 sprints |
-| High | 15 | 60h | 3 sprints |
-| Medium | 12 | 72h | 3-4 sprints |
-| Enhancement | 10 | 50h | 2+ sprints |
-| **TOTAL** | **46** | **217h** | **~10 sprints** |
+| Critical | 12 | 49h | 2 sprints |
+| High | 15 | 55h | 2-3 sprints |
+| Medium | 12 | 68h | 3-4 sprints |
+| Enhancement | 8 | 45h | 2 sprints |
+| **TOTAL** | **47** | **217h** | **~10 sprints** |
 
----
+### 10.4 Coverage by System Category
 
-## SECTION 10: NEWLY IDENTIFIED SYSTEMS (v3 Additions)
-
-### 10.1 Additional Systems Found in Deep Audit
-
-| # | System | Location | Strategy Integration | Gap Level |
-|---|--------|----------|---------------------|-----------|
-| 60 | **Gates System** | `src/components/gates/*` | ⚠️ Has StrategicPlanApprovalGate only | 🟢 Medium |
-| 61 | **Taxonomy System** | `src/components/taxonomy/*` | ❌ No strategic categorization | 🟡 High |
-| 62 | **Scaling Components** | `src/components/scaling/*` | ⚠️ Generic strategic mentions | 🟡 High |
-| 63 | **Testing System** | `src/components/testing/*` | ❌ No strategic test scenarios | 🟢 Low |
-| 64 | **Translation System** | `src/components/translation/*` | ❌ No strategic content priority | 🟢 Low |
-| 65 | **Stakeholder Mapping** | `StakeholderMapper.jsx` | ❌ No link to strategic stakeholders | 🟡 High |
-| 66 | **Delegation Rules** | `delegation_rules` table | ❌ No strategic delegation | 🟢 Medium |
-| 67 | **Milestones System** | `milestones` table | ❌ No strategic milestone tracking | 🟡 High |
-| 68 | **Risks System** | `risks` table | ❌ No strategic risk alignment | 🟡 High |
-| 69 | **Messaging System** | `messages` table | ❌ No strategic context | 🟢 Low |
-| 70 | **Media Library** | `media_files` table | ❌ No strategic asset tagging | 🟢 Low |
-| 71 | **Bookmarks System** | `bookmarks` table | ❌ No strategic bookmarks | 🟢 Low |
-| 72 | **Impact Stories** | `impact_stories` table | ❌ No strategic outcome link | 🟢 Medium |
-| 73 | **Incident Reports** | `incident_reports` table | ❌ No strategic risk link | 🟢 Medium |
-| 74 | **Regulatory Exemptions** | `regulatory_exemptions` table | ❌ No strategic justification | 🟡 High |
-| 75 | **Sector Strategies** | `sector_strategies` table | ✅ Strategy-native table | ✅ Complete |
-
-### 10.2 Edge Functions Strategy Integration
-
-| Category | Total Functions | Strategy-Related | Gap |
-|----------|-----------------|------------------|-----|
-| Strategy Edge Functions | 25 | 25 (100%) | ✅ Complete |
-| Non-Strategy Edge Functions | 50 | 3 (6%) | ❌ 47 functions have no strategy context |
-
-**Non-Strategy Edge Functions Missing Strategy Context:**
-- `calculate-mii` - Should link to strategic KPI targets
-- `budget-approval` - Should verify strategic alignment
-- `initiative-launch` - Should check strategy derivation
-- `portfolio-review` - Should consider strategic priorities
-- `auto-expert-assignment` - Should consider strategic expertise
+| Category | Total | Integrated | % |
+|----------|-------|------------|---|
+| Core Innovation | 14 | 5 | 36% |
+| R&D & Research | 8 | 1 | 13% |
+| Communications | 11 | 2 | 18% |
+| Financial | 7 | 0 | 0% |
+| Citizen/Public | 9 | 0 | 0% |
+| Support/Ops | 12 | 2 | 17% |
+| Platform Infra | 16 | 1 | 6% |
+| Governance | 11 | 3 | 27% |
+| Planning | 6 | 1 | 17% |
+| Security | 8 | 0 | 0% |
 
 ---
 
@@ -678,6 +756,5 @@ After exhaustive audit of the **entire platform codebase** against the Strategy 
 |---------|------|---------|
 | v1 | 2025-12-14 | Initial gaps analysis (12 systems) |
 | v2 | 2025-12-14 | Deep analysis expanded to 47 systems |
-| v3 | 2025-12-14 | **Complete platform audit: 75 systems identified, 63 new systems analyzed, edge functions reviewed** |
-| v2 | 2025-12-14 | Deep analysis of 25+ systems |
-| v3 | 2025-12-14 | **Complete audit of 59 systems; identified 35 previously uncovered systems** |
+| v3 | 2025-12-14 | Complete platform audit: 75 systems identified |
+| **v4** | **2025-12-14** | **Complete audit: 98 systems identified, 23 new systems (Security, Data Management, Workflows, KPI, Open Data), 18 system-level conflicts documented** |
