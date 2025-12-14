@@ -22,10 +22,13 @@ serve(async (req) => {
     console.log(`Generating program themes for program: ${program_id}`);
 
     let themes: Array<{
-      name: string;
-      description: string;
+      name_en: string;
+      name_ar: string;
+      description_en: string;
+      description_ar: string;
       objectives: string[];
       target_outcomes: string[];
+      recommended_type: string;
     }> = [];
 
     if (LOVABLE_API_KEY) {
@@ -34,13 +37,16 @@ serve(async (req) => {
       Strategic Goals: ${JSON.stringify(strategic_goals || [])}
       Sector Focus: ${sector_focus || 'general'}
       
-      For each theme provide:
-      - Theme Name
-      - Description (2-3 sentences)
-      - Key Objectives (3 bullet points)
-      - Target Outcomes (3 bullet points)
+      For each theme provide (MUST use these exact field names):
+      - name_en: Theme name in English
+      - name_ar: Theme name in Arabic
+      - description_en: Description in English (2-3 sentences)
+      - description_ar: Description in Arabic (2-3 sentences)
+      - objectives: Array of 3 key objectives (strings)
+      - target_outcomes: Array of 3 measurable outcomes (strings)
+      - recommended_type: One of: capacity_building, innovation_challenge, mentorship, accelerator, training
       
-      Format as JSON array.`;
+      Format as JSON array of themes.`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -70,26 +76,35 @@ serve(async (req) => {
       }
     }
 
-    // Fallback themes
+    // Fallback themes with bilingual fields expected by UI
     if (themes.length === 0) {
       themes = [
         {
-          name: 'Digital Transformation',
-          description: 'Accelerating digital adoption across municipal services.',
+          name_en: 'Digital Transformation',
+          name_ar: 'التحول الرقمي',
+          description_en: 'Accelerating digital adoption across municipal services.',
+          description_ar: 'تسريع التبني الرقمي عبر الخدمات البلدية.',
           objectives: ['Modernize legacy systems', 'Improve citizen access', 'Enhance efficiency'],
-          target_outcomes: ['50% digital service adoption', 'Reduced processing time', 'Cost savings']
+          target_outcomes: ['50% digital service adoption', 'Reduced processing time', 'Cost savings'],
+          recommended_type: 'capacity_building'
         },
         {
-          name: 'Sustainable Innovation',
-          description: 'Promoting environmentally conscious innovation solutions.',
+          name_en: 'Sustainable Innovation',
+          name_ar: 'الابتكار المستدام',
+          description_en: 'Promoting environmentally conscious innovation solutions.',
+          description_ar: 'تعزيز حلول الابتكار الصديقة للبيئة.',
           objectives: ['Reduce carbon footprint', 'Promote green tech', 'Support circular economy'],
-          target_outcomes: ['Carbon reduction targets', 'Green procurement increase', 'Waste reduction']
+          target_outcomes: ['Carbon reduction targets', 'Green procurement increase', 'Waste reduction'],
+          recommended_type: 'innovation_challenge'
         },
         {
-          name: 'Citizen Engagement',
-          description: 'Enhancing citizen participation in municipal innovation.',
+          name_en: 'Citizen Engagement',
+          name_ar: 'مشاركة المواطنين',
+          description_en: 'Enhancing citizen participation in municipal innovation.',
+          description_ar: 'تعزيز مشاركة المواطنين في الابتكار البلدي.',
           objectives: ['Increase participation', 'Improve feedback loops', 'Build trust'],
-          target_outcomes: ['Higher engagement rates', 'Faster response times', 'Improved satisfaction']
+          target_outcomes: ['Higher engagement rates', 'Faster response times', 'Improved satisfaction'],
+          recommended_type: 'mentorship'
         }
       ];
     }
