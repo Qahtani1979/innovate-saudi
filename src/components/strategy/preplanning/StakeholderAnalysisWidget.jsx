@@ -395,8 +395,8 @@ export default function StakeholderAnalysisWidget({
       // Map database fields to component fields
       const mapped = dbStakeholders.map(s => ({
         id: s.id,
-        name_en: s.name_en,
-        name_ar: s.name_ar,
+        name_en: s.stakeholder_name_en,
+        name_ar: s.stakeholder_name_ar,
         type: s.stakeholder_type,
         power: s.power_level,
         interest: s.interest_level,
@@ -418,8 +418,8 @@ export default function StakeholderAnalysisWidget({
       setStakeholders(prev => {
         const mapped = {
           id: result.id,
-          name_en: result.name_en,
-          name_ar: result.name_ar,
+          name_en: result.stakeholder_name_en,
+          name_ar: result.stakeholder_name_ar,
           type: result.stakeholder_type,
           power: result.power_level,
           interest: result.interest_level,

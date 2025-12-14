@@ -1,9 +1,9 @@
 # Strategy System Inventory
 
-> **Version:** 1.6  
+> **Version:** 1.7  
 > **Last Updated:** 2025-12-14  
 > **Total Assets:** 123 files (21 pages, 55 components, 30 hooks + 2 context files + 15 registered routes)
-> **Schema Audit:** ✅ All hooks verified against database schema
+> **Schema Audit:** ✅ All hooks and components verified against database schema
 
 ---
 
@@ -46,6 +46,18 @@ All strategy pages use a shared global context for maintaining the active strate
 ### Delete Strategy
 - **No soft delete**: Strategy tables do NOT have `is_deleted` columns
 - All hooks use **hard delete** (`.delete()`) instead of soft delete
+
+### Component Field Mappings (Fixed 2025-12-14)
+| Component | DB Field → Component Field |
+|-----------|---------------------------|
+| `SWOTAnalysisBuilder` | `title_en`/`title_ar` → display fields, `description_en`/`description_ar` |
+| `StakeholderAnalysisWidget` | `stakeholder_name_en` → `name_en`, `power_level` → `power` |
+| `RiskAssessmentBuilder` | `owner_email` → `owner`, `category` (not `risk_category`) |
+
+### Pages Using Global Context (All 6 Preplanning + All Generator Pages)
+- ✅ EnvironmentalScanPage, SWOTAnalysisPage, StakeholderAnalysisPage
+- ✅ RiskAssessmentPage, BaselineDataPage, StrategyInputPage
+- ✅ All 8 cascade generator pages
 
 ---
 

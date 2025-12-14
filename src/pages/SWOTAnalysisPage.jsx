@@ -1,19 +1,23 @@
 import React from 'react';
 import SWOTAnalysisBuilder from '@/components/strategy/preplanning/SWOTAnalysisBuilder';
+import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 
 function SWOTAnalysisPage() {
   const { t } = useLanguage();
+  const { activePlanId, activePlan } = useActivePlan();
 
   const handleSave = (swotData) => {
     console.log('SWOT Data saved:', swotData);
-    // TODO: Persist to database when strategic_swot_analyses table is created
   };
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-6">
+    <div className="container mx-auto py-6 px-4 space-y-6">
+      <ActivePlanBanner />
+      
+      <div>
         <h1 className="text-2xl font-bold">
           {t({ en: 'SWOT Analysis', ar: 'تحليل SWOT' })}
         </h1>
@@ -25,7 +29,11 @@ function SWOTAnalysisPage() {
         </p>
       </div>
       
-      <SWOTAnalysisBuilder onSave={handleSave} />
+      <SWOTAnalysisBuilder 
+        strategicPlanId={activePlanId}
+        strategicPlan={activePlan}
+        onSave={handleSave} 
+      />
     </div>
   );
 }

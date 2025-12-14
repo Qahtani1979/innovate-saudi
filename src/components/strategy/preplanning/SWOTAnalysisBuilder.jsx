@@ -106,11 +106,11 @@ function SWOTItem({ item, category, onEdit, onDelete, language, t }) {
         <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab" />
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-medium ${config.textColor}`}>
-            {language === 'ar' && item.text_ar ? item.text_ar : item.text_en}
+            {language === 'ar' && item.title_ar ? item.title_ar : item.title_en}
           </p>
-          {item.description && (
+          {(item.description_en || item.description) && (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-              {item.description}
+              {language === 'ar' ? (item.description_ar || item.description_en) : (item.description_en || item.description)}
             </p>
           )}
           <div className="flex items-center gap-2 mt-2">
@@ -201,21 +201,31 @@ function SWOTQuadrant({ category, items, onAddItem, onEditItem, onDeleteItem, la
 // Add/Edit Item Dialog
 function ItemDialog({ open, onOpenChange, category, item, onSave, language, t }) {
   const [formData, setFormData] = useState(item || {
-    text_en: '',
-    text_ar: '',
-    description: '',
+    title_en: '',
+    title_ar: '',
+    description_en: '',
+    description_ar: '',
     priority: 'medium',
     source: ''
   });
 
   React.useEffect(() => {
     if (item) {
-      setFormData(item);
+      setFormData({
+        title_en: item.title_en || '',
+        title_ar: item.title_ar || '',
+        description_en: item.description_en || '',
+        description_ar: item.description_ar || '',
+        priority: item.priority || 'medium',
+        source: item.source || '',
+        id: item.id
+      });
     } else {
       setFormData({
-        text_en: '',
-        text_ar: '',
-        description: '',
+        title_en: '',
+        title_ar: '',
+        description_en: '',
+        description_ar: '',
         priority: 'medium',
         source: ''
       });
@@ -225,7 +235,7 @@ function ItemDialog({ open, onOpenChange, category, item, onSave, language, t })
   const config = category ? SWOT_CATEGORIES[category] : null;
 
   const handleSubmit = () => {
-    if (!formData.text_en.trim()) {
+    if (!formData.title_en.trim()) {
       toast.error(t({ en: 'Please enter item text', ar: 'يرجى إدخال نص العنصر' }));
       return;
     }
@@ -250,29 +260,39 @@ function ItemDialog({ open, onOpenChange, category, item, onSave, language, t })
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>{t({ en: 'Text (English)', ar: 'النص (إنجليزي)' })}</Label>
+            <Label>{t({ en: 'Title (English)', ar: 'العنوان (إنجليزي)' })}</Label>
             <Input
-              value={formData.text_en}
-              onChange={(e) => setFormData({ ...formData, text_en: e.target.value })}
-              placeholder={t({ en: 'Enter item text...', ar: 'أدخل نص العنصر...' })}
+              value={formData.title_en}
+              onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
+              placeholder={t({ en: 'Enter item title...', ar: 'أدخل عنوان العنصر...' })}
             />
           </div>
           <div className="space-y-2">
-            <Label>{t({ en: 'Text (Arabic)', ar: 'النص (عربي)' })}</Label>
+            <Label>{t({ en: 'Title (Arabic)', ar: 'العنوان (عربي)' })}</Label>
             <Input
-              value={formData.text_ar}
-              onChange={(e) => setFormData({ ...formData, text_ar: e.target.value })}
-              placeholder={t({ en: 'Enter Arabic text...', ar: 'أدخل النص العربي...' })}
+              value={formData.title_ar}
+              onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
+              placeholder={t({ en: 'Enter Arabic title...', ar: 'أدخل العنوان العربي...' })}
               dir="rtl"
             />
           </div>
           <div className="space-y-2">
-            <Label>{t({ en: 'Description', ar: 'الوصف' })}</Label>
+            <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
             <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              value={formData.description_en}
+              onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
               placeholder={t({ en: 'Additional details...', ar: 'تفاصيل إضافية...' })}
-              rows={3}
+              rows={2}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
+            <Textarea
+              value={formData.description_ar}
+              onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+              placeholder={t({ en: 'Arabic description...', ar: 'الوصف بالعربية...' })}
+              rows={2}
+              dir="rtl"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
