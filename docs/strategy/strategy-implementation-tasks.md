@@ -206,9 +206,9 @@ The preplanning phase collects PESTLE factors, SWOT analysis, and stakeholder in
 #### TASK-P2-001: Create Strategy Context Aggregator Hook
 **Priority:** 🔴 CRITICAL  
 **Effort:** 2h  
-**Status:** ❌ Not Started
+**Status:** ✅ COMPLETED (2025-12-14)
 
-Create `useStrategyContext.js` hook that fetches and aggregates:
+Created `src/hooks/strategy/useStrategyContext.js` that fetches and aggregates:
 - All existing strategic plans
 - Entity counts by sector
 - Unresolved challenges
@@ -245,7 +245,7 @@ export function useStrategyContext() {
 #### TASK-P2-002: Enhance StrategicPlanBuilder with Context
 **Priority:** 🔴 CRITICAL  
 **Effort:** 1.5h  
-**Status:** ❌ Not Started
+**Status:** ✅ COMPLETED (2025-12-14)
 
 Update `StrategicPlanBuilder.jsx` to:
 1. Use `useStrategyContext()` hook
@@ -259,7 +259,7 @@ Update `StrategicPlanBuilder.jsx` to:
 #### TASK-P2-003: Add Deduplication to StrategyObjectiveGenerator
 **Priority:** 🔴 CRITICAL  
 **Effort:** 1h  
-**Status:** ❌ Not Started
+**Status:** ✅ COMPLETED (2025-12-14)
 
 Update `StrategyObjectiveGenerator.jsx` to:
 1. Fetch all existing objectives across all plans
