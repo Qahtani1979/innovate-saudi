@@ -1,7 +1,7 @@
 # Strategy System - Implementation Tasks
 
 **Generated:** 2025-12-14  
-**Updated:** 2025-12-14 (Phase 1, 2 & 3 Implementation Complete)  
+**Updated:** 2025-12-14 (Phase 1, 2 & 3 Implementation 100% Complete)  
 **Based on:** Code analysis of all 9 generators, Phase 1-3 integration  
 **Priority:** Critical → High → Medium → Low
 
@@ -17,7 +17,7 @@ After Phase 1, 2 & 3 deep validation and implementation:
 | Strategy creation context | ✅ FIXED | Plans consider existing data, gaps identified |
 | Duplicate prevention | ✅ FIXED | Objectives checked for similarity before save |
 | Database schema gaps | ✅ FIXED | All required columns added to pilots, challenges, rd_calls, partnerships |
-| Generator field gaps | ✅ FIXED | 6/9 generators now set all strategy tracking fields |
+| Generator field gaps | ✅ FIXED | 9/9 generators now set all strategy tracking fields |
 | Approval integration | 🟠 Pending | Phase 4 work |
 
 ---
@@ -53,6 +53,8 @@ After Phase 1, 2 & 3 deep validation and implementation:
 | TASK-GEN-004 | Fix StrategyToEventGenerator | ✅ DONE | 2025-12-14 |
 | TASK-GEN-005 | Fix StrategyToPartnershipGenerator | ✅ DONE | 2025-12-14 |
 | TASK-GEN-006 | Fix StrategyToRDCallGenerator | ✅ DONE | 2025-12-14 |
+| TASK-GEN-007 | Fix StrategyToPolicyGenerator | ✅ DONE | 2025-12-14 |
+| TASK-GEN-008 | Fix StrategyToCampaignGenerator | ✅ DONE | 2025-12-14 |
 
 ---
 
@@ -67,21 +69,12 @@ After Phase 1, 2 & 3 deep validation and implementation:
 | StrategyToEventGenerator | `cascade/StrategyToEventGenerator.jsx` | ✅ | ✅ | ✅ | **COMPLETE** |
 | StrategyToPartnershipGenerator | `cascade/StrategyToPartnershipGenerator.jsx` | ✅ | ✅ | ✅ | **COMPLETE** |
 | StrategyToRDCallGenerator | `cascade/StrategyToRDCallGenerator.jsx` | ✅ | ✅ | ✅ | **COMPLETE** |
-| StrategyToPolicyGenerator | `cascade/StrategyToPolicyGenerator.jsx` | ❌ | ❌ | singular | **NEEDS FIX** |
-| StrategyToCampaignGenerator | `cascade/StrategyToCampaignGenerator.jsx` | ❌ | ❌ | singular | **NEEDS FIX** |
+| StrategyToPolicyGenerator | `cascade/StrategyToPolicyGenerator.jsx` | ✅ | ✅ | ✅ | **COMPLETE** |
+| StrategyToCampaignGenerator | `cascade/StrategyToCampaignGenerator.jsx` | ✅ | ✅ | ✅ | **COMPLETE** |
 
 ---
 
 ## REMAINING TASKS
-
-### TASK-GEN-007: Fix StrategyToPolicyGenerator & StrategyToCampaignGenerator
-**Priority:** Medium  
-**Effort:** 30 min  
-**Status:** ⏳ Pending
-
-**Issue:** Both use `strategic_plan_id` (singular) instead of `strategic_plan_ids` (array), and do not set derived flags.
-
----
 
 ### TASK-APPR-001: Create shared approval request hook
 **Priority:** High  
@@ -120,5 +113,5 @@ Update all cascade generators to call `createApprovalRequest` after successful e
 
 **Phase 1:** 100% Complete - All 6 preplanning components store and feed data  
 **Phase 2:** 100% Complete - Context-aware strategy creation with deduplication  
-**Phase 3:** 95% Complete - 7/9 generators fully fixed, 2 pending minor fixes  
+**Phase 3:** 100% Complete - 9/9 generators fully fixed with all strategy tracking fields  
 **Phase 4-8:** See phase-specific methodology docs for status

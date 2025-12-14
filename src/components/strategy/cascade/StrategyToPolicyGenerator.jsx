@@ -72,7 +72,9 @@ export default function StrategyToPolicyGenerator({ onPolicyCreated }) {
           objectives: policy.objectives,
           stakeholders: policy.stakeholders,
           risk_level: policy.risk_level,
-          strategic_plan_id: selectedPlanId,
+          strategic_plan_ids: [selectedPlanId],
+          is_strategy_derived: true,
+          strategy_derivation_date: new Date().toISOString(),
           status: 'draft'
         })
         .select()
