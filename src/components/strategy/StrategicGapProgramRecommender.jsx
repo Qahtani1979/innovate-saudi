@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
-export default function StrategicGapProgramRecommender({ onProgramCreated }) {
+export default function StrategicGapProgramRecommender({ strategicPlanId, onProgramCreated }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const [recommendations, setRecommendations] = useState([]);
@@ -60,9 +60,12 @@ export default function StrategicGapProgramRecommender({ onProgramCreated }) {
   // Calculate strategic gaps
   const calculateGaps = () => {
     const gaps = [];
+    const scopedPlans = strategicPlanId
+      ? strategicPlans.filter(plan => plan.id === strategicPlanId)
+      : strategicPlans;
     
     // Gap 1: Strategic plans without programs
-    strategicPlans.forEach(plan => {
+    scopedPlans.forEach(plan => {
       const linkedPrograms = programs.filter(p => 
         p.strategic_plan_ids?.includes(plan.id)
       );
@@ -85,7 +88,7 @@ export default function StrategicGapProgramRecommender({ onProgramCreated }) {
     });
 
     // Gap 2: Objectives without coverage
-    strategicPlans.forEach(plan => {
+    scopedPlans.forEach(plan => {
       const objectives = plan.objectives || plan.strategic_objectives || [];
       objectives.forEach((obj, i) => {
         const objName = typeof obj === 'object' ? obj.name_en || obj.title : obj;

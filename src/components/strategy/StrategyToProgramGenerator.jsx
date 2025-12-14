@@ -12,10 +12,10 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
-export default function StrategyToProgramGenerator({ onProgramCreated }) {
+export default function StrategyToProgramGenerator({ strategicPlanId, onProgramCreated }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [selectedPlanId, setSelectedPlanId] = useState(strategicPlanId || '');
   const [generatedThemes, setGeneratedThemes] = useState([]);
   const [selectedThemes, setSelectedThemes] = useState([]);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();

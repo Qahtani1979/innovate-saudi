@@ -21,7 +21,6 @@ function StrategicInitiativeTracker() {
       const { data, error } = await supabase
         .from('strategic_plans')
         .select('*')
-        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];

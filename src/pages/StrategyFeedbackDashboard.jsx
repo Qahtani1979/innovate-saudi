@@ -13,10 +13,13 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import StrategyToProgramGenerator from '../components/strategy/StrategyToProgramGenerator';
 import StrategicGapProgramRecommender from '../components/strategy/StrategicGapProgramRecommender';
 import { useStrategicKPI } from '../hooks/useStrategicKPI';
+import ActivePlanBanner from '../components/strategy/ActivePlanBanner';
+import { useActivePlan } from '@/contexts/StrategicPlanContext';
 
 function StrategyFeedbackDashboardPage() {
   const { language, isRTL, t } = useLanguage();
   const { strategicPlans, strategicKPIs, getStrategicCoverage, isLoading: kpiLoading } = useStrategicKPI();
+  const { activePlanId, activePlan } = useActivePlan();
 
   const { data: programs = [], isLoading: programsLoading } = useQuery({
     queryKey: ['programs-feedback'],
@@ -82,6 +85,8 @@ function StrategyFeedbackDashboardPage() {
           {t({ en: 'Bidirectional integration between strategic planning and program execution', ar: 'التكامل ثنائي الاتجاه بين التخطيط الاستراتيجي وتنفيذ البرامج' })}
         </p>
       </div>
+
+      <ActivePlanBanner />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -188,11 +193,11 @@ function StrategyFeedbackDashboardPage() {
         </TabsList>
 
         <TabsContent value="generate" className="mt-6">
-          <StrategyToProgramGenerator />
+          <StrategyToProgramGenerator strategicPlanId={activePlanId} />
         </TabsContent>
 
         <TabsContent value="gaps" className="mt-6">
-          <StrategicGapProgramRecommender />
+          <StrategicGapProgramRecommender strategicPlanId={activePlanId} />
         </TabsContent>
 
         <TabsContent value="lessons" className="mt-6">

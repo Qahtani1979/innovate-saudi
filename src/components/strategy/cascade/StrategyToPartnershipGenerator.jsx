@@ -115,23 +115,7 @@ export default function StrategyToPartnershipGenerator({ strategicPlanId, strate
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              {t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })}
-            </label>
-            <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t({ en: 'Select a plan', ar: 'اختر خطة' })} />
-              </SelectTrigger>
-              <SelectContent>
-                {strategicPlans?.map(plan => (
-                  <SelectItem key={plan.id} value={plan.id}>
-                    {isRTL ? plan.name_ar : plan.name_en}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Active strategic plan comes from global context */}
 
           <div className="space-y-3">
             <label className="text-sm font-medium">
