@@ -1,10 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 
+// Safe hook to get user email without throwing if outside AuthProvider
+const useUserEmail = () => {
+  const [email, setEmail] = useState(null);
+  
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setEmail(user?.email || null);
+    };
+    getUser();
+  }, []);
+  
+  return email;
+};
+
 export function useEnvironmentalFactors(strategicPlanId) {
-  const { user } = useAuth();
+  const userEmail = useUserEmail();
   const [factors, setFactors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,7 +69,7 @@ export function useEnvironmentalFactors(strategicPlanId) {
 
   // Save factor to database
   const saveFactor = useCallback(async (factor) => {
-    if (!strategicPlanId || !user?.email) {
+    if (!strategicPlanId || !userEmail) {
       toast.error('Please log in to save');
       return false;
     }
@@ -74,7 +88,7 @@ export function useEnvironmentalFactors(strategicPlanId) {
         trend: factor.trend,
         source: factor.source,
         date_identified: factor.date_identified || new Date().toISOString().split('T')[0],
-        created_by_email: user.email,
+        created_by_email: userEmail,
         updated_at: new Date().toISOString()
       };
 
@@ -129,7 +143,7 @@ export function useEnvironmentalFactors(strategicPlanId) {
     } finally {
       setSaving(false);
     }
-  }, [strategicPlanId, user]);
+  }, [strategicPlanId, userEmail]);
 
   // Delete factor (soft delete)
   const deleteFactor = useCallback(async (id) => {

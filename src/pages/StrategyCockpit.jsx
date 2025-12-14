@@ -1,31 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from '../components/LanguageContext';
-import { Target, TrendingUp, Users, Zap, AlertTriangle, CheckCircle2, Sparkles, Loader2, X, ArrowRight, BookOpen } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLanguage } from '../components/LanguageContext';
+import { 
+  Target, TrendingUp, Users, Zap, AlertTriangle, CheckCircle2, 
+  Sparkles, Loader2, X, ArrowRight, Eye, Clock, FileText,
+  ExternalLink, ChevronRight, BarChart3, DollarSign, Layers
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import ResourceAllocationView from '../components/strategy/ResourceAllocationView';
 import PartnershipNetwork from '../components/strategy/PartnershipNetwork';
 import BottleneckDetector from '../components/strategy/BottleneckDetector';
-import StrategyToProgramGenerator from '../components/strategy/StrategyToProgramGenerator';
-import StrategicGapProgramRecommender from '../components/strategy/StrategicGapProgramRecommender';
 import StrategicCoverageWidget from '../components/strategy/StrategicCoverageWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { useStrategicKPI } from '@/hooks/useStrategicKPI';
 
 function StrategyCockpitPage() {
   const { language, isRTL, t } = useLanguage();
-  const [showAIInsights, setShowAIInsights] = React.useState(false);
-  const [aiInsights, setAiInsights] = React.useState(null);
-  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const [showAIInsights, setShowAIInsights] = useState(false);
+  const [aiInsights, setAiInsights] = useState(null);
+  const [selectedPlanId, setSelectedPlanId] = useState('all');
+  const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
 
   const { data: trendData = [] } = useQuery({
     queryKey: ['strategy-trends'],
@@ -37,7 +38,7 @@ function StrategyCockpitPage() {
   });
 
   const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
+    queryKey: ['challenges-cockpit'],
     queryFn: async () => {
       const { data, error } = await supabase.from('challenges').select('*').eq('is_deleted', false);
       if (error) throw error;
@@ -46,7 +47,7 @@ function StrategyCockpitPage() {
   });
 
   const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
+    queryKey: ['pilots-cockpit'],
     queryFn: async () => {
       const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
       if (error) throw error;
@@ -55,7 +56,7 @@ function StrategyCockpitPage() {
   });
 
   const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
+    queryKey: ['solutions-cockpit'],
     queryFn: async () => {
       const { data, error } = await supabase.from('solutions').select('*').eq('is_deleted', false);
       if (error) throw error;
@@ -64,7 +65,7 @@ function StrategyCockpitPage() {
   });
 
   const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
+    queryKey: ['rd-projects-cockpit'],
     queryFn: async () => {
       const { data, error } = await supabase.from('rd_projects').select('*').eq('is_deleted', false);
       if (error) throw error;
@@ -73,7 +74,7 @@ function StrategyCockpitPage() {
   });
 
   const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
+    queryKey: ['programs-cockpit'],
     queryFn: async () => {
       const { data, error } = await supabase.from('programs').select('*').eq('is_deleted', false);
       if (error) throw error;
@@ -82,13 +83,41 @@ function StrategyCockpitPage() {
   });
 
   const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
+    queryKey: ['strategic-plans-cockpit'],
     queryFn: async () => {
       const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
       if (error) throw error;
       return data || [];
     }
   });
+
+  const { data: approvals = [] } = useQuery({
+    queryKey: ['pending-approvals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('approval_requests')
+        .select('*')
+        .eq('approval_status', 'pending')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Filter data by selected strategic plan
+  const filteredChallenges = selectedPlanId === 'all' 
+    ? challenges 
+    : challenges.filter(c => c.strategic_plan_ids?.includes(selectedPlanId));
+  
+  const filteredPilots = selectedPlanId === 'all'
+    ? pilots
+    : pilots.filter(p => p.strategic_plan_ids?.includes(selectedPlanId));
+
+  const filteredPrograms = selectedPlanId === 'all'
+    ? programs
+    : programs.filter(p => p.strategic_plan_ids?.includes(selectedPlanId));
 
   const roadmapData = ['Q1 2025', 'Q2 2025', 'Q3 2025', 'Q4 2025'].map(quarter => ({
     quarter,
@@ -100,10 +129,10 @@ function StrategyCockpitPage() {
   const sectors = ['urban_design', 'transport', 'environment', 'digital_services'];
   const portfolioHeatmap = sectors.map(sector => ({
     sector: sector.replace(/_/g, ' '),
-    discover: challenges.filter(c => c.sector === sector && c.status === 'draft').length,
-    validate: challenges.filter(c => c.sector === sector && c.status === 'under_review').length,
-    pilot: pilots.filter(p => p.sector === sector && p.stage === 'in_progress').length,
-    scale: pilots.filter(p => p.sector === sector && p.stage === 'scaled').length,
+    discover: filteredChallenges.filter(c => c.sector === sector && c.status === 'draft').length,
+    validate: filteredChallenges.filter(c => c.sector === sector && c.status === 'under_review').length,
+    pilot: filteredPilots.filter(p => p.sector === sector && p.stage === 'in_progress').length,
+    scale: filteredPilots.filter(p => p.sector === sector && p.stage === 'scaled').length,
   }));
 
   const capacityData = [
@@ -118,18 +147,19 @@ function StrategyCockpitPage() {
     setShowAIInsights(true);
     try {
       const result = await invokeAI({
-        prompt: `Analyze this strategic portfolio for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
+        prompt: `Analyze this strategic portfolio for Saudi municipal innovation and provide strategic insights:
 
-Challenges: ${challenges.length}
-Active Pilots: ${pilots.filter(p => p.stage === 'in_progress').length}
-Completed: ${pilots.filter(p => p.stage === 'completed').length}
-At Risk: ${pilots.filter(p => p.risk_level === 'high').length}
+Challenges: ${filteredChallenges.length}
+Active Pilots: ${filteredPilots.filter(p => p.stage === 'in_progress').length}
+Completed: ${filteredPilots.filter(p => p.stage === 'completed').length}
+At Risk: ${filteredPilots.filter(p => p.risk_level === 'high').length}
+Programs: ${filteredPrograms.length}
 
 Portfolio by Sector: ${JSON.stringify(portfolioHeatmap)}
 
-Provide bilingual insights (each item should have both English and Arabic versions):
+Provide insights in format:
 1. Strategic focus recommendations for next quarter
-2. Portfolio balance and diversification analysis
+2. Portfolio balance and diversification analysis  
 3. Risk mitigation priorities
 4. Acceleration opportunities
 5. Resource reallocation suggestions`,
@@ -154,24 +184,96 @@ Provide bilingual insights (each item should have both English and Arabic versio
     }
   };
 
+  // Metric card with drill-down
+  const MetricCard = ({ title, value, icon: Icon, color, bgColor, link, subtext }) => (
+    <Card className={`${bgColor} hover:shadow-md transition-shadow cursor-pointer group`}>
+      <Link to={link}>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600">{t(title)}</p>
+              <p className={`text-3xl font-bold ${color} mt-1`}>{value}</p>
+              {subtext && <p className="text-xs text-slate-500 mt-1">{subtext}</p>}
+            </div>
+            <div className="flex items-center gap-2">
+              <Icon className={`h-8 w-8 ${color}`} />
+              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+            </div>
+          </div>
+        </CardContent>
+      </Link>
+    </Card>
+  );
+
+  // Pipeline stage card with drill-down
+  const PipelineCard = ({ label, count, bgColor, textColor, link }) => (
+    <Link to={link}>
+      <Card className={`${bgColor} hover:shadow-md transition-all cursor-pointer group`}>
+        <CardContent className="pt-4 text-center">
+          <p className="text-xs text-slate-500 mb-1">{t(label)}</p>
+          <p className={`text-2xl font-bold ${textColor}`}>{count}</p>
+          <ExternalLink className="h-3 w-3 mx-auto mt-1 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </CardContent>
+      </Card>
+    </Link>
+  );
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
+      {/* Header with filters */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
             {t({ en: 'Strategy Cockpit', ar: 'لوحة الاستراتيجية' })}
           </h1>
           <p className="text-slate-600 mt-1">
-            {t({ en: 'Strategic planning and portfolio management', ar: 'التخطيط الاستراتيجي وإدارة المحفظة' })}
+            {t({ en: 'Real-time strategic monitoring & decision support', ar: 'المراقبة الاستراتيجية الفورية ودعم القرار' })}
           </p>
         </div>
-        <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
-          <Sparkles className="h-4 w-4" />
-          {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder={t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t({ en: 'All Strategic Plans', ar: 'جميع الخطط الاستراتيجية' })}</SelectItem>
+              {strategicPlans.map(plan => (
+                <SelectItem key={plan.id} value={plan.id}>
+                  {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" className="gap-2" onClick={handleAIInsights}>
+            <Sparkles className="h-4 w-4" />
+            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+          </Button>
+        </div>
       </div>
 
-      {/* AI Insights Modal */}
+      {/* Quick Actions Bar */}
+      {approvals.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-amber-600" />
+                <span className="font-medium text-amber-800">
+                  {t({ en: `${approvals.length} pending approval(s) require attention`, ar: `${approvals.length} موافقة(ات) معلقة تتطلب الاهتمام` })}
+                </span>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/approvals">
+                  {t({ en: 'Review All', ar: 'مراجعة الكل' })}
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Insights Panel */}
       {showAIInsights && (
         <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -187,7 +289,9 @@ Provide bilingual insights (each item should have both English and Arabic versio
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                <span className={`${isRTL ? 'mr-3' : 'ml-3'} text-slate-600`}>{t({ en: 'Analyzing strategy...', ar: 'جاري تحليل الاستراتيجية...' })}</span>
+                <span className={`${isRTL ? 'mr-3' : 'ml-3'} text-slate-600`}>
+                  {t({ en: 'Analyzing strategy...', ar: 'جاري تحليل الاستراتيجية...' })}
+                </span>
               </div>
             ) : aiInsights ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -252,121 +356,121 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   </div>
                 )}
               </div>
-            ) : null}
+            ) : (
+              <p className="text-center text-slate-500 py-4">
+                {t({ en: 'Click "AI Insights" to generate analysis', ar: 'انقر على "رؤى ذكية" لتوليد التحليل' })}
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Full Pipeline Metrics */}
+      {/* Full Innovation Pipeline with drill-downs */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <Card className="bg-gradient-to-br from-slate-50 to-white">
-          <CardContent className="pt-4 text-center">
-            <p className="text-xs text-slate-500 mb-1">{t({ en: 'Discover', ar: 'اكتشاف' })}</p>
-            <p className="text-2xl font-bold text-slate-600">{challenges.filter(c => c.status === 'draft' || c.status === 'submitted').length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-4 text-center">
-            <p className="text-xs text-slate-500 mb-1">{t({ en: 'Validate', ar: 'تحقق' })}</p>
-            <p className="text-2xl font-bold text-blue-600">{challenges.filter(c => c.status === 'under_review').length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
-          <CardContent className="pt-4 text-center">
-            <p className="text-xs text-slate-500 mb-1">{t({ en: 'Experiment', ar: 'تجربة' })}</p>
-            <p className="text-2xl font-bold text-purple-600">{rdProjects.filter(r => r.status === 'active').length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="pt-4 text-center">
-            <p className="text-xs text-slate-500 mb-1">{t({ en: 'Pilot', ar: 'تجريب' })}</p>
-            <p className="text-2xl font-bold text-green-600">{pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-orange-50 to-white">
-          <CardContent className="pt-4 text-center">
-            <p className="text-xs text-slate-500 mb-1">{t({ en: 'Scale', ar: 'توسع' })}</p>
-            <p className="text-2xl font-bold text-orange-600">{pilots.filter(p => p.stage === 'scaled').length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-teal-50 to-white">
-          <CardContent className="pt-4 text-center">
-            <p className="text-xs text-slate-500 mb-1">{t({ en: 'Institutionalize', ar: 'مأسسة' })}</p>
-            <p className="text-2xl font-bold text-teal-600">{solutions.filter(s => s.maturity_level === 'proven').length}</p>
-          </CardContent>
-        </Card>
+        <PipelineCard 
+          label={{ en: 'Discover', ar: 'اكتشاف' }}
+          count={filteredChallenges.filter(c => c.status === 'draft' || c.status === 'submitted').length}
+          bgColor="bg-gradient-to-br from-slate-50 to-white"
+          textColor="text-slate-600"
+          link="/Challenges?status=draft"
+        />
+        <PipelineCard 
+          label={{ en: 'Validate', ar: 'تحقق' }}
+          count={filteredChallenges.filter(c => c.status === 'under_review').length}
+          bgColor="bg-gradient-to-br from-blue-50 to-white"
+          textColor="text-blue-600"
+          link="/Challenges?status=under_review"
+        />
+        <PipelineCard 
+          label={{ en: 'Experiment', ar: 'تجربة' }}
+          count={rdProjects.filter(r => r.status === 'active').length}
+          bgColor="bg-gradient-to-br from-purple-50 to-white"
+          textColor="text-purple-600"
+          link="/rd-projects?status=active"
+        />
+        <PipelineCard 
+          label={{ en: 'Pilot', ar: 'تجريب' }}
+          count={filteredPilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length}
+          bgColor="bg-gradient-to-br from-green-50 to-white"
+          textColor="text-green-600"
+          link="/Pilots?stage=active"
+        />
+        <PipelineCard 
+          label={{ en: 'Scale', ar: 'توسع' }}
+          count={filteredPilots.filter(p => p.stage === 'scaled').length}
+          bgColor="bg-gradient-to-br from-orange-50 to-white"
+          textColor="text-orange-600"
+          link="/Pilots?stage=scaled"
+        />
+        <PipelineCard 
+          label={{ en: 'Institutionalize', ar: 'مأسسة' }}
+          count={solutions.filter(s => s.maturity_level === 'proven').length}
+          bgColor="bg-gradient-to-br from-teal-50 to-white"
+          textColor="text-teal-600"
+          link="/Solutions?maturity=proven"
+        />
       </div>
 
-      {/* Key Portfolio Metrics */}
+      {/* Key Portfolio Metrics with drill-downs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Total Challenges', ar: 'إجمالي التحديات' })}</p>
-                <p className="text-3xl font-bold text-blue-600 mt-1">{challenges.length}</p>
-              </div>
-              <Target className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Active Pilots', ar: 'التجارب النشطة' })}</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">
-                  {pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length}
-                </p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-yellow-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'At Risk', ar: 'في خطر' })}</p>
-                <p className="text-3xl font-bold text-yellow-600 mt-1">
-                  {pilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical').length}
-                </p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Completed', ar: 'مكتمل' })}</p>
-                <p className="text-3xl font-bold text-purple-600 mt-1">
-                  {pilots.filter(p => p.stage === 'completed' || p.stage === 'scaled').length}
-                </p>
-              </div>
-              <Users className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <MetricCard 
+          title={{ en: 'Total Challenges', ar: 'إجمالي التحديات' }}
+          value={filteredChallenges.length}
+          icon={Target}
+          color="text-blue-600"
+          bgColor="bg-gradient-to-br from-blue-50 to-white"
+          link="/Challenges"
+        />
+        <MetricCard 
+          title={{ en: 'Active Pilots', ar: 'التجارب النشطة' }}
+          value={filteredPilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length}
+          icon={CheckCircle2}
+          color="text-green-600"
+          bgColor="bg-gradient-to-br from-green-50 to-white"
+          link="/Pilots?stage=active"
+        />
+        <MetricCard 
+          title={{ en: 'At Risk', ar: 'في خطر' }}
+          value={filteredPilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical').length}
+          icon={AlertTriangle}
+          color="text-yellow-600"
+          bgColor="bg-gradient-to-br from-yellow-50 to-white"
+          link="/Pilots?risk=high"
+          subtext={t({ en: 'Requires attention', ar: 'يتطلب الاهتمام' })}
+        />
+        <MetricCard 
+          title={{ en: 'Active Programs', ar: 'البرامج النشطة' }}
+          value={filteredPrograms.filter(p => p.status === 'active').length}
+          icon={Layers}
+          color="text-purple-600"
+          bgColor="bg-gradient-to-br from-purple-50 to-white"
+          link="/Programs?status=active"
+        />
       </div>
 
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t({ en: 'Innovation Roadmap', ar: 'خارطة الطريق' })}</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/strategy-roadmap-page">
+                <Eye className="h-4 w-4 mr-1" />
+                {t({ en: 'Full View', ar: 'عرض كامل' })}
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={280}>
               <LineChart data={roadmapData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="quarter" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="challenges" stroke="#3b82f6" name="Challenges" />
-                <Line type="monotone" dataKey="pilots" stroke="#10b981" name="Pilots" />
-                <Line type="monotone" dataKey="scaled" stroke="#f59e0b" name="Scaled" />
+                <Line type="monotone" dataKey="challenges" stroke="#3b82f6" name={t({ en: 'Challenges', ar: 'التحديات' })} />
+                <Line type="monotone" dataKey="pilots" stroke="#10b981" name={t({ en: 'Pilots', ar: 'التجارب' })} />
+                <Line type="monotone" dataKey="scaled" stroke="#f59e0b" name={t({ en: 'Scaled', ar: 'موسعة' })} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -377,7 +481,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
             <CardTitle>{t({ en: 'Capacity Metrics', ar: 'مؤشرات القدرات' })}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={capacityData}>
                 <PolarGrid />
                 <PolarAngleAxis dataKey="indicator" />
@@ -389,115 +493,119 @@ Provide bilingual insights (each item should have both English and Arabic versio
         </Card>
       </div>
 
+      {/* Portfolio Heatmap with drill-down */}
       <Card>
-        <CardHeader>
-          <CardTitle>{t({ en: 'Portfolio Heatmap', ar: 'خريطة المحفظة' })}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>{t({ en: 'Portfolio Heatmap by Sector', ar: 'خريطة المحفظة حسب القطاع' })}</CardTitle>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/strategy-sector-analysis-page">
+              <BarChart3 className="h-4 w-4 mr-1" />
+              {t({ en: 'Detailed Analysis', ar: 'تحليل مفصل' })}
+            </Link>
+          </Button>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width="100%" height={350}>
             <BarChart data={portfolioHeatmap}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="sector" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="discover" stackId="a" fill="#94a3b8" name="Discover" />
-              <Bar dataKey="validate" stackId="a" fill="#3b82f6" name="Validate" />
-              <Bar dataKey="pilot" stackId="a" fill="#10b981" name="Pilot" />
-              <Bar dataKey="scale" stackId="a" fill="#f59e0b" name="Scale" />
+              <Bar dataKey="discover" stackId="a" fill="#94a3b8" name={t({ en: 'Discover', ar: 'اكتشاف' })} />
+              <Bar dataKey="validate" stackId="a" fill="#3b82f6" name={t({ en: 'Validate', ar: 'تحقق' })} />
+              <Bar dataKey="pilot" stackId="a" fill="#10b981" name={t({ en: 'Pilot', ar: 'تجريب' })} />
+              <Bar dataKey="scale" stackId="a" fill="#f59e0b" name={t({ en: 'Scale', ar: 'توسع' })} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Budget & Resources */}
+      {/* Budget & Strategic Plan Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>{t({ en: 'Budget Utilization', ar: 'استخدام الميزانية' })}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              {t({ en: 'Budget Overview', ar: 'نظرة عامة على الميزانية' })}
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/budgets">
+                <Eye className="h-4 w-4 mr-1" />
+                {t({ en: 'Details', ar: 'التفاصيل' })}
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                 <span className="text-sm text-slate-600">{t({ en: 'Pilots Budget', ar: 'ميزانية التجارب' })}</span>
-                <span className="font-bold">{(pilots.reduce((sum, p) => sum + (p.budget || 0), 0) / 1000000).toFixed(1)}M SAR</span>
+                <span className="font-bold text-blue-600">{(filteredPilots.reduce((sum, p) => sum + (p.budget || 0), 0) / 1000000).toFixed(1)}M SAR</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                 <span className="text-sm text-slate-600">{t({ en: 'R&D Budget', ar: 'ميزانية البحث' })}</span>
-                <span className="font-bold">{(rdProjects.reduce((sum, r) => sum + (r.budget || 0), 0) / 1000000).toFixed(1)}M SAR</span>
+                <span className="font-bold text-purple-600">{(rdProjects.reduce((sum, r) => sum + (r.budget || 0), 0) / 1000000).toFixed(1)}M SAR</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <span className="text-sm text-slate-600">{t({ en: 'Programs Budget', ar: 'ميزانية البرامج' })}</span>
-                <span className="font-bold">{(programs.reduce((sum, p) => sum + (p.funding_details?.total_pool || 0), 0) / 1000000).toFixed(1)}M SAR</span>
+                <span className="font-bold text-green-600">{(filteredPrograms.reduce((sum, p) => sum + (p.funding_details?.total_pool || 0), 0) / 1000000).toFixed(1)}M SAR</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t({ en: 'Strategic Plan Execution', ar: 'تنفيذ الخطة الاستراتيجية' })}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {t({ en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' })}
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/strategy-hub">
+                <ArrowRight className="h-4 w-4 mr-1" />
+                {t({ en: 'Hub', ar: 'المركز' })}
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent>
             {strategicPlans.length > 0 ? (
               <div className="space-y-3">
-                {strategicPlans.slice(0, 2).map(plan => (
-                  <div key={plan.id} className="p-3 border rounded-lg">
-                    <p className="font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                      {language === 'ar' ? plan.name_ar : plan.name_en}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge>{plan.start_year} - {plan.end_year}</Badge>
-                      <Badge className={plan.status === 'active' ? 'bg-green-600' : 'bg-blue-600'}>{plan.status}</Badge>
+                {strategicPlans.slice(0, 3).map(plan => (
+                  <Link key={plan.id} to={`/strategic-plans/${plan.id}`} className="block">
+                    <div className="p-3 border rounded-lg hover:bg-slate-50 transition-colors">
+                      <p className="font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                        {language === 'ar' ? plan.name_ar : plan.name_en}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline">{plan.start_year} - {plan.end_year}</Badge>
+                        <Badge className={plan.status === 'active' ? 'bg-green-600' : 'bg-blue-600'}>{plan.status}</Badge>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
               <p className="text-sm text-slate-500 text-center py-4">
-                {t({ en: 'No strategic plan active', ar: 'لا توجد خطة استراتيجية نشطة' })}
+                {t({ en: 'No strategic plans', ar: 'لا توجد خطط استراتيجية' })}
               </p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* NEW: Strategic Coverage Widget */}
+      {/* Strategic Coverage Widget */}
       <StrategicCoverageWidget />
 
+      {/* Resource Allocation */}
       <ResourceAllocationView />
 
+      {/* Partnership Network */}
       <PartnershipNetwork />
 
+      {/* Bottleneck Detector */}
       <BottleneckDetector />
-
-      <Card className="bg-gradient-to-br from-blue-50 to-teal-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-blue-600" />
-            {t({ en: 'AI Strategic Insights', ar: 'رؤى استراتيجية ذكية' })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="p-3 bg-white rounded-lg">
-            <p className="text-sm font-medium text-green-700">
-              ✓ {t({ en: 'Portfolio is well-balanced across sectors', ar: 'المحفظة متوازنة عبر القطاعات' })}
-            </p>
-          </div>
-          <div className="p-3 bg-white rounded-lg">
-            <p className="text-sm font-medium text-yellow-700">
-              ⚠ {t({ en: 'Environment sector has low pilot conversion rate', ar: 'قطاع البيئة لديه معدل تحويل منخفض' })}
-            </p>
-          </div>
-          <div className="p-3 bg-white rounded-lg">
-            <p className="text-sm font-medium text-blue-700">
-              💡 {t({ en: 'Recommend focusing on scaling successful digital pilots', ar: 'نوصي بالتركيز على توسيع التجارب الرقمية الناجحة' })}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
 
-export default ProtectedPage(StrategyCockpitPage, { requiredPermissions: [] });
+export default ProtectedPage(StrategyCockpitPage, { requiredPermissions: ['strategy_view'] });
