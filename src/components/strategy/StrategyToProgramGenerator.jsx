@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,12 +22,20 @@ export default function StrategyToProgramGenerator({ onProgramCreated }) {
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-generator'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('sectors').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const selectedPlan = strategicPlans.find(p => p.id === selectedPlanId);
@@ -140,7 +147,7 @@ For each theme provide:
       const createdPrograms = [];
 
       for (const theme of themesToCreate) {
-        const program = await base44.entities.Program.create({
+        const { data: program, error } = await supabase.from('programs').insert({
           name_en: theme.name_en,
           name_ar: theme.name_ar,
           description_en: theme.description_en,
@@ -152,7 +159,9 @@ For each theme provide:
           target_outcomes: theme.target_outcomes?.map(o => ({ description: o, target: 100, current: 0 })),
           is_strategy_derived: true,
           strategy_derivation_date: new Date().toISOString()
-        });
+        }).select().single();
+        
+        if (error) throw error;
         createdPrograms.push(program);
       }
 

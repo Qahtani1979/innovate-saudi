@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,22 +23,38 @@ export default function StrategicGapProgramRecommender({ onProgramCreated }) {
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-gap'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-gap'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-gap'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('sectors').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   // Calculate strategic gaps
@@ -223,7 +239,7 @@ For each gap, recommend a specific program with:
 
   const createProgramMutation = useMutation({
     mutationFn: async (rec) => {
-      const program = await base44.entities.Program.create({
+      const { data: program, error } = await supabase.from('programs').insert({
         name_en: rec.program_name_en,
         name_ar: rec.program_name_ar,
         program_type: rec.program_type,
@@ -235,7 +251,9 @@ For each gap, recommend a specific program with:
         priority: rec.priority,
         duration_months: rec.duration_months,
         strategic_plan_ids: rec.related_gap?.plan ? [rec.related_gap.plan.id] : []
-      });
+      }).select().single();
+      
+      if (error) throw error;
       return program;
     },
     onSuccess: () => {
