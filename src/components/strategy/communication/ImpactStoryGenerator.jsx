@@ -97,7 +97,6 @@ Status: ${entity.status || 'N/A'}
       setEntityDetails(details);
     }
   };
-  const [newTag, setNewTag] = useState('');
 
   const handleGenerateStory = async () => {
     if (!entityDetails) {

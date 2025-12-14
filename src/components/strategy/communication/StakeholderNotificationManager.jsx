@@ -61,8 +61,38 @@ export default function StakeholderNotificationManager({ communicationPlanId, st
     subject_ar: '',
     content_en: '',
     content_ar: '',
-    scheduled_at: ''
+    scheduled_at: '',
+    template_id: ''
   });
+
+  // Fetch email templates for integration
+  const { data: emailTemplates = [] } = useQuery({
+    queryKey: ['email-templates-for-notifications'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('id, template_key, name_en, name_ar, category, subject_en, subject_ar, body_en, body_ar')
+        .eq('is_active', true)
+        .order('category', { ascending: true });
+      if (error) return [];
+      return data || [];
+    }
+  });
+
+  // Apply template when selected
+  const handleTemplateSelect = (templateId) => {
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+      setNotificationData(prev => ({
+        ...prev,
+        template_id: templateId,
+        subject_en: template.subject_en || prev.subject_en,
+        subject_ar: template.subject_ar || prev.subject_ar,
+        content_en: template.body_en || prev.content_en,
+        content_ar: template.body_ar || prev.content_ar
+      }));
+    }
+  };
 
   // Fetch real user profiles for recipient selection
   const { data: availableRecipients = [], isLoading: recipientsLoading } = useQuery({
@@ -85,6 +115,14 @@ export default function StakeholderNotificationManager({ communicationPlanId, st
         query = query.in('persona_type', ['provider', 'partner']);
       } else if (notificationData.audience_segment === 'leadership') {
         query = query.in('persona_type', ['deputyship_admin', 'admin']);
+      } else if (notificationData.audience_segment === 'citizens') {
+        // Fetch from citizen_profiles for citizens
+        const { data: citizenData } = await supabase
+          .from('citizen_profiles')
+          .select('id, user_email')
+          .not('user_email', 'is', null)
+          .limit(100);
+        return citizenData || [];
       }
 
       const { data, error } = await query;
@@ -232,6 +270,31 @@ export default function StakeholderNotificationManager({ communicationPlanId, st
           </TabsList>
 
           <TabsContent value="create" className="space-y-4 mt-4">
+            {/* Email Template Selection (for email notifications) */}
+            {notificationData.notification_type === 'email' && emailTemplates.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t({ en: 'Use Email Template (Optional)', ar: 'استخدام قالب بريد إلكتروني (اختياري)' })}</label>
+                <Select
+                  value={notificationData.template_id}
+                  onValueChange={handleTemplateSelect}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t({ en: 'Select a template', ar: 'اختر قالب' })} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {emailTemplates.map(template => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{template.category}</Badge>
+                          {language === 'ar' ? (template.name_ar || template.name_en) : template.name_en}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t({ en: 'Notification Type', ar: 'نوع الإشعار' })}</label>

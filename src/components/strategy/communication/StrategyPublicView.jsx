@@ -93,6 +93,21 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
     enabled: !!strategicPlanId
   });
 
+  // Fetch case studies for showcase
+  const { data: caseStudies = [] } = useQuery({
+    queryKey: ['case-studies-view', strategicPlanId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('case_studies')
+        .select('id, title_en, title_ar, description_en, description_ar, is_featured, image_url')
+        .eq('is_published', true)
+        .order('is_featured', { ascending: false })
+        .limit(3);
+      if (error) return [];
+      return data || [];
+    }
+  });
+
   // Fetch upcoming events
   const { data: upcomingEvents = [] } = useQuery({
     queryKey: ['upcoming-events-view', strategicPlanId],
@@ -378,6 +393,40 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
                     <Badge variant="outline">
                       {new Date(initiative.date).toLocaleDateString()}
                     </Badge>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Case Studies Showcase */}
+        {caseStudies.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <Eye className="h-6 w-6 text-primary" />
+              {t({ en: 'Case Studies', ar: 'دراسات حالة' })}
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {caseStudies.map((study, index) => (
+                <Card key={index} className="overflow-hidden">
+                  {study.image_url && (
+                    <div className="h-32 bg-muted">
+                      <img src={study.image_url} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <CardContent className="pt-4">
+                    <h3 className="font-semibold mb-2">
+                      {language === 'ar' ? (study.title_ar || study.title_en) : study.title_en}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {language === 'ar' ? (study.description_ar || study.description_en) : study.description_en}
+                    </p>
+                    {study.is_featured && (
+                      <Badge className="mt-2" variant="secondary">
+                        {t({ en: 'Featured', ar: 'مميز' })}
+                      </Badge>
+                    )}
                   </CardContent>
                 </Card>
               ))}
