@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useActionPlans } from '@/hooks/strategy';
 import {
   ClipboardList,
   Plus,
@@ -46,27 +47,49 @@ const STATUS_OPTIONS = [
 const ActionPlanBuilder = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const strategicPlanId = strategicPlan?.id;
+  
+  const { 
+    actionPlans: dbPlans, 
+    isLoading, 
+    saveActionPlan, 
+    saveBulkActionPlans,
+    deleteActionPlan 
+  } = useActionPlans(strategicPlanId);
+  
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('builder');
   
-  const [actionPlans, setActionPlans] = useState(
-    objectives.map(obj => ({
-      id: `ap-${obj.id}`,
-      objective_id: obj.id,
-      objective_title: obj.title_en,
-      title_en: `Action Plan for ${obj.title_en}`,
-      title_ar: `خطة عمل لـ ${obj.title_ar}`,
-      total_budget: 0,
-      currency: 'SAR',
-      start_date: '',
-      end_date: '',
-      status: 'draft',
-      actions: []
-    }))
-  );
+  // Initialize local state from DB or create from objectives
+  const [actionPlans, setActionPlans] = useState([]);
+  
+  useEffect(() => {
+    if (dbPlans && dbPlans.length > 0) {
+      setActionPlans(dbPlans);
+    } else if (objectives.length > 0 && actionPlans.length === 0) {
+      setActionPlans(objectives.map(obj => ({
+        id: `ap-${obj.id}`,
+        objective_id: obj.id,
+        objective_title: obj.title_en,
+        title_en: `Action Plan for ${obj.title_en}`,
+        title_ar: `خطة عمل لـ ${obj.title_ar}`,
+        total_budget: 0,
+        currency: 'SAR',
+        start_date: '',
+        end_date: '',
+        status: 'draft',
+        actions: []
+      })));
+    }
+  }, [dbPlans, objectives]);
 
-  const [selectedPlan, setSelectedPlan] = useState(actionPlans[0]?.id || '');
+  const [selectedPlan, setSelectedPlan] = useState('');
+  
+  useEffect(() => {
+    if (actionPlans.length > 0 && !selectedPlan) {
+      setSelectedPlan(actionPlans[0]?.id || '');
+    }
+  }, [actionPlans, selectedPlan]);
 
   const addAction = (planId) => {
     setActionPlans(prev => prev.map(plan => {
@@ -207,22 +230,15 @@ const ActionPlanBuilder = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSa
   };
 
   const handleSave = async () => {
-    setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      if (onSave) onSave(actionPlans);
-      toast({
-        title: t({ en: 'Action Plans Saved', ar: 'تم حفظ خطط العمل' }),
-        description: t({ en: 'All action plans have been saved successfully', ar: 'تم حفظ جميع خطط العمل بنجاح' })
-      });
+      const success = await saveBulkActionPlans(actionPlans);
+      if (success && onSave) onSave(actionPlans);
     } catch (error) {
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
         description: error.message,
         variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 

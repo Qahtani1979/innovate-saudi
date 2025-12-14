@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useStrategyOwnership } from '@/hooks/strategy';
 import {
   Users,
   UserCheck,
@@ -53,22 +54,37 @@ const SAMPLE_USERS = [
 const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIVES, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('assignments');
-  const [isLoading, setIsLoading] = useState(false);
+  const strategicPlanId = strategicPlan?.id;
   
-  const [assignments, setAssignments] = useState(
-    objectives.map(obj => ({
-      objective_id: obj.id,
-      objective_title: obj.title_en,
-      responsible: '',
-      accountable: '',
-      consulted: [],
-      informed: [],
-      delegation_allowed: false,
-      escalation_path: '',
-      notifications_enabled: true
-    }))
-  );
+  const {
+    assignments: dbAssignments,
+    isLoading,
+    saveAssignment,
+    saveBulkAssignments,
+    deleteAssignment
+  } = useStrategyOwnership(strategicPlanId);
+  
+  const [activeTab, setActiveTab] = useState('assignments');
+  
+  const [assignments, setAssignments] = useState([]);
+  
+  useEffect(() => {
+    if (dbAssignments && dbAssignments.length > 0) {
+      setAssignments(dbAssignments);
+    } else if (objectives.length > 0 && assignments.length === 0) {
+      setAssignments(objectives.map(obj => ({
+        objective_id: obj.id,
+        objective_title: obj.title_en,
+        responsible: '',
+        accountable: '',
+        consulted: [],
+        informed: [],
+        delegation_allowed: false,
+        escalation_path: '',
+        notifications_enabled: true
+      })));
+    }
+  }, [dbAssignments, objectives]);
 
   const [newConsulted, setNewConsulted] = useState({});
   const [newInformed, setNewInformed] = useState({});
@@ -102,7 +118,6 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
   };
 
   const handleSave = async () => {
-    setIsLoading(true);
     try {
       // Validate all objectives have at least responsible and accountable
       const incomplete = assignments.filter(a => !a.responsible || !a.accountable);
@@ -112,28 +127,19 @@ const StrategyOwnershipAssigner = ({ strategicPlan, objectives = SAMPLE_OBJECTIV
           description: t({ en: `${incomplete.length} objectives need Responsible and Accountable roles`, ar: `${incomplete.length} أهداف تحتاج أدوار المسؤول والمحاسب` }),
           variant: 'destructive'
         });
-        setIsLoading(false);
         return;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (onSave) {
+      const success = await saveBulkAssignments(assignments);
+      if (success && onSave) {
         onSave(assignments);
       }
-      
-      toast({
-        title: t({ en: 'Ownership Saved', ar: 'تم حفظ الملكية' }),
-        description: t({ en: 'RACI assignments have been saved successfully', ar: 'تم حفظ تعيينات RACI بنجاح' })
-      });
     } catch (error) {
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
         description: error.message,
         variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 

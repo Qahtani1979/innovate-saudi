@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useStrategyTemplates } from '@/hooks/strategy';
 import {
   FileText,
   Plus,
@@ -101,7 +102,16 @@ const SAMPLE_TEMPLATES = [
 const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
   const { t, isRTL, language } = useLanguage();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const strategicPlanId = currentPlan?.id;
+  
+  const {
+    templates: dbTemplates,
+    myTemplates: dbMyTemplates,
+    isLoading,
+    saveTemplate,
+    deleteTemplate
+  } = useStrategyTemplates(strategicPlanId);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [activeTab, setActiveTab] = useState('browse');
@@ -110,6 +120,15 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
 
   const [templates, setTemplates] = useState(SAMPLE_TEMPLATES);
   const [myTemplates, setMyTemplates] = useState([]);
+  
+  useEffect(() => {
+    if (dbTemplates && dbTemplates.length > 0) {
+      setTemplates(dbTemplates);
+    }
+    if (dbMyTemplates && dbMyTemplates.length > 0) {
+      setMyTemplates(dbMyTemplates);
+    }
+  }, [dbTemplates, dbMyTemplates]);
 
   const [newTemplate, setNewTemplate] = useState({
     name_en: '',
@@ -171,10 +190,7 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
       return;
     }
 
-    setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       const template = {
         id: `t-${Date.now()}`,
         ...newTemplate,
@@ -185,7 +201,10 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
         created_by: 'You'
       };
 
-      setMyTemplates(prev => [...prev, template]);
+      const savedTemplate = await saveTemplate(template);
+      if (savedTemplate) {
+        setMyTemplates(prev => [...prev, savedTemplate]);
+      }
       
       setNewTemplate({
         name_en: '',
@@ -195,19 +214,12 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
         template_type: 'innovation',
         is_public: false
       });
-
-      toast({
-        title: t({ en: 'Template Created', ar: 'تم إنشاء القالب' }),
-        description: t({ en: 'Your template has been saved', ar: 'تم حفظ القالب الخاص بك' })
-      });
     } catch (error) {
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
         description: error.message,
         variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
