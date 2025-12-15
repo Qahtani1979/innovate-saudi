@@ -106,12 +106,14 @@ const preplanningTools = [
 const templateTools = [
   { icon: FileText, label: { en: 'Template Library', ar: 'مكتبة القوالب' }, path: '/strategy-templates-page', desc: { en: 'Browse and apply templates with coverage analysis', ar: 'تصفح وتطبيق القوالب مع تحليل التغطية' }, permission: null },
   { icon: BarChart3, label: { en: 'Coverage Analysis', ar: 'تحليل التغطية' }, path: '/strategy-templates-page', desc: { en: 'Analyze template coverage against MoMAH taxonomy', ar: 'تحليل تغطية القوالب مقابل تصنيف الوزارة' }, permission: null },
+  { icon: Layers, label: { en: 'Sector Strategy Builder', ar: 'منشئ استراتيجية القطاع' }, path: '/sector-strategy-page', desc: { en: 'Create sector-specific sub-strategies', ar: 'إنشاء استراتيجيات فرعية خاصة بالقطاع' }, permission: 'strategy_manage' },
 ];
 
 // Monitoring & Review Tools
 const monitoringTools = [
   { icon: BarChart3, label: { en: 'Strategy Cockpit', ar: 'لوحة القيادة' }, path: '/strategy-cockpit', desc: { en: 'Real-time strategy monitoring', ar: 'مراقبة الاستراتيجية في الوقت الفعلي' }, permission: 'strategy_view' },
   { icon: Target, label: { en: 'Strategy Drill-down', ar: 'التفاصيل الاستراتيجية' }, path: '/strategy-drill-down', desc: { en: 'Detailed strategy analysis', ar: 'تحليل الاستراتيجية المفصل' }, permission: 'strategy_view' },
+  { icon: Workflow, label: { en: 'Initiative Tracker', ar: 'متتبع المبادرات' }, path: '/strategic-initiative-tracker', desc: { en: 'Track initiatives with health scores', ar: 'تتبع المبادرات مع درجات الصحة' }, permission: 'strategy_view' },
   { icon: GitBranch, label: { en: 'Strategy Alignment', ar: 'المواءمة الاستراتيجية' }, path: '/strategy-alignment', desc: { en: 'Entity alignment tracking', ar: 'تتبع مواءمة الكيانات' }, permission: 'strategy_view' },
   { icon: Calendar, label: { en: 'Timeline View', ar: 'عرض الجدول الزمني' }, path: '/strategy-timeline-page', desc: { en: 'Strategic timeline planning', ar: 'تخطيط الجدول الزمني الاستراتيجي' }, permission: 'strategy_view' },
   { icon: MessageSquare, label: { en: 'Feedback Dashboard', ar: 'لوحة التعليقات' }, path: '/strategy-feedback-dashboard', desc: { en: 'Collect and analyze feedback', ar: 'جمع وتحليل التعليقات' }, permission: 'strategy_view' },
