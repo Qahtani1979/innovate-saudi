@@ -1,6 +1,7 @@
 import React from 'react';
 import StrategyInputCollector from '@/components/strategy/preplanning/StrategyInputCollector';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
+import NoPlanGuard from '@/components/strategy/NoPlanGuard';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
@@ -29,11 +30,13 @@ function StrategyInputPage() {
         </p>
       </div>
       
-      <StrategyInputCollector 
-        strategicPlanId={activePlanId}
-        strategicPlan={activePlan}
-        onSave={handleSave} 
-      />
+      <NoPlanGuard>
+        <StrategyInputCollector 
+          strategicPlanId={activePlanId}
+          strategicPlan={activePlan}
+          onSave={handleSave} 
+        />
+      </NoPlanGuard>
     </div>
   );
 }

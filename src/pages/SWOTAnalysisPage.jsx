@@ -1,6 +1,7 @@
 import React from 'react';
 import SWOTAnalysisBuilder from '@/components/strategy/preplanning/SWOTAnalysisBuilder';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
+import NoPlanGuard from '@/components/strategy/NoPlanGuard';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
@@ -29,11 +30,13 @@ function SWOTAnalysisPage() {
         </p>
       </div>
       
-      <SWOTAnalysisBuilder 
-        strategicPlanId={activePlanId}
-        strategicPlan={activePlan}
-        onSave={handleSave} 
-      />
+      <NoPlanGuard>
+        <SWOTAnalysisBuilder 
+          strategicPlanId={activePlanId}
+          strategicPlan={activePlan}
+          onSave={handleSave} 
+        />
+      </NoPlanGuard>
     </div>
   );
 }

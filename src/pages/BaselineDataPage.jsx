@@ -1,6 +1,7 @@
 import React from 'react';
 import BaselineDataCollector from '@/components/strategy/preplanning/BaselineDataCollector';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
+import NoPlanGuard from '@/components/strategy/NoPlanGuard';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
@@ -29,11 +30,13 @@ function BaselineDataPage() {
         </p>
       </div>
       
-      <BaselineDataCollector 
-        strategicPlanId={activePlanId}
-        strategicPlan={activePlan}
-        onSave={handleSave} 
-      />
+      <NoPlanGuard>
+        <BaselineDataCollector 
+          strategicPlanId={activePlanId}
+          strategicPlan={activePlan}
+          onSave={handleSave} 
+        />
+      </NoPlanGuard>
     </div>
   );
 }
