@@ -1,13 +1,14 @@
 # Strategic Plan Creation Wizard - Design Document
 
-> **Version**: 1.9  
+> **Version**: 2.0  
 > **Last Updated**: December 15, 2025  
-> **Status**: ✅ Fully Implemented & Consistent
+> **Status**: ✅ Fully Implemented & Integrated with Strategy Hub
 
-## Recent Changes (v1.9)
-- Updated documentation to reflect Strategy Hub integration
-- Added hub navigation context
+## Recent Changes (v2.0)
+- Updated documentation to reflect Strategy Hub 10-tab structure
+- Added comprehensive hub navigation context
 - Verified wizard accessibility from hub header button
+- Documented Templates Tab integration with Sector Strategy
 
 ---
 
@@ -47,10 +48,26 @@ Key features include:
 - ✅ Integration with approval workflows
 - ✅ AI-assisted content generation
 - ✅ Progress tracking and validation
+- ✅ Strategy Hub integration (10 tabs)
 
 ---
 
 ## Hub Integration
+
+### Strategy Hub Tab Structure (10 Tabs)
+
+| Tab | Purpose | Phase Coverage |
+|-----|---------|----------------|
+| **Workflow** | Lifecycle management, plan list | All Phases |
+| **Templates** | Template library, coverage analysis | Phase 2 |
+| **Cascade** | 8 entity generators | Phase 3 |
+| **Monitoring** | Performance tracking, 10 tools | Phase 6 |
+| **Governance** | Approval & control, 5 tools | Phase 4 |
+| **Communication** | Stakeholder comms, 6 tools | Phase 5 |
+| **Pre-Planning** | Analysis & inputs, 6 tools | Phase 1 |
+| **Evaluation** | Expert panels, case studies | Phase 7 |
+| **Recalibration** | Feedback, adjustments | Phase 8 |
+| **AI** | 4 AI assistants | All Phases |
 
 ### Access Points from Strategy Hub
 
@@ -59,6 +76,7 @@ Key features include:
 | Header Button | "New Strategy" button | Direct access to wizard |
 | Templates Tab | "Create from Scratch" | Opens empty wizard |
 | Templates Tab | Apply template | Opens wizard with template data |
+| Templates Tab | "Open Template Library" | Full template page |
 | Workflow Tab | Plan cards | Edit existing plans |
 
 ### Navigation Flow
@@ -68,7 +86,9 @@ Strategy Hub (/strategy-hub)
 ├── Header Button: "New Strategy" → /strategic-plan-builder
 ├── Templates Tab
 │   ├── "Open Template Library" → /strategy-templates-page
-│   └── "Create from Scratch" → /strategic-plan-builder
+│   ├── "Create from Scratch" → /strategic-plan-builder
+│   ├── "Sector Strategy" → /sector-strategy-page
+│   └── Apply template → /strategic-plan-builder?template=xxx
 └── Workflow Tab
     └── Plan Card → /strategic-plan-builder?planId=xxx&mode=edit
 ```
@@ -215,5 +235,17 @@ Strategy Hub (/strategy-hub)
 | Draft Recovery | ✅ Complete | Local + DB |
 | Template Integration | ✅ Complete | Apply templates |
 | AI Assistance | ✅ Complete | Per-step AI |
-| Hub Integration | ✅ Complete | Header button + tabs |
+| Hub Integration | ✅ Complete | 10 tabs, header button |
 | Validation | ✅ Complete | Required fields |
+| Sector Strategy | ✅ Complete | Via `/sector-strategy-page` |
+
+---
+
+## Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [strategy-design.md](./strategy-design.md) | Complete 8-phase lifecycle |
+| [STRATEGY_TEMPLATES_DESIGN.md](./STRATEGY_TEMPLATES_DESIGN.md) | Template system |
+| [strategy-integration-matrix.md](./strategy-integration-matrix.md) | Entity integrations |
+| [plan-tracker.md](./plan-tracker.md) | Implementation tracking |
