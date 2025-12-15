@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,10 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { STRATEGY_TEMPLATE_TYPES } from '@/constants/strategyTemplateTypes';
+import { supabase } from '@/integrations/supabase/client';
 import {
   BarChart3, CheckCircle2, AlertTriangle, Lightbulb, Sparkles, Loader2,
   Building2, Home, Leaf, Globe, Zap, Users, FileText, Target, TrendingUp,
-  MapPin, Cpu, Cog, Shield, Heart, Truck, Droplets, TreeDeciduous, Building
+  MapPin, Cpu, Cog, Shield, Heart, Truck, Droplets, TreeDeciduous, Building,
+  RefreshCcw
 } from 'lucide-react';
 
 /**
@@ -100,11 +102,36 @@ const GAP_RECOMMENDATIONS = {
   }
 };
 
-const TemplateCoverageAnalysis = ({ templates = [] }) => {
+const TemplateCoverageAnalysis = ({ templates = [], onRefresh }) => {
   const { t, isRTL, language } = useLanguage();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [analysisTab, setAnalysisTab] = useState('coverage');
+  const [analysisVersion, setAnalysisVersion] = useState(0);
+
+  // Refresh analysis handler
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      if (onRefresh) {
+        await onRefresh();
+      }
+      setAnalysisVersion(v => v + 1);
+      toast({
+        title: t({ en: 'Analysis Refreshed', ar: 'تم تحديث التحليل' }),
+        description: t({ en: 'Coverage analysis has been updated with latest data.', ar: 'تم تحديث تحليل التغطية بأحدث البيانات.' })
+      });
+    } catch (error) {
+      toast({
+        title: t({ en: 'Refresh Failed', ar: 'فشل التحديث' }),
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [onRefresh, toast, t]);
 
   // Analyze template coverage against taxonomy
   const coverageAnalysis = useMemo(() => {
@@ -185,7 +212,7 @@ const TemplateCoverageAnalysis = ({ templates = [] }) => {
     analysis.overallScore = Math.round((coveredItems / totalItems) * 100);
 
     return analysis;
-  }, [templates]);
+  }, [templates, analysisVersion]);
 
   // Identify gaps
   const gaps = useMemo(() => {
@@ -244,16 +271,77 @@ const TemplateCoverageAnalysis = ({ templates = [] }) => {
     return recs;
   }, [gaps]);
 
+  // Generate template from AI recommendation
   const handleGenerateTemplate = async (recommendation) => {
     setIsGenerating(true);
-    toast({
-      title: t({ en: 'Template Generation', ar: 'إنشاء القالب' }),
-      description: t({ 
-        en: 'AI template generation coming soon. This will create a complete template based on MoMAH context.', 
-        ar: 'إنشاء القالب بالذكاء الاصطناعي قريباً. سيتم إنشاء قالب كامل بناءً على سياق وزارة البلديات.' 
-      })
-    });
-    setTimeout(() => setIsGenerating(false), 2000);
+    try {
+      // Create a new strategic plan template based on the recommendation
+      const templateData = {
+        name_en: recommendation.name_en,
+        name_ar: recommendation.name_ar,
+        description_en: recommendation.description_en,
+        description_ar: recommendation.description_en, // Use EN as fallback for AR description
+        is_template: true,
+        is_public: false,
+        status: 'draft',
+        template_type: recommendation.template_type,
+        template_tags: recommendation.keywords,
+        target_sectors: [recommendation.gapId],
+        vision_en: `Strategic framework addressing ${recommendation.gapName} with innovative solutions aligned with Saudi Vision 2030.`,
+        vision_ar: `إطار استراتيجي يعالج ${recommendation.gapName} بحلول مبتكرة متوافقة مع رؤية السعودية 2030.`,
+        objectives: [
+          {
+            id: crypto.randomUUID(),
+            title_en: `Establish ${recommendation.gapName} Innovation Framework`,
+            title_ar: `تأسيس إطار الابتكار لـ ${recommendation.gapName}`,
+            description_en: recommendation.description_en,
+            target_value: 100,
+            baseline_value: 0,
+            weight: 100
+          }
+        ],
+        pillars: [
+          {
+            id: crypto.randomUUID(),
+            title_en: 'Innovation & Technology',
+            title_ar: 'الابتكار والتقنية',
+            description_en: `Leverage ${recommendation.keywords.join(', ')} for municipal excellence.`
+          }
+        ]
+      };
+
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .insert([templateData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: t({ en: 'Template Created', ar: 'تم إنشاء القالب' }),
+        description: t({ 
+          en: `Template "${recommendation.name_en}" has been created as a draft. You can now edit and customize it.`, 
+          ar: `تم إنشاء قالب "${recommendation.name_ar}" كمسودة. يمكنك الآن تعديله وتخصيصه.` 
+        })
+      });
+
+      // Refresh analysis after creating template
+      if (onRefresh) {
+        await onRefresh();
+      }
+      setAnalysisVersion(v => v + 1);
+
+    } catch (error) {
+      console.error('Error generating template:', error);
+      toast({
+        title: t({ en: 'Generation Failed', ar: 'فشل الإنشاء' }),
+        description: error.message || t({ en: 'Failed to create template. Please try again.', ar: 'فشل إنشاء القالب. يرجى المحاولة مرة أخرى.' }),
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const renderCoverageItem = (item, showTemplates = true) => {
@@ -358,24 +446,36 @@ const TemplateCoverageAnalysis = ({ templates = [] }) => {
 
       {/* Analysis Tabs */}
       <Tabs value={analysisTab} onValueChange={setAnalysisTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="coverage" className="text-xs md:text-sm">
-            <Target className="h-4 w-4 mr-1" />
-            {t({ en: 'Coverage Matrix', ar: 'مصفوفة التغطية' })}
-          </TabsTrigger>
-          <TabsTrigger value="gaps" className="text-xs md:text-sm">
-            <AlertTriangle className="h-4 w-4 mr-1" />
-            {t({ en: 'Gap Analysis', ar: 'تحليل الفجوات' })}
-          </TabsTrigger>
-          <TabsTrigger value="recommendations" className="text-xs md:text-sm">
-            <Sparkles className="h-4 w-4 mr-1" />
-            {t({ en: 'AI Recommendations', ar: 'توصيات الذكاء الاصطناعي' })}
-          </TabsTrigger>
-          <TabsTrigger value="distribution" className="text-xs md:text-sm">
-            <BarChart3 className="h-4 w-4 mr-1" />
-            {t({ en: 'Distribution', ar: 'التوزيع' })}
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mb-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+            <TabsTrigger value="coverage" className="text-xs md:text-sm">
+              <Target className="h-4 w-4 mr-1" />
+              {t({ en: 'Coverage Matrix', ar: 'مصفوفة التغطية' })}
+            </TabsTrigger>
+            <TabsTrigger value="gaps" className="text-xs md:text-sm">
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              {t({ en: 'Gap Analysis', ar: 'تحليل الفجوات' })}
+            </TabsTrigger>
+            <TabsTrigger value="recommendations" className="text-xs md:text-sm">
+              <Sparkles className="h-4 w-4 mr-1" />
+              {t({ en: 'AI Recommendations', ar: 'توصيات الذكاء الاصطناعي' })}
+            </TabsTrigger>
+            <TabsTrigger value="distribution" className="text-xs md:text-sm">
+              <BarChart3 className="h-4 w-4 mr-1" />
+              {t({ en: 'Distribution', ar: 'التوزيع' })}
+            </TabsTrigger>
+          </TabsList>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="ml-2"
+          >
+            <RefreshCcw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {t({ en: 'Refresh', ar: 'تحديث' })}
+          </Button>
+        </div>
 
         {/* Coverage Matrix */}
         <TabsContent value="coverage" className="mt-4 space-y-4">
