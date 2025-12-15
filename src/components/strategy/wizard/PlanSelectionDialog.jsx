@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,17 +71,17 @@ export default function PlanSelectionDialog({
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [open, setOpen] = React.useState(defaultOpen);
-  const [search, setSearch] = React.useState('');
-  const [activeTab, setActiveTab] = React.useState('drafts');
+  const [open, setOpen] = useState(defaultOpen);
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('drafts');
   
   // Confirmation dialog states
-  const [confirmDialog, setConfirmDialog] = React.useState({
+  const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     type: null, // 'delete' | 'archive' | 'duplicate' | 'export'
     plan: null
   });
-  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch public templates
   const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({

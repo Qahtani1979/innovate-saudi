@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -18,14 +18,14 @@ export function useAutoSaveDraft({
   mode = 'create', // 'create' | 'edit' | 'review'
   enabled = true
 }) {
-  const [lastSaved, setLastSaved] = React.useState(null);
-  const [isSaving, setIsSaving] = React.useState(false);
-  const [hasDraft, setHasDraft] = React.useState(false);
-  const saveTimeoutRef = React.useRef(null);
-  const dataRef = React.useRef(null);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+  const saveTimeoutRef = useRef(null);
+  const dataRef = useRef(null);
 
   // Check for existing local draft on mount
-  React.useEffect(() => {
+  useEffect(() => {
     if (mode === 'create') {
       const savedDraft = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedDraft) {
@@ -42,7 +42,7 @@ export function useAutoSaveDraft({
   }, [mode]);
 
   // Save to local storage
-  const saveToLocal = React.useCallback((data) => {
+  const saveToLocal = useCallback((data) => {
     if (mode === 'create') {
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
@@ -57,7 +57,7 @@ export function useAutoSaveDraft({
   }, [mode]);
 
   // Save to database
-  const saveToDatabase = React.useCallback(async (data, currentStep) => {
+  const saveToDatabase = useCallback(async (data, currentStep) => {
     if (!enabled) return { success: false, error: 'Auto-save disabled' };
 
     setIsSaving(true);
@@ -159,7 +159,7 @@ export function useAutoSaveDraft({
   }, [planId, mode, enabled]);
 
   // Schedule auto-save
-  const scheduleAutoSave = React.useCallback((data, currentStep) => {
+  const scheduleAutoSave = useCallback((data, currentStep) => {
     dataRef.current = data;
     
     // Clear existing timeout
@@ -179,7 +179,7 @@ export function useAutoSaveDraft({
   }, [saveToLocal, saveToDatabase]);
 
   // Manual save
-  const saveNow = React.useCallback(async (data, currentStep) => {
+  const saveNow = useCallback(async (data, currentStep) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
@@ -188,7 +188,7 @@ export function useAutoSaveDraft({
   }, [saveToLocal, saveToDatabase]);
 
   // Load draft from local storage
-  const loadLocalDraft = React.useCallback(() => {
+  const loadLocalDraft = useCallback(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
@@ -201,13 +201,13 @@ export function useAutoSaveDraft({
   }, []);
 
   // Clear local draft
-  const clearLocalDraft = React.useCallback(() => {
+  const clearLocalDraft = useCallback(() => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     setHasDraft(false);
   }, []);
 
   // Load existing plan from database
-  const loadPlan = React.useCallback(async (id) => {
+  const loadPlan = useCallback(async (id) => {
     try {
       const { data, error } = await supabase
         .from('strategic_plans')
@@ -224,7 +224,7 @@ export function useAutoSaveDraft({
   }, []);
 
   // Cleanup on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
