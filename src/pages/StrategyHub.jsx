@@ -125,8 +125,8 @@ const monitoringTools = [
 // Evaluation Tools (Phase 7)
 const evaluationTools = [
   { icon: FileBarChart, label: { en: 'Evaluation Panel', ar: 'لوحة التقييم' }, path: '/strategy-review-page', desc: { en: 'Comprehensive strategy evaluation', ar: 'تقييم شامل للاستراتيجية' }, permission: 'strategy_view' },
-  { icon: BookOpen, label: { en: 'Case Studies', ar: 'دراسات الحالة' }, path: '/knowledge', desc: { en: 'Generate case studies from successes', ar: 'إنشاء دراسات حالة من النجاحات' }, permission: 'strategy_view' },
-  { icon: Lightbulb, label: { en: 'Lessons Learned', ar: 'الدروس المستفادة' }, path: '/lessons-learned-repository', desc: { en: 'Capture and share learnings', ar: 'جمع ومشاركة الدروس' }, permission: 'strategy_view' },
+  { icon: BookOpen, label: { en: 'Case Studies', ar: 'دراسات الحالة' }, path: '/knowledge?type=case-study', desc: { en: 'Generate case studies from successes', ar: 'إنشاء دراسات حالة من النجاحات' }, permission: 'strategy_view' },
+  { icon: Lightbulb, label: { en: 'Lessons Learned', ar: 'الدروس المستفادة' }, path: '/knowledge?type=lessons-learned', desc: { en: 'Capture and share learnings', ar: 'جمع ومشاركة الدروس' }, permission: 'strategy_view' },
   { icon: TrendingUp, label: { en: 'Impact Assessment', ar: 'تقييم الأثر' }, path: '/strategy-review-page?tab=impact', desc: { en: 'Measure strategy impact', ar: 'قياس أثر الاستراتيجية' }, permission: 'strategy_view' },
 ];
 
