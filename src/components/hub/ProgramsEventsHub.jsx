@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, TrendingUp, AlertCircle, Calendar, Lightbulb } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Loader2, Sparkles, TrendingUp, AlertCircle, Calendar, Lightbulb, RefreshCw } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { HubStats } from './HubStats';
 import { HubTabs } from './HubTabs';
 import { QuickActions } from './QuickActions';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { AIProgramEventCorrelator } from '@/components/ai/AIProgramEventCorrelator';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 // Lazy imports for tab content
 const ProgramsContent = React.lazy(() => import('@/pages/Programs'));
@@ -22,6 +25,9 @@ const CalendarContent = React.lazy(() => import('@/pages/CalendarView'));
 function ProgramsEventsHub() {
   const { language, isRTL, t } = useLanguage();
   const [activeTab, setActiveTab] = useState('programs');
+  const [aiInsights, setAiInsights] = useState(null);
+  
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   // Fetch programs
   const { data: programs = [], isLoading: programsLoading } = useQuery({
@@ -51,36 +57,55 @@ function ProgramsEventsHub() {
 
   const isLoading = programsLoading || eventsLoading;
 
-  // AI Insights placeholder data
-  const aiInsights = [
-    {
-      type: 'recommendation',
-      icon: TrendingUp,
-      title: t({ en: 'Program Optimization', ar: 'تحسين البرامج' }),
-      description: t({ 
-        en: '3 programs have low engagement. Consider adding events to boost participation.',
-        ar: '3 برامج لديها مشاركة منخفضة. فكر في إضافة فعاليات لتعزيز المشاركة.'
-      })
-    },
-    {
-      type: 'alert',
-      icon: AlertCircle,
-      title: t({ en: 'Scheduling Conflict', ar: 'تعارض في الجدولة' }),
-      description: t({
-        en: '2 events are scheduled on the same day. Review calendar for conflicts.',
-        ar: '2 فعاليات مجدولة في نفس اليوم. راجع التقويم للتعارضات.'
-      })
-    },
-    {
-      type: 'insight',
-      icon: Sparkles,
-      title: t({ en: 'Attendance Prediction', ar: 'توقع الحضور' }),
-      description: t({
-        en: 'Based on trends, workshop events have 40% higher attendance than webinars.',
-        ar: 'بناءً على الاتجاهات، فعاليات الورش لديها حضور أعلى بنسبة 40% من الندوات الإلكترونية.'
-      })
+  // Generate AI insights
+  const generateInsights = async () => {
+    if (!isAvailable || programs.length === 0) return;
+    
+    const response = await invokeAI({
+      prompt: `Analyze these programs and events for a Saudi municipal innovation platform:
+
+Programs (${programs.length}): ${JSON.stringify(programs.slice(0, 5).map(p => ({ name: p.name_en || p.name_ar, type: p.program_type, status: p.status })))}
+
+Events (${events.length}): ${JSON.stringify(events.slice(0, 5).map(e => ({ title: e.title_en || e.title_ar, type: e.event_type, date: e.start_date })))}
+
+Provide 3 actionable insights with type (recommendation/alert/insight), title, and description in both English and Arabic.`,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          insights: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                type: { type: 'string', enum: ['recommendation', 'alert', 'insight'] },
+                title_en: { type: 'string' },
+                title_ar: { type: 'string' },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' }
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    if (response.success && response.data?.response?.insights) {
+      setAiInsights(response.data.response.insights);
     }
-  ];
+  };
+
+  // Auto-generate insights when analytics tab is active
+  useEffect(() => {
+    if (activeTab === 'analytics' && !aiInsights && isAvailable && programs.length > 0) {
+      generateInsights();
+    }
+  }, [activeTab, programs.length, isAvailable]);
+
+  const getInsightIcon = (type) => {
+    if (type === 'alert') return AlertCircle;
+    if (type === 'recommendation') return TrendingUp;
+    return Sparkles;
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -152,38 +177,66 @@ function ProgramsEventsHub() {
             {activeTab === 'calendar' && <CalendarContent embedded />}
             {activeTab === 'analytics' && (
               <div className="space-y-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-lg">
-                    {t({ en: 'AI-Powered Insights', ar: 'رؤى مدعومة بالذكاء الاصطناعي' })}
-                  </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-600" />
+                    <h3 className="font-semibold text-lg">
+                      {t({ en: 'AI-Powered Insights', ar: 'رؤى مدعومة بالذكاء الاصطناعي' })}
+                    </h3>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={generateInsights}
+                    disabled={aiLoading || !isAvailable}
+                  >
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    <span className={isRTL ? 'mr-2' : 'ml-2'}>{t({ en: 'Refresh', ar: 'تحديث' })}</span>
+                  </Button>
                 </div>
+                
+                <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
                 
                 {/* Quick Insights Cards */}
                 <div className="grid gap-4 md:grid-cols-3">
-                  {aiInsights.map((insight, index) => (
-                    <Card key={index} className={`border-l-4 ${
-                      insight.type === 'alert' ? 'border-l-amber-500 bg-amber-50' :
-                      insight.type === 'recommendation' ? 'border-l-blue-500 bg-blue-50' :
-                      'border-l-purple-500 bg-purple-50'
-                    }`}>
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-3">
-                          <insight.icon className={`h-5 w-5 mt-0.5 ${
-                            insight.type === 'alert' ? 'text-amber-600' :
-                            insight.type === 'recommendation' ? 'text-blue-600' :
-                            'text-purple-600'
-                          }`} />
-                          <div>
-                            <p className="font-medium text-sm">{insight.title}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {insight.description}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {aiLoading ? (
+                    <div className="col-span-3 flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+                    </div>
+                  ) : aiInsights ? (
+                    aiInsights.map((insight, index) => {
+                      const Icon = getInsightIcon(insight.type);
+                      return (
+                        <Card key={index} className={`border-l-4 ${
+                          insight.type === 'alert' ? 'border-l-amber-500 bg-amber-50' :
+                          insight.type === 'recommendation' ? 'border-l-blue-500 bg-blue-50' :
+                          'border-l-purple-500 bg-purple-50'
+                        }`}>
+                          <CardContent className="pt-4">
+                            <div className="flex items-start gap-3">
+                              <Icon className={`h-5 w-5 mt-0.5 ${
+                                insight.type === 'alert' ? 'text-amber-600' :
+                                insight.type === 'recommendation' ? 'text-blue-600' :
+                                'text-purple-600'
+                              }`} />
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {language === 'ar' ? insight.title_ar : insight.title_en}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {language === 'ar' ? insight.description_ar : insight.description_en}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  ) : (
+                    <div className="col-span-3 text-center py-8 text-muted-foreground">
+                      {t({ en: 'Click Refresh to generate AI insights', ar: 'انقر على تحديث لإنشاء رؤى الذكاء الاصطناعي' })}
+                    </div>
+                  )}
                 </div>
 
                 {/* AI Program-Event Correlator */}
