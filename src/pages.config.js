@@ -505,6 +505,7 @@ import StrategyLivingLabGeneratorPage from './pages/StrategyLivingLabGeneratorPa
 import StrategyCommunicationPage from './pages/strategy/StrategyCommunicationPage';
 import StrategyPublicViewPage from './pages/strategy/StrategyPublicViewPage';
 import PublicStrategyDashboardPage from './pages/strategy/PublicStrategyDashboardPage';
+import StrategyRecalibrationPage from './pages/strategy/StrategyRecalibrationPage';
 import ActionPlanPage from './pages/ActionPlanPage';
 import __Layout from './Layout.jsx';
 
@@ -1029,6 +1030,7 @@ export const PAGES = {
     "StrategyCommunicationPage": StrategyCommunicationPage,
     "StrategyPublicViewPage": StrategyPublicViewPage,
     "PublicStrategyDashboardPage": PublicStrategyDashboardPage,
+    "StrategyRecalibrationPage": StrategyRecalibrationPage,
     "ActionPlanPage": ActionPlanPage,
 }
 

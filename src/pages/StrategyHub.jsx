@@ -124,19 +124,19 @@ const monitoringTools = [
 
 // Evaluation Tools (Phase 7)
 const evaluationTools = [
-  { icon: FileBarChart, label: { en: 'Evaluation Panel', ar: 'لوحة التقييم' }, path: '/strategy-evaluation-page', desc: { en: 'Comprehensive strategy evaluation', ar: 'تقييم شامل للاستراتيجية' }, permission: 'strategy_view' },
-  { icon: BookOpen, label: { en: 'Case Studies', ar: 'دراسات الحالة' }, path: '/case-studies', desc: { en: 'Generate case studies from successes', ar: 'إنشاء دراسات حالة من النجاحات' }, permission: 'strategy_view' },
-  { icon: Lightbulb, label: { en: 'Lessons Learned', ar: 'الدروس المستفادة' }, path: '/lessons-learned', desc: { en: 'Capture and share learnings', ar: 'جمع ومشاركة الدروس' }, permission: 'strategy_view' },
-  { icon: TrendingUp, label: { en: 'Impact Assessment', ar: 'تقييم الأثر' }, path: '/strategy-impact-assessment', desc: { en: 'Measure strategy impact', ar: 'قياس أثر الاستراتيجية' }, permission: 'strategy_view' },
+  { icon: FileBarChart, label: { en: 'Evaluation Panel', ar: 'لوحة التقييم' }, path: '/strategy-review-page', desc: { en: 'Comprehensive strategy evaluation', ar: 'تقييم شامل للاستراتيجية' }, permission: 'strategy_view' },
+  { icon: BookOpen, label: { en: 'Case Studies', ar: 'دراسات الحالة' }, path: '/knowledge', desc: { en: 'Generate case studies from successes', ar: 'إنشاء دراسات حالة من النجاحات' }, permission: 'strategy_view' },
+  { icon: Lightbulb, label: { en: 'Lessons Learned', ar: 'الدروس المستفادة' }, path: '/lessons-learned-repository', desc: { en: 'Capture and share learnings', ar: 'جمع ومشاركة الدروس' }, permission: 'strategy_view' },
+  { icon: TrendingUp, label: { en: 'Impact Assessment', ar: 'تقييم الأثر' }, path: '/strategy-review-page?tab=impact', desc: { en: 'Measure strategy impact', ar: 'قياس أثر الاستراتيجية' }, permission: 'strategy_view' },
 ];
 
-// Recalibration Tools (Phase 8)
+// Recalibration Tools (Phase 8) - All link to unified recalibration page with tabs
 const recalibrationTools = [
-  { icon: Brain, label: { en: 'Feedback Analysis', ar: 'تحليل التعليقات' }, path: '/feedback-analysis', desc: { en: 'AI-powered feedback analysis', ar: 'تحليل التعليقات بالذكاء الاصطناعي' }, permission: 'strategy_manage' },
-  { icon: Layers, label: { en: 'Adjustment Matrix', ar: 'مصفوفة التعديل' }, path: '/adjustment-matrix', desc: { en: 'Decision support for adjustments', ar: 'دعم القرار للتعديلات' }, permission: 'strategy_manage' },
-  { icon: Settings, label: { en: 'Mid-Cycle Pivot', ar: 'التحويل منتصف الدورة' }, path: '/mid-cycle-pivot', desc: { en: 'Manage strategic pivots', ar: 'إدارة التحويلات الاستراتيجية' }, permission: 'strategy_manage' },
-  { icon: Target, label: { en: 'Baseline Recalibrator', ar: 'إعادة معايرة الأساس' }, path: '/baseline-recalibrator', desc: { en: 'Recalibrate baselines', ar: 'إعادة معايرة خطوط الأساس' }, permission: 'strategy_manage' },
-  { icon: Sparkles, label: { en: 'Next Cycle Initializer', ar: 'مُهيئ الدورة التالية' }, path: '/next-cycle-initializer', desc: { en: 'Initialize next planning cycle', ar: 'بدء دورة التخطيط التالية' }, permission: 'strategy_manage' },
+  { icon: Brain, label: { en: 'Feedback Analysis', ar: 'تحليل التعليقات' }, path: '/strategy-recalibration-page?tab=feedback', desc: { en: 'AI-powered feedback analysis', ar: 'تحليل التعليقات بالذكاء الاصطناعي' }, permission: 'strategy_manage' },
+  { icon: Layers, label: { en: 'Adjustment Matrix', ar: 'مصفوفة التعديل' }, path: '/strategy-recalibration-page?tab=matrix', desc: { en: 'Decision support for adjustments', ar: 'دعم القرار للتعديلات' }, permission: 'strategy_manage' },
+  { icon: Settings, label: { en: 'Mid-Cycle Pivot', ar: 'التحويل منتصف الدورة' }, path: '/strategy-recalibration-page?tab=pivot', desc: { en: 'Manage strategic pivots', ar: 'إدارة التحويلات الاستراتيجية' }, permission: 'strategy_manage' },
+  { icon: Target, label: { en: 'Baseline Recalibrator', ar: 'إعادة معايرة الأساس' }, path: '/strategy-recalibration-page?tab=baseline', desc: { en: 'Recalibrate baselines', ar: 'إعادة معايرة خطوط الأساس' }, permission: 'strategy_manage' },
+  { icon: Sparkles, label: { en: 'Next Cycle Initializer', ar: 'مُهيئ الدورة التالية' }, path: '/strategy-recalibration-page?tab=next', desc: { en: 'Initialize next planning cycle', ar: 'بدء دورة التخطيط التالية' }, permission: 'strategy_manage' },
 ];
 
 // Demand & Resource Tools
@@ -957,7 +957,7 @@ function StrategyHub() {
                 </Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/case-studies">
+                <Link to="/knowledge">
                   <BookOpen className="h-4 w-4 mr-2" />
                   {t({ en: 'View Case Studies', ar: 'عرض دراسات الحالة' })}
                 </Link>
