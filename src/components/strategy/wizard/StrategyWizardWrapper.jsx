@@ -484,12 +484,59 @@ Example pillar structure:
 - If Vision 2030 Programs include "QUALITY_OF_LIFE", ensure a pillar addresses citizen well-being
 
 Use formal Arabic (فصحى) for Arabic content. Be specific, not generic.`,
-      stakeholders: `Identify key stakeholders for this Saudi municipal strategic plan:
-Plan: ${context.planName}
-Vision: ${context.vision}
-Sectors: ${context.sectors.join(', ')}
+      stakeholders: `You are identifying key stakeholders for a Saudi municipal strategic plan. Use ALL context provided to generate comprehensive and relevant stakeholders.
 
-List stakeholders with their power level (high/medium/low) and interest level.`,
+=== PLAN CONTEXT ===
+Plan Name: ${context.planName}${context.planNameAr ? ` (${context.planNameAr})` : ''}
+Vision: ${context.vision || 'Not yet defined'}
+Mission: ${context.mission || 'Not yet defined'}
+
+=== STRATEGIC FOCUS (USE TO IDENTIFY RELEVANT STAKEHOLDERS) ===
+Target Sectors: ${context.sectors.length > 0 ? context.sectors.join(', ') : 'General municipal services'}
+Strategic Themes: ${context.themes.length > 0 ? context.themes.join(', ') : 'General improvement'}
+Focus Technologies: ${context.technologies.length > 0 ? context.technologies.join(', ') : 'General technology'}
+Vision 2030 Programs: ${context.vision2030Programs.length > 0 ? context.vision2030Programs.join(', ') : 'General Vision 2030'}
+Target Regions: ${context.regions.length > 0 ? context.regions.join(', ') : 'Kingdom-wide'}
+
+=== DURATION & RESOURCES ===
+Timeline: ${context.startYear} - ${context.endYear}
+Budget Range: ${context.budgetRange || 'To be determined'}
+
+=== EXISTING QUICK STAKEHOLDERS (expand on these) ===
+${context.stakeholders.length > 0 ? context.stakeholders.map(s => `- ${s.name_en || s}${s.name_ar ? ` (${s.name_ar})` : ''}`).join('\n') : '- None specified yet'}
+
+=== DISCOVERY INPUTS ===
+Key Challenges: ${context.keyChallenges || 'General challenges'}
+Available Resources: ${context.availableResources || 'Standard resources'}
+Initial Constraints: ${context.initialConstraints || 'Standard constraints'}
+
+=== GENERATION REQUIREMENTS ===
+
+Generate 12-18 stakeholders with comprehensive details. Each stakeholder MUST have:
+- name_en, name_ar: Full organization/role name in both languages
+- type: One of (government|private|academic|ngo|community|international|internal)
+- power: high | medium | low (influence over plan success)
+- interest: high | medium | low (level of concern about outcomes)
+- engagement_level: One of (manage_closely|keep_satisfied|keep_informed|monitor)
+- influence_strategy_en, influence_strategy_ar: 2-3 sentences on how to engage this stakeholder
+
+CRITICAL REQUIREMENTS:
+- Include stakeholders from EACH target sector specified
+- Include technology partners for EACH focus technology
+- Include relevant Vision 2030 program offices
+- Include stakeholders from target regions if specified
+- Include both internal (municipal departments) and external stakeholders
+- Consider stakeholders affected by or who can address the key challenges
+
+Stakeholder categories to cover:
+1. Government entities (ministries, agencies, municipalities)
+2. Private sector (technology vendors, contractors, investors)
+3. Academic/Research institutions
+4. Community groups and citizens
+5. International partners if relevant
+6. Internal departments and leadership
+
+Use formal Arabic (فصحى) for Arabic content.`,
       pestel: `Conduct PESTEL analysis for this Saudi municipal strategy:
 Plan: ${context.planName}
 Vision: ${context.vision}
