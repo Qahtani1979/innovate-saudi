@@ -592,12 +592,63 @@ For EACH factor, provide ALL these fields in BOTH English and Arabic:
 - Mix of timeframes: short, medium, and long term factors
 
 Be specific to Saudi Arabia and the plan's sectors. Avoid generic statements.`,
-      swot: `Conduct SWOT analysis for this Saudi municipal strategic plan:
-Plan: ${context.planName}
-Vision: ${context.vision}
-Sectors: ${context.sectors.join(', ')}
+      swot: `Conduct a comprehensive SWOT analysis for this Saudi municipal strategic plan:
 
-Identify Strengths, Weaknesses, Opportunities, and Threats.`,
+**CONTEXT:**
+- Plan Name: ${context.planName}
+- Vision: ${context.vision}
+- Sectors: ${context.sectors.join(', ')}
+- Timeline: ${context.startYear}-${context.endYear}
+- Stakeholder Count: ${(wizardData.stakeholders || []).length}
+
+**REQUIREMENTS:**
+Generate items for ALL 4 SWOT categories. Each category MUST have 4-6 items.
+
+For EACH item, provide ALL these fields in BOTH English and Arabic:
+- text_en: The SWOT item description in English (1-2 sentences)
+- text_ar: The SWOT item description in Arabic (formal فصحى, 1-2 sentences)
+- priority: One of "low" | "medium" | "high"
+
+**CATEGORY GUIDANCE FOR SAUDI MUNICIPAL CONTEXT:**
+
+1. STRENGTHS (Internal positive factors):
+   - Government support and Vision 2030 alignment
+   - Digital infrastructure readiness
+   - Financial resources and funding access
+   - Skilled workforce availability
+   - Strategic location advantages
+   - Existing partnerships and relationships
+
+2. WEAKNESSES (Internal negative factors):
+   - Capacity or skill gaps
+   - Legacy systems or processes
+   - Resource constraints
+   - Coordination challenges between departments
+   - Data management issues
+   - Change resistance
+
+3. OPPORTUNITIES (External positive factors):
+   - Vision 2030 initiatives and funding programs
+   - Digital transformation trends
+   - International partnerships and knowledge transfer
+   - Private sector investment interest
+   - Demographic shifts (youth population)
+   - Regional economic development
+
+4. THREATS (External negative factors):
+   - Economic volatility and oil dependency
+   - Rapid technological change
+   - Talent competition
+   - Regulatory changes
+   - Environmental challenges (water, climate)
+   - Public expectation management
+
+**DISTRIBUTION:**
+- Each category should have a mix of priorities: at least one high, two medium, and one low
+- Items should be specific to the plan's sectors, not generic
+- Consider PESTEL factors when identifying opportunities and threats
+
+Be specific to Saudi Arabia and the municipal context. Avoid vague or generic statements.`,
       scenarios: `Create scenario planning for this Saudi strategic plan:
 Plan: ${context.planName}
 Vision: ${context.vision}
