@@ -1,6 +1,6 @@
 # Strategy System Inventory
 
-> **Version:** 4.0  
+> **Version:** 5.0  
 > **Last Updated:** 2025-12-15  
 > **Total Assets:** 180+ files (40+ pages, 75+ components, 35 hooks + 3 contexts)  
 > **Parent System:** Strategic Planning & Execution Framework  
@@ -19,6 +19,38 @@
 ## Overview
 
 The Strategy System is the core strategic planning and execution framework spanning all 8 phases of the strategic methodology. This document provides a complete inventory of all pages, components, hooks, and their relationships.
+
+---
+
+## 📄 Strategy Hub - Central Command Center
+
+### Purpose
+The Strategy Hub (`/strategy-hub`) serves as the **central command center** for the entire strategic planning lifecycle. It provides:
+- Quick access to all 8 phases of strategic methodology
+- Real-time visibility into plan progress and health
+- Tools for planning, execution, monitoring, and recalibration
+- AI-powered strategic insights and recommendations
+
+### Hub Tab Structure (8 Tabs)
+
+| Tab | Purpose | Tools/Features | Phase Coverage |
+|-----|---------|----------------|----------------|
+| **Workflow** | Strategic lifecycle management | Phase progress, Plan list, Coverage widget, Pending actions | All Phases |
+| **Templates** | Template library & coverage | Template Library, Coverage Analysis (MoMAH taxonomy) | Phase 2 |
+| **Cascade** | Entity generation | 8 generators (Challenges, Pilots, Policies, R&D, Partnerships, Events, Living Labs, Campaigns) | Phase 3 |
+| **Monitoring** | Performance tracking | Cockpit, Drill-down, Alignment, Timeline, Feedback, Adjustment + Demand Dashboard, Action Plans, National Alignment | Phase 6 |
+| **Governance** | Approval & control | Signoff Tracker, Version Control, Committee Review, Ownership | Phase 4 |
+| **Communication** | Stakeholder comms | Planner, Stories, Notifications, Analytics, Public Dashboard, Public View | Phase 5 |
+| **Pre-Planning** | Analysis & inputs | Environmental Scan, SWOT, Stakeholder, Risk, Baseline, Inputs | Phase 1 |
+| **AI** | Intelligent assistance | Narrative Generator, Gap Recommender, What-If Simulator, Bottleneck Detector | All Phases |
+
+### Recommended Future Enhancements
+
+| New Tab | Purpose | Components |
+|---------|---------|------------|
+| **Evaluation** | Phase 7 tools | Evaluation Panel, Case Study Generator, Lessons Learned, Impact Assessment, ROI Calculator |
+| **Recalibration** | Phase 8 tools | Feedback Analysis, Adjustment Matrix, Mid-Cycle Pivot, Baseline Recalibrator, Next Cycle Initializer |
+| **Creation** | Phase 2 creation tools | Sector Strategy Builder, Strategy Wizard access |
 
 ---
 
@@ -86,7 +118,7 @@ The Strategy System is the core strategic planning and execution framework spann
 
 | Page | File | Route | Permission | Hub Access |
 |------|------|-------|------------|------------|
-| What-If Simulator | `WhatIfSimulatorPage.jsx` | `/what-if-simulator-page` | `strategy_view` | ❌ Not in Hub |
+| What-If Simulator | `WhatIfSimulatorPage.jsx` | `/what-if-simulator-page` | `strategy_view` | ✅ AI Tab (inline) |
 | Gap Analysis Tool | `GapAnalysisTool.jsx` | `/gap-analysis-tool` | `strategy_manage` | ❌ Not in Hub |
 | Budget Allocation | `BudgetAllocationTool.jsx` | `/budget-allocation-tool` | `strategy_manage` | ❌ Not in Hub |
 | Strategic KPI Tracker | `StrategicKPITracker.jsx` | `/strategic-kpi-tracker` | `strategy_view` | ❌ Not in Hub |
