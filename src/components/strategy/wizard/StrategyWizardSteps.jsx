@@ -351,9 +351,9 @@ export const initialWizardData = {
   
   // Step 6: Scenario Planning
   scenarios: {
-    best_case: { description: '', assumptions: [], outcomes: [] },
-    worst_case: { description: '', assumptions: [], outcomes: [] },
-    most_likely: { description: '', assumptions: [], outcomes: [] }
+    best_case: { description_en: '', description_ar: '', assumptions: [], outcomes: [], probability: '' },
+    worst_case: { description_en: '', description_ar: '', assumptions: [], outcomes: [], probability: '' },
+    most_likely: { description_en: '', description_ar: '', assumptions: [], outcomes: [], probability: '' }
   },
   
   // Step 7: Risk Assessment
@@ -407,10 +407,13 @@ export const initialWizardData = {
   
   // Step 17: Change Management
   change_management: {
-    readiness_assessment: '',
-    change_approach: '',
+    readiness_assessment_en: '',
+    readiness_assessment_ar: '',
+    change_approach_en: '',
+    change_approach_ar: '',
     training_plan: [],
-    resistance_management: ''
+    resistance_management_en: '',
+    resistance_management_ar: ''
   },
   
   // Metadata
