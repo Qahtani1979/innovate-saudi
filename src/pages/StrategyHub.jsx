@@ -79,6 +79,7 @@ const governanceTools = [
   { icon: GitBranch, label: { en: 'Version Control', ar: 'التحكم بالإصدارات' }, path: '/strategy-governance-page', tab: 'versions', permission: 'strategy_manage' },
   { icon: Users, label: { en: 'Committee Review', ar: 'مراجعة اللجنة' }, path: '/strategy-governance-page', tab: 'committee', permission: 'strategy_manage' },
   { icon: Settings, label: { en: 'Ownership', ar: 'الملكية' }, path: '/strategy-ownership-page', permission: 'strategy_manage' },
+  { icon: TrendingUp, label: { en: 'Budget Allocation', ar: 'تخصيص الميزانية' }, path: '/budget-allocation-tool', permission: 'strategy_manage' },
 ];
 
 // Communication Tools with permission requirements
@@ -115,6 +116,27 @@ const monitoringTools = [
   { icon: Calendar, label: { en: 'Timeline View', ar: 'عرض الجدول الزمني' }, path: '/strategy-timeline-page', desc: { en: 'Strategic timeline planning', ar: 'تخطيط الجدول الزمني الاستراتيجي' }, permission: 'strategy_view' },
   { icon: MessageSquare, label: { en: 'Feedback Dashboard', ar: 'لوحة التعليقات' }, path: '/strategy-feedback-dashboard', desc: { en: 'Collect and analyze feedback', ar: 'جمع وتحليل التعليقات' }, permission: 'strategy_view' },
   { icon: Settings, label: { en: 'Adjustment Wizard', ar: 'معالج التعديل' }, path: '/strategy-review-page', desc: { en: 'Strategy adjustment and review', ar: 'تعديل ومراجعة الاستراتيجية' }, permission: 'strategy_manage' },
+  { icon: TrendingUp, label: { en: 'Execution Dashboard', ar: 'لوحة التنفيذ' }, path: '/strategic-execution-dashboard', desc: { en: 'Track strategic execution', ar: 'تتبع التنفيذ الاستراتيجي' }, permission: 'strategy_view' },
+  { icon: Workflow, label: { en: 'Planning Progress', ar: 'تقدم التخطيط' }, path: '/strategic-planning-progress', desc: { en: 'Monitor planning milestones', ar: 'مراقبة معالم التخطيط' }, permission: 'strategy_view' },
+  { icon: Target, label: { en: 'KPI Tracker', ar: 'متتبع المؤشرات' }, path: '/strategic-kpi-tracker', desc: { en: 'Track strategic KPIs', ar: 'تتبع مؤشرات الأداء الاستراتيجية' }, permission: 'strategy_view' },
+  { icon: AlertTriangle, label: { en: 'Gap Analysis', ar: 'تحليل الفجوات' }, path: '/gap-analysis-tool', desc: { en: 'Identify strategy gaps', ar: 'تحديد الفجوات الاستراتيجية' }, permission: 'strategy_view' },
+];
+
+// Evaluation Tools (Phase 7)
+const evaluationTools = [
+  { icon: FileBarChart, label: { en: 'Evaluation Panel', ar: 'لوحة التقييم' }, path: '/strategy-evaluation-page', desc: { en: 'Comprehensive strategy evaluation', ar: 'تقييم شامل للاستراتيجية' }, permission: 'strategy_view' },
+  { icon: BookOpen, label: { en: 'Case Studies', ar: 'دراسات الحالة' }, path: '/case-studies', desc: { en: 'Generate case studies from successes', ar: 'إنشاء دراسات حالة من النجاحات' }, permission: 'strategy_view' },
+  { icon: Lightbulb, label: { en: 'Lessons Learned', ar: 'الدروس المستفادة' }, path: '/lessons-learned', desc: { en: 'Capture and share learnings', ar: 'جمع ومشاركة الدروس' }, permission: 'strategy_view' },
+  { icon: TrendingUp, label: { en: 'Impact Assessment', ar: 'تقييم الأثر' }, path: '/strategy-impact-assessment', desc: { en: 'Measure strategy impact', ar: 'قياس أثر الاستراتيجية' }, permission: 'strategy_view' },
+];
+
+// Recalibration Tools (Phase 8)
+const recalibrationTools = [
+  { icon: Brain, label: { en: 'Feedback Analysis', ar: 'تحليل التعليقات' }, path: '/feedback-analysis', desc: { en: 'AI-powered feedback analysis', ar: 'تحليل التعليقات بالذكاء الاصطناعي' }, permission: 'strategy_manage' },
+  { icon: Layers, label: { en: 'Adjustment Matrix', ar: 'مصفوفة التعديل' }, path: '/adjustment-matrix', desc: { en: 'Decision support for adjustments', ar: 'دعم القرار للتعديلات' }, permission: 'strategy_manage' },
+  { icon: Settings, label: { en: 'Mid-Cycle Pivot', ar: 'التحويل منتصف الدورة' }, path: '/mid-cycle-pivot', desc: { en: 'Manage strategic pivots', ar: 'إدارة التحويلات الاستراتيجية' }, permission: 'strategy_manage' },
+  { icon: Target, label: { en: 'Baseline Recalibrator', ar: 'إعادة معايرة الأساس' }, path: '/baseline-recalibrator', desc: { en: 'Recalibrate baselines', ar: 'إعادة معايرة خطوط الأساس' }, permission: 'strategy_manage' },
+  { icon: Sparkles, label: { en: 'Next Cycle Initializer', ar: 'مُهيئ الدورة التالية' }, path: '/next-cycle-initializer', desc: { en: 'Initialize next planning cycle', ar: 'بدء دورة التخطيط التالية' }, permission: 'strategy_manage' },
 ];
 
 // Demand & Resource Tools
@@ -162,6 +184,8 @@ function StrategyHub() {
   const filteredMonitoringTools = useMemo(() => filterByPermission(monitoringTools), [isAdmin, hasPermission]);
   const filteredDemandTools = useMemo(() => filterByPermission(demandTools), [isAdmin, hasPermission]);
   const filteredTemplateTools = useMemo(() => filterByPermission(templateTools), [isAdmin, hasPermission]);
+  const filteredEvaluationTools = useMemo(() => filterByPermission(evaluationTools), [isAdmin, hasPermission]);
+  const filteredRecalibrationTools = useMemo(() => filterByPermission(recalibrationTools), [isAdmin, hasPermission]);
 
   // Permission flags for showing/hiding entire sections
   const canManageStrategy = isAdmin || hasPermission('strategy_manage');
@@ -339,6 +363,14 @@ function StrategyHub() {
           <TabsTrigger value="preplanning" className="flex items-center gap-1 text-xs md:text-sm">
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">{t({ en: 'Pre-Plan', ar: 'التخطيط' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="evaluation" className="flex items-center gap-1 text-xs md:text-sm">
+            <Target className="h-4 w-4" />
+            <span className="hidden sm:inline">{t({ en: 'Evaluation', ar: 'التقييم' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="recalibration" className="flex items-center gap-1 text-xs md:text-sm">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">{t({ en: 'Recalibrate', ar: 'إعادة المعايرة' })}</span>
           </TabsTrigger>
           <TabsTrigger value="ai" className="flex items-center gap-1 text-xs md:text-sm">
             <Brain className="h-4 w-4" />
@@ -869,6 +901,124 @@ function StrategyHub() {
                 <Link to="/strategy-feedback-dashboard">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   {t({ en: 'Feedback Dashboard', ar: 'لوحة التعليقات' })}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Evaluation Tab (Phase 7) */}
+        <TabsContent value="evaluation" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                {t({ en: 'Strategy Evaluation', ar: 'تقييم الاستراتيجية' })}
+              </CardTitle>
+              <CardDescription>
+                {t({ en: 'Assess strategy performance, capture lessons, and generate case studies', ar: 'تقييم أداء الاستراتيجية وجمع الدروس وإنشاء دراسات الحالة' })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {filteredEvaluationTools.map(tool => {
+                  const Icon = tool.icon;
+                  return (
+                    <Link key={tool.path} to={tool.path}>
+                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-green-500/10">
+                              <Icon className="h-6 w-6 text-green-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{t(tool.label)}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{t(tool.desc)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t({ en: 'Quick Actions', ar: 'إجراءات سريعة' })}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex gap-3 flex-wrap">
+              <Button variant="outline" asChild>
+                <Link to="/strategy-review-page">
+                  <FileBarChart className="h-4 w-4 mr-2" />
+                  {t({ en: 'Review Progress', ar: 'مراجعة التقدم' })}
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/case-studies">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  {t({ en: 'View Case Studies', ar: 'عرض دراسات الحالة' })}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Recalibration Tab (Phase 8) */}
+        <TabsContent value="recalibration" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                {t({ en: 'Strategy Recalibration', ar: 'إعادة معايرة الاستراتيجية' })}
+              </CardTitle>
+              <CardDescription>
+                {t({ en: 'Adjust strategies based on feedback, manage pivots, and initialize next cycles', ar: 'تعديل الاستراتيجيات بناءً على التعليقات وإدارة التحويلات وبدء الدورات التالية' })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredRecalibrationTools.map(tool => {
+                  const Icon = tool.icon;
+                  return (
+                    <Link key={tool.path} to={tool.path}>
+                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-purple-500/10">
+                              <Icon className="h-6 w-6 text-purple-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{t(tool.label)}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{t(tool.desc)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t({ en: 'Recalibration Actions', ar: 'إجراءات إعادة المعايرة' })}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex gap-3 flex-wrap">
+              <Button variant="outline" asChild>
+                <Link to="/strategy-review-page">
+                  <Settings className="h-4 w-4 mr-2" />
+                  {t({ en: 'Adjustment Wizard', ar: 'معالج التعديل' })}
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/strategic-plan-builder">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {t({ en: 'New Strategy Cycle', ar: 'دورة استراتيجية جديدة' })}
                 </Link>
               </Button>
             </CardContent>
