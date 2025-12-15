@@ -50,12 +50,17 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
 
   const addAssumption = (scenarioKey) => {
     const currentAssumptions = data.scenarios?.[scenarioKey]?.assumptions || [];
-    updateScenario(scenarioKey, 'assumptions', [...currentAssumptions, '']);
+    updateScenario(scenarioKey, 'assumptions', [...currentAssumptions, { id: Date.now().toString(), text_en: '', text_ar: '' }]);
   };
 
-  const updateAssumption = (scenarioKey, index, value) => {
+  const updateAssumption = (scenarioKey, index, field, value) => {
     const currentAssumptions = [...(data.scenarios?.[scenarioKey]?.assumptions || [])];
-    currentAssumptions[index] = value;
+    // Handle legacy string format
+    if (typeof currentAssumptions[index] === 'string') {
+      currentAssumptions[index] = { id: Date.now().toString(), text_en: currentAssumptions[index], text_ar: '', [field]: value };
+    } else {
+      currentAssumptions[index] = { ...currentAssumptions[index], [field]: value };
+    }
     updateScenario(scenarioKey, 'assumptions', currentAssumptions);
   };
 
@@ -66,7 +71,7 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
 
   const addOutcome = (scenarioKey) => {
     const currentOutcomes = data.scenarios?.[scenarioKey]?.outcomes || [];
-    updateScenario(scenarioKey, 'outcomes', [...currentOutcomes, { metric: '', value: '' }]);
+    updateScenario(scenarioKey, 'outcomes', [...currentOutcomes, { id: Date.now().toString(), metric_en: '', metric_ar: '', value: '' }]);
   };
 
   const updateOutcome = (scenarioKey, index, field, value) => {
@@ -78,6 +83,12 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
   const removeOutcome = (scenarioKey, index) => {
     const currentOutcomes = data.scenarios?.[scenarioKey]?.outcomes || [];
     updateScenario(scenarioKey, 'outcomes', currentOutcomes.filter((_, i) => i !== index));
+  };
+
+  // Helper to get assumption text (handles legacy string format)
+  const getAssumptionText = (assumption, lang) => {
+    if (typeof assumption === 'string') return assumption;
+    return lang === 'ar' ? (assumption.text_ar || assumption.text_en) : (assumption.text_en || assumption.text_ar || assumption.text || '');
   };
 
   return (
@@ -110,7 +121,7 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
       <div className="grid gap-6">
         {SCENARIO_TYPES.map((scenario) => {
           const ScenarioIcon = scenario.icon;
-          const scenarioData = data.scenarios?.[scenario.key] || { description: '', assumptions: [], outcomes: [] };
+          const scenarioData = data.scenarios?.[scenario.key] || { description_en: '', description_ar: '', assumptions: [], outcomes: [] };
           
           return (
             <Card key={scenario.key} className={cn("border-2", scenario.color)}>
@@ -125,24 +136,39 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
               </CardHeader>
               
               <CardContent className="space-y-6">
-                {/* Description */}
-                <div>
-                  <Label className="font-medium">
-                    {t({ en: 'Scenario Description', ar: 'وصف السيناريو' })}
-                  </Label>
-                  <Textarea
-                    value={scenarioData.description}
-                    onChange={(e) => updateScenario(scenario.key, 'description', e.target.value)}
-                    placeholder={t({ 
-                      en: 'Describe what this scenario looks like in detail...',
-                      ar: 'وصف كيف يبدو هذا السيناريو بالتفصيل...'
-                    })}
-                    rows={3}
-                    className="mt-1"
-                  />
+                {/* Description - Bilingual */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="font-medium">
+                      {t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}
+                    </Label>
+                    <Textarea
+                      value={scenarioData.description_en || scenarioData.description || ''}
+                      onChange={(e) => updateScenario(scenario.key, 'description_en', e.target.value)}
+                      placeholder={t({ 
+                        en: 'Describe what this scenario looks like in detail...',
+                        ar: 'وصف كيف يبدو هذا السيناريو بالتفصيل...'
+                      })}
+                      rows={3}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="font-medium">
+                      {t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}
+                    </Label>
+                    <Textarea
+                      value={scenarioData.description_ar || ''}
+                      onChange={(e) => updateScenario(scenario.key, 'description_ar', e.target.value)}
+                      placeholder={t({ en: 'Arabic description...', ar: 'الوصف بالعربية...' })}
+                      rows={3}
+                      className="mt-1"
+                      dir="rtl"
+                    />
+                  </div>
                 </div>
 
-                {/* Key Assumptions */}
+                {/* Key Assumptions - Bilingual */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="font-medium">
@@ -161,14 +187,21 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
                   ) : (
                     <div className="space-y-2">
                       {scenarioData.assumptions.map((assumption, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <Badge variant="outline" className="shrink-0">{idx + 1}</Badge>
-                          <Input
-                            value={assumption}
-                            onChange={(e) => updateAssumption(scenario.key, idx, e.target.value)}
-                            placeholder={t({ en: 'Enter assumption...', ar: 'أدخل الافتراض...' })}
-                            className="flex-1"
-                          />
+                        <div key={assumption.id || idx} className="flex items-start gap-2 p-2 bg-background rounded border">
+                          <Badge variant="outline" className="shrink-0 mt-1">{idx + 1}</Badge>
+                          <div className="flex-1 grid grid-cols-2 gap-2">
+                            <Input
+                              value={typeof assumption === 'string' ? assumption : (assumption.text_en || '')}
+                              onChange={(e) => updateAssumption(scenario.key, idx, 'text_en', e.target.value)}
+                              placeholder={t({ en: 'English...', ar: 'إنجليزي...' })}
+                            />
+                            <Input
+                              value={typeof assumption === 'string' ? '' : (assumption.text_ar || '')}
+                              onChange={(e) => updateAssumption(scenario.key, idx, 'text_ar', e.target.value)}
+                              placeholder={t({ en: 'Arabic...', ar: 'عربي...' })}
+                              dir="rtl"
+                            />
+                          </div>
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -182,7 +215,7 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
                   )}
                 </div>
 
-                {/* Expected Outcomes */}
+                {/* Expected Outcomes - Bilingual */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="font-medium">
@@ -201,19 +234,25 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
                   ) : (
                     <div className="space-y-2">
                       {scenarioData.outcomes.map((outcome, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <Input
-                            value={outcome.metric}
-                            onChange={(e) => updateOutcome(scenario.key, idx, 'metric', e.target.value)}
-                            placeholder={t({ en: 'Metric (e.g., Budget utilization)', ar: 'المؤشر (مثال: استخدام الميزانية)' })}
-                            className="flex-1"
-                          />
-                          <Input
-                            value={outcome.value}
-                            onChange={(e) => updateOutcome(scenario.key, idx, 'value', e.target.value)}
-                            placeholder={t({ en: 'Expected value', ar: 'القيمة المتوقعة' })}
-                            className="w-32"
-                          />
+                        <div key={outcome.id || idx} className="flex items-center gap-2 p-2 bg-background rounded border">
+                          <div className="flex-1 grid grid-cols-3 gap-2">
+                            <Input
+                              value={outcome.metric_en || outcome.metric || ''}
+                              onChange={(e) => updateOutcome(scenario.key, idx, 'metric_en', e.target.value)}
+                              placeholder={t({ en: 'Metric (EN)', ar: 'المؤشر (إنجليزي)' })}
+                            />
+                            <Input
+                              value={outcome.metric_ar || ''}
+                              onChange={(e) => updateOutcome(scenario.key, idx, 'metric_ar', e.target.value)}
+                              placeholder={t({ en: 'Metric (AR)', ar: 'المؤشر (عربي)' })}
+                              dir="rtl"
+                            />
+                            <Input
+                              value={outcome.value || ''}
+                              onChange={(e) => updateOutcome(scenario.key, idx, 'value', e.target.value)}
+                              placeholder={t({ en: 'Value', ar: 'القيمة' })}
+                            />
+                          </div>
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -227,7 +266,7 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
                   )}
                 </div>
 
-                {/* Probability (optional) */}
+                {/* Probability */}
                 <div className="flex items-center gap-4">
                   <Label className="shrink-0">{t({ en: 'Probability', ar: 'الاحتمالية' })}</Label>
                   <Input

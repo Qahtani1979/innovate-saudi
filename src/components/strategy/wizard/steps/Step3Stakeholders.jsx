@@ -17,14 +17,16 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
   const addStakeholder = () => {
     const newStakeholder = { 
       id: Date.now().toString(),
-      name: '',
+      name_en: '',
+      name_ar: '',
       type: 'GOVERNMENT',
-      power: 'medium', // low, medium, high
-      interest: 'medium', // low, medium, high
-      influence_strategy: '',
+      power: 'medium',
+      interest: 'medium',
+      influence_strategy_en: '',
+      influence_strategy_ar: '',
       contact_person: '',
       contact_email: '',
-      engagement_level: 'inform', // inform, consult, involve, collaborate, empower
+      engagement_level: 'inform',
       notes: ''
     };
     onChange({ stakeholders: [...(data.stakeholders || []), newStakeholder] });
@@ -60,6 +62,14 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
     { value: 'medium', label: { en: 'Medium', ar: 'متوسط' } },
     { value: 'high', label: { en: 'High', ar: 'مرتفع' } }
   ];
+
+  // Helper to get display name (handles legacy 'name' field)
+  const getDisplayName = (stakeholder) => {
+    if (stakeholder.name_en || stakeholder.name_ar) {
+      return language === 'ar' ? (stakeholder.name_ar || stakeholder.name_en) : (stakeholder.name_en || stakeholder.name_ar);
+    }
+    return stakeholder.name || '?';
+  };
 
   // Group stakeholders by quadrant for matrix view
   const groupedStakeholders = {
@@ -106,7 +116,7 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {groupedStakeholders['Keep Satisfied'].map(s => (
-                    <Badge key={s.id} variant="outline" className="text-xs">{s.name || '?'}</Badge>
+                    <Badge key={s.id} variant="outline" className="text-xs">{getDisplayName(s)}</Badge>
                   ))}
                   {groupedStakeholders['Keep Satisfied'].length === 0 && (
                     <span className="text-muted-foreground text-xs">{t({ en: 'None', ar: 'لا يوجد' })}</span>
@@ -120,7 +130,7 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {groupedStakeholders['Manage Closely'].map(s => (
-                    <Badge key={s.id} variant="outline" className="text-xs">{s.name || '?'}</Badge>
+                    <Badge key={s.id} variant="outline" className="text-xs">{getDisplayName(s)}</Badge>
                   ))}
                   {groupedStakeholders['Manage Closely'].length === 0 && (
                     <span className="text-muted-foreground text-xs">{t({ en: 'None', ar: 'لا يوجد' })}</span>
@@ -135,7 +145,7 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {groupedStakeholders['Monitor'].map(s => (
-                    <Badge key={s.id} variant="outline" className="text-xs">{s.name || '?'}</Badge>
+                    <Badge key={s.id} variant="outline" className="text-xs">{getDisplayName(s)}</Badge>
                   ))}
                   {groupedStakeholders['Monitor'].length === 0 && (
                     <span className="text-muted-foreground text-xs">{t({ en: 'None', ar: 'لا يوجد' })}</span>
@@ -149,7 +159,7 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {groupedStakeholders['Keep Informed'].map(s => (
-                    <Badge key={s.id} variant="outline" className="text-xs">{s.name || '?'}</Badge>
+                    <Badge key={s.id} variant="outline" className="text-xs">{getDisplayName(s)}</Badge>
                   ))}
                   {groupedStakeholders['Keep Informed'].length === 0 && (
                     <span className="text-muted-foreground text-xs">{t({ en: 'None', ar: 'لا يوجد' })}</span>
@@ -197,16 +207,27 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                       </Button>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>{t({ en: 'Stakeholder Name', ar: 'اسم صاحب المصلحة' })} *</Label>
+                        <Label>{t({ en: 'Name (English)', ar: 'الاسم (إنجليزي)' })} *</Label>
                         <Input
-                          value={stakeholder.name}
-                          onChange={(e) => updateStakeholder(index, 'name', e.target.value)}
+                          value={stakeholder.name_en || stakeholder.name || ''}
+                          onChange={(e) => updateStakeholder(index, 'name_en', e.target.value)}
                           placeholder={t({ en: 'e.g., Ministry of Finance', ar: 'مثال: وزارة المالية' })}
                         />
                       </div>
-                      
+                      <div>
+                        <Label>{t({ en: 'Name (Arabic)', ar: 'الاسم (عربي)' })}</Label>
+                        <Input
+                          value={stakeholder.name_ar || ''}
+                          onChange={(e) => updateStakeholder(index, 'name_ar', e.target.value)}
+                          placeholder={t({ en: 'Arabic name', ar: 'الاسم بالعربية' })}
+                          dir="rtl"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label>{t({ en: 'Type', ar: 'النوع' })}</Label>
                         <Select
@@ -220,25 +241,6 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                             {STAKEHOLDER_TYPES.map(type => (
                               <SelectItem key={type.code} value={type.code}>
                                 {type[`name_${language}`]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>{t({ en: 'Engagement Level', ar: 'مستوى المشاركة' })}</Label>
-                        <Select
-                          value={stakeholder.engagement_level}
-                          onValueChange={(v) => updateStakeholder(index, 'engagement_level', v)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {engagementLevels.map(level => (
-                              <SelectItem key={level.value} value={level.value}>
-                                {level.label[language]}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -282,6 +284,27 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>{t({ en: 'Engagement Level', ar: 'مستوى المشاركة' })}</Label>
+                        <Select
+                          value={stakeholder.engagement_level}
+                          onValueChange={(v) => updateStakeholder(index, 'engagement_level', v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {engagementLevels.map(level => (
+                              <SelectItem key={level.value} value={level.value}>
+                                {level.label[language]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
                       <div>
                         <Label>{t({ en: 'Contact Person', ar: 'جهة الاتصال' })}</Label>
@@ -293,14 +316,26 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                       </div>
                     </div>
 
-                    <div>
-                      <Label>{t({ en: 'Influence Strategy', ar: 'استراتيجية التأثير' })}</Label>
-                      <Textarea
-                        value={stakeholder.influence_strategy}
-                        onChange={(e) => updateStakeholder(index, 'influence_strategy', e.target.value)}
-                        placeholder={t({ en: 'How will you engage and influence this stakeholder?', ar: 'كيف ستتعامل مع وتؤثر على صاحب المصلحة هذا؟' })}
-                        rows={2}
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>{t({ en: 'Influence Strategy (English)', ar: 'استراتيجية التأثير (إنجليزي)' })}</Label>
+                        <Textarea
+                          value={stakeholder.influence_strategy_en || stakeholder.influence_strategy || ''}
+                          onChange={(e) => updateStakeholder(index, 'influence_strategy_en', e.target.value)}
+                          placeholder={t({ en: 'How will you engage and influence this stakeholder?', ar: 'كيف ستتعامل مع وتؤثر على صاحب المصلحة هذا؟' })}
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <Label>{t({ en: 'Influence Strategy (Arabic)', ar: 'استراتيجية التأثير (عربي)' })}</Label>
+                        <Textarea
+                          value={stakeholder.influence_strategy_ar || ''}
+                          onChange={(e) => updateStakeholder(index, 'influence_strategy_ar', e.target.value)}
+                          placeholder={t({ en: 'Arabic strategy', ar: 'الاستراتيجية بالعربية' })}
+                          rows={2}
+                          dir="rtl"
+                        />
+                      </div>
                     </div>
                   </div>
                 );

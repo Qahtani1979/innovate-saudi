@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sparkles, AlertTriangle, Plus, X, Shield, TrendingUp, TrendingDown } from 'lucide-react';
+import { Sparkles, AlertTriangle, Plus, X, Shield } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { RISK_CATEGORIES } from '../StrategyWizardSteps';
 import { cn } from '@/lib/utils';
@@ -18,16 +18,20 @@ export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating 
   const addRisk = () => {
     const newRisk = {
       id: Date.now().toString(),
-      title: '',
-      description: '',
+      title_en: '',
+      title_ar: '',
+      description_en: '',
+      description_ar: '',
       category: 'OPERATIONAL',
-      likelihood: 'medium', // low, medium, high
-      impact: 'medium', // low, medium, high
+      likelihood: 'medium',
+      impact: 'medium',
       risk_score: 0,
-      mitigation_strategy: '',
-      contingency_plan: '',
+      mitigation_strategy_en: '',
+      mitigation_strategy_ar: '',
+      contingency_plan_en: '',
+      contingency_plan_ar: '',
       owner: '',
-      status: 'identified' // identified, mitigating, resolved, accepted
+      status: 'identified'
     };
     onChange({ risks: [...(data.risks || []), newRisk] });
   };
@@ -75,6 +79,14 @@ export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating 
     { value: 'moderate', label: { en: 'Moderate (Balanced)', ar: 'معتدل (متوازن)' } },
     { value: 'high', label: { en: 'High (Risk Tolerant)', ar: 'مرتفع (تحمل المخاطر)' } }
   ];
+
+  // Helper to get display title (handles legacy 'title' field)
+  const getDisplayTitle = (risk) => {
+    if (risk.title_en || risk.title_ar) {
+      return language === 'ar' ? (risk.title_ar || risk.title_en) : (risk.title_en || risk.title_ar);
+    }
+    return risk.title || '?';
+  };
 
   // Group risks by score for matrix
   const riskMatrix = {
@@ -126,7 +138,7 @@ export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating 
             {t({ en: 'Risk Appetite', ar: 'تحمل المخاطر' })}
           </CardTitle>
           <CardDescription>
-            {t({ en: 'Define the organization\'s tolerance for risk', ar: 'تحديد تحمل المنظمة للمخاطر' })}
+            {t({ en: "Define the organization's tolerance for risk", ar: 'تحديد تحمل المنظمة للمخاطر' })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -153,46 +165,42 @@ export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating 
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-1 text-xs">
-              {/* Header */}
               <div></div>
               <div className="text-center font-medium p-2 bg-muted rounded">{t({ en: 'Low Impact', ar: 'تأثير منخفض' })}</div>
               <div className="text-center font-medium p-2 bg-muted rounded">{t({ en: 'Medium Impact', ar: 'تأثير متوسط' })}</div>
               <div className="text-center font-medium p-2 bg-muted rounded">{t({ en: 'High Impact', ar: 'تأثير مرتفع' })}</div>
               
-              {/* High Likelihood Row */}
               <div className="font-medium p-2 bg-muted rounded text-center">{t({ en: 'High', ar: 'مرتفع' })}</div>
               <div className="p-2 bg-yellow-100 rounded min-h-[60px]">
-                {riskMatrix.high_low.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{r.title || '?'}</Badge>)}
+                {riskMatrix.high_low.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{getDisplayTitle(r)}</Badge>)}
               </div>
               <div className="p-2 bg-orange-100 rounded min-h-[60px]">
-                {riskMatrix.high_medium.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{r.title || '?'}</Badge>)}
+                {riskMatrix.high_medium.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{getDisplayTitle(r)}</Badge>)}
               </div>
               <div className="p-2 bg-red-100 rounded min-h-[60px]">
-                {riskMatrix.high_high.map(r => <Badge key={r.id} variant="destructive" className="text-[10px] m-0.5">{r.title || '?'}</Badge>)}
+                {riskMatrix.high_high.map(r => <Badge key={r.id} variant="destructive" className="text-[10px] m-0.5">{getDisplayTitle(r)}</Badge>)}
               </div>
               
-              {/* Medium Likelihood Row */}
               <div className="font-medium p-2 bg-muted rounded text-center">{t({ en: 'Medium', ar: 'متوسط' })}</div>
               <div className="p-2 bg-green-100 rounded min-h-[60px]">
-                {riskMatrix.medium_low.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{r.title || '?'}</Badge>)}
+                {riskMatrix.medium_low.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{getDisplayTitle(r)}</Badge>)}
               </div>
               <div className="p-2 bg-yellow-100 rounded min-h-[60px]">
-                {riskMatrix.medium_medium.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{r.title || '?'}</Badge>)}
+                {riskMatrix.medium_medium.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{getDisplayTitle(r)}</Badge>)}
               </div>
               <div className="p-2 bg-orange-100 rounded min-h-[60px]">
-                {riskMatrix.medium_high.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{r.title || '?'}</Badge>)}
+                {riskMatrix.medium_high.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{getDisplayTitle(r)}</Badge>)}
               </div>
               
-              {/* Low Likelihood Row */}
               <div className="font-medium p-2 bg-muted rounded text-center">{t({ en: 'Low', ar: 'منخفض' })}</div>
               <div className="p-2 bg-green-50 rounded min-h-[60px]">
-                {riskMatrix.low_low.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{r.title || '?'}</Badge>)}
+                {riskMatrix.low_low.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{getDisplayTitle(r)}</Badge>)}
               </div>
               <div className="p-2 bg-green-100 rounded min-h-[60px]">
-                {riskMatrix.low_medium.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{r.title || '?'}</Badge>)}
+                {riskMatrix.low_medium.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{getDisplayTitle(r)}</Badge>)}
               </div>
               <div className="p-2 bg-yellow-100 rounded min-h-[60px]">
-                {riskMatrix.low_high.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{r.title || '?'}</Badge>)}
+                {riskMatrix.low_high.map(r => <Badge key={r.id} variant="outline" className="text-[10px] m-0.5">{getDisplayTitle(r)}</Badge>)}
               </div>
             </div>
             <div className="text-center mt-2 text-xs text-muted-foreground">
@@ -237,16 +245,28 @@ export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating 
                     </Button>
                   </div>
 
+                  {/* Bilingual Title */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label>{t({ en: 'Risk Title', ar: 'عنوان الخطر' })} *</Label>
+                      <Label>{t({ en: 'Risk Title (English)', ar: 'عنوان الخطر (إنجليزي)' })} *</Label>
                       <Input
-                        value={risk.title}
-                        onChange={(e) => updateRisk(index, 'title', e.target.value)}
+                        value={risk.title_en || risk.title || ''}
+                        onChange={(e) => updateRisk(index, 'title_en', e.target.value)}
                         placeholder={t({ en: 'Brief risk title', ar: 'عنوان موجز للخطر' })}
                       />
                     </div>
-                    
+                    <div>
+                      <Label>{t({ en: 'Risk Title (Arabic)', ar: 'عنوان الخطر (عربي)' })}</Label>
+                      <Input
+                        value={risk.title_ar || ''}
+                        onChange={(e) => updateRisk(index, 'title_ar', e.target.value)}
+                        placeholder={t({ en: 'Arabic title', ar: 'العنوان بالعربية' })}
+                        dir="rtl"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label>{t({ en: 'Category', ar: 'الفئة' })}</Label>
                       <Select
@@ -305,33 +325,57 @@ export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating 
                     </div>
                   </div>
 
-                  <div>
-                    <Label>{t({ en: 'Description', ar: 'الوصف' })}</Label>
-                    <Textarea
-                      value={risk.description}
-                      onChange={(e) => updateRisk(index, 'description', e.target.value)}
-                      placeholder={t({ en: 'Describe the risk in detail...', ar: 'وصف الخطر بالتفصيل...' })}
-                      rows={2}
-                    />
-                  </div>
-
+                  {/* Bilingual Description */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label>{t({ en: 'Mitigation Strategy', ar: 'استراتيجية التخفيف' })}</Label>
+                      <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
                       <Textarea
-                        value={risk.mitigation_strategy}
-                        onChange={(e) => updateRisk(index, 'mitigation_strategy', e.target.value)}
-                        placeholder={t({ en: 'How will you reduce the risk?', ar: 'كيف ستقلل من الخطر؟' })}
+                        value={risk.description_en || risk.description || ''}
+                        onChange={(e) => updateRisk(index, 'description_en', e.target.value)}
+                        placeholder={t({ en: 'Describe the risk in detail...', ar: 'وصف الخطر بالتفصيل...' })}
                         rows={2}
                       />
                     </div>
                     <div>
-                      <Label>{t({ en: 'Contingency Plan', ar: 'خطة الطوارئ' })}</Label>
+                      <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
                       <Textarea
-                        value={risk.contingency_plan}
-                        onChange={(e) => updateRisk(index, 'contingency_plan', e.target.value)}
-                        placeholder={t({ en: 'What if the risk materializes?', ar: 'ماذا لو تحقق الخطر؟' })}
+                        value={risk.description_ar || ''}
+                        onChange={(e) => updateRisk(index, 'description_ar', e.target.value)}
+                        placeholder={t({ en: 'Arabic description', ar: 'الوصف بالعربية' })}
                         rows={2}
+                        dir="rtl"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bilingual Mitigation & Contingency */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'Mitigation Strategy', ar: 'استراتيجية التخفيف' })}</Label>
+                      <Input
+                        value={risk.mitigation_strategy_en || risk.mitigation_strategy || ''}
+                        onChange={(e) => updateRisk(index, 'mitigation_strategy_en', e.target.value)}
+                        placeholder={t({ en: 'English...', ar: 'إنجليزي...' })}
+                      />
+                      <Input
+                        value={risk.mitigation_strategy_ar || ''}
+                        onChange={(e) => updateRisk(index, 'mitigation_strategy_ar', e.target.value)}
+                        placeholder={t({ en: 'Arabic...', ar: 'عربي...' })}
+                        dir="rtl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'Contingency Plan', ar: 'خطة الطوارئ' })}</Label>
+                      <Input
+                        value={risk.contingency_plan_en || risk.contingency_plan || ''}
+                        onChange={(e) => updateRisk(index, 'contingency_plan_en', e.target.value)}
+                        placeholder={t({ en: 'English...', ar: 'إنجليزي...' })}
+                      />
+                      <Input
+                        value={risk.contingency_plan_ar || ''}
+                        onChange={(e) => updateRisk(index, 'contingency_plan_ar', e.target.value)}
+                        placeholder={t({ en: 'Arabic...', ar: 'عربي...' })}
+                        dir="rtl"
                       />
                     </div>
                   </div>

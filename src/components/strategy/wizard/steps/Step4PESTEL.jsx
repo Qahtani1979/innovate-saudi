@@ -66,11 +66,13 @@ export default function Step4PESTEL({ data, onChange, onGenerateAI, isGenerating
   const addFactor = (category) => {
     const newFactor = { 
       id: Date.now().toString(),
-      factor: '',
-      impact: 'medium', // low, medium, high
-      trend: 'stable', // declining, stable, growing
-      timeframe: 'medium_term', // short_term, medium_term, long_term
-      implications: ''
+      factor_en: '',
+      factor_ar: '',
+      impact: 'medium',
+      trend: 'stable',
+      timeframe: 'medium_term',
+      implications_en: '',
+      implications_ar: ''
     };
     const currentFactors = data.pestel?.[category] || [];
     onChange({ 
@@ -183,12 +185,19 @@ export default function Step4PESTEL({ data, onChange, onGenerateAI, isGenerating
                   factors.map((factor, index) => (
                     <div key={factor.id} className="p-3 bg-background rounded-lg border space-y-3">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
+                        <div className="flex-1 grid grid-cols-2 gap-2">
                           <Input
-                            value={factor.factor}
-                            onChange={(e) => updateFactor(category.key, index, 'factor', e.target.value)}
-                            placeholder={t({ en: 'Describe the factor...', ar: 'وصف العامل...' })}
+                            value={factor.factor_en || factor.factor || ''}
+                            onChange={(e) => updateFactor(category.key, index, 'factor_en', e.target.value)}
+                            placeholder={t({ en: 'Factor (English)...', ar: 'العامل (إنجليزي)...' })}
                             className="font-medium"
+                          />
+                          <Input
+                            value={factor.factor_ar || ''}
+                            onChange={(e) => updateFactor(category.key, index, 'factor_ar', e.target.value)}
+                            placeholder={t({ en: 'Factor (Arabic)...', ar: 'العامل (عربي)...' })}
+                            className="font-medium"
+                            dir="rtl"
                           />
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => removeFactor(category.key, index)}>
@@ -255,14 +264,26 @@ export default function Step4PESTEL({ data, onChange, onGenerateAI, isGenerating
                         </div>
                       </div>
                       
-                      <div>
-                        <Label className="text-xs">{t({ en: 'Strategic Implications', ar: 'الآثار الاستراتيجية' })}</Label>
-                        <Input
-                          value={factor.implications}
-                          onChange={(e) => updateFactor(category.key, index, 'implications', e.target.value)}
-                          placeholder={t({ en: 'What does this mean for your strategy?', ar: 'ماذا يعني هذا لاستراتيجيتك؟' })}
-                          className="text-sm"
-                        />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">{t({ en: 'Implications (EN)', ar: 'الآثار (إنجليزي)' })}</Label>
+                          <Input
+                            value={factor.implications_en || factor.implications || ''}
+                            onChange={(e) => updateFactor(category.key, index, 'implications_en', e.target.value)}
+                            placeholder={t({ en: 'What does this mean for your strategy?', ar: 'ماذا يعني هذا لاستراتيجيتك؟' })}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">{t({ en: 'Implications (AR)', ar: 'الآثار (عربي)' })}</Label>
+                          <Input
+                            value={factor.implications_ar || ''}
+                            onChange={(e) => updateFactor(category.key, index, 'implications_ar', e.target.value)}
+                            placeholder={t({ en: 'Arabic implications', ar: 'الآثار بالعربية' })}
+                            className="text-sm"
+                            dir="rtl"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))
