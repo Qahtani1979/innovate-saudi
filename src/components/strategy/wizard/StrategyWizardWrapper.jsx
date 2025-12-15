@@ -408,12 +408,26 @@ Based on the plan name, suggest appropriate values for ALL of the following:
 - initial_constraints_en, initial_constraints_ar
 
 Use formal language appropriate for Saudi government documents.`,
-      vision: `Generate vision and mission statements for a Saudi municipal strategic plan.
+      vision: `Generate Core Values and Strategic Pillars for a Saudi municipal strategic plan.
 Plan: ${context.planName}
+Vision: ${context.vision}
+Mission: ${context.mission}
 Sectors: ${context.sectors.join(', ')}
 Themes: ${context.themes.join(', ')}
 
-Provide in both English and Arabic.`,
+Generate the following (all bilingual - English and Arabic):
+
+1. CORE VALUES (5-7 values):
+Each value should have: name_en, name_ar, description_en, description_ar
+Values should reflect Saudi government principles, Vision 2030 values, and organizational culture.
+Examples: Innovation, Excellence, Integrity, Collaboration, Transparency, Sustainability, Citizen-Focus
+
+2. STRATEGIC PILLARS (4-6 pillars):
+Each pillar should have: name_en, name_ar, description_en, description_ar
+Pillars are the main thematic areas that organize strategic objectives.
+Examples: Digital Transformation, Sustainable Development, Quality of Life, Economic Diversification, Institutional Excellence
+
+Use formal language appropriate for Saudi government documents.`,
       stakeholders: `Identify key stakeholders for this Saudi municipal strategic plan:
 Plan: ${context.planName}
 Vision: ${context.vision}
@@ -550,13 +564,36 @@ Assess readiness, define change approach, and resistance management strategies.`
       },
       vision: {
         type: 'object',
+        required: ['core_values', 'strategic_pillars'],
         properties: {
-          vision_en: { type: 'string' },
-          vision_ar: { type: 'string' },
-          mission_en: { type: 'string' },
-          mission_ar: { type: 'string' },
-          core_values: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } } },
-          strategic_pillars: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } } }
+          core_values: { 
+            type: 'array', 
+            minItems: 5,
+            items: { 
+              type: 'object', 
+              required: ['name_en', 'name_ar', 'description_en', 'description_ar'],
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' }, 
+                description_en: { type: 'string' }, 
+                description_ar: { type: 'string' } 
+              } 
+            } 
+          },
+          strategic_pillars: { 
+            type: 'array', 
+            minItems: 4,
+            items: { 
+              type: 'object', 
+              required: ['name_en', 'name_ar', 'description_en', 'description_ar'],
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' }, 
+                description_en: { type: 'string' }, 
+                description_ar: { type: 'string' } 
+              } 
+            } 
+          }
         }
       },
       stakeholders: {
@@ -800,12 +837,28 @@ Assess readiness, define change approach, and resistance management strategies.`
           if (typeof data.available_resources === 'string' && typeof updates.available_resources_en !== 'string') updates.available_resources_en = data.available_resources;
           if (typeof data.initial_constraints === 'string' && typeof updates.initial_constraints_en !== 'string') updates.initial_constraints_en = data.initial_constraints;
         } else if (stepKey === 'vision') {
-          if (data.vision_en) updates.vision_en = data.vision_en;
-          if (data.vision_ar) updates.vision_ar = data.vision_ar;
-          if (data.mission_en) updates.mission_en = data.mission_en;
-          if (data.mission_ar) updates.mission_ar = data.mission_ar;
-          if (data.core_values) updates.core_values = data.core_values.map((v, i) => ({ ...v, id: Date.now().toString() + i }));
-          if (data.strategic_pillars) updates.strategic_pillars = data.strategic_pillars.map((p, i) => ({ ...p, id: Date.now().toString() + 'p' + i, icon: 'Target' }));
+          // Step 2 focuses only on Core Values and Strategic Pillars (Vision/Mission are in Step 1)
+          if (Array.isArray(data.core_values) && data.core_values.length > 0) {
+            updates.core_values = data.core_values.map((v, i) => ({ 
+              ...v, 
+              id: Date.now().toString() + i,
+              name_en: v.name_en || '',
+              name_ar: v.name_ar || '',
+              description_en: v.description_en || '',
+              description_ar: v.description_ar || ''
+            }));
+          }
+          if (Array.isArray(data.strategic_pillars) && data.strategic_pillars.length > 0) {
+            updates.strategic_pillars = data.strategic_pillars.map((p, i) => ({ 
+              ...p, 
+              id: Date.now().toString() + 'p' + i, 
+              icon: 'Target',
+              name_en: p.name_en || '',
+              name_ar: p.name_ar || '',
+              description_en: p.description_en || '',
+              description_ar: p.description_ar || ''
+            }));
+          }
         } else if (stepKey === 'stakeholders' && data.stakeholders) {
           updates.stakeholders = data.stakeholders.map((s, i) => ({ 
             ...s, 
