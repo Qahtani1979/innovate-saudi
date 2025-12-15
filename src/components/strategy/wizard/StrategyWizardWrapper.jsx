@@ -987,7 +987,122 @@ For EACH assumption, provide ALL fields in BOTH English and Arabic:
 
 ---
 
-Be highly specific to MoMAH's mandate, Vision 2030 alignment, and the Saudi municipal ecosystem. Reference actual systems (Balady, Sakani, ANSA), agencies (SDAIA, MCIT, MOMRA), and frameworks. Avoid generic corporate language.`
+Be highly specific to MoMAH's mandate, Vision 2030 alignment, and the Saudi municipal ecosystem. Reference actual systems (Balady, Sakani, ANSA), agencies (SDAIA, MCIT, MOMRA), and frameworks. Avoid generic corporate language.`,
+      objectives: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
+
+## MoMAH CONTEXT:
+MoMAH oversees municipal services across 13 administrative regions, 285+ municipalities, and 17 major Amanats.
+- Major Cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Tabuk, Abha
+- Vision 2030 Programs: Quality of Life Program, Housing Program (70% ownership target), National Transformation Program, Thriving Cities Program
+- Innovation Priorities: AI/ML, IoT, Digital Twins, Blockchain, Smart City Technologies, GovTech, PropTech, CleanTech
+- Key Frameworks: National Spatial Strategy (NSS), National Housing Strategy, Smart City National Framework, Municipal Excellence Framework
+- Key Systems: Balady Platform, Sakani Housing Program, Momra Services, Baladiya Systems, ANSA (National Address)
+- Sister Agencies: MCIT, MHRSD, MOT, MODON, Royal Commission, SDAIA, STC, CITC
+
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}${context.planNameAr ? ` (${context.planNameAr})` : ''}
+- Vision: ${context.vision || 'Not yet defined'}
+- Mission: ${wizardData.mission_en || 'Not specified'}
+- Sectors: ${context.sectors.join(', ') || 'Not specified'}
+- Strategic Themes: ${(wizardData.strategic_themes || []).join(', ') || 'Not specified'}
+- Timeline: ${context.startYear}-${context.endYear} (${context.endYear - context.startYear} years)
+- Budget Range: ${wizardData.budget_range || 'Not specified'}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
+- Vision 2030 Programs: ${(wizardData.vision_2030_programs || []).join(', ') || 'Not specified'}
+- Target Regions: ${(wizardData.target_regions || []).join(', ') || 'Kingdom-wide'}
+
+## STRATEGIC PILLARS (from Step 2):
+${(wizardData.strategic_pillars || []).map((p, i) => `${i + 1}. ${p.name_en || p.name_ar}`).join('\n') || 'Not defined yet'}
+
+## KEY STAKEHOLDERS (from Step 3):
+${(wizardData.stakeholders || []).filter(s => s.power === 'high').slice(0, 5).map(s => `- ${s.name_en || s.name_ar} (${s.type})`).join('\n') || 'Not defined yet'}
+
+## SWOT SUMMARY (from Step 5):
+- Key Strengths: ${(wizardData.swot?.strengths || []).filter(s => s.priority === 'high').slice(0, 2).map(s => s.text_en).join('; ') || 'Not analyzed yet'}
+- Key Opportunities: ${(wizardData.swot?.opportunities || []).filter(o => o.priority === 'high').slice(0, 2).map(o => o.text_en).join('; ') || 'Not analyzed yet'}
+- Key Challenges: ${(wizardData.swot?.weaknesses || []).filter(w => w.priority === 'high').slice(0, 2).map(w => w.text_en).join('; ') || 'Not analyzed yet'}
+
+## KEY RISKS (from Step 7):
+${(wizardData.risks || []).filter(r => r.impact === 'high' || r.likelihood === 'high').slice(0, 3).map(r => `- ${r.title_en || r.title_ar} (${r.category})`).join('\n') || 'Not assessed yet'}
+
+## DISCOVERY INPUTS (from Step 1):
+- Key Challenges: ${wizardData.key_challenges_en || 'Not specified'}
+- Available Resources: ${wizardData.available_resources_en || 'Not specified'}
+- Initial Constraints: ${wizardData.initial_constraints_en || 'Not specified'}
+
+---
+
+## REQUIREMENTS:
+Generate 6-10 Strategic Objectives for this municipal strategic plan.
+
+Each objective MUST have ALL fields in BOTH English and Arabic:
+- name_en / name_ar: Clear, action-oriented objective title (5-12 words)
+- description_en / description_ar: Detailed description explaining the objective's scope, expected outcomes, and alignment (3-5 sentences)
+- sector_code: One of the target sectors (${context.sectors.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES | CITIZEN_SERVICES | RURAL_DEVELOPMENT | PUBLIC_SPACES | WATER_RESOURCES | TRANSPORTATION | HERITAGE'})
+- priority: "high" | "medium" | "low"
+
+---
+
+## OBJECTIVE DESIGN PRINCIPLES:
+
+**1. SMART Criteria:**
+- Specific: Clear scope and boundaries
+- Measurable: Quantifiable outcomes possible
+- Achievable: Realistic within budget and timeline
+- Relevant: Aligned with Vision 2030 and MoMAH mandate
+- Time-bound: Achievable within ${context.endYear - context.startYear} years
+
+**2. Alignment Requirements:**
+- Each objective MUST directly support at least one Strategic Pillar
+- Each objective MUST align with at least one Vision 2030 program
+- Objectives MUST collectively address the key challenges identified
+- Objectives MUST leverage the focus technologies where relevant
+
+**3. Distribution Requirements:**
+- At least 2-3 objectives should be HIGH priority
+- At least 2 objectives should be MEDIUM priority
+- Maximum 1-2 objectives LOW priority
+- Cover at least 4 different target sectors
+- Balance between operational excellence and transformation goals
+
+---
+
+## MoMAH-SPECIFIC OBJECTIVE EXAMPLES:
+
+**Digital Transformation & Smart Cities:**
+- "Implement Integrated Smart City Command Center" - Deploy IoT-based urban management platform across major cities
+- "Achieve 95% Digital Service Adoption" - Migrate all municipal services to Balady digital platform
+- "Deploy AI-Powered Municipal Decision Support" - Implement SDAIA-compliant AI for urban planning
+
+**Citizen Experience:**
+- "Enhance Municipal Service Satisfaction to 85%+" - Improve citizen-facing services across all Amanats
+- "Reduce Service Delivery Time by 50%" - Streamline permit and approval processes
+
+**Infrastructure & Urban Development:**
+- "Develop 50,000 Housing Units" - Support Sakani program housing targets in target regions
+- "Achieve 100% ANSA Coverage" - Complete National Address integration for all properties
+- "Upgrade Municipal Infrastructure in 5 Cities" - Modernize water, sewage, and roads
+
+**Sustainability & Environment:**
+- "Reduce Municipal Carbon Footprint by 30%" - Align with Saudi Green Initiative targets
+- "Achieve Zero-Waste for 3 Major Cities" - Implement comprehensive waste management
+
+**Governance & Capacity:**
+- "Build Digital Competency Across 80% of Staff" - MCIT-certified training program
+- "Establish Regional Innovation Hubs in 5 Regions" - Foster municipal innovation ecosystem
+
+---
+
+## CRITICAL GUIDELINES:
+
+1. **Use Formal Arabic (فصحى)** for all Arabic content - appropriate for government documents
+2. **Be Specific to Plan Context** - Reference the actual sectors, technologies, and programs selected
+3. **Avoid Generic Language** - No vague objectives like "improve efficiency" without specifics
+4. **Include Measurable Elements** - Even in descriptions, hint at how success will be measured
+5. **Consider Dependencies** - Objectives should be achievable given the constraints identified
+6. **Balance Ambition and Realism** - Stretch goals but achievable within timeline and budget
+
+Return objectives as an array under the "objectives" key.`
     };
     
     const schemas = {
