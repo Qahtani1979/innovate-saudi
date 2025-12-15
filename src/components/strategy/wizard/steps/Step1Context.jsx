@@ -43,7 +43,7 @@ export default function Step1Context({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* AI Generation Button */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-4">

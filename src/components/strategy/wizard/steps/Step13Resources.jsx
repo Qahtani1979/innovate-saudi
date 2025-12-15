@@ -1,12 +1,10 @@
 import React from 'react';
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, DollarSign, Users, Cpu, Building, Plus, X } from 'lucide-react';
+import { Sparkles, DollarSign, Users, Cpu, Building, Plus, X, StickyNote } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 
 export default function Step13Resources({ data, onChange, onGenerateAI, isGenerating }) {
@@ -64,11 +62,45 @@ export default function Step13Resources({ data, onChange, onGenerateAI, isGenera
               </div>
             ) : (
               data.resource_plan[key].map((item, idx) => (
-                <div key={item.id} className="grid grid-cols-4 gap-2 p-3 border rounded items-end">
-                  <Input placeholder={t({ en: 'Name/Description', ar: 'الاسم/الوصف' })} value={item.name} onChange={(e) => updateResource(key, idx, 'name', e.target.value)} />
-                  <Input placeholder={t({ en: 'Quantity', ar: 'الكمية' })} value={item.quantity} onChange={(e) => updateResource(key, idx, 'quantity', e.target.value)} />
-                  <Input placeholder={t({ en: 'Cost (SAR)', ar: 'التكلفة' })} value={item.cost} onChange={(e) => updateResource(key, idx, 'cost', e.target.value)} />
-                  <Button variant="ghost" size="icon" onClick={() => removeResource(key, idx)}><X className="w-4 h-4" /></Button>
+                <div key={item.id} className="grid grid-cols-1 md:grid-cols-5 gap-2 p-3 border rounded items-end">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Name', ar: 'الاسم' })}</Label>
+                    <Input
+                      placeholder={t({ en: 'Name/Description', ar: 'الاسم/الوصف' })}
+                      value={item.name}
+                      onChange={(e) => updateResource(key, idx, 'name', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Quantity', ar: 'الكمية' })}</Label>
+                    <Input
+                      placeholder={t({ en: 'Quantity', ar: 'الكمية' })}
+                      value={item.quantity}
+                      onChange={(e) => updateResource(key, idx, 'quantity', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Cost', ar: 'التكلفة' })}</Label>
+                    <Input
+                      placeholder={t({ en: 'Cost (SAR)', ar: 'التكلفة (ريال)' })}
+                      value={item.cost}
+                      onChange={(e) => updateResource(key, idx, 'cost', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      <StickyNote className="h-3 w-3" />
+                      {t({ en: 'Notes', ar: 'ملاحظات' })}
+                    </Label>
+                    <Input
+                      placeholder={t({ en: 'Optional notes', ar: 'ملاحظات اختيارية' })}
+                      value={item.notes || ''}
+                      onChange={(e) => updateResource(key, idx, 'notes', e.target.value)}
+                    />
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => removeResource(key, idx)}>
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
               ))
             )}

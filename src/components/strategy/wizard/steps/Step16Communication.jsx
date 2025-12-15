@@ -1,14 +1,16 @@
 import React from 'react';
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, Megaphone, RefreshCw } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, Megaphone, RefreshCw, Plus, X } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 
 // Combined Step 16 (Communication) and Step 17 (Change Management)
 export function Step16Communication({ data, onChange, onGenerateAI, isGenerating }) {
-  const { language, t, isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -29,7 +31,12 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
         <CardContent>
           <Textarea
             value={data.communication_plan?.key_messages?.join('\n') || ''}
-            onChange={(e) => onChange({ communication_plan: { ...data.communication_plan, key_messages: e.target.value.split('\n').filter(Boolean) } })}
+            onChange={(e) => onChange({
+              communication_plan: {
+                ...data.communication_plan,
+                key_messages: e.target.value.split('\n').map(s => s.trim()).filter(Boolean)
+              }
+            })}
             placeholder={t({ en: 'Enter key messages (one per line)...', ar: 'أدخل الرسائل الرئيسية (واحدة في كل سطر)...' })}
             rows={4}
           />
@@ -43,7 +50,12 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
         <CardContent>
           <Textarea
             value={data.communication_plan?.internal_channels?.join('\n') || ''}
-            onChange={(e) => onChange({ communication_plan: { ...data.communication_plan, internal_channels: e.target.value.split('\n').filter(Boolean) } })}
+            onChange={(e) => onChange({
+              communication_plan: {
+                ...data.communication_plan,
+                internal_channels: e.target.value.split('\n').map(s => s.trim()).filter(Boolean)
+              }
+            })}
             placeholder={t({ en: 'e.g., Email, Intranet, Team meetings...', ar: 'مثال: البريد الإلكتروني، الشبكة الداخلية...' })}
             rows={3}
           />
@@ -57,7 +69,12 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
         <CardContent>
           <Textarea
             value={data.communication_plan?.external_channels?.join('\n') || ''}
-            onChange={(e) => onChange({ communication_plan: { ...data.communication_plan, external_channels: e.target.value.split('\n').filter(Boolean) } })}
+            onChange={(e) => onChange({
+              communication_plan: {
+                ...data.communication_plan,
+                external_channels: e.target.value.split('\n').map(s => s.trim()).filter(Boolean)
+              }
+            })}
             placeholder={t({ en: 'e.g., Press releases, Social media, Public events...', ar: 'مثال: البيانات الصحفية، وسائل التواصل...' })}
             rows={3}
           />
@@ -68,7 +85,43 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
 }
 
 export function Step17Change({ data, onChange, onGenerateAI, isGenerating }) {
-  const { language, t, isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
+
+  const trainingPlan = data.change_management?.training_plan || [];
+
+  const addTraining = () => {
+    const next = [
+      ...trainingPlan,
+      { id: Date.now().toString(), name: '', target_audience: '', duration: '', timeline: '' }
+    ];
+
+    onChange({
+      change_management: {
+        ...data.change_management,
+        training_plan: next
+      }
+    });
+  };
+
+  const updateTraining = (id, updates) => {
+    const next = trainingPlan.map((tItem) => (tItem.id === id ? { ...tItem, ...updates } : tItem));
+    onChange({
+      change_management: {
+        ...data.change_management,
+        training_plan: next
+      }
+    });
+  };
+
+  const removeTraining = (id) => {
+    const next = trainingPlan.filter((tItem) => tItem.id !== id);
+    onChange({
+      change_management: {
+        ...data.change_management,
+        training_plan: next
+      }
+    });
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -123,8 +176,62 @@ export function Step17Change({ data, onChange, onGenerateAI, isGenerating }) {
           />
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            {t({ en: 'Training Plan', ar: 'خطة التدريب' })}
+            <Badge variant="secondary">{trainingPlan.length}</Badge>
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={addTraining} className="gap-2">
+            <Plus className="h-4 w-4" />
+            {t({ en: 'Add Training', ar: 'إضافة تدريب' })}
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {trainingPlan.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg">
+              {t({ en: 'No training items added', ar: 'لم تتم إضافة عناصر تدريب' })}
+            </div>
+          ) : (
+            trainingPlan.map((item) => (
+              <div key={item.id} className="border rounded-lg p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{item.name || t({ en: 'Training Item', ar: 'عنصر تدريب' })}</p>
+                  <Button size="icon" variant="ghost" onClick={() => removeTraining(item.id)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Training Name', ar: 'اسم التدريب' })}</Label>
+                    <Input value={item.name || ''} onChange={(e) => updateTraining(item.id, { name: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Target Audience', ar: 'الفئة المستهدفة' })}</Label>
+                    <Input value={item.target_audience || ''} onChange={(e) => updateTraining(item.id, { target_audience: e.target.value })} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Duration', ar: 'المدة' })}</Label>
+                    <Input value={item.duration || ''} onChange={(e) => updateTraining(item.id, { duration: e.target.value })} placeholder={t({ en: 'e.g., 2 days', ar: 'مثال: يومان' })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Timeline', ar: 'الجدول الزمني' })}</Label>
+                    <Input value={item.timeline || ''} onChange={(e) => updateTraining(item.id, { timeline: e.target.value })} placeholder={t({ en: 'e.g., Q2 2026', ar: 'مثال: الربع الثاني 2026' })} />
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 export default Step16Communication;
+

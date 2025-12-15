@@ -306,7 +306,16 @@ Plan Name: ${context.planName}
 Sectors: ${context.sectors.join(', ')}
 Themes: ${context.themes.join(', ')}
 
-Generate vision statement, mission statement, and description in both English and Arabic.`,
+Provide:
+- vision_en, vision_ar
+- mission_en, mission_ar
+- description_en, description_ar
+- quick_stakeholders: 6-10 stakeholder names (strings)
+- key_challenges: brief summary (write in ${language === 'ar' ? 'Arabic' : 'English'})
+- available_resources: brief summary (write in ${language === 'ar' ? 'Arabic' : 'English'})
+- initial_constraints: brief summary (write in ${language === 'ar' ? 'Arabic' : 'English'})
+
+Use formal language appropriate for government documents.`,
       vision: `Generate vision and mission statements for a Saudi municipal strategic plan.
 Plan: ${context.planName}
 Sectors: ${context.sectors.join(', ')}
@@ -395,7 +404,11 @@ Assess readiness, define change approach, and resistance management strategies.`
           mission_en: { type: 'string' },
           mission_ar: { type: 'string' },
           description_en: { type: 'string' },
-          description_ar: { type: 'string' }
+          description_ar: { type: 'string' },
+          quick_stakeholders: { type: 'array', items: { type: 'string' } },
+          key_challenges: { type: 'string' },
+          available_resources: { type: 'string' },
+          initial_constraints: { type: 'string' }
         }
       },
       vision: {
@@ -553,7 +566,7 @@ Assess readiness, define change approach, and resistance management strategies.`
         properties: {
           committees: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, role: { type: 'string' }, meeting_frequency: { type: 'string' }, responsibilities: { type: 'string' }, members: { type: 'array', items: { type: 'string' } } } } },
           reporting_frequency: { type: 'string' },
-          escalation_path: { type: 'string' }
+          escalation_path: { type: 'array', items: { type: 'string' } }
         }
       },
       communication: {
@@ -595,6 +608,13 @@ Assess readiness, define change approach, and resistance management strategies.`
           if (data.mission_ar) updates.mission_ar = data.mission_ar;
           if (data.description_en) updates.description_en = data.description_en;
           if (data.description_ar) updates.description_ar = data.description_ar;
+
+          if (Array.isArray(data.quick_stakeholders)) {
+            updates.quick_stakeholders = data.quick_stakeholders.map(s => String(s).trim()).filter(Boolean);
+          }
+          if (typeof data.key_challenges === 'string') updates.key_challenges = data.key_challenges;
+          if (typeof data.available_resources === 'string') updates.available_resources = data.available_resources;
+          if (typeof data.initial_constraints === 'string') updates.initial_constraints = data.initial_constraints;
         } else if (stepKey === 'vision') {
           if (data.vision_en) updates.vision_en = data.vision_en;
           if (data.vision_ar) updates.vision_ar = data.vision_ar;
@@ -756,15 +776,21 @@ Assess readiness, define change approach, and resistance management strategies.`
             }));
           }
         } else if (stepKey === 'governance') {
+          const escalationPath = Array.isArray(data.escalation_path)
+            ? data.escalation_path
+            : (typeof data.escalation_path === 'string'
+              ? data.escalation_path.split(/\n|;|,/).map(s => s.trim()).filter(Boolean)
+              : []);
+
           updates.governance = {
             ...wizardData.governance,
-            committees: (data.committees || []).map((c, i) => ({ 
-              ...c, 
+            committees: (data.committees || []).map((c, i) => ({
+              ...c,
               id: Date.now().toString() + i,
-              members: Array.isArray(c.members) ? c.members : []
+              members: Array.isArray(c.members) ? c.members.map(m => String(m).trim()).filter(Boolean) : []
             })),
             reporting_frequency: data.reporting_frequency || 'monthly',
-            escalation_path: data.escalation_path || ''
+            escalation_path: escalationPath
           };
         } else if (stepKey === 'communication') {
           updates.communication_plan = {
