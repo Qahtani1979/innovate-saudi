@@ -8,17 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   ChevronLeft, ChevronRight, Target, Save, FolderOpen, 
-  AlertCircle, Clock, Send, Loader2, RotateCcw 
+  AlertCircle, Clock, Send, Loader2, RotateCcw, FileText 
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
 import { toast } from 'sonner';
 import ProtectedPage from '../../permissions/ProtectedPage';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 import { useAutoSaveDraft } from '@/hooks/strategy/useAutoSaveDraft';
+import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
 
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';
 import PlanSelectionDialog from './PlanSelectionDialog';
+import SaveAsTemplateDialog from '../templates/SaveAsTemplateDialog';
 import Step1Context from './steps/Step1Context';
 import Step2Vision from './steps/Step2Vision';
 import Step3Stakeholders from './steps/Step3Stakeholders';
@@ -44,6 +46,7 @@ import Step18Review from './steps/Step8Review';
  * - Create mode: New plan creation with draft auto-save
  * - Edit mode: Edit existing plan with version control
  * - Review mode: Read-only review of submitted plans
+ * - Template mode: Start from a template
  */
 export default function StrategyWizardWrapper() {
   const { language, t, isRTL } = useLanguage();
@@ -52,6 +55,7 @@ export default function StrategyWizardWrapper() {
   const [searchParams, setSearchParams] = useSearchParams();
   
   const { createApprovalRequest } = useApprovalRequest();
+  const { applyTemplate } = useStrategyTemplates();
   
   // Mode and plan state
   const [mode, setMode] = useState('create'); // 'create' | 'edit' | 'review'
@@ -61,6 +65,7 @@ export default function StrategyWizardWrapper() {
   const [generatingStep, setGeneratingStep] = useState(null);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
+  const [appliedTemplateName, setAppliedTemplateName] = useState(null);
 
   // Auto-save hook
   const {
@@ -78,13 +83,25 @@ export default function StrategyWizardWrapper() {
   useEffect(() => {
     const urlPlanId = searchParams.get('id');
     const urlMode = searchParams.get('mode');
+    const templateId = searchParams.get('template');
     
-    if (urlPlanId) {
+    if (templateId) {
+      // Apply template
+      applyTemplate(templateId).then(templateData => {
+        if (templateData) {
+          setWizardData({ ...initialWizardData, ...templateData });
+          setAppliedTemplateName(templateData._sourceTemplateName);
+          setMode('create');
+          toast.success(`Template "${templateData._sourceTemplateName}" applied`);
+        }
+      }).catch(err => {
+        console.error('Failed to apply template:', err);
+      });
+    } else if (urlPlanId) {
       setPlanId(urlPlanId);
       setMode(urlMode || 'edit');
       loadPlan(urlPlanId).then(plan => {
         if (plan) {
-          // Merge plan data with draft_data if available
           const mergedData = {
             ...initialWizardData,
             ...plan,
@@ -99,7 +116,7 @@ export default function StrategyWizardWrapper() {
     } else if (hasDraft) {
       setShowDraftRecovery(true);
     }
-  }, [searchParams, hasDraft, loadPlan]);
+  }, [searchParams, hasDraft, loadPlan, applyTemplate]);
 
   // Update data with auto-save
   const updateData = useCallback((updates) => {
@@ -412,15 +429,24 @@ export default function StrategyWizardWrapper() {
             </div>
           </div>
           
-          <PlanSelectionDialog
-            onSelectPlan={handleSelectPlan}
-            onCreateNew={handleCreateNew}
-            trigger={
-              <Button variant="outline">
-                <FolderOpen className="h-4 w-4 mr-2" />
+          <div className="flex gap-2">
+            {appliedTemplateName && (
+              <Badge variant="outline" className="gap-1">
+                <FileText className="h-3 w-3" />
+                {appliedTemplateName}
+              </Badge>
+            )}
+            <PlanSelectionDialog
+              onSelectPlan={handleSelectPlan}
+              onCreateNew={handleCreateNew}
+              trigger={
+                <Button variant="outline">
+                  <FolderOpen className="h-4 w-4 mr-2" />
                 {t({ en: 'Open Plan', ar: 'فتح خطة' })}
-              </Button>
-            }
+                </Button>
+              }
+            />
+          </div>
           />
         </div>
 
@@ -443,6 +469,17 @@ export default function StrategyWizardWrapper() {
           </Button>
           
           <div className="flex gap-2">
+            {mode !== 'review' && currentStep === 18 && (
+              <SaveAsTemplateDialog
+                planData={wizardData}
+                trigger={
+                  <Button variant="outline">
+                    <FileText className="h-4 w-4 mr-2" />
+                    {t({ en: 'Save as Template', ar: 'حفظ كقالب' })}
+                  </Button>
+                }
+              />
+            )}
             {mode !== 'review' && (
               <Button 
                 variant="outline" 

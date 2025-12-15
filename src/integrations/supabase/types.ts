@@ -10686,6 +10686,8 @@ export type Database = {
           focus_technologies: string[] | null
           governance: Json | null
           id: string
+          is_featured: boolean | null
+          is_public: boolean | null
           is_template: boolean | null
           kpis: Json | null
           last_saved_step: number | null
@@ -10705,6 +10707,7 @@ export type Database = {
           resource_plan: Json | null
           risks: Json | null
           scenarios: Json | null
+          source_plan_id: string | null
           stakeholders: Json | null
           start_year: number | null
           status: string | null
@@ -10715,7 +10718,13 @@ export type Database = {
           swot: Json | null
           target_regions: string[] | null
           target_sectors: string[] | null
+          template_category: string | null
+          template_rating: number | null
+          template_reviews: number | null
+          template_tags: string[] | null
+          template_type: string | null
           updated_at: string | null
+          usage_count: number | null
           version_notes: string | null
           version_number: number | null
           vision_2030_programs: string[] | null
@@ -10743,6 +10752,8 @@ export type Database = {
           focus_technologies?: string[] | null
           governance?: Json | null
           id?: string
+          is_featured?: boolean | null
+          is_public?: boolean | null
           is_template?: boolean | null
           kpis?: Json | null
           last_saved_step?: number | null
@@ -10762,6 +10773,7 @@ export type Database = {
           resource_plan?: Json | null
           risks?: Json | null
           scenarios?: Json | null
+          source_plan_id?: string | null
           stakeholders?: Json | null
           start_year?: number | null
           status?: string | null
@@ -10772,7 +10784,13 @@ export type Database = {
           swot?: Json | null
           target_regions?: string[] | null
           target_sectors?: string[] | null
+          template_category?: string | null
+          template_rating?: number | null
+          template_reviews?: number | null
+          template_tags?: string[] | null
+          template_type?: string | null
           updated_at?: string | null
+          usage_count?: number | null
           version_notes?: string | null
           version_number?: number | null
           vision_2030_programs?: string[] | null
@@ -10800,6 +10818,8 @@ export type Database = {
           focus_technologies?: string[] | null
           governance?: Json | null
           id?: string
+          is_featured?: boolean | null
+          is_public?: boolean | null
           is_template?: boolean | null
           kpis?: Json | null
           last_saved_step?: number | null
@@ -10819,6 +10839,7 @@ export type Database = {
           resource_plan?: Json | null
           risks?: Json | null
           scenarios?: Json | null
+          source_plan_id?: string | null
           stakeholders?: Json | null
           start_year?: number | null
           status?: string | null
@@ -10829,7 +10850,13 @@ export type Database = {
           swot?: Json | null
           target_regions?: string[] | null
           target_sectors?: string[] | null
+          template_category?: string | null
+          template_rating?: number | null
+          template_reviews?: number | null
+          template_tags?: string[] | null
+          template_type?: string | null
           updated_at?: string | null
+          usage_count?: number | null
           version_notes?: string | null
           version_number?: number | null
           vision_2030_programs?: string[] | null
@@ -10847,6 +10874,13 @@ export type Database = {
           {
             foreignKeyName: "strategic_plans_previous_version_id_fkey"
             columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_plans_source_plan_id_fkey"
+            columns: ["source_plan_id"]
             isOneToOne: false
             referencedRelation: "strategic_plans"
             referencedColumns: ["id"]

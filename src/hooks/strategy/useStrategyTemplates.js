@@ -1,174 +1,372 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 
-// Note: This hook can work with local state until strategy_templates table is created
-// For now, we use the sector_strategies table structure or local state
+const TEMPLATE_TYPES = [
+  { id: 'innovation', name_en: 'Innovation Strategy', name_ar: 'استراتيجية الابتكار' },
+  { id: 'digital_transformation', name_en: 'Digital Transformation', name_ar: 'التحول الرقمي' },
+  { id: 'sustainability', name_en: 'Sustainability', name_ar: 'الاستدامة' },
+  { id: 'sector_specific', name_en: 'Sector Specific', name_ar: 'خاص بالقطاع' },
+  { id: 'municipality', name_en: 'Municipality Scale', name_ar: 'نطاق البلدية' },
+  { id: 'smart_city', name_en: 'Smart City', name_ar: 'المدينة الذكية' },
+  { id: 'citizen_services', name_en: 'Citizen Services', name_ar: 'خدمات المواطنين' }
+];
 
 export function useStrategyTemplates() {
   const { user } = useAuth();
-  const [templates, setTemplates] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
 
-  // Default templates (in-memory for now)
-  const defaultTemplates = [
-    {
-      id: 'template-1',
-      name_en: 'Innovation Strategy Template',
-      name_ar: 'قالب استراتيجية الابتكار',
-      description_en: 'Comprehensive template for municipal innovation strategies',
-      description_ar: 'قالب شامل لاستراتيجيات الابتكار البلدية',
-      template_type: 'innovation',
-      is_public: true,
-      usage_count: 15,
-      template_data: {
-        objectives: [
-          { title: 'Digital Transformation', weight: 30 },
-          { title: 'Citizen Engagement', weight: 25 },
-          { title: 'Partnership Development', weight: 25 },
-          { title: 'Capacity Building', weight: 20 }
-        ]
-      }
+  // Fetch all public templates
+  const { 
+    data: templates = [], 
+    isLoading: isLoadingTemplates,
+    error: templatesError,
+    refetch: refetchTemplates
+  } = useQuery({
+    queryKey: ['strategy-templates', 'public'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('is_template', true)
+        .eq('is_public', true)
+        .eq('is_deleted', false)
+        .order('usage_count', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch user's own templates
+  const { 
+    data: myTemplates = [], 
+    isLoading: isLoadingMyTemplates,
+    refetch: refetchMyTemplates
+  } = useQuery({
+    queryKey: ['strategy-templates', 'my', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('is_template', true)
+        .eq('owner_email', user.email)
+        .eq('is_deleted', false)
+        .order('updated_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
-    {
-      id: 'template-2',
-      name_en: 'Digital Transformation Template',
-      name_ar: 'قالب التحول الرقمي',
-      description_en: 'Template focused on digital service transformation',
-      description_ar: 'قالب يركز على تحول الخدمات الرقمية',
-      template_type: 'digital_transformation',
-      is_public: true,
-      usage_count: 12,
-      template_data: {
-        objectives: [
-          { title: 'Service Digitization', weight: 35 },
-          { title: 'Data Analytics', weight: 25 },
-          { title: 'Process Automation', weight: 25 },
-          { title: 'User Experience', weight: 15 }
-        ]
-      }
-    },
-    {
-      id: 'template-3',
-      name_en: 'Sustainability Strategy Template',
-      name_ar: 'قالب استراتيجية الاستدامة',
-      description_en: 'Template for environmental and sustainability initiatives',
-      description_ar: 'قالب للمبادرات البيئية والاستدامة',
-      template_type: 'sustainability',
-      is_public: true,
-      usage_count: 8,
-      template_data: {
-        objectives: [
-          { title: 'Carbon Reduction', weight: 30 },
-          { title: 'Resource Efficiency', weight: 30 },
-          { title: 'Green Infrastructure', weight: 25 },
-          { title: 'Community Awareness', weight: 15 }
-        ]
-      }
+    enabled: !!user?.email
+  });
+
+  // Fetch featured templates
+  const { 
+    data: featuredTemplates = [],
+    isLoading: isLoadingFeatured
+  } = useQuery({
+    queryKey: ['strategy-templates', 'featured'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('is_template', true)
+        .eq('is_featured', true)
+        .eq('is_deleted', false)
+        .order('usage_count', { ascending: false, nullsFirst: false });
+      
+      if (error) throw error;
+      return data || [];
     }
-  ];
+  });
 
-  const fetchTemplates = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // For now, use default templates
-      // When strategy_templates table is created, fetch from DB
-      setTemplates(defaultTemplates);
-    } catch (err) {
-      console.error('Error fetching templates:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // Create template from plan data
+  const createTemplateMutation = useMutation({
+    mutationFn: async ({ planData, templateMeta }) => {
+      if (!user?.email) throw new Error('User not authenticated');
 
-  useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
-
-  const createTemplate = useCallback(async (template) => {
-    if (!user?.email) {
-      toast.error('You must be logged in');
-      return null;
-    }
-
-    setIsLoading(true);
-    try {
-      const newTemplate = {
-        ...template,
-        id: `template-${Date.now()}`,
-        created_by_email: user.email,
+      const templateData = {
+        ...planData,
+        id: undefined, // Let DB generate new ID
+        name_en: templateMeta.name_en,
+        name_ar: templateMeta.name_ar || templateMeta.name_en,
+        description_en: templateMeta.description_en,
+        description_ar: templateMeta.description_ar,
+        is_template: true,
+        template_type: templateMeta.template_type,
+        template_category: 'personal',
+        is_public: templateMeta.is_public || false,
+        is_featured: false,
+        usage_count: 0,
+        template_rating: null,
+        template_reviews: 0,
+        template_tags: templateMeta.tags || [],
+        source_plan_id: planData.id || null,
+        owner_email: user.email,
+        status: 'template',
+        approval_status: null,
+        submitted_at: null,
+        submitted_by: null,
         created_at: new Date().toISOString(),
-        usage_count: 0
+        updated_at: new Date().toISOString()
       };
 
-      setTemplates(prev => [...prev, newTemplate]);
+      // Remove fields that shouldn't be copied
+      delete templateData.id;
+
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .insert(templateData)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['strategy-templates'] });
       toast.success('Template created successfully');
-      return newTemplate;
-    } catch (err) {
-      console.error('Error creating template:', err);
+    },
+    onError: (error) => {
+      console.error('Create template error:', error);
       toast.error('Failed to create template');
-      return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, [user]);
+  });
 
-  const useTemplate = useCallback(async (templateId) => {
-    const template = templates.find(t => t.id === templateId);
-    if (!template) {
-      toast.error('Template not found');
-      return null;
+  // Update template
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, updates }) => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('is_template', true)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['strategy-templates'] });
+      toast.success('Template updated');
+    },
+    onError: (error) => {
+      console.error('Update template error:', error);
+      toast.error('Failed to update template');
     }
+  });
 
-    // Increment usage count
-    setTemplates(prev => prev.map(t => 
-      t.id === templateId 
-        ? { ...t, usage_count: (t.usage_count || 0) + 1 }
-        : t
-    ));
+  // Delete template (soft delete)
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('strategic_plans')
+        .update({ 
+          is_deleted: true,
+          deleted_date: new Date().toISOString(),
+          deleted_by: user?.email
+        })
+        .eq('id', id)
+        .eq('is_template', true);
 
-    toast.success('Template applied successfully');
-    return template.template_data;
-  }, [templates]);
-
-  const deleteTemplate = useCallback(async (templateId) => {
-    setIsLoading(true);
-    try {
-      setTemplates(prev => prev.filter(t => t.id !== templateId));
-      toast.success('Template deleted');
+      if (error) throw error;
       return true;
-    } catch (err) {
-      console.error('Error deleting template:', err);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['strategy-templates'] });
+      toast.success('Template deleted');
+    },
+    onError: (error) => {
+      console.error('Delete template error:', error);
       toast.error('Failed to delete template');
-      return false;
-    } finally {
-      setIsLoading(false);
+    }
+  });
+
+  // Toggle public visibility
+  const togglePublicMutation = useMutation({
+    mutationFn: async ({ id, isPublic }) => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .update({ 
+          is_public: isPublic,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('is_template', true)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['strategy-templates'] });
+      toast.success(data.is_public ? 'Template is now public' : 'Template is now private');
+    }
+  });
+
+  // Increment usage count
+  const incrementUsage = useCallback(async (templateId) => {
+    try {
+      const { error } = await supabase.rpc('increment_template_usage', { 
+        template_id: templateId 
+      });
+      
+      // If RPC doesn't exist, do it manually
+      if (error) {
+        await supabase
+          .from('strategic_plans')
+          .update({ 
+            usage_count: supabase.sql`COALESCE(usage_count, 0) + 1` 
+          })
+          .eq('id', templateId);
+      }
+    } catch (err) {
+      // Silently fail - not critical
+      console.warn('Failed to increment usage:', err);
     }
   }, []);
 
+  // Apply template - returns wizard-compatible data
+  const applyTemplate = useCallback(async (templateId) => {
+    try {
+      const { data: template, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('id', templateId)
+        .eq('is_template', true)
+        .single();
+
+      if (error) throw error;
+      if (!template) throw new Error('Template not found');
+
+      // Increment usage
+      await incrementUsage(templateId);
+
+      // Transform template to wizard data format
+      const wizardData = {
+        // Basic info - clear for customization
+        name_en: '',
+        name_ar: '',
+        description_en: template.description_en || '',
+        description_ar: template.description_ar || '',
+        
+        // Copy template content
+        vision_en: template.vision_en || '',
+        vision_ar: template.vision_ar || '',
+        mission_en: template.mission_en || '',
+        mission_ar: template.mission_ar || '',
+        core_values: template.core_values || [],
+        strategic_pillars: template.strategic_pillars || template.pillars || [],
+        
+        // Analysis
+        stakeholders: template.stakeholders || [],
+        pestel: template.pestel || {},
+        swot: template.swot || {},
+        scenarios: template.scenarios || {},
+        risks: template.risks || [],
+        dependencies: template.dependencies || [],
+        constraints: template.constraints || [],
+        
+        // Strategy
+        objectives: template.objectives || [],
+        national_alignments: template.national_alignments || [],
+        kpis: template.kpis || [],
+        action_plans: template.action_plans || [],
+        resource_plan: template.resource_plan || {},
+        
+        // Implementation
+        milestones: template.milestones || [],
+        phases: template.phases || [],
+        governance: template.governance || {},
+        communication_plan: template.communication_plan || {},
+        change_management: template.change_management || {},
+        
+        // Context - reset for new plan
+        start_year: new Date().getFullYear(),
+        end_year: new Date().getFullYear() + 5,
+        target_sectors: template.target_sectors || [],
+        target_regions: template.target_regions || [],
+        strategic_themes: template.strategic_themes || [],
+        focus_technologies: template.focus_technologies || [],
+        vision_2030_programs: template.vision_2030_programs || [],
+        budget_range: template.budget_range || '',
+        
+        // Meta
+        _sourceTemplateId: template.id,
+        _sourceTemplateName: template.name_en
+      };
+
+      return wizardData;
+    } catch (err) {
+      console.error('Apply template error:', err);
+      toast.error('Failed to apply template');
+      throw err;
+    }
+  }, [incrementUsage]);
+
+  // Fetch single template
+  const fetchTemplate = useCallback(async (templateId) => {
+    const { data, error } = await supabase
+      .from('strategic_plans')
+      .select('*')
+      .eq('id', templateId)
+      .eq('is_template', true)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }, []);
+
+  // Get templates by type
   const getTemplatesByType = useCallback((type) => {
     return templates.filter(t => t.template_type === type);
   }, [templates]);
 
-  const getPublicTemplates = useCallback(() => {
-    return templates.filter(t => t.is_public);
-  }, [templates]);
-
   return {
+    // Data
     templates,
-    isLoading,
-    error,
-    fetchTemplates,
-    createTemplate,
-    useTemplate,
-    deleteTemplate,
+    myTemplates,
+    featuredTemplates,
+    templateTypes: TEMPLATE_TYPES,
+    
+    // Loading states
+    isLoading: isLoadingTemplates || isLoadingMyTemplates,
+    isLoadingFeatured,
+    error: templatesError,
+    
+    // Refetch
+    refetchTemplates,
+    refetchMyTemplates,
+    
+    // Mutations
+    createTemplate: createTemplateMutation.mutateAsync,
+    updateTemplate: updateTemplateMutation.mutateAsync,
+    deleteTemplate: deleteTemplateMutation.mutateAsync,
+    togglePublic: togglePublicMutation.mutateAsync,
+    isCreating: createTemplateMutation.isPending,
+    isUpdating: updateTemplateMutation.isPending,
+    isDeleting: deleteTemplateMutation.isPending,
+    
+    // Actions
+    applyTemplate,
+    fetchTemplate,
+    incrementUsage,
     getTemplatesByType,
-    getPublicTemplates,
-    setTemplates
+    
+    // Legacy compatibility
+    saveTemplate: (template) => createTemplateMutation.mutateAsync({ 
+      planData: template, 
+      templateMeta: template 
+    })
   };
 }
