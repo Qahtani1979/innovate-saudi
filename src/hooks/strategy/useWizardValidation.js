@@ -46,9 +46,9 @@ export function useWizardValidation(wizardData) {
       labels: {}
     },
     9: {
-      fields: [], // Objectives - at least one recommended
-      arrayFields: [{ field: 'objectives', min: 1 }],
-      labels: { objectives: { en: 'Strategic Objectives', ar: 'الأهداف الاستراتيجية' } }
+      fields: [], // Objectives - at least one required
+      arrayFields: [{ field: 'objectives', min: 1, label: { en: 'Strategic Objectives', ar: 'الأهداف الاستراتيجية' } }],
+      labels: {}
     },
     10: {
       fields: [], // National alignment optional
@@ -111,14 +111,15 @@ export function useWizardValidation(wizardData) {
     });
 
     // Check array fields with minimum counts
-    requirements.arrayFields?.forEach(({ field, min }) => {
+    requirements.arrayFields?.forEach(({ field, min, label }) => {
       const arr = wizardData[field];
+      const fieldLabel = label || requirements.labels[field] || { en: field, ar: field };
       if (min > 0 && (!arr || arr.length < min)) {
         errors.push({
           field,
           message: t({ 
-            en: `At least ${min} ${t(requirements.labels[field] || { en: field, ar: field })} required`, 
-            ar: `مطلوب ${min} ${t(requirements.labels[field] || { en: field, ar: field })} على الأقل` 
+            en: `At least ${min} ${t(fieldLabel)} required`, 
+            ar: `مطلوب ${min} ${t(fieldLabel)} على الأقل` 
           })
         });
       }

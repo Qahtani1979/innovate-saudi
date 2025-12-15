@@ -59,7 +59,6 @@ export const STRATEGY_TEMPLATE_TYPES = [
 
 export const TEMPLATE_CATEGORIES = [
   { id: 'system', name_en: 'Official Templates', name_ar: 'القوالب الرسمية' },
-  { id: 'featured', name_en: 'Featured', name_ar: 'المميزة' },
   { id: 'community', name_en: 'Community', name_ar: 'المجتمع' },
   { id: 'organization', name_en: 'Organization', name_ar: 'المنظمة' },
   { id: 'personal', name_en: 'Personal', name_ar: 'شخصي' }

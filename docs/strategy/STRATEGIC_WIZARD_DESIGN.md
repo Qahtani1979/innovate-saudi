@@ -1,6 +1,6 @@
 # Strategic Plan Creation Wizard - Design Document
 
-> **Version**: 1.2  
+> **Version**: 1.4  
 > **Last Updated**: December 15, 2025  
 > **Status**: ✅ Fully Implemented
 
