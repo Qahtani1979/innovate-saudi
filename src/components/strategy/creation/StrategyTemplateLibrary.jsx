@@ -555,7 +555,7 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {TEMPLATE_TYPES.map(type => (
+                    {STRATEGY_TEMPLATE_TYPES.map(type => (
                       <SelectItem key={type.id} value={type.id}>
                         {language === 'ar' ? type.name_ar : type.name_en}
                       </SelectItem>
