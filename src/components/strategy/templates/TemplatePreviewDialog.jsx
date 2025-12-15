@@ -128,8 +128,14 @@ export default function TemplatePreviewDialog({
       icon: DollarSign, 
       label: { en: 'Resource Planning', ar: 'تخطيط الموارد' },
       phase: 'strategy',
-      included: !!(template.resource_plan && Object.keys(template.resource_plan).length > 0),
-      count: template.resource_plan?.hr_requirements?.length || 0
+      included: !!(template.resource_plan && (
+        template.resource_plan.hr_requirements?.length > 0 ||
+        template.resource_plan.technology_requirements?.length > 0 ||
+        template.resource_plan.infrastructure_requirements?.length > 0 ||
+        template.resource_plan.budget_allocation?.length > 0
+      )),
+      count: (template.resource_plan?.hr_requirements?.length || 0) + 
+             (template.resource_plan?.technology_requirements?.length || 0)
     },
     // Phase 4: Implementation
     { 
@@ -143,19 +149,32 @@ export default function TemplatePreviewDialog({
       icon: Building2, 
       label: { en: 'Governance Structure', ar: 'هيكل الحوكمة' },
       phase: 'implementation',
-      included: !!(template.governance && Object.keys(template.governance).length > 0)
+      included: !!(template.governance && (
+        template.governance.structure?.length > 0 ||
+        template.governance.committees?.length > 0 ||
+        template.governance.escalation_path?.length > 0
+      ))
     },
     { 
       icon: Megaphone, 
       label: { en: 'Communication Plan', ar: 'خطة التواصل' },
       phase: 'implementation',
-      included: !!(template.communication_plan && Object.keys(template.communication_plan).length > 0)
+      included: !!(template.communication_plan && (
+        template.communication_plan.internal_channels?.length > 0 ||
+        template.communication_plan.external_channels?.length > 0 ||
+        template.communication_plan.key_messages?.length > 0
+      ))
     },
     { 
       icon: RefreshCw, 
       label: { en: 'Change Management', ar: 'إدارة التغيير' },
       phase: 'implementation',
-      included: !!(template.change_management && Object.keys(template.change_management).length > 0)
+      included: !!(template.change_management && (
+        template.change_management.readiness_assessment?.trim?.() ||
+        template.change_management.change_approach?.trim?.() ||
+        template.change_management.training_plan?.length > 0 ||
+        template.change_management.resistance_management?.trim?.()
+      ))
     }
   ];
 

@@ -172,15 +172,37 @@ export function useWizardValidation(wizardData) {
       case 12:
         return wizardData.action_plans?.length > 0;
       case 13:
-        return !!(wizardData.resource_plan && Object.keys(wizardData.resource_plan).length > 0);
+        // Resource plan has nested arrays - check if any have content
+        return !!(wizardData.resource_plan && (
+          wizardData.resource_plan.hr_requirements?.length > 0 ||
+          wizardData.resource_plan.technology_requirements?.length > 0 ||
+          wizardData.resource_plan.infrastructure_requirements?.length > 0 ||
+          wizardData.resource_plan.budget_allocation?.length > 0
+        ));
       case 14:
         return wizardData.milestones?.length > 0 || wizardData.phases?.length > 0;
       case 15:
-        return !!(wizardData.governance && Object.keys(wizardData.governance).length > 0);
+        // Governance has nested arrays - check if any have content
+        return !!(wizardData.governance && (
+          wizardData.governance.structure?.length > 0 ||
+          wizardData.governance.committees?.length > 0 ||
+          wizardData.governance.escalation_path?.length > 0
+        ));
       case 16:
-        return !!(wizardData.communication_plan && Object.keys(wizardData.communication_plan).length > 0);
+        // Communication plan has nested arrays
+        return !!(wizardData.communication_plan && (
+          wizardData.communication_plan.internal_channels?.length > 0 ||
+          wizardData.communication_plan.external_channels?.length > 0 ||
+          wizardData.communication_plan.key_messages?.length > 0
+        ));
       case 17:
-        return !!(wizardData.change_management && Object.keys(wizardData.change_management).length > 0);
+        // Change management - check text fields and arrays
+        return !!(wizardData.change_management && (
+          wizardData.change_management.readiness_assessment?.trim() ||
+          wizardData.change_management.change_approach?.trim() ||
+          wizardData.change_management.training_plan?.length > 0 ||
+          wizardData.change_management.resistance_management?.trim()
+        ));
       case 18:
         return true; // Review step always considered "has data"
       default:
