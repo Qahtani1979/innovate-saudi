@@ -1,8 +1,8 @@
 # Strategy System Inventory
 
-> **Version:** 3.0  
-> **Last Updated:** 2025-12-14  
-> **Total Assets:** 156 files (35 pages, 65 components, 33 hooks + 3 contexts)  
+> **Version:** 4.0  
+> **Last Updated:** 2025-12-15  
+> **Total Assets:** 180+ files (40+ pages, 75+ components, 35 hooks + 3 contexts)  
 > **Parent System:** Strategic Planning & Execution Framework  
 > **Hub Page:** `/strategy-hub`
 
@@ -22,77 +22,110 @@ The Strategy System is the core strategic planning and execution framework spann
 
 ---
 
-## 📄 Pages (35)
+## 📄 Pages (40+)
 
 ### Core Strategy Pages
 
-| Page | File | Route | Permission | Parent |
-|------|------|-------|------------|--------|
-| **Strategy Hub** | `StrategyHub.jsx` | `/strategy-hub` | `strategy_view` | Self (Root) |
-| Strategy Cockpit | `StrategyCockpit.jsx` | `/strategy-cockpit` | `strategy_view` | Strategy Hub |
-| Strategy Drill-Down | `StrategyDrillDown.jsx` | `/strategy-drill-down` | `strategy_view` | Strategy Hub |
-| Strategy Alignment | `StrategyAlignment.jsx` | `/strategy-alignment` | `strategy_view` | Strategy Hub |
-| Strategy Review | `StrategyReviewPage.jsx` | `/strategy-review-page` | `strategy_manage` | Strategy Hub |
-| Strategy Governance | `StrategyGovernancePage.jsx` | `/strategy-governance-page` | `strategy_manage` | Strategy Hub |
-| Strategy Demand Dashboard | `StrategyDemandDashboardPage.jsx` | `/strategy-demand-dashboard` | `strategy_manage` | Strategy Hub |
-| Strategic Plan Builder | `StrategicPlanBuilder.jsx` | `/strategic-plan-builder` | `strategy_manage` | Strategy Hub |
-| Strategic Execution Dashboard | `StrategicExecutionDashboard.jsx` | `/strategic-execution-dashboard` | `strategy_view` | Strategy Hub |
-| Strategic Planning Progress | `StrategicPlanningProgress.jsx` | `/strategic-planning-progress` | `strategy_view` | Strategy Hub |
+| Page | File | Route | Permission | Hub Access |
+|------|------|-------|------------|------------|
+| **Strategy Hub** | `StrategyHub.jsx` | `/strategy-hub` | `strategy_view` | ✅ Direct (Root) |
+| Strategy Cockpit | `StrategyCockpit.jsx` | `/strategy-cockpit` | `strategy_view` | ✅ Monitoring Tab |
+| Strategy Drill-Down | `StrategyDrillDown.jsx` | `/strategy-drill-down` | `strategy_view` | ✅ Workflow Tab |
+| Strategy Alignment | `StrategyAlignment.jsx` | `/strategy-alignment` | `strategy_view` | ✅ Monitoring Tab |
+| Strategy Review | `StrategyReviewPage.jsx` | `/strategy-review-page` | `strategy_manage` | ✅ Monitoring Tab |
+| Strategy Governance | `StrategyGovernancePage.jsx` | `/strategy-governance-page` | `strategy_manage` | ✅ Governance Tab |
+| Strategy Demand Dashboard | `StrategyDemandDashboardPage.jsx` | `/strategy-demand-dashboard` | `strategy_manage` | ✅ Monitoring Tab |
+| Strategic Plan Builder | `StrategicPlanBuilder.jsx` | `/strategic-plan-builder` | `strategy_manage` | ✅ Header Button |
+| Strategic Execution Dashboard | `StrategicExecutionDashboard.jsx` | `/strategic-execution-dashboard` | `strategy_view` | ❌ Not in Hub |
+| Strategic Planning Progress | `StrategicPlanningProgress.jsx` | `/strategic-planning-progress` | `strategy_view` | ❌ Not in Hub |
+| Sector Strategy | `SectorStrategyPage.jsx` | `/sector-strategy-page` | `strategy_manage` | ❌ Not in Hub |
 
 ### Pre-Planning Pages (Phase 1)
 
-| Page | File | Route | Permission | Parent |
-|------|------|-------|------------|--------|
-| Environmental Scan | `EnvironmentalScanPage.jsx` | `/environmental-scan-page` | `strategy_manage` | Strategy Hub |
-| SWOT Analysis | `SWOTAnalysisPage.jsx` | `/swot-analysis-page` | `strategy_manage` | Strategy Hub |
-| Stakeholder Analysis | `StakeholderAnalysisPage.jsx` | `/stakeholder-analysis-page` | `strategy_manage` | Strategy Hub |
-| Risk Assessment | `RiskAssessmentPage.jsx` | `/risk-assessment-page` | `strategy_manage` | Strategy Hub |
-| Baseline Data | `BaselineDataPage.jsx` | `/baseline-data-page` | `strategy_manage` | Strategy Hub |
-| Strategy Input | `StrategyInputPage.jsx` | `/strategy-input-page` | `strategy_manage` | Strategy Hub |
+| Page | File | Route | Permission | Hub Access |
+|------|------|-------|------------|------------|
+| Environmental Scan | `EnvironmentalScanPage.jsx` | `/environmental-scan-page` | `strategy_manage` | ✅ Pre-Planning Tab |
+| SWOT Analysis | `SWOTAnalysisPage.jsx` | `/swot-analysis-page` | `strategy_manage` | ✅ Pre-Planning Tab |
+| Stakeholder Analysis | `StakeholderAnalysisPage.jsx` | `/stakeholder-analysis-page` | `strategy_manage` | ✅ Pre-Planning Tab |
+| Risk Assessment | `RiskAssessmentPage.jsx` | `/risk-assessment-page` | `strategy_manage` | ✅ Pre-Planning Tab |
+| Baseline Data | `BaselineDataPage.jsx` | `/baseline-data-page` | `strategy_manage` | ✅ Pre-Planning Tab |
+| Strategy Input | `StrategyInputPage.jsx` | `/strategy-input-page` | `strategy_manage` | ✅ Pre-Planning Tab |
 
 ### Strategy Creation Pages (Phase 2)
 
-| Page | File | Route | Permission | Parent |
-|------|------|-------|------------|--------|
-| Strategy Timeline | `StrategyTimelinePage.jsx` | `/strategy-timeline-page` | `strategy_manage` | Strategy Hub |
-| Strategy Ownership | `StrategyOwnershipPage.jsx` | `/strategy-ownership-page` | `strategy_manage` | Strategy Hub |
-| Strategy Templates | `StrategyTemplatesPage.jsx` | `/strategy-templates-page` | `strategy_view` | Strategy Hub |
-| National Strategy Linker | `NationalStrategyLinkerPage.jsx` | `/national-strategy-linker-page` | `strategy_manage` | Strategy Hub |
-| Action Plan | `ActionPlanPage.jsx` | `/action-plan-page` | `strategy_manage` | Strategy Hub |
+| Page | File | Route | Permission | Hub Access |
+|------|------|-------|------------|------------|
+| Strategy Timeline | `StrategyTimelinePage.jsx` | `/strategy-timeline-page` | `strategy_manage` | ✅ Monitoring Tab |
+| Strategy Ownership | `StrategyOwnershipPage.jsx` | `/strategy-ownership-page` | `strategy_manage` | ✅ Governance Tab |
+| Strategy Templates | `StrategyTemplatesPage.jsx` | `/strategy-templates-page` | `strategy_view` | ✅ Templates Tab |
+| National Strategy Linker | `NationalStrategyLinkerPage.jsx` | `/national-strategy-linker-page` | `strategy_manage` | ✅ Monitoring Tab |
+| Action Plan | `ActionPlanPage.jsx` | `/action-plan-page` | `strategy_manage` | ✅ Monitoring Tab |
 
 ### Cascade Generator Pages (Phase 3)
 
-| Page | File | Route | Permission | Parent |
-|------|------|-------|------------|--------|
-| Policy Generator | `StrategyPolicyGeneratorPage.jsx` | `/strategy-policy-generator-page` | `strategy_cascade` | Strategy Hub |
-| Challenge Generator | `StrategyChallengeGeneratorPage.jsx` | `/strategy-challenge-generator-page` | `strategy_cascade` | Strategy Hub |
-| R&D Call Generator | `StrategyRDCallGeneratorPage.jsx` | `/strategy-rd-call-generator-page` | `strategy_cascade` | Strategy Hub |
-| Pilot Generator | `StrategyPilotGeneratorPage.jsx` | `/strategy-pilot-generator-page` | `strategy_cascade` | Strategy Hub |
-| Partnership Generator | `StrategyPartnershipGeneratorPage.jsx` | `/strategy-partnership-generator-page` | `strategy_cascade` | Strategy Hub |
-| Event Generator | `StrategyEventGeneratorPage.jsx` | `/strategy-event-generator-page` | `strategy_cascade` | Strategy Hub |
-| Living Lab Generator | `StrategyLivingLabGeneratorPage.jsx` | `/strategy-living-lab-generator-page` | `strategy_cascade` | Strategy Hub |
-| Campaign Generator | `StrategyCampaignGeneratorPage.jsx` | `/strategy-campaign-generator-page` | `strategy_cascade` | Strategy Hub |
+| Page | File | Route | Permission | Hub Access |
+|------|------|-------|------------|------------|
+| Challenge Generator | `StrategyChallengeGeneratorPage.jsx` | `/strategy-challenge-generator-page` | `strategy_cascade` | ✅ Cascade Tab |
+| Pilot Generator | `StrategyPilotGeneratorPage.jsx` | `/strategy-pilot-generator-page` | `strategy_cascade` | ✅ Cascade Tab |
+| Policy Generator | `StrategyPolicyGeneratorPage.jsx` | `/strategy-policy-generator-page` | `strategy_cascade` | ✅ Cascade Tab |
+| R&D Call Generator | `StrategyRDCallGeneratorPage.jsx` | `/strategy-rd-call-generator-page` | `strategy_cascade` | ✅ Cascade Tab |
+| Partnership Generator | `StrategyPartnershipGeneratorPage.jsx` | `/strategy-partnership-generator-page` | `strategy_cascade` | ✅ Cascade Tab |
+| Event Generator | `StrategyEventGeneratorPage.jsx` | `/strategy-event-generator-page` | `strategy_cascade` | ✅ Cascade Tab |
+| Living Lab Generator | `StrategyLivingLabGeneratorPage.jsx` | `/strategy-living-lab-generator-page` | `strategy_cascade` | ✅ Cascade Tab |
+| Campaign Generator | `StrategyCampaignGeneratorPage.jsx` | `/strategy-campaign-generator-page` | `strategy_cascade` | ✅ Cascade Tab |
 
 ### Communication Pages (Phase 5)
 
-| Page | File | Route | Permission | Parent |
-|------|------|-------|------------|--------|
-| Communication Hub | `strategy/StrategyCommunicationPage.jsx` | `/strategy-communication-page` | `strategy_view` | Strategy Hub |
-| Public Dashboard | `strategy/PublicStrategyDashboardPage.jsx` | `/public-strategy-dashboard-page` | `strategy_view` | Strategy Hub |
-| Public View | `strategy/StrategyPublicViewPage.jsx` | `/strategy-public-view-page` | `strategy_view` | Strategy Hub |
+| Page | File | Route | Permission | Hub Access |
+|------|------|-------|------------|------------|
+| Communication Hub | `strategy/StrategyCommunicationPage.jsx` | `/strategy-communication-page` | `strategy_view` | ✅ Communication Tab |
+| Public Dashboard | `strategy/PublicStrategyDashboardPage.jsx` | `/public-strategy-dashboard-page` | `strategy_view` | ✅ Communication Tab |
+| Public View | `strategy/StrategyPublicViewPage.jsx` | `/strategy-public-view-page` | `strategy_view` | ✅ Communication Tab |
 
-### Related Executive Pages
+### Monitoring & Evaluation Pages (Phase 6-7)
 
-| Page | File | Route | Permission | Parent |
-|------|------|-------|------------|--------|
-| What-If Simulator | `WhatIfSimulatorPage.jsx` | `/what-if-simulator-page` | `strategy_view` | Strategy Hub |
-| Gap Analysis Tool | `GapAnalysisTool.jsx` | `/gap-analysis-tool` | `strategy_manage` | Strategy Hub |
-| Budget Allocation | `BudgetAllocationTool.jsx` | `/budget-allocation-tool` | `strategy_manage` | Strategy Hub |
-| Strategic KPI Tracker | `StrategicKPITracker.jsx` | `/strategic-kpi-tracker` | `strategy_view` | Strategy Hub |
+| Page | File | Route | Permission | Hub Access |
+|------|------|-------|------------|------------|
+| What-If Simulator | `WhatIfSimulatorPage.jsx` | `/what-if-simulator-page` | `strategy_view` | ❌ Not in Hub |
+| Gap Analysis Tool | `GapAnalysisTool.jsx` | `/gap-analysis-tool` | `strategy_manage` | ❌ Not in Hub |
+| Budget Allocation | `BudgetAllocationTool.jsx` | `/budget-allocation-tool` | `strategy_manage` | ❌ Not in Hub |
+| Strategic KPI Tracker | `StrategicKPITracker.jsx` | `/strategic-kpi-tracker` | `strategy_view` | ❌ Not in Hub |
 
 ---
 
-## 🧩 Components (65)
+## 🔄 Strategy Hub Tab Coverage Matrix
+
+| Tab | Tools Displayed | Pages Linked | Status |
+|-----|-----------------|--------------|--------|
+| **Workflow** | Phase lifecycle, Strategic Plans list, Coverage, Pending Actions | `/strategy-drill-down`, `/strategy-alignment`, `/strategy-governance-page` | ✅ Complete |
+| **Templates** | Template Library, Coverage Analysis | `/strategy-templates-page`, `/strategic-plan-builder` | ✅ Complete |
+| **Cascade** | 8 Generators | All generator pages | ✅ Complete |
+| **Monitoring** | Cockpit, Drill-down, Alignment, Timeline, Feedback, Adjustment + Demand Tools | 9 pages | ✅ Complete |
+| **Governance** | Signoff, Version Control, Committee, Ownership | `/strategy-governance-page`, `/strategy-ownership-page` | ✅ Complete |
+| **Communication** | Planner, Stories, Notifications, Analytics, Public Dashboard, Public View | `/strategy-communication-page`, `/public-strategy-dashboard-page`, `/strategy-public-view-page` | ✅ Complete |
+| **Pre-Planning** | 6 Pre-planning tools | 6 pages | ✅ Complete |
+| **AI** | Narrative, Gap, What-If, Bottleneck | Inline components | ✅ Complete |
+
+---
+
+## 📊 Pages NOT Accessible from Hub
+
+The following strategy-related pages are NOT directly linked in the Strategy Hub:
+
+| Page | Route | Recommended Hub Location |
+|------|-------|-------------------------|
+| Strategic Execution Dashboard | `/strategic-execution-dashboard` | Monitoring Tab |
+| Strategic Planning Progress | `/strategic-planning-progress` | Monitoring Tab |
+| Sector Strategy | `/sector-strategy-page` | Creation Tab (new) |
+| What-If Simulator Page | `/what-if-simulator-page` | Monitoring Tab (already has inline AI) |
+| Gap Analysis Tool | `/gap-analysis-tool` | Monitoring Tab |
+| Budget Allocation Tool | `/budget-allocation-tool` | Governance Tab |
+| Strategic KPI Tracker | `/strategic-kpi-tracker` | Monitoring Tab |
+| Strategy Feedback Dashboard | `/strategy-feedback-dashboard` | Monitoring Tab (already listed) |
+
+---
+
+## 🧩 Components (75+)
 
 ### Root Strategy Components (18)
 **Location:** `src/components/strategy/`
@@ -101,7 +134,7 @@ The Strategy System is the core strategic planning and execution framework spann
 |-----------|-------------|---------|
 | `ActivePlanBanner.jsx` | Active plan selector banner | All strategy pages |
 | `AutomatedMIICalculator.jsx` | MII score calculator | Strategy cockpit |
-| `BottleneckDetector.jsx` | AI pipeline bottleneck detection | Strategy cockpit |
+| `BottleneckDetector.jsx` | AI pipeline bottleneck detection | Strategy cockpit, Hub AI Tab |
 | `CollaborationMapper.jsx` | R&D collaboration partner finder | Strategy cockpit |
 | `GeographicCoordinationWidget.jsx` | Municipality coordination | Strategy cockpit |
 | `HistoricalComparison.jsx` | Year-over-year trends | Strategy cockpit |
@@ -111,12 +144,12 @@ The Strategy System is the core strategic planning and execution framework spann
 | `StrategicAlignmentWidget.jsx` | Display linked plans | Multiple pages |
 | `StrategicCoverageWidget.jsx` | Coverage metrics | Strategy cockpit |
 | `StrategicGapProgramRecommender.jsx` | Program gap recommendations | Strategy hub |
-| `StrategicNarrativeGenerator.jsx` | AI narrative generation | Strategy cockpit |
+| `StrategicNarrativeGenerator.jsx` | AI narrative generation | Strategy cockpit, Hub AI Tab |
 | `StrategicPlanSelector.jsx` | Multi-select plan picker | All pages |
 | `StrategicPlanWorkflowTab.jsx` | Workflow visualization | Strategy hub |
 | `StrategyChallengeRouter.jsx` | Challenge track routing | Challenge pages |
 | `StrategyToProgramGenerator.jsx` | Generate programs | Strategy hub |
-| `WhatIfSimulator.jsx` | Budget scenario simulator | What-if page |
+| `WhatIfSimulator.jsx` | Budget scenario simulator | What-if page, Hub AI Tab |
 
 ### Cascade Components (8)
 **Location:** `src/components/strategy/cascade/`
@@ -132,7 +165,7 @@ The Strategy System is the core strategic planning and execution framework spann
 | `StrategyToPolicyGenerator.jsx` | StrategyPolicyGeneratorPage | Generate policies |
 | `StrategyToRDCallGenerator.jsx` | StrategyRDCallGeneratorPage | Generate R&D calls |
 
-### Creation Components (8)
+### Creation Components (9)
 **Location:** `src/components/strategy/creation/`
 
 | Component | Description |
@@ -143,8 +176,15 @@ The Strategy System is the core strategic planning and execution framework spann
 | `StrategyObjectiveGenerator.jsx` | AI objective generation |
 | `StrategyOwnershipAssigner.jsx` | Assign owners |
 | `StrategyPillarGenerator.jsx` | Generate pillars |
-| `StrategyTemplateLibrary.jsx` | Template library |
+| `StrategyTemplateLibrary.jsx` | Template library with coverage analysis |
 | `StrategyTimelinePlanner.jsx` | Timeline planning |
+
+### Templates Components (1)
+**Location:** `src/components/strategy/templates/`
+
+| Component | Description |
+|-----------|-------------|
+| `TemplateCoverageAnalysis.jsx` | Analyze template coverage against MoMAH taxonomy with AI recommendations |
 
 ### Governance Components (4)
 **Location:** `src/components/strategy/governance/`
@@ -189,6 +229,7 @@ The Strategy System is the core strategic planning and execution framework spann
 | `DemandDashboard.jsx` | Demand dashboard |
 | `QueueReviewPanel.jsx` | Queue review |
 | `RejectionFeedbackAnalysis.jsx` | Rejection analysis |
+| `BatchGenerationControls.jsx` | Batch generation |
 
 ### Evaluation Components (3)
 **Location:** `src/components/strategy/evaluation/`
@@ -229,7 +270,7 @@ The Strategy System is the core strategic planning and execution framework spann
 
 ---
 
-## 🪝 Hooks (33)
+## 🪝 Hooks (35)
 
 ### Core Hooks (3)
 **Location:** `src/hooks/`
@@ -240,7 +281,7 @@ The Strategy System is the core strategic planning and execution framework spann
 | `useStrategicCascadeValidation.js` | Cascade validation |
 | `useStrategyAlignment.js` | Alignment calculation |
 
-### Phase-Specific Hooks (30)
+### Phase-Specific Hooks (32)
 **Location:** `src/hooks/strategy/`
 
 #### Phase 1: Pre-Planning (6)
@@ -264,13 +305,14 @@ The Strategy System is the core strategic planning and execution framework spann
 | `useStrategyOwnership.js` | Ownership |
 | `useStrategyTemplates.js` | Templates |
 
-#### Phase 3: Demand-Driven (4)
+#### Phase 3: Demand-Driven (5)
 | Hook | Description |
 |------|-------------|
 | `useDemandQueue.js` | Queue management |
 | `useGapAnalysis.js` | Gap analysis |
 | `useQueueAutoPopulation.js` | Auto-population |
 | `useQueueNotifications.js` | Queue notifications |
+| `useBatchGeneration.js` | Batch generation |
 
 #### Phase 4: Governance (7)
 | Hook | Description |
@@ -314,16 +356,16 @@ The Strategy System is the core strategic planning and execution framework spann
 
 ## 📊 Coverage by Phase
 
-| Phase | Pages | Components | Hooks | Status |
-|-------|-------|------------|-------|--------|
-| 1. Pre-Planning | 6 | 6 | 6 | ✅ Complete |
-| 2. Creation | 5 | 8 | 7 | ✅ Complete |
-| 3. Cascade | 8 | 8 | 4 | ✅ Complete |
-| 4. Governance | 2 | 4 | 7 | ✅ Complete |
-| 5. Communication | 3 | 6 | 4 | ✅ Complete |
-| 6. Monitoring | 2 | 1 | 0 | ⚠️ Basic |
-| 7. Evaluation | 0 | 3 | 1 | ⚠️ Basic |
-| 8. Recalibration | 1 | 6 | 1 | ✅ Complete |
+| Phase | Pages | Components | Hooks | Hub Coverage | Status |
+|-------|-------|------------|-------|--------------|--------|
+| 1. Pre-Planning | 6 | 6 | 6 | ✅ Full Tab | ✅ Complete |
+| 2. Creation | 5 | 9 | 7 | ⚠️ Partial (Sector missing) | ⚠️ 90% |
+| 3. Cascade | 8 | 8 | 5 | ✅ Full Tab | ✅ Complete |
+| 4. Governance | 2 | 4 | 7 | ✅ Full Tab | ✅ Complete |
+| 5. Communication | 3 | 6 | 4 | ✅ Full Tab | ✅ Complete |
+| 6. Monitoring | 6 | 2 | 3 | ⚠️ Some pages missing | ⚠️ 85% |
+| 7. Evaluation | 1 | 3 | 1 | ⚠️ Not in Hub | ⚠️ 70% |
+| 8. Recalibration | 1 | 6 | 1 | ⚠️ Not in Hub | ⚠️ 80% |
 
 ---
 
@@ -343,6 +385,9 @@ The Strategy System is the core strategic planning and execution framework spann
 | Function | Location | Description |
 |----------|----------|-------------|
 | `strategy-scheduled-analysis` | `supabase/functions/` | Scheduled gap analysis automation |
+| `strategy-gap-analysis` | `supabase/functions/` | Coverage gap analysis |
+| `strategy-demand-queue-generator` | `supabase/functions/` | AI queue generation |
+| `strategy-quality-assessor` | `supabase/functions/` | AI quality validation |
 
 ---
 
@@ -359,6 +404,9 @@ The Strategy System is the core strategic planning and execution framework spann
 | `strategy_inputs` | Strategy inputs |
 | `action_plans` | Action plans |
 | `action_items` | Action plan items |
+| `demand_queue` | Generation queue |
+| `generation_history` | Generation tracking |
+| `coverage_snapshots` | Coverage trends |
 
 ---
 
