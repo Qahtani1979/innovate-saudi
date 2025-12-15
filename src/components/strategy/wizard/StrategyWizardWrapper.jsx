@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
 import { toast } from 'sonner';
-import ProtectedPage from '../../permissions/ProtectedPage';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 import { useAutoSaveDraft } from '@/hooks/strategy/useAutoSaveDraft';
 import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
@@ -397,133 +396,131 @@ export default function StrategyWizardWrapper() {
   };
 
   return (
-    <ProtectedPage entity="StrategicPlan" action={mode === 'create' ? 'create' : 'update'}>
-      <div className="max-w-5xl mx-auto space-y-6 p-4" dir={isRTL ? 'rtl' : 'ltr'}>
-        {/* Draft Recovery Alert */}
-        {showDraftRecovery && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{t({ en: 'You have an unsaved draft. Would you like to recover it?', ar: 'لديك مسودة غير محفوظة. هل تريد استردادها؟' })}</span>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={handleDiscardDraft}>
-                  {t({ en: 'Discard', ar: 'تجاهل' })}
-                </Button>
-                <Button size="sm" onClick={handleRecoverDraft}>
-                  <RotateCcw className="h-4 w-4 mr-1" />
-                  {t({ en: 'Recover', ar: 'استرداد' })}
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Target className="h-8 w-8 text-primary" />
-              {t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })}
-              <Badge variant={mode === 'review' ? 'secondary' : 'default'}>
-                {getModeLabel()}
-              </Badge>
-            </h1>
-            <div className="flex items-center gap-4 mt-1 text-muted-foreground">
-              <span>{t({ en: 'Step', ar: 'خطوة' })} {currentStep} / 18</span>
-              {lastSaved && (
-                <span className="flex items-center gap-1 text-xs">
-                  <Clock className="h-3 w-3" />
-                  {t({ en: 'Last saved', ar: 'آخر حفظ' })}: {lastSaved.toLocaleTimeString()}
-                </span>
-              )}
-              {isSaving && (
-                <span className="flex items-center gap-1 text-xs text-primary">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}
-                </span>
-              )}
+    <div className="max-w-5xl mx-auto space-y-6 p-4" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Draft Recovery Alert */}
+      {showDraftRecovery && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{t({ en: 'You have an unsaved draft. Would you like to recover it?', ar: 'لديك مسودة غير محفوظة. هل تريد استردادها؟' })}</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={handleDiscardDraft}>
+                {t({ en: 'Discard', ar: 'تجاهل' })}
+              </Button>
+              <Button size="sm" onClick={handleRecoverDraft}>
+                <RotateCcw className="h-4 w-4 mr-1" />
+                {t({ en: 'Recover', ar: 'استرداد' })}
+              </Button>
             </div>
-          </div>
-          
-          <div className="flex gap-2">
-            {appliedTemplateName && (
-              <Badge variant="outline" className="gap-1">
-                <FileText className="h-3 w-3" />
-                {appliedTemplateName}
-              </Badge>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Target className="h-8 w-8 text-primary" />
+            {t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })}
+            <Badge variant={mode === 'review' ? 'secondary' : 'default'}>
+              {getModeLabel()}
+            </Badge>
+          </h1>
+          <div className="flex items-center gap-4 mt-1 text-muted-foreground">
+            <span>{t({ en: 'Step', ar: 'خطوة' })} {currentStep} / 18</span>
+            {lastSaved && (
+              <span className="flex items-center gap-1 text-xs">
+                <Clock className="h-3 w-3" />
+                {t({ en: 'Last saved', ar: 'آخر حفظ' })}: {lastSaved.toLocaleTimeString()}
+              </span>
             )}
-            <PlanSelectionDialog
-              onSelectPlan={handleSelectPlan}
-              onCreateNew={handleCreateNew}
+            {isSaving && (
+              <span className="flex items-center gap-1 text-xs text-primary">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          {appliedTemplateName && (
+            <Badge variant="outline" className="gap-1">
+              <FileText className="h-3 w-3" />
+              {appliedTemplateName}
+            </Badge>
+          )}
+          <PlanSelectionDialog
+            onSelectPlan={handleSelectPlan}
+            onCreateNew={handleCreateNew}
+            trigger={
+              <Button variant="outline">
+                <FolderOpen className="h-4 w-4 mr-2" />
+                {t({ en: 'Open Plan', ar: 'فتح خطة' })}
+              </Button>
+            }
+          />
+        </div>
+      </div>
+
+      <WizardStepIndicator 
+        steps={WIZARD_STEPS} 
+        currentStep={currentStep} 
+        onStepClick={setCurrentStep} 
+        completedSteps={completedSteps} 
+      />
+
+      <Card>
+        <CardContent className="pt-6">{renderStep()}</CardContent>
+      </Card>
+
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          {t({ en: 'Back', ar: 'السابق' })}
+        </Button>
+        
+        <div className="flex gap-2">
+          {mode !== 'review' && currentStep === 18 && (
+            <SaveAsTemplateDialog
+              planData={wizardData}
               trigger={
                 <Button variant="outline">
-                  <FolderOpen className="h-4 w-4 mr-2" />
-                {t({ en: 'Open Plan', ar: 'فتح خطة' })}
+                  <FileText className="h-4 w-4 mr-2" />
+                  {t({ en: 'Save as Template', ar: 'حفظ كقالب' })}
                 </Button>
               }
             />
-          </div>
-        </div>
-
-        <WizardStepIndicator 
-          steps={WIZARD_STEPS} 
-          currentStep={currentStep} 
-          onStepClick={setCurrentStep} 
-          completedSteps={completedSteps} 
-        />
-
-        <Card>
-          <CardContent className="pt-6">{renderStep()}</CardContent>
-        </Card>
-
-        {/* Navigation */}
-        <div className="flex justify-between">
-          <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            {t({ en: 'Back', ar: 'السابق' })}
-          </Button>
+          )}
+          {mode !== 'review' && (
+            <Button 
+              variant="outline" 
+              onClick={() => saveNow(wizardData, currentStep)}
+              disabled={isSaving}
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              {t({ en: 'Save Draft', ar: 'حفظ المسودة' })}
+            </Button>
+          )}
           
-          <div className="flex gap-2">
-            {mode !== 'review' && currentStep === 18 && (
-              <SaveAsTemplateDialog
-                planData={wizardData}
-                trigger={
-                  <Button variant="outline">
-                    <FileText className="h-4 w-4 mr-2" />
-                    {t({ en: 'Save as Template', ar: 'حفظ كقالب' })}
-                  </Button>
-                }
-              />
-            )}
-            {mode !== 'review' && (
-              <Button 
-                variant="outline" 
-                onClick={() => saveNow(wizardData, currentStep)}
-                disabled={isSaving}
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                {t({ en: 'Save Draft', ar: 'حفظ المسودة' })}
-              </Button>
-            )}
-            
-            {currentStep < 18 ? (
-              <Button onClick={handleNext}>
-                {t({ en: 'Next', ar: 'التالي' })}
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            ) : mode !== 'review' && (
-              <Button 
-                onClick={() => submitMutation.mutate(wizardData)} 
-                disabled={submitMutation.isPending || !wizardData.name_en}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {submitMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                {t({ en: 'Submit for Approval', ar: 'إرسال للموافقة' })}
-              </Button>
-            )}
-          </div>
+          {currentStep < 18 ? (
+            <Button onClick={handleNext}>
+              {t({ en: 'Next', ar: 'التالي' })}
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          ) : mode !== 'review' && (
+            <Button 
+              onClick={() => submitMutation.mutate(wizardData)} 
+              disabled={submitMutation.isPending || !wizardData.name_en}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {submitMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+              {t({ en: 'Submit for Approval', ar: 'إرسال للموافقة' })}
+            </Button>
+          )}
         </div>
       </div>
-    </ProtectedPage>
+    </div>
   );
 }

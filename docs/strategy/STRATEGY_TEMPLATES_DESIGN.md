@@ -1,8 +1,13 @@
 # Strategy Templates System - Design Document
 
-> **Version**: 1.7  
+> **Version**: 1.8  
 > **Last Updated**: December 15, 2025  
 > **Status**: ✅ Fully Implemented & Consistent
+
+## Recent Changes (v1.8)
+- Verified all template operations consistent with wizard data structure
+- Confirmed hard delete for templates (no `is_deleted` column dependency)
+- All template-to-wizard field mappings validated
 
 ---
 
