@@ -10667,17 +10667,26 @@ export type Database = {
       strategic_plans: {
         Row: {
           action_plans: Json | null
+          activated_at: string | null
+          activated_by: string | null
           approval_notes: string | null
           approval_status: string | null
           approved_at: string | null
           approved_by: string | null
+          archived_at: string | null
+          archived_by: string | null
           budget_range: string | null
           cascade_config: Json | null
           change_management: Json | null
+          code: string | null
           communication_plan: Json | null
+          completed_at: string | null
+          completed_by: string | null
           constraints: Json | null
           core_values: string[] | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           dependencies: Json | null
           description_ar: string | null
           description_en: string | null
@@ -10686,6 +10695,7 @@ export type Database = {
           focus_technologies: string[] | null
           governance: Json | null
           id: string
+          is_deleted: boolean | null
           is_featured: boolean | null
           is_public: boolean | null
           is_template: boolean | null
@@ -10733,17 +10743,26 @@ export type Database = {
         }
         Insert: {
           action_plans?: Json | null
+          activated_at?: string | null
+          activated_by?: string | null
           approval_notes?: string | null
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           budget_range?: string | null
           cascade_config?: Json | null
           change_management?: Json | null
+          code?: string | null
           communication_plan?: Json | null
+          completed_at?: string | null
+          completed_by?: string | null
           constraints?: Json | null
           core_values?: string[] | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           dependencies?: Json | null
           description_ar?: string | null
           description_en?: string | null
@@ -10752,6 +10771,7 @@ export type Database = {
           focus_technologies?: string[] | null
           governance?: Json | null
           id?: string
+          is_deleted?: boolean | null
           is_featured?: boolean | null
           is_public?: boolean | null
           is_template?: boolean | null
@@ -10799,17 +10819,26 @@ export type Database = {
         }
         Update: {
           action_plans?: Json | null
+          activated_at?: string | null
+          activated_by?: string | null
           approval_notes?: string | null
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           budget_range?: string | null
           cascade_config?: Json | null
           change_management?: Json | null
+          code?: string | null
           communication_plan?: Json | null
+          completed_at?: string | null
+          completed_by?: string | null
           constraints?: Json | null
           core_values?: string[] | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           dependencies?: Json | null
           description_ar?: string | null
           description_en?: string | null
@@ -10818,6 +10847,7 @@ export type Database = {
           focus_technologies?: string[] | null
           governance?: Json | null
           id?: string
+          is_deleted?: boolean | null
           is_featured?: boolean | null
           is_public?: boolean | null
           is_template?: boolean | null

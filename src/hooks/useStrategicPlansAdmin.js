@@ -26,7 +26,7 @@ export function useStrategicPlansAdmin(options = {}) {
         .order('created_at', { ascending: false });
       
       if (!includeDeleted) {
-        query = query.eq('is_deleted', false);
+        query = query.or('is_deleted.is.null,is_deleted.eq.false');
       }
       
       if (!includeTemplates) {
@@ -257,16 +257,17 @@ export function useStrategicPlansAdmin(options = {}) {
     }
   });
 
-  // Statistics
+  // Statistics (exclude templates)
+  const nonTemplatePlans = plans.filter(p => !p.is_template);
   const stats = {
-    total: plans.length,
-    draft: plans.filter(p => p.status === 'draft').length,
-    active: plans.filter(p => p.status === 'active').length,
-    completed: plans.filter(p => p.status === 'completed').length,
-    archived: plans.filter(p => p.status === 'archived').length,
-    pendingApproval: plans.filter(p => p.approval_status === 'pending').length,
-    approved: plans.filter(p => p.approval_status === 'approved').length,
-    rejected: plans.filter(p => p.approval_status === 'rejected').length,
+    total: nonTemplatePlans.filter(p => !p.is_deleted).length,
+    draft: nonTemplatePlans.filter(p => p.status === 'draft' && !p.is_deleted).length,
+    active: nonTemplatePlans.filter(p => p.status === 'active' && !p.is_deleted).length,
+    completed: nonTemplatePlans.filter(p => p.status === 'completed' && !p.is_deleted).length,
+    archived: nonTemplatePlans.filter(p => p.status === 'archived' && !p.is_deleted).length,
+    pendingApproval: nonTemplatePlans.filter(p => p.approval_status === 'pending' && !p.is_deleted).length,
+    approved: nonTemplatePlans.filter(p => p.approval_status === 'approved' && !p.is_deleted).length,
+    rejected: nonTemplatePlans.filter(p => p.approval_status === 'rejected' && !p.is_deleted).length,
   };
 
   return {
