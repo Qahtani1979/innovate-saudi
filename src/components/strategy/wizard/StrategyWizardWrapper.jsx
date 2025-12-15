@@ -1625,7 +1625,6 @@ For EACH role, provide:
 ### 3. REPORTING STRUCTURE
 Provide:
 - reporting_frequency: For each governance level
-- escalation_paths_en / escalation_paths_ar: Clear escalation procedures
 - dashboards: Key monitoring dashboards (MUST include Innovation Dashboard)
 
 **INNOVATION REPORTING:**
@@ -1633,7 +1632,21 @@ Provide:
 - Quarterly Innovation Review: R&D ROI, partnership health, capability building progress
 - Annual Innovation Report: Technology roadmap review, patent/IP summary, lessons learned
 
-### 4. DECISION RIGHTS (RACI Matrix)
+### 4. ESCALATION PATH (Generate 4-6 escalation levels)
+For EACH escalation level, provide:
+- level: Number (1-6) indicating escalation order
+- role_en / role_ar: Role/position at this level (bilingual)
+- timeframe_en / timeframe_ar: When to escalate (bilingual)
+- description_en / description_ar: What triggers this escalation (bilingual)
+
+**Example Escalation Sequence:**
+1. Project Manager (24 hours) - Initial issue handling
+2. Department Director (48 hours) - Unresolved operational issues
+3. General Manager (72 hours) - Cross-department issues
+4. Deputy Minister (1 week) - Strategic/policy issues
+5. Minister (2 weeks) - Critical organizational matters
+
+### 5. DECISION RIGHTS (RACI Matrix)
 Provide decision rights for key areas:
 - Strategic decisions
 - Budget allocation (include R&D budget)
@@ -2447,10 +2460,22 @@ Return alignments as an array under the "alignments" key with proper objective_i
               }
             }
           },
-          reporting_frequency: { type: 'string' },
-          escalation_path_en: { type: 'string' },
-          escalation_path_ar: { type: 'string' },
-          escalation_path: { type: 'array', items: { type: 'string' } }
+          escalation_path: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                level: { type: 'number' },
+                role_en: { type: 'string' },
+                role_ar: { type: 'string' },
+                timeframe_en: { type: 'string' },
+                timeframe_ar: { type: 'string' },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' }
+              }
+            }
+          },
+          reporting_frequency: { type: 'string' }
         }
       },
       communication: {
@@ -2783,11 +2808,51 @@ Return alignments as an array under the "alignments" key with proper objective_i
             }));
           }
         } else if (stepKey === 'governance') {
-          const escalationPath = Array.isArray(data.escalation_path)
-            ? data.escalation_path
-            : (typeof data.escalation_path === 'string'
-              ? data.escalation_path.split(/\n|;|,/).map(s => s.trim()).filter(Boolean)
-              : []);
+          // Map escalation path - handle both array of objects and legacy string/array formats
+          const mapEscalationPath = (path) => {
+            if (!path) return [];
+            if (Array.isArray(path)) {
+              return path.map((item, i) => {
+                if (typeof item === 'object' && item !== null) {
+                  return {
+                    id: Date.now().toString() + 'esc' + i,
+                    level: item.level || i + 1,
+                    role_en: item.role_en || item.role || '',
+                    role_ar: item.role_ar || '',
+                    timeframe_en: item.timeframe_en || item.timeframe || '',
+                    timeframe_ar: item.timeframe_ar || '',
+                    description_en: item.description_en || item.description || '',
+                    description_ar: item.description_ar || ''
+                  };
+                }
+                // Legacy string format - convert to object
+                return {
+                  id: Date.now().toString() + 'esc' + i,
+                  level: i + 1,
+                  role_en: String(item).trim(),
+                  role_ar: '',
+                  timeframe_en: '',
+                  timeframe_ar: '',
+                  description_en: '',
+                  description_ar: ''
+                };
+              });
+            }
+            // Legacy string format
+            if (typeof path === 'string') {
+              return path.split(/\n|;/).map((s, i) => ({
+                id: Date.now().toString() + 'esc' + i,
+                level: i + 1,
+                role_en: s.trim(),
+                role_ar: '',
+                timeframe_en: '',
+                timeframe_ar: '',
+                description_en: '',
+                description_ar: ''
+              })).filter(e => e.role_en);
+            }
+            return [];
+          };
 
           updates.governance = {
             ...wizardData.governance,
@@ -2844,9 +2909,7 @@ Return alignments as an array under the "alignments" key with proper objective_i
               informed_ar: r.informed_ar || ''
             })),
             reporting_frequency: data.reporting_frequency || 'monthly',
-            escalation_path_en: data.escalation_path_en || escalationPath.join('\n'),
-            escalation_path_ar: data.escalation_path_ar || '',
-            escalation_path: escalationPath
+            escalation_path: mapEscalationPath(data.escalation_path)
           };
         } else if (stepKey === 'communication') {
           // Convert string key_messages to bilingual objects

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Building2, Plus, X, AlertTriangle, Users, LayoutDashboard, Grid3X3 } from 'lucide-react';
+import { Sparkles, Building2, Plus, X, AlertTriangle, Users, LayoutDashboard, Grid3X3, ChevronUp, ChevronDown, ArrowDown } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { GOVERNANCE_ROLES } from '../StrategyWizardSteps';
 
@@ -53,11 +53,30 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
   const dashboards = data.governance?.dashboards || [];
   const raciMatrix = data.governance?.raci_matrix || [];
   
-  const escalationPath = Array.isArray(data.governance?.escalation_path)
-    ? data.governance.escalation_path
-    : (typeof data.governance?.escalation_path === 'string'
-      ? data.governance.escalation_path.split(/\n|;|,/).map(s => s.trim()).filter(Boolean)
-      : []);
+  // Handle escalation path - support both new structured format and legacy string array
+  const getEscalationPath = () => {
+    const path = data.governance?.escalation_path;
+    if (!path || !Array.isArray(path) || path.length === 0) return [];
+    
+    // Check if it's new structured format (objects with role_en/role_ar)
+    if (typeof path[0] === 'object' && path[0] !== null) {
+      return path;
+    }
+    
+    // Legacy format - convert strings to objects
+    return path.map((item, i) => ({
+      id: `legacy-${i}`,
+      level: i + 1,
+      role_en: typeof item === 'string' ? item : '',
+      role_ar: '',
+      timeframe_en: '',
+      timeframe_ar: '',
+      description_en: '',
+      description_ar: ''
+    }));
+  };
+  
+  const escalationPath = getEscalationPath();
 
   const frequencyOptions = [
     { value: 'weekly', label: { en: 'Weekly', ar: 'أسبوعي' } },
@@ -171,6 +190,42 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
     onChange({ governance: { ...data.governance, raci_matrix: raciMatrix.filter((_, i) => i !== index) } });
   };
 
+  // Escalation Path handlers
+  const addEscalationStep = () => {
+    const newStep = {
+      id: Date.now().toString(),
+      level: escalationPath.length + 1,
+      role_en: '',
+      role_ar: '',
+      timeframe_en: '',
+      timeframe_ar: '',
+      description_en: '',
+      description_ar: ''
+    };
+    onChange({ governance: { ...data.governance, escalation_path: [...escalationPath, newStep] } });
+  };
+
+  const updateEscalationStep = (index, field, value) => {
+    const updated = escalationPath.map((step, i) => (i === index ? { ...step, [field]: value } : step));
+    onChange({ governance: { ...data.governance, escalation_path: updated } });
+  };
+
+  const removeEscalationStep = (index) => {
+    const updated = escalationPath.filter((_, i) => i !== index).map((step, i) => ({ ...step, level: i + 1 }));
+    onChange({ governance: { ...data.governance, escalation_path: updated } });
+  };
+
+  const moveEscalationStep = (index, direction) => {
+    if ((direction === -1 && index === 0) || (direction === 1 && index === escalationPath.length - 1)) return;
+    const newPath = [...escalationPath];
+    const temp = newPath[index];
+    newPath[index] = newPath[index + direction];
+    newPath[index + direction] = temp;
+    // Update level numbers
+    const updated = newPath.map((step, i) => ({ ...step, level: i + 1 }));
+    onChange({ governance: { ...data.governance, escalation_path: updated } });
+  };
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex justify-end">
@@ -222,45 +277,142 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <AlertTriangle className="w-5 h-5 text-primary" />
                 {t({ en: 'Escalation Path', ar: 'مسار التصعيد' })}
+                <Badge variant="secondary">{escalationPath.length}</Badge>
               </CardTitle>
+              <Button variant="outline" size="sm" onClick={addEscalationStep}>
+                <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Step', ar: 'إضافة خطوة' })}
+              </Button>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm">{t({ en: 'Escalation Path (EN)', ar: 'مسار التصعيد (إنجليزي)' })}</Label>
-                <Textarea
-                  className="mt-2"
-                  placeholder="Enter escalation steps (one per line)"
-                  value={data.governance?.escalation_path_en || escalationPath.join('\n')}
-                  onChange={(e) => onChange({
-                    governance: {
-                      ...data.governance,
-                      escalation_path_en: e.target.value,
-                      escalation_path: e.target.value.split('\n').map(s => s.trim()).filter(Boolean)
-                    }
-                  })}
-                  rows={4}
-                />
-              </div>
-              <div>
-                <Label className="text-sm">{t({ en: 'Escalation Path (AR)', ar: 'مسار التصعيد (عربي)' })}</Label>
-                <Textarea
-                  dir="rtl"
-                  className="mt-2"
-                  placeholder="أدخل خطوات التصعيد (كل خطوة في سطر)"
-                  value={data.governance?.escalation_path_ar || ''}
-                  onChange={(e) => onChange({
-                    governance: {
-                      ...data.governance,
-                      escalation_path_ar: e.target.value
-                    }
-                  })}
-                  rows={4}
-                />
-              </div>
+            <CardContent className="space-y-4">
+              {escalationPath.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg">
+                  {t({ en: 'No escalation steps defined. Click "Add Step" to create an escalation sequence.', ar: 'لم يتم تحديد خطوات التصعيد. انقر على "إضافة خطوة" لإنشاء تسلسل التصعيد.' })}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {escalationPath.map((step, idx) => (
+                    <div key={step.id || idx} className="relative">
+                      {/* Connection line */}
+                      {idx < escalationPath.length - 1 && (
+                        <div className="absolute left-6 top-full w-0.5 h-4 bg-primary/30 z-0" />
+                      )}
+                      
+                      <div className="p-4 border rounded-lg bg-card hover:bg-accent/5 transition-colors">
+                        <div className="flex items-start gap-3">
+                          {/* Level indicator */}
+                          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary">
+                            <span className="text-lg font-bold text-primary">{step.level || idx + 1}</span>
+                          </div>
+                          
+                          {/* Step content */}
+                          <div className="flex-1 space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Role/Position (EN)', ar: 'الدور/المنصب (إنجليزي)' })}</Label>
+                                <Input
+                                  placeholder="e.g., Project Manager"
+                                  value={step.role_en || ''}
+                                  onChange={(e) => updateEscalationStep(idx, 'role_en', e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Role/Position (AR)', ar: 'الدور/المنصب (عربي)' })}</Label>
+                                <Input
+                                  dir="rtl"
+                                  placeholder="مثال: مدير المشروع"
+                                  value={step.role_ar || ''}
+                                  onChange={(e) => updateEscalationStep(idx, 'role_ar', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Timeframe (EN)', ar: 'الإطار الزمني (إنجليزي)' })}</Label>
+                                <Input
+                                  placeholder="e.g., Within 24 hours"
+                                  value={step.timeframe_en || ''}
+                                  onChange={(e) => updateEscalationStep(idx, 'timeframe_en', e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Timeframe (AR)', ar: 'الإطار الزمني (عربي)' })}</Label>
+                                <Input
+                                  dir="rtl"
+                                  placeholder="مثال: خلال 24 ساعة"
+                                  value={step.timeframe_ar || ''}
+                                  onChange={(e) => updateEscalationStep(idx, 'timeframe_ar', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Description (EN)', ar: 'الوصف (إنجليزي)' })}</Label>
+                                <Input
+                                  placeholder="When to escalate to this level"
+                                  value={step.description_en || ''}
+                                  onChange={(e) => updateEscalationStep(idx, 'description_en', e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Description (AR)', ar: 'الوصف (عربي)' })}</Label>
+                                <Input
+                                  dir="rtl"
+                                  placeholder="متى يتم التصعيد إلى هذا المستوى"
+                                  value={step.description_ar || ''}
+                                  onChange={(e) => updateEscalationStep(idx, 'description_ar', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Actions */}
+                          <div className="flex flex-col gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => moveEscalationStep(idx, -1)}
+                              disabled={idx === 0}
+                              className="h-8 w-8"
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => moveEscalationStep(idx, 1)}
+                              disabled={idx === escalationPath.length - 1}
+                              className="h-8 w-8"
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => removeEscalationStep(idx)}
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Arrow indicator between steps */}
+                      {idx < escalationPath.length - 1 && (
+                        <div className="flex justify-center py-1">
+                          <ArrowDown className="w-5 h-5 text-primary/50" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
