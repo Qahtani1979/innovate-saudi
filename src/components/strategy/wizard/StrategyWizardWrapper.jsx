@@ -1028,24 +1028,363 @@ For EACH risk, provide ALL fields (bilingual):
 - "VC/Startup Partner Failure" - Innovation partners face funding or business challenges
 
 Be specific to plan context. Reference actual Saudi systems, agencies, and innovation ecosystem.`,
-      kpis: `Generate KPIs for this Saudi strategic plan:
-Plan: ${context.planName}
-Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
+      kpis: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
-Return 2-4 KPIs per objective.
-Include: name_en, name_ar, unit, baseline_value, target_value, objective_index, frequency (monthly|quarterly|annual), data_source, owner.`,
-      actions: `Generate action plans for this Saudi municipal strategy:
-Plan: ${context.planName}
-Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
+## MoMAH CONTEXT:
+- Vision 2030 Programs: Quality of Life, Housing, NTP, Thriving Cities
+- Innovation Ecosystem: KACST, SDAIA, MCIT, Monsha'at, university R&D
+- Key Systems: Balady, Sakani, ANSA, national data platforms
+- Innovation Priorities: AI/ML, IoT, Digital Twins, Smart Cities, GovTech
 
-Return 2-4 action plans per objective.
-Include: name_en, name_ar, description_en, description_ar, objective_index, type (initiative|program|project|pilot), priority (high|medium|low), budget_estimate (SAR), owner, deliverables (array of strings), dependencies (array of strings).`,
-      resources: `Generate resource plan for this Saudi municipal strategy:
-Plan: ${context.planName}
-Duration: ${wizardData.start_year}-${wizardData.end_year}
-Objectives: ${context.objectives.map(o => o.name_en).join(', ')}
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}
+- Vision: ${context.vision || 'Not specified'}
+- Timeline: ${context.startYear}-${context.endYear}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
+- Budget Range: ${wizardData.budget_range || 'Not specified'}
 
-Identify HR, technology, infrastructure requirements and budget allocation.`,
+## OBJECTIVES (from Step 9):
+${context.objectives.map((o, i) => \`\${i + 1}. \${o.name_en || o.name_ar} (\${o.priority || 'medium'} priority)\`).join('\\n') || 'Not defined yet'}
+
+---
+
+## REQUIREMENTS:
+Generate 2-4 KPIs per objective, including INNOVATION-SPECIFIC KPIs.
+
+For EACH KPI, provide ALL fields (bilingual):
+- name_en / name_ar: Clear KPI name
+- unit: Measurement unit (%, count, SAR, days, score, etc.)
+- baseline_value: Current/starting value
+- target_value: Target to achieve by end of plan
+- objective_index: Which objective this KPI measures (0-based index)
+- frequency: "monthly" | "quarterly" | "annual"
+- data_source: Where data will come from
+- owner: Role/department responsible
+
+---
+
+## KPI CATEGORIES (MUST include mix):
+
+### OUTCOME KPIs (Impact):
+- Citizen satisfaction scores
+- Service delivery improvements
+- Quality of life indicators
+- Housing/infrastructure targets
+
+### OUTPUT KPIs (Deliverables):
+- Projects completed
+- Services launched
+- Units delivered
+- Systems deployed
+
+### EFFICIENCY KPIs (Process):
+- Cost per transaction
+- Processing time reduction
+- Resource utilization
+- Budget variance
+
+### INNOVATION KPIs (MANDATORY - include 1-2 per objective where relevant):
+**R&D Investment:**
+- "R&D Spending as % of Budget" - Target: 3-5% of total budget
+- "Innovation Fund Utilization Rate" - % of allocated innovation budget spent
+
+**Pilot & Experimentation:**
+- "Pilot Projects Launched" - Number of innovation pilots initiated
+- "Pilot Success Rate" - % of pilots achieving success criteria
+- "Pilot-to-Production Conversion" - % of successful pilots scaled
+
+**Technology Adoption:**
+- "Digital Service Adoption Rate" - % of citizens using digital services
+- "AI/ML Models Deployed" - Number of AI solutions in production
+- "IoT Sensors Deployed" - Connected devices per city/region
+- "Smart City Index Score" - Composite smart city rating
+
+**Innovation Partnerships:**
+- "Active R&D Partnerships" - Number with KACST, universities, startups
+- "Technology Transfer Agreements" - Commercialized research outputs
+- "Startup Collaborations" - Pilots with GovTech/PropTech startups
+
+**Capability Building:**
+- "Staff with Digital Certifications" - % MCIT-certified
+- "Innovation Training Hours" - Per employee annually
+- "Internal Innovation Ideas Submitted" - Employee suggestions
+
+**IP & Knowledge:**
+- "Patents Filed" - Innovation IP protection
+- "Research Publications" - Academic collaborations
+- "Best Practices Documented" - Knowledge management
+
+---
+
+## DISTRIBUTION REQUIREMENTS:
+- Each objective: 2-4 KPIs
+- At least 30% should be Innovation/R&D KPIs
+- Mix of leading (predictive) and lagging (outcome) indicators
+- Realistic baselines and targets for Saudi municipal context
+
+## DATA SOURCE EXAMPLES:
+- Balady Platform Analytics
+- Citizen Satisfaction Surveys
+- SDAIA AI Governance Reports
+- Municipal Finance Systems
+- IoT Platform Dashboards
+- HR Training Management System
+- Innovation Portfolio Tracker
+
+Be specific. Use realistic Saudi municipal benchmarks.`,
+      actions: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
+
+## MoMAH CONTEXT:
+- Vision 2030 Programs: Quality of Life, Housing, NTP, Thriving Cities
+- Innovation Ecosystem: KACST, SDAIA, MCIT, Monsha'at, Badir, university research
+- Tech Partners: Elm, Thiqah, stc solutions, international vendors
+- Key Systems: Balady, Sakani, ANSA, Baladiya platforms
+
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}
+- Vision: ${context.vision || 'Not specified'}
+- Timeline: ${context.startYear}-${context.endYear}
+- Budget Range: ${wizardData.budget_range || 'Not specified'}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
+
+## OBJECTIVES (from Step 9):
+${context.objectives.map((o, i) => \`\${i + 1}. \${o.name_en || o.name_ar} (\${o.sector_code || 'General'})\`).join('\\n') || 'Not defined yet'}
+
+## KEY RISKS (from Step 7):
+${(wizardData.risks || []).filter(r => r.impact === 'high').slice(0, 3).map(r => \`- \${r.title_en || r.title_ar}\`).join('\\n') || 'Not assessed'}
+
+---
+
+## REQUIREMENTS:
+Generate 2-4 action plans per objective, including INNOVATION/R&D ACTIONS.
+
+For EACH action plan, provide ALL fields (bilingual):
+- name_en / name_ar: Clear action name
+- description_en / description_ar: Detailed description (2-3 sentences)
+- objective_index: Which objective this supports (0-based index)
+- type: "initiative" | "program" | "project" | "pilot" | "rd_project"
+- priority: "high" | "medium" | "low"
+- budget_estimate: Estimated cost in SAR
+- start_date: Planned start (YYYY-MM format)
+- end_date: Planned end (YYYY-MM format)
+- owner: Role/department responsible
+- deliverables: Array of specific outputs
+- dependencies: Array of prerequisites
+
+---
+
+## ACTION TYPES (MUST include mix):
+
+### INITIATIVES (Strategic):
+- Large-scale transformation programs
+- Multi-year strategic efforts
+- Cross-department coordination
+
+### PROGRAMS (Ongoing):
+- Continuous improvement efforts
+- Capacity building programs
+- Service enhancement programs
+
+### PROJECTS (Defined scope):
+- Specific deliverable focus
+- Clear start/end dates
+- Measurable outputs
+
+### PILOTS (CRITICAL - include for innovation objectives):
+- **Technology Pilots**: Test new tech before full deployment
+- **Process Pilots**: Trial new workflows in limited scope
+- **Service Pilots**: Beta test citizen services
+- **AI/ML Pilots**: Validate ML models with real data
+
+### R&D PROJECTS (MANDATORY - include 1-2 per technology-focused objective):
+- **Research Partnerships**: Collaborative R&D with KACST, KAUST, universities
+- **Technology Assessments**: Evaluate emerging tech for municipal use
+- **Proof of Concepts**: Validate technical feasibility
+- **Innovation Labs**: Establish testbed environments
+- **Knowledge Transfer**: Import expertise from research partners
+
+---
+
+## INNOVATION ACTION EXAMPLES:
+
+**AI/ML Projects:**
+- "AI-Powered Permit Processing POC" - Partner with SDAIA for automated permit review
+- "Predictive Maintenance ML Model" - R&D with KFUPM for infrastructure monitoring
+
+**IoT/Smart City:**
+- "Smart Parking Pilot" - Deploy sensors in 3 districts, measure adoption
+- "Environmental Monitoring Network" - IoT air/water quality sensors
+
+**Digital Transformation:**
+- "Balady Integration Sprint" - API development for legacy system connectivity
+- "Citizen App 2.0 Beta" - UX research and pilot with citizen focus groups
+
+**Innovation Capacity:**
+- "Municipal Innovation Lab Setup" - Establish dedicated innovation space
+- "GovTech Accelerator Partnership" - Collaborate with Badir/Flat6Labs
+- "Staff Innovation Challenge" - Internal hackathon program
+
+**Research Partnerships:**
+- "Smart Cities Research Chair" - Co-fund with KSU/KFUPM
+- "KAUST Urban Analytics MOU" - Data sharing for urban research
+- "International Best Practice Study" - Benchmark against global smart cities
+
+---
+
+## DISTRIBUTION REQUIREMENTS:
+- Each objective: 2-4 actions
+- At least 25% should be pilots or R&D projects
+- Mix of quick wins (6 months) and strategic initiatives (2+ years)
+- Budget estimates should be realistic for Saudi municipal context
+
+Be specific. Reference actual Saudi systems, agencies, and partners.`,
+      resources: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
+
+## MoMAH CONTEXT:
+- Vision 2030 Programs: Quality of Life, Housing, NTP, Thriving Cities
+- Innovation Ecosystem: KACST, SDAIA, MCIT, Monsha'at, university R&D
+- Saudization Requirements: MHRSD quotas for technical positions
+- Training Partners: MCIT Digital Academy, SDAIA AI certifications
+
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}
+- Timeline: ${context.startYear}-${context.endYear} (${(wizardData.end_year || 2030) - (wizardData.start_year || 2025)} years)
+- Budget Range: ${wizardData.budget_range || 'Not specified'}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
+
+## OBJECTIVES (from Step 9):
+${context.objectives.map((o, i) => \`\${i + 1}. \${o.name_en || o.name_ar}\`).join('\\n') || 'Not defined yet'}
+
+## ACTION PLANS (from Step 12):
+${(wizardData.action_plans || []).slice(0, 5).map(a => \`- \${a.name_en || a.name_ar} (\${a.type})\`).join('\\n') || 'Not defined yet'}
+
+---
+
+## REQUIREMENTS:
+Generate comprehensive resource plan with INNOVATION/R&D RESOURCES.
+
+Provide 4 resource categories:
+
+### 1. HR REQUIREMENTS (8-12 items)
+For EACH, provide (bilingual):
+- name_en / name_ar: Role/position title
+- quantity: Number needed
+- cost: Annual cost in SAR
+- notes_en / notes_ar: Skills required, hiring timeline
+
+**MUST include Innovation/R&D roles:**
+- Data Scientists / ML Engineers
+- AI/ML Specialists (SDAIA-certified)
+- IoT/Smart City Engineers
+- Innovation Program Managers
+- R&D Project Coordinators
+- Digital Transformation Specialists
+- UX Researchers
+- Technology Architects
+
+**Standard roles:**
+- Project Managers
+- Business Analysts
+- Software Developers
+- System Administrators
+- Change Management Specialists
+
+### 2. TECHNOLOGY REQUIREMENTS (8-12 items)
+For EACH, provide (bilingual):
+- name_en / name_ar: Technology/system name
+- quantity: Licenses, units, or capacity
+- cost: Total cost in SAR
+- notes_en / notes_ar: Vendor, integration needs
+
+**MUST include Innovation/R&D tech:**
+- AI/ML Development Platform (Azure ML, AWS SageMaker, Google Vertex)
+- Data Analytics Platform (Power BI, Tableau, custom dashboards)
+- IoT Platform & Sensors (for smart city pilots)
+- Digital Twin Software (for urban simulation)
+- Innovation Management System (idea tracking, portfolio)
+- Collaboration Tools (for R&D partnerships)
+- API Management Platform (for Balady integration)
+- Cloud Infrastructure (for AI workloads)
+
+**Standard tech:**
+- Enterprise Software Licenses
+- Hardware & Devices
+- Network Infrastructure
+- Security Solutions
+
+### 3. INFRASTRUCTURE REQUIREMENTS (4-8 items)
+For EACH, provide (bilingual):
+- name_en / name_ar: Infrastructure item
+- quantity: Size/capacity
+- cost: Capital cost in SAR
+- notes_en / notes_ar: Location, timeline
+
+**MUST include Innovation infrastructure:**
+- Innovation Lab / Testbed Facility
+- Data Center Capacity (for AI/analytics)
+- IoT Network Infrastructure (LoRaWAN, 5G)
+- Smart City Command Center
+- Collaboration Space for R&D teams
+
+**Standard infrastructure:**
+- Office Space
+- Training Facilities
+- Equipment & Vehicles
+
+### 4. BUDGET ALLOCATION (6-10 line items)
+For EACH, provide (bilingual):
+- name_en / name_ar: Budget category
+- quantity: "1" (or number of years)
+- cost: Total allocation in SAR
+- notes_en / notes_ar: Breakdown, conditions
+
+**MUST include Innovation budget:**
+- R&D Investment Fund (3-5% of total budget)
+- Innovation Pilots Budget
+- Research Partnership Funding (KACST, universities)
+- Technology POC Budget
+- Innovation Training & Certifications
+- Startup/VC Co-investment Fund
+
+**Standard budget:**
+- Personnel Costs
+- Technology & Licenses
+- Infrastructure & Capital
+- Operations & Maintenance
+- Contingency Reserve (10-15%)
+
+---
+
+## INNOVATION RESOURCE EXAMPLES:
+
+**HR - Innovation Team:**
+- "Chief Innovation Officer" - SAR 600,000/year - Lead innovation strategy
+- "AI/ML Engineer (SDAIA Certified)" - SAR 400,000/year - 3 needed for ML projects
+- "Smart City Solutions Architect" - SAR 450,000/year - IoT & digital twin expertise
+
+**Technology - R&D Platforms:**
+- "Azure AI + ML Studio" - SAR 500,000/year - Cloud AI development
+- "Innovation Portfolio Management System" - SAR 200,000 - Track pilots & R&D
+- "IoT Platform (ThingsBoard/Azure IoT)" - SAR 300,000/year - Smart city sensors
+
+**Infrastructure - Innovation Spaces:**
+- "Municipal Innovation Lab" - SAR 2,000,000 - Testbed facility in Riyadh
+- "Smart City Command Center" - SAR 5,000,000 - Urban operations center
+
+**Budget - R&D Allocation:**
+- "Annual R&D Fund" - SAR 10,000,000/year - Innovation pilots and research
+- "KACST Partnership Fund" - SAR 3,000,000 - Co-funded research projects
+- "GovTech Accelerator Investment" - SAR 2,000,000 - Startup collaborations
+
+---
+
+## DISTRIBUTION REQUIREMENTS:
+- At least 25% of HR should be innovation/tech roles
+- At least 30% of technology budget for R&D platforms
+- Explicit R&D budget line (3-5% of total)
+- Saudization compliance for all positions
+
+Be specific. Use realistic Saudi salary benchmarks and vendor pricing.`,
       timeline: `Generate implementation timeline for this Saudi strategic plan:
 Plan: ${context.planName}
 Duration: ${wizardData.start_year}-${wizardData.end_year}
