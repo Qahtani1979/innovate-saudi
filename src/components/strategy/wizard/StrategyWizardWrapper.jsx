@@ -484,171 +484,320 @@ Example pillar structure:
 - If Vision 2030 Programs include "QUALITY_OF_LIFE", ensure a pillar addresses citizen well-being
 
 Use formal Arabic (فصحى) for Arabic content. Be specific, not generic.`,
-      stakeholders: `You are identifying key stakeholders for a Saudi municipal strategic plan. Use ALL context provided to generate comprehensive stakeholders AND a detailed engagement plan.
+      stakeholders: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
-=== PLAN CONTEXT ===
-Plan Name: ${context.planName}${context.planNameAr ? ` (${context.planNameAr})` : ''}
-Vision: ${context.vision || 'Not yet defined'}
-Mission: ${context.mission || 'Not yet defined'}
+## MoMAH CONTEXT:
+MoMAH oversees municipal services across 13 administrative regions, 285+ municipalities, and 17 major Amanats.
+- Vision 2030 Programs: Quality of Life, Housing (70% ownership), NTP, Thriving Cities
+- Innovation Ecosystem: KACST, TAQNIA, Misk Foundation, Monsha'at, Research Chair Programs
+- Tech & Innovation Partners: SDAIA, MCIT, STC, stc solutions, Elm, Thiqah, Saudi Venture Capital
+- Universities & Research: KSU, KFUPM, KAUST, PNU, KAU, Effat, Alfaisal
+- Innovation Hubs: NEOM, The Line, Oxagon, KAFD Innovation District, Riyadh Technopolis
+- Incubators/Accelerators: Badir, Flat6Labs, 500 Global, Wadi Makkah
+- Key Systems: Balady Platform, Sakani, ANSA, Absher, Etimad
 
-=== STRATEGIC FOCUS (USE TO IDENTIFY RELEVANT STAKEHOLDERS) ===
-Target Sectors: ${context.sectors.length > 0 ? context.sectors.join(', ') : 'General municipal services'}
-Strategic Themes: ${context.themes.length > 0 ? context.themes.join(', ') : 'General improvement'}
-Focus Technologies: ${context.technologies.length > 0 ? context.technologies.join(', ') : 'General technology'}
-Vision 2030 Programs: ${context.vision2030Programs.length > 0 ? context.vision2030Programs.join(', ') : 'General Vision 2030'}
-Target Regions: ${context.regions.length > 0 ? context.regions.join(', ') : 'Kingdom-wide'}
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}${context.planNameAr ? ` (${context.planNameAr})` : ''}
+- Vision: ${context.vision || 'Not yet defined'}
+- Mission: ${context.mission || 'Not yet defined'}
+- Target Sectors: ${context.sectors.length > 0 ? context.sectors.join(', ') : 'General municipal services'}
+- Strategic Themes: ${context.themes.length > 0 ? context.themes.join(', ') : 'General improvement'}
+- Focus Technologies: ${context.technologies.length > 0 ? context.technologies.join(', ') : 'General technology'}
+- Vision 2030 Programs: ${context.vision2030Programs.length > 0 ? context.vision2030Programs.join(', ') : 'General Vision 2030'}
+- Target Regions: ${context.regions.length > 0 ? context.regions.join(', ') : 'Kingdom-wide'}
+- Timeline: ${context.startYear} - ${context.endYear}
+- Budget Range: ${context.budgetRange || 'To be determined'}
 
-=== DURATION & RESOURCES ===
-Timeline: ${context.startYear} - ${context.endYear}
-Budget Range: ${context.budgetRange || 'To be determined'}
-
-=== EXISTING QUICK STAKEHOLDERS (expand on these) ===
+## EXISTING QUICK STAKEHOLDERS:
 ${context.stakeholders.length > 0 ? context.stakeholders.map(s => `- ${s.name_en || s}${s.name_ar ? ` (${s.name_ar})` : ''}`).join('\n') : '- None specified yet'}
 
-=== DISCOVERY INPUTS ===
-Key Challenges: ${context.keyChallenges || 'General challenges'}
-Available Resources: ${context.availableResources || 'Standard resources'}
-Initial Constraints: ${context.initialConstraints || 'Standard constraints'}
+## DISCOVERY INPUTS:
+- Key Challenges: ${context.keyChallenges || 'General challenges'}
+- Available Resources: ${context.availableResources || 'Standard resources'}
+- Initial Constraints: ${context.initialConstraints || 'Standard constraints'}
 
-=== GENERATION REQUIREMENTS ===
+---
 
-**PART 1: STAKEHOLDERS (Generate exactly 14-18 stakeholders)**
+## REQUIREMENTS:
 
-Each stakeholder MUST have ALL these fields (all text fields bilingual):
-- name_en: Full organization/role name in English
-- name_ar: Full organization/role name in Arabic  
-- type: One of GOVERNMENT | PRIVATE | ACADEMIC | NGO | COMMUNITY | INTERNATIONAL | INTERNAL
-- power: low | medium | high (influence over plan success)
-- interest: low | medium | high (level of concern about outcomes)
-- engagement_level: One of inform | consult | involve | collaborate | empower
-- influence_strategy_en: 2-3 sentences on how to engage this stakeholder (English)
-- influence_strategy_ar: 2-3 sentences on how to engage this stakeholder (Arabic)
-- contact_person_en: Suggested role/title for primary contact in English (e.g., "Director of Strategic Planning")
-- contact_person_ar: Suggested role/title for primary contact in Arabic (e.g., "مدير التخطيط الاستراتيجي")
-- notes_en: Brief note about timing, special considerations, or relationship history (English)
-- notes_ar: Brief note about timing, special considerations, or relationship history (Arabic)
+### PART 1: STAKEHOLDERS (Generate 14-18 stakeholders)
 
-CRITICAL DISTRIBUTION REQUIREMENTS:
-- At least 4 GOVERNMENT stakeholders (relevant ministries, agencies)
-- At least 3 PRIVATE sector stakeholders (technology vendors, contractors for focus technologies)
-- At least 2 ACADEMIC/research institutions
-- At least 2 COMMUNITY stakeholders (citizen groups, associations)
-- At least 2 INTERNAL stakeholders (municipal departments)
-- Include stakeholders from EACH target sector
-- Include technology partners for EACH focus technology
-- Include relevant Vision 2030 program offices
+Each stakeholder MUST have ALL fields (bilingual):
+- name_en / name_ar: Full organization/role name
+- type: GOVERNMENT | PRIVATE | ACADEMIC | NGO | COMMUNITY | INTERNATIONAL | INTERNAL
+- power: low | medium | high
+- interest: low | medium | high
+- engagement_level: inform | consult | involve | collaborate | empower
+- influence_strategy_en / influence_strategy_ar: 2-3 sentences on engagement approach
+- contact_person_en / contact_person_ar: Suggested role/title for primary contact
+- notes_en / notes_ar: Timing, special considerations, relationship notes
 
-POWER/INTEREST DISTRIBUTION:
-- 3-4 stakeholders with High Power + High Interest (Manage Closely)
-- 3-4 stakeholders with High Power + Low/Medium Interest (Keep Satisfied)  
-- 3-4 stakeholders with Low/Medium Power + High Interest (Keep Informed)
-- 3-4 stakeholders with Low Power + Low Interest (Monitor)
+**MANDATORY DISTRIBUTION:**
 
-**PART 2: STAKEHOLDER ENGAGEMENT PLAN (Required - Bilingual)**
+**GOVERNMENT (4-5 stakeholders):**
+- Vision Realization Programs (VRO, NTP PMO)
+- Regulatory bodies (MOMRA, CITC, PDPL Authority)
+- Funding agencies (MOF, PIF, NDF)
+- Sister ministries (MCIT, MHRSD, MOT)
 
-Generate a comprehensive engagement plan in BOTH languages:
+**INNOVATION & R&D (3-4 stakeholders) - CRITICAL:**
+- Research institutions: KACST, KAUST Research Office, university research centers
+- Innovation agencies: SDAIA, Monsha'at Innovation, Research Products Development Company (RPDC)
+- Tech incubators: Badir Program, Wadi Makkah Ventures, KAUST Innovation
+- National labs: National Center for AI, Cyber Security Center
+
+**PRIVATE SECTOR & TECH (3-4 stakeholders):**
+- Technology vendors for focus technologies (${context.technologies.join(', ') || 'AI, IoT, etc.'})
+- System integrators: Elm, Thiqah, stc solutions
+- PropTech/GovTech startups relevant to sectors
+- International tech partners (if applicable)
+
+**ACADEMIC (2-3 stakeholders):**
+- Leading universities: KSU, KFUPM, KAUST for research partnerships
+- Research chairs aligned with plan focus
+- Student innovation programs (Misk, Monsha'at Youth)
+
+**COMMUNITY & INTERNAL (2-3 stakeholders):**
+- Citizen groups, professional associations
+- Municipal departments, Amanat innovation units
+- Chamber of Commerce, industry associations
+
+**POWER/INTEREST MATRIX:**
+- 3-4 High Power + High Interest (Manage Closely)
+- 3-4 High Power + Low/Medium Interest (Keep Satisfied)
+- 3-4 Low/Medium Power + High Interest (Keep Informed)
+- 3-4 Low Power + Low Interest (Monitor)
+
+---
+
+### PART 2: STAKEHOLDER ENGAGEMENT PLAN (Bilingual)
+
+Generate comprehensive engagement plan:
 - stakeholder_engagement_plan_en: 3-5 paragraphs in English
 - stakeholder_engagement_plan_ar: 3-5 paragraphs in Arabic (formal فصحى)
 
-Both versions should describe:
-1. Overall engagement philosophy and approach for this strategic plan
-2. Communication cadence and channels for different stakeholder groups
-3. Key engagement milestones aligned with the plan timeline (${context.startYear}-${context.endYear})
-4. Mechanisms for stakeholder feedback and input
-5. Risk mitigation for potential stakeholder resistance or disengagement
+Must include:
+1. Overall engagement philosophy with emphasis on innovation co-creation
+2. Communication cadence for different stakeholder types
+3. Key engagement milestones (${context.startYear}-${context.endYear})
+4. Innovation partnership mechanisms (R&D collaborations, pilot partnerships, knowledge transfer)
+5. Feedback mechanisms and resistance mitigation
 
-Be specific to the plan context, not generic.`,
-      pestel: `Conduct a comprehensive PESTEL analysis for this Saudi municipal strategic plan:
+---
 
-**CONTEXT:**
+## INNOVATION STAKEHOLDER EXAMPLES:
+
+**R&D Partners:**
+- "King Abdulaziz City for Science and Technology (KACST)" - National R&D coordination, technology transfer
+- "KAUST Innovation & Economic Development" - Deep tech research, startup ecosystem
+- "SDAIA National Center for AI" - AI research, ethics, governance
+
+**Tech Innovation:**
+- "Badir Program for Technology Incubators" - Startup incubation, municipal tech solutions
+- "Monsha'at SME Innovation Programs" - SME tech adoption, innovation funding
+- "Saudi Venture Capital Company" - Innovation investment, growth capital
+
+**Academic Research:**
+- "KSU Smart Cities Research Chair" - Urban innovation research
+- "KFUPM Center for Environment & Water" - Sustainability research
+- "Research Products Development Company (RPDC)" - University research commercialization
+
+Be specific to plan context. Reference actual Saudi innovation ecosystem entities.`,
+      pestel: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
+
+## MoMAH CONTEXT:
+- Vision 2030 Programs: Quality of Life, Housing, NTP, Thriving Cities
+- Innovation Ecosystem: KACST, SDAIA, MCIT Digital Government, Monsha'at
+- R&D Infrastructure: KAUST, KFUPM, national research centers, innovation hubs
+- Key Initiatives: Saudi Green Initiative, National Industrial Strategy, Digital Government Strategy
+
+## STRATEGIC PLAN CONTEXT:
 - Plan Name: ${context.planName}
 - Vision: ${context.vision}
 - Sectors: ${context.sectors.join(', ')}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
 - Timeline: ${context.startYear}-${context.endYear}
 
-**REQUIREMENTS:**
-Generate factors for ALL 6 PESTEL categories. Each category MUST have 2-4 factors.
+---
 
-For EACH factor, provide ALL these fields in BOTH English and Arabic:
-- factor_en: Factor name/description in English
-- factor_ar: Factor name/description in Arabic (formal فصحى)
-- impact: One of "low" | "medium" | "high"
-- trend: One of "declining" | "stable" | "growing"
-- timeframe: One of "short_term" | "medium_term" | "long_term"
-- implications_en: Strategic implications in English (1-2 sentences)
-- implications_ar: Strategic implications in Arabic (1-2 sentences)
+## REQUIREMENTS:
+Generate factors for ALL 6 PESTEL categories. Each category MUST have 3-4 factors.
 
-**CATEGORY GUIDANCE FOR SAUDI CONTEXT:**
-1. POLITICAL: Vision 2030 initiatives, municipal reforms, governance changes, decentralization
-2. ECONOMIC: Oil diversification, PPP opportunities, economic zones, investment climate
-3. SOCIAL: Youth demographics, urbanization, cultural shifts, women empowerment
-4. TECHNOLOGICAL: Smart city tech, AI/digital transformation, 5G, e-government
-5. ENVIRONMENTAL: Saudi Green Initiative, water scarcity, renewable energy, sustainability
-6. LEGAL: Municipal law updates, data protection, labor reforms, compliance requirements
+For EACH factor, provide ALL fields (bilingual):
+- factor_en / factor_ar: Factor name/description
+- impact: "low" | "medium" | "high"
+- trend: "declining" | "stable" | "growing"
+- timeframe: "short_term" | "medium_term" | "long_term"
+- implications_en / implications_ar: Strategic implications (1-2 sentences)
 
-**DISTRIBUTION:**
-- Mix of impacts: at least one high, one medium, one low per category where applicable
-- Mix of trends: variety of declining, stable, growing
-- Mix of timeframes: short, medium, and long term factors
+---
 
-Be specific to Saudi Arabia and the plan's sectors. Avoid generic statements.`,
-      swot: `Conduct a comprehensive SWOT analysis for this Saudi municipal strategic plan:
+## CATEGORY GUIDANCE WITH INNOVATION/R&D FOCUS:
 
-**CONTEXT:**
+### 1. POLITICAL:
+- Vision 2030 governance and VRP oversight
+- Municipal reform agenda and decentralization
+- Innovation policy support (regulatory sandboxes, innovation zones)
+- Public-private partnership frameworks
+- R&D funding prioritization in national budgets
+
+### 2. ECONOMIC:
+- Economic diversification beyond oil (NIDLP targets)
+- PIF and sovereign wealth investment in innovation
+- PPP opportunities for municipal innovation
+- Venture capital and startup ecosystem growth
+- R&D tax incentives and innovation funding programs
+- Budget allocation for digital transformation
+
+### 3. SOCIAL:
+- Youth population and digital natives (70% under 35)
+- Rising citizen expectations for smart services
+- Innovation culture and entrepreneurship mindset
+- Talent availability for emerging technologies
+- Public acceptance of AI and automation
+- Research talent retention and attraction
+
+### 4. TECHNOLOGICAL (CRITICAL - INCLUDE R&D):
+- AI/ML maturity and SDAIA governance framework
+- IoT infrastructure readiness (5G, LoRaWAN)
+- Cloud adoption and data center availability
+- Digital twins and simulation capabilities
+- R&D infrastructure (labs, testbeds, innovation centers)
+- Technology transfer mechanisms (KACST, universities)
+- Open innovation platforms and APIs
+- Cybersecurity capabilities and threats
+
+### 5. ENVIRONMENTAL:
+- Saudi Green Initiative commitments
+- Circular economy and waste innovation
+- Water technology and desalination R&D
+- Clean energy transition and solar adoption
+- Climate adaptation technologies
+- Green building standards and innovation
+
+### 6. LEGAL:
+- PDPL data protection compliance
+- AI ethics and governance regulations (SDAIA)
+- Intellectual property and patent frameworks
+- Cybersecurity law requirements
+- Procurement regulations for innovation
+- Open data and government transparency mandates
+
+---
+
+## DISTRIBUTION REQUIREMENTS:
+- Each category: mix of high, medium, low impacts
+- Each category: variety of trends (declining, stable, growing)
+- Each category: mix of timeframes
+- TECHNOLOGICAL category: At least 2 factors explicitly about R&D/innovation infrastructure
+
+Be specific to Saudi Arabia. Reference actual programs, agencies, and frameworks.`,
+      swot: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
+
+## MoMAH CONTEXT:
+- Vision 2030 Programs: Quality of Life, Housing, NTP, Thriving Cities
+- Innovation Ecosystem: KACST, SDAIA, MCIT, Monsha'at, university research centers
+- R&D Infrastructure: KAUST, KFUPM, national labs, innovation hubs, tech incubators
+- Digital Platforms: Balady, Sakani, ANSA, Absher integration
+
+## STRATEGIC PLAN CONTEXT:
 - Plan Name: ${context.planName}
 - Vision: ${context.vision}
 - Sectors: ${context.sectors.join(', ')}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
 - Timeline: ${context.startYear}-${context.endYear}
 - Stakeholder Count: ${(wizardData.stakeholders || []).length}
 
-**REQUIREMENTS:**
-Generate items for ALL 4 SWOT categories. Each category MUST have 4-6 items.
+## PESTEL INSIGHTS (from Step 4):
+- Key Political: ${(wizardData.pestel?.political || []).slice(0, 2).map(f => f.factor_en).join('; ') || 'Not analyzed'}
+- Key Technological: ${(wizardData.pestel?.technological || []).slice(0, 2).map(f => f.factor_en).join('; ') || 'Not analyzed'}
 
-For EACH item, provide ALL these fields in BOTH English and Arabic:
-- text_en: The SWOT item description in English (1-2 sentences)
-- text_ar: The SWOT item description in Arabic (formal فصحى, 1-2 sentences)
-- priority: One of "low" | "medium" | "high"
+---
 
-**CATEGORY GUIDANCE FOR SAUDI MUNICIPAL CONTEXT:**
+## REQUIREMENTS:
+Generate items for ALL 4 SWOT categories. Each category MUST have 5-7 items.
 
-1. STRENGTHS (Internal positive factors):
-   - Government support and Vision 2030 alignment
-   - Digital infrastructure readiness
-   - Financial resources and funding access
-   - Skilled workforce availability
-   - Strategic location advantages
-   - Existing partnerships and relationships
+For EACH item, provide (bilingual):
+- text_en / text_ar: SWOT item description (1-2 sentences)
+- priority: "low" | "medium" | "high"
 
-2. WEAKNESSES (Internal negative factors):
-   - Capacity or skill gaps
-   - Legacy systems or processes
-   - Resource constraints
-   - Coordination challenges between departments
-   - Data management issues
-   - Change resistance
+---
 
-3. OPPORTUNITIES (External positive factors):
-   - Vision 2030 initiatives and funding programs
-   - Digital transformation trends
-   - International partnerships and knowledge transfer
-   - Private sector investment interest
-   - Demographic shifts (youth population)
-   - Regional economic development
+## CATEGORY GUIDANCE WITH INNOVATION/R&D FOCUS:
 
-4. THREATS (External negative factors):
-   - Economic volatility and oil dependency
-   - Rapid technological change
-   - Talent competition
-   - Regulatory changes
-   - Environmental challenges (water, climate)
-   - Public expectation management
+### STRENGTHS (Internal positive - include 1-2 innovation-related):
+**Standard:**
+- Government support and Vision 2030 alignment
+- Digital infrastructure (Balady, national platforms)
+- Financial resources and funding access
+- Strategic geographic advantages
+- Existing partnerships
 
-**DISTRIBUTION:**
-- Each category should have a mix of priorities: at least one high, two medium, and one low
-- Items should be specific to the plan's sectors, not generic
-- Consider PESTEL factors when identifying opportunities and threats
+**Innovation-Specific (MUST include):**
+- Access to national R&D infrastructure (KACST, KAUST, KFUPM)
+- Established innovation partnerships (SDAIA, tech vendors)
+- Digital transformation experience and capabilities
+- Innovation budget allocation or R&D funding access
+- Pilot program experience and testbed availability
+- Technology talent pool and training programs
 
-Be specific to Saudi Arabia and the municipal context. Avoid vague or generic statements.`,
+### WEAKNESSES (Internal negative - include 1-2 innovation-related):
+**Standard:**
+- Capacity or skill gaps
+- Legacy systems and processes
+- Resource constraints
+- Coordination challenges
+- Data management issues
+
+**Innovation-Specific (MUST include):**
+- Limited R&D experience or innovation capacity
+- Shortage of specialized tech talent (AI, IoT, data science)
+- Weak innovation culture or risk aversion
+- Insufficient pilot/experimentation infrastructure
+- Technology vendor dependency
+- Knowledge transfer gaps from research to operations
+
+### OPPORTUNITIES (External positive - include 2-3 innovation-related):
+**Standard:**
+- Vision 2030 funding and programs
+- Regional economic development
+- Demographic dividend (youth population)
+- International partnerships
+
+**Innovation-Specific (MUST include):**
+- National innovation funding (SIDF, Monsha'at, VC ecosystem)
+- University research partnerships and knowledge transfer
+- GovTech/PropTech startup ecosystem growth
+- SDAIA AI adoption support and frameworks
+- Innovation sandbox and regulatory flexibility
+- Technology transfer from NEOM, megaprojects
+- Open innovation platforms and hackathons
+- International R&D collaboration opportunities
+
+### THREATS (External negative - include 1-2 innovation-related):
+**Standard:**
+- Economic volatility
+- Regulatory changes
+- Environmental challenges
+- Public expectation management
+
+**Innovation-Specific (MUST include):**
+- Rapid technology obsolescence
+- Cybersecurity threats and data breaches
+- AI ethics and governance risks
+- Innovation talent competition (brain drain)
+- Technology vendor lock-in risks
+- R&D project failure and sunk costs
+- Disruptive technology from competitors
+
+---
+
+## DISTRIBUTION REQUIREMENTS:
+- Each category: mix of high, medium, low priorities
+- At least 2 HIGH priority items per category
+- EXPLICIT innovation/R&D items in each category as specified above
+
+Be specific to Saudi municipal context. Reference actual systems, programs, and ecosystem players.`,
       scenarios: `Create comprehensive scenario planning for this Saudi municipal strategic plan:
 
 **STRATEGIC PLAN CONTEXT:**
@@ -761,9 +910,15 @@ MOST LIKELY (Realistic - probability: 60):
 - Each scenario should reference the SWOT and PESTEL factors above
 - Outcomes should be sector-specific and measurable
 - Values should be realistic for Saudi municipal context`,
-      risks: `Identify and analyze risks for this Saudi municipal strategic plan:
+      risks: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
-**STRATEGIC PLAN CONTEXT:**
+## MoMAH CONTEXT:
+- Vision 2030 Programs: Quality of Life, Housing, NTP, Thriving Cities
+- Innovation Ecosystem: KACST, SDAIA, MCIT, Monsha'at, university R&D
+- Tech Infrastructure: Balady, Sakani, ANSA, national data platforms
+- Regulatory Framework: PDPL, SDAIA AI Ethics, CITC, cybersecurity laws
+
+## STRATEGIC PLAN CONTEXT:
 - Plan Name: ${context.planName}
 - Vision: ${context.vision}
 - Mission: ${wizardData.mission_en || 'Not specified'}
@@ -772,73 +927,107 @@ MOST LIKELY (Realistic - probability: 60):
 - Budget Range: ${wizardData.budget_range || 'Not specified'}
 - Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
 
-**PESTEL THREATS (from Step 4):**
+## PESTEL THREATS (from Step 4):
 ${Object.entries(wizardData.pestel || {}).map(([category, factors]) => 
   (factors || []).filter(f => f.impact === 'high' || f.trend === 'declining').slice(0, 2).map(f => `- ${category.toUpperCase()}: ${f.factor_en || 'N/A'}`).join('\n')
 ).filter(Boolean).join('\n') || 'Not analyzed yet'}
 
-**SWOT WEAKNESSES & THREATS (from Step 5):**
-- Weaknesses: ${(wizardData.swot?.weaknesses || []).slice(0, 3).map(w => w.text_en).join('; ') || 'Not defined yet'}
-- Threats: ${(wizardData.swot?.threats || []).slice(0, 3).map(t => t.text_en).join('; ') || 'Not defined yet'}
+## SWOT WEAKNESSES & THREATS (from Step 5):
+- Weaknesses: ${(wizardData.swot?.weaknesses || []).slice(0, 3).map(w => w.text_en).join('; ') || 'Not defined'}
+- Threats: ${(wizardData.swot?.threats || []).slice(0, 3).map(t => t.text_en).join('; ') || 'Not defined'}
 
-**WORST-CASE SCENARIO (from Step 6):**
+## WORST-CASE SCENARIO (from Step 6):
 ${wizardData.scenarios?.worst_case?.description_en || 'Not defined yet'}
 
-**KEY STAKEHOLDERS:**
-${(wizardData.stakeholders || []).filter(s => s.power === 'high').slice(0, 3).map(s => `- ${s.name_en || s.name_ar} (${s.type})`).join('\n') || 'Not defined yet'}
+## KEY STAKEHOLDERS:
+${(wizardData.stakeholders || []).filter(s => s.power === 'high').slice(0, 3).map(s => `- ${s.name_en || s.name_ar} (${s.type})`).join('\n') || 'Not defined'}
 
-**REQUIREMENTS:**
-Generate 10-14 risks covering ALL categories. Each risk MUST have ALL fields in BOTH English and Arabic.
+---
 
-For EACH risk, provide:
-1. **title_en / title_ar**: Short risk title (5-10 words) in both languages
-2. **description_en / description_ar**: Detailed risk description (2-3 sentences) explaining what could go wrong
-3. **category**: One of STRATEGIC | OPERATIONAL | FINANCIAL | REGULATORY | TECHNOLOGY | REPUTATIONAL | POLITICAL | ENVIRONMENTAL
-4. **likelihood**: low | medium | high
-5. **impact**: low | medium | high
-6. **mitigation_strategy_en / mitigation_strategy_ar**: Preventive actions to reduce probability (2-3 sentences)
-7. **contingency_plan_en / contingency_plan_ar**: Response actions if risk materializes (2-3 sentences)
-8. **owner**: Role/department responsible (e.g., "IT Director", "Finance Department", "Strategy Office")
+## REQUIREMENTS:
+Generate 12-16 risks covering ALL categories with explicit innovation/R&D risks.
 
-**CATEGORY DISTRIBUTION (MANDATORY):**
-- STRATEGIC: 2 risks (vision misalignment, stakeholder resistance)
-- OPERATIONAL: 2 risks (capacity gaps, process inefficiencies)
-- FINANCIAL: 2 risks (budget overruns, funding delays)
-- REGULATORY: 1-2 risks (compliance, policy changes)
-- TECHNOLOGY: 2 risks (system failures, cybersecurity, integration issues)
-- REPUTATIONAL: 1 risk (public perception, media)
-- POLITICAL: 1-2 risks (leadership changes, priority shifts)
-- ENVIRONMENTAL: 1 risk (sustainability, climate factors)
+For EACH risk, provide ALL fields (bilingual):
+- title_en / title_ar: Short risk title (5-10 words)
+- description_en / description_ar: Detailed description (2-3 sentences)
+- category: STRATEGIC | OPERATIONAL | FINANCIAL | REGULATORY | TECHNOLOGY | INNOVATION | REPUTATIONAL | POLITICAL | ENVIRONMENTAL
+- likelihood: low | medium | high
+- impact: low | medium | high
+- mitigation_strategy_en / mitigation_strategy_ar: Preventive actions (2-3 sentences)
+- contingency_plan_en / contingency_plan_ar: Response if risk occurs (2-3 sentences)
+- owner: Role/department responsible
 
-**LIKELIHOOD/IMPACT DISTRIBUTION:**
-- At least 2-3 HIGH likelihood risks
-- At least 2-3 HIGH impact risks
-- Mix of LOW, MEDIUM across remaining risks
-- At least 2 risks should be HIGH/HIGH (critical risks)
+---
 
-**SAUDI MUNICIPAL RISK EXAMPLES:**
+## CATEGORY DISTRIBUTION (MANDATORY):
 
-STRATEGIC:
-- "Vision 2030 Program Misalignment" - Risk that plan objectives drift from national priorities
-- "Stakeholder Engagement Failure" - Key stakeholders disengage due to competing priorities
+### STRATEGIC (2 risks):
+- Vision 2030 misalignment or VRP milestone failure
+- Stakeholder disengagement or priority conflicts
 
-OPERATIONAL:
-- "Capacity and Skills Gap" - Insufficient trained staff to execute initiatives
-- "Cross-Department Coordination Failure" - Siloed operations preventing integration
+### OPERATIONAL (2 risks):
+- Capacity gaps and skill shortages
+- Cross-department coordination failures
 
-FINANCIAL:
-- "Budget Allocation Delays" - Ministry approval processes delay funding
-- "Cost Overruns" - Inflation and scope creep exceed estimates
+### FINANCIAL (2 risks):
+- Budget overruns or funding delays
+- ROI uncertainty on innovation investments
 
-TECHNOLOGY:
-- "Digital Infrastructure Gaps" - Legacy systems incompatible with new solutions
-- "Cybersecurity Incidents" - Data breaches affecting citizen trust
+### REGULATORY (1-2 risks):
+- PDPL/data protection non-compliance
+- Municipal law or policy changes
 
-REGULATORY:
-- "Municipal Law Changes" - New regulations requiring plan modifications
-- "Data Protection Non-Compliance" - PDPL requirements not met
+### TECHNOLOGY (2 risks):
+- System integration failures (Balady, legacy systems)
+- Cybersecurity breaches or data loss
 
-Be specific to the plan's sectors and context. Avoid generic risks.`,
+### INNOVATION/R&D (2-3 risks) - CRITICAL NEW CATEGORY:
+- **Pilot Program Failure**: Innovation pilots fail to demonstrate value, wasting R&D investment
+- **Technology Obsolescence**: Selected technologies become outdated before full deployment
+- **R&D Partner Dependency**: Over-reliance on single research partner or vendor
+- **Innovation Talent Drain**: Key technical staff leave for private sector or competitors
+- **Proof-of-Concept to Scale Gap**: Successful POCs fail to scale to production
+- **AI/ML Model Bias**: AI systems produce biased or unfair outcomes
+- **Open Innovation IP Risks**: Intellectual property disputes from collaborative R&D
+
+### REPUTATIONAL (1 risk):
+- Public perception of failed innovation or wasted funds
+
+### POLITICAL (1-2 risks):
+- Leadership changes affecting innovation priorities
+- Inter-ministry coordination breakdown
+
+### ENVIRONMENTAL (1 risk):
+- Sustainability targets missed or green initiative compliance
+
+---
+
+## LIKELIHOOD/IMPACT DISTRIBUTION:
+- At least 3-4 HIGH likelihood risks
+- At least 3-4 HIGH impact risks
+- At least 2-3 risks should be HIGH/HIGH (critical)
+- Mix of LOW, MEDIUM across remaining
+
+---
+
+## INNOVATION RISK EXAMPLES:
+
+**INNOVATION Category:**
+- "AI Model Performance Degradation" - ML models drift over time, requiring ongoing retraining and monitoring
+- "Pilot-to-Production Scaling Failure" - Successful small-scale pilots fail when deployed city-wide
+- "Research Partner Misalignment" - University/KACST research priorities diverge from municipal needs
+- "Innovation Investment ROI Uncertainty" - Difficulty measuring tangible returns on R&D spending
+
+**TECHNOLOGY Category:**
+- "Legacy System Integration Complexity" - Connecting new innovations to Balady/Baladiya systems
+- "Data Quality for AI/ML" - Insufficient or biased training data affecting model accuracy
+- "Vendor Lock-in from Proprietary Solutions" - Dependence on single technology vendor
+
+**FINANCIAL Category:**
+- "Innovation Budget Reallocation" - R&D funds redirected to operational priorities
+- "VC/Startup Partner Failure" - Innovation partners face funding or business challenges
+
+Be specific to plan context. Reference actual Saudi systems, agencies, and innovation ecosystem.`,
       kpis: `Generate KPIs for this Saudi strategic plan:
 Plan: ${context.planName}
 Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
