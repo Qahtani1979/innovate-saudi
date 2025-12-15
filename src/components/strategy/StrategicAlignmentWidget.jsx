@@ -44,7 +44,7 @@ export default function StrategicAlignmentWidget({
         .from('strategic_plans')
         .select('*')
         .or('is_template.is.null,is_template.eq.false')
-        .eq('is_deleted', false);
+        .or('is_deleted.is.null,is_deleted.eq.false');
       if (error) throw error;
       return data || [];
     }
