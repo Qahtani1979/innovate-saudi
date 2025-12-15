@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,7 +58,7 @@ export default function StrategyWizardWrapper() {
   const { createApprovalRequest } = useApprovalRequest();
 
   // Apply template without react-query hooks (prevents "dispatcher is null" hook crashes)
-  const applyTemplate = React.useCallback(async (templateId) => {
+  const applyTemplate = useCallback(async (templateId) => {
     const { data: template, error } = await supabase
       .from('strategic_plans')
       .select('*')
@@ -124,14 +124,14 @@ export default function StrategyWizardWrapper() {
   }, []);
   
   // Mode and plan state
-  const [mode, setMode] = React.useState('create'); // 'create' | 'edit' | 'review'
-  const [planId, setPlanId] = React.useState(null);
-  const [currentStep, setCurrentStep] = React.useState(1);
-  const [wizardData, setWizardData] = React.useState(initialWizardData);
-  const [generatingStep, setGeneratingStep] = React.useState(null);
-  const [completedSteps, setCompletedSteps] = React.useState([]);
-  const [showDraftRecovery, setShowDraftRecovery] = React.useState(false);
-  const [appliedTemplateName, setAppliedTemplateName] = React.useState(null);
+  const [mode, setMode] = useState('create'); // 'create' | 'edit' | 'review'
+  const [planId, setPlanId] = useState(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [wizardData, setWizardData] = useState(initialWizardData);
+  const [generatingStep, setGeneratingStep] = useState(null);
+  const [completedSteps, setCompletedSteps] = useState([]);
+  const [showDraftRecovery, setShowDraftRecovery] = useState(false);
+  const [appliedTemplateName, setAppliedTemplateName] = useState(null);
 
   // Validation hook - pass t function to avoid nested context issues
   const { validateStep, hasStepData, calculateProgress } = useWizardValidation(wizardData, t);
@@ -155,7 +155,7 @@ export default function StrategyWizardWrapper() {
   } = useAutoSaveDraft({ planId, mode, enabled: mode !== 'review' });
 
   // Initialize from URL params or detect draft
-  React.useEffect(() => {
+  useEffect(() => {
     const urlPlanId = searchParams.get('id');
     const urlMode = searchParams.get('mode');
     const templateId = searchParams.get('template');
@@ -196,7 +196,7 @@ export default function StrategyWizardWrapper() {
   }, [searchParams, hasDraft, loadPlan, applyTemplate]);
 
   // Update data with auto-save
-  const updateData = React.useCallback((updates) => {
+  const updateData = useCallback((updates) => {
     setWizardData(prev => {
       const newData = { ...prev, ...updates };
       scheduleAutoSave(newData, currentStep);
@@ -2517,9 +2517,54 @@ Return alignments as an array under the "alignments" key with proper objective_i
       communication: {
         type: 'object',
         properties: {
-          key_messages: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } },
-          internal_channels: { type: 'array', items: { type: 'string' } },
-          external_channels: { type: 'array', items: { type: 'string' } }
+          master_narrative_en: { type: 'string' },
+          master_narrative_ar: { type: 'string' },
+          target_audiences: { type: 'array', items: { type: 'string' } },
+          key_messages: { 
+            type: 'array', 
+            items: { 
+              type: 'object', 
+              required: ['text_en', 'text_ar', 'audience', 'channel'],
+              properties: { 
+                text_en: { type: 'string' }, 
+                text_ar: { type: 'string' },
+                audience: { type: 'string' },
+                channel: { type: 'string' }
+              } 
+            } 
+          },
+          internal_channels: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              required: ['name_en', 'name_ar', 'type', 'purpose_en', 'purpose_ar', 'frequency', 'owner'],
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' },
+                type: { type: 'string' },
+                purpose_en: { type: 'string' },
+                purpose_ar: { type: 'string' },
+                frequency: { type: 'string' },
+                owner: { type: 'string' }
+              } 
+            } 
+          },
+          external_channels: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              required: ['name_en', 'name_ar', 'type', 'purpose_en', 'purpose_ar', 'frequency', 'audience'],
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' },
+                type: { type: 'string' },
+                purpose_en: { type: 'string' },
+                purpose_ar: { type: 'string' },
+                frequency: { type: 'string' },
+                audience: { type: 'string' }
+              } 
+            } 
+          }
         }
       },
       change: {

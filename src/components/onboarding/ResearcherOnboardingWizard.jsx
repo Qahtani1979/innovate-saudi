@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { base44 } from '@/api/base44Client';
@@ -77,7 +77,7 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
   });
 
   // Pre-populate from Stage 1 onboarding data
-  React.useEffect(() => {
+  useEffect(() => {
     if (userProfile) {
       setFormData(prev => ({
         ...prev,

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy, useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from 'lucide-react';
 
@@ -28,9 +28,9 @@ export function createLazyComponent(importFn) {
 
 // Intersection observer for lazy loading on scroll
 export function useIntersectionObserver(callback, options = {}) {
-  const [node, setNode] = React.useState(null);
+  const [node, setNode] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!node) return;
 
     const observer = new IntersectionObserver((entries) => {
