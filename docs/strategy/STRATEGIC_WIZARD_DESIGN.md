@@ -777,14 +777,15 @@ Step 18 (Review) → "Save as Template" button
 |---------|--------|-------|
 | Version History UI | 🔄 70% | DB ready, UI pending |
 | Version Comparison | 🔄 30% | Design complete |
+| AI Generation per Step | 🔄 50% | Placeholder exists, edge function pending |
 
 ### ⏳ Pending Features
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| AI Generation per Step | Medium | Edge function exists |
-| Template Rating System | Low | DB columns ready |
-| Template Analytics | Low | usage_count implemented |
+| Step Validation Rules | Medium | Per-step validation pending |
+| Template Analytics Dashboard | Low | usage_count implemented |
+| Version Diff View | Low | Compare versions side-by-side |
 
 ---
 

@@ -447,7 +447,6 @@ export default function StrategyWizardWrapper() {
               }
             />
           </div>
-          />
         </div>
 
         <WizardStepIndicator 

@@ -610,23 +610,28 @@ template_tags      TEXT[]                  -- Searchable tags
 | Templates Tab in Dialog | `PlanSelectionDialog.jsx` | ✅ Complete |
 | Public/Private Toggle | Template management | ✅ Complete |
 | Template Deletion | Soft delete | ✅ Complete |
-| Usage Count Tracking | Auto-increment on apply | ✅ Complete |
+| Usage Count Tracking | `increment_template_usage` RPC | ✅ Complete |
+| Template Rating System | `rate_template` RPC + UI | ✅ Complete |
+| Template Rating Dialog | `TemplateRatingDialog.jsx` | ✅ Complete |
+| Tag-based Search | `StrategyTemplateLibrary.jsx` | ✅ Complete |
+| System/Seed Templates | 5 official templates seeded | ✅ Complete |
+| Tag Filter UI | Browse tab with tag chips | ✅ Complete |
 
 ### 🔄 Partially Complete
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Template Editing | 🔄 50% | Can delete/toggle, full edit pending |
-| Template Categories | 🔄 70% | Types work, categories UI pending |
+| Template Categories UI | 🔄 70% | Types work, categories dropdown pending |
 
 ### ⏳ Pending Features
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| Template Rating System | Low | DB columns ready |
-| Template Reviews | Low | Future enhancement |
+| Template Reviews (text) | Low | Rating exists, text reviews pending |
 | Template Import/Export | Low | Future enhancement |
 | Featured Templates Admin | Low | Manual DB only |
+| Template Versioning | Low | Future enhancement |
 
 ---
 
@@ -637,15 +642,16 @@ src/
 ├── components/
 │   └── strategy/
 │       ├── creation/
-│       │   └── StrategyTemplateLibrary.jsx    # ✅ Updated - Real DB integration
+│       │   └── StrategyTemplateLibrary.jsx    # ✅ Real DB + Tag search + Rating
 │       ├── templates/
-│       │   ├── TemplatePreviewDialog.jsx      # ✅ New - Preview with stats
-│       │   └── SaveAsTemplateDialog.jsx       # ✅ New - Save plan as template
+│       │   ├── TemplatePreviewDialog.jsx      # ✅ Preview with stats
+│       │   ├── SaveAsTemplateDialog.jsx       # ✅ Save plan as template
+│       │   └── TemplateRatingDialog.jsx       # ✅ Star rating UI
 │       └── wizard/
-│           ├── StrategyWizardWrapper.jsx      # ✅ Updated - Template URL handling
-│           ├── PlanSelectionDialog.jsx        # ✅ Updated - Templates tab
+│           ├── StrategyWizardWrapper.jsx      # ✅ Template URL handling
+│           ├── PlanSelectionDialog.jsx        # ✅ Templates tab
 │           └── steps/
-│               └── Step8Review.jsx            # ✅ Updated - Save as Template btn
+│               └── Step8Review.jsx            # ✅ Save as Template btn
 ├── hooks/
 │   └── strategy/
 │       └── useStrategyTemplates.js            # ✅ Updated - Full CRUD operations

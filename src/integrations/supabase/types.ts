@@ -12520,10 +12520,18 @@ export type Database = {
         Returns: undefined
       }
       increment_media_view: { Args: { p_media_id: string }; Returns: undefined }
+      increment_template_usage: {
+        Args: { template_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_national_entity: {
         Args: { p_municipality_id: string }
         Returns: boolean
+      }
+      rate_template: {
+        Args: { p_rating: number; p_template_id: string; p_user_email: string }
+        Returns: Json
       }
     }
     Enums: {
