@@ -335,46 +335,46 @@ function StrategyHub() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="flex flex-wrap justify-start gap-1 h-auto p-1">
-          <TabsTrigger value="workflow" className="flex items-center gap-1 text-xs md:text-sm">
+        <TabsList className="w-full h-auto flex-wrap justify-start gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="workflow" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Workflow className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Workflow', ar: 'سير العمل' })}</span>
+            <span>{t({ en: 'Workflow', ar: 'سير العمل' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-1 text-xs md:text-sm">
+          <TabsTrigger value="templates" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Templates', ar: 'القوالب' })}</span>
+            <span>{t({ en: 'Templates', ar: 'القوالب' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="cascade" className="flex items-center gap-1 text-xs md:text-sm">
+          <TabsTrigger value="cascade" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Zap className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Cascade', ar: 'التدرج' })}</span>
+            <span>{t({ en: 'Cascade', ar: 'التدرج' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="monitoring" className="flex items-center gap-1 text-xs md:text-sm">
+          <TabsTrigger value="monitoring" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Monitoring', ar: 'المراقبة' })}</span>
+            <span>{t({ en: 'Monitoring', ar: 'المراقبة' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="governance" className="flex items-center gap-1 text-xs md:text-sm">
+          <TabsTrigger value="governance" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Governance', ar: 'الحوكمة' })}</span>
+            <span>{t({ en: 'Governance', ar: 'الحوكمة' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="communication" className="flex items-center gap-1 text-xs md:text-sm">
+          <TabsTrigger value="communication" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Megaphone className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Comms', ar: 'التواصل' })}</span>
+            <span>{t({ en: 'Comms', ar: 'التواصل' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="preplanning" className="flex items-center gap-1 text-xs md:text-sm">
+          <TabsTrigger value="preplanning" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Pre-Plan', ar: 'التخطيط' })}</span>
+            <span>{t({ en: 'Pre-Plan', ar: 'التخطيط' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="evaluation" className="flex items-center gap-1 text-xs md:text-sm">
+          <TabsTrigger value="evaluation" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Target className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Evaluation', ar: 'التقييم' })}</span>
+            <span>{t({ en: 'Evaluation', ar: 'التقييم' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="recalibration" className="flex items-center gap-1 text-xs md:text-sm">
+          <TabsTrigger value="recalibration" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Recalibrate', ar: 'إعادة المعايرة' })}</span>
+            <span>{t({ en: 'Recalibrate', ar: 'إعادة المعايرة' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-1 text-xs md:text-sm">
+          <TabsTrigger value="ai" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Brain className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'AI', ar: 'الذكاء' })}</span>
+            <span>{t({ en: 'AI', ar: 'الذكاء' })}</span>
           </TabsTrigger>
         </TabsList>
 
