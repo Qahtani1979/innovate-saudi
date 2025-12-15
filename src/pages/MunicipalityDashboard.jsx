@@ -239,7 +239,9 @@ function MunicipalityDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('strategic_plans')
-        .select('*');
+        .select('*')
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false');
       if (error) return [];
       return data || [];
     }

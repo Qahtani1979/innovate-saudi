@@ -35,7 +35,9 @@ export default function StrategyChallengeRouter({ challengeId }) {
       const { data, error } = await supabase
         .from('strategic_plans')
         .select('*')
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false');
       if (error) throw error;
       return data || [];
     }

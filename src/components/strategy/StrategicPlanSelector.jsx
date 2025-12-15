@@ -28,6 +28,8 @@ export default function StrategicPlanSelector({
       const { data, error } = await supabase
         .from('strategic_plans')
         .select('*')
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
