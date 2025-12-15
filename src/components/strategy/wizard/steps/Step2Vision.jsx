@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Eye, Target, Heart, Plus, X, Columns } from 'lucide-react';
+import { Sparkles, Heart, Plus, X, Columns } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 
 export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating }) {
@@ -72,91 +72,7 @@ export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating
         </Button>
       </div>
 
-      {/* Vision Statement */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Eye className="w-5 h-5 text-primary" />
-            {t({ en: 'Vision Statement', ar: 'بيان الرؤية' })}
-            <Badge variant="destructive" className="text-[10px]">{t({ en: 'Required', ar: 'مطلوب' })}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {t({ 
-              en: 'A vision statement describes the desired future state. It should be aspirational, clear, and inspiring.',
-              ar: 'يصف بيان الرؤية الحالة المستقبلية المرغوبة. يجب أن يكون طموحًا وواضحًا وملهمًا.'
-            })}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>{t({ en: 'Vision (English)', ar: 'الرؤية (إنجليزي)' })} *</Label>
-              <Textarea
-                value={data.vision_en || ''}
-                onChange={(e) => onChange({ vision_en: e.target.value })}
-                placeholder={t({ 
-                  en: 'e.g., "To be the leading municipality in sustainable urban development..."',
-                  ar: 'مثال: "أن نكون البلدية الرائدة في التنمية الحضرية المستدامة..."'
-                })}
-                rows={4}
-              />
-            </div>
-            <div>
-              <Label>{t({ en: 'Vision (Arabic)', ar: 'الرؤية (عربي)' })}</Label>
-              <Textarea
-                value={data.vision_ar || ''}
-                onChange={(e) => onChange({ vision_ar: e.target.value })}
-                placeholder="الرؤية بالعربية..."
-                rows={4}
-                dir="rtl"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Mission Statement */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target className="w-5 h-5 text-primary" />
-            {t({ en: 'Mission Statement', ar: 'بيان الرسالة' })}
-            <Badge variant="destructive" className="text-[10px]">{t({ en: 'Required', ar: 'مطلوب' })}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {t({ 
-              en: 'A mission statement describes the organization\'s purpose and how it will achieve the vision.',
-              ar: 'يصف بيان الرسالة غرض المنظمة وكيفية تحقيق الرؤية.'
-            })}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>{t({ en: 'Mission (English)', ar: 'الرسالة (إنجليزي)' })} *</Label>
-              <Textarea
-                value={data.mission_en || ''}
-                onChange={(e) => onChange({ mission_en: e.target.value })}
-                placeholder={t({ 
-                  en: 'e.g., "We provide innovative municipal services that enhance quality of life..."',
-                  ar: 'مثال: "نقدم خدمات بلدية مبتكرة تعزز جودة الحياة..."'
-                })}
-                rows={4}
-              />
-            </div>
-            <div>
-              <Label>{t({ en: 'Mission (Arabic)', ar: 'الرسالة (عربي)' })}</Label>
-              <Textarea
-                value={data.mission_ar || ''}
-                onChange={(e) => onChange({ mission_ar: e.target.value })}
-                placeholder="الرسالة بالعربية..."
-                rows={4}
-                dir="rtl"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Note: Vision and Mission are now in Step 1 */}
 
       {/* Core Values */}
       <Card>
