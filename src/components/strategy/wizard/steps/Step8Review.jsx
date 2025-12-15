@@ -66,7 +66,7 @@ export default function Step8Review({
     actions: actionPlans.length > 0,
     resources: !!(data.resource_plan?.hr_requirements?.length || data.resource_plan?.budget_allocation?.length),
     timeline: (phases.length > 0 || milestones.length > 0),
-    governance: !!(governance.structure?.length || governance.committees?.length),
+    governance: !!(governance.committees?.length > 0 || governance.reporting_frequency),
     communication: !!(data.communication_plan?.internal_channels?.length || data.communication_plan?.key_messages?.length),
     change: !!(data.change_management?.readiness_assessment || data.change_management?.change_approach)
   };
