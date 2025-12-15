@@ -301,6 +301,12 @@ export default function StrategyWizardWrapper() {
     };
     
     const prompts = {
+      context: `Generate context and discovery content for this Saudi municipal strategic plan:
+Plan Name: ${context.planName}
+Sectors: ${context.sectors.join(', ')}
+Themes: ${context.themes.join(', ')}
+
+Generate vision statement, mission statement, and description in both English and Arabic.`,
       vision: `Generate vision and mission statements for a Saudi municipal strategic plan.
 Plan: ${context.planName}
 Sectors: ${context.sectors.join(', ')}
@@ -336,6 +342,12 @@ Vision: ${context.vision}
 Sectors: ${context.sectors.join(', ')}
 
 List key risks with category, likelihood, impact, and mitigation strategies.`,
+      dependencies: `Analyze dependencies and constraints for this Saudi municipal strategic plan:
+Plan: ${context.planName}
+Vision: ${context.vision}
+Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
+
+Identify key dependencies, constraints, and assumptions.`,
       objectives: `Generate strategic objectives for this Saudi municipal plan:
 Plan: ${context.planName}
 Vision: ${context.vision}
@@ -343,19 +355,63 @@ Mission: ${context.mission}
 Themes: ${context.themes.join(', ')}
 
 Create SMART objectives aligned with Vision 2030.`,
+      national: `Suggest Vision 2030 alignments for these strategic objectives:
+Plan: ${context.planName}
+Objectives: ${context.objectives.map((o, i) => `${i}: ${o.name_en}`).join('; ')}
+
+Map each objective to relevant Vision 2030 goals and targets.`,
       kpis: `Generate KPIs for this Saudi strategic plan:
 Plan: ${context.planName}
-Objectives: ${context.objectives.map(o => o.title_en || o.title_ar).join(', ')}
+Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
 
 Create measurable KPIs with targets and baselines.`,
       actions: `Generate action plans for this Saudi municipal strategy:
 Plan: ${context.planName}
-Objectives: ${context.objectives.map(o => o.title_en || o.title_ar).join(', ')}
+Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
 
-Create actionable initiatives with timelines and owners.`
+Create actionable initiatives with timelines and owners.`,
+      resources: `Generate resource plan for this Saudi municipal strategy:
+Plan: ${context.planName}
+Duration: ${wizardData.start_year}-${wizardData.end_year}
+Objectives: ${context.objectives.map(o => o.name_en).join(', ')}
+
+Identify HR, technology, infrastructure requirements and budget allocation.`,
+      timeline: `Generate implementation timeline for this Saudi strategic plan:
+Plan: ${context.planName}
+Duration: ${wizardData.start_year}-${wizardData.end_year}
+Objectives count: ${context.objectives.length}
+
+Create phases and milestones for implementation.`,
+      governance: `Generate governance structure for this Saudi municipal strategic plan:
+Plan: ${context.planName}
+Vision: ${context.vision}
+
+Define committees, roles, reporting frequency, and escalation paths.`,
+      communication: `Generate communication plan for this Saudi municipal strategy:
+Plan: ${context.planName}
+Vision: ${context.vision}
+Stakeholders count: ${(wizardData.stakeholders || []).length}
+
+Define key messages, internal channels, and external channels.`,
+      change: `Generate change management plan for this Saudi municipal strategy:
+Plan: ${context.planName}
+Vision: ${context.vision}
+
+Assess readiness, define change approach, and resistance management strategies.`
     };
     
     const schemas = {
+      context: {
+        type: 'object',
+        properties: {
+          vision_en: { type: 'string' },
+          vision_ar: { type: 'string' },
+          mission_en: { type: 'string' },
+          mission_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' }
+        }
+      },
       vision: {
         type: 'object',
         properties: {
@@ -363,13 +419,13 @@ Create actionable initiatives with timelines and owners.`
           vision_ar: { type: 'string' },
           mission_en: { type: 'string' },
           mission_ar: { type: 'string' },
-          core_values: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' } } } }
+          core_values: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } } }
         }
       },
       stakeholders: {
         type: 'object',
         properties: {
-          stakeholders: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, type: { type: 'string' }, power: { type: 'string' }, interest: { type: 'string' }, engagement_strategy: { type: 'string' } } } }
+          stakeholders: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, type: { type: 'string' }, power: { type: 'string' }, interest: { type: 'string' }, engagement_level: { type: 'string' }, influence_strategy: { type: 'string' } } } }
         }
       },
       pestel: {
@@ -406,22 +462,75 @@ Create actionable initiatives with timelines and owners.`
           risks: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, category: { type: 'string' }, likelihood: { type: 'string' }, impact: { type: 'string' }, mitigation: { type: 'string' } } } }
         }
       },
+      dependencies: {
+        type: 'object',
+        properties: {
+          dependencies: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, type: { type: 'string' }, source: { type: 'string' }, target: { type: 'string' }, criticality: { type: 'string' } } } },
+          constraints: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, type: { type: 'string' }, impact: { type: 'string' }, mitigation: { type: 'string' } } } },
+          assumptions: { type: 'array', items: { type: 'object', properties: { statement: { type: 'string' }, category: { type: 'string' }, confidence: { type: 'string' } } } }
+        }
+      },
       objectives: {
         type: 'object',
         properties: {
-          objectives: { type: 'array', items: { type: 'object', properties: { title_en: { type: 'string' }, title_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' }, category: { type: 'string' } } } }
+          objectives: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' }, sector_code: { type: 'string' }, priority: { type: 'string' } } } }
+        }
+      },
+      national: {
+        type: 'object',
+        properties: {
+          alignments: { type: 'array', items: { type: 'object', properties: { objective_index: { type: 'number' }, goal_code: { type: 'string' }, target_code: { type: 'string' } } } }
         }
       },
       kpis: {
         type: 'object',
         properties: {
-          kpis: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, unit: { type: 'string' }, baseline: { type: 'number' }, target: { type: 'number' } } } }
+          kpis: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, unit: { type: 'string' }, baseline: { type: 'number' }, target: { type: 'number' }, objective_index: { type: 'number' } } } }
         }
       },
       actions: {
         type: 'object',
         properties: {
-          action_plans: { type: 'array', items: { type: 'object', properties: { title_en: { type: 'string' }, title_ar: { type: 'string' }, description: { type: 'string' }, timeline: { type: 'string' }, owner: { type: 'string' } } } }
+          action_plans: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' }, objective_index: { type: 'number' }, type: { type: 'string' }, owner: { type: 'string' }, start_date: { type: 'string' }, end_date: { type: 'string' } } } }
+        }
+      },
+      resources: {
+        type: 'object',
+        properties: {
+          hr_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' } } } },
+          technology_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' } } } },
+          infrastructure_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' } } } },
+          budget_allocation: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' } } } }
+        }
+      },
+      timeline: {
+        type: 'object',
+        properties: {
+          phases: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, start_date: { type: 'string' }, end_date: { type: 'string' }, description: { type: 'string' } } } },
+          milestones: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, date: { type: 'string' }, type: { type: 'string' } } } }
+        }
+      },
+      governance: {
+        type: 'object',
+        properties: {
+          committees: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, role: { type: 'string' }, meeting_frequency: { type: 'string' }, responsibilities: { type: 'string' } } } },
+          reporting_frequency: { type: 'string' }
+        }
+      },
+      communication: {
+        type: 'object',
+        properties: {
+          key_messages: { type: 'array', items: { type: 'string' } },
+          internal_channels: { type: 'array', items: { type: 'string' } },
+          external_channels: { type: 'array', items: { type: 'string' } }
+        }
+      },
+      change: {
+        type: 'object',
+        properties: {
+          readiness_assessment: { type: 'string' },
+          change_approach: { type: 'string' },
+          resistance_management: { type: 'string' }
         }
       }
     };
@@ -439,14 +548,26 @@ Create actionable initiatives with timelines and owners.`
       if (success && data) {
         // Merge AI response into wizard data based on step
         const updates = {};
-        if (stepKey === 'vision') {
+        if (stepKey === 'context') {
           if (data.vision_en) updates.vision_en = data.vision_en;
           if (data.vision_ar) updates.vision_ar = data.vision_ar;
           if (data.mission_en) updates.mission_en = data.mission_en;
           if (data.mission_ar) updates.mission_ar = data.mission_ar;
-          if (data.core_values) updates.core_values = data.core_values;
+          if (data.description_en) updates.description_en = data.description_en;
+          if (data.description_ar) updates.description_ar = data.description_ar;
+        } else if (stepKey === 'vision') {
+          if (data.vision_en) updates.vision_en = data.vision_en;
+          if (data.vision_ar) updates.vision_ar = data.vision_ar;
+          if (data.mission_en) updates.mission_en = data.mission_en;
+          if (data.mission_ar) updates.mission_ar = data.mission_ar;
+          if (data.core_values) updates.core_values = data.core_values.map((v, i) => ({ ...v, id: Date.now().toString() + i }));
         } else if (stepKey === 'stakeholders' && data.stakeholders) {
-          updates.stakeholders = data.stakeholders;
+          updates.stakeholders = data.stakeholders.map((s, i) => ({ 
+            ...s, 
+            id: Date.now().toString() + i,
+            type: s.type || 'GOVERNMENT',
+            engagement_level: s.engagement_level || 'consult'
+          }));
         } else if (stepKey === 'pestel') {
           updates.pestel = {
             political: data.political || [],
@@ -464,15 +585,86 @@ Create actionable initiatives with timelines and owners.`
             threats: data.threats || []
           };
         } else if (stepKey === 'scenarios') {
-          updates.scenarios = data;
+          updates.scenarios = {
+            best_case: data.best_case || { description: '', assumptions: [], outcomes: [] },
+            worst_case: data.worst_case || { description: '', assumptions: [], outcomes: [] },
+            most_likely: data.most_likely || { description: '', assumptions: [], outcomes: [] }
+          };
         } else if (stepKey === 'risks' && data.risks) {
-          updates.risks = data.risks;
+          updates.risks = data.risks.map((r, i) => ({ ...r, id: Date.now().toString() + i }));
+        } else if (stepKey === 'dependencies') {
+          if (data.dependencies) {
+            updates.dependencies = data.dependencies.map((d, i) => ({ 
+              ...d, 
+              id: Date.now().toString() + i,
+              status: 'pending'
+            }));
+          }
+          if (data.constraints) {
+            updates.constraints = data.constraints.map((c, i) => ({ ...c, id: Date.now().toString() + i }));
+          }
+          if (data.assumptions) {
+            updates.assumptions = data.assumptions.map((a, i) => ({ ...a, id: Date.now().toString() + i }));
+          }
         } else if (stepKey === 'objectives' && data.objectives) {
-          updates.objectives = data.objectives;
+          updates.objectives = data.objectives.map((o, i) => ({ 
+            ...o, 
+            priority: o.priority || 'medium',
+            target_year: wizardData.end_year
+          }));
+        } else if (stepKey === 'national' && data.alignments) {
+          updates.national_alignments = data.alignments.map(a => ({
+            key: `${a.objective_index}-${a.goal_code}${a.target_code ? `-${a.target_code}` : ''}`,
+            objective_index: a.objective_index,
+            goal_code: a.goal_code,
+            target_code: a.target_code
+          }));
         } else if (stepKey === 'kpis' && data.kpis) {
-          updates.kpis = data.kpis;
+          updates.kpis = data.kpis.map((k, i) => ({ ...k, id: Date.now().toString() + i }));
         } else if (stepKey === 'actions' && data.action_plans) {
-          updates.action_plans = data.action_plans;
+          updates.action_plans = data.action_plans.map((a, i) => ({ 
+            ...a, 
+            id: Date.now().toString() + i,
+            type: a.type || 'initiative'
+          }));
+        } else if (stepKey === 'resources') {
+          updates.resource_plan = {
+            hr_requirements: (data.hr_requirements || []).map((r, i) => ({ ...r, id: Date.now().toString() + 'hr' + i })),
+            technology_requirements: (data.technology_requirements || []).map((r, i) => ({ ...r, id: Date.now().toString() + 'tech' + i })),
+            infrastructure_requirements: (data.infrastructure_requirements || []).map((r, i) => ({ ...r, id: Date.now().toString() + 'infra' + i })),
+            budget_allocation: (data.budget_allocation || []).map((r, i) => ({ ...r, id: Date.now().toString() + 'budget' + i }))
+          };
+        } else if (stepKey === 'timeline') {
+          if (data.phases) {
+            updates.phases = data.phases.map((p, i) => ({ ...p, id: Date.now().toString() + 'phase' + i }));
+          }
+          if (data.milestones) {
+            updates.milestones = data.milestones.map((m, i) => ({ 
+              ...m, 
+              id: Date.now().toString() + 'ms' + i,
+              status: 'planned'
+            }));
+          }
+        } else if (stepKey === 'governance') {
+          updates.governance = {
+            ...wizardData.governance,
+            committees: (data.committees || []).map((c, i) => ({ ...c, id: Date.now().toString() + i })),
+            reporting_frequency: data.reporting_frequency || 'monthly'
+          };
+        } else if (stepKey === 'communication') {
+          updates.communication_plan = {
+            ...wizardData.communication_plan,
+            key_messages: data.key_messages || [],
+            internal_channels: data.internal_channels || [],
+            external_channels: data.external_channels || []
+          };
+        } else if (stepKey === 'change') {
+          updates.change_management = {
+            ...wizardData.change_management,
+            readiness_assessment: data.readiness_assessment || '',
+            change_approach: data.change_approach || '',
+            resistance_management: data.resistance_management || ''
+          };
         }
         
         if (Object.keys(updates).length > 0) {

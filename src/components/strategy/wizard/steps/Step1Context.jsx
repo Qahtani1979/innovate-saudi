@@ -30,16 +30,16 @@ export default function Step1Context({
     onChange({ [field]: updated });
   };
 
-  const addStakeholder = (stakeholder) => {
+  const addQuickStakeholder = (stakeholder) => {
     if (stakeholder.trim()) {
-      onChange({ stakeholders: [...(data.stakeholders || []), stakeholder.trim()] });
+      onChange({ quick_stakeholders: [...(data.quick_stakeholders || []), stakeholder.trim()] });
     }
   };
 
-  const removeStakeholder = (index) => {
-    const updated = [...data.stakeholders];
+  const removeQuickStakeholder = (index) => {
+    const updated = [...(data.quick_stakeholders || [])];
     updated.splice(index, 1);
-    onChange({ stakeholders: updated });
+    onChange({ quick_stakeholders: updated });
   };
 
   return (
@@ -297,10 +297,11 @@ export default function Step1Context({
         </CardContent>
       </Card>
 
-      {/* Stakeholders */}
+      {/* Quick Stakeholders (simple list for discovery) */}
       <Card>
         <CardHeader>
-          <CardTitle>{t({ en: 'Key Stakeholders', ar: 'أصحاب المصلحة الرئيسيون' })}</CardTitle>
+          <CardTitle>{t({ en: 'Key Stakeholders (Quick List)', ar: 'أصحاب المصلحة الرئيسيون (قائمة سريعة)' })}</CardTitle>
+          <CardDescription>{t({ en: 'Add stakeholder names here. Detailed analysis is in Step 3.', ar: 'أضف أسماء أصحاب المصلحة هنا. التحليل التفصيلي في الخطوة 3.' })}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
@@ -309,24 +310,24 @@ export default function Step1Context({
               placeholder={t({ en: 'Add stakeholder (e.g., MOMRA, RCRC, SDAIA)', ar: 'أضف صاحب مصلحة (مثال: وزارة الموارد البشرية)' })}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  addStakeholder(e.target.value);
+                  addQuickStakeholder(e.target.value);
                   e.target.value = '';
                 }
               }}
             />
             <Button variant="outline" onClick={() => {
               const input = document.getElementById('new-stakeholder');
-              addStakeholder(input.value);
+              addQuickStakeholder(input.value);
               input.value = '';
             }}>
               {t({ en: 'Add', ar: 'إضافة' })}
             </Button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {(data.stakeholders || []).map((s, i) => (
+            {(data.quick_stakeholders || []).map((s, i) => (
               <Badge key={i} variant="secondary" className="gap-1">
                 {s}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => removeStakeholder(i)} />
+                <X className="h-3 w-3 cursor-pointer" onClick={() => removeQuickStakeholder(i)} />
               </Badge>
             ))}
           </div>
@@ -343,7 +344,7 @@ export default function Step1Context({
           <div className="space-y-2">
             <Label>{t({ en: 'Key Challenges', ar: 'التحديات الرئيسية' })}</Label>
             <Textarea
-              value={data.key_challenges}
+              value={data.key_challenges || ''}
               onChange={(e) => onChange({ key_challenges: e.target.value })}
               rows={3}
               placeholder={t({ en: 'What are the main challenges to address?', ar: 'ما هي التحديات الرئيسية التي يجب معالجتها؟' })}
@@ -352,17 +353,17 @@ export default function Step1Context({
           <div className="space-y-2">
             <Label>{t({ en: 'Available Resources', ar: 'الموارد المتاحة' })}</Label>
             <Textarea
-              value={data.available_resources}
+              value={data.available_resources || ''}
               onChange={(e) => onChange({ available_resources: e.target.value })}
               rows={2}
               placeholder={t({ en: 'Human resources, technology, partnerships, etc.', ar: 'الموارد البشرية، التقنية، الشراكات، إلخ' })}
             />
           </div>
           <div className="space-y-2">
-            <Label>{t({ en: 'Constraints & Limitations', ar: 'القيود والحدود' })}</Label>
+            <Label>{t({ en: 'Initial Constraints & Limitations', ar: 'القيود والحدود الأولية' })}</Label>
             <Textarea
-              value={data.constraints}
-              onChange={(e) => onChange({ constraints: e.target.value })}
+              value={data.initial_constraints || ''}
+              onChange={(e) => onChange({ initial_constraints: e.target.value })}
               rows={2}
               placeholder={t({ en: 'Budget limits, regulatory constraints, timeline pressures', ar: 'حدود الميزانية، القيود التنظيمية، ضغوط الجدول الزمني' })}
             />
