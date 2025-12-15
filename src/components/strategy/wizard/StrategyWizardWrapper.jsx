@@ -683,11 +683,11 @@ ${(wizardData.stakeholders || []).slice(0, 5).map(s => `- ${s.name_en || s.name_
 **REQUIREMENTS:**
 Generate ALL 3 scenarios: best_case, worst_case, and most_likely.
 
-**CRITICAL**: Each scenario MUST include a "probability" field with a percentage value (e.g., "20%", "60%").
+**CRITICAL**: Each scenario MUST include a "probability" field as a NUMBER from 0 to 100 (no % sign).
 
 For EACH scenario, provide ALL these fields in BOTH English and Arabic:
 
-1. **probability**: REQUIRED - Likelihood percentage as a string (e.g., "20%", "60%", "20%"). This field is mandatory!
+1. **probability**: REQUIRED - Likelihood as a number from 0 to 100. This field is mandatory!
 
 2. **description_en / description_ar**: A 2-3 sentence narrative describing this scenario (what the future looks like)
 
@@ -732,7 +732,7 @@ For MOST LIKELY outcomes:
 
 **SCENARIO GUIDANCE FOR SAUDI CONTEXT:**
 
-BEST CASE (Optimistic - probability: "20%"):
+BEST CASE (Optimistic - probability: 20):
 - Vision 2030 goals exceeded ahead of schedule
 - Strong private sector PPP partnerships
 - Rapid digital transformation adoption
@@ -740,7 +740,7 @@ BEST CASE (Optimistic - probability: "20%"):
 - Budget surplus enabling additional initiatives
 - International recognition for innovation
 
-WORST CASE (Pessimistic - probability: "20%"):
+WORST CASE (Pessimistic - probability: 20):
 - Economic challenges from oil price volatility
 - Significant implementation delays (12-24 months)
 - Budget constraints requiring scope reduction
@@ -748,7 +748,7 @@ WORST CASE (Pessimistic - probability: "20%"):
 - Regulatory obstacles and compliance issues
 - Talent shortage and high turnover
 
-MOST LIKELY (Realistic - probability: "60%"):
+MOST LIKELY (Realistic - probability: 60):
 - Steady progress with manageable challenges
 - Moderate achievement of 70-80% of targets
 - Mixed stakeholder response requiring ongoing engagement
@@ -757,7 +757,7 @@ MOST LIKELY (Realistic - probability: "60%"):
 - Phased rollout with lessons learned integration
 
 **DISTRIBUTION:**
-- Probabilities MUST sum to 100% (typically: 20% + 20% + 60%)
+- Probabilities MUST sum to 100 (typically: 20 + 20 + 60)
 - Each scenario should reference the SWOT and PESTEL factors above
 - Outcomes should be sector-specific and measurable
 - Values should be realistic for Saudi municipal context`,
@@ -951,9 +951,9 @@ Assess readiness, define change approach, and resistance management strategies.`
       scenarios: {
         type: 'object',
         properties: {
-          best_case: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, assumptions: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric_en: { type: 'string' }, metric_ar: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } },
-          worst_case: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, assumptions: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric_en: { type: 'string' }, metric_ar: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } },
-          most_likely: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, assumptions: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric_en: { type: 'string' }, metric_ar: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } }
+          best_case: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, assumptions: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric_en: { type: 'string' }, metric_ar: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'number' } } },
+          worst_case: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, assumptions: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric_en: { type: 'string' }, metric_ar: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'number' } } },
+          most_likely: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, assumptions: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric_en: { type: 'string' }, metric_ar: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'number' } } }
         }
       },
       risks: {
@@ -1241,23 +1241,35 @@ Assess readiness, define change approach, and resistance management strategies.`
           };
         } else if (stepKey === 'scenarios') {
           // Scenarios UI expects bilingual outcomes
-          const mapScenario = (scenario) => ({
+          const parseProbability = (value, fallback) => {
+            if (typeof value === 'number' && Number.isFinite(value)) {
+              return Math.max(0, Math.min(100, value));
+            }
+            if (typeof value === 'string') {
+              const n = Number(value.replace('%', '').trim());
+              if (Number.isFinite(n)) return Math.max(0, Math.min(100, n));
+            }
+            return fallback;
+          };
+
+          const mapScenario = (scenario, fallbackProbability) => ({
             description_en: scenario?.description_en || scenario?.description || '',
             description_ar: scenario?.description_ar || '',
-            assumptions: (scenario?.assumptions || []).map(a => 
+            assumptions: (scenario?.assumptions || []).map(a =>
               typeof a === 'string' ? { text_en: a, text_ar: '' } : { text_en: a.text_en || a.text || '', text_ar: a.text_ar || '' }
             ),
-            outcomes: (scenario?.outcomes || []).map(o => 
-              typeof o === 'string' 
-                ? { metric_en: o, metric_ar: '', value: '' } 
+            outcomes: (scenario?.outcomes || []).map(o =>
+              typeof o === 'string'
+                ? { metric_en: o, metric_ar: '', value: '' }
                 : { metric_en: o.metric_en || o.metric || '', metric_ar: o.metric_ar || '', value: o.value || '' }
             ),
-            probability: scenario?.probability || ''
+            probability: parseProbability(scenario?.probability, fallbackProbability)
           });
+
           updates.scenarios = {
-            best_case: mapScenario(data.best_case),
-            worst_case: mapScenario(data.worst_case),
-            most_likely: mapScenario(data.most_likely)
+            best_case: mapScenario(data.best_case, 20),
+            worst_case: mapScenario(data.worst_case, 20),
+            most_likely: mapScenario(data.most_likely, 60)
           };
         } else if (stepKey === 'risks' && data.risks) {
           const scoreMap = { low: 1, medium: 2, high: 3 };
