@@ -183,6 +183,7 @@ import ServiceCatalog from './pages/ServiceCatalog';
 import MultiYearRoadmap from './pages/MultiYearRoadmap';
 import StrategicPlanApprovalGate from './pages/StrategicPlanApprovalGate';
 import StrategicPlansPage from './pages/StrategicPlansPage';
+import SectorStrategyPage from './pages/SectorStrategyPage';
 import SWOTAnalysisPage from './pages/SWOTAnalysisPage';
 import StakeholderAnalysisPage from './pages/StakeholderAnalysisPage';
 import RiskAssessmentPage from './pages/RiskAssessmentPage';
@@ -1034,6 +1035,7 @@ export const PAGES = {
     "PublicStrategyDashboardPage": PublicStrategyDashboardPage,
     "StrategyRecalibrationPage": StrategyRecalibrationPage,
     "ActionPlanPage": ActionPlanPage,
+    "SectorStrategyPage": SectorStrategyPage,
 }
 
 export const pagesConfig = {
