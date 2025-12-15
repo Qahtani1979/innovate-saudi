@@ -10666,59 +10666,173 @@ export type Database = {
       }
       strategic_plans: {
         Row: {
+          action_plans: Json | null
+          approval_notes: string | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          budget_range: string | null
           cascade_config: Json | null
+          change_management: Json | null
+          communication_plan: Json | null
+          constraints: Json | null
+          core_values: string[] | null
           created_at: string | null
+          dependencies: Json | null
           description_ar: string | null
           description_en: string | null
+          draft_data: Json | null
           end_year: number | null
+          focus_technologies: string[] | null
+          governance: Json | null
           id: string
+          is_template: boolean | null
           kpis: Json | null
+          last_saved_step: number | null
+          milestones: Json | null
+          mission_ar: string | null
+          mission_en: string | null
           municipality_id: string | null
           name_ar: string | null
           name_en: string
+          national_alignments: Json | null
           objectives: Json | null
+          owner_email: string | null
+          pestel: Json | null
+          phases: Json | null
           pillars: Json | null
+          previous_version_id: string | null
+          resource_plan: Json | null
+          risks: Json | null
+          scenarios: Json | null
+          stakeholders: Json | null
           start_year: number | null
           status: string | null
+          strategic_pillars: string[] | null
+          strategic_themes: string[] | null
+          submitted_at: string | null
+          submitted_by: string | null
+          swot: Json | null
+          target_regions: string[] | null
+          target_sectors: string[] | null
           updated_at: string | null
+          version_notes: string | null
+          version_number: number | null
+          vision_2030_programs: string[] | null
           vision_ar: string | null
           vision_en: string | null
         }
         Insert: {
+          action_plans?: Json | null
+          approval_notes?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_range?: string | null
           cascade_config?: Json | null
+          change_management?: Json | null
+          communication_plan?: Json | null
+          constraints?: Json | null
+          core_values?: string[] | null
           created_at?: string | null
+          dependencies?: Json | null
           description_ar?: string | null
           description_en?: string | null
+          draft_data?: Json | null
           end_year?: number | null
+          focus_technologies?: string[] | null
+          governance?: Json | null
           id?: string
+          is_template?: boolean | null
           kpis?: Json | null
+          last_saved_step?: number | null
+          milestones?: Json | null
+          mission_ar?: string | null
+          mission_en?: string | null
           municipality_id?: string | null
           name_ar?: string | null
           name_en: string
+          national_alignments?: Json | null
           objectives?: Json | null
+          owner_email?: string | null
+          pestel?: Json | null
+          phases?: Json | null
           pillars?: Json | null
+          previous_version_id?: string | null
+          resource_plan?: Json | null
+          risks?: Json | null
+          scenarios?: Json | null
+          stakeholders?: Json | null
           start_year?: number | null
           status?: string | null
+          strategic_pillars?: string[] | null
+          strategic_themes?: string[] | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          swot?: Json | null
+          target_regions?: string[] | null
+          target_sectors?: string[] | null
           updated_at?: string | null
+          version_notes?: string | null
+          version_number?: number | null
+          vision_2030_programs?: string[] | null
           vision_ar?: string | null
           vision_en?: string | null
         }
         Update: {
+          action_plans?: Json | null
+          approval_notes?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_range?: string | null
           cascade_config?: Json | null
+          change_management?: Json | null
+          communication_plan?: Json | null
+          constraints?: Json | null
+          core_values?: string[] | null
           created_at?: string | null
+          dependencies?: Json | null
           description_ar?: string | null
           description_en?: string | null
+          draft_data?: Json | null
           end_year?: number | null
+          focus_technologies?: string[] | null
+          governance?: Json | null
           id?: string
+          is_template?: boolean | null
           kpis?: Json | null
+          last_saved_step?: number | null
+          milestones?: Json | null
+          mission_ar?: string | null
+          mission_en?: string | null
           municipality_id?: string | null
           name_ar?: string | null
           name_en?: string
+          national_alignments?: Json | null
           objectives?: Json | null
+          owner_email?: string | null
+          pestel?: Json | null
+          phases?: Json | null
           pillars?: Json | null
+          previous_version_id?: string | null
+          resource_plan?: Json | null
+          risks?: Json | null
+          scenarios?: Json | null
+          stakeholders?: Json | null
           start_year?: number | null
           status?: string | null
+          strategic_pillars?: string[] | null
+          strategic_themes?: string[] | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          swot?: Json | null
+          target_regions?: string[] | null
+          target_sectors?: string[] | null
           updated_at?: string | null
+          version_notes?: string | null
+          version_number?: number | null
+          vision_2030_programs?: string[] | null
           vision_ar?: string | null
           vision_en?: string | null
         }
@@ -10728,6 +10842,13 @@ export type Database = {
             columns: ["municipality_id"]
             isOneToOne: false
             referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_plans_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
             referencedColumns: ["id"]
           },
         ]
