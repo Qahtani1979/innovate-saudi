@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +21,7 @@ import {
   Plus, Loader2, Star, Copy, Lightbulb, Zap, Leaf, Building2, Globe
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
-import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
+
 
 const TEMPLATE_TYPE_ICONS = {
   innovation: Lightbulb,
@@ -51,11 +51,29 @@ export default function PlanSelectionDialog({
 }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(defaultOpen);
-  const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('drafts');
+  const [open, setOpen] = React.useState(defaultOpen);
+  const [search, setSearch] = React.useState('');
+  const [activeTab, setActiveTab] = React.useState('drafts');
 
-  const { templates, isLoading: isLoadingTemplates } = useStrategyTemplates();
+  // Fetch public templates
+  const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({
+    queryKey: ['strategy-templates-selection'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('is_template', true)
+        .eq('is_public', true)
+        .or('is_deleted.is.null,is_deleted.eq.false')
+        .order('is_featured', { ascending: false })
+        .order('usage_count', { ascending: false, nullsFirst: false })
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open
+  });
 
   // Fetch strategic plans (excluding templates)
   const { data: plans = [], isLoading } = useQuery({
