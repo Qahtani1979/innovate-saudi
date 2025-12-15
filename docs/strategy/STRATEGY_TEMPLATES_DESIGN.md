@@ -1,6 +1,6 @@
 # Strategy Templates System - Design Document
 
-> **Version**: 1.5  
+> **Version**: 1.6  
 > **Last Updated**: December 15, 2025  
 > **Status**: ✅ Fully Implemented & Consistent
 
@@ -177,7 +177,7 @@ StrategyTemplatesPage
 │   │     │               │                  │              │      │   │
 │   │     ▼               ▼                  ▼              ▼      │   │
 │   │  ┌───────┐    ┌───────────┐      ┌─────────┐    ┌────────┐  │   │
-│   │  │ Fetch │    │ Clone to  │      │ Insert  │    │ Soft   │  │   │
+│   │  │ Fetch │    │ Clone to  │      │ Insert  │    │ Hard   │  │   │
 │   │  │ WHERE │    │ New Plan  │      │ WHERE   │    │ Delete │  │   │
 │   │  │ is_   │    │ is_temp   │      │ is_temp │    │        │  │   │
 │   │  │ temp  │    │ = false   │      │ = true  │    │        │  │   │
