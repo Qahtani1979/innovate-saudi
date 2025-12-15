@@ -68,7 +68,7 @@ export default function Step8Review({
     timeline: (phases.length > 0 || milestones.length > 0),
     governance: !!(governance.committees?.length > 0 || governance.reporting_frequency),
     communication: !!(data.communication_plan?.internal_channels?.length || data.communication_plan?.key_messages?.length),
-    change: !!(data.change_management?.readiness_assessment || data.change_management?.change_approach)
+    change: !!(data.change_management?.readiness_assessment_en || data.change_management?.readiness_assessment_ar || data.change_management?.change_approach_en || data.change_management?.change_approach_ar)
   };
 
   const completenessScore = Object.values(completeness).filter(Boolean).length;
