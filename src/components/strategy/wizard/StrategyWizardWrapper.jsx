@@ -2378,8 +2378,78 @@ Return alignments as an array under the "alignments" key with proper objective_i
       governance: {
         type: 'object',
         properties: {
-          committees: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, role: { type: 'string' }, meeting_frequency: { type: 'string' }, responsibilities_en: { type: 'string' }, responsibilities_ar: { type: 'string' }, members: { type: 'array', items: { type: 'string' } } } } },
+          committees: { 
+            type: 'array', 
+            items: { 
+              type: 'object', 
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' }, 
+                type: { type: 'string' },
+                chair_role_en: { type: 'string' },
+                chair_role_ar: { type: 'string' },
+                meeting_frequency: { type: 'string' }, 
+                responsibilities_en: { type: 'string' }, 
+                responsibilities_ar: { type: 'string' }, 
+                members: { type: 'array', items: { type: 'string' } } 
+              } 
+            } 
+          },
+          roles: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title_en: { type: 'string' },
+                title_ar: { type: 'string' },
+                type: { type: 'string' },
+                department_en: { type: 'string' },
+                department_ar: { type: 'string' },
+                key_responsibilities_en: { type: 'string' },
+                key_responsibilities_ar: { type: 'string' },
+                reports_to_en: { type: 'string' },
+                reports_to_ar: { type: 'string' }
+              }
+            }
+          },
+          dashboards: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name_en: { type: 'string' },
+                name_ar: { type: 'string' },
+                type: { type: 'string' },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' },
+                key_metrics_en: { type: 'string' },
+                key_metrics_ar: { type: 'string' },
+                update_frequency: { type: 'string' },
+                audience_en: { type: 'string' },
+                audience_ar: { type: 'string' }
+              }
+            }
+          },
+          raci_matrix: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                area: { type: 'string' },
+                responsible_en: { type: 'string' },
+                responsible_ar: { type: 'string' },
+                accountable_en: { type: 'string' },
+                accountable_ar: { type: 'string' },
+                consulted_en: { type: 'string' },
+                consulted_ar: { type: 'string' },
+                informed_en: { type: 'string' },
+                informed_ar: { type: 'string' }
+              }
+            }
+          },
           reporting_frequency: { type: 'string' },
+          escalation_path_en: { type: 'string' },
+          escalation_path_ar: { type: 'string' },
           escalation_path: { type: 'array', items: { type: 'string' } }
         }
       },
@@ -2723,14 +2793,59 @@ Return alignments as an array under the "alignments" key with proper objective_i
             ...wizardData.governance,
             committees: (data.committees || []).map((c, i) => ({
               ...c,
-              id: Date.now().toString() + i,
+              id: Date.now().toString() + 'comm' + i,
               name_en: c.name_en || c.name || '',
               name_ar: c.name_ar || '',
+              type: c.type || 'steering',
+              chair_role_en: c.chair_role_en || c.chair_role || '',
+              chair_role_ar: c.chair_role_ar || '',
               responsibilities_en: c.responsibilities_en || c.responsibilities || '',
               responsibilities_ar: c.responsibilities_ar || '',
               members: Array.isArray(c.members) ? c.members.map(m => String(m).trim()).filter(Boolean) : []
             })),
+            roles: (data.roles || []).map((r, i) => ({
+              ...r,
+              id: Date.now().toString() + 'role' + i,
+              title_en: r.title_en || r.title || '',
+              title_ar: r.title_ar || '',
+              type: r.type || 'management',
+              department_en: r.department_en || r.department || '',
+              department_ar: r.department_ar || '',
+              key_responsibilities_en: r.key_responsibilities_en || (Array.isArray(r.key_responsibilities) ? r.key_responsibilities.join('\n') : r.key_responsibilities || ''),
+              key_responsibilities_ar: r.key_responsibilities_ar || '',
+              reports_to_en: r.reports_to_en || r.reports_to || '',
+              reports_to_ar: r.reports_to_ar || ''
+            })),
+            dashboards: (data.dashboards || []).map((d, i) => ({
+              ...d,
+              id: Date.now().toString() + 'dash' + i,
+              name_en: d.name_en || d.name || '',
+              name_ar: d.name_ar || '',
+              type: d.type || 'executive',
+              description_en: d.description_en || d.description || '',
+              description_ar: d.description_ar || '',
+              key_metrics_en: d.key_metrics_en || (Array.isArray(d.key_metrics) ? d.key_metrics.join('\n') : d.key_metrics || ''),
+              key_metrics_ar: d.key_metrics_ar || '',
+              update_frequency: d.update_frequency || 'weekly',
+              audience_en: d.audience_en || d.audience || '',
+              audience_ar: d.audience_ar || ''
+            })),
+            raci_matrix: (data.raci_matrix || data.decision_rights || []).map((r, i) => ({
+              ...r,
+              id: Date.now().toString() + 'raci' + i,
+              area: r.area || 'strategic_decisions',
+              responsible_en: r.responsible_en || r.responsible || '',
+              responsible_ar: r.responsible_ar || '',
+              accountable_en: r.accountable_en || r.accountable || '',
+              accountable_ar: r.accountable_ar || '',
+              consulted_en: r.consulted_en || r.consulted || '',
+              consulted_ar: r.consulted_ar || '',
+              informed_en: r.informed_en || r.informed || '',
+              informed_ar: r.informed_ar || ''
+            })),
             reporting_frequency: data.reporting_frequency || 'monthly',
+            escalation_path_en: data.escalation_path_en || escalationPath.join('\n'),
+            escalation_path_ar: data.escalation_path_ar || '',
             escalation_path: escalationPath
           };
         } else if (stepKey === 'communication') {
