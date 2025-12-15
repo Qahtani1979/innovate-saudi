@@ -484,7 +484,7 @@ Example pillar structure:
 - If Vision 2030 Programs include "QUALITY_OF_LIFE", ensure a pillar addresses citizen well-being
 
 Use formal Arabic (فصحى) for Arabic content. Be specific, not generic.`,
-      stakeholders: `You are identifying key stakeholders for a Saudi municipal strategic plan. Use ALL context provided to generate comprehensive and relevant stakeholders.
+      stakeholders: `You are identifying key stakeholders for a Saudi municipal strategic plan. Use ALL context provided to generate comprehensive stakeholders AND a detailed engagement plan.
 
 === PLAN CONTEXT ===
 Plan Name: ${context.planName}${context.planNameAr ? ` (${context.planNameAr})` : ''}
@@ -512,31 +512,46 @@ Initial Constraints: ${context.initialConstraints || 'Standard constraints'}
 
 === GENERATION REQUIREMENTS ===
 
-Generate 12-18 stakeholders with comprehensive details. Each stakeholder MUST have:
-- name_en, name_ar: Full organization/role name in both languages
-- type: One of (government|private|academic|ngo|community|international|internal)
-- power: high | medium | low (influence over plan success)
-- interest: high | medium | low (level of concern about outcomes)
-- engagement_level: One of (manage_closely|keep_satisfied|keep_informed|monitor)
-- influence_strategy_en, influence_strategy_ar: 2-3 sentences on how to engage this stakeholder
+**PART 1: STAKEHOLDERS (Generate exactly 14-18 stakeholders)**
 
-CRITICAL REQUIREMENTS:
-- Include stakeholders from EACH target sector specified
+Each stakeholder MUST have ALL these fields:
+- name_en: Full organization/role name in English
+- name_ar: Full organization/role name in Arabic  
+- type: One of GOVERNMENT | PRIVATE | ACADEMIC | NGO | COMMUNITY | INTERNATIONAL | INTERNAL
+- power: low | medium | high (influence over plan success)
+- interest: low | medium | high (level of concern about outcomes)
+- engagement_level: One of inform | consult | involve | collaborate | empower
+- influence_strategy_en: 2-3 sentences on how to engage this stakeholder (English)
+- influence_strategy_ar: 2-3 sentences on how to engage this stakeholder (Arabic)
+- contact_person: Suggested role/title for primary contact (e.g., "Director of Strategic Planning")
+- notes: Brief note about timing, special considerations, or relationship history
+
+CRITICAL DISTRIBUTION REQUIREMENTS:
+- At least 4 GOVERNMENT stakeholders (relevant ministries, agencies)
+- At least 3 PRIVATE sector stakeholders (technology vendors, contractors for focus technologies)
+- At least 2 ACADEMIC/research institutions
+- At least 2 COMMUNITY stakeholders (citizen groups, associations)
+- At least 2 INTERNAL stakeholders (municipal departments)
+- Include stakeholders from EACH target sector
 - Include technology partners for EACH focus technology
 - Include relevant Vision 2030 program offices
-- Include stakeholders from target regions if specified
-- Include both internal (municipal departments) and external stakeholders
-- Consider stakeholders affected by or who can address the key challenges
 
-Stakeholder categories to cover:
-1. Government entities (ministries, agencies, municipalities)
-2. Private sector (technology vendors, contractors, investors)
-3. Academic/Research institutions
-4. Community groups and citizens
-5. International partners if relevant
-6. Internal departments and leadership
+POWER/INTEREST DISTRIBUTION:
+- 3-4 stakeholders with High Power + High Interest (Manage Closely)
+- 3-4 stakeholders with High Power + Low/Medium Interest (Keep Satisfied)  
+- 3-4 stakeholders with Low/Medium Power + High Interest (Keep Informed)
+- 3-4 stakeholders with Low Power + Low Interest (Monitor)
 
-Use formal Arabic (فصحى) for Arabic content.`,
+**PART 2: STAKEHOLDER ENGAGEMENT PLAN (Required)**
+
+Generate a comprehensive stakeholder_engagement_plan (3-5 paragraphs) that describes:
+1. Overall engagement philosophy and approach for this strategic plan
+2. Communication cadence and channels for different stakeholder groups
+3. Key engagement milestones aligned with the plan timeline (${context.startYear}-${context.endYear})
+4. Mechanisms for stakeholder feedback and input
+5. Risk mitigation for potential stakeholder resistance or disengagement
+
+Use formal Arabic (فصحى) for Arabic content. Be specific to the plan context, not generic.`,
       pestel: `Conduct PESTEL analysis for this Saudi municipal strategy:
 Plan: ${context.planName}
 Vision: ${context.vision}
@@ -701,17 +716,29 @@ Assess readiness, define change approach, and resistance management strategies.`
       },
       stakeholders: {
         type: 'object',
+        required: ['stakeholders', 'stakeholder_engagement_plan'],
         properties: {
-          stakeholders: { type: 'array', items: { type: 'object', properties: { 
-            name_en: { type: 'string' }, 
-            name_ar: { type: 'string' }, 
-            type: { type: 'string' }, 
-            power: { type: 'string' }, 
-            interest: { type: 'string' }, 
-            engagement_level: { type: 'string' }, 
-            influence_strategy_en: { type: 'string' },
-            influence_strategy_ar: { type: 'string' }
-          } } }
+          stakeholders: { 
+            type: 'array', 
+            minItems: 12,
+            items: { 
+              type: 'object', 
+              required: ['name_en', 'name_ar', 'type', 'power', 'interest', 'engagement_level', 'influence_strategy_en', 'influence_strategy_ar'],
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' }, 
+                type: { type: 'string', enum: ['GOVERNMENT', 'PRIVATE', 'ACADEMIC', 'NGO', 'COMMUNITY', 'INTERNATIONAL', 'INTERNAL'] }, 
+                power: { type: 'string', enum: ['low', 'medium', 'high'] }, 
+                interest: { type: 'string', enum: ['low', 'medium', 'high'] }, 
+                engagement_level: { type: 'string', enum: ['inform', 'consult', 'involve', 'collaborate', 'empower'] }, 
+                influence_strategy_en: { type: 'string' },
+                influence_strategy_ar: { type: 'string' },
+                contact_person: { type: 'string' },
+                notes: { type: 'string' }
+              } 
+            } 
+          },
+          stakeholder_engagement_plan: { type: 'string' }
         }
       },
       pestel: {
@@ -962,17 +989,26 @@ Assess readiness, define change approach, and resistance management strategies.`
               description_ar: p.description_ar || ''
             }));
           }
-        } else if (stepKey === 'stakeholders' && data.stakeholders) {
-          updates.stakeholders = data.stakeholders.map((s, i) => ({ 
-            ...s, 
-            id: Date.now().toString() + i,
-            name_en: s.name_en || s.name || '',
-            name_ar: s.name_ar || '',
-            influence_strategy_en: s.influence_strategy_en || s.influence_strategy || '',
-            influence_strategy_ar: s.influence_strategy_ar || '',
-            type: s.type || 'GOVERNMENT',
-            engagement_level: s.engagement_level || 'consult'
-          }));
+        } else if (stepKey === 'stakeholders') {
+          if (data.stakeholders) {
+            updates.stakeholders = data.stakeholders.map((s, i) => ({ 
+              ...s, 
+              id: Date.now().toString() + i,
+              name_en: s.name_en || s.name || '',
+              name_ar: s.name_ar || '',
+              influence_strategy_en: s.influence_strategy_en || s.influence_strategy || '',
+              influence_strategy_ar: s.influence_strategy_ar || '',
+              type: s.type || 'GOVERNMENT',
+              power: s.power || 'medium',
+              interest: s.interest || 'medium',
+              engagement_level: s.engagement_level || 'consult',
+              contact_person: s.contact_person || '',
+              notes: s.notes || ''
+            }));
+          }
+          if (data.stakeholder_engagement_plan) {
+            updates.stakeholder_engagement_plan = data.stakeholder_engagement_plan;
+          }
         } else if (stepKey === 'pestel') {
           // PESTEL UI expects bilingual objects
           const mapPestelItems = (items) => (items || []).map((item, i) => ({
