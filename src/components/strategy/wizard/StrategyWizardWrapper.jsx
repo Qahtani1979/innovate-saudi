@@ -761,14 +761,84 @@ MOST LIKELY (Realistic - probability: 60):
 - Each scenario should reference the SWOT and PESTEL factors above
 - Outcomes should be sector-specific and measurable
 - Values should be realistic for Saudi municipal context`,
-      risks: `Identify risks for this Saudi municipal strategic plan:
-Plan: ${context.planName}
-Vision: ${context.vision}
-Sectors: ${context.sectors.join(', ')}
+      risks: `Identify and analyze risks for this Saudi municipal strategic plan:
 
-Return 8-12 risks. Use category codes from: STRATEGIC, OPERATIONAL, FINANCIAL, REGULATORY, TECHNOLOGY, REPUTATIONAL, POLITICAL, ENVIRONMENTAL.
-Use likelihood and impact as: low | medium | high.
-Include: title, description, mitigation_strategy, contingency_plan, owner (role or department).`,
+**STRATEGIC PLAN CONTEXT:**
+- Plan Name: ${context.planName}
+- Vision: ${context.vision}
+- Mission: ${wizardData.mission_en || 'Not specified'}
+- Sectors: ${context.sectors.join(', ')}
+- Timeline: ${context.startYear}-${context.endYear} (${context.endYear - context.startYear} years)
+- Budget Range: ${wizardData.budget_range || 'Not specified'}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
+
+**PESTEL THREATS (from Step 4):**
+${Object.entries(wizardData.pestel || {}).map(([category, factors]) => 
+  (factors || []).filter(f => f.impact === 'high' || f.trend === 'declining').slice(0, 2).map(f => `- ${category.toUpperCase()}: ${f.factor_en || 'N/A'}`).join('\n')
+).filter(Boolean).join('\n') || 'Not analyzed yet'}
+
+**SWOT WEAKNESSES & THREATS (from Step 5):**
+- Weaknesses: ${(wizardData.swot?.weaknesses || []).slice(0, 3).map(w => w.text_en).join('; ') || 'Not defined yet'}
+- Threats: ${(wizardData.swot?.threats || []).slice(0, 3).map(t => t.text_en).join('; ') || 'Not defined yet'}
+
+**WORST-CASE SCENARIO (from Step 6):**
+${wizardData.scenarios?.worst_case?.description_en || 'Not defined yet'}
+
+**KEY STAKEHOLDERS:**
+${(wizardData.stakeholders || []).filter(s => s.power === 'high').slice(0, 3).map(s => `- ${s.name_en || s.name_ar} (${s.type})`).join('\n') || 'Not defined yet'}
+
+**REQUIREMENTS:**
+Generate 10-14 risks covering ALL categories. Each risk MUST have ALL fields in BOTH English and Arabic.
+
+For EACH risk, provide:
+1. **title_en / title_ar**: Short risk title (5-10 words) in both languages
+2. **description_en / description_ar**: Detailed risk description (2-3 sentences) explaining what could go wrong
+3. **category**: One of STRATEGIC | OPERATIONAL | FINANCIAL | REGULATORY | TECHNOLOGY | REPUTATIONAL | POLITICAL | ENVIRONMENTAL
+4. **likelihood**: low | medium | high
+5. **impact**: low | medium | high
+6. **mitigation_strategy_en / mitigation_strategy_ar**: Preventive actions to reduce probability (2-3 sentences)
+7. **contingency_plan_en / contingency_plan_ar**: Response actions if risk materializes (2-3 sentences)
+8. **owner**: Role/department responsible (e.g., "IT Director", "Finance Department", "Strategy Office")
+
+**CATEGORY DISTRIBUTION (MANDATORY):**
+- STRATEGIC: 2 risks (vision misalignment, stakeholder resistance)
+- OPERATIONAL: 2 risks (capacity gaps, process inefficiencies)
+- FINANCIAL: 2 risks (budget overruns, funding delays)
+- REGULATORY: 1-2 risks (compliance, policy changes)
+- TECHNOLOGY: 2 risks (system failures, cybersecurity, integration issues)
+- REPUTATIONAL: 1 risk (public perception, media)
+- POLITICAL: 1-2 risks (leadership changes, priority shifts)
+- ENVIRONMENTAL: 1 risk (sustainability, climate factors)
+
+**LIKELIHOOD/IMPACT DISTRIBUTION:**
+- At least 2-3 HIGH likelihood risks
+- At least 2-3 HIGH impact risks
+- Mix of LOW, MEDIUM across remaining risks
+- At least 2 risks should be HIGH/HIGH (critical risks)
+
+**SAUDI MUNICIPAL RISK EXAMPLES:**
+
+STRATEGIC:
+- "Vision 2030 Program Misalignment" - Risk that plan objectives drift from national priorities
+- "Stakeholder Engagement Failure" - Key stakeholders disengage due to competing priorities
+
+OPERATIONAL:
+- "Capacity and Skills Gap" - Insufficient trained staff to execute initiatives
+- "Cross-Department Coordination Failure" - Siloed operations preventing integration
+
+FINANCIAL:
+- "Budget Allocation Delays" - Ministry approval processes delay funding
+- "Cost Overruns" - Inflation and scope creep exceed estimates
+
+TECHNOLOGY:
+- "Digital Infrastructure Gaps" - Legacy systems incompatible with new solutions
+- "Cybersecurity Incidents" - Data breaches affecting citizen trust
+
+REGULATORY:
+- "Municipal Law Changes" - New regulations requiring plan modifications
+- "Data Protection Non-Compliance" - PDPL requirements not met
+
+Be specific to the plan's sectors and context. Avoid generic risks.`,
       kpis: `Generate KPIs for this Saudi strategic plan:
 Plan: ${context.planName}
 Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
