@@ -2967,6 +2967,13 @@ Return alignments as an array under the "alignments" key with proper objective_i
         return;
       }
       
+      // Save current step data immediately before navigating
+      if (mode !== 'review' && planId) {
+        saveNow(wizardData, currentStep).catch(err => {
+          console.warn('Failed to save on navigation:', err);
+        });
+      }
+      
       if (!completedSteps.includes(currentStep)) {
         setCompletedSteps([...completedSteps, currentStep]);
       }
@@ -2975,7 +2982,15 @@ Return alignments as an array under the "alignments" key with proper objective_i
   };
 
   const handleBack = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
+    if (currentStep > 1) {
+      // Save current step data immediately before navigating
+      if (mode !== 'review' && planId) {
+        saveNow(wizardData, currentStep).catch(err => {
+          console.warn('Failed to save on navigation:', err);
+        });
+      }
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   const handleSelectPlan = (plan, selectedMode) => {
@@ -3141,7 +3156,15 @@ Return alignments as an array under the "alignments" key with proper objective_i
       <WizardStepIndicator 
         steps={WIZARD_STEPS} 
         currentStep={currentStep} 
-        onStepClick={setCurrentStep} 
+        onStepClick={(step) => {
+          // Save current data before jumping to another step
+          if (mode !== 'review' && planId && step !== currentStep) {
+            saveNow(wizardData, currentStep).catch(err => {
+              console.warn('Failed to save on step click:', err);
+            });
+          }
+          setCurrentStep(step);
+        }} 
         completedSteps={completedSteps} 
       />
 
