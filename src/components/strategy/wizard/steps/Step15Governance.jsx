@@ -6,26 +6,45 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Building2, Plus, X } from 'lucide-react';
+import { Sparkles, Building2, Plus, X, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { GOVERNANCE_ROLES } from '../StrategyWizardSteps';
 
 export default function Step15Governance({ data, onChange, onGenerateAI, isGenerating }) {
   const { language, t, isRTL } = useLanguage();
 
+  const committees = data.governance?.committees || [];
+  const escalationPath = Array.isArray(data.governance?.escalation_path)
+    ? data.governance.escalation_path
+    : (typeof data.governance?.escalation_path === 'string'
+      ? data.governance.escalation_path.split(/\n|;|,/).map(s => s.trim()).filter(Boolean)
+      : []);
+
   const addCommittee = () => {
-    const newCommittee = { id: Date.now().toString(), name: '', role: 'STEERING_COMMITTEE', members: [], meeting_frequency: 'monthly', responsibilities: '' };
-    onChange({ governance: { ...data.governance, committees: [...(data.governance?.committees || []), newCommittee] } });
+    const newCommittee = {
+      id: Date.now().toString(),
+      name: '',
+      role: 'STEERING_COMMITTEE',
+      members: [],
+      meeting_frequency: 'monthly',
+      responsibilities: ''
+    };
+
+    onChange({
+      governance: {
+        ...data.governance,
+        committees: [...committees, newCommittee]
+      }
+    });
   };
 
   const updateCommittee = (index, field, value) => {
-    const updated = [...(data.governance?.committees || [])];
-    updated[index] = { ...updated[index], [field]: value };
+    const updated = committees.map((c, i) => (i === index ? { ...c, [field]: value } : c));
     onChange({ governance: { ...data.governance, committees: updated } });
   };
 
   const removeCommittee = (index) => {
-    onChange({ governance: { ...data.governance, committees: data.governance.committees.filter((_, i) => i !== index) } });
+    onChange({ governance: { ...data.governance, committees: committees.filter((_, i) => i !== index) } });
   };
 
   const frequencyOptions = [
@@ -49,12 +68,40 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
           <CardTitle className="text-lg">{t({ en: 'Reporting Frequency', ar: 'تكرار التقارير' })}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Select value={data.governance?.reporting_frequency || 'monthly'} onValueChange={(v) => onChange({ governance: { ...data.governance, reporting_frequency: v } })}>
-            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+          <Select
+            value={data.governance?.reporting_frequency || 'monthly'}
+            onValueChange={(v) => onChange({ governance: { ...data.governance, reporting_frequency: v } })}
+          >
+            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {frequencyOptions.map(f => <SelectItem key={f.value} value={f.value}>{f.label[language]}</SelectItem>)}
+              {frequencyOptions.map((f) => (
+                <SelectItem key={f.value} value={f.value}>{f.label[language]}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <AlertTriangle className="w-5 h-5 text-primary" />
+            {t({ en: 'Escalation Path', ar: 'مسار التصعيد' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="text-sm">{t({ en: 'Enter escalation steps (one per line)', ar: 'أدخل خطوات التصعيد (كل خطوة في سطر)' })}</Label>
+          <Textarea
+            className="mt-2"
+            value={escalationPath.join('\n')}
+            onChange={(e) => onChange({
+              governance: {
+                ...data.governance,
+                escalation_path: e.target.value.split('\n').map(s => s.trim()).filter(Boolean)
+              }
+            })}
+            rows={4}
+          />
         </CardContent>
       </Card>
 
@@ -63,45 +110,82 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
           <CardTitle className="flex items-center gap-2 text-lg">
             <Building2 className="w-5 h-5 text-primary" />
             {t({ en: 'Governance Committees', ar: 'لجان الحوكمة' })}
-            <Badge variant="secondary">{(data.governance?.committees || []).length}</Badge>
+            <Badge variant="secondary">{committees.length}</Badge>
           </CardTitle>
           <Button variant="outline" size="sm" onClick={addCommittee}>
             <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Committee', ar: 'إضافة لجنة' })}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {(data.governance?.committees || []).length === 0 ? (
+          {committees.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg">
               {t({ en: 'No committees defined', ar: 'لم يتم تحديد لجان' })}
             </div>
           ) : (
-            data.governance.committees.map((committee, idx) => (
-              <div key={committee.id} className="p-4 border rounded-lg space-y-3">
-                <div className="flex justify-between">
-                  <Badge>{GOVERNANCE_ROLES.find(r => r.code === committee.role)?.[`name_${language}`]}</Badge>
-                  <Button variant="ghost" size="icon" onClick={() => removeCommittee(idx)}><X className="w-4 h-4" /></Button>
+            committees.map((committee, idx) => {
+              const members = Array.isArray(committee.members)
+                ? committee.members
+                : (typeof committee.members === 'string'
+                  ? committee.members.split('\n').map(s => s.trim()).filter(Boolean)
+                  : []);
+
+              return (
+                <div key={committee.id || idx} className="p-4 border rounded-lg space-y-3">
+                  <div className="flex justify-between">
+                    <Badge>
+                      {GOVERNANCE_ROLES.find(r => r.code === committee.role)?.[`name_${language}`]}
+                    </Badge>
+                    <Button variant="ghost" size="icon" onClick={() => removeCommittee(idx)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Input
+                      placeholder={t({ en: 'Committee Name', ar: 'اسم اللجنة' })}
+                      value={committee.name}
+                      onChange={(e) => updateCommittee(idx, 'name', e.target.value)}
+                    />
+                    <Select value={committee.role} onValueChange={(v) => updateCommittee(idx, 'role', v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {GOVERNANCE_ROLES.map((r) => (
+                          <SelectItem key={r.code} value={r.code}>{r[`name_${language}`]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={committee.meeting_frequency} onValueChange={(v) => updateCommittee(idx, 'meeting_frequency', v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {frequencyOptions.map((f) => (
+                          <SelectItem key={f.value} value={f.value}>{f.label[language]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm">{t({ en: 'Members (one per line)', ar: 'الأعضاء (كل عضو في سطر)' })}</Label>
+                    <Textarea
+                      value={members.join('\n')}
+                      onChange={(e) => updateCommittee(idx, 'members', e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}
+                      rows={3}
+                    />
+                  </div>
+
+                  <Textarea
+                    placeholder={t({ en: 'Responsibilities...', ar: 'المسؤوليات...' })}
+                    value={committee.responsibilities}
+                    onChange={(e) => updateCommittee(idx, 'responsibilities', e.target.value)}
+                    rows={2}
+                  />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <Input placeholder={t({ en: 'Committee Name', ar: 'اسم اللجنة' })} value={committee.name} onChange={(e) => updateCommittee(idx, 'name', e.target.value)} />
-                  <Select value={committee.role} onValueChange={(v) => updateCommittee(idx, 'role', v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {GOVERNANCE_ROLES.map(r => <SelectItem key={r.code} value={r.code}>{r[`name_${language}`]}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Select value={committee.meeting_frequency} onValueChange={(v) => updateCommittee(idx, 'meeting_frequency', v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {frequencyOptions.map(f => <SelectItem key={f.value} value={f.value}>{f.label[language]}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Textarea placeholder={t({ en: 'Responsibilities...', ar: 'المسؤوليات...' })} value={committee.responsibilities} onChange={(e) => updateCommittee(idx, 'responsibilities', e.target.value)} rows={2} />
-              </div>
-            ))
+              );
+            })
           )}
         </CardContent>
       </Card>
     </div>
   );
 }
+

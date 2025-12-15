@@ -240,6 +240,44 @@ export default function Step6ActionPlans({
                                     </div>
                                   </div>
 
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">{t({ en: 'Start Date', ar: 'تاريخ البداية' })}</Label>
+                                      <Input
+                                        type="date"
+                                        value={ap.start_date}
+                                        onChange={(e) => updateActionPlan(apIndex, { start_date: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">{t({ en: 'End Date', ar: 'تاريخ النهاية' })}</Label>
+                                      <Input
+                                        type="date"
+                                        value={ap.end_date}
+                                        onChange={(e) => updateActionPlan(apIndex, { end_date: e.target.value })}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">{t({ en: 'Deliverables (one per line)', ar: 'المخرجات (كل عنصر في سطر)' })}</Label>
+                                      <Textarea
+                                        value={(ap.deliverables || []).join('\n')}
+                                        onChange={(e) => updateActionPlan(apIndex, { deliverables: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
+                                        rows={3}
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">{t({ en: 'Dependencies (one per line)', ar: 'التبعيات (كل عنصر في سطر)' })}</Label>
+                                      <Textarea
+                                        value={(ap.dependencies || []).join('\n')}
+                                        onChange={(e) => updateActionPlan(apIndex, { dependencies: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
+                                        rows={3}
+                                      />
+                                    </div>
+                                  </div>
+
                                   <div className="flex justify-end">
                                     <Button size="sm" variant="destructive" onClick={() => removeActionPlan(apIndex)}>
                                       <X className="h-4 w-4 mr-1" />

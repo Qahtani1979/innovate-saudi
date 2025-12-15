@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Loader2, Plus, X, Calendar, Flag } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
@@ -18,6 +20,7 @@ export default function Step7Timeline({
   
   const milestones = data.milestones || [];
   const phases = data.phases || [];
+  const objectives = data.objectives || [];
 
   const addMilestone = () => {
     onChange({
@@ -61,6 +64,15 @@ export default function Step7Timeline({
 
   const removePhase = (index) => {
     onChange({ phases: phases.filter((_, i) => i !== index) });
+  };
+
+  const toggleObjectiveCovered = (phaseIndex, objectiveIndex, checked) => {
+    const current = phases[phaseIndex]?.objectives_covered || [];
+    const next = checked
+      ? Array.from(new Set([...current, objectiveIndex]))
+      : current.filter((i) => i !== objectiveIndex);
+
+    updatePhase(phaseIndex, { objectives_covered: next });
   };
 
   const getTypeIcon = (type) => {
@@ -108,7 +120,7 @@ export default function Step7Timeline({
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">{t({ en: 'Objectives', ar: 'الأهداف' })}</p>
-              <p className="font-medium">{(data.objectives || []).length}</p>
+              <p className="font-medium">{objectives.length}</p>
             </div>
           </div>
         </CardContent>
@@ -136,7 +148,7 @@ export default function Step7Timeline({
           ) : (
             <div className="space-y-3">
               {phases.map((phase, index) => (
-                <div key={index} className="border rounded-lg p-4 space-y-3">
+                <div key={phase.id || index} className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <Badge variant="outline">
                       {t({ en: 'Phase', ar: 'مرحلة' })} {index + 1}
@@ -145,7 +157,7 @@ export default function Step7Timeline({
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">{t({ en: 'Phase Name (EN)', ar: 'اسم المرحلة (إنجليزي)' })}</Label>
@@ -153,6 +165,7 @@ export default function Step7Timeline({
                         value={phase.name_en}
                         onChange={(e) => updatePhase(index, { name_en: e.target.value })}
                         placeholder={t({ en: 'e.g., Foundation Phase', ar: 'مثال: مرحلة التأسيس' })}
+                        dir="ltr"
                       />
                     </div>
                     <div className="space-y-1">
@@ -183,6 +196,36 @@ export default function Step7Timeline({
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Phase Description', ar: 'وصف المرحلة' })}</Label>
+                    <Textarea
+                      value={phase.description || ''}
+                      onChange={(e) => updatePhase(index, { description: e.target.value })}
+                      rows={2}
+                    />
+                  </div>
+
+                  {objectives.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">{t({ en: 'Objectives Covered', ar: 'الأهداف المشمولة' })}</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {objectives.map((obj, objIndex) => {
+                          const checked = (phase.objectives_covered || []).includes(objIndex);
+                          const label = language === 'ar' ? (obj.name_ar || obj.name_en) : (obj.name_en || obj.name_ar);
+                          return (
+                            <label key={objIndex} className="flex items-start gap-2 rounded-md border p-2">
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(v) => toggleObjectiveCovered(index, objIndex, Boolean(v))}
+                              />
+                              <span className="text-sm leading-5">{label || `${t({ en: 'Objective', ar: 'هدف' })} ${objIndex + 1}`}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -215,14 +258,24 @@ export default function Step7Timeline({
           ) : (
             <div className="space-y-3">
               {milestones.map((milestone, index) => (
-                <div key={index} className="border rounded-lg p-3">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div key={milestone.id || index} className="border rounded-lg p-3 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
                     <div className="space-y-1">
-                      <Label className="text-xs">{t({ en: 'Milestone', ar: 'المعلم' })}</Label>
+                      <Label className="text-xs">{t({ en: 'Milestone (EN)', ar: 'المعلم (إنجليزي)' })}</Label>
                       <Input
                         value={milestone.name_en}
                         onChange={(e) => updateMilestone(index, { name_en: e.target.value })}
                         placeholder={t({ en: 'Milestone name', ar: 'اسم المعلم' })}
+                        dir="ltr"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t({ en: 'Milestone (AR)', ar: 'المعلم (عربي)' })}</Label>
+                      <Input
+                        value={milestone.name_ar}
+                        onChange={(e) => updateMilestone(index, { name_ar: e.target.value })}
+                        placeholder={t({ en: 'Arabic milestone name', ar: 'اسم المعلم بالعربية' })}
+                        dir="rtl"
                       />
                     </div>
                     <div className="space-y-1">
@@ -249,6 +302,15 @@ export default function Step7Timeline({
                     <Button size="icon" variant="ghost" onClick={() => removeMilestone(index)}>
                       <X className="h-4 w-4" />
                     </Button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Description', ar: 'الوصف' })}</Label>
+                    <Textarea
+                      value={milestone.description || ''}
+                      onChange={(e) => updateMilestone(index, { description: e.target.value })}
+                      rows={2}
+                    />
                   </div>
                 </div>
               ))}
@@ -278,3 +340,4 @@ export default function Step7Timeline({
     </div>
   );
 }
+
