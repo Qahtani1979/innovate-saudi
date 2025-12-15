@@ -9,7 +9,7 @@ import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { 
   Target, TrendingUp, Users, Zap, AlertTriangle, CheckCircle2, 
   Sparkles, Loader2, X, ArrowRight, Clock,
-  ExternalLink, ChevronRight, BarChart3, DollarSign, Layers
+  ExternalLink, ChevronRight, BarChart3, DollarSign, Layers, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
