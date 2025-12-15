@@ -14,7 +14,7 @@ import { useLanguage } from '../../LanguageContext';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 import { useAutoSaveDraft } from '@/hooks/strategy/useAutoSaveDraft';
-import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
+// NOTE: templates are applied via a lightweight helper in this file to avoid hook dispatcher crashes
 import { useWizardValidation } from '@/hooks/strategy/useWizardValidation';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 
@@ -56,7 +56,72 @@ export default function StrategyWizardWrapper() {
   const [searchParams, setSearchParams] = useSearchParams();
   
   const { createApprovalRequest } = useApprovalRequest();
-  const { applyTemplate } = useStrategyTemplates();
+
+  // Apply template without react-query hooks (prevents "dispatcher is null" hook crashes)
+  const applyTemplate = useCallback(async (templateId) => {
+    const { data: template, error } = await supabase
+      .from('strategic_plans')
+      .select('*')
+      .eq('id', templateId)
+      .eq('is_template', true)
+      .single();
+
+    if (error) throw error;
+    if (!template) throw new Error('Template not found');
+
+    return {
+      // Basic info - clear for customization
+      name_en: '',
+      name_ar: '',
+      description_en: template.description_en || '',
+      description_ar: template.description_ar || '',
+
+      // Copy template content
+      vision_en: template.vision_en || '',
+      vision_ar: template.vision_ar || '',
+      mission_en: template.mission_en || '',
+      mission_ar: template.mission_ar || '',
+      core_values: template.core_values || [],
+      strategic_pillars: template.strategic_pillars || template.pillars || [],
+
+      // Analysis
+      stakeholders: template.stakeholders || [],
+      pestel: template.pestel || {},
+      swot: template.swot || {},
+      scenarios: template.scenarios || {},
+      risks: template.risks || [],
+      dependencies: template.dependencies || [],
+      constraints: template.constraints || [],
+
+      // Strategy
+      objectives: template.objectives || [],
+      national_alignments: template.national_alignments || [],
+      kpis: template.kpis || [],
+      action_plans: template.action_plans || [],
+      resource_plan: template.resource_plan || {},
+
+      // Implementation
+      milestones: template.milestones || [],
+      phases: template.phases || [],
+      governance: template.governance || {},
+      communication_plan: template.communication_plan || {},
+      change_management: template.change_management || {},
+
+      // Context - reset for new plan
+      start_year: new Date().getFullYear(),
+      end_year: new Date().getFullYear() + 5,
+      target_sectors: template.target_sectors || [],
+      target_regions: template.target_regions || [],
+      strategic_themes: template.strategic_themes || [],
+      focus_technologies: template.focus_technologies || [],
+      vision_2030_programs: template.vision_2030_programs || [],
+      budget_range: template.budget_range || '',
+
+      // Meta
+      _sourceTemplateId: template.id,
+      _sourceTemplateName: template.name_en,
+    };
+  }, []);
   
   // Mode and plan state
   const [mode, setMode] = useState('create'); // 'create' | 'edit' | 'review'
