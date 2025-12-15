@@ -611,26 +611,29 @@ function StrategyHub() {
           </div>
         </TabsContent>
 
-        {/* Monitoring Tab */}
+        {/* Monitoring Tab (Phase 6) */}
         <TabsContent value="monitoring" className="space-y-6">
-          <Card>
+          <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950 dark:to-background">
             <CardHeader>
-              <CardTitle>{t({ en: 'Strategy Monitoring & Review', ar: 'مراقبة ومراجعة الاستراتيجية' })}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                {t({ en: 'Strategy Monitoring & Review (Phase 6)', ar: 'مراقبة ومراجعة الاستراتيجية (المرحلة 6)' })}
+              </CardTitle>
               <CardDescription>
-                {t({ en: 'Track strategy execution, alignment, and performance', ar: 'تتبع تنفيذ الاستراتيجية والمواءمة والأداء' })}
+                {t({ en: 'Real-time tracking of strategy execution, KPIs, alignment, and performance metrics', ar: 'تتبع تنفيذ الاستراتيجية ومؤشرات الأداء والمواءمة في الوقت الفعلي' })}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredMonitoringTools.map(tool => {
                   const Icon = tool.icon;
                   return (
                     <Link key={tool.path} to={tool.path}>
-                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                      <Card className="hover:border-blue-400/50 transition-colors cursor-pointer h-full">
                         <CardContent className="pt-6">
-                          <div className="flex flex-col items-center text-center gap-3">
-                            <div className="p-3 rounded-lg bg-primary/10">
-                              <Icon className="h-6 w-6 text-primary" />
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900">
+                              <Icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div>
                               <h3 className="font-semibold">{t(tool.label)}</h3>
@@ -643,13 +646,67 @@ function StrategyHub() {
                   );
                 })}
               </div>
+              <div className="mt-6 flex gap-3">
+                <Button asChild>
+                  <Link to="/strategy-cockpit">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    {t({ en: 'Open Strategy Cockpit', ar: 'فتح لوحة القيادة' })}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/strategic-kpi-tracker">
+                    <Target className="h-4 w-4 mr-2" />
+                    {t({ en: 'KPI Tracker', ar: 'متتبع المؤشرات' })}
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
+
+          {/* Monitoring Features */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-3">
+                  <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Real-time Dashboards', ar: 'لوحات الوقت الفعلي' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Live KPI tracking with automated alerts and progress updates', ar: 'تتبع المؤشرات مباشرة مع تنبيهات آلية وتحديثات التقدم' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-3">
+                  <GitBranch className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Alignment Tracking', ar: 'تتبع المواءمة' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Monitor entity alignment with strategic objectives', ar: 'مراقبة مواءمة الكيانات مع الأهداف الاستراتيجية' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center mb-3">
+                  <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Gap Analysis', ar: 'تحليل الفجوات' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Identify coverage gaps and get AI recommendations', ar: 'تحديد فجوات التغطية والحصول على توصيات الذكاء الاصطناعي' })}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Demand & Resource Tools */}
           <Card>
             <CardHeader>
-              <CardTitle>{t({ en: 'Demand & Resource Management', ar: 'إدارة الطلب والموارد' })}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-primary" />
+                {t({ en: 'Demand & Resource Management', ar: 'إدارة الطلب والموارد' })}
+              </CardTitle>
               <CardDescription>
                 {t({ en: 'Track strategy-driven demand, action plans, and national alignment', ar: 'تتبع الطلب المدفوع بالاستراتيجية وخطط العمل والمواءمة الوطنية' })}
               </CardDescription>
@@ -680,12 +737,16 @@ function StrategyHub() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* Cascade Tab (Phase 3) */}
         <TabsContent value="cascade" className="space-y-6">
-          <Card>
+          <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white dark:from-orange-950 dark:to-background">
             <CardHeader>
-              <CardTitle>{t({ en: 'Strategy Cascade Generators', ar: 'مولدات التدرج الاستراتيجي' })}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-orange-600" />
+                {t({ en: 'Strategy Cascade Generators (Phase 3)', ar: 'مولدات التدرج الاستراتيجي (المرحلة 3)' })}
+              </CardTitle>
               <CardDescription>
-                {t({ en: 'Generate entities aligned with strategic objectives', ar: 'إنشاء كيانات متوافقة مع الأهداف الاستراتيجية' })}
+                {t({ en: 'AI-powered generation of entities aligned with strategic objectives across 8 entity types', ar: 'إنشاء كيانات بالذكاء الاصطناعي متوافقة مع الأهداف الاستراتيجية عبر 8 أنواع من الكيانات' })}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -696,7 +757,7 @@ function StrategyHub() {
                     <Link
                       key={gen.path}
                       to={gen.path}
-                      className="flex flex-col items-center p-4 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all group"
+                      className="flex flex-col items-center p-4 rounded-lg border bg-card hover:bg-accent/50 hover:border-orange-400/50 transition-all group"
                     >
                       <Icon className={`h-8 w-8 ${gen.color} group-hover:scale-110 transition-transform`} />
                       <span className="mt-2 text-sm font-medium text-center">{t(gen.label)}</span>
@@ -704,167 +765,214 @@ function StrategyHub() {
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t({ en: 'Quick Links', ar: 'روابط سريعة' })}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/strategy-templates-page">
-                    <FileText className="h-4 w-4 mr-2" />
-                    {t({ en: 'Strategy Templates', ar: 'قوالب الاستراتيجية' })}
+              <div className="mt-6 flex gap-3">
+                <Button asChild>
+                  <Link to="/strategy-demand-dashboard">
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    {t({ en: 'Open Demand Dashboard', ar: 'فتح لوحة الطلب' })}
                   </Link>
                 </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/national-strategy-linker-page">
-                    <Target className="h-4 w-4 mr-2" />
-                    {t({ en: 'National Alignment', ar: 'المواءمة الوطنية' })}
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/baseline-data-page">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    {t({ en: 'Baseline Data', ar: 'البيانات الأساسية' })}
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
+                <Button variant="outline" asChild>
                   <Link to="/action-plan-page">
                     <ClipboardList className="h-4 w-4 mr-2" />
                     {t({ en: 'Action Plans', ar: 'خطط العمل' })}
                   </Link>
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cascade Features */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center mb-3">
+                  <Sparkles className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'AI-Powered Generation', ar: 'إنشاء بالذكاء الاصطناعي' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Automatically generate entities aligned with strategic objectives', ar: 'إنشاء كيانات تلقائياً متوافقة مع الأهداف الاستراتيجية' })}
+                </p>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t({ en: 'Recent Generations', ar: 'الإنشاءات الأخيرة' })}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-4 text-muted-foreground">
-                  <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>{t({ en: 'Generated entities will appear here', ar: 'ستظهر الكيانات المُنشأة هنا' })}</p>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-3">
+                  <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Objective Linking', ar: 'ربط الأهداف' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'All generated entities linked to strategic objectives and KPIs', ar: 'جميع الكيانات المُنشأة مرتبطة بالأهداف الاستراتيجية ومؤشرات الأداء' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-3">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Quality Assurance', ar: 'ضمان الجودة' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'AI quality scoring and validation before entity creation', ar: 'تقييم جودة بالذكاء الاصطناعي والتحقق قبل إنشاء الكيانات' })}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Links */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t({ en: 'Related Tools', ar: 'أدوات ذات صلة' })}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex gap-3 flex-wrap">
+              <Button variant="outline" asChild>
+                <Link to="/strategy-templates-page">
+                  <FileText className="h-4 w-4 mr-2" />
+                  {t({ en: 'Strategy Templates', ar: 'قوالب الاستراتيجية' })}
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/national-strategy-linker-page">
+                  <Target className="h-4 w-4 mr-2" />
+                  {t({ en: 'National Alignment', ar: 'المواءمة الوطنية' })}
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/baseline-data-page">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  {t({ en: 'Baseline Data', ar: 'البيانات الأساسية' })}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Governance Tab (Phase 4) */}
+        <TabsContent value="governance" className="space-y-6">
+          <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950 dark:to-background">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-purple-600" />
+                {t({ en: 'Strategy Governance & Approval (Phase 4)', ar: 'حوكمة الاستراتيجية والموافقات (المرحلة 4)' })}
+              </CardTitle>
+              <CardDescription>
+                {t({ en: 'Manage approvals, version control, committee reviews, and strategic ownership', ar: 'إدارة الموافقات والتحكم بالإصدارات ومراجعات اللجان والملكية الاستراتيجية' })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredGovernanceTools.map(tool => {
+                  const Icon = tool.icon;
+                  return (
+                    <Link key={tool.path + tool.tab} to={tool.path}>
+                      <Card className="hover:border-purple-400/50 transition-colors cursor-pointer h-full">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900">
+                              <Icon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{t(tool.label)}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {t({ 
+                                  en: tool.tab === 'signoff' ? 'Track stakeholder approvals and sign-offs' :
+                                      tool.tab === 'versions' ? 'Manage strategy versions and history' :
+                                      tool.tab === 'committee' ? 'Committee decision tracking and voting' :
+                                      tool.path.includes('budget') ? 'Strategic budget allocation' :
+                                      'Assign RACI ownership matrix',
+                                  ar: tool.tab === 'signoff' ? 'تتبع موافقات وتوقيعات أصحاب المصلحة' :
+                                      tool.tab === 'versions' ? 'إدارة إصدارات الاستراتيجية والتاريخ' :
+                                      tool.tab === 'committee' ? 'تتبع قرارات اللجنة والتصويت' :
+                                      tool.path.includes('budget') ? 'تخصيص الميزانية الاستراتيجية' :
+                                      'تعيين مصفوفة ملكية RACI'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="mt-6 flex gap-3">
+                <Button asChild>
+                  <Link to="/strategy-governance-page">
+                    <Shield className="h-4 w-4 mr-2" />
+                    {t({ en: 'Open Governance Dashboard', ar: 'فتح لوحة الحوكمة' })}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/strategy-ownership-page">
+                    <Users className="h-4 w-4 mr-2" />
+                    {t({ en: 'Manage Ownership', ar: 'إدارة الملكية' })}
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Governance Features */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mb-3">
+                  <CheckCircle2 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Multi-Step Approvals', ar: 'موافقات متعددة الخطوات' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Configurable approval workflows with SLA tracking', ar: 'سير عمل موافقات قابلة للتكوين مع تتبع اتفاقية الخدمة' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-3">
+                  <GitBranch className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Version History', ar: 'تاريخ الإصدارات' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Complete audit trail with change comparison', ar: 'مسار تدقيق كامل مع مقارنة التغييرات' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-3">
+                  <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Committee Decisions', ar: 'قرارات اللجنة' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Track committee votes, decisions, and action items', ar: 'تتبع تصويتات اللجنة والقرارات وبنود العمل' })}
+                </p>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        {/* Governance Tab */}
-        <TabsContent value="governance" className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-4">
-            {filteredGovernanceTools.map(tool => {
-              const Icon = tool.icon;
-              return (
-                <Link key={tool.path + tool.tab} to={tool.path}>
-                  <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 rounded-lg bg-primary/10">
-                          <Icon className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">{t(tool.label)}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {t({ 
-                              en: tool.tab === 'signoff' ? 'Track stakeholder approvals' :
-                                  tool.tab === 'versions' ? 'Manage strategy versions' :
-                                  tool.tab === 'committee' ? 'Committee decision tracking' :
-                                  'Assign strategic ownership',
-                              ar: tool.tab === 'signoff' ? 'تتبع موافقات أصحاب المصلحة' :
-                                  tool.tab === 'versions' ? 'إدارة إصدارات الاستراتيجية' :
-                                  tool.tab === 'committee' ? 'تتبع قرارات اللجنة' :
-                                  'تعيين الملكية الاستراتيجية'
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Governance Dashboard', ar: 'لوحة الحوكمة' })}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button asChild>
-                <Link to="/strategy-governance-page">
-                  <Shield className="h-4 w-4 mr-2" />
-                  {t({ en: 'Open Full Dashboard', ar: 'فتح اللوحة الكاملة' })}
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Communication Tab */}
+        {/* Communication Tab (Phase 5) */}
         <TabsContent value="communication" className="space-y-6">
-          <div className="grid md:grid-cols-3 gap-4">
-            {filteredCommunicationTools.map(tool => {
-              const Icon = tool.icon;
-              return (
-                <Link key={tool.path} to={tool.path}>
-                  <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
-                    <CardContent className="pt-6">
-                      <div className="flex flex-col items-center text-center gap-3">
-                        <div className="p-3 rounded-lg bg-primary/10">
-                          <Icon className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">{t(tool.label)}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">{t(tool.desc)}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
-
-          <Card>
+          <Card className="border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-white dark:from-pink-950 dark:to-background">
             <CardHeader>
-              <CardTitle>{t({ en: 'Communication Hub', ar: 'مركز التواصل' })}</CardTitle>
-              <CardDescription>{t({ en: 'Manage all strategy communication from one place', ar: 'إدارة جميع اتصالات الاستراتيجية من مكان واحد' })}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild>
-                <Link to="/strategy-communication-page">
-                  <Megaphone className="h-4 w-4 mr-2" />
-                  {t({ en: 'Open Communication Center', ar: 'فتح مركز التواصل' })}
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Pre-Planning Tab */}
-        <TabsContent value="preplanning" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Pre-Planning Tools', ar: 'أدوات التخطيط المسبق' })}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5 text-pink-600" />
+                {t({ en: 'Strategy Communication & Publishing (Phase 5)', ar: 'التواصل والنشر الاستراتيجي (المرحلة 5)' })}
+              </CardTitle>
               <CardDescription>
-                {t({ en: 'Gather inputs and analyze the environment before strategy creation', ar: 'جمع المدخلات وتحليل البيئة قبل إنشاء الاستراتيجية' })}
+                {t({ en: 'Plan communications, generate impact stories, manage stakeholder notifications, and publish strategy publicly', ar: 'تخطيط الاتصالات وإنشاء قصص الأثر وإدارة إشعارات أصحاب المصلحة ونشر الاستراتيجية علنياً' })}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
-                {filteredPreplanningTools.map(tool => {
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredCommunicationTools.map(tool => {
                   const Icon = tool.icon;
                   return (
                     <Link key={tool.path} to={tool.path}>
-                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                      <Card className="hover:border-pink-400/50 transition-colors cursor-pointer h-full">
                         <CardContent className="pt-6">
                           <div className="flex items-start gap-4">
-                            <div className="p-3 rounded-lg bg-primary/10">
-                              <Icon className="h-6 w-6 text-primary" />
+                            <div className="p-3 rounded-lg bg-pink-100 dark:bg-pink-900">
+                              <Icon className="h-6 w-6 text-pink-600 dark:text-pink-400" />
                             </div>
                             <div>
                               <h3 className="font-semibold">{t(tool.label)}</h3>
@@ -877,12 +985,154 @@ function StrategyHub() {
                   );
                 })}
               </div>
+              <div className="mt-6 flex gap-3">
+                <Button asChild>
+                  <Link to="/strategy-communication-page">
+                    <Megaphone className="h-4 w-4 mr-2" />
+                    {t({ en: 'Open Communication Center', ar: 'فتح مركز التواصل' })}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/public-strategy-dashboard-page">
+                    <Globe className="h-4 w-4 mr-2" />
+                    {t({ en: 'Public Dashboard', ar: 'اللوحة العامة' })}
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
+          {/* Communication Features */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-pink-100 dark:bg-pink-900 rounded-lg flex items-center justify-center mb-3">
+                  <BookOpen className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Impact Stories', ar: 'قصص الأثر' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'AI-generated narratives from strategy outcomes', ar: 'سرديات مولدة بالذكاء الاصطناعي من نتائج الاستراتيجية' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-3">
+                  <Bell className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Smart Notifications', ar: 'إشعارات ذكية' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Automated stakeholder notifications by role', ar: 'إشعارات آلية لأصحاب المصلحة حسب الدور' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-3">
+                  <BarChart3 className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Communication Analytics', ar: 'تحليلات التواصل' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Track engagement and reach metrics', ar: 'تتبع مقاييس المشاركة والوصول' })}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Pre-Planning Tab (Phase 1) */}
+        <TabsContent value="preplanning" className="space-y-6">
+          <Card className="border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-white dark:from-teal-950 dark:to-background">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-teal-600" />
+                {t({ en: 'Pre-Planning & Analysis (Phase 1)', ar: 'التخطيط المسبق والتحليل (المرحلة 1)' })}
+              </CardTitle>
+              <CardDescription>
+                {t({ en: 'Environmental scanning, SWOT analysis, stakeholder mapping, risk assessment, and baseline data collection', ar: 'المسح البيئي وتحليل SWOT ورسم خرائط أصحاب المصلحة وتقييم المخاطر وجمع البيانات الأساسية' })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPreplanningTools.map(tool => {
+                  const Icon = tool.icon;
+                  return (
+                    <Link key={tool.path} to={tool.path}>
+                      <Card className="hover:border-teal-400/50 transition-colors cursor-pointer h-full">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-teal-100 dark:bg-teal-900">
+                              <Icon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{t(tool.label)}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{t(tool.desc)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="mt-6 flex gap-3">
+                <Button asChild>
+                  <Link to="/environmental-scan-page">
+                    <Search className="h-4 w-4 mr-2" />
+                    {t({ en: 'Start Environmental Scan', ar: 'بدء المسح البيئي' })}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/swot-analysis-page">
+                    <Layers className="h-4 w-4 mr-2" />
+                    {t({ en: 'SWOT Analysis', ar: 'تحليل SWOT' })}
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pre-Planning Features */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-teal-100 dark:bg-teal-900 rounded-lg flex items-center justify-center mb-3">
+                  <Globe className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'PESTLE Analysis', ar: 'تحليل PESTLE' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Political, Economic, Social, Tech, Legal, Environmental factors', ar: 'العوامل السياسية والاقتصادية والاجتماعية والتقنية والقانونية والبيئية' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center mb-3">
+                  <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Risk Registry', ar: 'سجل المخاطر' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Identify, assess, and mitigate strategic risks', ar: 'تحديد وتقييم وتخفيف المخاطر الاستراتيجية' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-3">
+                  <FileBarChart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Baseline Metrics', ar: 'مقاييس الأساس' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Establish baselines for measuring future progress', ar: 'وضع خطوط أساس لقياس التقدم المستقبلي' })}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>{t({ en: 'Strategy Review & Adjustment', ar: 'مراجعة وتعديل الاستراتيجية' })}</CardTitle>
+              <CardTitle>{t({ en: 'Related Planning Tools', ar: 'أدوات تخطيط ذات صلة' })}</CardTitle>
             </CardHeader>
             <CardContent className="flex gap-3 flex-wrap">
               <Button variant="outline" asChild>
@@ -909,14 +1159,14 @@ function StrategyHub() {
 
         {/* Evaluation Tab (Phase 7) */}
         <TabsContent value="evaluation" className="space-y-6">
-          <Card>
+          <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-white dark:from-green-950 dark:to-background">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
-                {t({ en: 'Strategy Evaluation', ar: 'تقييم الاستراتيجية' })}
+                <Target className="h-5 w-5 text-green-600" />
+                {t({ en: 'Strategy Evaluation & Review (Phase 7)', ar: 'تقييم ومراجعة الاستراتيجية (المرحلة 7)' })}
               </CardTitle>
               <CardDescription>
-                {t({ en: 'Assess strategy performance, capture lessons, and generate case studies', ar: 'تقييم أداء الاستراتيجية وجمع الدروس وإنشاء دراسات الحالة' })}
+                {t({ en: 'Expert evaluation panels, ROI analysis, case studies, lessons learned capture, and impact assessment', ar: 'لجان تقييم الخبراء وتحليل العائد على الاستثمار ودراسات الحالة وجمع الدروس المستفادة وتقييم الأثر' })}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -925,11 +1175,11 @@ function StrategyHub() {
                   const Icon = tool.icon;
                   return (
                     <Link key={tool.path} to={tool.path}>
-                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                      <Card className="hover:border-green-400/50 transition-colors cursor-pointer h-full">
                         <CardContent className="pt-6">
                           <div className="flex items-start gap-4">
-                            <div className="p-3 rounded-lg bg-green-500/10">
-                              <Icon className="h-6 w-6 text-green-600" />
+                            <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900">
+                              <Icon className="h-6 w-6 text-green-600 dark:text-green-400" />
                             </div>
                             <div>
                               <h3 className="font-semibold">{t(tool.label)}</h3>
@@ -942,40 +1192,71 @@ function StrategyHub() {
                   );
                 })}
               </div>
+              <div className="mt-6 flex gap-3">
+                <Button asChild>
+                  <Link to="/strategy-review-page">
+                    <FileBarChart className="h-4 w-4 mr-2" />
+                    {t({ en: 'Open Evaluation Panel', ar: 'فتح لوحة التقييم' })}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/knowledge">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    {t({ en: 'Knowledge Repository', ar: 'مستودع المعرفة' })}
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Quick Actions', ar: 'إجراءات سريعة' })}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-3 flex-wrap">
-              <Button variant="outline" asChild>
-                <Link to="/strategy-review-page">
-                  <FileBarChart className="h-4 w-4 mr-2" />
-                  {t({ en: 'Review Progress', ar: 'مراجعة التقدم' })}
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/knowledge">
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  {t({ en: 'View Case Studies', ar: 'عرض دراسات الحالة' })}
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Evaluation Features */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-3">
+                  <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Expert Panels', ar: 'لجان الخبراء' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Multi-stakeholder evaluation with scoring criteria', ar: 'تقييم متعدد أصحاب المصلحة مع معايير التسجيل' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-3">
+                  <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'ROI Calculator', ar: 'حاسبة العائد' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Measure return on investment for strategic initiatives', ar: 'قياس العائد على الاستثمار للمبادرات الاستراتيجية' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center mb-3">
+                  <Lightbulb className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Lessons Learned', ar: 'الدروس المستفادة' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Capture and share organizational learnings', ar: 'جمع ومشاركة التعلم المؤسسي' })}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Recalibration Tab (Phase 8) */}
         <TabsContent value="recalibration" className="space-y-6">
-          <Card>
+          <Card className="border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950 dark:to-background">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-primary" />
-                {t({ en: 'Strategy Recalibration', ar: 'إعادة معايرة الاستراتيجية' })}
+                <Settings className="h-5 w-5 text-indigo-600" />
+                {t({ en: 'Strategy Recalibration (Phase 8)', ar: 'إعادة معايرة الاستراتيجية (المرحلة 8)' })}
               </CardTitle>
               <CardDescription>
-                {t({ en: 'Adjust strategies based on feedback, manage pivots, and initialize next cycles', ar: 'تعديل الاستراتيجيات بناءً على التعليقات وإدارة التحويلات وبدء الدورات التالية' })}
+                {t({ en: 'AI-powered feedback analysis, adjustment decision matrix, mid-cycle pivots, baseline recalibration, and next cycle initialization', ar: 'تحليل التعليقات بالذكاء الاصطناعي ومصفوفة قرار التعديل والتحويلات منتصف الدورة وإعادة معايرة الأساس وبدء الدورة التالية' })}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -984,11 +1265,11 @@ function StrategyHub() {
                   const Icon = tool.icon;
                   return (
                     <Link key={tool.path} to={tool.path}>
-                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                      <Card className="hover:border-indigo-400/50 transition-colors cursor-pointer h-full">
                         <CardContent className="pt-6">
                           <div className="flex items-start gap-4">
-                            <div className="p-3 rounded-lg bg-purple-500/10">
-                              <Icon className="h-6 w-6 text-purple-600" />
+                            <div className="p-3 rounded-lg bg-indigo-100 dark:bg-indigo-900">
+                              <Icon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                             </div>
                             <div>
                               <h3 className="font-semibold">{t(tool.label)}</h3>
@@ -1001,28 +1282,59 @@ function StrategyHub() {
                   );
                 })}
               </div>
+              <div className="mt-6 flex gap-3">
+                <Button asChild>
+                  <Link to="/strategy-recalibration-page">
+                    <Settings className="h-4 w-4 mr-2" />
+                    {t({ en: 'Open Recalibration Center', ar: 'فتح مركز إعادة المعايرة' })}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/strategic-plan-builder">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {t({ en: 'New Strategy Cycle', ar: 'دورة استراتيجية جديدة' })}
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t({ en: 'Recalibration Actions', ar: 'إجراءات إعادة المعايرة' })}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-3 flex-wrap">
-              <Button variant="outline" asChild>
-                <Link to="/strategy-review-page">
-                  <Settings className="h-4 w-4 mr-2" />
-                  {t({ en: 'Adjustment Wizard', ar: 'معالج التعديل' })}
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/strategic-plan-builder">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {t({ en: 'New Strategy Cycle', ar: 'دورة استراتيجية جديدة' })}
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Recalibration Features */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center mb-3">
+                  <Brain className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'AI Feedback Analysis', ar: 'تحليل التعليقات بالذكاء الاصطناعي' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Sentiment analysis and theme extraction from feedback', ar: 'تحليل المشاعر واستخراج المواضيع من التعليقات' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center mb-3">
+                  <Layers className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Decision Matrix', ar: 'مصفوفة القرار' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Data-driven adjustment recommendations', ar: 'توصيات تعديل مبنية على البيانات' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-3">
+                  <Sparkles className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Next Cycle Init', ar: 'بدء الدورة التالية' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Carry forward learnings to next planning cycle', ar: 'نقل التعلم إلى دورة التخطيط التالية' })}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* AI Tools Tab */}
