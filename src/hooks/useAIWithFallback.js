@@ -1,10 +1,10 @@
 /**
  * Hook for AI calls with graceful degradation
  * Handles rate limits, failures, and provides fallback behavior
- * @version 2.1.0
+ * @version 2.1.1
  */
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
