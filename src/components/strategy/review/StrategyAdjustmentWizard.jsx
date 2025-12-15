@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,9 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { 
   Settings, ChevronRight, ChevronLeft, Check, AlertTriangle,
-  Target, Calendar, Users, FileText, Bell, CheckCircle2
+  Target, Calendar, Users, FileText, Bell, CheckCircle2, Sparkles, Loader2
 } from 'lucide-react';
 import {
   Select,
@@ -28,13 +32,16 @@ const STEPS = [
 ];
 
 export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPlan, planId, onComplete }) {
-  // Support both prop naming conventions
   const activePlanId = strategicPlanId || planId;
   const { t, language } = useLanguage();
+  const queryClient = useQueryClient();
+  const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
   const [currentStep, setCurrentStep] = useState(0);
+  const [aiImpactAnalysis, setAiImpactAnalysis] = useState(null);
   const [adjustmentData, setAdjustmentData] = useState({
     elementType: '',
     elementId: '',
+    elementName: '',
     changeType: '',
     currentValue: '',
     newValue: '',
@@ -44,8 +51,164 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
     notifyStakeholders: true
   });
 
+  // Fetch objectives and KPIs for selection
+  const { data: objectives = [] } = useQuery({
+    queryKey: ['adjustment-objectives', activePlanId],
+    queryFn: async () => {
+      if (!activePlanId) return [];
+      const { data } = await supabase
+        .from('strategic_objectives')
+        .select('id, title_en, title_ar, target_value, current_value')
+        .eq('strategic_plan_id', activePlanId);
+      return data || [];
+    },
+    enabled: !!activePlanId
+  });
+
+  const { data: kpis = [] } = useQuery({
+    queryKey: ['adjustment-kpis', activePlanId],
+    queryFn: async () => {
+      if (!activePlanId) return [];
+      const { data } = await supabase
+        .from('strategy_kpis')
+        .select('id, name_en, name_ar, target_value, current_value, unit')
+        .eq('strategic_plan_id', activePlanId);
+      return data || [];
+    },
+    enabled: !!activePlanId
+  });
+
+  // Save adjustment mutation
+  const saveMutation = useMutation({
+    mutationFn: async (data) => {
+      const { data: user } = await supabase.auth.getUser();
+      
+      // Create approval request for the adjustment
+      const { error } = await supabase
+        .from('approval_requests')
+        .insert({
+          request_type: 'strategy_adjustment',
+          entity_type: data.elementType,
+          entity_id: data.elementId || null,
+          requester_email: user?.user?.email || 'system',
+          requester_notes: data.justification,
+          metadata: {
+            element_name: data.elementName,
+            change_type: data.changeType,
+            current_value: data.currentValue,
+            new_value: data.newValue,
+            impact_level: data.impactLevel,
+            strategic_plan_id: activePlanId,
+            ai_analysis: aiImpactAnalysis
+          }
+        });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['approval_requests']);
+      toast.success(t({ en: 'Adjustment submitted for approval', ar: 'تم إرسال التعديل للموافقة' }));
+      onComplete?.(adjustmentData);
+    },
+    onError: (error) => {
+      console.error('Save error:', error);
+      toast.error(t({ en: 'Failed to submit adjustment', ar: 'فشل في إرسال التعديل' }));
+    }
+  });
+
+  const handleAIJustification = async () => {
+    if (!adjustmentData.elementType || !adjustmentData.changeType) {
+      toast.error(t({ en: 'Please select element and change type first', ar: 'يرجى اختيار العنصر ونوع التغيير أولاً' }));
+      return;
+    }
+
+    try {
+      const result = await invokeAI({
+        system_prompt: 'You are a strategic planning expert. Help draft a professional justification for a strategy adjustment.',
+        prompt: `Draft a professional justification for this strategy adjustment:
+
+Element Type: ${adjustmentData.elementType}
+Element: ${adjustmentData.elementName || 'Not specified'}
+Change Type: ${adjustmentData.changeType}
+Current Value: ${adjustmentData.currentValue || 'Not specified'}
+New Value: ${adjustmentData.newValue || 'Not specified'}
+
+Provide a well-structured justification (2-3 paragraphs) that:
+1. Explains why this change is necessary
+2. Describes expected benefits
+3. Addresses potential risks`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            justification: { type: 'string' }
+          },
+          required: ['justification']
+        }
+      });
+
+      if (result.success && result.data?.response?.justification) {
+        setAdjustmentData(prev => ({ ...prev, justification: result.data.response.justification }));
+        toast.success(t({ en: 'AI justification generated', ar: 'تم إنشاء التبرير الذكي' }));
+      }
+    } catch (error) {
+      console.error('AI error:', error);
+      toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء الذكي' }));
+    }
+  };
+
+  const handleAIImpactAnalysis = async () => {
+    try {
+      const result = await invokeAI({
+        system_prompt: 'You are a strategic planning expert. Analyze the potential impact of a strategy adjustment.',
+        prompt: `Analyze the impact of this strategy adjustment:
+
+Element Type: ${adjustmentData.elementType}
+Element: ${adjustmentData.elementName || 'Not specified'}
+Change Type: ${adjustmentData.changeType}
+Current Value: ${adjustmentData.currentValue}
+New Value: ${adjustmentData.newValue}
+Justification: ${adjustmentData.justification}
+
+Provide:
+1. Affected entities (list of areas/teams impacted)
+2. Budget impact estimate
+3. Timeline impact
+4. Risk assessment
+5. Recommended impact level (low/medium/high)`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            affected_entities: { type: 'array', items: { type: 'string' } },
+            budget_impact: { type: 'string' },
+            timeline_impact: { type: 'string' },
+            risks: { type: 'array', items: { type: 'string' } },
+            recommended_level: { type: 'string', enum: ['low', 'medium', 'high'] }
+          },
+          required: ['affected_entities', 'budget_impact', 'timeline_impact', 'recommended_level']
+        }
+      });
+
+      if (result.success && result.data?.response) {
+        setAiImpactAnalysis(result.data.response);
+        setAdjustmentData(prev => ({ 
+          ...prev, 
+          impactLevel: result.data.response.recommended_level || 'medium' 
+        }));
+        toast.success(t({ en: 'AI impact analysis complete', ar: 'اكتمل تحليل الأثر الذكي' }));
+      }
+    } catch (error) {
+      console.error('AI error:', error);
+      toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل الذكي' }));
+    }
+  };
+
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
+      // Auto-trigger AI impact analysis when entering impact step
+      if (currentStep === 2 && !aiImpactAnalysis) {
+        handleAIImpactAnalysis();
+      }
       setCurrentStep(currentStep + 1);
     }
   };
@@ -57,8 +220,25 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
   };
 
   const handleComplete = () => {
-    // Submit adjustment
-    onComplete?.(adjustmentData);
+    saveMutation.mutate(adjustmentData);
+  };
+
+  const getElementOptions = () => {
+    if (adjustmentData.elementType === 'objective') {
+      return objectives.map(obj => ({
+        id: obj.id,
+        name: language === 'ar' && obj.title_ar ? obj.title_ar : obj.title_en,
+        currentValue: obj.current_value
+      }));
+    }
+    if (adjustmentData.elementType === 'kpi') {
+      return kpis.map(kpi => ({
+        id: kpi.id,
+        name: language === 'ar' && kpi.name_ar ? kpi.name_ar : kpi.name_en,
+        currentValue: `${kpi.current_value || 0} ${kpi.unit || ''}`
+      }));
+    }
+    return [];
   };
 
   const renderStepContent = () => {
@@ -70,7 +250,7 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
               <label className="text-sm font-medium">{t({ en: 'Element Type', ar: 'نوع العنصر' })}</label>
               <Select 
                 value={adjustmentData.elementType}
-                onValueChange={(value) => setAdjustmentData({ ...adjustmentData, elementType: value })}
+                onValueChange={(value) => setAdjustmentData({ ...adjustmentData, elementType: value, elementId: '', elementName: '', currentValue: '' })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t({ en: 'Select type', ar: 'اختر النوع' })} />
@@ -84,6 +264,34 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
                 </SelectContent>
               </Select>
             </div>
+            
+            {(adjustmentData.elementType === 'objective' || adjustmentData.elementType === 'kpi') && (
+              <div>
+                <label className="text-sm font-medium">{t({ en: 'Select Element', ar: 'اختر العنصر' })}</label>
+                <Select 
+                  value={adjustmentData.elementId}
+                  onValueChange={(value) => {
+                    const element = getElementOptions().find(e => e.id === value);
+                    setAdjustmentData({ 
+                      ...adjustmentData, 
+                      elementId: value, 
+                      elementName: element?.name || '',
+                      currentValue: element?.currentValue || ''
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t({ en: 'Select element', ar: 'اختر العنصر' })} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getElementOptions().map(opt => (
+                      <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             <div>
               <label className="text-sm font-medium">{t({ en: 'Change Type', ar: 'نوع التغيير' })}</label>
               <Select 
@@ -129,40 +337,66 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
       case 'justify':
         return (
           <div className="space-y-4">
-            <div>
+            <div className="flex justify-between items-center">
               <label className="text-sm font-medium">{t({ en: 'Justification', ar: 'التبرير' })}</label>
-              <Textarea 
-                value={adjustmentData.justification}
-                onChange={(e) => setAdjustmentData({ ...adjustmentData, justification: e.target.value })}
-                placeholder={t({ en: 'Explain why this adjustment is needed...', ar: 'اشرح لماذا هذا التعديل مطلوب...' })}
-                rows={4}
-              />
+              <Button variant="outline" size="sm" onClick={handleAIJustification} disabled={aiLoading}>
+                {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                {t({ en: 'AI Draft', ar: 'صياغة ذكية' })}
+              </Button>
             </div>
+            <Textarea 
+              value={adjustmentData.justification}
+              onChange={(e) => setAdjustmentData({ ...adjustmentData, justification: e.target.value })}
+              placeholder={t({ en: 'Explain why this adjustment is needed...', ar: 'اشرح لماذا هذا التعديل مطلوب...' })}
+              rows={6}
+            />
           </div>
         );
 
       case 'impact':
         return (
           <div className="space-y-4">
-            <Card className="bg-muted/50">
-              <CardContent className="pt-4">
-                <h4 className="font-medium mb-3">{t({ en: 'Estimated Impact', ar: 'الأثر المتوقع' })}</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">{t({ en: 'Downstream Entities', ar: 'الكيانات المتأثرة' })}</span>
-                    <Badge>5 {t({ en: 'entities', ar: 'كيانات' })}</Badge>
+            {aiImpactAnalysis ? (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="pt-4 space-y-4">
+                  <div className="flex items-center gap-2 text-primary font-medium">
+                    <Sparkles className="h-4 w-4" />
+                    {t({ en: 'AI Impact Analysis', ar: 'تحليل الأثر الذكي' })}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">{t({ en: 'Budget Impact', ar: 'أثر الميزانية' })}</span>
-                    <Badge variant="secondary">+12%</Badge>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">{t({ en: 'Affected Areas:', ar: 'المناطق المتأثرة:' })}</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {aiImpactAnalysis.affected_entities?.map((e, i) => (
+                          <Badge key={i} variant="secondary">{e}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">{t({ en: 'Budget Impact:', ar: 'أثر الميزانية:' })}</span>
+                      <Badge variant="outline" className="ml-2">{aiImpactAnalysis.budget_impact}</Badge>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">{t({ en: 'Timeline Impact:', ar: 'أثر الجدول:' })}</span>
+                      <Badge variant="outline" className="ml-2">{aiImpactAnalysis.timeline_impact}</Badge>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">{t({ en: 'Risks:', ar: 'المخاطر:' })}</span>
+                      <ul className="text-xs mt-1">
+                        {aiImpactAnalysis.risks?.map((r, i) => (
+                          <li key={i} className="text-amber-700">• {r}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">{t({ en: 'Timeline Impact', ar: 'أثر الجدول الزمني' })}</span>
-                    <Badge variant="outline">{t({ en: 'No change', ar: 'بدون تغيير' })}</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <Button variant="outline" onClick={handleAIImpactAnalysis} disabled={aiLoading} className="w-full">
+                {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                {t({ en: 'Run AI Impact Analysis', ar: 'تشغيل تحليل الأثر الذكي' })}
+              </Button>
+            )}
             <div>
               <label className="text-sm font-medium">{t({ en: 'Impact Level', ar: 'مستوى الأثر' })}</label>
               <Select 
@@ -189,7 +423,12 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
               {t({ en: 'Based on the impact level, the following approvers are required:', ar: 'بناءً على مستوى الأثر، المعتمدون التاليون مطلوبون:' })}
             </p>
             <div className="space-y-2">
-              {['Strategy Director', 'Deputy Minister', 'Innovation Committee'].map((approver, i) => (
+              {(adjustmentData.impactLevel === 'high' ? 
+                ['Strategy Director', 'Deputy Minister', 'Innovation Committee'] :
+                adjustmentData.impactLevel === 'medium' ?
+                ['Strategy Director', 'Department Head'] :
+                ['Strategy Director']
+              ).map((approver, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span>{approver}</span>
@@ -226,7 +465,7 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t({ en: 'Element:', ar: 'العنصر:' })}</span>
-                <span>{adjustmentData.elementType || '-'}</span>
+                <span>{adjustmentData.elementName || adjustmentData.elementType || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t({ en: 'Change:', ar: 'التغيير:' })}</span>
@@ -299,8 +538,8 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
           </Button>
           
           {currentStep === STEPS.length - 1 ? (
-            <Button onClick={handleComplete}>
-              <Check className="h-4 w-4 mr-2" />
+            <Button onClick={handleComplete} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
               {t({ en: 'Submit for Approval', ar: 'إرسال للموافقة' })}
             </Button>
           ) : (

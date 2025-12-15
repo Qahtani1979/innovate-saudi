@@ -4,6 +4,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
+import NoPlanGuard from '@/components/strategy/NoPlanGuard';
 import StrategyAdjustmentWizard from '@/components/strategy/review/StrategyAdjustmentWizard';
 import StrategyReprioritizer from '@/components/strategy/review/StrategyReprioritizer';
 import StrategyImpactAssessment from '@/components/strategy/review/StrategyImpactAssessment';
@@ -25,43 +26,45 @@ function StrategyReviewPage() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="adjustment" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            {t({ en: 'Adjustment Wizard', ar: 'معالج التعديل' })}
-          </TabsTrigger>
-          <TabsTrigger value="reprioritize" className="flex items-center gap-2">
-            <ArrowUpDown className="h-4 w-4" />
-            {t({ en: 'Reprioritizer', ar: 'إعادة الترتيب' })}
-          </TabsTrigger>
-          <TabsTrigger value="impact" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            {t({ en: 'Impact Assessment', ar: 'تقييم الأثر' })}
-          </TabsTrigger>
-        </TabsList>
+      <NoPlanGuard>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="adjustment" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              {t({ en: 'Adjustment Wizard', ar: 'معالج التعديل' })}
+            </TabsTrigger>
+            <TabsTrigger value="reprioritize" className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4" />
+              {t({ en: 'Reprioritizer', ar: 'إعادة الترتيب' })}
+            </TabsTrigger>
+            <TabsTrigger value="impact" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              {t({ en: 'Impact Assessment', ar: 'تقييم الأثر' })}
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="adjustment">
-          <StrategyAdjustmentWizard 
-            strategicPlanId={activePlanId}
-            strategicPlan={activePlan}
-          />
-        </TabsContent>
+          <TabsContent value="adjustment">
+            <StrategyAdjustmentWizard 
+              strategicPlanId={activePlanId}
+              strategicPlan={activePlan}
+            />
+          </TabsContent>
 
-        <TabsContent value="reprioritize">
-          <StrategyReprioritizer 
-            strategicPlanId={activePlanId}
-            strategicPlan={activePlan}
-          />
-        </TabsContent>
+          <TabsContent value="reprioritize">
+            <StrategyReprioritizer 
+              strategicPlanId={activePlanId}
+              strategicPlan={activePlan}
+            />
+          </TabsContent>
 
-        <TabsContent value="impact">
-          <StrategyImpactAssessment 
-            strategicPlanId={activePlanId}
-            strategicPlan={activePlan}
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="impact">
+            <StrategyImpactAssessment 
+              strategicPlanId={activePlanId}
+              strategicPlan={activePlan}
+            />
+          </TabsContent>
+        </Tabs>
+      </NoPlanGuard>
     </div>
   );
 }
