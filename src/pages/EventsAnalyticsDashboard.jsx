@@ -113,8 +113,8 @@ Format each with title and description in both English and Arabic.`,
       }
     });
     
-    if (response.success && response.data?.response) {
-      setAiInsights(response.data.response);
+    if (response.success && response.data) {
+      setAiInsights(response.data);
     }
   };
 

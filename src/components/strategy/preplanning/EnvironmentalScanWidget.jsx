@@ -212,8 +212,8 @@ For each factor provide:
         }
       });
 
-      if (result.success && result.data?.response?.factors) {
-        const aiFactors = result.data.response.factors;
+      if (result.success && result.data?.factors) {
+        const aiFactors = result.data.factors;
         
         // Save each factor to database
         for (const factor of aiFactors) {

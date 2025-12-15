@@ -147,8 +147,8 @@ Provide a well-structured justification (2-3 paragraphs) that:
         }
       });
 
-      if (result.success && result.data?.response?.justification) {
-        setAdjustmentData(prev => ({ ...prev, justification: result.data.response.justification }));
+      if (result.success && result.data?.justification) {
+        setAdjustmentData(prev => ({ ...prev, justification: result.data.justification }));
         toast.success(t({ en: 'AI justification generated', ar: 'تم إنشاء التبرير الذكي' }));
       }
     } catch (error) {
@@ -189,11 +189,11 @@ Provide:
         }
       });
 
-      if (result.success && result.data?.response) {
-        setAiImpactAnalysis(result.data.response);
+      if (result.success && result.data) {
+        setAiImpactAnalysis(result.data);
         setAdjustmentData(prev => ({ 
           ...prev, 
-          impactLevel: result.data.response.recommended_level || 'medium' 
+          impactLevel: result.data.recommended_level || 'medium' 
         }));
         toast.success(t({ en: 'AI impact analysis complete', ar: 'اكتمل تحليل الأثر الذكي' }));
       }

@@ -436,45 +436,43 @@ Create actionable initiatives with timelines and owners.`
         system_prompt: 'You are an expert in Saudi Arabian strategic planning and Vision 2030. Generate professional content in both English and Arabic. Use formal language appropriate for government documents.'
       });
       
-      if (success && data?.response) {
-        const response = data.response;
-        
+      if (success && data) {
         // Merge AI response into wizard data based on step
         const updates = {};
         if (stepKey === 'vision') {
-          if (response.vision_en) updates.vision_en = response.vision_en;
-          if (response.vision_ar) updates.vision_ar = response.vision_ar;
-          if (response.mission_en) updates.mission_en = response.mission_en;
-          if (response.mission_ar) updates.mission_ar = response.mission_ar;
-          if (response.core_values) updates.core_values = response.core_values;
-        } else if (stepKey === 'stakeholders' && response.stakeholders) {
-          updates.stakeholders = response.stakeholders;
+          if (data.vision_en) updates.vision_en = data.vision_en;
+          if (data.vision_ar) updates.vision_ar = data.vision_ar;
+          if (data.mission_en) updates.mission_en = data.mission_en;
+          if (data.mission_ar) updates.mission_ar = data.mission_ar;
+          if (data.core_values) updates.core_values = data.core_values;
+        } else if (stepKey === 'stakeholders' && data.stakeholders) {
+          updates.stakeholders = data.stakeholders;
         } else if (stepKey === 'pestel') {
           updates.pestel = {
-            political: response.political || [],
-            economic: response.economic || [],
-            social: response.social || [],
-            technological: response.technological || [],
-            environmental: response.environmental || [],
-            legal: response.legal || []
+            political: data.political || [],
+            economic: data.economic || [],
+            social: data.social || [],
+            technological: data.technological || [],
+            environmental: data.environmental || [],
+            legal: data.legal || []
           };
         } else if (stepKey === 'swot') {
           updates.swot = {
-            strengths: response.strengths || [],
-            weaknesses: response.weaknesses || [],
-            opportunities: response.opportunities || [],
-            threats: response.threats || []
+            strengths: data.strengths || [],
+            weaknesses: data.weaknesses || [],
+            opportunities: data.opportunities || [],
+            threats: data.threats || []
           };
         } else if (stepKey === 'scenarios') {
-          updates.scenarios = response;
-        } else if (stepKey === 'risks' && response.risks) {
-          updates.risks = response.risks;
-        } else if (stepKey === 'objectives' && response.objectives) {
-          updates.objectives = response.objectives;
-        } else if (stepKey === 'kpis' && response.kpis) {
-          updates.kpis = response.kpis;
-        } else if (stepKey === 'actions' && response.action_plans) {
-          updates.action_plans = response.action_plans;
+          updates.scenarios = data;
+        } else if (stepKey === 'risks' && data.risks) {
+          updates.risks = data.risks;
+        } else if (stepKey === 'objectives' && data.objectives) {
+          updates.objectives = data.objectives;
+        } else if (stepKey === 'kpis' && data.kpis) {
+          updates.kpis = data.kpis;
+        } else if (stepKey === 'actions' && data.action_plans) {
+          updates.action_plans = data.action_plans;
         }
         
         if (Object.keys(updates).length > 0) {
