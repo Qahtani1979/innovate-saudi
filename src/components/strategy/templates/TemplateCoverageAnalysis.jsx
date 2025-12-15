@@ -446,23 +446,23 @@ const TemplateCoverageAnalysis = ({ templates = [], onRefresh }) => {
 
       {/* Analysis Tabs */}
       <Tabs value={analysisTab} onValueChange={setAnalysisTab}>
-        <div className="flex items-center justify-between mb-2">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
-            <TabsTrigger value="coverage" className="text-xs md:text-sm">
-              <Target className="h-4 w-4 mr-1" />
-              {t({ en: 'Coverage Matrix', ar: 'مصفوفة التغطية' })}
+        <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
+          <TabsList className="w-full h-auto flex-wrap justify-start gap-1 bg-muted/50 p-1">
+            <TabsTrigger value="coverage" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Target className="h-4 w-4" />
+              <span>{t({ en: 'Coverage Matrix', ar: 'مصفوفة التغطية' })}</span>
             </TabsTrigger>
-            <TabsTrigger value="gaps" className="text-xs md:text-sm">
-              <AlertTriangle className="h-4 w-4 mr-1" />
-              {t({ en: 'Gap Analysis', ar: 'تحليل الفجوات' })}
+            <TabsTrigger value="gaps" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <AlertTriangle className="h-4 w-4" />
+              <span>{t({ en: 'Gap Analysis', ar: 'تحليل الفجوات' })}</span>
             </TabsTrigger>
-            <TabsTrigger value="recommendations" className="text-xs md:text-sm">
-              <Sparkles className="h-4 w-4 mr-1" />
-              {t({ en: 'AI Recommendations', ar: 'توصيات الذكاء الاصطناعي' })}
+            <TabsTrigger value="recommendations" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Sparkles className="h-4 w-4" />
+              <span>{t({ en: 'AI Recommendations', ar: 'توصيات الذكاء الاصطناعي' })}</span>
             </TabsTrigger>
-            <TabsTrigger value="distribution" className="text-xs md:text-sm">
-              <BarChart3 className="h-4 w-4 mr-1" />
-              {t({ en: 'Distribution', ar: 'التوزيع' })}
+            <TabsTrigger value="distribution" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <BarChart3 className="h-4 w-4" />
+              <span>{t({ en: 'Distribution', ar: 'التوزيع' })}</span>
             </TabsTrigger>
           </TabsList>
           <Button 
@@ -470,15 +470,26 @@ const TemplateCoverageAnalysis = ({ templates = [], onRefresh }) => {
             size="sm" 
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="ml-2"
+            className="shrink-0"
           >
             <RefreshCcw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {t({ en: 'Refresh', ar: 'تحديث' })}
+            {t({ en: 'Refresh All', ar: 'تحديث الكل' })}
           </Button>
         </div>
 
         {/* Coverage Matrix */}
         <TabsContent value="coverage" className="mt-4 space-y-4">
+          <div className="flex justify-end mb-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCcw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {t({ en: 'Refresh Coverage', ar: 'تحديث التغطية' })}
+            </Button>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle className="text-base">{t({ en: 'MoMAH Service Domains', ar: 'مجالات خدمات وزارة البلديات' })}</CardTitle>
@@ -518,6 +529,17 @@ const TemplateCoverageAnalysis = ({ templates = [], onRefresh }) => {
 
         {/* Gap Analysis */}
         <TabsContent value="gaps" className="mt-4 space-y-4">
+          <div className="flex justify-end mb-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCcw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {t({ en: 'Refresh Gaps', ar: 'تحديث الفجوات' })}
+            </Button>
+          </div>
           {gaps.total === 0 ? (
             <Card className="border-green-200 bg-green-50 dark:bg-green-950">
               <CardContent className="pt-6 text-center">
@@ -694,27 +716,64 @@ const TemplateCoverageAnalysis = ({ templates = [], onRefresh }) => {
 
         {/* Distribution */}
         <TabsContent value="distribution" className="mt-4 space-y-4">
+          <div className="flex justify-end mb-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCcw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {t({ en: 'Refresh Distribution', ar: 'تحديث التوزيع' })}
+            </Button>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle className="text-base">{t({ en: 'Templates by Type', ar: 'القوالب حسب النوع' })}</CardTitle>
+              <CardDescription>
+                {t({ en: 'Distribution of templates across different strategy types', ar: 'توزيع القوالب عبر أنواع الاستراتيجيات المختلفة' })}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {STRATEGY_TEMPLATE_TYPES.map(type => {
-                  const count = coverageAnalysis.templateTypes[type.id]?.count || 0;
+                  const typeData = coverageAnalysis.templateTypes[type.id];
+                  const count = typeData?.count || 0;
                   const percentage = templates.length > 0 ? Math.round((count / templates.length) * 100) : 0;
                   const TypeIcon = type.icon;
+                  const templateNames = typeData?.templates?.slice(0, 3).map(t => t.name_en?.substring(0, 25)) || [];
                   
                   return (
-                    <div key={type.id} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
+                    <div key={type.id} className="p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <TypeIcon className="h-4 w-4" />
-                          <span>{language === 'ar' ? type.name_ar : type.name_en}</span>
+                          <div className={`p-2 rounded-lg ${type.color || 'bg-muted'}`}>
+                            <TypeIcon className="h-4 w-4 text-white" />
+                          </div>
+                          <div>
+                            <span className="font-medium">{language === 'ar' ? type.name_ar : type.name_en}</span>
+                            <p className="text-xs text-muted-foreground">{type.description_en?.substring(0, 50) || ''}</p>
+                          </div>
                         </div>
-                        <span className="font-medium">{count} ({percentage}%)</span>
+                        <Badge variant={count > 0 ? 'default' : 'secondary'}>
+                          {count} {t({ en: 'templates', ar: 'قوالب' })} ({percentage}%)
+                        </Badge>
                       </div>
-                      <Progress value={percentage} className="h-2" />
+                      <Progress value={percentage} className="h-2 mb-2" />
+                      {templateNames.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {templateNames.map((name, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {name}...
+                            </Badge>
+                          ))}
+                          {count > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{count - 3} {t({ en: 'more', ar: 'المزيد' })}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

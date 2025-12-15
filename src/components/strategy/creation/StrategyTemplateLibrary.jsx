@@ -37,7 +37,8 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
     isCreating,
     isDeleting,
     rateTemplate,
-    cloneTemplate
+    cloneTemplate,
+    refetchTemplates
   } = useStrategyTemplates();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -225,35 +226,30 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="coverage" className="flex items-center gap-2">
+        <TabsList className="w-full h-auto flex-wrap justify-start gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="coverage" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Coverage Analysis', ar: 'تحليل التغطية' })}</span>
-            <span className="sm:hidden">{t({ en: 'Coverage', ar: 'التغطية' })}</span>
+            <span>{t({ en: 'Coverage Analysis', ar: 'تحليل التغطية' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="browse" className="flex items-center gap-2">
+          <TabsTrigger value="browse" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Browse Templates', ar: 'تصفح القوالب' })}</span>
-            <span className="sm:hidden">{t({ en: 'Browse', ar: 'تصفح' })}</span>
+            <span>{t({ en: 'Browse Templates', ar: 'تصفح القوالب' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="my-templates" className="flex items-center gap-2">
+          <TabsTrigger value="my-templates" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Star className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'My Templates', ar: 'قوالبي' })}</span>
-            <span className="sm:hidden">{t({ en: 'Mine', ar: 'قوالبي' })}</span>
+            <span>{t({ en: 'My Templates', ar: 'قوالبي' })}</span>
             {myTemplates.length > 0 && (
-              <Badge variant="secondary" className="ml-1">{myTemplates.length}</Badge>
+              <Badge variant="secondary" className="h-5 px-1.5 text-xs">{myTemplates.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="create" className="flex items-center gap-2">
+          <TabsTrigger value="create" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">{t({ en: 'Create Template', ar: 'إنشاء قالب' })}</span>
-            <span className="sm:hidden">{t({ en: 'Create', ar: 'إنشاء' })}</span>
+            <span>{t({ en: 'Create Template', ar: 'إنشاء قالب' })}</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* Coverage Analysis Tab */}
         <TabsContent value="coverage" className="mt-4">
-          <TemplateCoverageAnalysis templates={allTemplates} />
+          <TemplateCoverageAnalysis templates={allTemplates} onRefresh={refetchTemplates} />
         </TabsContent>
 
         {/* Browse Tab */}
