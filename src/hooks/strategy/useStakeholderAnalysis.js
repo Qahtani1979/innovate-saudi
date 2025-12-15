@@ -1,10 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 
+// Safe hook to get user email without throwing if outside AuthProvider
+const useUserEmail = () => {
+  const [email, setEmail] = useState(null);
+  
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setEmail(user?.email || null);
+    };
+    getUser();
+  }, []);
+  
+  return email;
+};
+
 export function useStakeholderAnalysis(strategicPlanId) {
-  const { user } = useAuth();
+  const userEmail = useUserEmail();
   const [stakeholders, setStakeholders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,7 +52,7 @@ export function useStakeholderAnalysis(strategicPlanId) {
 
   // Save stakeholder to database
   const saveStakeholder = useCallback(async (stakeholder) => {
-    if (!strategicPlanId || !user?.email) {
+    if (!strategicPlanId || !userEmail) {
       toast.error('Please log in to save');
       return false;
     }
@@ -56,7 +70,7 @@ export function useStakeholderAnalysis(strategicPlanId) {
         expectations: stakeholder.expectations,
         engagement_strategy: stakeholder.engagement_strategy,
         contact_info: stakeholder.contact_info,
-        created_by_email: user.email,
+        created_by_email: userEmail,
         updated_at: new Date().toISOString()
       };
 
@@ -97,7 +111,7 @@ export function useStakeholderAnalysis(strategicPlanId) {
     } finally {
       setSaving(false);
     }
-  }, [strategicPlanId, user]);
+  }, [strategicPlanId, userEmail]);
 
   // Delete stakeholder (soft delete)
   const deleteStakeholder = useCallback(async (id) => {

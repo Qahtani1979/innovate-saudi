@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -40,6 +41,7 @@ import {
 const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
+  const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
   
   // Database integration hook
   const { 
@@ -170,31 +172,92 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
 
   const handleAIGenerate = async () => {
     setIsGenerating(true);
-    // Simulate AI generation
-    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    const aiFactors = [
-      {
-        id: `ai-${Date.now()}`,
-        category: 'technological',
-        title_en: 'Emerging Smart City Standards',
-        title_ar: 'معايير المدن الذكية الناشئة',
-        description_en: 'New international standards for smart city interoperability being adopted',
-        description_ar: 'يتم اعتماد معايير دولية جديدة للتشغيل البيني للمدن الذكية',
-        impact_type: 'opportunity',
-        impact_level: 'medium',
-        trend: 'increasing',
-        source: 'AI Analysis',
-        date_identified: new Date().toISOString().split('T')[0]
+    try {
+      const result = await invokeAI({
+        system_prompt: `You are a strategic planning expert. Generate a comprehensive PESTLE analysis with environmental factors covering all 6 categories: Political, Economic, Social, Technological, Legal, and Environmental.`,
+        prompt: `Generate environmental factors for a PESTLE analysis for a municipal strategic plan. Provide 1-2 factors for EACH of the 6 categories (political, economic, social, technological, legal, environmental). Total should be 6-12 factors covering all categories.
+
+For each factor provide:
+- category: one of "political", "economic", "social", "technological", "legal", "environmental"
+- title_en: English title
+- title_ar: Arabic title  
+- description_en: English description
+- description_ar: Arabic description
+- impact_type: "opportunity" or "threat"
+- impact_level: "high", "medium", or "low"
+- trend: "increasing", "stable", or "decreasing"`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            factors: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  category: { type: 'string', enum: ['political', 'economic', 'social', 'technological', 'legal', 'environmental'] },
+                  title_en: { type: 'string' },
+                  title_ar: { type: 'string' },
+                  description_en: { type: 'string' },
+                  description_ar: { type: 'string' },
+                  impact_type: { type: 'string', enum: ['opportunity', 'threat'] },
+                  impact_level: { type: 'string', enum: ['high', 'medium', 'low'] },
+                  trend: { type: 'string', enum: ['increasing', 'stable', 'decreasing'] }
+                },
+                required: ['category', 'title_en', 'impact_type', 'impact_level']
+              }
+            }
+          },
+          required: ['factors']
+        }
+      });
+
+      if (result.success && result.data?.response?.factors) {
+        const aiFactors = result.data.response.factors;
+        
+        // Save each factor to database
+        for (const factor of aiFactors) {
+          const newFactor = {
+            id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            category: factor.category,
+            title_en: factor.title_en,
+            title_ar: factor.title_ar || '',
+            description_en: factor.description_en || '',
+            description_ar: factor.description_ar || '',
+            impact_type: factor.impact_type,
+            impact_level: factor.impact_level,
+            trend: factor.trend || 'stable',
+            source: 'AI Analysis',
+            date_identified: new Date().toISOString().split('T')[0]
+          };
+          
+          const saved = await saveToDb(newFactor);
+          if (saved) {
+            setFactors(prev => [...prev, saved]);
+          }
+        }
+        
+        toast({
+          title: t({ en: 'AI Analysis Complete', ar: 'اكتمل تحليل الذكاء الاصطناعي' }),
+          description: t({ en: `${aiFactors.length} environmental factors identified across all PESTLE categories.`, ar: `تم تحديد ${aiFactors.length} عوامل بيئية عبر جميع فئات PESTLE.` })
+        });
+      } else {
+        toast({
+          title: t({ en: 'AI Analysis Failed', ar: 'فشل التحليل' }),
+          description: t({ en: 'Unable to generate factors. Please try again.', ar: 'تعذر إنشاء العوامل. يرجى المحاولة مرة أخرى.' }),
+          variant: 'destructive'
+        });
       }
-    ];
-    
-    setFactors(prev => [...prev, ...aiFactors]);
-    setIsGenerating(false);
-    toast({
-      title: t({ en: 'AI Analysis Complete', ar: 'اكتمل تحليل الذكاء الاصطناعي' }),
-      description: t({ en: 'New environmental factors identified.', ar: 'تم تحديد عوامل بيئية جديدة.' })
-    });
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast({
+        title: t({ en: 'Error', ar: 'خطأ' }),
+        description: t({ en: 'An error occurred during AI analysis.', ar: 'حدث خطأ أثناء تحليل الذكاء الاصطناعي.' }),
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const filteredFactors = factors.filter(f => {

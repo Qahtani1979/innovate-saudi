@@ -1,10 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 
+// Safe hook to get user email without throwing if outside AuthProvider
+const useUserEmail = () => {
+  const [email, setEmail] = useState(null);
+  
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setEmail(user?.email || null);
+    };
+    getUser();
+  }, []);
+  
+  return email;
+};
+
 export function useStrategyInputs(strategicPlanId) {
-  const { user } = useAuth();
+  const userEmail = useUserEmail();
   const [inputs, setInputs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,7 +66,7 @@ export function useStrategyInputs(strategicPlanId) {
 
   // Save input to database
   const saveInput = useCallback(async (input) => {
-    if (!strategicPlanId || !user?.email) {
+    if (!strategicPlanId || !userEmail) {
       toast.error('Please log in to save');
       return false;
     }
@@ -68,7 +82,7 @@ export function useStrategyInputs(strategicPlanId) {
         sentiment: input.sentiment,
         priority_votes: input.priority_votes || 0,
         ai_extracted_themes: input.ai_extracted_themes || [],
-        created_by_email: user.email,
+        created_by_email: userEmail,
         updated_at: new Date().toISOString()
       };
 
@@ -121,7 +135,7 @@ export function useStrategyInputs(strategicPlanId) {
     } finally {
       setSaving(false);
     }
-  }, [strategicPlanId, user]);
+  }, [strategicPlanId, userEmail]);
 
   // Vote on input
   const voteOnInput = useCallback(async (id, direction) => {

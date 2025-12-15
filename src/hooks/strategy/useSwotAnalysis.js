@@ -1,10 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 
+// Safe hook to get user email without throwing if outside AuthProvider
+const useUserEmail = () => {
+  const [email, setEmail] = useState(null);
+  
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setEmail(user?.email || null);
+    };
+    getUser();
+  }, []);
+  
+  return email;
+};
+
 export function useSwotAnalysis(strategicPlanId) {
-  const { user } = useAuth();
+  const userEmail = useUserEmail();
   const [swotData, setSwotData] = useState({
     strengths: [],
     weaknesses: [],
@@ -78,7 +92,7 @@ export function useSwotAnalysis(strategicPlanId) {
 
   // Save single SWOT item to database
   const saveSwotItem = useCallback(async (quadrant, item) => {
-    if (!strategicPlanId || !user?.email) {
+    if (!strategicPlanId || !userEmail) {
       toast.error('Please log in to save');
       return false;
     }
@@ -95,7 +109,7 @@ export function useSwotAnalysis(strategicPlanId) {
         impact_level: item.impact_level,
         priority: item.priority,
         source: item.source,
-        created_by_email: user.email,
+        created_by_email: userEmail,
         updated_at: new Date().toISOString()
       };
 
@@ -149,7 +163,7 @@ export function useSwotAnalysis(strategicPlanId) {
     } finally {
       setSaving(false);
     }
-  }, [strategicPlanId, user]);
+  }, [strategicPlanId, userEmail]);
 
   // Delete SWOT item
   const deleteSwotItem = useCallback(async (quadrant, id) => {
@@ -180,7 +194,7 @@ export function useSwotAnalysis(strategicPlanId) {
 
   // Save multiple items at once (for bulk operations)
   const saveSwotAnalysis = useCallback(async (data) => {
-    if (!strategicPlanId || !user?.email) {
+    if (!strategicPlanId || !userEmail) {
       toast.error('Please log in to save');
       return false;
     }
@@ -205,7 +219,7 @@ export function useSwotAnalysis(strategicPlanId) {
     } finally {
       setSaving(false);
     }
-  }, [strategicPlanId, user, saveSwotItem]);
+  }, [strategicPlanId, userEmail, saveSwotItem]);
 
   return {
     swotData,
