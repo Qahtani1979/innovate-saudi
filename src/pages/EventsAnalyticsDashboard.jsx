@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,9 @@ import {
   DollarSign,
   Target,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -42,11 +44,16 @@ import {
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function EventsAnalyticsDashboard() {
   const { t, language, isRTL } = useLanguage();
   const [timeRange, setTimeRange] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+  const [aiInsights, setAiInsights] = useState(null);
+  
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   // Fetch all events
   const { data: events = [], isLoading } = useQuery({
@@ -74,6 +81,49 @@ function EventsAnalyticsDashboard() {
       return data || [];
     }
   });
+
+  // Generate AI insights
+  const generateInsights = async () => {
+    if (!isAvailable || events.length === 0) return;
+    
+    const response = await invokeAI({
+      prompt: `Analyze event data for a Saudi municipal innovation platform:
+
+Events summary:
+- Total events: ${events.length}
+- Event types: ${[...new Set(events.map(e => e.event_type))].join(', ')}
+- Completed: ${events.filter(e => e.status === 'completed').length}
+- Upcoming: ${events.filter(e => new Date(e.start_date) > new Date()).length}
+
+Registrations: ${registrations.length} total, ${registrations.filter(r => r.attendance_status === 'attended').length} attended
+
+Provide 3 actionable insights about:
+1. Optimal timing for events
+2. Popular/successful event types  
+3. A recommendation for improvement
+
+Format each with title and description in both English and Arabic.`,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          optimal_timing: { type: 'object', properties: { title_en: { type: 'string' }, title_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } },
+          popular_types: { type: 'object', properties: { title_en: { type: 'string' }, title_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } },
+          recommendation: { type: 'object', properties: { title_en: { type: 'string' }, title_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } }
+        }
+      }
+    });
+    
+    if (response.success && response.data?.response) {
+      setAiInsights(response.data.response);
+    }
+  };
+
+  // Auto-generate insights when data is loaded
+  useEffect(() => {
+    if (!aiInsights && isAvailable && events.length > 0 && registrations.length >= 0) {
+      generateInsights();
+    }
+  }, [events.length, registrations.length, isAvailable]);
 
   // Filter events by time range
   const filteredEvents = events.filter(event => {
@@ -422,50 +472,64 @@ function EventsAnalyticsDashboard() {
         </Card>
       </div>
 
-      {/* AI Insights Placeholder */}
+      {/* AI Insights */}
       <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-purple-700">
-            <Sparkles className="h-5 w-5" />
-            {t({ en: 'AI-Powered Insights', ar: 'رؤى مدعومة بالذكاء الاصطناعي' })}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-purple-700">
+              <Sparkles className="h-5 w-5" />
+              {t({ en: 'AI-Powered Insights', ar: 'رؤى مدعومة بالذكاء الاصطناعي' })}
+            </CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={generateInsights}
+              disabled={aiLoading || !isAvailable}
+            >
+              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              <span className={isRTL ? 'mr-2' : 'ml-2'}>{t({ en: 'Refresh', ar: 'تحديث' })}</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-white rounded-lg border border-purple-100">
-              <h4 className="font-semibold text-purple-700 mb-2">
-                {t({ en: 'Optimal Timing', ar: 'التوقيت الأمثل' })}
-              </h4>
-              <p className="text-sm text-slate-600">
-                {t({ 
-                  en: 'Based on historical data, Tuesday-Wednesday events at 10-11 AM have highest attendance',
-                  ar: 'بناءً على البيانات التاريخية، فعاليات الثلاثاء-الأربعاء في 10-11 صباحاً لديها أعلى حضور'
-                })}
-              </p>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          
+          {aiLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
             </div>
-            <div className="p-4 bg-white rounded-lg border border-purple-100">
-              <h4 className="font-semibold text-purple-700 mb-2">
-                {t({ en: 'Popular Types', ar: 'الأنواع الشائعة' })}
-              </h4>
-              <p className="text-sm text-slate-600">
-                {t({ 
-                  en: 'Workshops and training sessions show 23% higher engagement than webinars',
-                  ar: 'ورش العمل والدورات التدريبية تظهر تفاعلاً أعلى بنسبة 23% من الندوات الإلكترونية'
-                })}
-              </p>
+          ) : aiInsights ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-white rounded-lg border border-purple-100">
+                <h4 className="font-semibold text-purple-700 mb-2">
+                  {language === 'ar' ? aiInsights.optimal_timing?.title_ar : aiInsights.optimal_timing?.title_en}
+                </h4>
+                <p className="text-sm text-slate-600">
+                  {language === 'ar' ? aiInsights.optimal_timing?.description_ar : aiInsights.optimal_timing?.description_en}
+                </p>
+              </div>
+              <div className="p-4 bg-white rounded-lg border border-purple-100">
+                <h4 className="font-semibold text-purple-700 mb-2">
+                  {language === 'ar' ? aiInsights.popular_types?.title_ar : aiInsights.popular_types?.title_en}
+                </h4>
+                <p className="text-sm text-slate-600">
+                  {language === 'ar' ? aiInsights.popular_types?.description_ar : aiInsights.popular_types?.description_en}
+                </p>
+              </div>
+              <div className="p-4 bg-white rounded-lg border border-purple-100">
+                <h4 className="font-semibold text-purple-700 mb-2">
+                  {language === 'ar' ? aiInsights.recommendation?.title_ar : aiInsights.recommendation?.title_en}
+                </h4>
+                <p className="text-sm text-slate-600">
+                  {language === 'ar' ? aiInsights.recommendation?.description_ar : aiInsights.recommendation?.description_en}
+                </p>
+              </div>
             </div>
-            <div className="p-4 bg-white rounded-lg border border-purple-100">
-              <h4 className="font-semibold text-purple-700 mb-2">
-                {t({ en: 'Recommendation', ar: 'توصية' })}
-              </h4>
-              <p className="text-sm text-slate-600">
-                {t({ 
-                  en: 'Consider hybrid events - they show 35% higher registration rates',
-                  ar: 'فكر في الفعاليات الهجينة - تظهر معدلات تسجيل أعلى بنسبة 35%'
-                })}
-              </p>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              {t({ en: 'Click Refresh to generate AI insights', ar: 'انقر على تحديث لإنشاء رؤى الذكاء الاصطناعي' })}
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

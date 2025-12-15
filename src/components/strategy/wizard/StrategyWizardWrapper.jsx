@@ -16,6 +16,7 @@ import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 import { useAutoSaveDraft } from '@/hooks/strategy/useAutoSaveDraft';
 import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
 import { useWizardValidation } from '@/hooks/strategy/useWizardValidation';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';
@@ -69,6 +70,12 @@ export default function StrategyWizardWrapper() {
 
   // Validation hook - pass t function to avoid nested context issues
   const { validateStep, hasStepData, calculateProgress } = useWizardValidation(wizardData, t);
+
+  // AI generation hook
+  const { invokeAI, isLoading: aiLoading, isAvailable: aiAvailable } = useAIWithFallback({
+    showToasts: true,
+    fallbackData: null
+  });
 
   // Auto-save hook
   const {
@@ -271,13 +278,216 @@ export default function StrategyWizardWrapper() {
     }
   });
 
-  // AI generation placeholder
+  // AI generation for each step
   const generateForStep = async (step) => {
+    if (!aiAvailable) {
+      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
+      return;
+    }
+    
     setGeneratingStep(step);
-    setTimeout(() => {
+    
+    const stepConfig = WIZARD_STEPS.find(s => s.num === step);
+    const stepKey = stepConfig?.key || '';
+    
+    // Build context from existing data
+    const context = {
+      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
+      vision: wizardData.vision_en || wizardData.vision_ar || '',
+      mission: wizardData.mission_en || wizardData.mission_ar || '',
+      sectors: wizardData.target_sectors || [],
+      themes: wizardData.strategic_themes || [],
+      objectives: wizardData.objectives || []
+    };
+    
+    const prompts = {
+      vision: `Generate vision and mission statements for a Saudi municipal strategic plan.
+Plan: ${context.planName}
+Sectors: ${context.sectors.join(', ')}
+Themes: ${context.themes.join(', ')}
+
+Provide in both English and Arabic.`,
+      stakeholders: `Identify key stakeholders for this Saudi municipal strategic plan:
+Plan: ${context.planName}
+Vision: ${context.vision}
+Sectors: ${context.sectors.join(', ')}
+
+List stakeholders with their power level (high/medium/low) and interest level.`,
+      pestel: `Conduct PESTEL analysis for this Saudi municipal strategy:
+Plan: ${context.planName}
+Vision: ${context.vision}
+Sectors: ${context.sectors.join(', ')}
+
+Analyze Political, Economic, Social, Technological, Environmental, and Legal factors relevant to Saudi Arabia and Vision 2030.`,
+      swot: `Conduct SWOT analysis for this Saudi municipal strategic plan:
+Plan: ${context.planName}
+Vision: ${context.vision}
+Sectors: ${context.sectors.join(', ')}
+
+Identify Strengths, Weaknesses, Opportunities, and Threats.`,
+      scenarios: `Create scenario planning for this Saudi strategic plan:
+Plan: ${context.planName}
+Vision: ${context.vision}
+
+Provide Best Case, Worst Case, and Most Likely scenarios with assumptions and outcomes.`,
+      risks: `Identify risks for this Saudi municipal strategic plan:
+Plan: ${context.planName}
+Vision: ${context.vision}
+Sectors: ${context.sectors.join(', ')}
+
+List key risks with category, likelihood, impact, and mitigation strategies.`,
+      objectives: `Generate strategic objectives for this Saudi municipal plan:
+Plan: ${context.planName}
+Vision: ${context.vision}
+Mission: ${context.mission}
+Themes: ${context.themes.join(', ')}
+
+Create SMART objectives aligned with Vision 2030.`,
+      kpis: `Generate KPIs for this Saudi strategic plan:
+Plan: ${context.planName}
+Objectives: ${context.objectives.map(o => o.title_en || o.title_ar).join(', ')}
+
+Create measurable KPIs with targets and baselines.`,
+      actions: `Generate action plans for this Saudi municipal strategy:
+Plan: ${context.planName}
+Objectives: ${context.objectives.map(o => o.title_en || o.title_ar).join(', ')}
+
+Create actionable initiatives with timelines and owners.`
+    };
+    
+    const schemas = {
+      vision: {
+        type: 'object',
+        properties: {
+          vision_en: { type: 'string' },
+          vision_ar: { type: 'string' },
+          mission_en: { type: 'string' },
+          mission_ar: { type: 'string' },
+          core_values: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' } } } }
+        }
+      },
+      stakeholders: {
+        type: 'object',
+        properties: {
+          stakeholders: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, type: { type: 'string' }, power: { type: 'string' }, interest: { type: 'string' }, engagement_strategy: { type: 'string' } } } }
+        }
+      },
+      pestel: {
+        type: 'object',
+        properties: {
+          political: { type: 'array', items: { type: 'string' } },
+          economic: { type: 'array', items: { type: 'string' } },
+          social: { type: 'array', items: { type: 'string' } },
+          technological: { type: 'array', items: { type: 'string' } },
+          environmental: { type: 'array', items: { type: 'string' } },
+          legal: { type: 'array', items: { type: 'string' } }
+        }
+      },
+      swot: {
+        type: 'object',
+        properties: {
+          strengths: { type: 'array', items: { type: 'string' } },
+          weaknesses: { type: 'array', items: { type: 'string' } },
+          opportunities: { type: 'array', items: { type: 'string' } },
+          threats: { type: 'array', items: { type: 'string' } }
+        }
+      },
+      scenarios: {
+        type: 'object',
+        properties: {
+          best_case: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'string' } } } },
+          worst_case: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'string' } } } },
+          most_likely: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'string' } } } }
+        }
+      },
+      risks: {
+        type: 'object',
+        properties: {
+          risks: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, category: { type: 'string' }, likelihood: { type: 'string' }, impact: { type: 'string' }, mitigation: { type: 'string' } } } }
+        }
+      },
+      objectives: {
+        type: 'object',
+        properties: {
+          objectives: { type: 'array', items: { type: 'object', properties: { title_en: { type: 'string' }, title_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' }, category: { type: 'string' } } } }
+        }
+      },
+      kpis: {
+        type: 'object',
+        properties: {
+          kpis: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, unit: { type: 'string' }, baseline: { type: 'number' }, target: { type: 'number' } } } }
+        }
+      },
+      actions: {
+        type: 'object',
+        properties: {
+          action_plans: { type: 'array', items: { type: 'object', properties: { title_en: { type: 'string' }, title_ar: { type: 'string' }, description: { type: 'string' }, timeline: { type: 'string' }, owner: { type: 'string' } } } }
+        }
+      }
+    };
+    
+    const prompt = prompts[stepKey] || `Generate content for step "${stepConfig?.title?.en || stepKey}" of this Saudi municipal strategic plan: ${context.planName}`;
+    const schema = schemas[stepKey];
+    
+    try {
+      const { success, data } = await invokeAI({
+        prompt,
+        response_json_schema: schema,
+        system_prompt: 'You are an expert in Saudi Arabian strategic planning and Vision 2030. Generate professional content in both English and Arabic. Use formal language appropriate for government documents.'
+      });
+      
+      if (success && data?.response) {
+        const response = data.response;
+        
+        // Merge AI response into wizard data based on step
+        const updates = {};
+        if (stepKey === 'vision') {
+          if (response.vision_en) updates.vision_en = response.vision_en;
+          if (response.vision_ar) updates.vision_ar = response.vision_ar;
+          if (response.mission_en) updates.mission_en = response.mission_en;
+          if (response.mission_ar) updates.mission_ar = response.mission_ar;
+          if (response.core_values) updates.core_values = response.core_values;
+        } else if (stepKey === 'stakeholders' && response.stakeholders) {
+          updates.stakeholders = response.stakeholders;
+        } else if (stepKey === 'pestel') {
+          updates.pestel = {
+            political: response.political || [],
+            economic: response.economic || [],
+            social: response.social || [],
+            technological: response.technological || [],
+            environmental: response.environmental || [],
+            legal: response.legal || []
+          };
+        } else if (stepKey === 'swot') {
+          updates.swot = {
+            strengths: response.strengths || [],
+            weaknesses: response.weaknesses || [],
+            opportunities: response.opportunities || [],
+            threats: response.threats || []
+          };
+        } else if (stepKey === 'scenarios') {
+          updates.scenarios = response;
+        } else if (stepKey === 'risks' && response.risks) {
+          updates.risks = response.risks;
+        } else if (stepKey === 'objectives' && response.objectives) {
+          updates.objectives = response.objectives;
+        } else if (stepKey === 'kpis' && response.kpis) {
+          updates.kpis = response.kpis;
+        } else if (stepKey === 'actions' && response.action_plans) {
+          updates.action_plans = response.action_plans;
+        }
+        
+        if (Object.keys(updates).length > 0) {
+          setWizardData(prev => ({ ...prev, ...updates }));
+          toast.success(t({ en: 'AI generation complete', ar: 'تم الإنشاء بالذكاء الاصطناعي' }));
+        }
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء بالذكاء الاصطناعي' }));
+    } finally {
       setGeneratingStep(null);
-      toast.success(t({ en: 'AI generation complete', ar: 'تم الإنشاء' }));
-    }, 1500);
+    }
   };
 
   const handleNext = () => {
