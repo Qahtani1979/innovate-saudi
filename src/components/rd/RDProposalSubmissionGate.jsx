@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +26,7 @@ export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) 
   });
 
   // Auto-check based on proposal data
-  React.useEffect(() => {
+  useEffect(() => {
     if (proposal) {
       setChecklist({
         title_complete: !!(proposal.title_en && proposal.title_ar),
