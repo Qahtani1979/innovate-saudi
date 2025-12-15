@@ -16,12 +16,13 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
   const addDependency = () => {
     const newDep = {
       id: Date.now().toString(),
-      name: '',
-      type: 'internal', // internal, external, technical, resource
+      name_en: '',
+      name_ar: '',
+      type: 'internal',
       source: '',
       target: '',
-      criticality: 'medium', // low, medium, high
-      status: 'pending', // pending, resolved, blocked
+      criticality: 'medium',
+      status: 'pending',
       notes: ''
     };
     onChange({ dependencies: [...(data.dependencies || []), newDep] });
@@ -41,10 +42,12 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
   const addConstraint = () => {
     const newConstraint = {
       id: Date.now().toString(),
-      description: '',
-      type: 'budget', // budget, time, resource, regulatory, technical
+      description_en: '',
+      description_ar: '',
+      type: 'budget',
       impact: 'medium',
-      mitigation: ''
+      mitigation_en: '',
+      mitigation_ar: ''
     };
     onChange({ constraints: [...(data.constraints || []), newConstraint] });
   };
@@ -63,10 +66,12 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
   const addAssumption = () => {
     const newAssumption = {
       id: Date.now().toString(),
-      statement: '',
+      statement_en: '',
+      statement_ar: '',
       category: 'operational',
-      confidence: 'high', // low, medium, high
-      validation_method: ''
+      confidence: 'high',
+      validation_method_en: '',
+      validation_method_ar: ''
     };
     onChange({ assumptions: [...(data.assumptions || []), newAssumption] });
   };
@@ -177,29 +182,38 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="md:col-span-2">
-                    <Label>{t({ en: 'Dependency Name', ar: 'اسم التبعية' })}</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label>{t({ en: 'Dependency Name (EN)', ar: 'اسم التبعية (إنجليزي)' })}</Label>
                     <Input
-                      value={dep.name}
-                      onChange={(e) => updateDependency(index, 'name', e.target.value)}
+                      value={dep.name_en || dep.name || ''}
+                      onChange={(e) => updateDependency(index, 'name_en', e.target.value)}
                       placeholder={t({ en: 'e.g., Budget approval from finance', ar: 'مثال: موافقة الميزانية من المالية' })}
                     />
                   </div>
+                  <div>
+                    <Label>{t({ en: 'Dependency Name (AR)', ar: 'اسم التبعية (عربي)' })}</Label>
+                    <Input
+                      dir="rtl"
+                      value={dep.name_ar || ''}
+                      onChange={(e) => updateDependency(index, 'name_ar', e.target.value)}
+                      placeholder="مثال: موافقة الميزانية من المالية"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div>
                     <Label>{t({ en: 'Type', ar: 'النوع' })}</Label>
                     <Select value={dep.type} onValueChange={(v) => updateDependency(index, 'type', v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {dependencyTypes.map(t => (
-                          <SelectItem key={t.value} value={t.value}>{t.label[language]}</SelectItem>
+                        {dependencyTypes.map(dt => (
+                          <SelectItem key={dt.value} value={dt.value}>{dt.label[language]}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label>{t({ en: 'Source', ar: 'المصدر' })}</Label>
                     <Input
@@ -269,36 +283,58 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="md:col-span-2">
-                    <Label>{t({ en: 'Constraint Description', ar: 'وصف القيد' })}</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label>{t({ en: 'Constraint Description (EN)', ar: 'وصف القيد (إنجليزي)' })}</Label>
                     <Textarea
-                      value={constraint.description}
-                      onChange={(e) => updateConstraint(index, 'description', e.target.value)}
+                      value={constraint.description_en || constraint.description || ''}
+                      onChange={(e) => updateConstraint(index, 'description_en', e.target.value)}
                       placeholder={t({ en: 'Describe the constraint...', ar: 'وصف القيد...' })}
                       rows={2}
                     />
                   </div>
                   <div>
-                    <Label>{t({ en: 'Type', ar: 'النوع' })}</Label>
-                    <Select value={constraint.type} onValueChange={(v) => updateConstraint(index, 'type', v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {constraintTypes.map(c => (
-                          <SelectItem key={c.value} value={c.value}>{c.label[language]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>{t({ en: 'Constraint Description (AR)', ar: 'وصف القيد (عربي)' })}</Label>
+                    <Textarea
+                      dir="rtl"
+                      value={constraint.description_ar || ''}
+                      onChange={(e) => updateConstraint(index, 'description_ar', e.target.value)}
+                      placeholder="وصف القيد..."
+                      rows={2}
+                    />
                   </div>
                 </div>
                 
                 <div>
-                  <Label>{t({ en: 'Mitigation Approach', ar: 'نهج التخفيف' })}</Label>
-                  <Input
-                    value={constraint.mitigation}
-                    onChange={(e) => updateConstraint(index, 'mitigation', e.target.value)}
-                    placeholder={t({ en: 'How will you work around this?', ar: 'كيف ستتعامل مع هذا؟' })}
-                  />
+                  <Label>{t({ en: 'Type', ar: 'النوع' })}</Label>
+                  <Select value={constraint.type} onValueChange={(v) => updateConstraint(index, 'type', v)}>
+                    <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {constraintTypes.map(c => (
+                        <SelectItem key={c.value} value={c.value}>{c.label[language]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label>{t({ en: 'Mitigation Approach (EN)', ar: 'نهج التخفيف (إنجليزي)' })}</Label>
+                    <Input
+                      value={constraint.mitigation_en || constraint.mitigation || ''}
+                      onChange={(e) => updateConstraint(index, 'mitigation_en', e.target.value)}
+                      placeholder={t({ en: 'How will you work around this?', ar: 'كيف ستتعامل مع هذا؟' })}
+                    />
+                  </div>
+                  <div>
+                    <Label>{t({ en: 'Mitigation Approach (AR)', ar: 'نهج التخفيف (عربي)' })}</Label>
+                    <Input
+                      dir="rtl"
+                      value={constraint.mitigation_ar || ''}
+                      onChange={(e) => updateConstraint(index, 'mitigation_ar', e.target.value)}
+                      placeholder="كيف ستتعامل مع هذا؟"
+                    />
+                  </div>
                 </div>
               </div>
             ))
@@ -346,14 +382,26 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
                   </Button>
                 </div>
                 
-                <div>
-                  <Label>{t({ en: 'Assumption Statement', ar: 'بيان الافتراض' })}</Label>
-                  <Textarea
-                    value={assumption.statement}
-                    onChange={(e) => updateAssumption(index, 'statement', e.target.value)}
-                    placeholder={t({ en: 'We assume that...', ar: 'نفترض أن...' })}
-                    rows={2}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label>{t({ en: 'Assumption Statement (EN)', ar: 'بيان الافتراض (إنجليزي)' })}</Label>
+                    <Textarea
+                      value={assumption.statement_en || assumption.statement || ''}
+                      onChange={(e) => updateAssumption(index, 'statement_en', e.target.value)}
+                      placeholder={t({ en: 'We assume that...', ar: 'نفترض أن...' })}
+                      rows={2}
+                    />
+                  </div>
+                  <div>
+                    <Label>{t({ en: 'Assumption Statement (AR)', ar: 'بيان الافتراض (عربي)' })}</Label>
+                    <Textarea
+                      dir="rtl"
+                      value={assumption.statement_ar || ''}
+                      onChange={(e) => updateAssumption(index, 'statement_ar', e.target.value)}
+                      placeholder="نفترض أن..."
+                      rows={2}
+                    />
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -379,12 +427,24 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <Label>{t({ en: 'Validation Method', ar: 'طريقة التحقق' })}</Label>
+                    <Label>{t({ en: 'Validation Method (EN)', ar: 'طريقة التحقق (إنجليزي)' })}</Label>
                     <Input
-                      value={assumption.validation_method}
-                      onChange={(e) => updateAssumption(index, 'validation_method', e.target.value)}
+                      value={assumption.validation_method_en || assumption.validation_method || ''}
+                      onChange={(e) => updateAssumption(index, 'validation_method_en', e.target.value)}
                       placeholder={t({ en: 'How to verify?', ar: 'كيفية التحقق؟' })}
+                    />
+                  </div>
+                  <div>
+                    <Label>{t({ en: 'Validation Method (AR)', ar: 'طريقة التحقق (عربي)' })}</Label>
+                    <Input
+                      dir="rtl"
+                      value={assumption.validation_method_ar || ''}
+                      onChange={(e) => updateAssumption(index, 'validation_method_ar', e.target.value)}
+                      placeholder="كيفية التحقق؟"
                     />
                   </div>
                 </div>
