@@ -3,16 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
-
-const TEMPLATE_TYPES = [
-  { id: 'innovation', name_en: 'Innovation Strategy', name_ar: 'استراتيجية الابتكار' },
-  { id: 'digital_transformation', name_en: 'Digital Transformation', name_ar: 'التحول الرقمي' },
-  { id: 'sustainability', name_en: 'Sustainability', name_ar: 'الاستدامة' },
-  { id: 'sector_specific', name_en: 'Sector Specific', name_ar: 'خاص بالقطاع' },
-  { id: 'municipality', name_en: 'Municipality Scale', name_ar: 'نطاق البلدية' },
-  { id: 'smart_city', name_en: 'Smart City', name_ar: 'المدينة الذكية' },
-  { id: 'citizen_services', name_en: 'Citizen Services', name_ar: 'خدمات المواطنين' }
-];
+import { STRATEGY_TEMPLATE_TYPES } from '@/constants/strategyTemplateTypes';
 
 export function useStrategyTemplates() {
   const { user } = useAuth();
@@ -360,12 +351,65 @@ export function useStrategyTemplates() {
     );
   }, [templates]);
 
+  // Clone a template
+  const cloneTemplate = useCallback(async (templateId) => {
+    if (!user?.email) {
+      toast.error('Please sign in to clone templates');
+      return null;
+    }
+    
+    try {
+      const template = await fetchTemplate(templateId);
+      if (!template) throw new Error('Template not found');
+      
+      const clonedData = {
+        ...template,
+        id: undefined,
+        name_en: `${template.name_en} (Copy)`,
+        name_ar: template.name_ar ? `${template.name_ar} (نسخة)` : null,
+        is_public: false,
+        is_featured: false,
+        usage_count: 0,
+        template_rating: null,
+        template_reviews: 0,
+        template_category: 'personal',
+        source_plan_id: template.id,
+        owner_email: user.email,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      delete clonedData.id;
+      
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .insert(clonedData)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['strategy-templates'] });
+      toast.success('Template cloned successfully');
+      return data;
+    } catch (err) {
+      console.error('Clone template error:', err);
+      toast.error('Failed to clone template');
+      return null;
+    }
+  }, [user?.email, fetchTemplate, queryClient]);
+
+  // Get templates by category
+  const getTemplatesByCategory = useCallback((category) => {
+    return templates.filter(t => t.template_category === category);
+  }, [templates]);
+
   return {
     // Data
     templates,
     myTemplates,
     featuredTemplates,
-    templateTypes: TEMPLATE_TYPES,
+    templateTypes: STRATEGY_TEMPLATE_TYPES,
     
     // Loading states
     isLoading: isLoadingTemplates || isLoadingMyTemplates,
@@ -390,8 +434,10 @@ export function useStrategyTemplates() {
     fetchTemplate,
     incrementUsage,
     getTemplatesByType,
+    getTemplatesByCategory,
     rateTemplate,
     searchByTags,
+    cloneTemplate,
     
     // Legacy compatibility
     saveTemplate: (template) => createTemplateMutation.mutateAsync({ 

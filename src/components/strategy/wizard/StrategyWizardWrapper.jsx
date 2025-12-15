@@ -16,6 +16,7 @@ import ProtectedPage from '../../permissions/ProtectedPage';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 import { useAutoSaveDraft } from '@/hooks/strategy/useAutoSaveDraft';
 import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
+import { useWizardValidation } from '@/hooks/strategy/useWizardValidation';
 
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';
@@ -67,6 +68,9 @@ export default function StrategyWizardWrapper() {
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [appliedTemplateName, setAppliedTemplateName] = useState(null);
 
+  // Validation hook
+  const { validateStep, hasStepData, calculateProgress } = useWizardValidation(wizardData);
+
   // Auto-save hook
   const {
     scheduleAutoSave,
@@ -92,6 +96,8 @@ export default function StrategyWizardWrapper() {
           setWizardData({ ...initialWizardData, ...templateData });
           setAppliedTemplateName(templateData._sourceTemplateName);
           setMode('create');
+          // Clear template param from URL
+          setSearchParams({});
           toast.success(`Template "${templateData._sourceTemplateName}" applied`);
         }
       }).catch(err => {
@@ -277,6 +283,16 @@ export default function StrategyWizardWrapper() {
 
   const handleNext = () => {
     if (currentStep < 18) {
+      // Validate current step before proceeding
+      const validation = validateStep(currentStep);
+      if (!validation.isValid && currentStep <= 2) {
+        // Only enforce validation for critical steps 1-2
+        validation.errors.forEach(err => {
+          toast.error(err.message);
+        });
+        return;
+      }
+      
       if (!completedSteps.includes(currentStep)) {
         setCompletedSteps([...completedSteps, currentStep]);
       }
