@@ -105,7 +105,7 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
         .from('strategic_plans')
         .select('*')
         .or('is_template.is.null,is_template.eq.false')
-        .eq('is_deleted', false)
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .in('status', ['active', 'draft']);
       return data || [];
     }
