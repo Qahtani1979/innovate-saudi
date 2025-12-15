@@ -23,8 +23,8 @@ export default function StrategicPlanApprovalGate() {
       const { data } = await supabase
         .from('strategic_plans')
         .select('*')
-        .eq('is_template', false)
-        .eq('is_deleted', false)
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('created_at', { ascending: false });
       return data || [];
     }

@@ -22,11 +22,13 @@ export default function ApprovalMatrixEditor() {
   
   // Fetch strategic plans for strategic approval chains
   const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-approval'],
+    queryKey: ['strategic-plans-approval-matrix'],
     queryFn: async () => {
       const { data } = await supabase
         .from('strategic_plans')
         .select('id, name_en, name_ar, status')
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('name_en');
       return data || [];
     }

@@ -25,6 +25,8 @@ export default function SLARuleBuilder() {
       const { data } = await supabase
         .from('strategic_plans')
         .select('id, name_en, name_ar, status')
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('name_en');
       return data || [];
     }
