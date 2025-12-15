@@ -660,20 +660,22 @@ Be specific to Saudi Arabia and the municipal context. Avoid vague or generic st
 **REQUIREMENTS:**
 Generate ALL 3 scenarios: best_case, worst_case, and most_likely.
 
+**CRITICAL**: Each scenario MUST include a "probability" field with a percentage value (e.g., "20%", "60%").
+
 For EACH scenario, provide ALL these fields in BOTH English and Arabic:
 
-1. **description_en / description_ar**: A 2-3 sentence narrative describing this scenario (what the future looks like)
+1. **probability**: REQUIRED - Likelihood percentage as a string (e.g., "20%", "60%", "20%"). This field is mandatory!
 
-2. **assumptions**: Array of 3-5 key assumptions. Each assumption must have:
+2. **description_en / description_ar**: A 2-3 sentence narrative describing this scenario (what the future looks like)
+
+3. **assumptions**: Array of 3-5 key assumptions. Each assumption must have:
    - text_en: Assumption in English
    - text_ar: Assumption in Arabic (formal فصحى)
 
-3. **outcomes**: Array of 4-6 measurable outcomes. Each outcome must have:
+4. **outcomes**: Array of 4-6 measurable outcomes. Each outcome must have:
    - metric_en: The metric/outcome name in English
    - metric_ar: The metric/outcome name in Arabic
    - value: The expected value/result (e.g., "95%", "+30%", "500,000 users")
-
-4. **probability**: Likelihood percentage (e.g., "20%", "60%", "20%")
 
 **SCENARIO GUIDANCE FOR SAUDI CONTEXT:**
 
