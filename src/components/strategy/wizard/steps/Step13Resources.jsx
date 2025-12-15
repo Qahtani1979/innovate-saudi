@@ -19,7 +19,15 @@ export default function Step13Resources({ data, onChange, onGenerateAI, isGenera
 
   const addResource = (type) => {
     const current = data.resource_plan?.[type] || [];
-    const newItem = { id: Date.now().toString(), name: '', quantity: '', cost: '', notes: '' };
+    const newItem = { 
+      id: Date.now().toString(), 
+      name_en: '', 
+      name_ar: '', 
+      quantity: '', 
+      cost: '', 
+      notes_en: '',
+      notes_ar: ''
+    };
     onChange({ resource_plan: { ...data.resource_plan, [type]: [...current, newItem] } });
   };
 
@@ -62,45 +70,77 @@ export default function Step13Resources({ data, onChange, onGenerateAI, isGenera
               </div>
             ) : (
               data.resource_plan[key].map((item, idx) => (
-                <div key={item.id} className="grid grid-cols-1 md:grid-cols-5 gap-2 p-3 border rounded items-end">
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t({ en: 'Name', ar: 'الاسم' })}</Label>
-                    <Input
-                      placeholder={t({ en: 'Name/Description', ar: 'الاسم/الوصف' })}
-                      value={item.name}
-                      onChange={(e) => updateResource(key, idx, 'name', e.target.value)}
-                    />
+                <div key={item.id} className="p-3 border rounded-lg space-y-3">
+                  <div className="flex justify-end">
+                    <Button variant="ghost" size="icon" onClick={() => removeResource(key, idx)}>
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t({ en: 'Quantity', ar: 'الكمية' })}</Label>
-                    <Input
-                      placeholder={t({ en: 'Quantity', ar: 'الكمية' })}
-                      value={item.quantity}
-                      onChange={(e) => updateResource(key, idx, 'quantity', e.target.value)}
-                    />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t({ en: 'Name (EN)', ar: 'الاسم (إنجليزي)' })}</Label>
+                      <Input
+                        placeholder={t({ en: 'Name/Description', ar: 'الاسم/الوصف' })}
+                        value={item.name_en || item.name || ''}
+                        onChange={(e) => updateResource(key, idx, 'name_en', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t({ en: 'Name (AR)', ar: 'الاسم (عربي)' })}</Label>
+                      <Input
+                        dir="rtl"
+                        placeholder="الاسم/الوصف"
+                        value={item.name_ar || ''}
+                        onChange={(e) => updateResource(key, idx, 'name_ar', e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t({ en: 'Cost', ar: 'التكلفة' })}</Label>
-                    <Input
-                      placeholder={t({ en: 'Cost (SAR)', ar: 'التكلفة (ريال)' })}
-                      value={item.cost}
-                      onChange={(e) => updateResource(key, idx, 'cost', e.target.value)}
-                    />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t({ en: 'Quantity', ar: 'الكمية' })}</Label>
+                      <Input
+                        placeholder={t({ en: 'Quantity', ar: 'الكمية' })}
+                        value={item.quantity}
+                        onChange={(e) => updateResource(key, idx, 'quantity', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t({ en: 'Cost', ar: 'التكلفة' })}</Label>
+                      <Input
+                        placeholder={t({ en: 'Cost (SAR)', ar: 'التكلفة (ريال)' })}
+                        value={item.cost}
+                        onChange={(e) => updateResource(key, idx, 'cost', e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs flex items-center gap-1">
-                      <StickyNote className="h-3 w-3" />
-                      {t({ en: 'Notes', ar: 'ملاحظات' })}
-                    </Label>
-                    <Input
-                      placeholder={t({ en: 'Optional notes', ar: 'ملاحظات اختيارية' })}
-                      value={item.notes || ''}
-                      onChange={(e) => updateResource(key, idx, 'notes', e.target.value)}
-                    />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs flex items-center gap-1">
+                        <StickyNote className="h-3 w-3" />
+                        {t({ en: 'Notes (EN)', ar: 'ملاحظات (إنجليزي)' })}
+                      </Label>
+                      <Input
+                        placeholder={t({ en: 'Optional notes', ar: 'ملاحظات اختيارية' })}
+                        value={item.notes_en || item.notes || ''}
+                        onChange={(e) => updateResource(key, idx, 'notes_en', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs flex items-center gap-1">
+                        <StickyNote className="h-3 w-3" />
+                        {t({ en: 'Notes (AR)', ar: 'ملاحظات (عربي)' })}
+                      </Label>
+                      <Input
+                        dir="rtl"
+                        placeholder="ملاحظات اختيارية"
+                        value={item.notes_ar || ''}
+                        onChange={(e) => updateResource(key, idx, 'notes_ar', e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => removeResource(key, idx)}>
-                    <X className="w-4 h-4" />
-                  </Button>
                 </div>
               ))
             )}

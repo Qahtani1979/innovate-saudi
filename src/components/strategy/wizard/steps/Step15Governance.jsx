@@ -23,11 +23,13 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
   const addCommittee = () => {
     const newCommittee = {
       id: Date.now().toString(),
-      name: '',
+      name_en: '',
+      name_ar: '',
       role: 'STEERING_COMMITTEE',
       members: [],
       meeting_frequency: 'monthly',
-      responsibilities: ''
+      responsibilities_en: '',
+      responsibilities_ar: ''
     };
 
     onChange({
@@ -140,28 +142,49 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <Input
-                      placeholder={t({ en: 'Committee Name', ar: 'اسم اللجنة' })}
-                      value={committee.name}
-                      onChange={(e) => updateCommittee(idx, 'name', e.target.value)}
-                    />
-                    <Select value={committee.role} onValueChange={(v) => updateCommittee(idx, 'role', v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {GOVERNANCE_ROLES.map((r) => (
-                          <SelectItem key={r.code} value={r.code}>{r[`name_${language}`]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={committee.meeting_frequency} onValueChange={(v) => updateCommittee(idx, 'meeting_frequency', v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {frequencyOptions.map((f) => (
-                          <SelectItem key={f.value} value={f.value}>{f.label[language]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">{t({ en: 'Committee Name (EN)', ar: 'اسم اللجنة (إنجليزي)' })}</Label>
+                      <Input
+                        placeholder={t({ en: 'Committee Name', ar: 'اسم اللجنة' })}
+                        value={committee.name_en || committee.name || ''}
+                        onChange={(e) => updateCommittee(idx, 'name_en', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">{t({ en: 'Committee Name (AR)', ar: 'اسم اللجنة (عربي)' })}</Label>
+                      <Input
+                        dir="rtl"
+                        placeholder="اسم اللجنة"
+                        value={committee.name_ar || ''}
+                        onChange={(e) => updateCommittee(idx, 'name_ar', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">{t({ en: 'Role', ar: 'الدور' })}</Label>
+                      <Select value={committee.role} onValueChange={(v) => updateCommittee(idx, 'role', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {GOVERNANCE_ROLES.map((r) => (
+                            <SelectItem key={r.code} value={r.code}>{r[`name_${language}`]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">{t({ en: 'Meeting Frequency', ar: 'تكرار الاجتماعات' })}</Label>
+                      <Select value={committee.meeting_frequency} onValueChange={(v) => updateCommittee(idx, 'meeting_frequency', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {frequencyOptions.map((f) => (
+                            <SelectItem key={f.value} value={f.value}>{f.label[language]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-1">
@@ -173,12 +196,27 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
                     />
                   </div>
 
-                  <Textarea
-                    placeholder={t({ en: 'Responsibilities...', ar: 'المسؤوليات...' })}
-                    value={committee.responsibilities}
-                    onChange={(e) => updateCommittee(idx, 'responsibilities', e.target.value)}
-                    rows={2}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">{t({ en: 'Responsibilities (EN)', ar: 'المسؤوليات (إنجليزي)' })}</Label>
+                      <Textarea
+                        placeholder={t({ en: 'Responsibilities...', ar: 'المسؤوليات...' })}
+                        value={committee.responsibilities_en || committee.responsibilities || ''}
+                        onChange={(e) => updateCommittee(idx, 'responsibilities_en', e.target.value)}
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">{t({ en: 'Responsibilities (AR)', ar: 'المسؤوليات (عربي)' })}</Label>
+                      <Textarea
+                        dir="rtl"
+                        placeholder="المسؤوليات..."
+                        value={committee.responsibilities_ar || ''}
+                        onChange={(e) => updateCommittee(idx, 'responsibilities_ar', e.target.value)}
+                        rows={2}
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })
@@ -188,4 +226,3 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
     </div>
   );
 }
-

@@ -425,35 +425,44 @@ Assess readiness, define change approach, and resistance management strategies.`
       stakeholders: {
         type: 'object',
         properties: {
-          stakeholders: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, type: { type: 'string' }, power: { type: 'string' }, interest: { type: 'string' }, engagement_level: { type: 'string' }, influence_strategy: { type: 'string' } } } }
+          stakeholders: { type: 'array', items: { type: 'object', properties: { 
+            name_en: { type: 'string' }, 
+            name_ar: { type: 'string' }, 
+            type: { type: 'string' }, 
+            power: { type: 'string' }, 
+            interest: { type: 'string' }, 
+            engagement_level: { type: 'string' }, 
+            influence_strategy_en: { type: 'string' },
+            influence_strategy_ar: { type: 'string' }
+          } } }
         }
       },
       pestel: {
         type: 'object',
         properties: {
-          political: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
-          economic: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
-          social: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
-          technological: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
-          environmental: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
-          legal: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } }
+          political: { type: 'array', items: { type: 'object', properties: { factor_en: { type: 'string' }, factor_ar: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications_en: { type: 'string' }, implications_ar: { type: 'string' } } } },
+          economic: { type: 'array', items: { type: 'object', properties: { factor_en: { type: 'string' }, factor_ar: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications_en: { type: 'string' }, implications_ar: { type: 'string' } } } },
+          social: { type: 'array', items: { type: 'object', properties: { factor_en: { type: 'string' }, factor_ar: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications_en: { type: 'string' }, implications_ar: { type: 'string' } } } },
+          technological: { type: 'array', items: { type: 'object', properties: { factor_en: { type: 'string' }, factor_ar: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications_en: { type: 'string' }, implications_ar: { type: 'string' } } } },
+          environmental: { type: 'array', items: { type: 'object', properties: { factor_en: { type: 'string' }, factor_ar: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications_en: { type: 'string' }, implications_ar: { type: 'string' } } } },
+          legal: { type: 'array', items: { type: 'object', properties: { factor_en: { type: 'string' }, factor_ar: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications_en: { type: 'string' }, implications_ar: { type: 'string' } } } }
         }
       },
       swot: {
         type: 'object',
         properties: {
-          strengths: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, priority: { type: 'string' } } } },
-          weaknesses: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, priority: { type: 'string' } } } },
-          opportunities: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, priority: { type: 'string' } } } },
-          threats: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, priority: { type: 'string' } } } }
+          strengths: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' }, priority: { type: 'string' } } } },
+          weaknesses: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' }, priority: { type: 'string' } } } },
+          opportunities: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' }, priority: { type: 'string' } } } },
+          threats: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' }, priority: { type: 'string' } } } }
         }
       },
       scenarios: {
         type: 'object',
         properties: {
-          best_case: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } },
-          worst_case: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } },
-          most_likely: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } }
+          best_case: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, assumptions: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric_en: { type: 'string' }, metric_ar: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } },
+          worst_case: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, assumptions: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric_en: { type: 'string' }, metric_ar: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } },
+          most_likely: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, assumptions: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric_en: { type: 'string' }, metric_ar: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } }
         }
       },
       risks: {
@@ -464,13 +473,17 @@ Assess readiness, define change approach, and resistance management strategies.`
             items: {
               type: 'object',
               properties: {
-                title: { type: 'string' },
-                description: { type: 'string' },
+                title_en: { type: 'string' },
+                title_ar: { type: 'string' },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' },
                 category: { type: 'string' },
                 likelihood: { type: 'string' },
                 impact: { type: 'string' },
-                mitigation_strategy: { type: 'string' },
-                contingency_plan: { type: 'string' },
+                mitigation_strategy_en: { type: 'string' },
+                mitigation_strategy_ar: { type: 'string' },
+                contingency_plan_en: { type: 'string' },
+                contingency_plan_ar: { type: 'string' },
                 owner: { type: 'string' }
               }
             }
@@ -480,9 +493,9 @@ Assess readiness, define change approach, and resistance management strategies.`
       dependencies: {
         type: 'object',
         properties: {
-          dependencies: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, type: { type: 'string' }, source: { type: 'string' }, target: { type: 'string' }, criticality: { type: 'string' } } } },
-          constraints: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, type: { type: 'string' }, impact: { type: 'string' }, mitigation: { type: 'string' } } } },
-          assumptions: { type: 'array', items: { type: 'object', properties: { statement: { type: 'string' }, category: { type: 'string' }, confidence: { type: 'string' } } } }
+          dependencies: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, type: { type: 'string' }, source: { type: 'string' }, target: { type: 'string' }, criticality: { type: 'string' } } } },
+          constraints: { type: 'array', items: { type: 'object', properties: { description_en: { type: 'string' }, description_ar: { type: 'string' }, type: { type: 'string' }, impact: { type: 'string' }, mitigation_en: { type: 'string' }, mitigation_ar: { type: 'string' } } } },
+          assumptions: { type: 'array', items: { type: 'object', properties: { statement_en: { type: 'string' }, statement_ar: { type: 'string' }, category: { type: 'string' }, confidence: { type: 'string' }, validation_method_en: { type: 'string' }, validation_method_ar: { type: 'string' } } } }
         }
       },
       objectives: {
@@ -548,23 +561,23 @@ Assess readiness, define change approach, and resistance management strategies.`
       resources: {
         type: 'object',
         properties: {
-          hr_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes: { type: 'string' } } } },
-          technology_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes: { type: 'string' } } } },
-          infrastructure_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes: { type: 'string' } } } },
-          budget_allocation: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes: { type: 'string' } } } }
+          hr_requirements: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes_en: { type: 'string' }, notes_ar: { type: 'string' } } } },
+          technology_requirements: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes_en: { type: 'string' }, notes_ar: { type: 'string' } } } },
+          infrastructure_requirements: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes_en: { type: 'string' }, notes_ar: { type: 'string' } } } },
+          budget_allocation: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes_en: { type: 'string' }, notes_ar: { type: 'string' } } } }
         }
       },
       timeline: {
         type: 'object',
         properties: {
-          phases: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, start_date: { type: 'string' }, end_date: { type: 'string' }, description: { type: 'string' }, objectives_covered: { type: 'array', items: { type: 'number' } } } } },
-          milestones: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, date: { type: 'string' }, type: { type: 'string' }, description: { type: 'string' } } } }
+          phases: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, start_date: { type: 'string' }, end_date: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' }, objectives_covered: { type: 'array', items: { type: 'number' } } } } },
+          milestones: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, date: { type: 'string' }, type: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } } }
         }
       },
       governance: {
         type: 'object',
         properties: {
-          committees: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, role: { type: 'string' }, meeting_frequency: { type: 'string' }, responsibilities: { type: 'string' }, members: { type: 'array', items: { type: 'string' } } } } },
+          committees: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, role: { type: 'string' }, meeting_frequency: { type: 'string' }, responsibilities_en: { type: 'string' }, responsibilities_ar: { type: 'string' }, members: { type: 'array', items: { type: 'string' } } } } },
           reporting_frequency: { type: 'string' },
           escalation_path: { type: 'array', items: { type: 'string' } }
         }
@@ -572,7 +585,7 @@ Assess readiness, define change approach, and resistance management strategies.`
       communication: {
         type: 'object',
         properties: {
-          key_messages: { type: 'array', items: { type: 'string' } },
+          key_messages: { type: 'array', items: { type: 'object', properties: { text_en: { type: 'string' }, text_ar: { type: 'string' } } } },
           internal_channels: { type: 'array', items: { type: 'string' } },
           external_channels: { type: 'array', items: { type: 'string' } }
         }
@@ -580,10 +593,13 @@ Assess readiness, define change approach, and resistance management strategies.`
       change: {
         type: 'object',
         properties: {
-          readiness_assessment: { type: 'string' },
-          change_approach: { type: 'string' },
-          resistance_management: { type: 'string' },
-          training_plan: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, target_audience: { type: 'string' }, duration: { type: 'string' }, timeline: { type: 'string' } } } }
+          readiness_assessment_en: { type: 'string' },
+          readiness_assessment_ar: { type: 'string' },
+          change_approach_en: { type: 'string' },
+          change_approach_ar: { type: 'string' },
+          resistance_management_en: { type: 'string' },
+          resistance_management_ar: { type: 'string' },
+          training_plan: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, target_audience: { type: 'string' }, duration: { type: 'string' }, timeline: { type: 'string' } } } }
         }
       }
     };
@@ -626,18 +642,24 @@ Assess readiness, define change approach, and resistance management strategies.`
           updates.stakeholders = data.stakeholders.map((s, i) => ({ 
             ...s, 
             id: Date.now().toString() + i,
+            name_en: s.name_en || s.name || '',
+            name_ar: s.name_ar || '',
+            influence_strategy_en: s.influence_strategy_en || s.influence_strategy || '',
+            influence_strategy_ar: s.influence_strategy_ar || '',
             type: s.type || 'GOVERNMENT',
             engagement_level: s.engagement_level || 'consult'
           }));
         } else if (stepKey === 'pestel') {
-          // PESTEL UI expects objects with {id, factor, impact, trend, timeframe, implications}
+          // PESTEL UI expects bilingual objects
           const mapPestelItems = (items) => (items || []).map((item, i) => ({
             id: Date.now().toString() + i,
-            factor: typeof item === 'string' ? item : (item.factor || ''),
+            factor_en: item.factor_en || item.factor || '',
+            factor_ar: item.factor_ar || '',
             impact: item.impact || 'medium',
             trend: item.trend || 'stable',
             timeframe: item.timeframe || 'medium_term',
-            implications: item.implications || ''
+            implications_en: item.implications_en || item.implications || '',
+            implications_ar: item.implications_ar || ''
           }));
           updates.pestel = {
             political: mapPestelItems(data.political),
@@ -648,10 +670,11 @@ Assess readiness, define change approach, and resistance management strategies.`
             legal: mapPestelItems(data.legal)
           };
         } else if (stepKey === 'swot') {
-          // SWOT UI expects objects with {text, priority, id}
+          // SWOT UI expects bilingual objects
           const mapSwotItems = (items) => (items || []).map((item, i) => ({
             id: Date.now().toString() + i,
-            text: typeof item === 'string' ? item : (item.text || ''),
+            text_en: item.text_en || item.text || '',
+            text_ar: item.text_ar || '',
             priority: item.priority || 'medium'
           }));
           updates.swot = {
@@ -661,12 +684,17 @@ Assess readiness, define change approach, and resistance management strategies.`
             threats: mapSwotItems(data.threats)
           };
         } else if (stepKey === 'scenarios') {
-          // Scenarios UI expects outcomes as objects with {metric, value}
+          // Scenarios UI expects bilingual outcomes
           const mapScenario = (scenario) => ({
-            description: scenario?.description || '',
-            assumptions: scenario?.assumptions || [],
+            description_en: scenario?.description_en || scenario?.description || '',
+            description_ar: scenario?.description_ar || '',
+            assumptions: (scenario?.assumptions || []).map(a => 
+              typeof a === 'string' ? { text_en: a, text_ar: '' } : { text_en: a.text_en || a.text || '', text_ar: a.text_ar || '' }
+            ),
             outcomes: (scenario?.outcomes || []).map(o => 
-              typeof o === 'string' ? { metric: o, value: '' } : { metric: o.metric || '', value: o.value || '' }
+              typeof o === 'string' 
+                ? { metric_en: o, metric_ar: '', value: '' } 
+                : { metric_en: o.metric_en || o.metric || '', metric_ar: o.metric_ar || '', value: o.value || '' }
             ),
             probability: scenario?.probability || ''
           });
@@ -682,14 +710,18 @@ Assess readiness, define change approach, and resistance management strategies.`
             const impact = r.impact || 'medium';
             return {
               id: Date.now().toString() + i,
-              title: r.title || '',
-              description: r.description || '',
+              title_en: r.title_en || r.title || '',
+              title_ar: r.title_ar || '',
+              description_en: r.description_en || r.description || '',
+              description_ar: r.description_ar || '',
               category: r.category || 'OPERATIONAL',
               likelihood,
               impact,
               risk_score: (scoreMap[likelihood] || 0) * (scoreMap[impact] || 0),
-              mitigation_strategy: r.mitigation_strategy || r.mitigation || '',
-              contingency_plan: r.contingency_plan || '',
+              mitigation_strategy_en: r.mitigation_strategy_en || r.mitigation_strategy || r.mitigation || '',
+              mitigation_strategy_ar: r.mitigation_strategy_ar || '',
+              contingency_plan_en: r.contingency_plan_en || r.contingency_plan || '',
+              contingency_plan_ar: r.contingency_plan_ar || '',
               owner: r.owner || '',
               status: 'identified'
             };
@@ -699,14 +731,30 @@ Assess readiness, define change approach, and resistance management strategies.`
             updates.dependencies = data.dependencies.map((d, i) => ({ 
               ...d, 
               id: Date.now().toString() + i,
+              name_en: d.name_en || d.name || '',
+              name_ar: d.name_ar || '',
               status: 'pending'
             }));
           }
           if (data.constraints) {
-            updates.constraints = data.constraints.map((c, i) => ({ ...c, id: Date.now().toString() + i }));
+            updates.constraints = data.constraints.map((c, i) => ({ 
+              ...c, 
+              id: Date.now().toString() + i,
+              description_en: c.description_en || c.description || '',
+              description_ar: c.description_ar || '',
+              mitigation_en: c.mitigation_en || c.mitigation || '',
+              mitigation_ar: c.mitigation_ar || ''
+            }));
           }
           if (data.assumptions) {
-            updates.assumptions = data.assumptions.map((a, i) => ({ ...a, id: Date.now().toString() + i }));
+            updates.assumptions = data.assumptions.map((a, i) => ({ 
+              ...a, 
+              id: Date.now().toString() + i,
+              statement_en: a.statement_en || a.statement || '',
+              statement_ar: a.statement_ar || '',
+              validation_method_en: a.validation_method_en || a.validation_method || '',
+              validation_method_ar: a.validation_method_ar || ''
+            }));
           }
         } else if (stepKey === 'objectives' && data.objectives) {
           updates.objectives = data.objectives.map((o, i) => ({ 
@@ -753,17 +801,27 @@ Assess readiness, define change approach, and resistance management strategies.`
             dependencies: Array.isArray(a.dependencies) ? a.dependencies : []
           }));
         } else if (stepKey === 'resources') {
+          const mapResource = (r, i, prefix) => ({
+            ...r,
+            id: Date.now().toString() + prefix + i,
+            name_en: r.name_en || r.name || '',
+            name_ar: r.name_ar || '',
+            notes_en: r.notes_en || r.notes || '',
+            notes_ar: r.notes_ar || ''
+          });
           updates.resource_plan = {
-            hr_requirements: (data.hr_requirements || []).map((r, i) => ({ ...r, id: Date.now().toString() + 'hr' + i })),
-            technology_requirements: (data.technology_requirements || []).map((r, i) => ({ ...r, id: Date.now().toString() + 'tech' + i })),
-            infrastructure_requirements: (data.infrastructure_requirements || []).map((r, i) => ({ ...r, id: Date.now().toString() + 'infra' + i })),
-            budget_allocation: (data.budget_allocation || []).map((r, i) => ({ ...r, id: Date.now().toString() + 'budget' + i }))
+            hr_requirements: (data.hr_requirements || []).map((r, i) => mapResource(r, i, 'hr')),
+            technology_requirements: (data.technology_requirements || []).map((r, i) => mapResource(r, i, 'tech')),
+            infrastructure_requirements: (data.infrastructure_requirements || []).map((r, i) => mapResource(r, i, 'infra')),
+            budget_allocation: (data.budget_allocation || []).map((r, i) => mapResource(r, i, 'budget'))
           };
         } else if (stepKey === 'timeline') {
           if (data.phases) {
             updates.phases = data.phases.map((p, i) => ({ 
               ...p, 
               id: Date.now().toString() + 'phase' + i,
+              description_en: p.description_en || p.description || '',
+              description_ar: p.description_ar || '',
               objectives_covered: Array.isArray(p.objectives_covered) ? p.objectives_covered : []
             }));
           }
@@ -772,7 +830,8 @@ Assess readiness, define change approach, and resistance management strategies.`
               ...m, 
               id: Date.now().toString() + 'ms' + i,
               status: 'planned',
-              description: m.description || ''
+              description_en: m.description_en || m.description || '',
+              description_ar: m.description_ar || ''
             }));
           }
         } else if (stepKey === 'governance') {
@@ -787,25 +846,43 @@ Assess readiness, define change approach, and resistance management strategies.`
             committees: (data.committees || []).map((c, i) => ({
               ...c,
               id: Date.now().toString() + i,
+              name_en: c.name_en || c.name || '',
+              name_ar: c.name_ar || '',
+              responsibilities_en: c.responsibilities_en || c.responsibilities || '',
+              responsibilities_ar: c.responsibilities_ar || '',
               members: Array.isArray(c.members) ? c.members.map(m => String(m).trim()).filter(Boolean) : []
             })),
             reporting_frequency: data.reporting_frequency || 'monthly',
             escalation_path: escalationPath
           };
         } else if (stepKey === 'communication') {
+          // Convert string key_messages to bilingual objects
+          const keyMessages = (data.key_messages || []).map((m, i) => 
+            typeof m === 'string' 
+              ? { id: Date.now().toString() + i, text_en: m, text_ar: '' } 
+              : { id: Date.now().toString() + i, text_en: m.text_en || '', text_ar: m.text_ar || '' }
+          );
           updates.communication_plan = {
             ...wizardData.communication_plan,
-            key_messages: data.key_messages || [],
+            key_messages: keyMessages,
             internal_channels: data.internal_channels || [],
             external_channels: data.external_channels || []
           };
         } else if (stepKey === 'change') {
           updates.change_management = {
             ...wizardData.change_management,
-            readiness_assessment: data.readiness_assessment || '',
-            change_approach: data.change_approach || '',
-            resistance_management: data.resistance_management || '',
-            training_plan: (data.training_plan || []).map((t, i) => ({ ...t, id: Date.now().toString() + 'train' + i }))
+            readiness_assessment_en: data.readiness_assessment_en || data.readiness_assessment || '',
+            readiness_assessment_ar: data.readiness_assessment_ar || '',
+            change_approach_en: data.change_approach_en || data.change_approach || '',
+            change_approach_ar: data.change_approach_ar || '',
+            resistance_management_en: data.resistance_management_en || data.resistance_management || '',
+            resistance_management_ar: data.resistance_management_ar || '',
+            training_plan: (data.training_plan || []).map((tp, i) => ({ 
+              ...tp, 
+              id: Date.now().toString() + 'train' + i,
+              name_en: tp.name_en || tp.name || '',
+              name_ar: tp.name_ar || ''
+            }))
           };
         }
         
