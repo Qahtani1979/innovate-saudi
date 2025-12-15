@@ -24,10 +24,11 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
       interest: 'medium',
       influence_strategy_en: '',
       influence_strategy_ar: '',
-      contact_person: '',
-      contact_email: '',
+      contact_person_en: '',
+      contact_person_ar: '',
       engagement_level: 'inform',
-      notes: ''
+      notes_en: '',
+      notes_ar: ''
     };
     onChange({ stakeholders: [...(data.stakeholders || []), newStakeholder] });
   };
@@ -307,11 +308,20 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                       </div>
 
                       <div>
-                        <Label>{t({ en: 'Contact Person', ar: 'جهة الاتصال' })}</Label>
+                        <Label>{t({ en: 'Contact Person (English)', ar: 'جهة الاتصال (إنجليزي)' })}</Label>
                         <Input
-                          value={stakeholder.contact_person}
-                          onChange={(e) => updateStakeholder(index, 'contact_person', e.target.value)}
-                          placeholder={t({ en: 'Name', ar: 'الاسم' })}
+                          value={stakeholder.contact_person_en || stakeholder.contact_person || ''}
+                          onChange={(e) => updateStakeholder(index, 'contact_person_en', e.target.value)}
+                          placeholder={t({ en: 'Role/Title', ar: 'الدور/المنصب' })}
+                        />
+                      </div>
+                      <div>
+                        <Label>{t({ en: 'Contact Person (Arabic)', ar: 'جهة الاتصال (عربي)' })}</Label>
+                        <Input
+                          value={stakeholder.contact_person_ar || ''}
+                          onChange={(e) => updateStakeholder(index, 'contact_person_ar', e.target.value)}
+                          placeholder={t({ en: 'Arabic role/title', ar: 'الدور/المنصب بالعربية' })}
+                          dir="rtl"
                         />
                       </div>
                     </div>
@@ -352,16 +362,32 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
             {t({ en: 'Stakeholder Engagement Plan', ar: 'خطة إشراك أصحاب المصلحة' })}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Textarea
-            value={data.stakeholder_engagement_plan || ''}
-            onChange={(e) => onChange({ stakeholder_engagement_plan: e.target.value })}
-            placeholder={t({ 
-              en: 'Describe the overall approach to stakeholder engagement throughout the strategy lifecycle...',
-              ar: 'وصف النهج العام لإشراك أصحاب المصلحة طوال دورة حياة الاستراتيجية...'
-            })}
-            rows={4}
-          />
+        <CardContent className="space-y-4">
+          <div>
+            <Label>{t({ en: 'Engagement Plan (English)', ar: 'خطة الإشراك (إنجليزي)' })}</Label>
+            <Textarea
+              value={data.stakeholder_engagement_plan_en || data.stakeholder_engagement_plan || ''}
+              onChange={(e) => onChange({ stakeholder_engagement_plan_en: e.target.value })}
+              placeholder={t({ 
+                en: 'Describe the overall approach to stakeholder engagement throughout the strategy lifecycle...',
+                ar: 'وصف النهج العام لإشراك أصحاب المصلحة طوال دورة حياة الاستراتيجية...'
+              })}
+              rows={4}
+            />
+          </div>
+          <div>
+            <Label>{t({ en: 'Engagement Plan (Arabic)', ar: 'خطة الإشراك (عربي)' })}</Label>
+            <Textarea
+              value={data.stakeholder_engagement_plan_ar || ''}
+              onChange={(e) => onChange({ stakeholder_engagement_plan_ar: e.target.value })}
+              placeholder={t({ 
+                en: 'Arabic engagement plan...',
+                ar: 'خطة الإشراك بالعربية...'
+              })}
+              rows={4}
+              dir="rtl"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

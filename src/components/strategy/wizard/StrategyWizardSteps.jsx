@@ -329,7 +329,8 @@ export const initialWizardData = {
   
   // Step 3: Stakeholder Analysis
   stakeholders: [],
-  stakeholder_engagement_plan: '',
+  stakeholder_engagement_plan_en: '',
+  stakeholder_engagement_plan_ar: '',
   
   // Step 4: PESTEL
   pestel: {
