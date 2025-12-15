@@ -366,22 +366,48 @@ export default function StrategyWizardWrapper() {
     };
     
     const prompts = {
-      context: `Generate context and discovery content for this Saudi municipal strategic plan:
+      context: `Generate comprehensive context and discovery content for this Saudi municipal strategic plan:
 Plan Name (English): ${context.planName}
-Sectors: ${context.sectors.join(', ')}
-Themes: ${context.themes.join(', ')}
 
-Provide all fields in BOTH English and Arabic:
+Based on the plan name, suggest appropriate values for ALL of the following:
+
+1. ARABIC TITLE:
 - name_ar: Arabic translation of the plan title
+
+2. VISION & MISSION (in both English and Arabic):
 - vision_en, vision_ar
 - mission_en, mission_ar
 - description_en, description_ar
-- quick_stakeholders: 6-10 stakeholder names (strings)
-- key_challenges_en, key_challenges_ar: brief summary of challenges
-- available_resources_en, available_resources_ar: brief summary of resources
-- initial_constraints_en, initial_constraints_ar: brief summary of constraints
 
-Use formal language appropriate for government documents.`,
+3. DURATION & RESOURCES:
+- start_year: Suggested start year (2024-2027)
+- end_year: Suggested end year (2027-2035)
+- budget_range: One of: "<10M", "10-50M", "50-100M", "100-500M", ">500M"
+
+4. TARGET SECTORS (select relevant codes from: URBAN_PLANNING, HOUSING, INFRASTRUCTURE, ENVIRONMENT, SMART_CITIES, DIGITAL_SERVICES, CITIZEN_SERVICES, RURAL_DEVELOPMENT, PUBLIC_SPACES, WATER_RESOURCES, TRANSPORTATION, HERITAGE):
+- target_sectors: Array of sector codes
+
+5. STRATEGIC THEMES (select relevant codes from: DIGITAL_TRANSFORMATION, SUSTAINABILITY, CITIZEN_EXPERIENCE, INNOVATION, GOVERNANCE, ECONOMIC_ENABLEMENT, QUALITY_OF_LIFE, OPERATIONAL_EXCELLENCE):
+- strategic_themes: Array of theme codes
+
+6. FOCUS TECHNOLOGIES (select relevant codes from: AI_ML, IOT, BLOCKCHAIN, DIGITAL_TWINS, DRONES, 5G_6G, ROBOTICS, AR_VR, BIM, CLEANTECH):
+- focus_technologies: Array of technology codes
+
+7. VISION 2030 PROGRAMS (select relevant codes from: QUALITY_OF_LIFE, HOUSING, NTP, THRIVING_CITIES, FISCAL_BALANCE, PRIVATIZATION, DARP):
+- vision_2030_programs: Array of program codes
+
+8. TARGET REGIONS (select relevant codes from: RIYADH, MAKKAH, MADINAH, EASTERN, ASIR, TABUK, HAIL, NORTHERN_BORDERS, JAZAN, NAJRAN, AL_BAHA, AL_JOUF, QASSIM, or leave empty for kingdom-wide):
+- target_regions: Array of region codes
+
+9. KEY STAKEHOLDERS (bilingual list):
+- quick_stakeholders: Array of objects with name_en and name_ar for 6-10 key stakeholders
+
+10. DISCOVERY INPUTS (all bilingual):
+- key_challenges_en, key_challenges_ar
+- available_resources_en, available_resources_ar
+- initial_constraints_en, initial_constraints_ar
+
+Use formal language appropriate for Saudi government documents.`,
       vision: `Generate vision and mission statements for a Saudi municipal strategic plan.
 Plan: ${context.planName}
 Sectors: ${context.sectors.join(', ')}
@@ -472,6 +498,14 @@ Assess readiness, define change approach, and resistance management strategies.`
           'mission_ar',
           'description_en',
           'description_ar',
+          'start_year',
+          'end_year',
+          'budget_range',
+          'target_sectors',
+          'strategic_themes',
+          'focus_technologies',
+          'vision_2030_programs',
+          'target_regions',
           'quick_stakeholders',
           'key_challenges_en',
           'key_challenges_ar',
@@ -488,7 +522,24 @@ Assess readiness, define change approach, and resistance management strategies.`
           mission_ar: { type: 'string' },
           description_en: { type: 'string' },
           description_ar: { type: 'string' },
-          quick_stakeholders: { type: 'array', items: { type: 'string' } },
+          start_year: { type: 'integer' },
+          end_year: { type: 'integer' },
+          budget_range: { type: 'string' },
+          target_sectors: { type: 'array', items: { type: 'string' } },
+          strategic_themes: { type: 'array', items: { type: 'string' } },
+          focus_technologies: { type: 'array', items: { type: 'string' } },
+          vision_2030_programs: { type: 'array', items: { type: 'string' } },
+          target_regions: { type: 'array', items: { type: 'string' } },
+          quick_stakeholders: { 
+            type: 'array', 
+            items: { 
+              type: 'object', 
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' } 
+              } 
+            } 
+          },
           key_challenges_en: { type: 'string' },
           key_challenges_ar: { type: 'string' },
           available_resources_en: { type: 'string' },
@@ -713,11 +764,30 @@ Assess readiness, define change approach, and resistance management strategies.`
           if (data.description_en) updates.description_en = data.description_en;
           if (data.description_ar) updates.description_ar = data.description_ar;
 
+          // Duration & Resources
+          if (data.start_year) updates.start_year = parseInt(data.start_year) || updates.start_year;
+          if (data.end_year) updates.end_year = parseInt(data.end_year) || updates.end_year;
+          if (data.budget_range) updates.budget_range = data.budget_range;
+
+          // Target Sectors, Themes, Technologies, Programs, Regions
+          if (Array.isArray(data.target_sectors)) updates.target_sectors = data.target_sectors;
+          if (Array.isArray(data.strategic_themes)) updates.strategic_themes = data.strategic_themes;
+          if (Array.isArray(data.focus_technologies)) updates.focus_technologies = data.focus_technologies;
+          if (Array.isArray(data.vision_2030_programs)) updates.vision_2030_programs = data.vision_2030_programs;
+          if (Array.isArray(data.target_regions)) updates.target_regions = data.target_regions;
+
+          // Bilingual stakeholders
           if (Array.isArray(data.quick_stakeholders)) {
-            updates.quick_stakeholders = data.quick_stakeholders.map(s => String(s).trim()).filter(Boolean);
+            updates.quick_stakeholders = data.quick_stakeholders.map(s => {
+              if (typeof s === 'object' && s !== null) {
+                return { name_en: s.name_en || '', name_ar: s.name_ar || '' };
+              }
+              // Backward compatibility for string format
+              return { name_en: String(s).trim(), name_ar: '' };
+            }).filter(s => s.name_en || s.name_ar);
           }
 
-          // Bilingual discovery inputs (new fields)
+          // Bilingual discovery inputs
           if (typeof data.key_challenges_en === 'string') updates.key_challenges_en = data.key_challenges_en;
           if (typeof data.key_challenges_ar === 'string') updates.key_challenges_ar = data.key_challenges_ar;
           if (typeof data.available_resources_en === 'string') updates.available_resources_en = data.available_resources_en;

@@ -30,9 +30,10 @@ export default function Step1Context({
     onChange({ [field]: updated });
   };
 
-  const addQuickStakeholder = (stakeholder) => {
-    if (stakeholder.trim()) {
-      onChange({ quick_stakeholders: [...(data.quick_stakeholders || []), stakeholder.trim()] });
+  const addQuickStakeholder = (nameEn, nameAr = '') => {
+    if (nameEn.trim() || nameAr.trim()) {
+      const newStakeholder = { name_en: nameEn.trim(), name_ar: nameAr.trim() };
+      onChange({ quick_stakeholders: [...(data.quick_stakeholders || []), newStakeholder] });
     }
   };
 
@@ -40,6 +41,14 @@ export default function Step1Context({
     const updated = [...(data.quick_stakeholders || [])];
     updated.splice(index, 1);
     onChange({ quick_stakeholders: updated });
+  };
+
+  // Helper to get stakeholder display name
+  const getStakeholderName = (s, index) => {
+    if (typeof s === 'object' && s !== null) {
+      return language === 'ar' ? (s.name_ar || s.name_en) : (s.name_en || s.name_ar);
+    }
+    return String(s);
   };
 
   return (
@@ -304,29 +313,49 @@ export default function Step1Context({
           <CardDescription>{t({ en: 'Add stakeholder names here. Detailed analysis is in Step 3.', ar: 'أضف أسماء أصحاب المصلحة هنا. التحليل التفصيلي في الخطوة 3.' })}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Input
-              id="new-stakeholder"
-              placeholder={t({ en: 'Add stakeholder (e.g., MOMRA, RCRC, SDAIA)', ar: 'أضف صاحب مصلحة (مثال: وزارة الموارد البشرية)' })}
+              id="new-stakeholder-en"
+              placeholder={t({ en: 'Stakeholder name (English)', ar: 'اسم صاحب المصلحة (إنجليزي)' })}
+              dir="ltr"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  addQuickStakeholder(e.target.value);
-                  e.target.value = '';
+                  const enInput = document.getElementById('new-stakeholder-en');
+                  const arInput = document.getElementById('new-stakeholder-ar');
+                  addQuickStakeholder(enInput.value, arInput.value);
+                  enInput.value = '';
+                  arInput.value = '';
                 }
               }}
             />
-            <Button variant="outline" onClick={() => {
-              const input = document.getElementById('new-stakeholder');
-              addQuickStakeholder(input.value);
-              input.value = '';
-            }}>
-              {t({ en: 'Add', ar: 'إضافة' })}
-            </Button>
+            <Input
+              id="new-stakeholder-ar"
+              placeholder={t({ en: 'Stakeholder name (Arabic)', ar: 'اسم صاحب المصلحة (عربي)' })}
+              dir="rtl"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const enInput = document.getElementById('new-stakeholder-en');
+                  const arInput = document.getElementById('new-stakeholder-ar');
+                  addQuickStakeholder(enInput.value, arInput.value);
+                  enInput.value = '';
+                  arInput.value = '';
+                }
+              }}
+            />
           </div>
+          <Button variant="outline" onClick={() => {
+            const enInput = document.getElementById('new-stakeholder-en');
+            const arInput = document.getElementById('new-stakeholder-ar');
+            addQuickStakeholder(enInput.value, arInput.value);
+            enInput.value = '';
+            arInput.value = '';
+          }}>
+            {t({ en: 'Add Stakeholder', ar: 'إضافة صاحب مصلحة' })}
+          </Button>
           <div className="flex flex-wrap gap-2">
             {(data.quick_stakeholders || []).map((s, i) => (
               <Badge key={i} variant="secondary" className="gap-1">
-                {s}
+                {getStakeholderName(s, i)}
                 <X className="h-3 w-3 cursor-pointer" onClick={() => removeQuickStakeholder(i)} />
               </Badge>
             ))}
