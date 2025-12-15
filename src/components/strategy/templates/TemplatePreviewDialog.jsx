@@ -104,6 +104,13 @@ export default function TemplatePreviewDialog({
       included: template.objectives?.length > 0
     },
     { 
+      icon: Globe, 
+      label: { en: 'National Alignment', ar: 'التوافق الوطني' },
+      phase: 'strategy',
+      count: template.national_alignments?.length || 0,
+      included: template.national_alignments?.length > 0
+    },
+    { 
       icon: CheckCircle2, 
       label: { en: 'KPIs & Metrics', ar: 'مؤشرات الأداء' },
       phase: 'strategy',
@@ -121,9 +128,17 @@ export default function TemplatePreviewDialog({
       icon: DollarSign, 
       label: { en: 'Resource Planning', ar: 'تخطيط الموارد' },
       phase: 'strategy',
-      included: !!(template.resource_plan && Object.keys(template.resource_plan).length > 0)
+      included: !!(template.resource_plan && Object.keys(template.resource_plan).length > 0),
+      count: template.resource_plan?.hr_requirements?.length || 0
     },
     // Phase 4: Implementation
+    { 
+      icon: Calendar, 
+      label: { en: 'Timeline & Milestones', ar: 'الجدول الزمني' },
+      phase: 'implementation',
+      count: (template.milestones?.length || 0) + (template.phases?.length || 0),
+      included: !!(template.milestones?.length > 0 || template.phases?.length > 0)
+    },
     { 
       icon: Building2, 
       label: { en: 'Governance Structure', ar: 'هيكل الحوكمة' },
@@ -367,6 +382,47 @@ export default function TemplatePreviewDialog({
                           {t({ en: 'Threats', ar: 'التهديدات' })}: {template.swot.threats.length}
                         </span>
                       </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* National Alignments Preview */}
+              {template.national_alignments?.length > 0 && (
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-primary" />
+                    {t({ en: 'National Alignment', ar: 'التوافق الوطني' })}
+                  </h4>
+                  <ul className="space-y-1">
+                    {template.national_alignments.slice(0, 3).map((alignment, idx) => (
+                      <li key={idx} className="text-xs text-muted-foreground flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full" />
+                        {alignment.program_name || alignment.vision_program || 'Vision 2030 Program'}
+                      </li>
+                    ))}
+                    {template.national_alignments.length > 3 && (
+                      <li className="text-xs text-muted-foreground">
+                        +{template.national_alignments.length - 3} {t({ en: 'more', ar: 'المزيد' })}
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {/* Timeline Preview */}
+              {(template.milestones?.length > 0 || template.phases?.length > 0) && (
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    {t({ en: 'Timeline & Milestones', ar: 'الجدول الزمني' })}
+                  </h4>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    {template.milestones?.length > 0 && (
+                      <p>{template.milestones.length} {t({ en: 'milestones defined', ar: 'معالم محددة' })}</p>
+                    )}
+                    {template.phases?.length > 0 && (
+                      <p>{template.phases.length} {t({ en: 'phases planned', ar: 'مراحل مخططة' })}</p>
                     )}
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 # Strategy Templates System - Design Document
 
-> **Version**: 1.2  
+> **Version**: 1.4  
 > **Last Updated**: December 15, 2025  
 > **Status**: ✅ Fully Implemented
 
@@ -243,11 +243,12 @@ template_tags      TEXT[]                  -- Searchable tags
 
 | Category | Description |
 |----------|-------------|
-| `system` | Pre-built system templates (read-only) |
-| `featured` | Curated high-quality templates |
+| `system` | Pre-built official templates (read-only) |
 | `community` | User-shared public templates |
 | `organization` | Organization-specific templates |
 | `personal` | User's private templates |
+
+> **Note**: `is_featured` is a separate boolean flag, not a category.
 
 ---
 
