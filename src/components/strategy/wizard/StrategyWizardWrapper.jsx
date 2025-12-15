@@ -514,7 +514,7 @@ Initial Constraints: ${context.initialConstraints || 'Standard constraints'}
 
 **PART 1: STAKEHOLDERS (Generate exactly 14-18 stakeholders)**
 
-Each stakeholder MUST have ALL these fields:
+Each stakeholder MUST have ALL these fields (all text fields bilingual):
 - name_en: Full organization/role name in English
 - name_ar: Full organization/role name in Arabic  
 - type: One of GOVERNMENT | PRIVATE | ACADEMIC | NGO | COMMUNITY | INTERNATIONAL | INTERNAL
@@ -523,8 +523,10 @@ Each stakeholder MUST have ALL these fields:
 - engagement_level: One of inform | consult | involve | collaborate | empower
 - influence_strategy_en: 2-3 sentences on how to engage this stakeholder (English)
 - influence_strategy_ar: 2-3 sentences on how to engage this stakeholder (Arabic)
-- contact_person: Suggested role/title for primary contact (e.g., "Director of Strategic Planning")
-- notes: Brief note about timing, special considerations, or relationship history
+- contact_person_en: Suggested role/title for primary contact in English (e.g., "Director of Strategic Planning")
+- contact_person_ar: Suggested role/title for primary contact in Arabic (e.g., "مدير التخطيط الاستراتيجي")
+- notes_en: Brief note about timing, special considerations, or relationship history (English)
+- notes_ar: Brief note about timing, special considerations, or relationship history (Arabic)
 
 CRITICAL DISTRIBUTION REQUIREMENTS:
 - At least 4 GOVERNMENT stakeholders (relevant ministries, agencies)
@@ -542,16 +544,20 @@ POWER/INTEREST DISTRIBUTION:
 - 3-4 stakeholders with Low/Medium Power + High Interest (Keep Informed)
 - 3-4 stakeholders with Low Power + Low Interest (Monitor)
 
-**PART 2: STAKEHOLDER ENGAGEMENT PLAN (Required)**
+**PART 2: STAKEHOLDER ENGAGEMENT PLAN (Required - Bilingual)**
 
-Generate a comprehensive stakeholder_engagement_plan (3-5 paragraphs) that describes:
+Generate a comprehensive engagement plan in BOTH languages:
+- stakeholder_engagement_plan_en: 3-5 paragraphs in English
+- stakeholder_engagement_plan_ar: 3-5 paragraphs in Arabic (formal فصحى)
+
+Both versions should describe:
 1. Overall engagement philosophy and approach for this strategic plan
 2. Communication cadence and channels for different stakeholder groups
 3. Key engagement milestones aligned with the plan timeline (${context.startYear}-${context.endYear})
 4. Mechanisms for stakeholder feedback and input
 5. Risk mitigation for potential stakeholder resistance or disengagement
 
-Use formal Arabic (فصحى) for Arabic content. Be specific to the plan context, not generic.`,
+Be specific to the plan context, not generic.`,
       pestel: `Conduct PESTEL analysis for this Saudi municipal strategy:
 Plan: ${context.planName}
 Vision: ${context.vision}
@@ -725,12 +731,15 @@ Assess readiness, define change approach, and resistance management strategies.`
                 engagement_level: { type: 'string' }, 
                 influence_strategy_en: { type: 'string' },
                 influence_strategy_ar: { type: 'string' },
-                contact_person: { type: 'string' },
-                notes: { type: 'string' }
+                contact_person_en: { type: 'string' },
+                contact_person_ar: { type: 'string' },
+                notes_en: { type: 'string' },
+                notes_ar: { type: 'string' }
               } 
             } 
           },
-          stakeholder_engagement_plan: { type: 'string' }
+          stakeholder_engagement_plan_en: { type: 'string' },
+          stakeholder_engagement_plan_ar: { type: 'string' }
         }
       },
       pestel: {
@@ -994,12 +1003,21 @@ Assess readiness, define change approach, and resistance management strategies.`
               power: s.power || 'medium',
               interest: s.interest || 'medium',
               engagement_level: s.engagement_level || 'consult',
-              contact_person: s.contact_person || '',
-              notes: s.notes || ''
+              contact_person_en: s.contact_person_en || s.contact_person || '',
+              contact_person_ar: s.contact_person_ar || '',
+              notes_en: s.notes_en || s.notes || '',
+              notes_ar: s.notes_ar || ''
             }));
           }
-          if (data.stakeholder_engagement_plan) {
-            updates.stakeholder_engagement_plan = data.stakeholder_engagement_plan;
+          if (data.stakeholder_engagement_plan_en) {
+            updates.stakeholder_engagement_plan_en = data.stakeholder_engagement_plan_en;
+          }
+          if (data.stakeholder_engagement_plan_ar) {
+            updates.stakeholder_engagement_plan_ar = data.stakeholder_engagement_plan_ar;
+          }
+          // Backward compatibility
+          if (data.stakeholder_engagement_plan && !data.stakeholder_engagement_plan_en) {
+            updates.stakeholder_engagement_plan_en = data.stakeholder_engagement_plan;
           }
         } else if (stepKey === 'pestel') {
           // PESTEL UI expects bilingual objects
