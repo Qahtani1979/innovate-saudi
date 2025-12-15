@@ -12,7 +12,7 @@ export default function Step2SWOT({
   onGenerateAI, 
   isGenerating 
 }) {
-  const { language, t } = useLanguage();
+  const { language, t, isRTL } = useLanguage();
   const [newItems, setNewItems] = useState({ strengths: '', weaknesses: '', opportunities: '', threats: '' });
 
   const swot = data.swot || { strengths: [], weaknesses: [], opportunities: [], threats: [] };
@@ -82,7 +82,7 @@ export default function Step2SWOT({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* AI Generation */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-4">

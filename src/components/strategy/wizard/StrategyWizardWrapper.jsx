@@ -522,6 +522,8 @@ Assess readiness, define change approach, and resistance management strategies.`
                 type: { type: 'string' },
                 priority: { type: 'string' },
                 budget_estimate: { type: 'string' },
+                start_date: { type: 'string' },
+                end_date: { type: 'string' },
                 owner: { type: 'string' },
                 deliverables: { type: 'array', items: { type: 'string' } },
                 dependencies: { type: 'array', items: { type: 'string' } }
@@ -533,24 +535,25 @@ Assess readiness, define change approach, and resistance management strategies.`
       resources: {
         type: 'object',
         properties: {
-          hr_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' } } } },
-          technology_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' } } } },
-          infrastructure_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' } } } },
-          budget_allocation: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' } } } }
+          hr_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes: { type: 'string' } } } },
+          technology_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes: { type: 'string' } } } },
+          infrastructure_requirements: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes: { type: 'string' } } } },
+          budget_allocation: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, quantity: { type: 'string' }, cost: { type: 'string' }, notes: { type: 'string' } } } }
         }
       },
       timeline: {
         type: 'object',
         properties: {
-          phases: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, start_date: { type: 'string' }, end_date: { type: 'string' }, description: { type: 'string' } } } },
-          milestones: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, date: { type: 'string' }, type: { type: 'string' } } } }
+          phases: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, start_date: { type: 'string' }, end_date: { type: 'string' }, description: { type: 'string' }, objectives_covered: { type: 'array', items: { type: 'number' } } } } },
+          milestones: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, date: { type: 'string' }, type: { type: 'string' }, description: { type: 'string' } } } }
         }
       },
       governance: {
         type: 'object',
         properties: {
-          committees: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, role: { type: 'string' }, meeting_frequency: { type: 'string' }, responsibilities: { type: 'string' } } } },
-          reporting_frequency: { type: 'string' }
+          committees: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, role: { type: 'string' }, meeting_frequency: { type: 'string' }, responsibilities: { type: 'string' }, members: { type: 'array', items: { type: 'string' } } } } },
+          reporting_frequency: { type: 'string' },
+          escalation_path: { type: 'string' }
         }
       },
       communication: {
@@ -566,7 +569,8 @@ Assess readiness, define change approach, and resistance management strategies.`
         properties: {
           readiness_assessment: { type: 'string' },
           change_approach: { type: 'string' },
-          resistance_management: { type: 'string' }
+          resistance_management: { type: 'string' },
+          training_plan: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, target_audience: { type: 'string' }, duration: { type: 'string' }, timeline: { type: 'string' } } } }
         }
       }
     };
@@ -722,6 +726,8 @@ Assess readiness, define change approach, and resistance management strategies.`
             type: a.type || 'initiative',
             priority: a.priority || 'medium',
             budget_estimate: a.budget_estimate || '',
+            start_date: a.start_date || '',
+            end_date: a.end_date || '',
             owner: a.owner || '',
             deliverables: Array.isArray(a.deliverables) ? a.deliverables : [],
             dependencies: Array.isArray(a.dependencies) ? a.dependencies : []
@@ -735,20 +741,30 @@ Assess readiness, define change approach, and resistance management strategies.`
           };
         } else if (stepKey === 'timeline') {
           if (data.phases) {
-            updates.phases = data.phases.map((p, i) => ({ ...p, id: Date.now().toString() + 'phase' + i }));
+            updates.phases = data.phases.map((p, i) => ({ 
+              ...p, 
+              id: Date.now().toString() + 'phase' + i,
+              objectives_covered: Array.isArray(p.objectives_covered) ? p.objectives_covered : []
+            }));
           }
           if (data.milestones) {
             updates.milestones = data.milestones.map((m, i) => ({ 
               ...m, 
               id: Date.now().toString() + 'ms' + i,
-              status: 'planned'
+              status: 'planned',
+              description: m.description || ''
             }));
           }
         } else if (stepKey === 'governance') {
           updates.governance = {
             ...wizardData.governance,
-            committees: (data.committees || []).map((c, i) => ({ ...c, id: Date.now().toString() + i })),
-            reporting_frequency: data.reporting_frequency || 'monthly'
+            committees: (data.committees || []).map((c, i) => ({ 
+              ...c, 
+              id: Date.now().toString() + i,
+              members: Array.isArray(c.members) ? c.members : []
+            })),
+            reporting_frequency: data.reporting_frequency || 'monthly',
+            escalation_path: data.escalation_path || ''
           };
         } else if (stepKey === 'communication') {
           updates.communication_plan = {
@@ -762,7 +778,8 @@ Assess readiness, define change approach, and resistance management strategies.`
             ...wizardData.change_management,
             readiness_assessment: data.readiness_assessment || '',
             change_approach: data.change_approach || '',
-            resistance_management: data.resistance_management || ''
+            resistance_management: data.resistance_management || '',
+            training_plan: (data.training_plan || []).map((t, i) => ({ ...t, id: Date.now().toString() + 'train' + i }))
           };
         }
         
