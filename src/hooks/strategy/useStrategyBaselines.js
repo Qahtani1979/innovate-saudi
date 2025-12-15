@@ -1,10 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 
+// Safe hook to get user email without throwing if outside AuthProvider
+const useUserEmail = () => {
+  const [email, setEmail] = useState(null);
+  
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setEmail(user?.email || null);
+    };
+    getUser();
+  }, []);
+  
+  return email;
+};
+
 export function useStrategyBaselines(strategicPlanId) {
-  const { user } = useAuth();
+  const userEmail = useUserEmail();
   const [baselines, setBaselines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,7 +68,7 @@ export function useStrategyBaselines(strategicPlanId) {
 
   // Save baseline to database
   const saveBaseline = useCallback(async (baseline) => {
-    if (!strategicPlanId || !user?.email) {
+    if (!strategicPlanId || !userEmail) {
       toast.error('Please log in to save');
       return false;
     }
@@ -73,7 +87,7 @@ export function useStrategyBaselines(strategicPlanId) {
         source: baseline.source,
         status: baseline.status,
         notes: baseline.notes,
-        created_by_email: user.email,
+        created_by_email: userEmail,
         updated_at: new Date().toISOString()
       };
 
@@ -128,7 +142,7 @@ export function useStrategyBaselines(strategicPlanId) {
     } finally {
       setSaving(false);
     }
-  }, [strategicPlanId, user]);
+  }, [strategicPlanId, userEmail]);
 
   // Delete baseline (soft delete)
   const deleteBaseline = useCallback(async (id) => {

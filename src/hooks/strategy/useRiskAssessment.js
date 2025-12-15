@@ -1,10 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 
+// Safe hook to get user email without throwing if outside AuthProvider
+const useUserEmail = () => {
+  const [email, setEmail] = useState(null);
+  
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setEmail(user?.email || null);
+    };
+    getUser();
+  }, []);
+  
+  return email;
+};
+
 export function useRiskAssessment(strategicPlanId) {
-  const { user } = useAuth();
+  const userEmail = useUserEmail();
   const [risks, setRisks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,7 +71,7 @@ export function useRiskAssessment(strategicPlanId) {
 
   // Save risk to database
   const saveRisk = useCallback(async (risk) => {
-    if (!strategicPlanId || !user?.email) {
+    if (!strategicPlanId || !userEmail) {
       toast.error('Please log in to save');
       return false;
     }
@@ -136,7 +150,7 @@ export function useRiskAssessment(strategicPlanId) {
     } finally {
       setSaving(false);
     }
-  }, [strategicPlanId, user]);
+  }, [strategicPlanId, userEmail]);
 
   // Delete risk (soft delete)
   const deleteRisk = useCallback(async (id) => {

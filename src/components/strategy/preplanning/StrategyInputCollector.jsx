@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useStrategyInputs } from '@/hooks/strategy/useStrategyInputs';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { 
   MessageSquare, 
   Plus, 
@@ -36,6 +37,7 @@ import {
 const StrategyInputCollector = ({ strategicPlanId, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
+  const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
   
   // Database integration hook
   const { 
@@ -134,20 +136,91 @@ const StrategyInputCollector = ({ strategicPlanId, onSave }) => {
 
   const handleAIAnalyze = async () => {
     setIsAnalyzing(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Simulate AI theme extraction
-    setInputs(prev => prev.map(input => ({
-      ...input,
-      ai_extracted_themes: input.ai_extracted_themes.length ? input.ai_extracted_themes : 
-        ['Innovation', 'Digital Services', 'Efficiency']
-    })));
-    
-    setIsAnalyzing(false);
-    toast({
-      title: t({ en: 'AI Analysis Complete', ar: 'اكتمل تحليل الذكاء الاصطناعي' }),
-      description: t({ en: 'Themes extracted from all inputs.', ar: 'تم استخراج المواضيع من جميع المدخلات.' })
-    });
+    try {
+      // Prepare existing inputs for analysis
+      const inputTexts = inputs.map(input => input.input_text).join('\n---\n');
+      
+      const result = await invokeAI({
+        system_prompt: `You are a strategic planning expert. Analyze strategy inputs and extract meaningful themes.`,
+        prompt: `Analyze these strategy inputs and extract key themes for each:
+
+${inputTexts || 'No inputs to analyze yet. Generate sample strategic inputs for a municipal innovation strategy.'}
+
+For each input or for new generated inputs, provide:
+- source_type: one of "municipality", "department", "citizen", "expert", "stakeholder"
+- source_name: Name of the source
+- input_text: The strategic input text
+- theme: Primary theme
+- sentiment: "positive", "neutral", or "negative"
+- ai_extracted_themes: Array of extracted themes`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            inputs: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  source_type: { type: 'string', enum: ['municipality', 'department', 'citizen', 'expert', 'stakeholder'] },
+                  source_name: { type: 'string' },
+                  input_text: { type: 'string' },
+                  theme: { type: 'string' },
+                  sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] },
+                  ai_extracted_themes: { type: 'array', items: { type: 'string' } }
+                },
+                required: ['source_type', 'source_name', 'input_text', 'theme', 'sentiment', 'ai_extracted_themes']
+              }
+            }
+          },
+          required: ['inputs']
+        }
+      });
+
+      if (result.success && result.data?.response?.inputs) {
+        const aiInputs = result.data.response.inputs;
+        
+        // Save each new input to database
+        for (const input of aiInputs) {
+          const newInput = {
+            id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            source_type: input.source_type,
+            source_name: input.source_name,
+            input_text: input.input_text,
+            theme: input.theme,
+            sentiment: input.sentiment,
+            priority_votes: 0,
+            ai_extracted_themes: input.ai_extracted_themes || [],
+            created_at: new Date().toISOString().split('T')[0]
+          };
+          
+          const saved = await saveToDb(newInput);
+          if (saved) {
+            setInputs(prev => [...prev, saved]);
+          }
+        }
+        
+        toast({
+          title: t({ en: 'AI Analysis Complete', ar: 'اكتمل تحليل الذكاء الاصطناعي' }),
+          description: t({ en: `${aiInputs.length} strategic inputs analyzed and saved.`, ar: `تم تحليل وحفظ ${aiInputs.length} مدخلات استراتيجية.` })
+        });
+      } else {
+        toast({
+          title: t({ en: 'AI Analysis Failed', ar: 'فشل التحليل' }),
+          description: t({ en: 'Unable to analyze inputs. Please try again.', ar: 'تعذر تحليل المدخلات. يرجى المحاولة مرة أخرى.' }),
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      toast({
+        title: t({ en: 'Error', ar: 'خطأ' }),
+        description: t({ en: 'An error occurred during AI analysis.', ar: 'حدث خطأ أثناء تحليل الذكاء الاصطناعي.' }),
+        variant: 'destructive'
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const filteredInputs = inputs.filter(i => {
