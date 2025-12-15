@@ -1,14 +1,19 @@
 # Strategy Templates System - Design Document
 
-> **Version**: 2.0  
+> **Version**: 2.1  
 > **Last Updated**: December 15, 2025  
-> **Status**: ✅ Fully Implemented & Consistent - MoMAH Innovation Focus
+> **Status**: ✅ Fully Implemented - MoMAH Innovation Focus + Coverage Analysis
 
-## Recent Changes (v2.0)
-- Added 14 official MoMAH Innovation & R&D templates covering all service domains
-- All templates aligned with Saudi Vision 2030, MoMAH mandate, and Innovation priorities
-- Templates cover: Digital Transformation, Smart Cities, Housing/PropTech, CleanTech, GIS, IoT, Rural, GovTech, Citizen Services
-- Verified all template operations consistent with wizard data structure
+## Recent Changes (v2.1)
+- Added `TemplateCoverageAnalysis` component for analyzing templates against MoMAH taxonomy
+- Coverage Analysis tab now shows:
+  - Template coverage by service domains
+  - Template coverage by innovation areas
+  - Template coverage by Vision 2030 programs
+  - Gap identification for uncovered areas
+  - AI recommendations for new templates
+  - Template distribution by type
+- Coverage Analysis accessible via Strategy Hub Templates Tab
 
 ---
 
@@ -20,11 +25,12 @@
 4. [Data Model](#data-model)
 5. [User Workflows](#user-workflows)
 6. [Component Design](#component-design)
-7. [Integration with Wizard](#integration-with-wizard)
-8. [Implementation Status](#implementation-status)
-9. [File Structure](#file-structure)
-10. [API Reference](#api-reference)
-11. [Consistency with Wizard](#consistency-with-wizard)
+7. [Coverage Analysis](#coverage-analysis)
+8. [Integration with Wizard](#integration-with-wizard)
+9. [Implementation Status](#implementation-status)
+10. [File Structure](#file-structure)
+11. [API Reference](#api-reference)
+12. [Consistency with Wizard](#consistency-with-wizard)
 
 ---
 
@@ -36,6 +42,8 @@ The Strategy Templates System enables users to:
 - **Apply** templates to quickly start new plans in the wizard
 - **Share** templates publicly or keep them private
 - **Manage** personal template library
+- **Analyze** template coverage against MoMAH taxonomy
+- **Identify** gaps and get AI recommendations for new templates
 
 ### Key Design Decisions
 
@@ -45,6 +53,7 @@ The Strategy Templates System enables users to:
 | Template Source | Completed plans can become templates | Ensures real-world tested templates |
 | Access Control | Public/Private via `is_public` flag | Simple sharing model |
 | Integration | Deep integration with wizard | Seamless user experience |
+| Coverage Analysis | MoMAH taxonomy alignment | Ensures strategic coverage of all domains |
 
 ---
 
@@ -58,13 +67,13 @@ The Strategy Templates System enables users to:
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │  ┌──────────────────┐    ┌──────────────────┐    ┌───────────────┐  │
-│  │  Template        │    │  Template        │    │  Template     │  │
-│  │  Library Page    │    │  Management      │    │  Application  │  │
+│  │  Template        │    │  Coverage        │    │  Template     │  │
+│  │  Library Page    │    │  Analysis        │    │  Application  │  │
 │  │                  │    │                  │    │               │  │
-│  │  • Browse        │    │  • Create        │    │  • Preview    │  │
-│  │  • Search        │    │  • Edit          │    │  • Apply      │  │
-│  │  • Filter        │    │  • Delete        │    │  • Clone      │  │
-│  │  • Categories    │    │  • Share/Unshare │    │  • Customize  │  │
+│  │  • Browse        │    │  • Taxonomy      │    │  • Preview    │  │
+│  │  • Search        │    │  • Gaps          │    │  • Apply      │  │
+│  │  • Filter        │    │  • AI Recs       │    │  • Clone      │  │
+│  │  • Categories    │    │  • Distribution  │    │  • Customize  │  │
 │  └────────┬─────────┘    └────────┬─────────┘    └───────┬───────┘  │
 │           │                       │                      │          │
 │           └───────────────────────┼──────────────────────┘          │
@@ -72,19 +81,10 @@ The Strategy Templates System enables users to:
 │                    ┌──────────────▼──────────────┐                  │
 │                    │      useStrategyTemplates   │                  │
 │                    │           Hook              │                  │
-│                    │                             │                  │
-│                    │  • fetchTemplates()         │                  │
-│                    │  • fetchMyTemplates()       │                  │
-│                    │  • createTemplate()         │                  │
-│                    │  • updateTemplate()         │                  │
-│                    │  • deleteTemplate()         │                  │
-│                    │  • applyTemplate()          │                  │
-│                    │  • saveAsTemplate()         │                  │
 │                    └──────────────┬──────────────┘                  │
 │                                   │                                  │
 │                    ┌──────────────▼──────────────┐                  │
 │                    │      Supabase Database      │                  │
-│                    │                             │                  │
 │                    │  strategic_plans            │                  │
 │                    │  WHERE is_template = true   │                  │
 │                    └─────────────────────────────┘                  │
@@ -92,171 +92,87 @@ The Strategy Templates System enables users to:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Template Lifecycle
+---
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Strategic  │     │   Save as   │     │  Template   │
-│    Plan     │────►│  Template   │────►│   Created   │
-│ (Completed) │     │             │     │             │
-└─────────────┘     └─────────────┘     └──────┬──────┘
-                                               │
-                    ┌──────────────────────────┼──────────────────────┐
-                    │                          │                      │
-                    ▼                          ▼                      ▼
-            ┌─────────────┐           ┌─────────────┐        ┌─────────────┐
-            │   Private   │           │   Public    │        │  Featured   │
-            │  Template   │           │  Template   │        │  Template   │
-            │             │           │             │        │  (Curated)  │
-            └─────────────┘           └─────────────┘        └─────────────┘
-                    │                          │                      │
-                    └──────────────────────────┼──────────────────────┘
-                                               │
-                                               ▼
-                                      ┌─────────────┐
-                                      │   Applied   │
-                                      │  to Wizard  │
-                                      │             │
-                                      │  Creates    │
-                                      │  New Plan   │
-                                      └─────────────┘
+## Coverage Analysis
+
+### New Feature: Template Coverage Analysis
+
+The `TemplateCoverageAnalysis` component provides:
+
+#### 1. Coverage by MoMAH Service Domains
+- Housing & Real Estate
+- Municipal Services
+- Urban Planning
+- Environmental Services
+- Rural Development
+- Digital Government
+
+#### 2. Coverage by Innovation Areas
+- Digital Transformation
+- Smart City Technologies
+- Citizen Experience
+- Sustainability & Green Tech
+- Data & AI
+- Process Automation
+- PropTech & Housing Innovation
+- GovTech & Digital Permits
+- Infrastructure IoT
+- Rural Digital Inclusion
+
+#### 3. Coverage by Vision 2030 Programs
+- Quality of Life
+- Housing Program (Sakani)
+- National Transformation
+- Digital Government
+- Environmental Sustainability
+- Regional Development
+
+#### 4. Gap Identification
+- Identifies uncovered service domains
+- Highlights missing innovation areas
+- Shows Vision 2030 program gaps
+- Prioritizes gaps by strategic importance
+
+#### 5. AI Recommendations
+Pre-defined, context-consistent recommendations for:
+- Public Health & Safety Innovation Strategy
+- Drones & Robotics in Municipal Services
+- Blockchain & Trust Technologies Strategy
+- Quality of Life Enhancement Strategy
+
+### Component Implementation
+
+```typescript
+// src/components/strategy/templates/TemplateCoverageAnalysis.jsx
+
+interface CoverageItem {
+  id: string;
+  name: { en: string; ar: string };
+  coverage: number;
+  templateCount: number;
+  templates: string[];
+}
+
+interface Gap {
+  area: string;
+  priority: 'high' | 'medium' | 'low';
+  recommendation: string;
+}
+
+interface AIRecommendation {
+  id: string;
+  title: { en: string; ar: string };
+  description: { en: string; ar: string };
+  targetGap: string;
+  templateType: string;
+  estimatedImpact: 'high' | 'medium';
+}
 ```
 
 ---
 
-## Architecture
-
-### Component Hierarchy
-
-```
-StrategyTemplatesPage
-├── ActivePlanBanner
-└── StrategyTemplateLibrary
-    ├── TemplateHeader
-    │   ├── Search Input
-    │   ├── Category Filter
-    │   └── Template Count Badge
-    ├── Tabs
-    │   ├── Browse Tab
-    │   │   ├── TemplateGrid
-    │   │   │   └── TemplateCard (multiple)
-    │   │   │       ├── Type Icon
-    │   │   │       ├── Template Info
-    │   │   │       ├── Usage Stats
-    │   │   │       └── Action Buttons
-    │   │   └── EmptyState
-    │   ├── My Templates Tab
-    │   │   ├── TemplateGrid (filtered)
-    │   │   └── EmptyState with CTA
-    │   └── Create Tab
-    │       └── TemplateCreateForm
-    │           ├── Basic Info Fields
-    │           ├── Type Selector
-    │           ├── Source Plan Selector
-    │           └── Privacy Toggle
-    ├── TemplatePreviewDialog
-    │   ├── Template Details
-    │   ├── Objectives Preview
-    │   ├── KPIs Preview
-    │   └── Apply Button
-    └── TemplateApplyDialog
-        ├── Customization Options
-        ├── Name Override
-        └── Confirm Apply
-```
-
-### Data Flow Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Data Flow                                    │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│   User Action                                                        │
-│       │                                                              │
-│       ▼                                                              │
-│   ┌─────────────────────────────────────────────────────────────┐   │
-│   │                     Template Actions                         │   │
-│   ├─────────────────────────────────────────────────────────────┤   │
-│   │                                                              │   │
-│   │  BROWSE           APPLY              CREATE         DELETE   │   │
-│   │     │               │                  │              │      │   │
-│   │     ▼               ▼                  ▼              ▼      │   │
-│   │  ┌───────┐    ┌───────────┐      ┌─────────┐    ┌────────┐  │   │
-│   │  │ Fetch │    │ Clone to  │      │ Insert  │    │ Hard   │  │   │
-│   │  │ WHERE │    │ New Plan  │      │ WHERE   │    │ Delete │  │   │
-│   │  │ is_   │    │ is_temp   │      │ is_temp │    │        │  │   │
-│   │  │ temp  │    │ = false   │      │ = true  │    │        │  │   │
-│   │  │ =true │    │           │      │         │    │        │  │   │
-│   │  └───┬───┘    └─────┬─────┘      └────┬────┘    └───┬────┘  │   │
-│   │      │              │                 │             │       │   │
-│   └──────┼──────────────┼─────────────────┼─────────────┼───────┘   │
-│          │              │                 │             │           │
-│          ▼              ▼                 ▼             ▼           │
-│   ┌─────────────────────────────────────────────────────────────┐   │
-│   │                    strategic_plans                           │   │
-│   │                                                              │   │
-│   │   id | is_template | is_public | template_type | usage_count │   │
-│   │   ───┼─────────────┼───────────┼───────────────┼─────────────│   │
-│   │   T1 │    true     │   true    │  innovation   │     45      │   │
-│   │   T2 │    true     │   false   │  digital      │     12      │   │
-│   │   P1 │    false    │   false   │    null       │    null     │   │
-│   │                                                              │   │
-│   └─────────────────────────────────────────────────────────────┘   │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Data Model
-
-### Database Schema (Using Existing strategic_plans)
-
-```sql
--- Templates are stored in strategic_plans with is_template = true
--- Key fields for templates:
-
--- Existing columns used:
-is_template        BOOLEAN DEFAULT false  -- Flag to identify templates
-status             TEXT                    -- 'template' for templates
-
--- New columns to add:
-template_type      TEXT                    -- 'innovation', 'digital', 'sustainability', etc.
-template_category  TEXT                    -- 'government', 'municipal', 'sector', etc.
-is_public          BOOLEAN DEFAULT false   -- Whether template is publicly visible
-is_featured        BOOLEAN DEFAULT false   -- Curated/featured templates
-usage_count        INTEGER DEFAULT 0       -- How many times applied
-template_rating    NUMERIC(2,1)            -- Average rating (1-5)
-template_reviews   INTEGER DEFAULT 0       -- Number of reviews
-source_plan_id     UUID                    -- Original plan this was created from
-template_tags      TEXT[]                  -- Searchable tags
-```
-
-### Template Types
-
-| Type ID | English Name | Arabic Name | Icon | Color | MoMAH Domain |
-|---------|--------------|-------------|------|-------|--------------|
-| `innovation` | Innovation Strategy | استراتيجية الابتكار | Lightbulb | Amber | Innovation Labs, R&D |
-| `digital_transformation` | Digital Transformation | التحول الرقمي | Zap | Blue | GovTech, Digital Permits |
-| `sustainability` | Sustainability | الاستدامة | Leaf | Green | CleanTech, Environment |
-| `sector_specific` | Sector Specific | خاص بالقطاع | Building2 | Purple | Industry Hubs |
-| `municipality` | Municipality Scale | نطاق البلدية | Globe | Cyan | Municipal Services |
-| `smart_city` | Smart City | المدينة الذكية | Zap | Indigo | IoT, Urban Planning, GIS |
-| `citizen_services` | Citizen Services | خدمات المواطنين | Users | Rose | Rural, Digital Inclusion |
-
-### Template Categories
-
-| Category | Description |
-|----------|-------------|
-| `system` | Pre-built official MoMAH templates (14 templates) |
-| `community` | User-shared public templates |
-| `organization` | Organization-specific templates |
-| `personal` | User's private templates |
-
-> **Note**: `is_featured` is a separate boolean flag, not a category.
-
-### Official MoMAH Innovation Templates (14 Total)
+## Official MoMAH Innovation Templates (14 Total)
 
 | Template Name | Type | Rating | MoMAH Domain |
 |--------------|------|--------|--------------|
@@ -277,696 +193,51 @@ template_tags      TEXT[]                  -- Searchable tags
 
 ---
 
-## User Workflows
-
-### Workflow 1: Browse and Apply Template
+## File Structure
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                  Browse and Apply Template                        │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  1. User visits Template Library                                  │
-│     └──► /strategy-templates-page                                 │
-│                                                                   │
-│  2. User browses/searches templates                               │
-│     ├── Search by keyword                                         │
-│     ├── Filter by type                                            │
-│     └── Sort by popularity/rating                                 │
-│                                                                   │
-│  3. User previews template                                        │
-│     └── Opens preview dialog with full details                    │
-│                                                                   │
-│  4. User clicks "Apply Template"                                  │
-│     ├── Option A: Apply to new plan                               │
-│     │   └── Redirect to wizard with template data pre-filled      │
-│     │       /strategic-plan-builder?template=<template_id>        │
-│     │                                                             │
-│     └── Option B: Apply to existing draft                         │
-│         └── Select draft → Merge template data                    │
-│                                                                   │
-│  5. Wizard opens with template data                               │
-│     ├── All steps pre-populated                                   │
-│     ├── User can modify as needed                                 │
-│     └── Template usage_count incremented                          │
-│                                                                   │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### Workflow 2: Create Template from Plan
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                  Create Template from Plan                        │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  Option A: From Wizard (Step 18 - Review)                         │
-│  ─────────────────────────────────────────                        │
-│  1. User completes plan in wizard                                 │
-│  2. On Step 18, clicks "Save as Template"                         │
-│  3. Template creation dialog opens                                │
-│     ├── Enter template name                                       │
-│     ├── Select template type                                      │
-│     ├── Add description                                           │
-│     ├── Add tags                                                  │
-│     └── Choose public/private                                     │
-│  4. Template saved with is_template = true                        │
-│  5. Original plan saved separately (is_template = false)          │
-│                                                                   │
-│  Option B: From Template Library                                  │
-│  ───────────────────────────────                                  │
-│  1. User goes to Template Library → Create tab                    │
-│  2. Selects source plan from dropdown                             │
-│  3. Fills template metadata                                       │
-│  4. Clicks "Create Template"                                      │
-│  5. Plan cloned as template                                       │
-│                                                                   │
-│  Option C: From Plan Detail Page                                  │
-│  ───────────────────────────────                                  │
-│  1. User views existing plan                                      │
-│  2. Clicks "Save as Template" action                              │
-│  3. Same flow as Option A                                         │
-│                                                                   │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### Workflow 3: Manage Templates
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                     Manage Templates                              │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  My Templates Tab                                                 │
-│  ────────────────                                                 │
-│                                                                   │
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │  Template Card                                               │ │
-│  │  ┌─────────────────────────────────────────────────────────┐│ │
-│  │  │  [Icon] Innovation Strategy Template                    ││ │
-│  │  │  Description: Comprehensive municipal...                ││ │
-│  │  │  [Private] [12 uses] [★ 4.5]                           ││ │
-│  │  │                                                         ││ │
-│  │  │  [Edit] [Preview] [Share] [Delete]                     ││ │
-│  │  └─────────────────────────────────────────────────────────┘│ │
-│  └─────────────────────────────────────────────────────────────┘ │
-│                                                                   │
-│  Actions:                                                         │
-│  ├── Edit: Open template in wizard (edit mode)                   │
-│  ├── Preview: View template details                              │
-│  ├── Share: Toggle is_public flag                                │
-│  ├── Delete: Soft delete template                                │
-│  └── Duplicate: Clone template for modification                  │
-│                                                                   │
-└──────────────────────────────────────────────────────────────────┘
+src/
+├── pages/
+│   └── StrategyTemplatesPage.jsx
+├── components/
+│   └── strategy/
+│       ├── creation/
+│       │   └── StrategyTemplateLibrary.jsx
+│       └── templates/
+│           └── TemplateCoverageAnalysis.jsx    # NEW
+├── hooks/
+│   └── strategy/
+│       └── useStrategyTemplates.js
 ```
 
 ---
 
-## Component Design
+## Strategy Hub Integration
 
-### TemplateCard Component
+The Templates system is accessible from Strategy Hub via:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │  ┌─────┐                                                   │ │
-│  │  │ 💡  │  Innovation Strategy Template              ★ 4.8  │ │
-│  │  │     │                                                   │ │
-│  │  └─────┘  Comprehensive template for municipal innovation  │ │
-│  │           strategies with focus on digital transformation  │ │
-│  │                                                            │ │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐                   │ │
-│  │  │5 Obj     │ │12 KPIs   │ │45 uses   │                   │ │
-│  │  └──────────┘ └──────────┘ └──────────┘                   │ │
-│  │                                                            │ │
-│  │  By: Innovation Department                                 │ │
-│  │                                                            │ │
-│  │  ┌──────────────┐  ┌────────────────────┐                 │ │
-│  │  │  👁 Preview  │  │  📋 Apply Template │                 │ │
-│  │  └──────────────┘  └────────────────────┘                 │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. **Templates Tab** - Direct access to template library
+2. **Coverage Analysis** - Sub-feature within Templates tab
+3. **Quick Actions** - "Create from Template" button
 
-### TemplatePreviewDialog
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  ╔═══════════════════════════════════════════════════════════╗ │
-│  ║                  Template Preview                          ║ │
-│  ╠═══════════════════════════════════════════════════════════╣ │
-│  ║                                                            ║ │
-│  ║  💡 Innovation Strategy Template                           ║ │
-│  ║  ─────────────────────────────                             ║ │
-│  ║                                                            ║ │
-│  ║  Description:                                              ║ │
-│  ║  Comprehensive template for municipal innovation           ║ │
-│  ║  strategies with focus on digital transformation...        ║ │
-│  ║                                                            ║ │
-│  ║  ┌─────────────────────────────────────────────────────┐  ║ │
-│  ║  │  Included Content                                    │  ║ │
-│  ║  ├─────────────────────────────────────────────────────┤  ║ │
-│  ║  │  ✓ Vision & Mission statements                      │  ║ │
-│  ║  │  ✓ 5 Strategic Objectives                           │  ║ │
-│  ║  │  ✓ 12 Key Performance Indicators                    │  ║ │
-│  ║  │  ✓ SWOT Analysis framework                          │  ║ │
-│  ║  │  ✓ Stakeholder mapping                              │  ║ │
-│  ║  │  ✓ Risk assessment template                         │  ║ │
-│  ║  │  ✓ Action plan structure                            │  ║ │
-│  ║  │  ✓ Governance framework                             │  ║ │
-│  ║  └─────────────────────────────────────────────────────┘  ║ │
-│  ║                                                            ║ │
-│  ║  Statistics:                                               ║ │
-│  ║  • Used 45 times                                           ║ │
-│  ║  • Rating: ★★★★★ (4.8/5)                                   ║ │
-│  ║  • Created by: Innovation Department                       ║ │
-│  ║                                                            ║ │
-│  ║  ┌────────────────────────────────────────────────────┐   ║ │
-│  ║  │           🚀 Apply This Template                    │   ║ │
-│  ║  └────────────────────────────────────────────────────┘   ║ │
-│  ║                                                            ║ │
-│  ╚═══════════════════════════════════════════════════════════╝ │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### SaveAsTemplateDialog
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  ╔═══════════════════════════════════════════════════════════╗ │
-│  ║               Save Plan as Template                        ║ │
-│  ╠═══════════════════════════════════════════════════════════╣ │
-│  ║                                                            ║ │
-│  ║  Template Name (English) *                                 ║ │
-│  ║  ┌───────────────────────────────────────────────────────┐║ │
-│  ║  │ Innovation Strategy Template                          │║ │
-│  ║  └───────────────────────────────────────────────────────┘║ │
-│  ║                                                            ║ │
-│  ║  Template Name (Arabic)                                    ║ │
-│  ║  ┌───────────────────────────────────────────────────────┐║ │
-│  ║  │ قالب استراتيجية الابتكار                              │║ │
-│  ║  └───────────────────────────────────────────────────────┘║ │
-│  ║                                                            ║ │
-│  ║  Template Type *                                           ║ │
-│  ║  ┌───────────────────────────────────────────────────────┐║ │
-│  ║  │ Innovation Strategy                              ▼    │║ │
-│  ║  └───────────────────────────────────────────────────────┘║ │
-│  ║                                                            ║ │
-│  ║  Description                                               ║ │
-│  ║  ┌───────────────────────────────────────────────────────┐║ │
-│  ║  │ Comprehensive template for municipal innovation       │║ │
-│  ║  │ strategies...                                         │║ │
-│  ║  └───────────────────────────────────────────────────────┘║ │
-│  ║                                                            ║ │
-│  ║  Tags (comma-separated)                                    ║ │
-│  ║  ┌───────────────────────────────────────────────────────┐║ │
-│  ║  │ innovation, digital, transformation, municipal        │║ │
-│  ║  └───────────────────────────────────────────────────────┘║ │
-│  ║                                                            ║ │
-│  ║  ┌─────────────────────────────────────────────────────┐  ║ │
-│  ║  │ ☐ Make this template public (visible to everyone)   │  ║ │
-│  ║  └─────────────────────────────────────────────────────┘  ║ │
-│  ║                                                            ║ │
-│  ║  ┌────────────┐  ┌────────────────────────────────────┐   ║ │
-│  ║  │   Cancel   │  │      💾 Save as Template           │   ║ │
-│  ║  └────────────┘  └────────────────────────────────────┘   ║ │
-│  ║                                                            ║ │
-│  ╚═══════════════════════════════════════════════════════════╝ │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Integration with Wizard
-
-### Wizard Entry Points
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                  Wizard Entry Points                             │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  1. Direct URL with Template                                     │
-│     /strategic-plan-builder?template=<template_id>               │
-│                                                                  │
-│  2. From Template Library "Apply" Button                         │
-│     navigate(`/strategic-plan-builder?template=${templateId}`)   │
-│                                                                  │
-│  3. From Plan Selection Dialog                                   │
-│     └── "Start from Template" tab                                │
-│         └── Shows template list                                  │
-│         └── Click selects template and starts wizard             │
-│                                                                  │
-│  4. From Dashboard Quick Actions                                 │
-│     └── "New Plan from Template" button                          │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Template Application Flow in Wizard
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│               Template Application in Wizard                     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  URL: /strategic-plan-builder?template=template-123              │
-│                                                                  │
-│       ┌─────────────────┐                                        │
-│       │ StrategyWizard  │                                        │
-│       │ Wrapper         │                                        │
-│       └────────┬────────┘                                        │
-│                │                                                 │
-│                ▼                                                 │
-│       ┌─────────────────┐                                        │
-│       │ Check URL Params│                                        │
-│       │ template=xxx    │                                        │
-│       └────────┬────────┘                                        │
-│                │                                                 │
-│                ▼                                                 │
-│       ┌─────────────────┐                                        │
-│       │ Fetch Template  │                                        │
-│       │ from Database   │                                        │
-│       └────────┬────────┘                                        │
-│                │                                                 │
-│                ▼                                                 │
-│       ┌─────────────────┐                                        │
-│       │ Transform to    │                                        │
-│       │ Wizard Data     │                                        │
-│       │                 │                                        │
-│       │ • Copy all data │                                        │
-│       │ • Clear IDs     │                                        │
-│       │ • Reset dates   │                                        │
-│       │ • Set mode=     │                                        │
-│       │   'create'      │                                        │
-│       └────────┬────────┘                                        │
-│                │                                                 │
-│                ▼                                                 │
-│       ┌─────────────────┐                                        │
-│       │ Show Template   │                                        │
-│       │ Applied Banner  │                                        │
-│       │                 │                                        │
-│       │ "Using template:│                                        │
-│       │  Innovation..." │                                        │
-│       └────────┬────────┘                                        │
-│                │                                                 │
-│                ▼                                                 │
-│       ┌─────────────────┐                                        │
-│       │ Increment       │                                        │
-│       │ usage_count     │                                        │
-│       └────────┬────────┘                                        │
-│                │                                                 │
-│                ▼                                                 │
-│       ┌─────────────────┐                                        │
-│       │ Start at Step 1 │                                        │
-│       │ (Pre-filled)    │                                        │
-│       └─────────────────┘                                        │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Save as Template from Wizard
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│             Save as Template (Step 18)                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Step 18 Review Page                                             │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │                                                              ││
-│  │  Review & Submit                                             ││
-│  │  ─────────────                                               ││
-│  │                                                              ││
-│  │  [All sections validated ✓]                                  ││
-│  │                                                              ││
-│  │  ┌──────────────────────────────────────────────────────┐   ││
-│  │  │                    Action Buttons                     │   ││
-│  │  │                                                       │   ││
-│  │  │  ┌─────────────┐ ┌─────────────┐ ┌────────────────┐  │   ││
-│  │  │  │ Save Draft  │ │ Save as     │ │ Submit for     │  │   ││
-│  │  │  │             │ │ Template 📋 │ │ Approval ✓     │  │   ││
-│  │  │  └─────────────┘ └─────────────┘ └────────────────┘  │   ││
-│  │  │                        │                              │   ││
-│  │  │                        ▼                              │   ││
-│  │  │              Opens SaveAsTemplateDialog               │   ││
-│  │  └──────────────────────────────────────────────────────┘   ││
-│  │                                                              ││
-│  └─────────────────────────────────────────────────────────────┘│
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+### Hub Templates Tab Features
+- Template Library access
+- Coverage Analysis access
+- Vision 2030 alignment indicators
+- AI recommendation previews
 
 ---
 
 ## Implementation Status
 
-### ✅ Completed Features
-
-| Feature | Component/File | Status |
-|---------|---------------|--------|
-| Database columns | `strategic_plans` table | ✅ Complete |
-| Template hooks | `useStrategyTemplates.js` | ✅ Complete |
-| Template Library UI | `StrategyTemplateLibrary.jsx` | ✅ Complete |
-| Template Preview | `TemplatePreviewDialog.jsx` | ✅ Complete |
-| Save as Template | `SaveAsTemplateDialog.jsx` | ✅ Complete |
-| Wizard Integration | `StrategyWizardWrapper.jsx` | ✅ Complete |
-| URL Parameter `?template=` | Wizard wrapper | ✅ Complete |
-| Template Applied Badge | Wizard header | ✅ Complete |
-| Templates Tab in Dialog | `PlanSelectionDialog.jsx` | ✅ Complete |
-| Public/Private Toggle | Template management | ✅ Complete |
-| Template Deletion | Soft delete | ✅ Complete |
-| Usage Count Tracking | `increment_template_usage` RPC | ✅ Complete |
-| Template Rating System | `rate_template` RPC + UI | ✅ Complete |
-| Template Rating Dialog | `TemplateRatingDialog.jsx` | ✅ Complete |
-| Tag-based Search | `StrategyTemplateLibrary.jsx` | ✅ Complete |
-| System/Seed Templates | 5 official templates seeded | ✅ Complete |
-| Tag Filter UI | Browse tab with tag chips | ✅ Complete |
-
-### 🔄 Partially Complete
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Template Editing | 🔄 50% | Can delete/toggle, full edit pending |
-| Template Categories UI | 🔄 70% | Types work, categories dropdown pending |
-
-### ⏳ Pending Features
-
-| Feature | Priority | Notes |
-|---------|----------|-------|
-| Template Reviews (text) | Low | Rating exists, text reviews pending |
-| Template Import/Export | Low | Future enhancement |
-| Featured Templates Admin | Low | Manual DB only |
-| Template Versioning | Low | Future enhancement |
-
----
-
-## File Structure
-
-```
-src/
-├── components/
-│   └── strategy/
-│       ├── creation/
-│       │   └── StrategyTemplateLibrary.jsx    # ✅ Real DB + Tag search + Rating
-│       ├── templates/
-│       │   ├── TemplatePreviewDialog.jsx      # ✅ Preview with stats
-│       │   ├── SaveAsTemplateDialog.jsx       # ✅ Save plan as template
-│       │   └── TemplateRatingDialog.jsx       # ✅ Star rating UI
-│       └── wizard/
-│           ├── StrategyWizardWrapper.jsx      # ✅ Template URL handling
-│           ├── PlanSelectionDialog.jsx        # ✅ Templates tab
-│           └── steps/
-│               └── Step8Review.jsx            # ✅ Save as Template btn
-├── hooks/
-│   └── strategy/
-│       └── useStrategyTemplates.js            # ✅ Updated - Full CRUD operations
-├── pages/
-│   └── StrategyTemplatesPage.jsx              # ✅ Existing - Uses updated library
-└── docs/
-    └── strategy/
-        ├── STRATEGIC_WIZARD_DESIGN.md         # ✅ Updated
-        └── STRATEGY_TEMPLATES_DESIGN.md       # ✅ This document
-```
-
----
-
-## API Reference
-
-### useStrategyTemplates Hook
-
-```typescript
-interface UseStrategyTemplatesReturn {
-  // Data
-  templates: Template[];           // All public templates
-  myTemplates: Template[];         // User's templates
-  featuredTemplates: Template[];   // Featured templates
-  isLoading: boolean;
-  error: Error | null;
-  
-  // Actions
-  fetchTemplates: () => Promise<void>;
-  fetchMyTemplates: () => Promise<void>;
-  createTemplate: (data: CreateTemplateInput) => Promise<Template>;
-  updateTemplate: (id: string, data: UpdateTemplateInput) => Promise<Template>;
-  deleteTemplate: (id: string) => Promise<boolean>;
-  applyTemplate: (id: string) => Promise<WizardData>;
-  saveAsTemplate: (planData: WizardData, meta: TemplateMeta) => Promise<Template>;
-  togglePublic: (id: string) => Promise<boolean>;
-  incrementUsage: (id: string) => Promise<void>;
-}
-
-interface Template {
-  id: string;
-  name_en: string;
-  name_ar: string;
-  description_en: string;
-  description_ar: string;
-  template_type: TemplateType;
-  template_category: TemplateCategory;
-  is_public: boolean;
-  is_featured: boolean;
-  usage_count: number;
-  template_rating: number;
-  template_reviews: number;
-  template_tags: string[];
-  owner_email: string;
-  created_at: string;
-  // ... all strategic plan fields
-}
-
-type TemplateType = 
-  | 'innovation'
-  | 'digital_transformation'
-  | 'sustainability'
-  | 'sector_specific'
-  | 'municipality'
-  | 'smart_city'
-  | 'citizen_services';
-
-type TemplateCategory = 
-  | 'system'
-  | 'featured'
-  | 'community'
-  | 'organization'
-  | 'personal';
-```
-
-### Database Queries
-
-```sql
--- Fetch all public templates
-SELECT * FROM strategic_plans 
-WHERE is_template = true 
-  AND is_public = true 
-  AND is_deleted = false
-ORDER BY usage_count DESC, created_at DESC;
-
--- Fetch user's templates
-SELECT * FROM strategic_plans 
-WHERE is_template = true 
-  AND owner_email = :userEmail
-  AND is_deleted = false
-ORDER BY updated_at DESC;
-
--- Apply template (create new plan from template)
-INSERT INTO strategic_plans (
-  -- Copy all template fields except:
-  id,              -- Generate new
-  is_template,     -- Set to false
-  usage_count,     -- Reset to null
-  template_rating, -- Reset to null
-  source_plan_id,  -- Set to template.id
-  status,          -- Set to 'draft'
-  created_at,      -- Set to now()
-  updated_at       -- Set to now()
-)
-SELECT 
-  gen_random_uuid(),
-  false,
-  null,
-  null,
-  id,
-  'draft',
-  now(),
-  now(),
-  -- ... rest of fields
-FROM strategic_plans
-WHERE id = :templateId;
-
--- Increment usage count
-UPDATE strategic_plans 
-SET usage_count = COALESCE(usage_count, 0) + 1
-WHERE id = :templateId;
-
--- Save plan as template
-INSERT INTO strategic_plans (
-  -- Copy all plan fields plus:
-  is_template,       -- Set to true
-  template_type,     -- From input
-  template_category, -- 'personal'
-  is_public,         -- From input
-  source_plan_id,    -- Original plan ID
-  usage_count,       -- 0
-  template_rating,   -- null
-  template_tags      -- From input
-)
-SELECT 
-  true,
-  :templateType,
-  'personal',
-  :isPublic,
-  id,
-  0,
-  null,
-  :tags,
-  -- ... rest of fields
-FROM strategic_plans
-WHERE id = :planId;
-```
-
----
-
-## Security Considerations
-
-### RLS Policies for Templates
-
-```sql
--- View templates: public templates visible to all, own templates visible to owner
-CREATE POLICY "View templates" ON strategic_plans
-FOR SELECT USING (
-  is_template = true AND (
-    is_public = true OR 
-    owner_email = auth.jwt()->>'email'
-  )
-);
-
--- Create templates: authenticated users only
-CREATE POLICY "Create templates" ON strategic_plans
-FOR INSERT WITH CHECK (
-  is_template = true AND
-  owner_email = auth.jwt()->>'email'
-);
-
--- Update templates: owner only
-CREATE POLICY "Update own templates" ON strategic_plans
-FOR UPDATE USING (
-  is_template = true AND
-  owner_email = auth.jwt()->>'email'
-);
-
--- Delete templates: owner only
-CREATE POLICY "Delete own templates" ON strategic_plans
-FOR DELETE USING (
-  is_template = true AND
-  owner_email = auth.jwt()->>'email'
-);
-```
-
----
-
-## Consistency with Wizard
-
-### Field Mapping: Templates ↔ Wizard
-
-| Wizard Step | Template Field | Supported |
-|-------------|----------------|-----------|
-| 1. Context & Discovery | `name_en`, `description_en`, `start_year`, `end_year` | ✅ |
-| 2. Vision & Mission | `vision_en`, `mission_en`, `core_values` | ✅ |
-| 3. Stakeholder Analysis | `stakeholders` | ✅ |
-| 4. PESTEL Analysis | `pestel` | ✅ |
-| 5. SWOT Analysis | `swot` | ✅ |
-| 6. Scenario Planning | `scenarios` | ✅ |
-| 7. Risk Assessment | `risks` | ✅ |
-| 8. Dependencies | `dependencies`, `constraints` | ✅ |
-| 9. Strategic Objectives | `objectives` | ✅ |
-| 10. National Alignment | `national_alignments` | ✅ |
-| 11. KPIs & Metrics | `kpis` | ✅ |
-| 12. Action Plans | `action_plans` | ✅ |
-| 13. Resource Planning | `resource_plan` | ✅ |
-| 14. Timeline & Milestones | `milestones`, `phases` | ✅ |
-| 15. Governance Structure | `governance` | ✅ |
-| 16. Communication Plan | `communication_plan` | ✅ |
-| 17. Change Management | `change_management` | ✅ |
-| 18. Review & Submit | N/A | N/A |
-
-### Verified Integration Points
-
-- ✅ **Template Apply**: Uses `?template=<id>` URL parameter (clears after apply)
-- ✅ **Save as Template**: Available in Step 18 via `SaveAsTemplateDialog`
-- ✅ **Template Preview**: Shows all 17 step data sections in tabbed UI
-- ✅ **Template Rating**: Star rating with RPC `rate_template`
-- ✅ **Usage Tracking**: RPC `increment_template_usage` called on apply
-- ✅ **Tag Search**: `searchByTags()` function in hook + UI filter
-- ✅ **Category Filter**: Filter by template category (system, personal, etc.)
-- ✅ **Template Clone**: Duplicate templates with `cloneTemplate()` function
-- ✅ **Official Templates**: 5 system templates seeded in database
-- ✅ **Centralized Types**: `src/constants/strategyTemplateTypes.js` single source
-
-### Centralized Constants
-
-All template types and categories are defined in a single file:
-
-```
-src/constants/strategyTemplateTypes.js
-├── STRATEGY_TEMPLATE_TYPES[]  - Type definitions with icons/colors
-├── TEMPLATE_CATEGORIES[]      - Category definitions
-├── getTemplateTypeInfo()      - Helper to get type info
-└── getTemplateCategoryInfo()  - Helper to get category info
-```
-
-### File Cross-References
-
-| Templates Module | Wizard Module |
-|------------------|---------------|
-| `StrategyTemplateLibrary.jsx` | `StrategyWizardWrapper.jsx` |
-| `SaveAsTemplateDialog.jsx` | Step 18 (Review) |
-| `TemplatePreviewDialog.jsx` | All 18 step data |
-| `TemplateRatingDialog.jsx` | N/A |
-| `useStrategyTemplates.js` | `useAutoSaveDraft.js`, `useWizardValidation.js` |
-| `strategyTemplateTypes.js` | Shared by all template components |
-
-### Wizard Validation Integration
-
-The wizard now validates required fields before navigation:
-
-- **Step 1**: Requires `name_en`
-- **Step 2**: Requires `vision_en`, `mission_en`
-- **Steps 3+**: Recommended but not enforced
-
----
-
-*Document generated by Strategic Planning System v1.5*
-
----
-
-## Changelog
-
-### v2.0 (Dec 15, 2025)
-- Added 14 official MoMAH Innovation & R&D templates
-- All templates aligned with Saudi Vision 2030 and MoMAH mandate
-- Template domains: Housing/PropTech, CleanTech, GIS, IoT, Rural, GovTech, Citizen Services
-- Updated documentation with complete template inventory
-- Added MoMAH domain mapping for each template type
-
-### v1.8 (Dec 15, 2025)
-- Verified all template operations consistent with wizard data structure
-- Confirmed hard delete for templates (no `is_deleted` column dependency)
-- All template-to-wizard field mappings validated
-
-### v1.5 (Dec 15, 2025)
-- Fixed nested object detection for `resource_plan`, `governance`, `communication_plan`, `change_management`
-- Removed `featured` from TEMPLATE_CATEGORIES (it's a boolean flag)
-- Added National Alignment and Timeline sections to TemplatePreviewDialog
-- Improved `hasStepData` detection for complex nested structures
-
-### v1.4 (Dec 15, 2025)
-- Added category filter UI
-- Implemented template cloning
-- Centralized type constants
-
-### v1.3 (Dec 15, 2025)
-- Initial full implementation
-
-*Document maintained by MoMAH Strategic Planning System*
+| Feature | Status | Version |
+|---------|--------|---------|
+| Template Library | ✅ Complete | v1.0 |
+| Browse Templates | ✅ Complete | v1.0 |
+| Apply Templates | ✅ Complete | v1.0 |
+| Create from Plan | ✅ Complete | v1.0 |
+| 14 MoMAH Templates | ✅ Complete | v2.0 |
+| Coverage Analysis | ✅ Complete | v2.1 |
+| Gap Identification | ✅ Complete | v2.1 |
+| AI Recommendations | ✅ Complete | v2.1 |
+| Hub Integration | ✅ Complete | v2.1 |
