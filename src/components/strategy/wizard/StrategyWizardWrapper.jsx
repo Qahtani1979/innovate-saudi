@@ -878,7 +878,97 @@ Define key messages, internal channels, and external channels.`,
 Plan: ${context.planName}
 Vision: ${context.vision}
 
-Assess readiness, define change approach, and resistance management strategies.`
+Assess readiness, define change approach, and resistance management strategies.`,
+      dependencies: `Analyze dependencies, constraints, and assumptions for this Saudi municipal strategic plan:
+
+**STRATEGIC PLAN CONTEXT:**
+- Plan Name: ${context.planName}
+- Vision: ${context.vision}
+- Mission: ${wizardData.mission_en || 'Not specified'}
+- Sectors: ${context.sectors.join(', ')}
+- Timeline: ${context.startYear}-${context.endYear} (${context.endYear - context.startYear} years)
+- Budget Range: ${wizardData.budget_range || 'Not specified'}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
+
+**KEY STAKEHOLDERS (from Step 3):**
+${(wizardData.stakeholders || []).slice(0, 5).map(s => `- ${s.name_en || s.name_ar} (${s.type})`).join('\n') || 'Not defined yet'}
+
+**IDENTIFIED RISKS (from Step 7):**
+${(wizardData.risks || []).slice(0, 5).map(r => `- ${r.title_en || r.title_ar} (${r.category})`).join('\n') || 'Not defined yet'}
+
+**REQUIREMENTS:**
+Generate THREE types of items: dependencies, constraints, and assumptions.
+
+---
+
+**PART 1: DEPENDENCIES (8-12 items)**
+
+For EACH dependency, provide ALL fields in BOTH English and Arabic:
+- name_en / name_ar: Short dependency name (5-10 words)
+- type: One of "internal" | "external" | "technical" | "resource"
+- source: Where/who the dependency comes from (department, system, stakeholder)
+- target: What/who depends on it (initiative, objective, system)
+- criticality: "low" | "medium" | "high"
+
+**DEPENDENCY TYPE DISTRIBUTION:**
+- internal: 2-3 (cross-department coordination, approvals)
+- external: 2-3 (third-party vendors, government agencies)
+- technical: 2-3 (system integrations, infrastructure)
+- resource: 2-3 (budget, staffing, equipment)
+
+**DEPENDENCY EXAMPLES FOR SAUDI MUNICIPAL CONTEXT:**
+- INTERNAL: "Finance Department Budget Approval" - Source: Finance → Target: All initiatives
+- EXTERNAL: "Ministry of Municipal Affairs Regulatory Approval" - Source: MOMAH → Target: Policy changes
+- TECHNICAL: "GIS Platform Integration" - Source: IT Systems → Target: Smart city services
+- RESOURCE: "Specialized IT Staff Recruitment" - Source: HR → Target: Digital transformation
+
+---
+
+**PART 2: CONSTRAINTS (6-8 items)**
+
+For EACH constraint, provide ALL fields in BOTH English and Arabic:
+- description_en / description_ar: Clear description of the limitation (1-2 sentences)
+- type: One of "budget" | "time" | "resource" | "regulatory" | "technical"
+- impact: "low" | "medium" | "high"
+- mitigation_en / mitigation_ar: How to work within this constraint (1-2 sentences)
+
+**CONSTRAINT TYPE DISTRIBUTION:**
+- budget: 1-2 (funding limits, procurement rules)
+- time: 1-2 (deadlines, electoral cycles)
+- resource: 1-2 (staffing limits, skill gaps)
+- regulatory: 1-2 (legal requirements, compliance)
+- technical: 1-2 (legacy systems, interoperability)
+
+**CONSTRAINT EXAMPLES:**
+- BUDGET: "Annual budget allocation capped at SAR ${wizardData.budget_range || '50M'}"
+- TIME: "Implementation must align with Vision 2030 milestone reviews"
+- REGULATORY: "All digital services must comply with PDPL data protection requirements"
+- TECHNICAL: "Must integrate with existing Balady municipal systems"
+
+---
+
+**PART 3: ASSUMPTIONS (6-10 items)**
+
+For EACH assumption, provide ALL fields in BOTH English and Arabic:
+- statement_en / statement_ar: Clear assumption statement (1 sentence starting with "We assume that...")
+- category: One of "operational" | "financial" | "market" | "stakeholder" | "regulatory"
+- confidence: "low" | "medium" | "high"
+- validation_method_en / validation_method_ar: How to verify this assumption (1 sentence)
+
+**ASSUMPTION CATEGORY DISTRIBUTION:**
+- operational: 2-3 (internal capabilities, processes)
+- financial: 1-2 (budget availability, cost estimates)
+- market: 1-2 (technology adoption, citizen behavior)
+- stakeholder: 1-2 (engagement, support)
+- regulatory: 1-2 (policy stability, approval timelines)
+
+**ASSUMPTION EXAMPLES:**
+- OPERATIONAL: "We assume that current staff can be upskilled within 6 months"
+- FINANCIAL: "We assume that allocated budget will not be reduced mid-cycle"
+- STAKEHOLDER: "We assume that key ministry stakeholders will remain supportive"
+- REGULATORY: "We assume that Vision 2030 programs will continue as planned"
+
+Be specific to the plan's context and Saudi municipal environment. Avoid generic statements.`
     };
     
     const schemas = {
