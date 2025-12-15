@@ -273,8 +273,12 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
                     type="number"
                     min="0"
                     max="100"
-                    value={scenarioData.probability || ''}
-                    onChange={(e) => updateScenario(scenario.key, 'probability', e.target.value)}
+                    value={scenarioData.probability ?? ''}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const next = raw === '' ? '' : Math.max(0, Math.min(100, Number(raw)));
+                      updateScenario(scenario.key, 'probability', next);
+                    }}
                     placeholder="0-100"
                     className="w-24"
                   />
@@ -327,11 +331,15 @@ export default function Step6Scenarios({ data, onChange, onGenerateAI, isGenerat
                 </tr>
                 <tr>
                   <td className="py-2 px-3 font-medium">{t({ en: 'Probability', ar: 'الاحتمالية' })}</td>
-                  {SCENARIO_TYPES.map(s => (
-                    <td key={s.key} className="py-2 px-3">
-                      {data.scenarios?.[s.key]?.probability ? `${data.scenarios[s.key].probability}%` : '-'}
-                    </td>
-                  ))}
+                  {SCENARIO_TYPES.map(s => {
+                    const p = data.scenarios?.[s.key]?.probability;
+                    const hasP = p !== undefined && p !== null && p !== '';
+                    return (
+                      <td key={s.key} className="py-2 px-3">
+                        {hasP ? `${p}%` : '-'}
+                      </td>
+                    );
+                  })}
                 </tr>
               </tbody>
             </table>
