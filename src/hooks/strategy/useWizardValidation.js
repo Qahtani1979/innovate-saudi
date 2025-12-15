@@ -1,13 +1,13 @@
 import { useMemo, useCallback } from 'react';
-import { useLanguage } from '@/components/LanguageContext';
 
 /**
  * Hook for wizard step validation
  * Validates required fields for each step before allowing navigation
+ * 
+ * @param {Object} wizardData - The wizard form data
+ * @param {Function} t - Translation function from useLanguage (passed as param to avoid context issues)
  */
-export function useWizardValidation(wizardData) {
-  const { t } = useLanguage();
-
+export function useWizardValidation(wizardData, t = (obj) => obj?.en || obj) {
   // Define required fields per step (aligned with WIZARD_STEPS.required flags)
   const stepRequirements = useMemo(() => ({
     1: {

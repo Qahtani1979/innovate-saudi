@@ -67,8 +67,8 @@ export default function StrategyWizardWrapper() {
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [appliedTemplateName, setAppliedTemplateName] = useState(null);
 
-  // Validation hook
-  const { validateStep, hasStepData, calculateProgress } = useWizardValidation(wizardData);
+  // Validation hook - pass t function to avoid nested context issues
+  const { validateStep, hasStepData, calculateProgress } = useWizardValidation(wizardData, t);
 
   // Auto-save hook
   const {
