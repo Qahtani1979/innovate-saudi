@@ -649,11 +649,62 @@ For EACH item, provide ALL these fields in BOTH English and Arabic:
 - Consider PESTEL factors when identifying opportunities and threats
 
 Be specific to Saudi Arabia and the municipal context. Avoid vague or generic statements.`,
-      scenarios: `Create scenario planning for this Saudi strategic plan:
-Plan: ${context.planName}
-Vision: ${context.vision}
+      scenarios: `Create comprehensive scenario planning for this Saudi municipal strategic plan:
 
-Provide Best Case, Worst Case, and Most Likely scenarios with assumptions and outcomes.`,
+**CONTEXT:**
+- Plan Name: ${context.planName}
+- Vision: ${context.vision}
+- Sectors: ${context.sectors.join(', ')}
+- Timeline: ${context.startYear}-${context.endYear}
+
+**REQUIREMENTS:**
+Generate ALL 3 scenarios: best_case, worst_case, and most_likely.
+
+For EACH scenario, provide ALL these fields in BOTH English and Arabic:
+
+1. **description_en / description_ar**: A 2-3 sentence narrative describing this scenario (what the future looks like)
+
+2. **assumptions**: Array of 3-5 key assumptions. Each assumption must have:
+   - text_en: Assumption in English
+   - text_ar: Assumption in Arabic (formal فصحى)
+
+3. **outcomes**: Array of 4-6 measurable outcomes. Each outcome must have:
+   - metric_en: The metric/outcome name in English
+   - metric_ar: The metric/outcome name in Arabic
+   - value: The expected value/result (e.g., "95%", "+30%", "500,000 users")
+
+4. **probability**: Likelihood percentage (e.g., "20%", "60%", "20%")
+
+**SCENARIO GUIDANCE FOR SAUDI CONTEXT:**
+
+BEST CASE (Optimistic - typically 15-25% probability):
+- Vision 2030 goals exceeded
+- Strong private sector investment
+- Rapid digital adoption
+- High citizen satisfaction
+- Budget surplus and efficiency gains
+
+WORST CASE (Pessimistic - typically 15-25% probability):
+- Economic challenges (oil price volatility)
+- Implementation delays
+- Resource constraints
+- Low stakeholder engagement
+- Regulatory obstacles
+
+MOST LIKELY (Realistic - typically 50-70% probability):
+- Steady progress with some challenges
+- Moderate achievement of targets
+- Mixed stakeholder response
+- Some budget adjustments needed
+- Gradual capacity building
+
+**DISTRIBUTION:**
+- Probabilities should sum to 100%
+- Each scenario should have distinct assumptions
+- Outcomes should be measurable and specific to the plan's sectors
+- Consider PESTEL and SWOT factors in scenario development
+
+Be specific to Saudi Arabia and the plan context. Avoid generic outcomes.`,
       risks: `Identify risks for this Saudi municipal strategic plan:
 Plan: ${context.planName}
 Vision: ${context.vision}
