@@ -141,7 +141,7 @@ const recalibrationTools = [
 
 // Demand & Resource Tools
 const demandTools = [
-  { icon: TrendingUp, label: { en: 'Demand Dashboard', ar: 'لوحة الطلب' }, path: '/strategy-demand-dashboard-page', desc: { en: 'Track strategy-driven demand', ar: 'تتبع الطلب المدفوع بالاستراتيجية' }, permission: 'strategy_view' },
+  { icon: TrendingUp, label: { en: 'Demand Dashboard', ar: 'لوحة الطلب' }, path: '/strategy-demand-dashboard', desc: { en: 'Track strategy-driven demand', ar: 'تتبع الطلب المدفوع بالاستراتيجية' }, permission: 'strategy_view' },
   { icon: ClipboardList, label: { en: 'Action Plans', ar: 'خطط العمل' }, path: '/action-plan-page', desc: { en: 'Manage strategic action plans', ar: 'إدارة خطط العمل الاستراتيجية' }, permission: 'strategy_view' },
   { icon: Target, label: { en: 'National Alignment', ar: 'المواءمة الوطنية' }, path: '/national-strategy-linker-page', desc: { en: 'Link to Vision 2030 programs', ar: 'الربط ببرامج رؤية 2030' }, permission: 'strategy_view' },
 ];
