@@ -1,0 +1,242 @@
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  FolderOpen, Search, FileText, Clock, Edit, Eye, 
+  Plus, AlertCircle, CheckCircle2, Loader2 
+} from 'lucide-react';
+import { useLanguage } from '../../LanguageContext';
+
+export default function PlanSelectionDialog({ 
+  onSelectPlan, 
+  onCreateNew,
+  trigger,
+  defaultOpen = false
+}) {
+  const { language, t } = useLanguage();
+  const [open, setOpen] = useState(defaultOpen);
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('drafts');
+
+  // Fetch strategic plans
+  const { data: plans = [], isLoading } = useQuery({
+    queryKey: ['strategic-plans-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: open
+  });
+
+  const filteredPlans = plans.filter(plan => {
+    const matchesSearch = !search || 
+      plan.name_en?.toLowerCase().includes(search.toLowerCase()) ||
+      plan.name_ar?.includes(search);
+    
+    const matchesTab = activeTab === 'all' ||
+      (activeTab === 'drafts' && plan.status === 'draft') ||
+      (activeTab === 'active' && plan.status === 'active') ||
+      (activeTab === 'pending' && plan.approval_status === 'pending');
+    
+    return matchesSearch && matchesTab;
+  });
+
+  const getStatusBadge = (plan) => {
+    const statusColors = {
+      draft: 'bg-muted text-muted-foreground',
+      active: 'bg-green-100 text-green-700',
+      completed: 'bg-blue-100 text-blue-700',
+      archived: 'bg-gray-100 text-gray-700'
+    };
+    
+    return (
+      <Badge className={statusColors[plan.status] || 'bg-muted'}>
+        {plan.status || 'draft'}
+      </Badge>
+    );
+  };
+
+  const getApprovalBadge = (plan) => {
+    if (!plan.approval_status || plan.approval_status === 'draft') return null;
+    
+    const colors = {
+      pending: 'bg-amber-100 text-amber-700',
+      approved: 'bg-green-100 text-green-700',
+      rejected: 'bg-red-100 text-red-700'
+    };
+    
+    return (
+      <Badge className={colors[plan.approval_status] || 'bg-muted'}>
+        {plan.approval_status}
+      </Badge>
+    );
+  };
+
+  const handleSelect = (plan, mode) => {
+    onSelectPlan?.(plan, mode);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger || (
+          <Button variant="outline">
+            <FolderOpen className="h-4 w-4 mr-2" />
+            {t({ en: 'Open Plan', ar: 'فتح خطة' })}
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            {t({ en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' })}
+          </DialogTitle>
+          <DialogDescription>
+            {t({ en: 'Select a plan to edit, review, or create a new one', ar: 'اختر خطة للتعديل أو المراجعة أو إنشاء خطة جديدة' })}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Create New Button */}
+          <Button 
+            onClick={() => {
+              onCreateNew?.();
+              setOpen(false);
+            }}
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {t({ en: 'Create New Strategic Plan', ar: 'إنشاء خطة استراتيجية جديدة' })}
+          </Button>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t({ en: 'Search plans...', ar: 'بحث في الخطط...' })}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="drafts">
+                {t({ en: 'Drafts', ar: 'مسودات' })}
+              </TabsTrigger>
+              <TabsTrigger value="pending">
+                {t({ en: 'Pending', ar: 'معلق' })}
+              </TabsTrigger>
+              <TabsTrigger value="active">
+                {t({ en: 'Active', ar: 'نشط' })}
+              </TabsTrigger>
+              <TabsTrigger value="all">
+                {t({ en: 'All', ar: 'الكل' })}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={activeTab} className="mt-4">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : filteredPlans.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>{t({ en: 'No plans found', ar: 'لم يتم العثور على خطط' })}</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px] pr-4">
+                  <div className="space-y-3">
+                    {filteredPlans.map((plan) => (
+                      <Card key={plan.id} className="hover:border-primary/50 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium truncate">
+                                {language === 'ar' ? (plan.name_ar || plan.name_en) : plan.name_en}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {new Date(plan.updated_at).toLocaleDateString()}
+                                {plan.last_saved_step && (
+                                  <span className="text-xs">
+                                    • {t({ en: 'Step', ar: 'خطوة' })} {plan.last_saved_step}/18
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                {getStatusBadge(plan)}
+                                {getApprovalBadge(plan)}
+                                {plan.version_number > 1 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    v{plan.version_number}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              {plan.status === 'draft' ? (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleSelect(plan, 'edit')}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  {t({ en: 'Edit', ar: 'تعديل' })}
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleSelect(plan, 'review')}
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    {t({ en: 'Review', ar: 'مراجعة' })}
+                                  </Button>
+                                  <Button 
+                                    size="sm"
+                                    onClick={() => handleSelect(plan, 'edit')}
+                                  >
+                                    <Edit className="h-4 w-4 mr-1" />
+                                    {t({ en: 'Edit', ar: 'تعديل' })}
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

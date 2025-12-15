@@ -1,6 +1,6 @@
 import React from 'react';
-import StrategyCreateWizard from '../components/strategy/wizard/StrategyCreateWizard';
+import StrategyWizardWrapper from '../components/strategy/wizard/StrategyWizardWrapper';
 
 export default function StrategicPlanBuilder() {
-  return <StrategyCreateWizard />;
+  return <StrategyWizardWrapper />;
 }
