@@ -464,6 +464,22 @@ Assess readiness, define change approach, and resistance management strategies.`
     const schemas = {
       context: {
         type: 'object',
+        required: [
+          'name_ar',
+          'vision_en',
+          'vision_ar',
+          'mission_en',
+          'mission_ar',
+          'description_en',
+          'description_ar',
+          'quick_stakeholders',
+          'key_challenges_en',
+          'key_challenges_ar',
+          'available_resources_en',
+          'available_resources_ar',
+          'initial_constraints_en',
+          'initial_constraints_ar'
+        ],
         properties: {
           name_ar: { type: 'string' },
           vision_en: { type: 'string' },
@@ -688,6 +704,8 @@ Assess readiness, define change approach, and resistance management strategies.`
         // Merge AI response into wizard data based on step
         const updates = {};
         if (stepKey === 'context') {
+          if (data.name_ar) updates.name_ar = data.name_ar;
+
           if (data.vision_en) updates.vision_en = data.vision_en;
           if (data.vision_ar) updates.vision_ar = data.vision_ar;
           if (data.mission_en) updates.mission_en = data.mission_en;
@@ -698,9 +716,19 @@ Assess readiness, define change approach, and resistance management strategies.`
           if (Array.isArray(data.quick_stakeholders)) {
             updates.quick_stakeholders = data.quick_stakeholders.map(s => String(s).trim()).filter(Boolean);
           }
-          if (typeof data.key_challenges === 'string') updates.key_challenges = data.key_challenges;
-          if (typeof data.available_resources === 'string') updates.available_resources = data.available_resources;
-          if (typeof data.initial_constraints === 'string') updates.initial_constraints = data.initial_constraints;
+
+          // Bilingual discovery inputs (new fields)
+          if (typeof data.key_challenges_en === 'string') updates.key_challenges_en = data.key_challenges_en;
+          if (typeof data.key_challenges_ar === 'string') updates.key_challenges_ar = data.key_challenges_ar;
+          if (typeof data.available_resources_en === 'string') updates.available_resources_en = data.available_resources_en;
+          if (typeof data.available_resources_ar === 'string') updates.available_resources_ar = data.available_resources_ar;
+          if (typeof data.initial_constraints_en === 'string') updates.initial_constraints_en = data.initial_constraints_en;
+          if (typeof data.initial_constraints_ar === 'string') updates.initial_constraints_ar = data.initial_constraints_ar;
+
+          // Backward compatibility (old single-language fields)
+          if (typeof data.key_challenges === 'string' && typeof updates.key_challenges_en !== 'string') updates.key_challenges_en = data.key_challenges;
+          if (typeof data.available_resources === 'string' && typeof updates.available_resources_en !== 'string') updates.available_resources_en = data.available_resources;
+          if (typeof data.initial_constraints === 'string' && typeof updates.initial_constraints_en !== 'string') updates.initial_constraints_en = data.initial_constraints;
         } else if (stepKey === 'vision') {
           if (data.vision_en) updates.vision_en = data.vision_en;
           if (data.vision_ar) updates.vision_ar = data.vision_ar;
