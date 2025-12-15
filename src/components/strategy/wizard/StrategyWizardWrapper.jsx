@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,7 +58,7 @@ export default function StrategyWizardWrapper() {
   const { createApprovalRequest } = useApprovalRequest();
 
   // Apply template without react-query hooks (prevents "dispatcher is null" hook crashes)
-  const applyTemplate = useCallback(async (templateId) => {
+  const applyTemplate = React.useCallback(async (templateId) => {
     const { data: template, error } = await supabase
       .from('strategic_plans')
       .select('*')
@@ -124,14 +124,14 @@ export default function StrategyWizardWrapper() {
   }, []);
   
   // Mode and plan state
-  const [mode, setMode] = useState('create'); // 'create' | 'edit' | 'review'
-  const [planId, setPlanId] = useState(null);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [wizardData, setWizardData] = useState(initialWizardData);
-  const [generatingStep, setGeneratingStep] = useState(null);
-  const [completedSteps, setCompletedSteps] = useState([]);
-  const [showDraftRecovery, setShowDraftRecovery] = useState(false);
-  const [appliedTemplateName, setAppliedTemplateName] = useState(null);
+  const [mode, setMode] = React.useState('create'); // 'create' | 'edit' | 'review'
+  const [planId, setPlanId] = React.useState(null);
+  const [currentStep, setCurrentStep] = React.useState(1);
+  const [wizardData, setWizardData] = React.useState(initialWizardData);
+  const [generatingStep, setGeneratingStep] = React.useState(null);
+  const [completedSteps, setCompletedSteps] = React.useState([]);
+  const [showDraftRecovery, setShowDraftRecovery] = React.useState(false);
+  const [appliedTemplateName, setAppliedTemplateName] = React.useState(null);
 
   // Validation hook - pass t function to avoid nested context issues
   const { validateStep, hasStepData, calculateProgress } = useWizardValidation(wizardData, t);
@@ -155,7 +155,7 @@ export default function StrategyWizardWrapper() {
   } = useAutoSaveDraft({ planId, mode, enabled: mode !== 'review' });
 
   // Initialize from URL params or detect draft
-  useEffect(() => {
+  React.useEffect(() => {
     const urlPlanId = searchParams.get('id');
     const urlMode = searchParams.get('mode');
     const templateId = searchParams.get('template');
@@ -196,7 +196,7 @@ export default function StrategyWizardWrapper() {
   }, [searchParams, hasDraft, loadPlan, applyTemplate]);
 
   // Update data with auto-save
-  const updateData = useCallback((updates) => {
+  const updateData = React.useCallback((updates) => {
     setWizardData(prev => {
       const newData = { ...prev, ...updates };
       scheduleAutoSave(newData, currentStep);
