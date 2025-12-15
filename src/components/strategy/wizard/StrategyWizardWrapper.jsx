@@ -426,55 +426,64 @@ Based on the plan name, suggest appropriate values for ALL of the following:
 - initial_constraints_en, initial_constraints_ar
 
 Use formal language appropriate for Saudi government documents.`,
-      vision: `Generate Core Values and Strategic Pillars for a Saudi municipal strategic plan.
+      vision: `You are generating Core Values and Strategic Pillars for a Saudi municipal strategic plan. You MUST use ALL the context provided below to create highly relevant and specific outputs.
 
-PLAN CONTEXT:
-- Plan Name: ${context.planName}${context.planNameAr ? ` (${context.planNameAr})` : ''}
-- Vision: ${context.vision}
-- Mission: ${context.mission}
-- Description: ${context.description}
+=== PLAN CONTEXT ===
+Plan Name: ${context.planName}${context.planNameAr ? ` (${context.planNameAr})` : ''}
+Vision Statement: ${context.vision || 'Not yet defined'}
+Mission Statement: ${context.mission || 'Not yet defined'}
+Description: ${context.description || 'Not yet defined'}
 
-STRATEGIC FOCUS:
-- Target Sectors: ${context.sectors.length > 0 ? context.sectors.join(', ') : 'Not specified'}
-- Strategic Themes: ${context.themes.length > 0 ? context.themes.join(', ') : 'Not specified'}
-- Focus Technologies: ${context.technologies.length > 0 ? context.technologies.join(', ') : 'Not specified'}
-- Vision 2030 Programs: ${context.vision2030Programs.length > 0 ? context.vision2030Programs.join(', ') : 'Not specified'}
-- Target Regions: ${context.regions.length > 0 ? context.regions.join(', ') : 'Kingdom-wide'}
+=== STRATEGIC FOCUS (CRITICAL - USE THESE) ===
+Target Sectors: ${context.sectors.length > 0 ? context.sectors.join(', ') : 'General municipal services'}
+Strategic Themes: ${context.themes.length > 0 ? context.themes.join(', ') : 'General improvement'}
+Focus Technologies: ${context.technologies.length > 0 ? context.technologies.join(', ') : 'General technology adoption'}
+Vision 2030 Programs: ${context.vision2030Programs.length > 0 ? context.vision2030Programs.join(', ') : 'General Vision 2030 alignment'}
+Target Regions: ${context.regions.length > 0 ? context.regions.join(', ') : 'Kingdom-wide'}
 
-DURATION & RESOURCES:
-- Duration: ${context.startYear} - ${context.endYear} (${context.endYear - context.startYear} years)
-- Budget Range: ${context.budgetRange || 'Not specified'}
+=== DURATION & RESOURCES ===
+Timeline: ${context.startYear} - ${context.endYear} (${context.endYear - context.startYear} years)
+Budget Range: ${context.budgetRange || 'To be determined'}
 
-KEY STAKEHOLDERS:
-${context.stakeholders.length > 0 ? context.stakeholders.map(s => `- ${s.name_en || s}${s.name_ar ? ` (${s.name_ar})` : ''}`).join('\n') : '- Not specified'}
+=== KEY STAKEHOLDERS ===
+${context.stakeholders.length > 0 ? context.stakeholders.map(s => `- ${s.name_en || s}${s.name_ar ? ` (${s.name_ar})` : ''}`).join('\n') : '- Municipal leadership and citizens'}
 
-DISCOVERY INPUTS:
-- Key Challenges: ${context.keyChallenges || 'Not specified'}
-- Available Resources: ${context.availableResources || 'Not specified'}
-- Initial Constraints: ${context.initialConstraints || 'Not specified'}
+=== DISCOVERY INPUTS ===
+Key Challenges: ${context.keyChallenges || 'General municipal challenges'}
+Available Resources: ${context.availableResources || 'Standard municipal resources'}
+Initial Constraints: ${context.initialConstraints || 'Standard constraints'}
 
-Generate the following (all bilingual - English and Arabic):
+=== GENERATION REQUIREMENTS ===
 
-1. CORE VALUES (5-7 values):
-Each value should have: name_en, name_ar, description_en, description_ar
-Values should:
-- Reflect Saudi government principles and Vision 2030 values
-- Align with the strategic themes and focus areas specified above
-- Address the challenges and constraints mentioned
-- Be relevant to the target sectors and regions
-Examples: Innovation, Excellence, Integrity, Collaboration, Transparency, Sustainability, Citizen-Focus
+**1. CORE VALUES (Generate exactly 6-7 values)**
+Each value MUST have: name_en, name_ar, description_en, description_ar
 
-2. STRATEGIC PILLARS (4-6 pillars):
-Each pillar should have: name_en, name_ar, description_en, description_ar
-Pillars should:
-- Be the main thematic areas that organize strategic objectives
-- Directly support the vision and mission statements
-- Leverage the focus technologies and Vision 2030 programs
-- Address key challenges while considering constraints
-- Be achievable within the specified budget and timeline
-Examples: Digital Transformation, Sustainable Development, Quality of Life, Economic Diversification, Institutional Excellence
+Requirements:
+- Values MUST reflect Saudi government principles and Vision 2030
+- At least 2 values should directly relate to the TARGET SECTORS specified
+- At least 1 value should relate to the FOCUS TECHNOLOGIES
+- Values should address the KEY CHALLENGES mentioned
+- Each description should be 2-3 sentences explaining how this value guides the organization
 
-Use formal language appropriate for Saudi government documents.`,
+**2. STRATEGIC PILLARS (Generate exactly 5-6 pillars)**
+Each pillar MUST have: name_en, name_ar, description_en, description_ar
+
+CRITICAL REQUIREMENTS:
+- Each pillar MUST directly correspond to one or more TARGET SECTORS or STRATEGIC THEMES
+- Pillars MUST explicitly incorporate the FOCUS TECHNOLOGIES where relevant
+- Pillars MUST align with the specified VISION 2030 PROGRAMS
+- Pillars should be designed to address the KEY CHALLENGES
+- Pillars should be achievable within the BUDGET RANGE and TIMELINE
+- Each description should be 3-4 sentences explaining:
+  * What this pillar covers
+  * Which sectors/technologies it addresses
+  * Expected outcomes aligned with Vision 2030
+
+Example pillar structure:
+- If Target Sectors include "SMART_CITIES" and Focus Technologies include "IOT", create a pillar like "Smart City Infrastructure" that explicitly mentions IoT deployment
+- If Vision 2030 Programs include "QUALITY_OF_LIFE", ensure a pillar addresses citizen well-being
+
+Use formal Arabic (فصحى) for Arabic content. Be specific, not generic.`,
       stakeholders: `Identify key stakeholders for this Saudi municipal strategic plan:
 Plan: ${context.planName}
 Vision: ${context.vision}
