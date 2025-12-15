@@ -28,12 +28,15 @@ export const StrategicPlanProvider = ({ children }) => {
     return null;
   });
 
+  // Fetch only non-template, non-deleted plans for the active plan selector
   const { data: strategicPlans = [], isLoading } = useQuery({
     queryKey: ['strategic-plans-global'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('strategic_plans')
         .select('*')
+        .eq('is_template', false)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];

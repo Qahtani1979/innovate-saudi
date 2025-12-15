@@ -18,9 +18,14 @@ export default function StrategicPlanApprovalGate() {
   const { user } = useAuth();
 
   const { data: plans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
+    queryKey: ['strategic-plans-approval'],
     queryFn: async () => {
-      const { data } = await supabase.from('strategic_plans').select('*');
+      const { data } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('is_template', false)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
       return data || [];
     }
   });
