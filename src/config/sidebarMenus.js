@@ -115,7 +115,7 @@ export const SIDEBAR_MENUS = {
       { name: 'StrategyCockpit', icon: Gauge, label: { en: 'Strategy Cockpit', ar: 'قمرة الاستراتيجية' }, permission: 'strategy_view' },
       { name: 'OKRManagementSystem', icon: Target, label: { en: 'OKR Management', ar: 'إدارة الأهداف' } },
       { name: 'Portfolio', icon: FolderKanban, label: { en: 'Portfolio Management', ar: 'إدارة المحفظة' } },
-      { name: 'StrategicPlans', icon: FileBarChart, label: { en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' } },
+      { name: 'StrategicPlansPage', icon: FileBarChart, label: { en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' }, permission: 'strategy_view' },
       { name: 'ExecutiveBriefGenerator', icon: FileText, label: { en: 'Brief Generator', ar: 'مولد الموجزات' } },
       { name: 'QuarterlyReviewWizard', icon: Calendar, label: { en: 'Quarterly Review', ar: 'المراجعة الربعية' } },
       { name: 'DecisionSimulator', icon: Scale, label: { en: 'Decision Simulator', ar: 'محاكي القرارات' } },

@@ -263,7 +263,7 @@ export default function StrategyWizardWrapper() {
       queryClient.invalidateQueries(['approval-requests']);
       clearLocalDraft();
       toast.success(t({ en: 'Plan submitted for approval!', ar: 'تم إرسال الخطة للموافقة!' }));
-      navigate('/strategic-plans');
+      navigate('/strategic-plans-page');
     },
     onError: (err) => {
       toast.error(t({ en: 'Failed to submit', ar: 'فشل في الإرسال' }));

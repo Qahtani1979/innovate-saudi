@@ -24,7 +24,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 
 function StrategyCockpitPage() {
   const { language, isRTL, t } = useLanguage();
-  const { activePlanId, activePlan } = useActivePlan();
+  const { activePlanId, activePlan, strategicPlans } = useActivePlan();
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
@@ -86,14 +86,9 @@ function StrategyCockpitPage() {
     }
   });
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-cockpit'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use strategicPlans from context - avoid duplicate query
+  // Note: Additional local filtering for cockpit-specific needs can be done here
+  const cockpitPlans = strategicPlans.filter(p => !p.is_deleted);
 
   const { data: approvals = [] } = useQuery({
     queryKey: ['pending-approvals'],
@@ -562,7 +557,7 @@ Provide insights in format:
             {strategicPlans.length > 0 ? (
               <div className="space-y-3">
                 {strategicPlans.slice(0, 3).map(plan => (
-                  <Link key={plan.id} to={`/strategic-plans/${plan.id}`} className="block">
+                  <Link key={plan.id} to={`/strategic-plans-page`} className="block">
                     <div className="p-3 border rounded-lg hover:bg-slate-50 transition-colors">
                       <p className="font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                         {language === 'ar' ? plan.name_ar : plan.name_en}

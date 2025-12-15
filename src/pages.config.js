@@ -182,6 +182,7 @@ import SandboxLabCapacityPlanner from './pages/SandboxLabCapacityPlanner';
 import ServiceCatalog from './pages/ServiceCatalog';
 import MultiYearRoadmap from './pages/MultiYearRoadmap';
 import StrategicPlanApprovalGate from './pages/StrategicPlanApprovalGate';
+import StrategicPlansPage from './pages/StrategicPlansPage';
 import SWOTAnalysisPage from './pages/SWOTAnalysisPage';
 import StakeholderAnalysisPage from './pages/StakeholderAnalysisPage';
 import RiskAssessmentPage from './pages/RiskAssessmentPage';
@@ -698,6 +699,7 @@ export const PAGES = {
     "ServiceCatalog": ServiceCatalog,
     "MultiYearRoadmap": MultiYearRoadmap,
     "StrategicPlanApprovalGate": StrategicPlanApprovalGate,
+    "StrategicPlansPage": StrategicPlansPage,
     "BudgetAllocationApprovalGate": BudgetAllocationApprovalGate,
     "InitiativeLaunchGate": InitiativeLaunchGate,
     "PortfolioReviewGate": PortfolioReviewGate,

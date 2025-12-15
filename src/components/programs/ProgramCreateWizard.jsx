@@ -99,9 +99,14 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
   });
 
   const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
+    queryKey: ['strategic-plans-program-wizard'],
     queryFn: async () => {
-      const { data } = await supabase.from('strategic_plans').select('*');
+      const { data } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .or('is_template.is.null,is_template.eq.false')
+        .eq('is_deleted', false)
+        .in('status', ['active', 'draft']);
       return data || [];
     }
   });

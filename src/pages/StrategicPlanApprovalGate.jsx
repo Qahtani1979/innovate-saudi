@@ -31,16 +31,43 @@ export default function StrategicPlanApprovalGate() {
   });
 
   const approvalMutation = useMutation({
-    mutationFn: ({ plan_id, action, comments }) => 
-      base44.functions.invoke('strategicPlanApproval', { action, plan_id, comments }),
+    mutationFn: async ({ plan_id, action, comments }) => {
+      const updateData = {
+        approval_status: action === 'approve' ? 'approved' : 'rejected',
+        approval_comments: comments,
+        approved_at: action === 'approve' ? new Date().toISOString() : null,
+        approved_by: user?.email,
+        updated_at: new Date().toISOString()
+      };
+      
+      // If approving, also set status to active
+      if (action === 'approve') {
+        updateData.status = 'active';
+        updateData.activated_at = new Date().toISOString();
+        updateData.activated_by = user?.email;
+      }
+      
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .update(updateData)
+        .eq('id', plan_id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['strategic-plans']);
+      queryClient.invalidateQueries(['strategic-plans-admin']);
+      queryClient.invalidateQueries(['strategic-plans-global']);
+      queryClient.invalidateQueries(['strategic-plans-approval']);
       setSelectedPlan(null);
       setReviewComments('');
       toast.success(t({ en: 'Action completed', ar: 'تم إكمال الإجراء' }));
     },
-    onError: () => {
-      toast.error(t({ en: 'Action failed', ar: 'فشل الإجراء' }));
+    onError: (error) => {
+      toast.error(t({ en: 'Action failed', ar: 'فشل الإجراء' }) + ': ' + error.message);
     }
   });
 
