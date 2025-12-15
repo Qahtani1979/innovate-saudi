@@ -405,7 +405,8 @@ Assess readiness, define change approach, and resistance management strategies.`
           vision_ar: { type: 'string' },
           mission_en: { type: 'string' },
           mission_ar: { type: 'string' },
-          core_values: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } } }
+          core_values: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } } },
+          strategic_pillars: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } } }
         }
       },
       stakeholders: {
@@ -417,29 +418,29 @@ Assess readiness, define change approach, and resistance management strategies.`
       pestel: {
         type: 'object',
         properties: {
-          political: { type: 'array', items: { type: 'string' } },
-          economic: { type: 'array', items: { type: 'string' } },
-          social: { type: 'array', items: { type: 'string' } },
-          technological: { type: 'array', items: { type: 'string' } },
-          environmental: { type: 'array', items: { type: 'string' } },
-          legal: { type: 'array', items: { type: 'string' } }
+          political: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
+          economic: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
+          social: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
+          technological: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
+          environmental: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } },
+          legal: { type: 'array', items: { type: 'object', properties: { factor: { type: 'string' }, impact: { type: 'string' }, trend: { type: 'string' }, timeframe: { type: 'string' }, implications: { type: 'string' } } } }
         }
       },
       swot: {
         type: 'object',
         properties: {
-          strengths: { type: 'array', items: { type: 'string' } },
-          weaknesses: { type: 'array', items: { type: 'string' } },
-          opportunities: { type: 'array', items: { type: 'string' } },
-          threats: { type: 'array', items: { type: 'string' } }
+          strengths: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, priority: { type: 'string' } } } },
+          weaknesses: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, priority: { type: 'string' } } } },
+          opportunities: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, priority: { type: 'string' } } } },
+          threats: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, priority: { type: 'string' } } } }
         }
       },
       scenarios: {
         type: 'object',
         properties: {
-          best_case: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'string' } } } },
-          worst_case: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'string' } } } },
-          most_likely: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'string' } } } }
+          best_case: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } },
+          worst_case: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } },
+          most_likely: { type: 'object', properties: { description: { type: 'string' }, assumptions: { type: 'array', items: { type: 'string' } }, outcomes: { type: 'array', items: { type: 'object', properties: { metric: { type: 'string' }, value: { type: 'string' } } } }, probability: { type: 'string' } } }
         }
       },
       risks: {
@@ -596,6 +597,7 @@ Assess readiness, define change approach, and resistance management strategies.`
           if (data.mission_en) updates.mission_en = data.mission_en;
           if (data.mission_ar) updates.mission_ar = data.mission_ar;
           if (data.core_values) updates.core_values = data.core_values.map((v, i) => ({ ...v, id: Date.now().toString() + i }));
+          if (data.strategic_pillars) updates.strategic_pillars = data.strategic_pillars.map((p, i) => ({ ...p, id: Date.now().toString() + 'p' + i, icon: 'Target' }));
         } else if (stepKey === 'stakeholders' && data.stakeholders) {
           updates.stakeholders = data.stakeholders.map((s, i) => ({ 
             ...s, 
@@ -604,26 +606,50 @@ Assess readiness, define change approach, and resistance management strategies.`
             engagement_level: s.engagement_level || 'consult'
           }));
         } else if (stepKey === 'pestel') {
+          // PESTEL UI expects objects with {id, factor, impact, trend, timeframe, implications}
+          const mapPestelItems = (items) => (items || []).map((item, i) => ({
+            id: Date.now().toString() + i,
+            factor: typeof item === 'string' ? item : (item.factor || ''),
+            impact: item.impact || 'medium',
+            trend: item.trend || 'stable',
+            timeframe: item.timeframe || 'medium_term',
+            implications: item.implications || ''
+          }));
           updates.pestel = {
-            political: data.political || [],
-            economic: data.economic || [],
-            social: data.social || [],
-            technological: data.technological || [],
-            environmental: data.environmental || [],
-            legal: data.legal || []
+            political: mapPestelItems(data.political),
+            economic: mapPestelItems(data.economic),
+            social: mapPestelItems(data.social),
+            technological: mapPestelItems(data.technological),
+            environmental: mapPestelItems(data.environmental),
+            legal: mapPestelItems(data.legal)
           };
         } else if (stepKey === 'swot') {
+          // SWOT UI expects objects with {text, priority, id}
+          const mapSwotItems = (items) => (items || []).map((item, i) => ({
+            id: Date.now().toString() + i,
+            text: typeof item === 'string' ? item : (item.text || ''),
+            priority: item.priority || 'medium'
+          }));
           updates.swot = {
-            strengths: data.strengths || [],
-            weaknesses: data.weaknesses || [],
-            opportunities: data.opportunities || [],
-            threats: data.threats || []
+            strengths: mapSwotItems(data.strengths),
+            weaknesses: mapSwotItems(data.weaknesses),
+            opportunities: mapSwotItems(data.opportunities),
+            threats: mapSwotItems(data.threats)
           };
         } else if (stepKey === 'scenarios') {
+          // Scenarios UI expects outcomes as objects with {metric, value}
+          const mapScenario = (scenario) => ({
+            description: scenario?.description || '',
+            assumptions: scenario?.assumptions || [],
+            outcomes: (scenario?.outcomes || []).map(o => 
+              typeof o === 'string' ? { metric: o, value: '' } : { metric: o.metric || '', value: o.value || '' }
+            ),
+            probability: scenario?.probability || ''
+          });
           updates.scenarios = {
-            best_case: data.best_case || { description: '', assumptions: [], outcomes: [] },
-            worst_case: data.worst_case || { description: '', assumptions: [], outcomes: [] },
-            most_likely: data.most_likely || { description: '', assumptions: [], outcomes: [] }
+            best_case: mapScenario(data.best_case),
+            worst_case: mapScenario(data.worst_case),
+            most_likely: mapScenario(data.most_likely)
           };
         } else if (stepKey === 'risks' && data.risks) {
           const scoreMap = { low: 1, medium: 2, high: 3 };

@@ -44,7 +44,7 @@ export default function NoPlanGuard({ children, requirePlan = true }) {
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Button asChild>
-              <Link to="/strategic-plan-wizard">
+              <Link to="/strategic-plan-builder">
                 <Plus className="h-4 w-4 mr-2" />
                 {t({ en: 'Create First Strategic Plan', ar: 'إنشاء الخطة الاستراتيجية الأولى' })}
               </Link>
