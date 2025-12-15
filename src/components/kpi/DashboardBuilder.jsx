@@ -29,6 +29,8 @@ export default function DashboardBuilder({ kpis = [] }) {
       const { data } = await supabase
         .from('strategic_plans')
         .select('id, name_en, name_ar, status, objectives')
+        .or('is_template.is.null,is_template.eq.false')
+        .eq('is_deleted', false)
         .order('name_en');
       return data || [];
     }
