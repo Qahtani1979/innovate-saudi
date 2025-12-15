@@ -516,8 +516,8 @@ Identify 5-8 key risks for this initiative. For each, provide:
       }
     });
 
-    if (result.success && result.data?.response?.risks) {
-      const newRisks = result.data.response.risks.map((r, idx) => ({
+    if (result.success && result.data?.risks) {
+      const newRisks = result.data.risks.map((r, idx) => ({
         ...r,
         id: `risk-ai-${Date.now()}-${idx}`,
         status: 'identified'

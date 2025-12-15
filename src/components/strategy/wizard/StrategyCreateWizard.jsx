@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Target, Save } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
 import { toast } from 'sonner';
 import ProtectedPage from '../../permissions/ProtectedPage';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';
@@ -15,19 +16,19 @@ import Step1Context from './steps/Step1Context';
 import Step2Vision from './steps/Step2Vision';
 import Step3Stakeholders from './steps/Step3Stakeholders';
 import Step4PESTEL from './steps/Step4PESTEL';
-import Step5SWOT from './steps/Step2SWOT'; // Reusing existing SWOT
+import Step5SWOT from './steps/Step2SWOT';
 import Step6Scenarios from './steps/Step6Scenarios';
 import Step7Risks from './steps/Step7Risks';
 import Step8Dependencies from './steps/Step8Dependencies';
-import Step9Objectives from './steps/Step3Objectives'; // Reusing existing
-import Step10National from './steps/Step4NationalAlignment'; // Reusing existing
-import Step11KPIs from './steps/Step5KPIs'; // Reusing existing
-import Step12Actions from './steps/Step6ActionPlans'; // Reusing existing
+import Step9Objectives from './steps/Step3Objectives';
+import Step10National from './steps/Step4NationalAlignment';
+import Step11KPIs from './steps/Step5KPIs';
+import Step12Actions from './steps/Step6ActionPlans';
 import Step13Resources from './steps/Step13Resources';
-import Step14Timeline from './steps/Step7Timeline'; // Reusing existing
+import Step14Timeline from './steps/Step7Timeline';
 import Step15Governance from './steps/Step15Governance';
 import { Step16Communication, Step17Change } from './steps/Step16Communication';
-import Step18Review from './steps/Step8Review'; // Reusing existing review
+import Step18Review from './steps/Step8Review';
 
 export default function StrategyCreateWizard() {
   const { language, t, isRTL } = useLanguage();
@@ -37,6 +38,8 @@ export default function StrategyCreateWizard() {
   const [wizardData, setWizardData] = useState(initialWizardData);
   const [generatingStep, setGeneratingStep] = useState(null);
   const [completedSteps, setCompletedSteps] = useState([]);
+  
+  const { invokeAI, isLoading: aiLoading, isAvailable: aiAvailable } = useAIWithFallback();
 
   const updateData = (updates) => {
     setWizardData(prev => ({ ...prev, ...updates }));
@@ -69,12 +72,78 @@ export default function StrategyCreateWizard() {
   });
 
   const generateForStep = async (step) => {
+    if (!aiAvailable) {
+      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
+      return;
+    }
+    
     setGeneratingStep(step);
-    // Placeholder - AI generation would be implemented here
-    setTimeout(() => {
+    const stepConfig = WIZARD_STEPS.find(s => s.num === step);
+    const stepKey = stepConfig?.key || '';
+    
+    const context = {
+      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
+      vision: wizardData.vision_en || wizardData.vision_ar || '',
+      mission: wizardData.mission_en || wizardData.mission_ar || '',
+      sectors: wizardData.target_sectors || [],
+      themes: wizardData.strategic_themes || [],
+      objectives: wizardData.objectives || []
+    };
+    
+    const prompts = {
+      vision: `Generate vision and mission for: ${context.planName}. Sectors: ${context.sectors.join(', ')}. Provide in English and Arabic.`,
+      stakeholders: `Identify stakeholders for: ${context.planName}. Vision: ${context.vision}`,
+      pestel: `PESTEL analysis for: ${context.planName} in Saudi Arabia context.`,
+      swot: `SWOT analysis for: ${context.planName}`,
+      scenarios: `Scenario planning for: ${context.planName}`,
+      risks: `Risk assessment for: ${context.planName}`,
+      objectives: `Strategic objectives for: ${context.planName}. Vision: ${context.vision}`,
+      kpis: `KPIs for: ${context.planName}. Objectives: ${context.objectives.map(o => o.title_en).join(', ')}`,
+      actions: `Action plans for: ${context.planName}`
+    };
+    
+    try {
+      const { success, data } = await invokeAI({
+        prompt: prompts[stepKey] || `Generate content for ${stepKey} step of: ${context.planName}`,
+        system_prompt: 'You are a Saudi strategic planning expert. Provide content in English and Arabic.'
+      });
+      
+      if (success && data) {
+        const updates = {};
+        if (stepKey === 'vision') {
+          if (data.vision_en) updates.vision_en = data.vision_en;
+          if (data.vision_ar) updates.vision_ar = data.vision_ar;
+          if (data.mission_en) updates.mission_en = data.mission_en;
+          if (data.mission_ar) updates.mission_ar = data.mission_ar;
+        } else if (stepKey === 'stakeholders' && data.stakeholders) {
+          updates.stakeholders = data.stakeholders;
+        } else if (stepKey === 'pestel') {
+          updates.pestel = data;
+        } else if (stepKey === 'swot') {
+          updates.swot = data;
+        } else if (stepKey === 'scenarios') {
+          updates.scenarios = data;
+        } else if (stepKey === 'risks' && data.risks) {
+          updates.risks = data.risks;
+        } else if (stepKey === 'objectives' && data.objectives) {
+          updates.objectives = data.objectives;
+        } else if (stepKey === 'kpis' && data.kpis) {
+          updates.kpis = data.kpis;
+        } else if (stepKey === 'actions' && data.action_plans) {
+          updates.action_plans = data.action_plans;
+        }
+        
+        if (Object.keys(updates).length > 0) {
+          setWizardData(prev => ({ ...prev, ...updates }));
+          toast.success(t({ en: 'AI generation complete', ar: 'تم الإنشاء بالذكاء الاصطناعي' }));
+        }
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء' }));
+    } finally {
       setGeneratingStep(null);
-      toast.success(t({ en: 'AI generation complete', ar: 'تم الإنشاء' }));
-    }, 1500);
+    }
   };
 
   const handleNext = () => {

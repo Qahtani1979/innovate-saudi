@@ -169,8 +169,8 @@ Provide:
         }
       });
 
-      if (result.success && result.data?.response) {
-        setAiInsights(result.data.response);
+      if (result.success && result.data) {
+        setAiInsights(result.data);
         toast.success(t({ en: 'AI analysis complete', ar: 'اكتمل التحليل الذكي' }));
       }
     } catch (error) {

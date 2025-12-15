@@ -512,8 +512,8 @@ Analyze this context and provide a SWOT analysis with 3-5 items per category. Fo
       }
     });
 
-    if (result.success && result.data?.response) {
-      const aiData = result.data.response;
+    if (result.success && result.data) {
+      const aiData = result.data;
       
       // Merge AI suggestions with existing data
       setSwotData(prev => {

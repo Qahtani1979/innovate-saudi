@@ -161,11 +161,11 @@ Provide:
         }
       });
 
-      if (result.success && result.data?.response) {
-        setAiSuggestion(result.data.response);
+      if (result.success && result.data) {
+        setAiSuggestion(result.data);
         
         // Optionally auto-apply the suggested order
-        const suggestedOrder = result.data.response.suggested_order || [];
+        const suggestedOrder = result.data.suggested_order || [];
         if (suggestedOrder.length > 0) {
           const reordered = [...items].sort((a, b) => {
             const aIndex = suggestedOrder.findIndex(name => 

@@ -89,8 +89,8 @@ Provide 3 actionable insights with type (recommendation/alert/insight), title, a
       }
     });
     
-    if (response.success && response.data?.response?.insights) {
-      setAiInsights(response.data.response.insights);
+    if (response.success && response.data?.insights) {
+      setAiInsights(response.data.insights);
     }
   };
 

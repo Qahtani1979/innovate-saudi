@@ -177,8 +177,8 @@ For each input or for new generated inputs, provide:
         }
       });
 
-      if (result.success && result.data?.response?.inputs) {
-        const aiInputs = result.data.response.inputs;
+      if (result.success && result.data?.inputs) {
+        const aiInputs = result.data.inputs;
         
         // Save each new input to database
         for (const input of aiInputs) {

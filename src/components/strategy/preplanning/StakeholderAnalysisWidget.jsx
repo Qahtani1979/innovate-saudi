@@ -491,8 +491,8 @@ Identify 5-8 key stakeholders for this initiative. For each, provide:
       }
     });
 
-    if (result.success && result.data?.response?.stakeholders) {
-      const newStakeholders = result.data.response.stakeholders.map((s, idx) => ({
+    if (result.success && result.data?.stakeholders) {
+      const newStakeholders = result.data.stakeholders.map((s, idx) => ({
         ...s,
         id: `stakeholder-ai-${Date.now()}-${idx}`
       }));
