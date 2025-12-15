@@ -314,6 +314,10 @@ export const initialWizardData = {
   vision_2030_programs: [],
   budget_range: '',
   currency: 'SAR',
+  quick_stakeholders: [], // Simple list for quick discovery
+  key_challenges: '',
+  available_resources: '',
+  initial_constraints: '',
   
   // Step 2: Vision & Mission
   vision_en: '',
