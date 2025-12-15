@@ -73,13 +73,13 @@ function StrategicPlansPage() {
       plan.name_ar?.includes(searchQuery) ||
       plan.code?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    if (activeTab === 'all') return matchesSearch && !plan.is_deleted;
-    if (activeTab === 'draft') return matchesSearch && plan.status === 'draft' && !plan.is_deleted;
-    if (activeTab === 'active') return matchesSearch && plan.status === 'active' && !plan.is_deleted;
-    if (activeTab === 'completed') return matchesSearch && plan.status === 'completed' && !plan.is_deleted;
-    if (activeTab === 'archived') return matchesSearch && plan.status === 'archived' && !plan.is_deleted;
-    if (activeTab === 'pending') return matchesSearch && plan.approval_status === 'pending' && !plan.is_deleted;
-    if (activeTab === 'deleted') return matchesSearch && plan.is_deleted;
+    if (activeTab === 'all') return matchesSearch && !plan.is_deleted && !plan.is_template;
+    if (activeTab === 'draft') return matchesSearch && plan.status === 'draft' && !plan.is_deleted && !plan.is_template;
+    if (activeTab === 'active') return matchesSearch && plan.status === 'active' && !plan.is_deleted && !plan.is_template;
+    if (activeTab === 'completed') return matchesSearch && plan.status === 'completed' && !plan.is_deleted && !plan.is_template;
+    if (activeTab === 'archived') return matchesSearch && plan.status === 'archived' && !plan.is_deleted && !plan.is_template;
+    if (activeTab === 'pending') return matchesSearch && plan.approval_status === 'pending' && !plan.is_deleted && !plan.is_template;
+    if (activeTab === 'deleted') return matchesSearch && plan.is_deleted && !plan.is_template;
     return matchesSearch;
   });
 

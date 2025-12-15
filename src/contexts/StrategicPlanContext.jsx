@@ -28,15 +28,16 @@ export const StrategicPlanProvider = ({ children }) => {
     return null;
   });
 
-  // Fetch only non-template, non-deleted plans for the active plan selector
+  // Fetch only active/approved plans for the context selector (not drafts)
   const { data: strategicPlans = [], isLoading } = useQuery({
     queryKey: ['strategic-plans-global'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('strategic_plans')
         .select('*')
-        .eq('is_template', false)
-        .eq('is_deleted', false)
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false')
+        .in('status', ['active', 'completed']) // Only show active/completed plans in selector
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];

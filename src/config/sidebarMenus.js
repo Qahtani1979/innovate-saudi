@@ -149,7 +149,7 @@ export const SIDEBAR_MENUS = {
       { name: 'MultiCityOrchestration', icon: Network, label: { en: 'Multi-City Orchestration', ar: 'تنسيق متعدد المدن' } },
       { name: 'CrossCityLearningHub', icon: BookOpen, label: { en: 'Cross-City Learning', ar: 'التعلم عبر المدن' } },
       { name: 'CapacityPlanning', icon: Cpu, label: { en: 'Capacity Planning', ar: 'تخطيط القدرات' } },
-      { name: 'StrategicPlans', icon: Target, label: { en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' } },
+      { name: 'StrategicPlansPage', icon: Target, label: { en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' } },
       { name: 'PolicyHub', icon: ScrollText, label: { en: 'Policy Hub', ar: 'مركز السياسات' } },
       { name: 'MIIDrillDown', icon: PieChart, label: { en: 'MII Drill Down', ar: 'تحليل المؤشر' } },
       { name: 'NationalInnovationMap', icon: Map, label: { en: 'National Overview', ar: 'النظرة الوطنية' } },
