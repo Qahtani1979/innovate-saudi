@@ -1,13 +1,14 @@
 # Strategy Templates System - Design Document
 
-> **Version**: 1.8  
+> **Version**: 2.0  
 > **Last Updated**: December 15, 2025  
-> **Status**: ✅ Fully Implemented & Consistent
+> **Status**: ✅ Fully Implemented & Consistent - MoMAH Innovation Focus
 
-## Recent Changes (v1.8)
+## Recent Changes (v2.0)
+- Added 14 official MoMAH Innovation & R&D templates covering all service domains
+- All templates aligned with Saudi Vision 2030, MoMAH mandate, and Innovation priorities
+- Templates cover: Digital Transformation, Smart Cities, Housing/PropTech, CleanTech, GIS, IoT, Rural, GovTech, Citizen Services
 - Verified all template operations consistent with wizard data structure
-- Confirmed hard delete for templates (no `is_deleted` column dependency)
-- All template-to-wizard field mappings validated
 
 ---
 
@@ -234,26 +235,45 @@ template_tags      TEXT[]                  -- Searchable tags
 
 ### Template Types
 
-| Type ID | English Name | Arabic Name | Icon | Color |
-|---------|--------------|-------------|------|-------|
-| `innovation` | Innovation Strategy | استراتيجية الابتكار | Lightbulb | Amber |
-| `digital_transformation` | Digital Transformation | التحول الرقمي | Zap | Blue |
-| `sustainability` | Sustainability | الاستدامة | Leaf | Green |
-| `sector_specific` | Sector Specific | خاص بالقطاع | Building2 | Purple |
-| `municipality` | Municipality Scale | نطاق البلدية | Globe | Cyan |
-| `smart_city` | Smart City | المدينة الذكية | Cpu | Indigo |
-| `citizen_services` | Citizen Services | خدمات المواطنين | Users | Rose |
+| Type ID | English Name | Arabic Name | Icon | Color | MoMAH Domain |
+|---------|--------------|-------------|------|-------|--------------|
+| `innovation` | Innovation Strategy | استراتيجية الابتكار | Lightbulb | Amber | Innovation Labs, R&D |
+| `digital_transformation` | Digital Transformation | التحول الرقمي | Zap | Blue | GovTech, Digital Permits |
+| `sustainability` | Sustainability | الاستدامة | Leaf | Green | CleanTech, Environment |
+| `sector_specific` | Sector Specific | خاص بالقطاع | Building2 | Purple | Industry Hubs |
+| `municipality` | Municipality Scale | نطاق البلدية | Globe | Cyan | Municipal Services |
+| `smart_city` | Smart City | المدينة الذكية | Zap | Indigo | IoT, Urban Planning, GIS |
+| `citizen_services` | Citizen Services | خدمات المواطنين | Users | Rose | Rural, Digital Inclusion |
 
 ### Template Categories
 
 | Category | Description |
 |----------|-------------|
-| `system` | Pre-built official templates (read-only) |
+| `system` | Pre-built official MoMAH templates (14 templates) |
 | `community` | User-shared public templates |
 | `organization` | Organization-specific templates |
 | `personal` | User's private templates |
 
 > **Note**: `is_featured` is a separate boolean flag, not a category.
+
+### Official MoMAH Innovation Templates (14 Total)
+
+| Template Name | Type | Rating | MoMAH Domain |
+|--------------|------|--------|--------------|
+| MoMAH Innovation & R&D Excellence Strategy | `innovation` | 4.4 | Core Innovation |
+| Housing Innovation & PropTech Strategy | `innovation` | 4.7 | Housing/Sakani |
+| Open Innovation & Crowdsourcing for Saudi Municipalities | `innovation` | 4.7 | Citizen Co-creation |
+| Digital Innovation & AI Research for Saudi Municipalities | `digital_transformation` | 4.5 | AI/ML |
+| GovTech & Digital Permits Innovation Strategy | `digital_transformation` | 4.6 | Digital Permits |
+| Environmental Innovation & CleanTech Strategy | `sustainability` | 4.6 | Waste/Water/Carbon |
+| Green Technology R&D for Saudi Sustainable Cities | `sustainability` | 4.7 | Green Tech |
+| MoMAH Sector-Specific Innovation Hubs Strategy | `sector_specific` | 4.5 | Industry Sectors |
+| Saudi Municipal Innovation Ecosystem Strategy | `municipality` | 4.6 | Municipal Scale |
+| Smart City Innovation & IoT Research for Saudi Urban Development | `smart_city` | 4.6 | Smart Cities |
+| Urban Planning Innovation & GIS R&D Strategy | `smart_city` | 4.8 | GIS/Digital Twins |
+| Infrastructure Innovation & IoT R&D Strategy | `smart_city` | 4.5 | IoT/Infrastructure |
+| Citizen Experience Innovation Lab for Saudi Municipal Services | `citizen_services` | 4.8 | Citizen UX |
+| Rural Innovation & Digital Inclusion Strategy | `citizen_services` | 4.4 | Rural/Inclusion |
 
 ---
 
@@ -923,6 +943,18 @@ The wizard now validates required fields before navigation:
 
 ## Changelog
 
+### v2.0 (Dec 15, 2025)
+- Added 14 official MoMAH Innovation & R&D templates
+- All templates aligned with Saudi Vision 2030 and MoMAH mandate
+- Template domains: Housing/PropTech, CleanTech, GIS, IoT, Rural, GovTech, Citizen Services
+- Updated documentation with complete template inventory
+- Added MoMAH domain mapping for each template type
+
+### v1.8 (Dec 15, 2025)
+- Verified all template operations consistent with wizard data structure
+- Confirmed hard delete for templates (no `is_deleted` column dependency)
+- All template-to-wizard field mappings validated
+
 ### v1.5 (Dec 15, 2025)
 - Fixed nested object detection for `resource_plan`, `governance`, `communication_plan`, `change_management`
 - Removed `featured` from TEMPLATE_CATEGORIES (it's a boolean flag)
@@ -936,3 +968,5 @@ The wizard now validates required fields before navigation:
 
 ### v1.3 (Dec 15, 2025)
 - Initial full implementation
+
+*Document maintained by MoMAH Strategic Planning System*
