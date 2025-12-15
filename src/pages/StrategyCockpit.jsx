@@ -86,7 +86,14 @@ function StrategyCockpitPage() {
     }
   });
 
-  // strategicPlans are now provided by context via activePlan
+  const { data: strategicPlans = [] } = useQuery({
+    queryKey: ['strategic-plans-cockpit'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('strategic_plans').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   const { data: approvals = [] } = useQuery({
     queryKey: ['pending-approvals'],
