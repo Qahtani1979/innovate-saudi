@@ -341,35 +341,21 @@ Plan: ${context.planName}
 Vision: ${context.vision}
 Sectors: ${context.sectors.join(', ')}
 
-List key risks with category, likelihood, impact, and mitigation strategies.`,
-      dependencies: `Analyze dependencies and constraints for this Saudi municipal strategic plan:
-Plan: ${context.planName}
-Vision: ${context.vision}
-Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
-
-Identify key dependencies, constraints, and assumptions.`,
-      objectives: `Generate strategic objectives for this Saudi municipal plan:
-Plan: ${context.planName}
-Vision: ${context.vision}
-Mission: ${context.mission}
-Themes: ${context.themes.join(', ')}
-
-Create SMART objectives aligned with Vision 2030.`,
-      national: `Suggest Vision 2030 alignments for these strategic objectives:
-Plan: ${context.planName}
-Objectives: ${context.objectives.map((o, i) => `${i}: ${o.name_en}`).join('; ')}
-
-Map each objective to relevant Vision 2030 goals and targets.`,
+Return 8-12 risks. Use category codes from: STRATEGIC, OPERATIONAL, FINANCIAL, REGULATORY, TECHNOLOGY, REPUTATIONAL, POLITICAL, ENVIRONMENTAL.
+Use likelihood and impact as: low | medium | high.
+Include: title, description, mitigation_strategy, contingency_plan, owner (role or department).`,
       kpis: `Generate KPIs for this Saudi strategic plan:
 Plan: ${context.planName}
 Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
 
-Create measurable KPIs with targets and baselines.`,
+Return 2-4 KPIs per objective.
+Include: name_en, name_ar, unit, baseline_value, target_value, objective_index, frequency (monthly|quarterly|annual), data_source, owner.`,
       actions: `Generate action plans for this Saudi municipal strategy:
 Plan: ${context.planName}
 Objectives: ${context.objectives.map(o => o.name_en || o.name_ar).join(', ')}
 
-Create actionable initiatives with timelines and owners.`,
+Return 2-4 action plans per objective.
+Include: name_en, name_ar, description_en, description_ar, objective_index, type (initiative|program|project|pilot), priority (high|medium|low), budget_estimate (SAR), owner, deliverables (array of strings), dependencies (array of strings).`,
       resources: `Generate resource plan for this Saudi municipal strategy:
 Plan: ${context.planName}
 Duration: ${wizardData.start_year}-${wizardData.end_year}
@@ -459,7 +445,22 @@ Assess readiness, define change approach, and resistance management strategies.`
       risks: {
         type: 'object',
         properties: {
-          risks: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, category: { type: 'string' }, likelihood: { type: 'string' }, impact: { type: 'string' }, mitigation: { type: 'string' } } } }
+          risks: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                description: { type: 'string' },
+                category: { type: 'string' },
+                likelihood: { type: 'string' },
+                impact: { type: 'string' },
+                mitigation_strategy: { type: 'string' },
+                contingency_plan: { type: 'string' },
+                owner: { type: 'string' }
+              }
+            }
+          }
         }
       },
       dependencies: {
@@ -485,13 +486,47 @@ Assess readiness, define change approach, and resistance management strategies.`
       kpis: {
         type: 'object',
         properties: {
-          kpis: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, unit: { type: 'string' }, baseline: { type: 'number' }, target: { type: 'number' }, objective_index: { type: 'number' } } } }
+          kpis: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name_en: { type: 'string' },
+                name_ar: { type: 'string' },
+                unit: { type: 'string' },
+                baseline_value: { type: 'string' },
+                target_value: { type: 'string' },
+                objective_index: { type: 'number' },
+                frequency: { type: 'string' },
+                data_source: { type: 'string' },
+                owner: { type: 'string' }
+              }
+            }
+          }
         }
       },
       actions: {
         type: 'object',
         properties: {
-          action_plans: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' }, objective_index: { type: 'number' }, type: { type: 'string' }, owner: { type: 'string' }, start_date: { type: 'string' }, end_date: { type: 'string' } } } }
+          action_plans: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name_en: { type: 'string' },
+                name_ar: { type: 'string' },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' },
+                objective_index: { type: 'number' },
+                type: { type: 'string' },
+                priority: { type: 'string' },
+                budget_estimate: { type: 'string' },
+                owner: { type: 'string' },
+                deliverables: { type: 'array', items: { type: 'string' } },
+                dependencies: { type: 'array', items: { type: 'string' } }
+              }
+            }
+          }
         }
       },
       resources: {
@@ -591,7 +626,24 @@ Assess readiness, define change approach, and resistance management strategies.`
             most_likely: data.most_likely || { description: '', assumptions: [], outcomes: [] }
           };
         } else if (stepKey === 'risks' && data.risks) {
-          updates.risks = data.risks.map((r, i) => ({ ...r, id: Date.now().toString() + i }));
+          const scoreMap = { low: 1, medium: 2, high: 3 };
+          updates.risks = data.risks.map((r, i) => {
+            const likelihood = r.likelihood || 'medium';
+            const impact = r.impact || 'medium';
+            return {
+              id: Date.now().toString() + i,
+              title: r.title || '',
+              description: r.description || '',
+              category: r.category || 'OPERATIONAL',
+              likelihood,
+              impact,
+              risk_score: (scoreMap[likelihood] || 0) * (scoreMap[impact] || 0),
+              mitigation_strategy: r.mitigation_strategy || r.mitigation || '',
+              contingency_plan: r.contingency_plan || '',
+              owner: r.owner || '',
+              status: 'identified'
+            };
+          });
         } else if (stepKey === 'dependencies') {
           if (data.dependencies) {
             updates.dependencies = data.dependencies.map((d, i) => ({ 
@@ -620,12 +672,33 @@ Assess readiness, define change approach, and resistance management strategies.`
             target_code: a.target_code
           }));
         } else if (stepKey === 'kpis' && data.kpis) {
-          updates.kpis = data.kpis.map((k, i) => ({ ...k, id: Date.now().toString() + i }));
+          updates.kpis = data.kpis.map((k, i) => ({
+            id: Date.now().toString() + i,
+            name_en: k.name_en || '',
+            name_ar: k.name_ar || '',
+            objective_index: typeof k.objective_index === 'number' ? k.objective_index : null,
+            unit: k.unit || '',
+            baseline_value: String(k.baseline_value ?? k.baseline ?? ''),
+            target_value: String(k.target_value ?? k.target ?? ''),
+            target_year: wizardData.end_year,
+            frequency: k.frequency || 'quarterly',
+            data_source: k.data_source || '',
+            owner: k.owner || ''
+          }));
         } else if (stepKey === 'actions' && data.action_plans) {
           updates.action_plans = data.action_plans.map((a, i) => ({ 
-            ...a, 
             id: Date.now().toString() + i,
-            type: a.type || 'initiative'
+            name_en: a.name_en || '',
+            name_ar: a.name_ar || '',
+            description_en: a.description_en || '',
+            description_ar: a.description_ar || '',
+            objective_index: typeof a.objective_index === 'number' ? a.objective_index : null,
+            type: a.type || 'initiative',
+            priority: a.priority || 'medium',
+            budget_estimate: a.budget_estimate || '',
+            owner: a.owner || '',
+            deliverables: Array.isArray(a.deliverables) ? a.deliverables : [],
+            dependencies: Array.isArray(a.dependencies) ? a.dependencies : []
           }));
         } else if (stepKey === 'resources') {
           updates.resource_plan = {
