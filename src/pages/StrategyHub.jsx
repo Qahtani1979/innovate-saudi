@@ -101,6 +101,29 @@ const preplanningTools = [
   { icon: ClipboardList, label: { en: 'Strategy Inputs', ar: 'مدخلات الاستراتيجية' }, path: '/strategy-input-page', desc: { en: 'Gather strategic inputs', ar: 'جمع المدخلات الاستراتيجية' }, permission: 'strategy_manage' },
 ];
 
+// Template & Library Tools
+const templateTools = [
+  { icon: FileText, label: { en: 'Template Library', ar: 'مكتبة القوالب' }, path: '/strategy-templates-page', desc: { en: 'Browse and apply templates with coverage analysis', ar: 'تصفح وتطبيق القوالب مع تحليل التغطية' }, permission: null },
+  { icon: BarChart3, label: { en: 'Coverage Analysis', ar: 'تحليل التغطية' }, path: '/strategy-templates-page', desc: { en: 'Analyze template coverage against MoMAH taxonomy', ar: 'تحليل تغطية القوالب مقابل تصنيف الوزارة' }, permission: null },
+];
+
+// Monitoring & Review Tools
+const monitoringTools = [
+  { icon: BarChart3, label: { en: 'Strategy Cockpit', ar: 'لوحة القيادة' }, path: '/strategy-cockpit', desc: { en: 'Real-time strategy monitoring', ar: 'مراقبة الاستراتيجية في الوقت الفعلي' }, permission: 'strategy_view' },
+  { icon: Target, label: { en: 'Strategy Drill-down', ar: 'التفاصيل الاستراتيجية' }, path: '/strategy-drill-down', desc: { en: 'Detailed strategy analysis', ar: 'تحليل الاستراتيجية المفصل' }, permission: 'strategy_view' },
+  { icon: GitBranch, label: { en: 'Strategy Alignment', ar: 'المواءمة الاستراتيجية' }, path: '/strategy-alignment', desc: { en: 'Entity alignment tracking', ar: 'تتبع مواءمة الكيانات' }, permission: 'strategy_view' },
+  { icon: Calendar, label: { en: 'Timeline View', ar: 'عرض الجدول الزمني' }, path: '/strategy-timeline-page', desc: { en: 'Strategic timeline planning', ar: 'تخطيط الجدول الزمني الاستراتيجي' }, permission: 'strategy_view' },
+  { icon: MessageSquare, label: { en: 'Feedback Dashboard', ar: 'لوحة التعليقات' }, path: '/strategy-feedback-dashboard', desc: { en: 'Collect and analyze feedback', ar: 'جمع وتحليل التعليقات' }, permission: 'strategy_view' },
+  { icon: Settings, label: { en: 'Adjustment Wizard', ar: 'معالج التعديل' }, path: '/strategy-review-page', desc: { en: 'Strategy adjustment and review', ar: 'تعديل ومراجعة الاستراتيجية' }, permission: 'strategy_manage' },
+];
+
+// Demand & Resource Tools
+const demandTools = [
+  { icon: TrendingUp, label: { en: 'Demand Dashboard', ar: 'لوحة الطلب' }, path: '/strategy-demand-dashboard-page', desc: { en: 'Track strategy-driven demand', ar: 'تتبع الطلب المدفوع بالاستراتيجية' }, permission: 'strategy_view' },
+  { icon: ClipboardList, label: { en: 'Action Plans', ar: 'خطط العمل' }, path: '/action-plan-page', desc: { en: 'Manage strategic action plans', ar: 'إدارة خطط العمل الاستراتيجية' }, permission: 'strategy_view' },
+  { icon: Target, label: { en: 'National Alignment', ar: 'المواءمة الوطنية' }, path: '/national-strategy-linker-page', desc: { en: 'Link to Vision 2030 programs', ar: 'الربط ببرامج رؤية 2030' }, permission: 'strategy_view' },
+];
+
 // Phase workflow definition
 const phases = [
   { key: 'preplanning', label: { en: 'Pre-Planning', ar: 'التخطيط المسبق' }, icon: Eye },
@@ -136,6 +159,9 @@ function StrategyHub() {
   const filteredGovernanceTools = useMemo(() => filterByPermission(governanceTools), [isAdmin, hasPermission]);
   const filteredCommunicationTools = useMemo(() => filterByPermission(communicationTools), [isAdmin, hasPermission]);
   const filteredPreplanningTools = useMemo(() => filterByPermission(preplanningTools), [isAdmin, hasPermission]);
+  const filteredMonitoringTools = useMemo(() => filterByPermission(monitoringTools), [isAdmin, hasPermission]);
+  const filteredDemandTools = useMemo(() => filterByPermission(demandTools), [isAdmin, hasPermission]);
+  const filteredTemplateTools = useMemo(() => filterByPermission(templateTools), [isAdmin, hasPermission]);
 
   // Permission flags for showing/hiding entire sections
   const canManageStrategy = isAdmin || hasPermission('strategy_manage');
@@ -285,30 +311,38 @@ function StrategyHub() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="workflow" className="flex items-center gap-2">
+        <TabsList className="flex flex-wrap justify-start gap-1 h-auto p-1">
+          <TabsTrigger value="workflow" className="flex items-center gap-1 text-xs md:text-sm">
             <Workflow className="h-4 w-4" />
-            <span className="hidden md:inline">{t({ en: 'Workflow', ar: 'سير العمل' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Workflow', ar: 'سير العمل' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="cascade" className="flex items-center gap-2">
+          <TabsTrigger value="templates" className="flex items-center gap-1 text-xs md:text-sm">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">{t({ en: 'Templates', ar: 'القوالب' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="cascade" className="flex items-center gap-1 text-xs md:text-sm">
             <Zap className="h-4 w-4" />
-            <span className="hidden md:inline">{t({ en: 'Cascade', ar: 'التدرج' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Cascade', ar: 'التدرج' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="governance" className="flex items-center gap-2">
+          <TabsTrigger value="monitoring" className="flex items-center gap-1 text-xs md:text-sm">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">{t({ en: 'Monitoring', ar: 'المراقبة' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="governance" className="flex items-center gap-1 text-xs md:text-sm">
             <Shield className="h-4 w-4" />
-            <span className="hidden md:inline">{t({ en: 'Governance', ar: 'الحوكمة' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Governance', ar: 'الحوكمة' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="communication" className="flex items-center gap-2">
+          <TabsTrigger value="communication" className="flex items-center gap-1 text-xs md:text-sm">
             <Megaphone className="h-4 w-4" />
-            <span className="hidden md:inline">{t({ en: 'Communication', ar: 'التواصل' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Comms', ar: 'التواصل' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="preplanning" className="flex items-center gap-2">
+          <TabsTrigger value="preplanning" className="flex items-center gap-1 text-xs md:text-sm">
             <Search className="h-4 w-4" />
-            <span className="hidden md:inline">{t({ en: 'Pre-Planning', ar: 'التخطيط المسبق' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Pre-Plan', ar: 'التخطيط' })}</span>
           </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-2">
+          <TabsTrigger value="ai" className="flex items-center gap-1 text-xs md:text-sm">
             <Brain className="h-4 w-4" />
-            <span className="hidden md:inline">{t({ en: 'AI Tools', ar: 'أدوات الذكاء' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'AI', ar: 'الذكاء' })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -455,7 +489,165 @@ function StrategyHub() {
           </div>
         </TabsContent>
 
-        {/* Cascade Tab */}
+        {/* Templates Tab */}
+        <TabsContent value="templates" className="space-y-6">
+          <Card className="border-2 border-cyan-200 bg-gradient-to-br from-cyan-50 to-white dark:from-cyan-950 dark:to-background">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-cyan-600" />
+                {t({ en: 'Strategy Template Library', ar: 'مكتبة قوالب الاستراتيجية' })}
+              </CardTitle>
+              <CardDescription>
+                {t({ en: 'MoMAH Innovation & R&D strategy templates with coverage analysis and AI recommendations', ar: 'قوالب استراتيجيات الابتكار والبحث والتطوير لوزارة البلديات مع تحليل التغطية وتوصيات الذكاء الاصطناعي' })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {filteredTemplateTools.map(tool => {
+                  const Icon = tool.icon;
+                  return (
+                    <Link key={tool.path} to={tool.path}>
+                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-cyan-100 dark:bg-cyan-900">
+                              <Icon className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{t(tool.label)}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{t(tool.desc)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="mt-6 flex gap-3">
+                <Button asChild>
+                  <Link to="/strategy-templates-page">
+                    <FileText className="h-4 w-4 mr-2" />
+                    {t({ en: 'Open Template Library', ar: 'فتح مكتبة القوالب' })}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/strategic-plan-builder">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {t({ en: 'Create from Scratch', ar: 'إنشاء من البداية' })}
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Template Features */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center mb-3">
+                  <Target className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Coverage Analysis', ar: 'تحليل التغطية' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Analyze templates against MoMAH service domains and innovation areas', ar: 'تحليل القوالب مقابل مجالات خدمات الوزارة ومجالات الابتكار' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mb-3">
+                  <Sparkles className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'AI Recommendations', ar: 'توصيات الذكاء الاصطناعي' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Get AI-powered suggestions for new templates based on gaps', ar: 'احصل على اقتراحات مدعومة بالذكاء الاصطناعي لقوالب جديدة بناءً على الفجوات' })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="w-12 h-12 mx-auto bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-3">
+                  <Globe className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="font-semibold mb-2">{t({ en: 'Vision 2030 Aligned', ar: 'متوافق مع رؤية 2030' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'All templates aligned with Saudi Vision 2030 programs', ar: 'جميع القوالب متوافقة مع برامج رؤية السعودية 2030' })}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Monitoring Tab */}
+        <TabsContent value="monitoring" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t({ en: 'Strategy Monitoring & Review', ar: 'مراقبة ومراجعة الاستراتيجية' })}</CardTitle>
+              <CardDescription>
+                {t({ en: 'Track strategy execution, alignment, and performance', ar: 'تتبع تنفيذ الاستراتيجية والمواءمة والأداء' })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                {filteredMonitoringTools.map(tool => {
+                  const Icon = tool.icon;
+                  return (
+                    <Link key={tool.path} to={tool.path}>
+                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                        <CardContent className="pt-6">
+                          <div className="flex flex-col items-center text-center gap-3">
+                            <div className="p-3 rounded-lg bg-primary/10">
+                              <Icon className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{t(tool.label)}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{t(tool.desc)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Demand & Resource Tools */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t({ en: 'Demand & Resource Management', ar: 'إدارة الطلب والموارد' })}</CardTitle>
+              <CardDescription>
+                {t({ en: 'Track strategy-driven demand, action plans, and national alignment', ar: 'تتبع الطلب المدفوع بالاستراتيجية وخطط العمل والمواءمة الوطنية' })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                {filteredDemandTools.map(tool => {
+                  const Icon = tool.icon;
+                  return (
+                    <Link key={tool.path} to={tool.path}>
+                      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 rounded-lg bg-primary/10">
+                              <Icon className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{t(tool.label)}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{t(tool.desc)}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="cascade" className="space-y-6">
           <Card>
             <CardHeader>
