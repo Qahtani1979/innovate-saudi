@@ -23,7 +23,6 @@ export function useStrategyTemplates() {
         .select('*')
         .eq('is_template', true)
         .eq('is_public', true)
-        .eq('is_deleted', false)
         .order('usage_count', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
       
@@ -47,7 +46,6 @@ export function useStrategyTemplates() {
         .select('*')
         .eq('is_template', true)
         .eq('owner_email', user.email)
-        .eq('is_deleted', false)
         .order('updated_at', { ascending: false });
       
       if (error) throw error;
@@ -68,7 +66,6 @@ export function useStrategyTemplates() {
         .select('*')
         .eq('is_template', true)
         .eq('is_featured', true)
-        .eq('is_deleted', false)
         .order('usage_count', { ascending: false, nullsFirst: false });
       
       if (error) throw error;
@@ -156,16 +153,12 @@ export function useStrategyTemplates() {
     }
   });
 
-  // Delete template (soft delete)
+  // Delete template (hard delete since is_deleted column doesn't exist)
   const deleteTemplateMutation = useMutation({
     mutationFn: async (id) => {
       const { error } = await supabase
         .from('strategic_plans')
-        .update({ 
-          is_deleted: true,
-          deleted_date: new Date().toISOString(),
-          deleted_by: user?.email
-        })
+        .delete()
         .eq('id', id)
         .eq('is_template', true);
 
