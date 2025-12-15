@@ -27,7 +27,7 @@ export default function KPIAlertConfig({ kpis = [] }) {
         .from('strategic_plans')
         .select('id, name_en, name_ar, objectives')
         .or('is_template.is.null,is_template.eq.false')
-        .eq('is_deleted', false)
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('name_en');
       return data || [];
     }

@@ -9,7 +9,11 @@ export function useStrategicCascadeValidation() {
   const { data: strategicPlans = [], isLoading: plansLoading } = useQuery({
     queryKey: ['strategic-plans-cascade'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('strategic_plans').select('*');
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false');
       if (error) throw error;
       return data || [];
     }

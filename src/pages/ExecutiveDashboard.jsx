@@ -55,7 +55,11 @@ function ExecutiveDashboard() {
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-exec'],
     queryFn: async () => {
-      const { data } = await supabase.from('strategic_plans').select('*');
+      const { data } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false');
       return data || [];
     }
   });
