@@ -1,8 +1,8 @@
 # Strategic Plan Creation Wizard - Design Document
 
-> **Version**: 1.0  
+> **Version**: 1.1  
 > **Last Updated**: December 15, 2025  
-> **Status**: Implementation Phase
+> **Status**: ✅ Implemented
 
 ---
 
@@ -18,9 +18,10 @@
 8. [Auto-Save & Draft System](#auto-save--draft-system)
 9. [Version Control System](#version-control-system)
 10. [Approval Workflow Integration](#approval-workflow-integration)
-11. [Implementation Plan](#implementation-plan)
-12. [File Structure](#file-structure)
-13. [API Reference](#api-reference)
+11. [Template Integration](#template-integration)
+12. [Implementation Status](#implementation-status)
+13. [File Structure](#file-structure)
+14. [API Reference](#api-reference)
 
 ---
 
@@ -708,45 +709,86 @@ const submitForApproval = async (planId, wizardData, userEmail) => {
 
 ---
 
+## Template Integration
+
+The wizard fully integrates with the Strategy Templates System:
+
+### Starting from Template
+
+```
+URL: /strategic-plan-builder?template=<template_id>
+
+1. Wizard detects ?template parameter
+2. Fetches template from database
+3. Transforms template data to wizard format
+4. Pre-fills all wizard steps
+5. Shows "Template Applied" badge
+6. Increments template usage_count
+7. User customizes and saves as new plan
+```
+
+### Saving as Template
+
+```
+Step 18 (Review) → "Save as Template" button
+
+1. Opens SaveAsTemplateDialog
+2. User enters template metadata:
+   - Name (EN/AR)
+   - Template type
+   - Description
+   - Tags
+   - Public/Private toggle
+3. Creates new record with is_template = true
+4. Original plan saved separately
+```
+
+### Template Entry Points
+
+| Entry Point | URL/Action |
+|-------------|------------|
+| Template Library | Navigate to `/strategic-plan-builder?template=<id>` |
+| Plan Selection Dialog | "Templates" tab → "Use" button |
+| Direct URL | `/strategic-plan-builder?template=<id>` |
+
+---
+
+## Implementation Status
+
+### ✅ Completed Features
+
+| Feature | Component/File | Status |
+|---------|---------------|--------|
+| 18-Step Wizard | `StrategyWizardWrapper.jsx` | ✅ Complete |
+| All Step Components | `steps/Step*.jsx` | ✅ Complete |
+| Auto-Save (30s) | `useAutoSaveDraft.js` | ✅ Complete |
+| Draft Recovery | `StrategyWizardWrapper.jsx` | ✅ Complete |
+| Plan Selection Dialog | `PlanSelectionDialog.jsx` | ✅ Complete |
+| Templates Tab | `PlanSelectionDialog.jsx` | ✅ Complete |
+| Template Application | `?template=<id>` URL param | ✅ Complete |
+| Save as Template | `SaveAsTemplateDialog.jsx` | ✅ Complete |
+| Template Preview | `TemplatePreviewDialog.jsx` | ✅ Complete |
+| Approval Workflow | `useApprovalRequest.js` | ✅ Complete |
+| Version Control | DB fields + mutations | ✅ Complete |
+
+### 🔄 Partially Complete
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Version History UI | 🔄 70% | DB ready, UI pending |
+| Version Comparison | 🔄 30% | Design complete |
+
+### ⏳ Pending Features
+
+| Feature | Priority | Notes |
+|---------|----------|-------|
+| AI Generation per Step | Medium | Edge function exists |
+| Template Rating System | Low | DB columns ready |
+| Template Analytics | Low | usage_count implemented |
+
+---
+
 ## Implementation Plan
-
-### Phase 1: Core Infrastructure (Priority: HIGH)
-
-| Task | Status | Dependencies | Est. Hours |
-|------|--------|--------------|------------|
-| Database migration for extended fields | ✅ Done | None | 2 |
-| StrategyWizardWrapper component | ✅ Done | DB migration | 4 |
-| PlanSelectionDialog component | ✅ Done | None | 3 |
-| useAutoSaveDraft hook | ✅ Done | DB migration | 3 |
-| URL parameter handling | ✅ Done | Wrapper | 2 |
-
-### Phase 2: Step Components (Priority: HIGH)
-
-| Task | Status | Dependencies | Est. Hours |
-|------|--------|--------------|------------|
-| Step2Vision component | ✅ Done | None | 3 |
-| Step3Stakeholders component | ✅ Done | None | 4 |
-| Step4PESTEL component | ✅ Done | None | 4 |
-| Step6Scenarios component | ✅ Done | None | 3 |
-| Step7Risks component | ✅ Done | None | 4 |
-| Step8Dependencies component | ✅ Done | None | 3 |
-| Step13Resources component | ✅ Done | None | 4 |
-| Step15Governance component | ✅ Done | None | 4 |
-| Step16Communication component | ✅ Done | None | 3 |
-| Step8Review (Step 18) update | ✅ Done | All steps | 3 |
-
-### Phase 3: Edit & Review Mode (Priority: MEDIUM)
-
-| Task | Status | Dependencies | Est. Hours |
-|------|--------|--------------|------------|
-| Edit mode with version control | 🔄 In Progress | Phase 1 | 4 |
-| Review mode (read-only) | 🔄 In Progress | Phase 1 | 3 |
-| Version history viewer | ⏳ Pending | Edit mode | 4 |
-| Version comparison view | ⏳ Pending | History viewer | 4 |
-
-### Phase 4: Polish & Testing (Priority: MEDIUM)
-
-| Task | Status | Dependencies | Est. Hours |
 |------|--------|--------------|------------|
 | Draft recovery dialog | ⏳ Pending | Auto-save | 2 |
 | Approval workflow integration | ✅ Done | Review step | 4 |

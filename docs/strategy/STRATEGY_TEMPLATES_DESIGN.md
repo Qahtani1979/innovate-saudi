@@ -1,8 +1,8 @@
 # Strategy Templates System - Design Document
 
-> **Version**: 1.0  
+> **Version**: 1.1  
 > **Last Updated**: December 15, 2025  
-> **Status**: Implementation Ready
+> **Status**: ✅ Implemented
 
 ---
 
@@ -15,7 +15,7 @@
 5. [User Workflows](#user-workflows)
 6. [Component Design](#component-design)
 7. [Integration with Wizard](#integration-with-wizard)
-8. [Implementation Plan](#implementation-plan)
+8. [Implementation Status](#implementation-status)
 9. [File Structure](#file-structure)
 10. [API Reference](#api-reference)
 
@@ -593,53 +593,40 @@ template_tags      TEXT[]                  -- Searchable tags
 
 ---
 
-## Implementation Plan
+## Implementation Status
 
-### Phase 1: Database & Hook Updates (Priority: HIGH)
+### ✅ Completed Features
 
-| Task | Description | Est. Hours |
-|------|-------------|------------|
-| 1.1 | Add template columns to strategic_plans | 1 |
-| 1.2 | Update `useStrategyTemplates` hook for real DB | 3 |
-| 1.3 | Add template-specific queries | 2 |
-| 1.4 | Add RLS policies for templates | 1 |
+| Feature | Component/File | Status |
+|---------|---------------|--------|
+| Database columns | `strategic_plans` table | ✅ Complete |
+| Template hooks | `useStrategyTemplates.js` | ✅ Complete |
+| Template Library UI | `StrategyTemplateLibrary.jsx` | ✅ Complete |
+| Template Preview | `TemplatePreviewDialog.jsx` | ✅ Complete |
+| Save as Template | `SaveAsTemplateDialog.jsx` | ✅ Complete |
+| Wizard Integration | `StrategyWizardWrapper.jsx` | ✅ Complete |
+| URL Parameter `?template=` | Wizard wrapper | ✅ Complete |
+| Template Applied Badge | Wizard header | ✅ Complete |
+| Templates Tab in Dialog | `PlanSelectionDialog.jsx` | ✅ Complete |
+| Public/Private Toggle | Template management | ✅ Complete |
+| Template Deletion | Soft delete | ✅ Complete |
+| Usage Count Tracking | Auto-increment on apply | ✅ Complete |
 
-### Phase 2: Template Library Enhancement (Priority: HIGH)
+### 🔄 Partially Complete
 
-| Task | Description | Est. Hours |
-|------|-------------|------------|
-| 2.1 | Update StrategyTemplateLibrary to use real data | 3 |
-| 2.2 | Add TemplatePreviewDialog component | 2 |
-| 2.3 | Add SaveAsTemplateDialog component | 2 |
-| 2.4 | Add template management actions (edit, delete, share) | 2 |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Template Editing | 🔄 50% | Can delete/toggle, full edit pending |
+| Template Categories | 🔄 70% | Types work, categories UI pending |
 
-### Phase 3: Wizard Integration (Priority: HIGH)
+### ⏳ Pending Features
 
-| Task | Description | Est. Hours |
-|------|-------------|------------|
-| 3.1 | Add template URL parameter handling to wizard | 2 |
-| 3.2 | Add template fetching and data transformation | 2 |
-| 3.3 | Add "Template Applied" banner in wizard | 1 |
-| 3.4 | Add "Save as Template" button to Step 18 | 2 |
-| 3.5 | Update PlanSelectionDialog with template tab | 2 |
-
-### Phase 4: Template Creation Flow (Priority: MEDIUM)
-
-| Task | Description | Est. Hours |
-|------|-------------|------------|
-| 4.1 | Source plan selector component | 2 |
-| 4.2 | Template creation from existing plan | 2 |
-| 4.3 | Template editing functionality | 2 |
-| 4.4 | Template versioning | 2 |
-
-### Phase 5: Polish & Features (Priority: LOW)
-
-| Task | Description | Est. Hours |
-|------|-------------|------------|
-| 5.1 | Template rating/review system | 3 |
-| 5.2 | Template analytics (usage stats) | 2 |
-| 5.3 | Featured templates management | 2 |
-| 5.4 | Template import/export | 2 |
+| Feature | Priority | Notes |
+|---------|----------|-------|
+| Template Rating System | Low | DB columns ready |
+| Template Reviews | Low | Future enhancement |
+| Template Import/Export | Low | Future enhancement |
+| Featured Templates Admin | Low | Manual DB only |
 
 ---
 
@@ -650,27 +637,24 @@ src/
 ├── components/
 │   └── strategy/
 │       ├── creation/
-│       │   └── StrategyTemplateLibrary.jsx    # Updated
+│       │   └── StrategyTemplateLibrary.jsx    # ✅ Updated - Real DB integration
 │       ├── templates/
-│       │   ├── TemplateCard.jsx               # New
-│       │   ├── TemplatePreviewDialog.jsx      # New
-│       │   ├── SaveAsTemplateDialog.jsx       # New
-│       │   ├── TemplateApplyDialog.jsx        # New
-│       │   └── TemplateSourceSelector.jsx     # New
+│       │   ├── TemplatePreviewDialog.jsx      # ✅ New - Preview with stats
+│       │   └── SaveAsTemplateDialog.jsx       # ✅ New - Save plan as template
 │       └── wizard/
-│           ├── StrategyWizardWrapper.jsx      # Updated
-│           ├── PlanSelectionDialog.jsx        # Updated
+│           ├── StrategyWizardWrapper.jsx      # ✅ Updated - Template URL handling
+│           ├── PlanSelectionDialog.jsx        # ✅ Updated - Templates tab
 │           └── steps/
-│               └── Step8Review.jsx            # Updated
+│               └── Step8Review.jsx            # ✅ Updated - Save as Template btn
 ├── hooks/
 │   └── strategy/
-│       └── useStrategyTemplates.js            # Updated
+│       └── useStrategyTemplates.js            # ✅ Updated - Full CRUD operations
 ├── pages/
-│   └── StrategyTemplatesPage.jsx              # Updated
+│   └── StrategyTemplatesPage.jsx              # ✅ Existing - Uses updated library
 └── docs/
     └── strategy/
-        ├── STRATEGIC_WIZARD_DESIGN.md
-        └── STRATEGY_TEMPLATES_DESIGN.md       # This document
+        ├── STRATEGIC_WIZARD_DESIGN.md         # ✅ Updated
+        └── STRATEGY_TEMPLATES_DESIGN.md       # ✅ This document
 ```
 
 ---
