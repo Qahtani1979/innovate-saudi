@@ -1,4 +1,4 @@
-import React from 'react';
+// Strategy Wizard Steps Configuration
 import { 
   FileText, Target, BarChart3, Lightbulb, Link, Activity, Calendar, CheckCircle2,
   Eye, Users, Globe, TrendingUp, AlertTriangle, GitBranch, Shield, Building2,

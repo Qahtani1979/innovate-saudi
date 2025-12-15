@@ -28,6 +28,18 @@ export default function Step8Review({
   const { language, t, isRTL } = useLanguage();
   const [isExporting, setIsExporting] = useState(false);
 
+  // Data extraction - define early for use in export functions
+  const objectives = data.objectives || [];
+  const kpis = data.kpis || [];
+  const actionPlans = data.action_plans || [];
+  const alignments = data.national_alignments || [];
+  const milestones = data.milestones || [];
+  const phases = data.phases || [];
+  const swot = data.swot || { strengths: [], weaknesses: [], opportunities: [], threats: [] };
+  const stakeholders = data.stakeholders || [];
+  const risks = data.risks || [];
+  const governance = data.governance || {};
+
   const getSectorName = (code) => {
     const sector = MOMAH_SECTORS.find(s => s.code === code);
     return sector ? (language === 'ar' ? sector.name_ar : sector.name_en) : code;
@@ -304,16 +316,6 @@ export default function Step8Review({
     }
   };
 
-  const objectives = data.objectives || [];
-  const kpis = data.kpis || [];
-  const actionPlans = data.action_plans || [];
-  const alignments = data.national_alignments || [];
-  const milestones = data.milestones || [];
-  const phases = data.phases || [];
-  const swot = data.swot || { strengths: [], weaknesses: [], opportunities: [], threats: [] };
-  const stakeholders = data.stakeholders || [];
-  const risks = data.risks || [];
-  const governance = data.governance || {};
 
   // Calculate completeness for all 18 steps
   const completeness = {
