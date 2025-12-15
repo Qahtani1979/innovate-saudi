@@ -18,16 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, FileText, X } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
-
-const TEMPLATE_TYPES = [
-  { id: 'innovation', name_en: 'Innovation Strategy', name_ar: 'استراتيجية الابتكار' },
-  { id: 'digital_transformation', name_en: 'Digital Transformation', name_ar: 'التحول الرقمي' },
-  { id: 'sustainability', name_en: 'Sustainability', name_ar: 'الاستدامة' },
-  { id: 'sector_specific', name_en: 'Sector Specific', name_ar: 'خاص بالقطاع' },
-  { id: 'municipality', name_en: 'Municipality Scale', name_ar: 'نطاق البلدية' },
-  { id: 'smart_city', name_en: 'Smart City', name_ar: 'المدينة الذكية' },
-  { id: 'citizen_services', name_en: 'Citizen Services', name_ar: 'خدمات المواطنين' }
-];
+import { STRATEGY_TEMPLATE_TYPES } from '@/constants/strategyTemplateTypes';
 
 export default function SaveAsTemplateDialog({ 
   planData, 
@@ -140,7 +131,7 @@ export default function SaveAsTemplateDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TEMPLATE_TYPES.map(type => (
+                {STRATEGY_TEMPLATE_TYPES.map(type => (
                   <SelectItem key={type.id} value={type.id}>
                     {language === 'ar' ? type.name_ar : type.name_en}
                   </SelectItem>

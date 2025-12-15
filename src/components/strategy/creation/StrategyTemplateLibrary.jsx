@@ -12,22 +12,13 @@ import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
+import { STRATEGY_TEMPLATE_TYPES, TEMPLATE_CATEGORIES, getTemplateTypeInfo } from '@/constants/strategyTemplateTypes';
 import TemplatePreviewDialog from '../templates/TemplatePreviewDialog';
 import TemplateRatingDialog from '../templates/TemplateRatingDialog';
 import {
   FileText, Plus, Search, Star, Copy, Eye, Trash2, Save,
   Loader2, Lightbulb, Building2, Leaf, Globe, Zap, Users, Share2, Lock, Tag, X
 } from 'lucide-react';
-
-const TEMPLATE_TYPES = [
-  { id: 'innovation', name_en: 'Innovation Strategy', name_ar: 'استراتيجية الابتكار', icon: Lightbulb, color: 'bg-amber-500' },
-  { id: 'digital_transformation', name_en: 'Digital Transformation', name_ar: 'التحول الرقمي', icon: Zap, color: 'bg-blue-500' },
-  { id: 'sustainability', name_en: 'Sustainability', name_ar: 'الاستدامة', icon: Leaf, color: 'bg-green-500' },
-  { id: 'sector_specific', name_en: 'Sector Specific', name_ar: 'خاص بالقطاع', icon: Building2, color: 'bg-purple-500' },
-  { id: 'municipality', name_en: 'Municipality Scale', name_ar: 'نطاق البلدية', icon: Globe, color: 'bg-cyan-500' },
-  { id: 'smart_city', name_en: 'Smart City', name_ar: 'المدينة الذكية', icon: Zap, color: 'bg-indigo-500' },
-  { id: 'citizen_services', name_en: 'Citizen Services', name_ar: 'خدمات المواطنين', icon: Users, color: 'bg-rose-500' }
-];
 
 const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
   const { t, isRTL, language } = useLanguage();
@@ -44,16 +35,19 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
     togglePublic,
     isCreating,
     isDeleting,
-    rateTemplate
+    rateTemplate,
+    cloneTemplate
   } = useStrategyTemplates();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTags, setSelectedTags] = useState([]);
   const [activeTab, setActiveTab] = useState('browse');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [applyingTemplateId, setApplyingTemplateId] = useState(null);
+  const [cloningTemplateId, setCloningTemplateId] = useState(null);
 
   const [newTemplate, setNewTemplate] = useState({
     name_en: '',
@@ -78,7 +72,7 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
     return Array.from(tags).sort();
   }, [allTemplates]);
 
-  // Filter templates by search, type, and tags
+  // Filter templates by search, type, category, and tags
   const filteredTemplates = useMemo(() => {
     return allTemplates.filter(template => {
       const matchesSearch = !searchQuery || 
@@ -87,11 +81,12 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
         template.description_en?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         template.template_tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesType = selectedType === 'all' || template.template_type === selectedType;
+      const matchesCategory = selectedCategory === 'all' || template.template_category === selectedCategory;
       const matchesTags = selectedTags.length === 0 || 
         selectedTags.every(tag => template.template_tags?.includes(tag));
-      return matchesSearch && matchesType && matchesTags;
+      return matchesSearch && matchesType && matchesCategory && matchesTags;
     });
-  }, [allTemplates, searchQuery, selectedType, selectedTags]);
+  }, [allTemplates, searchQuery, selectedType, selectedCategory, selectedTags]);
 
   const toggleTag = (tag) => {
     setSelectedTags(prev => 
@@ -176,6 +171,20 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
     await togglePublic({ id: template.id, isPublic: !template.is_public });
   };
 
+  const handleCloneTemplate = async (template) => {
+    setCloningTemplateId(template.id);
+    try {
+      const cloned = await cloneTemplate(template.id);
+      if (cloned) {
+        setActiveTab('my-templates');
+      }
+    } catch (error) {
+      // Error handled in hook
+    } finally {
+      setCloningTemplateId(null);
+    }
+  };
+
   const handleAddTag = () => {
     if (tagInput.trim() && !newTemplate.tags.includes(tagInput.trim())) {
       setNewTemplate(prev => ({
@@ -186,7 +195,7 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
     }
   };
 
-  const getTypeInfo = (typeId) => TEMPLATE_TYPES.find(t => t.id === typeId);
+  const getTypeInfo = (typeId) => getTemplateTypeInfo(typeId);
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -247,14 +256,27 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
               />
             </div>
             <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder={t({ en: 'Filter by type', ar: 'تصفية حسب النوع' })} />
+              <SelectTrigger className="w-full md:w-[150px]">
+                <SelectValue placeholder={t({ en: 'Type', ar: 'النوع' })} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t({ en: 'All Types', ar: 'جميع الأنواع' })}</SelectItem>
-                {TEMPLATE_TYPES.map(type => (
+                {STRATEGY_TEMPLATE_TYPES.map(type => (
                   <SelectItem key={type.id} value={type.id}>
                     {language === 'ar' ? type.name_ar : type.name_en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full md:w-[150px]">
+                <SelectValue placeholder={t({ en: 'Category', ar: 'الفئة' })} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t({ en: 'All Categories', ar: 'جميع الفئات' })}</SelectItem>
+                {TEMPLATE_CATEGORIES.map(cat => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {language === 'ar' ? cat.name_ar : cat.name_en}
                   </SelectItem>
                 ))}
               </SelectContent>
