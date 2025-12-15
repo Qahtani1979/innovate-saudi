@@ -367,18 +367,19 @@ export default function StrategyWizardWrapper() {
     
     const prompts = {
       context: `Generate context and discovery content for this Saudi municipal strategic plan:
-Plan Name: ${context.planName}
+Plan Name (English): ${context.planName}
 Sectors: ${context.sectors.join(', ')}
 Themes: ${context.themes.join(', ')}
 
-Provide:
+Provide all fields in BOTH English and Arabic:
+- name_ar: Arabic translation of the plan title
 - vision_en, vision_ar
 - mission_en, mission_ar
 - description_en, description_ar
 - quick_stakeholders: 6-10 stakeholder names (strings)
-- key_challenges: brief summary (write in ${language === 'ar' ? 'Arabic' : 'English'})
-- available_resources: brief summary (write in ${language === 'ar' ? 'Arabic' : 'English'})
-- initial_constraints: brief summary (write in ${language === 'ar' ? 'Arabic' : 'English'})
+- key_challenges_en, key_challenges_ar: brief summary of challenges
+- available_resources_en, available_resources_ar: brief summary of resources
+- initial_constraints_en, initial_constraints_ar: brief summary of constraints
 
 Use formal language appropriate for government documents.`,
       vision: `Generate vision and mission statements for a Saudi municipal strategic plan.
@@ -464,6 +465,7 @@ Assess readiness, define change approach, and resistance management strategies.`
       context: {
         type: 'object',
         properties: {
+          name_ar: { type: 'string' },
           vision_en: { type: 'string' },
           vision_ar: { type: 'string' },
           mission_en: { type: 'string' },
@@ -471,9 +473,12 @@ Assess readiness, define change approach, and resistance management strategies.`
           description_en: { type: 'string' },
           description_ar: { type: 'string' },
           quick_stakeholders: { type: 'array', items: { type: 'string' } },
-          key_challenges: { type: 'string' },
-          available_resources: { type: 'string' },
-          initial_constraints: { type: 'string' }
+          key_challenges_en: { type: 'string' },
+          key_challenges_ar: { type: 'string' },
+          available_resources_en: { type: 'string' },
+          available_resources_ar: { type: 'string' },
+          initial_constraints_en: { type: 'string' },
+          initial_constraints_ar: { type: 'string' }
         }
       },
       vision: {
