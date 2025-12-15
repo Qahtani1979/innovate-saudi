@@ -558,12 +558,40 @@ Both versions should describe:
 5. Risk mitigation for potential stakeholder resistance or disengagement
 
 Be specific to the plan context, not generic.`,
-      pestel: `Conduct PESTEL analysis for this Saudi municipal strategy:
-Plan: ${context.planName}
-Vision: ${context.vision}
-Sectors: ${context.sectors.join(', ')}
+      pestel: `Conduct a comprehensive PESTEL analysis for this Saudi municipal strategic plan:
 
-Analyze Political, Economic, Social, Technological, Environmental, and Legal factors relevant to Saudi Arabia and Vision 2030.`,
+**CONTEXT:**
+- Plan Name: ${context.planName}
+- Vision: ${context.vision}
+- Sectors: ${context.sectors.join(', ')}
+- Timeline: ${context.startYear}-${context.endYear}
+
+**REQUIREMENTS:**
+Generate factors for ALL 6 PESTEL categories. Each category MUST have 2-4 factors.
+
+For EACH factor, provide ALL these fields in BOTH English and Arabic:
+- factor_en: Factor name/description in English
+- factor_ar: Factor name/description in Arabic (formal فصحى)
+- impact: One of "low" | "medium" | "high"
+- trend: One of "declining" | "stable" | "growing"
+- timeframe: One of "short_term" | "medium_term" | "long_term"
+- implications_en: Strategic implications in English (1-2 sentences)
+- implications_ar: Strategic implications in Arabic (1-2 sentences)
+
+**CATEGORY GUIDANCE FOR SAUDI CONTEXT:**
+1. POLITICAL: Vision 2030 initiatives, municipal reforms, governance changes, decentralization
+2. ECONOMIC: Oil diversification, PPP opportunities, economic zones, investment climate
+3. SOCIAL: Youth demographics, urbanization, cultural shifts, women empowerment
+4. TECHNOLOGICAL: Smart city tech, AI/digital transformation, 5G, e-government
+5. ENVIRONMENTAL: Saudi Green Initiative, water scarcity, renewable energy, sustainability
+6. LEGAL: Municipal law updates, data protection, labor reforms, compliance requirements
+
+**DISTRIBUTION:**
+- Mix of impacts: at least one high, one medium, one low per category where applicable
+- Mix of trends: variety of declining, stable, growing
+- Mix of timeframes: short, medium, and long term factors
+
+Be specific to Saudi Arabia and the plan's sectors. Avoid generic statements.`,
       swot: `Conduct SWOT analysis for this Saudi municipal strategic plan:
 Plan: ${context.planName}
 Vision: ${context.vision}
