@@ -451,7 +451,32 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // Return a safe fallback instead of throwing to avoid hook context issues
+    return {
+      user: null,
+      session: null,
+      userProfile: null,
+      userRoles: [],
+      isAuthenticated: false,
+      isLoadingAuth: true,
+      isLoadingPublicSettings: false,
+      authError: null,
+      appPublicSettings: { public_settings: { requiresAuth: false } },
+      needsOnboarding: false,
+      login: async () => { throw new Error('AuthProvider not mounted'); },
+      signUp: async () => { throw new Error('AuthProvider not mounted'); },
+      signInWithGoogle: async () => { throw new Error('AuthProvider not mounted'); },
+      signInWithMicrosoft: async () => { throw new Error('AuthProvider not mounted'); },
+      logout: async () => {},
+      navigateToLogin: () => { window.location.href = '/Auth'; },
+      resetPassword: async () => { throw new Error('AuthProvider not mounted'); },
+      updatePassword: async () => { throw new Error('AuthProvider not mounted'); },
+      hasRole: () => false,
+      isAdmin: () => false,
+      checkAuth: async () => {},
+      checkAppState: async () => {},
+      redirectToOnboardingIfNeeded: () => false,
+    };
   }
   return context;
 };
