@@ -682,14 +682,11 @@ Assess readiness, define change approach, and resistance management strategies.`
       },
       vision: {
         type: 'object',
-        required: ['core_values', 'strategic_pillars'],
         properties: {
           core_values: { 
             type: 'array', 
-            minItems: 5,
             items: { 
               type: 'object', 
-              required: ['name_en', 'name_ar', 'description_en', 'description_ar'],
               properties: { 
                 name_en: { type: 'string' }, 
                 name_ar: { type: 'string' }, 
@@ -700,10 +697,8 @@ Assess readiness, define change approach, and resistance management strategies.`
           },
           strategic_pillars: { 
             type: 'array', 
-            minItems: 4,
             items: { 
               type: 'object', 
-              required: ['name_en', 'name_ar', 'description_en', 'description_ar'],
               properties: { 
                 name_en: { type: 'string' }, 
                 name_ar: { type: 'string' }, 
@@ -716,21 +711,18 @@ Assess readiness, define change approach, and resistance management strategies.`
       },
       stakeholders: {
         type: 'object',
-        required: ['stakeholders', 'stakeholder_engagement_plan'],
         properties: {
           stakeholders: { 
             type: 'array', 
-            minItems: 12,
             items: { 
               type: 'object', 
-              required: ['name_en', 'name_ar', 'type', 'power', 'interest', 'engagement_level', 'influence_strategy_en', 'influence_strategy_ar'],
               properties: { 
                 name_en: { type: 'string' }, 
                 name_ar: { type: 'string' }, 
-                type: { type: 'string', enum: ['GOVERNMENT', 'PRIVATE', 'ACADEMIC', 'NGO', 'COMMUNITY', 'INTERNATIONAL', 'INTERNAL'] }, 
-                power: { type: 'string', enum: ['low', 'medium', 'high'] }, 
-                interest: { type: 'string', enum: ['low', 'medium', 'high'] }, 
-                engagement_level: { type: 'string', enum: ['inform', 'consult', 'involve', 'collaborate', 'empower'] }, 
+                type: { type: 'string' }, 
+                power: { type: 'string' }, 
+                interest: { type: 'string' }, 
+                engagement_level: { type: 'string' }, 
                 influence_strategy_en: { type: 'string' },
                 influence_strategy_ar: { type: 'string' },
                 contact_person: { type: 'string' },
