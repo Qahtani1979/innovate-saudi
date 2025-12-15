@@ -384,9 +384,6 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
                               </Button>
                             </div>
                           </div>
-                              </Button>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     </CardContent>
