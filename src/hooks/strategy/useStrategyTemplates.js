@@ -214,27 +214,45 @@ export function useStrategyTemplates() {
     }
   });
 
-  // Increment usage count
+  // Increment usage count via RPC
   const incrementUsage = useCallback(async (templateId) => {
     try {
-      const { error } = await supabase.rpc('increment_template_usage', { 
+      await supabase.rpc('increment_template_usage', { 
         template_id: templateId 
       });
-      
-      // If RPC doesn't exist, do it manually
-      if (error) {
-        await supabase
-          .from('strategic_plans')
-          .update({ 
-            usage_count: supabase.sql`COALESCE(usage_count, 0) + 1` 
-          })
-          .eq('id', templateId);
-      }
     } catch (err) {
-      // Silently fail - not critical
       console.warn('Failed to increment usage:', err);
     }
   }, []);
+
+  // Rate a template
+  const rateTemplate = useCallback(async (templateId, rating) => {
+    if (!user?.email) {
+      toast.error('Please sign in to rate templates');
+      return null;
+    }
+    
+    try {
+      const { data, error } = await supabase.rpc('rate_template', {
+        p_template_id: templateId,
+        p_rating: rating,
+        p_user_email: user.email
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        queryClient.invalidateQueries({ queryKey: ['strategy-templates'] });
+        toast.success(`Rated ${rating} stars`);
+        return data;
+      }
+      return null;
+    } catch (err) {
+      console.error('Rate template error:', err);
+      toast.error('Failed to rate template');
+      return null;
+    }
+  }, [user?.email, queryClient]);
 
   // Apply template - returns wizard-compatible data
   const applyTemplate = useCallback(async (templateId) => {
@@ -332,6 +350,16 @@ export function useStrategyTemplates() {
     return templates.filter(t => t.template_type === type);
   }, [templates]);
 
+  // Search templates by tags
+  const searchByTags = useCallback((tags) => {
+    if (!tags || tags.length === 0) return templates;
+    return templates.filter(t => 
+      t.template_tags?.some(tag => 
+        tags.some(searchTag => tag.toLowerCase().includes(searchTag.toLowerCase()))
+      )
+    );
+  }, [templates]);
+
   return {
     // Data
     templates,
@@ -362,6 +390,8 @@ export function useStrategyTemplates() {
     fetchTemplate,
     incrementUsage,
     getTemplatesByType,
+    rateTemplate,
+    searchByTags,
     
     // Legacy compatibility
     saveTemplate: (template) => createTemplateMutation.mutateAsync({ 

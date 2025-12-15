@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,10 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
 import TemplatePreviewDialog from '../templates/TemplatePreviewDialog';
+import TemplateRatingDialog from '../templates/TemplateRatingDialog';
 import {
   FileText, Plus, Search, Star, Copy, Eye, Trash2, Save,
-  Loader2, Lightbulb, Building2, Leaf, Globe, Zap, Users, Share2, Lock
+  Loader2, Lightbulb, Building2, Leaf, Globe, Zap, Users, Share2, Lock, Tag, X
 } from 'lucide-react';
 
 const TEMPLATE_TYPES = [
@@ -42,11 +43,13 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
     deleteTemplate,
     togglePublic,
     isCreating,
-    isDeleting
+    isDeleting,
+    rateTemplate
   } = useStrategyTemplates();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
+  const [selectedTags, setSelectedTags] = useState([]);
   const [activeTab, setActiveTab] = useState('browse');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -66,14 +69,35 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
   // Combine all templates for browsing
   const allTemplates = [...templates, ...featuredTemplates.filter(f => !templates.find(t => t.id === f.id))];
 
-  const filteredTemplates = allTemplates.filter(template => {
-    const matchesSearch = !searchQuery || 
-      template.name_en?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      template.name_ar?.includes(searchQuery) ||
-      template.description_en?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === 'all' || template.template_type === selectedType;
-    return matchesSearch && matchesType;
-  });
+  // Extract all unique tags from templates
+  const allTags = useMemo(() => {
+    const tags = new Set();
+    allTemplates.forEach(t => {
+      t.template_tags?.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, [allTemplates]);
+
+  // Filter templates by search, type, and tags
+  const filteredTemplates = useMemo(() => {
+    return allTemplates.filter(template => {
+      const matchesSearch = !searchQuery || 
+        template.name_en?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        template.name_ar?.includes(searchQuery) ||
+        template.description_en?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        template.template_tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesType = selectedType === 'all' || template.template_type === selectedType;
+      const matchesTags = selectedTags.length === 0 || 
+        selectedTags.every(tag => template.template_tags?.includes(tag));
+      return matchesSearch && matchesType && matchesTags;
+    });
+  }, [allTemplates, searchQuery, selectedType, selectedTags]);
+
+  const toggleTag = (tag) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
 
   const handleApplyTemplate = async (template) => {
     setApplyingTemplateId(template.id);
@@ -237,6 +261,34 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
             </Select>
           </div>
 
+          {/* Tag Filter */}
+          {allTags.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Tag className="h-4 w-4" />
+                {t({ en: 'Filter by tags:', ar: 'تصفية حسب العلامات:' })}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {allTags.slice(0, 15).map(tag => (
+                  <Badge 
+                    key={tag}
+                    variant={selectedTags.includes(tag) ? 'default' : 'outline'}
+                    className="cursor-pointer hover:bg-muted"
+                    onClick={() => toggleTag(tag)}
+                  >
+                    {tag}
+                    {selectedTags.includes(tag) && <X className="h-3 w-3 ml-1" />}
+                  </Badge>
+                ))}
+                {selectedTags.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedTags([])}>
+                    {t({ en: 'Clear', ar: 'مسح' })}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Template Grid */}
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -291,10 +343,25 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
                             )}
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">
-                              {t({ en: 'By', ar: 'بواسطة' })} {template.owner_email?.split('@')[0] || 'System'}
-                            </span>
-                            <div className="flex gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {t({ en: 'By', ar: 'بواسطة' })} {template.owner_email?.split('@')[0] || 'System'}
+                              </span>
+                              {template.template_category === 'system' && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {t({ en: 'Official', ar: 'رسمي' })}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              <TemplateRatingDialog
+                                template={template}
+                                trigger={
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Star className="h-4 w-4" />
+                                  </Button>
+                                }
+                              />
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -314,6 +381,9 @@ const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {
                                   <Copy className="h-4 w-4 mr-1" />
                                 )}
                                 {t({ en: 'Apply', ar: 'تطبيق' })}
+                              </Button>
+                            </div>
+                          </div>
                               </Button>
                             </div>
                           </div>
