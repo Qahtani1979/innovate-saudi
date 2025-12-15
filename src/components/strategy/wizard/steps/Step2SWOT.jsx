@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2, Plus, X, TrendingUp, TrendingDown, Target, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 
@@ -13,18 +14,25 @@ export default function Step2SWOT({
   isGenerating 
 }) {
   const { language, t, isRTL } = useLanguage();
-  const [newItems, setNewItems] = useState({ strengths: '', weaknesses: '', opportunities: '', threats: '' });
+  const [newItems, setNewItems] = useState({ strengths: { en: '', ar: '' }, weaknesses: { en: '', ar: '' }, opportunities: { en: '', ar: '' }, threats: { en: '', ar: '' } });
 
   const swot = data.swot || { strengths: [], weaknesses: [], opportunities: [], threats: [] };
 
   const addItem = (category) => {
-    if (newItems[category].trim()) {
+    const enText = newItems[category].en?.trim();
+    const arText = newItems[category].ar?.trim();
+    if (enText || arText) {
       const updated = {
         ...swot,
-        [category]: [...(swot[category] || []), { text: newItems[category].trim(), priority: 'medium' }]
+        [category]: [...(swot[category] || []), { 
+          id: Date.now().toString(),
+          text_en: enText || '', 
+          text_ar: arText || '', 
+          priority: 'medium' 
+        }]
       };
       onChange({ swot: updated });
-      setNewItems({ ...newItems, [category]: '' });
+      setNewItems({ ...newItems, [category]: { en: '', ar: '' } });
     }
   };
 
@@ -44,6 +52,24 @@ export default function Step2SWOT({
       )
     };
     onChange({ swot: updated });
+  };
+
+  const updateItem = (category, index, field, value) => {
+    const updated = {
+      ...swot,
+      [category]: swot[category].map((item, i) => 
+        i === index ? { ...item, [field]: value } : item
+      )
+    };
+    onChange({ swot: updated });
+  };
+
+  // Helper to get display text (handles legacy 'text' field)
+  const getDisplayText = (item) => {
+    if (item.text_en || item.text_ar) {
+      return language === 'ar' ? (item.text_ar || item.text_en) : (item.text_en || item.text_ar);
+    }
+    return typeof item === 'string' ? item : (item.text || '');
   };
 
   const categories = [
@@ -119,37 +145,72 @@ export default function Step2SWOT({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Add new item */}
-                <div className="flex gap-2">
-                  <Input
-                    value={newItems[cat.key]}
-                    onChange={(e) => setNewItems({ ...newItems, [cat.key]: e.target.value })}
-                    placeholder={t({ en: `Add ${cat.key.slice(0, -1)}...`, ar: 'أضف عنصراً...' })}
-                    className="bg-white"
-                    onKeyDown={(e) => e.key === 'Enter' && addItem(cat.key)}
-                  />
-                  <Button size="sm" variant="outline" onClick={() => addItem(cat.key)}>
-                    <Plus className="h-4 w-4" />
+                {/* Add new item - bilingual inputs */}
+                <div className="space-y-2 p-2 bg-white/50 rounded border border-dashed">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">English</Label>
+                      <Input
+                        value={newItems[cat.key].en}
+                        onChange={(e) => setNewItems({ ...newItems, [cat.key]: { ...newItems[cat.key], en: e.target.value } })}
+                        placeholder={t({ en: 'English text...', ar: 'النص بالإنجليزية...' })}
+                        className="bg-white text-sm"
+                        onKeyDown={(e) => e.key === 'Enter' && addItem(cat.key)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">العربية</Label>
+                      <Input
+                        value={newItems[cat.key].ar}
+                        onChange={(e) => setNewItems({ ...newItems, [cat.key]: { ...newItems[cat.key], ar: e.target.value } })}
+                        placeholder={t({ en: 'Arabic text...', ar: 'النص بالعربية...' })}
+                        className="bg-white text-sm"
+                        dir="rtl"
+                        onKeyDown={(e) => e.key === 'Enter' && addItem(cat.key)}
+                      />
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => addItem(cat.key)} className="w-full">
+                    <Plus className="h-4 w-4 mr-1" />
+                    {t({ en: 'Add', ar: 'إضافة' })}
                   </Button>
                 </div>
 
                 {/* Items list */}
-                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                <div className="space-y-2 max-h-[250px] overflow-y-auto">
                   {items.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-white rounded-md border">
-                      <span className="flex-1 text-sm">{typeof item === 'string' ? item : item.text}</span>
-                      <select 
-                        className="text-xs border rounded px-1 py-0.5"
-                        value={item.priority || 'medium'}
-                        onChange={(e) => setPriority(cat.key, index, e.target.value)}
-                      >
-                        <option value="high">{t({ en: 'High', ar: 'عالي' })}</option>
-                        <option value="medium">{t({ en: 'Medium', ar: 'متوسط' })}</option>
-                        <option value="low">{t({ en: 'Low', ar: 'منخفض' })}</option>
-                      </select>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeItem(cat.key, index)}>
-                        <X className="h-3 w-3" />
-                      </Button>
+                    <div key={item.id || index} className="p-2 bg-white rounded-md border space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 space-y-1">
+                          <Input
+                            value={item.text_en || item.text || ''}
+                            onChange={(e) => updateItem(cat.key, index, 'text_en', e.target.value)}
+                            placeholder="English"
+                            className="text-sm h-8"
+                          />
+                          <Input
+                            value={item.text_ar || ''}
+                            onChange={(e) => updateItem(cat.key, index, 'text_ar', e.target.value)}
+                            placeholder="العربية"
+                            className="text-sm h-8"
+                            dir="rtl"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <select 
+                            className="text-xs border rounded px-1 py-0.5"
+                            value={item.priority || 'medium'}
+                            onChange={(e) => setPriority(cat.key, index, e.target.value)}
+                          >
+                            <option value="high">{t({ en: 'High', ar: 'عالي' })}</option>
+                            <option value="medium">{t({ en: 'Medium', ar: 'متوسط' })}</option>
+                            <option value="low">{t({ en: 'Low', ar: 'منخفض' })}</option>
+                          </select>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeItem(cat.key, index)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                   {items.length === 0 && (
