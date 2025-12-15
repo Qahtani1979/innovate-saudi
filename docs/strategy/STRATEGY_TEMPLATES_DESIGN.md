@@ -1,19 +1,15 @@
 # Strategy Templates System - Design Document
 
-> **Version**: 2.1  
+> **Version**: 2.2  
 > **Last Updated**: December 15, 2025  
-> **Status**: ✅ Fully Implemented - MoMAH Innovation Focus + Coverage Analysis
+> **Status**: ✅ Fully Implemented - MoMAH Innovation Focus + Coverage Analysis + Hub Integration
 
-## Recent Changes (v2.1)
-- Added `TemplateCoverageAnalysis` component for analyzing templates against MoMAH taxonomy
-- Coverage Analysis tab now shows:
-  - Template coverage by service domains
-  - Template coverage by innovation areas
-  - Template coverage by Vision 2030 programs
-  - Gap identification for uncovered areas
-  - AI recommendations for new templates
-  - Template distribution by type
-- Coverage Analysis accessible via Strategy Hub Templates Tab
+## Recent Changes (v2.2)
+- Updated for Strategy Hub 10-tab structure
+- Templates Tab now includes Sector Strategy access
+- Coverage Analysis with MoMAH taxonomy fully integrated
+- All tabs styled consistently with HubTabs pattern
+- Distribution shows actual templates per type with names
 
 ---
 
@@ -27,10 +23,9 @@
 6. [Component Design](#component-design)
 7. [Coverage Analysis](#coverage-analysis)
 8. [Integration with Wizard](#integration-with-wizard)
-9. [Implementation Status](#implementation-status)
-10. [File Structure](#file-structure)
-11. [API Reference](#api-reference)
-12. [Consistency with Wizard](#consistency-with-wizard)
+9. [Hub Integration](#hub-integration)
+10. [Implementation Status](#implementation-status)
+11. [File Structure](#file-structure)
 
 ---
 
@@ -141,35 +136,6 @@ Pre-defined, context-consistent recommendations for:
 - Blockchain & Trust Technologies Strategy
 - Quality of Life Enhancement Strategy
 
-### Component Implementation
-
-```typescript
-// src/components/strategy/templates/TemplateCoverageAnalysis.jsx
-
-interface CoverageItem {
-  id: string;
-  name: { en: string; ar: string };
-  coverage: number;
-  templateCount: number;
-  templates: string[];
-}
-
-interface Gap {
-  area: string;
-  priority: 'high' | 'medium' | 'low';
-  recommendation: string;
-}
-
-interface AIRecommendation {
-  id: string;
-  title: { en: string; ar: string };
-  description: { en: string; ar: string };
-  targetGap: string;
-  templateType: string;
-  estimatedImpact: 'high' | 'medium';
-}
-```
-
 ---
 
 ## Official MoMAH Innovation Templates (14 Total)
@@ -193,38 +159,54 @@ interface AIRecommendation {
 
 ---
 
+## Hub Integration
+
+### Strategy Hub Templates Tab Features
+
+The Templates Tab in Strategy Hub (`/strategy-hub`) provides:
+
+| Tool | Description | Route |
+|------|-------------|-------|
+| Template Library | Browse and apply templates | `/strategy-templates-page` |
+| Coverage Analysis | Analyze against MoMAH taxonomy | In-page component |
+| Sector Strategy | Build sector-specific strategies | `/sector-strategy-page` |
+| Create from Scratch | Start new plan without template | `/strategic-plan-builder` |
+
+### Tab Style Consistency
+
+All tabs use unified HubTabs styling:
+```jsx
+<TabsList className="w-full h-auto flex-wrap justify-start gap-1 bg-muted/50 p-1">
+  <TabsTrigger className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+```
+
+### Quick Actions
+
+| Action | Target | Description |
+|--------|--------|-------------|
+| "Open Template Library" | `/strategy-templates-page` | Full template browsing |
+| "Create from Scratch" | `/strategic-plan-builder` | Blank wizard |
+| "Sector Strategy" | `/sector-strategy-page` | Sector-focused creation |
+
+---
+
 ## File Structure
 
 ```
 src/
 ├── pages/
-│   └── StrategyTemplatesPage.jsx
+│   ├── StrategyTemplatesPage.jsx          # Full template library page
+│   └── SectorStrategyPage.jsx             # Sector strategy builder
 ├── components/
 │   └── strategy/
 │       ├── creation/
 │       │   └── StrategyTemplateLibrary.jsx
 │       └── templates/
-│           └── TemplateCoverageAnalysis.jsx    # NEW
+│           └── TemplateCoverageAnalysis.jsx
 ├── hooks/
 │   └── strategy/
 │       └── useStrategyTemplates.js
 ```
-
----
-
-## Strategy Hub Integration
-
-The Templates system is accessible from Strategy Hub via:
-
-1. **Templates Tab** - Direct access to template library
-2. **Coverage Analysis** - Sub-feature within Templates tab
-3. **Quick Actions** - "Create from Template" button
-
-### Hub Templates Tab Features
-- Template Library access
-- Coverage Analysis access
-- Vision 2030 alignment indicators
-- AI recommendation previews
 
 ---
 
@@ -240,4 +222,16 @@ The Templates system is accessible from Strategy Hub via:
 | Coverage Analysis | ✅ Complete | v2.1 |
 | Gap Identification | ✅ Complete | v2.1 |
 | AI Recommendations | ✅ Complete | v2.1 |
-| Hub Integration | ✅ Complete | v2.1 |
+| Hub Integration | ✅ Complete | v2.2 |
+| Sector Strategy | ✅ Complete | v2.2 |
+| Consistent Tab Styling | ✅ Complete | v2.2 |
+
+---
+
+## Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [STRATEGIC_WIZARD_DESIGN.md](./STRATEGIC_WIZARD_DESIGN.md) | Wizard design |
+| [strategy-design.md](./strategy-design.md) | Complete 8-phase lifecycle |
+| [plan-tracker.md](./plan-tracker.md) | Implementation tracking |
