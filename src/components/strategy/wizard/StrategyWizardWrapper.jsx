@@ -355,13 +355,31 @@ export default function StrategyWizardWrapper() {
     const stepConfig = WIZARD_STEPS.find(s => s.num === step);
     const stepKey = stepConfig?.key || '';
     
-    // Build context from existing data
+    // Build comprehensive context from existing data
     const context = {
       planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
+      planNameAr: wizardData.name_ar || '',
       vision: wizardData.vision_en || wizardData.vision_ar || '',
+      visionAr: wizardData.vision_ar || '',
       mission: wizardData.mission_en || wizardData.mission_ar || '',
+      missionAr: wizardData.mission_ar || '',
+      description: wizardData.description_en || wizardData.description_ar || '',
+      descriptionAr: wizardData.description_ar || '',
       sectors: wizardData.target_sectors || [],
       themes: wizardData.strategic_themes || [],
+      technologies: wizardData.focus_technologies || [],
+      vision2030Programs: wizardData.vision_2030_programs || [],
+      regions: wizardData.target_regions || [],
+      startYear: wizardData.start_year || new Date().getFullYear(),
+      endYear: wizardData.end_year || new Date().getFullYear() + 5,
+      budgetRange: wizardData.budget_range || '',
+      stakeholders: wizardData.quick_stakeholders || [],
+      keyChallenges: wizardData.key_challenges_en || wizardData.key_challenges_ar || '',
+      keyChallengesAr: wizardData.key_challenges_ar || '',
+      availableResources: wizardData.available_resources_en || wizardData.available_resources_ar || '',
+      availableResourcesAr: wizardData.available_resources_ar || '',
+      initialConstraints: wizardData.initial_constraints_en || wizardData.initial_constraints_ar || '',
+      initialConstraintsAr: wizardData.initial_constraints_ar || '',
       objectives: wizardData.objectives || []
     };
     
@@ -409,22 +427,51 @@ Based on the plan name, suggest appropriate values for ALL of the following:
 
 Use formal language appropriate for Saudi government documents.`,
       vision: `Generate Core Values and Strategic Pillars for a Saudi municipal strategic plan.
-Plan: ${context.planName}
-Vision: ${context.vision}
-Mission: ${context.mission}
-Sectors: ${context.sectors.join(', ')}
-Themes: ${context.themes.join(', ')}
+
+PLAN CONTEXT:
+- Plan Name: ${context.planName}${context.planNameAr ? ` (${context.planNameAr})` : ''}
+- Vision: ${context.vision}
+- Mission: ${context.mission}
+- Description: ${context.description}
+
+STRATEGIC FOCUS:
+- Target Sectors: ${context.sectors.length > 0 ? context.sectors.join(', ') : 'Not specified'}
+- Strategic Themes: ${context.themes.length > 0 ? context.themes.join(', ') : 'Not specified'}
+- Focus Technologies: ${context.technologies.length > 0 ? context.technologies.join(', ') : 'Not specified'}
+- Vision 2030 Programs: ${context.vision2030Programs.length > 0 ? context.vision2030Programs.join(', ') : 'Not specified'}
+- Target Regions: ${context.regions.length > 0 ? context.regions.join(', ') : 'Kingdom-wide'}
+
+DURATION & RESOURCES:
+- Duration: ${context.startYear} - ${context.endYear} (${context.endYear - context.startYear} years)
+- Budget Range: ${context.budgetRange || 'Not specified'}
+
+KEY STAKEHOLDERS:
+${context.stakeholders.length > 0 ? context.stakeholders.map(s => `- ${s.name_en || s}${s.name_ar ? ` (${s.name_ar})` : ''}`).join('\n') : '- Not specified'}
+
+DISCOVERY INPUTS:
+- Key Challenges: ${context.keyChallenges || 'Not specified'}
+- Available Resources: ${context.availableResources || 'Not specified'}
+- Initial Constraints: ${context.initialConstraints || 'Not specified'}
 
 Generate the following (all bilingual - English and Arabic):
 
 1. CORE VALUES (5-7 values):
 Each value should have: name_en, name_ar, description_en, description_ar
-Values should reflect Saudi government principles, Vision 2030 values, and organizational culture.
+Values should:
+- Reflect Saudi government principles and Vision 2030 values
+- Align with the strategic themes and focus areas specified above
+- Address the challenges and constraints mentioned
+- Be relevant to the target sectors and regions
 Examples: Innovation, Excellence, Integrity, Collaboration, Transparency, Sustainability, Citizen-Focus
 
 2. STRATEGIC PILLARS (4-6 pillars):
 Each pillar should have: name_en, name_ar, description_en, description_ar
-Pillars are the main thematic areas that organize strategic objectives.
+Pillars should:
+- Be the main thematic areas that organize strategic objectives
+- Directly support the vision and mission statements
+- Leverage the focus technologies and Vision 2030 programs
+- Address key challenges while considering constraints
+- Be achievable within the specified budget and timeline
 Examples: Digital Transformation, Sustainable Development, Quality of Life, Economic Diversification, Institutional Excellence
 
 Use formal language appropriate for Saudi government documents.`,
