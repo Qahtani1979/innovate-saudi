@@ -273,10 +273,17 @@ export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating
                     dir="rtl"
                   />
                   <Textarea
-                    placeholder={t({ en: 'Brief description...', ar: 'وصف مختصر...' })}
+                    placeholder={t({ en: 'Description (English)...', ar: 'الوصف (إنجليزي)...' })}
                     value={pillar.description_en}
                     onChange={(e) => updatePillar(index, 'description_en', e.target.value)}
                     rows={2}
+                  />
+                  <Textarea
+                    placeholder={t({ en: 'Description (Arabic)...', ar: 'الوصف (عربي)...' })}
+                    value={pillar.description_ar}
+                    onChange={(e) => updatePillar(index, 'description_ar', e.target.value)}
+                    rows={2}
+                    dir="rtl"
                   />
                 </div>
               ))}

@@ -30,7 +30,8 @@ export default function Step7Timeline({
         date: '',
         type: 'milestone',
         status: 'planned',
-        description: ''
+        description_en: '',
+        description_ar: ''
       }]
     });
   };
@@ -51,7 +52,8 @@ export default function Step7Timeline({
         name_ar: '',
         start_date: '',
         end_date: '',
-        description: '',
+        description_en: '',
+        description_ar: '',
         objectives_covered: []
       }]
     });
@@ -197,13 +199,24 @@ export default function Step7Timeline({
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t({ en: 'Phase Description', ar: 'وصف المرحلة' })}</Label>
-                    <Textarea
-                      value={phase.description || ''}
-                      onChange={(e) => updatePhase(index, { description: e.target.value })}
-                      rows={2}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t({ en: 'Phase Description (EN)', ar: 'وصف المرحلة (إنجليزي)' })}</Label>
+                      <Textarea
+                        value={phase.description_en || phase.description || ''}
+                        onChange={(e) => updatePhase(index, { description_en: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t({ en: 'Phase Description (AR)', ar: 'وصف المرحلة (عربي)' })}</Label>
+                      <Textarea
+                        dir="rtl"
+                        value={phase.description_ar || ''}
+                        onChange={(e) => updatePhase(index, { description_ar: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
                   </div>
 
                   {objectives.length > 0 && (
@@ -304,13 +317,24 @@ export default function Step7Timeline({
                     </Button>
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t({ en: 'Description', ar: 'الوصف' })}</Label>
-                    <Textarea
-                      value={milestone.description || ''}
-                      onChange={(e) => updateMilestone(index, { description: e.target.value })}
-                      rows={2}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t({ en: 'Description (EN)', ar: 'الوصف (إنجليزي)' })}</Label>
+                      <Textarea
+                        value={milestone.description_en || milestone.description || ''}
+                        onChange={(e) => updateMilestone(index, { description_en: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t({ en: 'Description (AR)', ar: 'الوصف (عربي)' })}</Label>
+                      <Textarea
+                        dir="rtl"
+                        value={milestone.description_ar || ''}
+                        onChange={(e) => updateMilestone(index, { description_ar: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
