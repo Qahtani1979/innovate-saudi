@@ -161,7 +161,9 @@ export function useWizardValidation(wizardData, t = (obj) => obj?.en || obj) {
       case 5:
         return !!(wizardData.swot && Object.values(wizardData.swot).some(arr => arr?.length > 0));
       case 6:
-        return !!(wizardData.scenarios && Object.keys(wizardData.scenarios).some(k => wizardData.scenarios[k]?.description));
+        return !!(wizardData.scenarios && Object.keys(wizardData.scenarios).some(k => 
+          wizardData.scenarios[k]?.description_en || wizardData.scenarios[k]?.description_ar || wizardData.scenarios[k]?.description
+        ));
       case 7:
         return wizardData.risks?.length > 0;
       case 8:
@@ -199,12 +201,15 @@ export function useWizardValidation(wizardData, t = (obj) => obj?.en || obj) {
           wizardData.communication_plan.key_messages?.length > 0
         ));
       case 17:
-        // Change management - check text fields and arrays
+        // Change management - check bilingual text fields and arrays
         return !!(wizardData.change_management && (
-          wizardData.change_management.readiness_assessment?.trim() ||
-          wizardData.change_management.change_approach?.trim() ||
+          wizardData.change_management.readiness_assessment_en?.trim() ||
+          wizardData.change_management.readiness_assessment_ar?.trim() ||
+          wizardData.change_management.change_approach_en?.trim() ||
+          wizardData.change_management.change_approach_ar?.trim() ||
           wizardData.change_management.training_plan?.length > 0 ||
-          wizardData.change_management.resistance_management?.trim()
+          wizardData.change_management.resistance_management_en?.trim() ||
+          wizardData.change_management.resistance_management_ar?.trim()
         ));
       case 18:
         return true; // Review step always considered "has data"

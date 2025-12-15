@@ -57,7 +57,7 @@ export default function Step8Review({
     stakeholders: stakeholders.length > 0,
     pestel: Object.values(data.pestel || {}).some(arr => arr?.length > 0),
     swot: (swot.strengths?.length > 0 || swot.opportunities?.length > 0),
-    scenarios: !!(data.scenarios?.best_case?.description || data.scenarios?.most_likely?.description),
+    scenarios: !!(data.scenarios?.best_case?.description_en || data.scenarios?.best_case?.description_ar || data.scenarios?.most_likely?.description_en || data.scenarios?.most_likely?.description_ar),
     risks: risks.length > 0,
     dependencies: (data.dependencies?.length > 0 || data.constraints?.length > 0),
     objectives: objectives.length >= 3,
