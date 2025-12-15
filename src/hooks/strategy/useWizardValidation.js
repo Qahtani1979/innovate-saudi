@@ -8,7 +8,7 @@ import { useLanguage } from '@/components/LanguageContext';
 export function useWizardValidation(wizardData) {
   const { t } = useLanguage();
 
-  // Define required fields per step
+  // Define required fields per step (aligned with WIZARD_STEPS.required flags)
   const stepRequirements = useMemo(() => ({
     1: {
       fields: ['name_en'],
@@ -22,7 +22,8 @@ export function useWizardValidation(wizardData) {
       }
     },
     3: {
-      fields: [], // Stakeholders optional
+      fields: [], // Stakeholders recommended but not blocking
+      arrayFields: [{ field: 'stakeholders', min: 0, label: { en: 'Stakeholders', ar: 'أصحاب المصلحة' } }],
       labels: {}
     },
     4: {
@@ -30,7 +31,7 @@ export function useWizardValidation(wizardData) {
       labels: {}
     },
     5: {
-      fields: [], // SWOT recommended but not required
+      fields: [], // SWOT recommended
       labels: {}
     },
     6: {
@@ -38,7 +39,8 @@ export function useWizardValidation(wizardData) {
       labels: {}
     },
     7: {
-      fields: [], // Risks optional
+      fields: [], // Risks recommended but not blocking
+      arrayFields: [{ field: 'risks', min: 0, label: { en: 'Risks', ar: 'المخاطر' } }],
       labels: {}
     },
     8: {
@@ -46,7 +48,7 @@ export function useWizardValidation(wizardData) {
       labels: {}
     },
     9: {
-      fields: [], // Objectives - at least one required
+      fields: [],
       arrayFields: [{ field: 'objectives', min: 1, label: { en: 'Strategic Objectives', ar: 'الأهداف الاستراتيجية' } }],
       labels: {}
     },
@@ -55,12 +57,13 @@ export function useWizardValidation(wizardData) {
       labels: {}
     },
     11: {
-      fields: [], // KPIs - at least one recommended
-      arrayFields: [{ field: 'kpis', min: 0 }],
+      fields: [], // KPIs recommended
+      arrayFields: [{ field: 'kpis', min: 0, label: { en: 'KPIs', ar: 'مؤشرات الأداء' } }],
       labels: {}
     },
     12: {
-      fields: [], // Action plans optional
+      fields: [], // Action plans recommended
+      arrayFields: [{ field: 'action_plans', min: 0, label: { en: 'Action Plans', ar: 'خطط العمل' } }],
       labels: {}
     },
     13: {
