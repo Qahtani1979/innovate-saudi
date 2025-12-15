@@ -1,8 +1,12 @@
 # Strategic Plan Creation Wizard - Design Document
 
-> **Version**: 1.7  
+> **Version**: 1.8  
 > **Last Updated**: December 15, 2025  
 > **Status**: ✅ Fully Implemented & Consistent
+
+## Recent Changes (v1.8)
+- Fixed ProtectedPage HOC usage error (was incorrectly used as JSX wrapper)
+- Removed ProtectedPage wrapper from StrategyWizardWrapper (page-level protection handled by route)
 
 ---
 
