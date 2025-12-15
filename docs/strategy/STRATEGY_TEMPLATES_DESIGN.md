@@ -1,6 +1,6 @@
 # Strategy Templates System - Design Document
 
-> **Version**: 1.6  
+> **Version**: 1.7  
 > **Last Updated**: December 15, 2025  
 > **Status**: ✅ Fully Implemented & Consistent
 

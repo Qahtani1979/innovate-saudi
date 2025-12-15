@@ -38,7 +38,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Context & Discovery', ar: 'السياق والاستكشاف' },
     description: { en: 'Foundation, scope, and situational analysis', ar: 'الأساس والنطاق وتحليل الوضع' },
     icon: FileText,
-    required: true
+    required: true  // Plan name required
   },
   { 
     num: 2, 
@@ -47,7 +47,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Vision & Mission', ar: 'الرؤية والرسالة' },
     description: { en: 'Define strategic vision and mission statements', ar: 'تحديد الرؤية والرسالة الاستراتيجية' },
     icon: Eye,
-    required: true
+    required: true  // Vision & mission required
   },
   { 
     num: 3, 
@@ -56,7 +56,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Stakeholder Analysis', ar: 'تحليل أصحاب المصلحة' },
     description: { en: 'Map stakeholders with power/interest matrix', ar: 'تحليل أصحاب المصلحة بمصفوفة القوة/الاهتمام' },
     icon: Users,
-    required: true
+    required: false  // Recommended but optional
   },
   { 
     num: 4, 
@@ -76,7 +76,7 @@ export const WIZARD_STEPS = [
     title: { en: 'SWOT Analysis', ar: 'تحليل SWOT' },
     description: { en: 'Strengths, Weaknesses, Opportunities, Threats', ar: 'نقاط القوة والضعف والفرص والتهديدات' },
     icon: BarChart3,
-    required: true
+    required: false  // Recommended but optional
   },
   { 
     num: 6, 
@@ -94,7 +94,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Risk Assessment', ar: 'تقييم المخاطر' },
     description: { en: 'Identify risks and mitigation strategies', ar: 'تحديد المخاطر واستراتيجيات التخفيف' },
     icon: AlertTriangle,
-    required: true
+    required: false  // Recommended but optional
   },
   { 
     num: 8, 
@@ -114,7 +114,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Strategic Objectives', ar: 'الأهداف الاستراتيجية' },
     description: { en: 'Define goals and outcomes', ar: 'تحديد الأهداف والنتائج' },
     icon: Target,
-    required: true
+    required: true  // At least one objective required
   },
   { 
     num: 10, 
@@ -123,7 +123,7 @@ export const WIZARD_STEPS = [
     title: { en: 'National Alignment', ar: 'التوافق الوطني' },
     description: { en: 'Link to Vision 2030 and national goals', ar: 'الربط برؤية 2030 والأهداف الوطنية' },
     icon: Link,
-    required: true
+    required: false  // Optional
   },
   { 
     num: 11, 
@@ -132,7 +132,7 @@ export const WIZARD_STEPS = [
     title: { en: 'KPIs & Metrics', ar: 'مؤشرات الأداء' },
     description: { en: 'Define success measurements', ar: 'تحديد قياسات النجاح' },
     icon: Activity,
-    required: true
+    required: false  // Recommended but optional
   },
   { 
     num: 12, 
@@ -141,7 +141,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Action Plans', ar: 'خطط العمل' },
     description: { en: 'Initiatives and programs', ar: 'المبادرات والبرامج' },
     icon: Lightbulb,
-    required: true
+    required: false  // Recommended but optional
   },
   { 
     num: 13, 
@@ -150,7 +150,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Resource Planning', ar: 'تخطيط الموارد' },
     description: { en: 'HR, technology, infrastructure, and budget allocation', ar: 'الموارد البشرية والتقنية والبنية التحتية وتخصيص الميزانية' },
     icon: DollarSign,
-    required: true
+    required: false  // Optional
   },
 
   // === PHASE D: IMPLEMENTATION (14-18) ===
@@ -161,7 +161,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Timeline & Milestones', ar: 'الجدول الزمني' },
     description: { en: 'Schedule and key dates', ar: 'الجدول والتواريخ الرئيسية' },
     icon: Calendar,
-    required: true
+    required: false  // Recommended but optional
   },
   { 
     num: 15, 
@@ -170,7 +170,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Governance Structure', ar: 'هيكل الحوكمة' },
     description: { en: 'Oversight, committees, and reporting lines', ar: 'الإشراف واللجان وخطوط التقارير' },
     icon: Building2,
-    required: true
+    required: false  // Optional
   },
   { 
     num: 16, 
@@ -197,7 +197,7 @@ export const WIZARD_STEPS = [
     title: { en: 'Review & Submit', ar: 'المراجعة والإرسال' },
     description: { en: 'Final review and submission', ar: 'المراجعة النهائية والإرسال' },
     icon: CheckCircle2,
-    required: true
+    required: true  // Final step always required
   }
 ];
 

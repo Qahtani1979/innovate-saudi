@@ -1,6 +1,6 @@
 # Strategic Plan Creation Wizard - Design Document
 
-> **Version**: 1.6  
+> **Version**: 1.7  
 > **Last Updated**: December 15, 2025  
 > **Status**: ✅ Fully Implemented & Consistent
 
@@ -162,35 +162,35 @@ StrategicPlanBuilder (Page)
 
 | Step | Name | Required | Description | AI Support |
 |------|------|----------|-------------|------------|
-| 1 | Context & Discovery | ✅ | Basic plan info, timeframe, scope | ✅ |
-| 2 | Vision & Mission | ✅ | Strategic vision and mission statements | ✅ |
-| 3 | Stakeholder Analysis | ❌ | Map stakeholders and their influence | ✅ |
+| 1 | Context & Discovery | ✅ | Basic plan info (name required), timeframe, scope | ✅ |
+| 2 | Vision & Mission | ✅ | Strategic vision and mission statements (both required) | ✅ |
+| 3 | Stakeholder Analysis | ❌ | Map stakeholders and their influence (recommended) | ✅ |
 | 4 | PESTEL Analysis | ❌ | Political, Economic, Social, Tech, Environmental, Legal | ✅ |
 
 #### Phase 2: Analysis
 
 | Step | Name | Required | Description | AI Support |
 |------|------|----------|-------------|------------|
-| 5 | SWOT Analysis | ✅ | Strengths, Weaknesses, Opportunities, Threats | ✅ |
+| 5 | SWOT Analysis | ❌ | Strengths, Weaknesses, Opportunities, Threats (recommended) | ✅ |
 | 6 | Scenario Planning | ❌ | Best, moderate, worst case scenarios | ✅ |
-| 7 | Risk Assessment | ❌ | Identify and mitigate strategic risks | ✅ |
+| 7 | Risk Assessment | ❌ | Identify and mitigate strategic risks (recommended) | ✅ |
 | 8 | Dependencies | ❌ | External dependencies and constraints | ✅ |
 
 #### Phase 3: Strategy
 
 | Step | Name | Required | Description | AI Support |
 |------|------|----------|-------------|------------|
-| 9 | Strategic Objectives | ✅ | Define measurable objectives | ✅ |
+| 9 | Strategic Objectives | ✅ | Define measurable objectives (min 1 required) | ✅ |
 | 10 | National Alignment | ❌ | Align with national vision/programs | ❌ |
-| 11 | KPIs & Metrics | ✅ | Define success metrics | ✅ |
-| 12 | Action Plans | ✅ | Detailed action items per objective | ✅ |
+| 11 | KPIs & Metrics | ❌ | Define success metrics (recommended) | ✅ |
+| 12 | Action Plans | ❌ | Detailed action items per objective (recommended) | ✅ |
 | 13 | Resource Planning | ❌ | Budget, human resources, technology | ✅ |
 
 #### Phase 4: Implementation
 
 | Step | Name | Required | Description | AI Support |
 |------|------|----------|-------------|------------|
-| 14 | Timeline & Milestones | ✅ | Project timeline with key milestones | ❌ |
+| 14 | Timeline & Milestones | ❌ | Project timeline with key milestones (recommended) | ❌ |
 | 15 | Governance Structure | ❌ | Roles, committees, reporting | ❌ |
 | 16 | Communication Plan | ❌ | Stakeholder communication strategy | ✅ |
 | 17 | Change Management | ❌ | Change readiness and adoption plan | ✅ |
