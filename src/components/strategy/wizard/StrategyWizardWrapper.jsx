@@ -651,11 +651,34 @@ For EACH item, provide ALL these fields in BOTH English and Arabic:
 Be specific to Saudi Arabia and the municipal context. Avoid vague or generic statements.`,
       scenarios: `Create comprehensive scenario planning for this Saudi municipal strategic plan:
 
-**CONTEXT:**
+**STRATEGIC PLAN CONTEXT:**
 - Plan Name: ${context.planName}
 - Vision: ${context.vision}
+- Mission: ${wizardData.mission_en || 'Not specified'}
 - Sectors: ${context.sectors.join(', ')}
-- Timeline: ${context.startYear}-${context.endYear}
+- Timeline: ${context.startYear}-${context.endYear} (${context.endYear - context.startYear} years)
+- Budget Range: ${wizardData.budget_range || 'Not specified'}
+- Target Regions: ${(wizardData.target_regions || []).join(', ') || 'Kingdom-wide'}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
+- Vision 2030 Programs: ${(wizardData.vision_2030_programs || []).join(', ') || 'Not specified'}
+
+**STRATEGIC PILLARS (from Step 2):**
+${(wizardData.strategic_pillars || []).map(p => `- ${p.name_en || p.name_ar}`).join('\n') || 'Not defined yet'}
+
+**KEY STAKEHOLDERS (from Step 3):**
+${(wizardData.stakeholders || []).slice(0, 5).map(s => `- ${s.name_en || s.name_ar} (${s.type}, Power: ${s.power}, Interest: ${s.interest})`).join('\n') || 'Not defined yet'}
+
+**PESTEL SUMMARY (from Step 4):**
+- Political factors: ${(wizardData.pestel?.political || []).length} identified
+- Economic factors: ${(wizardData.pestel?.economic || []).length} identified
+- Key opportunities: ${(wizardData.pestel?.political || []).filter(f => f.trend === 'growing').map(f => f.factor_en).slice(0, 2).join(', ') || 'Vision 2030 support'}
+- Key threats: ${(wizardData.pestel?.economic || []).filter(f => f.trend === 'declining').map(f => f.factor_en).slice(0, 2).join(', ') || 'Economic volatility'}
+
+**SWOT SUMMARY (from Step 5):**
+- Top Strengths: ${(wizardData.swot?.strengths || []).slice(0, 2).map(s => s.text_en).join('; ') || 'Not defined yet'}
+- Top Weaknesses: ${(wizardData.swot?.weaknesses || []).slice(0, 2).map(w => w.text_en).join('; ') || 'Not defined yet'}
+- Top Opportunities: ${(wizardData.swot?.opportunities || []).slice(0, 2).map(o => o.text_en).join('; ') || 'Not defined yet'}
+- Top Threats: ${(wizardData.swot?.threats || []).slice(0, 2).map(t => t.text_en).join('; ') || 'Not defined yet'}
 
 **REQUIREMENTS:**
 Generate ALL 3 scenarios: best_case, worst_case, and most_likely.
@@ -672,41 +695,72 @@ For EACH scenario, provide ALL these fields in BOTH English and Arabic:
    - text_en: Assumption in English
    - text_ar: Assumption in Arabic (formal فصحى)
 
-4. **outcomes**: Array of 4-6 measurable outcomes. Each outcome must have:
+4. **outcomes**: Array of 4-6 measurable outcomes with REALISTIC VALUES. Each outcome must have:
    - metric_en: The metric/outcome name in English
    - metric_ar: The metric/outcome name in Arabic
-   - value: The expected value/result (e.g., "95%", "+30%", "500,000 users")
+   - value: The expected value/result - USE REALISTIC SAUDI MUNICIPAL BENCHMARKS
+
+**REALISTIC OUTCOME VALUE EXAMPLES (adapt to plan context):**
+
+For BEST CASE outcomes:
+- "Citizen satisfaction: 92%"
+- "Digital service adoption: 85%"
+- "Budget utilization efficiency: 98%"
+- "Project completion rate: 95%"
+- "Private sector investment: SAR 2.5 billion"
+- "Job creation: 15,000 new positions"
+- "E-service transactions: 5 million annually"
+- "Carbon emission reduction: 25%"
+
+For WORST CASE outcomes:
+- "Citizen satisfaction: 55%"
+- "Digital service adoption: 35%"
+- "Budget overrun: +40%"
+- "Project completion rate: 45%"
+- "Implementation delay: 24 months"
+- "Staff turnover: 35%"
+- "Service disruption incidents: 50+ annually"
+
+For MOST LIKELY outcomes:
+- "Citizen satisfaction: 75%"
+- "Digital service adoption: 65%"
+- "Budget variance: ±10%"
+- "Project completion rate: 78%"
+- "Private sector investment: SAR 800 million"
+- "Job creation: 5,000 new positions"
+- "E-service transactions: 2 million annually"
 
 **SCENARIO GUIDANCE FOR SAUDI CONTEXT:**
 
-BEST CASE (Optimistic - typically 15-25% probability):
-- Vision 2030 goals exceeded
-- Strong private sector investment
-- Rapid digital adoption
-- High citizen satisfaction
-- Budget surplus and efficiency gains
+BEST CASE (Optimistic - probability: "20%"):
+- Vision 2030 goals exceeded ahead of schedule
+- Strong private sector PPP partnerships
+- Rapid digital transformation adoption
+- High citizen satisfaction and engagement
+- Budget surplus enabling additional initiatives
+- International recognition for innovation
 
-WORST CASE (Pessimistic - typically 15-25% probability):
-- Economic challenges (oil price volatility)
-- Implementation delays
-- Resource constraints
-- Low stakeholder engagement
-- Regulatory obstacles
+WORST CASE (Pessimistic - probability: "20%"):
+- Economic challenges from oil price volatility
+- Significant implementation delays (12-24 months)
+- Budget constraints requiring scope reduction
+- Low stakeholder engagement and resistance to change
+- Regulatory obstacles and compliance issues
+- Talent shortage and high turnover
 
-MOST LIKELY (Realistic - typically 50-70% probability):
-- Steady progress with some challenges
-- Moderate achievement of targets
-- Mixed stakeholder response
-- Some budget adjustments needed
-- Gradual capacity building
+MOST LIKELY (Realistic - probability: "60%"):
+- Steady progress with manageable challenges
+- Moderate achievement of 70-80% of targets
+- Mixed stakeholder response requiring ongoing engagement
+- Some budget adjustments within ±15% variance
+- Gradual capacity building with external support
+- Phased rollout with lessons learned integration
 
 **DISTRIBUTION:**
-- Probabilities should sum to 100%
-- Each scenario should have distinct assumptions
-- Outcomes should be measurable and specific to the plan's sectors
-- Consider PESTEL and SWOT factors in scenario development
-
-Be specific to Saudi Arabia and the plan context. Avoid generic outcomes.`,
+- Probabilities MUST sum to 100% (typically: 20% + 20% + 60%)
+- Each scenario should reference the SWOT and PESTEL factors above
+- Outcomes should be sector-specific and measurable
+- Values should be realistic for Saudi municipal context`,
       risks: `Identify risks for this Saudi municipal strategic plan:
 Plan: ${context.planName}
 Vision: ${context.vision}
