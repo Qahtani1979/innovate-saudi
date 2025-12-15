@@ -341,32 +341,71 @@ export default function Step1Context({
           <CardDescription>{t({ en: 'Current situation analysis', ar: 'تحليل الوضع الحالي' })}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t({ en: 'Key Challenges', ar: 'التحديات الرئيسية' })}</Label>
-            <Textarea
-              value={data.key_challenges || ''}
-              onChange={(e) => onChange({ key_challenges: e.target.value })}
-              rows={3}
-              placeholder={t({ en: 'What are the main challenges to address?', ar: 'ما هي التحديات الرئيسية التي يجب معالجتها؟' })}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{t({ en: 'Key Challenges (English)', ar: 'التحديات الرئيسية (إنجليزي)' })}</Label>
+              <Textarea
+                value={data.key_challenges_en || data.key_challenges || ''}
+                onChange={(e) => onChange({ key_challenges_en: e.target.value })}
+                rows={3}
+                placeholder={t({ en: 'What are the main challenges to address?', ar: 'ما هي التحديات الرئيسية التي يجب معالجتها؟' })}
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t({ en: 'Key Challenges (Arabic)', ar: 'التحديات الرئيسية (عربي)' })}</Label>
+              <Textarea
+                value={data.key_challenges_ar || ''}
+                onChange={(e) => onChange({ key_challenges_ar: e.target.value })}
+                rows={3}
+                placeholder={t({ en: 'Enter challenges in Arabic', ar: 'أدخل التحديات بالعربية' })}
+                dir="rtl"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>{t({ en: 'Available Resources', ar: 'الموارد المتاحة' })}</Label>
-            <Textarea
-              value={data.available_resources || ''}
-              onChange={(e) => onChange({ available_resources: e.target.value })}
-              rows={2}
-              placeholder={t({ en: 'Human resources, technology, partnerships, etc.', ar: 'الموارد البشرية، التقنية، الشراكات، إلخ' })}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{t({ en: 'Available Resources (English)', ar: 'الموارد المتاحة (إنجليزي)' })}</Label>
+              <Textarea
+                value={data.available_resources_en || data.available_resources || ''}
+                onChange={(e) => onChange({ available_resources_en: e.target.value })}
+                rows={2}
+                placeholder={t({ en: 'Human resources, technology, partnerships, etc.', ar: 'الموارد البشرية، التقنية، الشراكات، إلخ' })}
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t({ en: 'Available Resources (Arabic)', ar: 'الموارد المتاحة (عربي)' })}</Label>
+              <Textarea
+                value={data.available_resources_ar || ''}
+                onChange={(e) => onChange({ available_resources_ar: e.target.value })}
+                rows={2}
+                placeholder={t({ en: 'Enter resources in Arabic', ar: 'أدخل الموارد بالعربية' })}
+                dir="rtl"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>{t({ en: 'Initial Constraints & Limitations', ar: 'القيود والحدود الأولية' })}</Label>
-            <Textarea
-              value={data.initial_constraints || ''}
-              onChange={(e) => onChange({ initial_constraints: e.target.value })}
-              rows={2}
-              placeholder={t({ en: 'Budget limits, regulatory constraints, timeline pressures', ar: 'حدود الميزانية، القيود التنظيمية، ضغوط الجدول الزمني' })}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{t({ en: 'Initial Constraints & Limitations (English)', ar: 'القيود والحدود الأولية (إنجليزي)' })}</Label>
+              <Textarea
+                value={data.initial_constraints_en || data.initial_constraints || ''}
+                onChange={(e) => onChange({ initial_constraints_en: e.target.value })}
+                rows={2}
+                placeholder={t({ en: 'Budget limits, regulatory constraints, timeline pressures', ar: 'حدود الميزانية، القيود التنظيمية، ضغوط الجدول الزمني' })}
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t({ en: 'Initial Constraints & Limitations (Arabic)', ar: 'القيود والحدود الأولية (عربي)' })}</Label>
+              <Textarea
+                value={data.initial_constraints_ar || ''}
+                onChange={(e) => onChange({ initial_constraints_ar: e.target.value })}
+                rows={2}
+                placeholder={t({ en: 'Enter constraints in Arabic', ar: 'أدخل القيود بالعربية' })}
+                dir="rtl"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
