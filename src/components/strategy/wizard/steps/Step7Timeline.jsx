@@ -14,7 +14,7 @@ export default function Step7Timeline({
   onGenerateAI, 
   isGenerating 
 }) {
-  const { language, t } = useLanguage();
+  const { language, t, isRTL } = useLanguage();
   
   const milestones = data.milestones || [];
   const phases = data.phases || [];
@@ -74,7 +74,7 @@ export default function Step7Timeline({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* AI Generation */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-4">

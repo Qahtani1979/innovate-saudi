@@ -46,7 +46,7 @@ export default function Step4NationalAlignment({
   onGenerateAI, 
   isGenerating 
 }) {
-  const { language, t } = useLanguage();
+  const { language, t, isRTL } = useLanguage();
   const objectives = data.objectives || [];
   const alignments = data.national_alignments || [];
 
@@ -79,7 +79,7 @@ export default function Step4NationalAlignment({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* AI Generation */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-4">

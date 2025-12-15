@@ -22,7 +22,7 @@ export default function Step8Review({
   validationErrors = [],
   mode = 'create'
 }) {
-  const { language, t } = useLanguage();
+  const { language, t, isRTL } = useLanguage();
 
   const getSectorName = (code) => {
     const sector = MOMAH_SECTORS.find(s => s.code === code);
@@ -89,7 +89,7 @@ export default function Step8Review({
   const canSubmit = errors.length === 0 && completionPercentage >= 60;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Validation Errors */}
       {errors.length > 0 && (
         <Alert variant="destructive">

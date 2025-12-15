@@ -17,7 +17,7 @@ export default function Step3Objectives({
   onGenerateAI, 
   isGenerating 
 }) {
-  const { language, t } = useLanguage();
+  const { language, t, isRTL } = useLanguage();
   const [expandedIndex, setExpandedIndex] = useState(null);
   
   const objectives = data.objectives || [];
@@ -59,7 +59,7 @@ export default function Step3Objectives({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* AI Generation */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-4">
