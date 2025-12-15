@@ -384,48 +384,88 @@ export default function StrategyWizardWrapper() {
     };
     
     const prompts = {
-      context: `Generate comprehensive context and discovery content for this Saudi municipal strategic plan:
+      context: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH) with expertise in Innovation & R&D.
+
+## MoMAH INNOVATION CONTEXT:
+- National Innovation Ecosystem: KACST, SDAIA, MCIT Digital Gov, Monsha'at, Badir Program
+- University R&D Partners: KAUST, KFUPM, KSU research chairs, university innovation centers
+- Tech Infrastructure: National Data Management Office, CITC, cloud platforms, 5G networks
+- Innovation Programs: Regulatory sandboxes, GovTech initiatives, AI Strategy, National Industrial Strategy
+- R&D Funding: SIDF, Monsha'at, Saudi Venture Capital, PIF technology investments
+
+Generate comprehensive context and discovery content for this Saudi municipal strategic plan:
 Plan Name (English): ${context.planName}
 
-Based on the plan name, suggest appropriate values for ALL of the following:
+Based on the plan name, suggest appropriate values for ALL of the following with STRONG INNOVATION/R&D FOCUS:
 
 1. ARABIC TITLE:
 - name_ar: Arabic translation of the plan title
 
 2. VISION & MISSION (in both English and Arabic):
-- vision_en, vision_ar
-- mission_en, mission_ar
-- description_en, description_ar
+- vision_en, vision_ar: MUST include innovation/technology leadership element
+- mission_en, mission_ar: MUST reference R&D, emerging technologies, or innovation
+- description_en, description_ar: Include how innovation drives the strategy
+
+**VISION EXAMPLES with Innovation:**
+- "To be a pioneering municipality leveraging AI and emerging technologies for sustainable, citizen-centric urban development"
+- "To transform municipal services through innovation, R&D partnerships, and smart city solutions"
+
+**MISSION EXAMPLES with Innovation:**
+- "Drive municipal excellence through technology adoption, R&D collaboration, and continuous innovation"
+- "Deliver world-class services by fostering an innovation ecosystem with KACST, SDAIA, and university partners"
 
 3. DURATION & RESOURCES:
 - start_year: Suggested start year (2024-2027)
 - end_year: Suggested end year (2027-2035)
 - budget_range: One of: "<10M", "10-50M", "50-100M", "100-500M", ">500M"
 
-4. TARGET SECTORS (select relevant codes from: URBAN_PLANNING, HOUSING, INFRASTRUCTURE, ENVIRONMENT, SMART_CITIES, DIGITAL_SERVICES, CITIZEN_SERVICES, RURAL_DEVELOPMENT, PUBLIC_SPACES, WATER_RESOURCES, TRANSPORTATION, HERITAGE):
-- target_sectors: Array of sector codes
+4. TARGET SECTORS (select relevant codes - MUST include SMART_CITIES or DIGITAL_SERVICES):
+Codes: URBAN_PLANNING, HOUSING, INFRASTRUCTURE, ENVIRONMENT, SMART_CITIES, DIGITAL_SERVICES, CITIZEN_SERVICES, RURAL_DEVELOPMENT, PUBLIC_SPACES, WATER_RESOURCES, TRANSPORTATION, HERITAGE
+- target_sectors: Array of sector codes (MUST include at least one innovation-related sector)
 
-5. STRATEGIC THEMES (select relevant codes from: DIGITAL_TRANSFORMATION, SUSTAINABILITY, CITIZEN_EXPERIENCE, INNOVATION, GOVERNANCE, ECONOMIC_ENABLEMENT, QUALITY_OF_LIFE, OPERATIONAL_EXCELLENCE):
-- strategic_themes: Array of theme codes
+5. STRATEGIC THEMES (select relevant codes - MUST include INNOVATION and DIGITAL_TRANSFORMATION):
+Codes: DIGITAL_TRANSFORMATION, SUSTAINABILITY, CITIZEN_EXPERIENCE, INNOVATION, GOVERNANCE, ECONOMIC_ENABLEMENT, QUALITY_OF_LIFE, OPERATIONAL_EXCELLENCE
+- strategic_themes: Array of theme codes (MANDATORY: include INNOVATION and DIGITAL_TRANSFORMATION)
 
-6. FOCUS TECHNOLOGIES (select relevant codes from: AI_ML, IOT, BLOCKCHAIN, DIGITAL_TWINS, DRONES, 5G_6G, ROBOTICS, AR_VR, BIM, CLEANTECH):
-- focus_technologies: Array of technology codes
+6. FOCUS TECHNOLOGIES (select 3-5 relevant codes - CRITICAL for Innovation):
+Codes: AI_ML, IOT, BLOCKCHAIN, DIGITAL_TWINS, DRONES, 5G_6G, ROBOTICS, AR_VR, BIM, CLEANTECH
+- focus_technologies: Array of technology codes (MUST select at least 3 emerging technologies)
 
-7. VISION 2030 PROGRAMS (select relevant codes from: QUALITY_OF_LIFE, HOUSING, NTP, THRIVING_CITIES, FISCAL_BALANCE, PRIVATIZATION, DARP):
+7. VISION 2030 PROGRAMS (select relevant codes):
+Codes: QUALITY_OF_LIFE, HOUSING, NTP, THRIVING_CITIES, FISCAL_BALANCE, PRIVATIZATION, DARP
 - vision_2030_programs: Array of program codes
 
-8. TARGET REGIONS (select relevant codes from: RIYADH, MAKKAH, MADINAH, EASTERN, ASIR, TABUK, HAIL, NORTHERN_BORDERS, JAZAN, NAJRAN, AL_BAHA, AL_JOUF, QASSIM, or leave empty for kingdom-wide):
+8. TARGET REGIONS (select relevant codes or leave empty for kingdom-wide):
+Codes: RIYADH, MAKKAH, MADINAH, EASTERN, ASIR, TABUK, HAIL, NORTHERN_BORDERS, JAZAN, NAJRAN, AL_BAHA, AL_JOUF, QASSIM
 - target_regions: Array of region codes
 
-9. KEY STAKEHOLDERS (bilingual list):
-- quick_stakeholders: Array of objects with name_en and name_ar for 6-10 key stakeholders
+9. KEY STAKEHOLDERS (bilingual - MUST include Innovation stakeholders):
+- quick_stakeholders: Array of 8-12 objects with name_en and name_ar
+**MANDATORY Innovation Stakeholders (include at least 3):**
+- KACST (King Abdulaziz City for Science & Technology)
+- SDAIA (Saudi Data & AI Authority)
+- MCIT Digital Government
+- University R&D Partner (KAUST, KFUPM, KSU)
+- Technology Vendor Partner
+- Innovation/Tech Incubator (Badir, Monsha'at)
 
-10. DISCOVERY INPUTS (all bilingual):
-- key_challenges_en, key_challenges_ar
-- available_resources_en, available_resources_ar
-- initial_constraints_en, initial_constraints_ar
+10. DISCOVERY INPUTS (all bilingual - with Innovation focus):
+- key_challenges_en, key_challenges_ar: MUST mention technology adoption, innovation capacity, or digital transformation challenges
+- available_resources_en, available_resources_ar: MUST mention R&D partnerships, tech infrastructure, innovation funding
+- initial_constraints_en, initial_constraints_ar: MUST mention innovation-related constraints (talent, technology, regulatory)
 
-Use formal language appropriate for Saudi government documents.`,
+**KEY CHALLENGES EXAMPLES:**
+- "Limited AI/ML expertise within municipal workforce; need for R&D partnership acceleration"
+- "Legacy systems hindering smart city integration; technology vendor dependency"
+
+**AVAILABLE RESOURCES EXAMPLES:**
+- "Access to SDAIA AI frameworks; KACST research partnerships; Balady digital platform"
+- "MCIT digital training programs; PPP opportunities with tech vendors; innovation lab space"
+
+**CONSTRAINTS EXAMPLES:**
+- "Saudization requirements for tech roles; PDPL compliance timeline; limited pilot testing infrastructure"
+
+Use formal language appropriate for Saudi government documents with strong Innovation/R&D emphasis.`,
       vision: `You are generating Core Values and Strategic Pillars for a Saudi municipal strategic plan with strong Innovation & R&D focus.
 
 ## MoMAH INNOVATION CONTEXT:
@@ -1437,12 +1477,92 @@ For EACH, provide (bilingual):
 - Saudization compliance for all positions
 
 Be specific. Use realistic Saudi salary benchmarks and vendor pricing.`,
-      timeline: `Generate implementation timeline for this Saudi strategic plan:
-Plan: ${context.planName}
-Duration: ${wizardData.start_year}-${wizardData.end_year}
-Objectives count: ${context.objectives.length}
+      timeline: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH) with expertise in Innovation & R&D program implementation.
 
-Create phases and milestones for implementation.`,
+## MoMAH INNOVATION TIMELINE CONTEXT:
+- Vision 2030 Milestones: 2025 interim review, 2030 final targets
+- Innovation Cycles: Pilot phases (3-6 months), Scale phases (12-18 months)
+- R&D Timelines: Research partnerships (2-3 years), Technology transfer (6-12 months)
+- Digital Gov Milestones: MCIT digital transformation targets, SDAIA AI adoption timeline
+
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}
+- Duration: ${wizardData.start_year}-${wizardData.end_year} (${(wizardData.end_year || 2030) - (wizardData.start_year || 2025)} years)
+- Objectives: ${context.objectives.length} defined
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'AI_ML, IOT, DIGITAL_TWINS'}
+- Budget Range: ${wizardData.budget_range || 'Not specified'}
+
+## OBJECTIVES (from Step 9):
+${(wizardData.objectives || []).map((o, i) => (i + 1) + '. ' + (o.name_en || o.name_ar || 'Objective ' + (i + 1))).join('\n') || 'Not defined yet'}
+
+---
+
+## REQUIREMENTS:
+Generate implementation timeline with PHASES and MILESTONES that include Innovation/R&D activities.
+
+### PART 1: PHASES (Generate 4-5 phases)
+For EACH phase, provide ALL fields in BOTH English and Arabic:
+- name_en / name_ar: Phase name (must reflect innovation stage)
+- start_date / end_date: ISO format dates within ${wizardData.start_year}-${wizardData.end_year}
+- description_en / description_ar: What happens in this phase (2-3 sentences, include innovation activities)
+- objectives_covered: Array of objective indices (0-based) covered in this phase
+
+**MANDATORY PHASE STRUCTURE for Innovation Plans:**
+
+1. **Foundation & R&D Setup (6-9 months)**
+   - Establish innovation governance, hire key tech talent
+   - Sign R&D partnerships with KACST/universities
+   - Deploy innovation lab/sandbox infrastructure
+   - Complete technology assessments and PoC planning
+
+2. **Pilot Development (9-12 months)**
+   - Launch 3-5 pilot programs for focus technologies
+   - Execute initial R&D projects with partners
+   - Build data infrastructure and analytics platforms
+   - Train core team on emerging technologies
+
+3. **Pilot Evaluation & Iteration (6-9 months)**
+   - Assess pilot outcomes and gather lessons learned
+   - Iterate on successful pilots, sunset failures
+   - Expand R&D partnerships based on results
+   - Document knowledge and best practices
+
+4. **Scale & Integration (12-18 months)**
+   - Scale successful pilots to production
+   - Integrate new systems with Balady/national platforms
+   - Establish ongoing R&D program structure
+   - Build sustainable innovation capabilities
+
+5. **Optimization & Institutionalization (remaining time)**
+   - Continuous improvement and optimization
+   - Knowledge transfer and capability institutionalization
+   - Advanced R&D and next-generation pilots
+   - Measure and report on innovation ROI
+
+### PART 2: MILESTONES (Generate 15-20 milestones)
+For EACH milestone, provide ALL fields in BOTH English and Arabic:
+- name_en / name_ar: Milestone name
+- date: ISO format date
+- type: "deliverable" | "decision" | "launch" | "review" | "certification"
+- description_en / description_ar: What this milestone represents
+
+**MANDATORY Innovation Milestones (include at least 6):**
+- "Innovation Lab Operational" - R&D infrastructure ready
+- "First R&D Partnership MoU Signed" - KACST/university agreement
+- "Pilot Portfolio Approved" - 3-5 pilots defined and funded
+- "First Pilot Launch" - Initial technology pilot goes live
+- "Pilot Results Review" - Comprehensive pilot assessment
+- "Scale Decision Point" - Go/no-go for pilot scaling
+- "AI/ML Model Deployment" - First production AI system
+- "Innovation Dashboard Live" - R&D KPI tracking operational
+- "Technology Transfer Complete" - Knowledge transferred from R&D partner
+- "SDAIA Compliance Certification" - AI governance approval
+
+**Vision 2030 Alignment Milestones:**
+- Align key milestones with 2025 interim and 2030 final Vision targets
+- Include NTP and Quality of Life program milestones
+
+Be specific with realistic dates. Space milestones appropriately across the timeline.`,
       governance: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH) with expertise in Innovation Governance.
 
 ## MoMAH GOVERNANCE CONTEXT:
@@ -1544,17 +1664,163 @@ Provide decision rights for key areas:
 - AI Ethics Officer: Reports to Chief Data Officer, ensures SDAIA compliance
 
 Be specific to Saudi municipal governance context. Reference actual roles, agencies, and frameworks.`,
-      communication: `Generate communication plan for this Saudi municipal strategy:
-Plan: ${context.planName}
-Vision: ${context.vision}
-Stakeholders count: ${(wizardData.stakeholders || []).length}
+      communication: `You are a strategic communications expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH) with expertise in Innovation & R&D communication.
 
-Define key messages, internal channels, and external channels.`,
-      change: `Generate change management plan for this Saudi municipal strategy:
-Plan: ${context.planName}
-Vision: ${context.vision}
+## MoMAH COMMUNICATION CONTEXT:
+- Internal Channels: Ministry portal, Amanat intranets, email, workshops, townhalls
+- External Channels: Balady portal, social media, press releases, stakeholder events
+- Innovation Communication: Tech showcases, pilot demos, R&D partnership announcements, innovation awards
+- Key Audiences: Municipal staff, citizens, tech partners, research institutions, government agencies
 
-Assess readiness, define change approach, and resistance management strategies.`,
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}
+- Vision: ${context.vision}
+- Stakeholders: ${(wizardData.stakeholders || []).length} identified
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'AI_ML, IOT, DIGITAL_TWINS'}
+- Key Pillars: ${(wizardData.strategic_pillars || []).slice(0, 3).map(p => p.name_en).join(', ') || 'Not defined'}
+
+## KEY STAKEHOLDERS (from Step 3):
+${(wizardData.stakeholders || []).slice(0, 8).map(s => '- ' + (s.name_en || s.name_ar) + ' (' + s.type + ')').join('\n') || 'Not defined'}
+
+---
+
+## REQUIREMENTS:
+Generate comprehensive communication plan with INNOVATION/R&D messaging.
+
+### PART 1: KEY MESSAGES (Generate 8-12 messages)
+For EACH message, provide bilingual content:
+- text_en / text_ar: Clear, compelling message (1-2 sentences)
+- audience: Target audience for this message
+- channel: Recommended communication channel
+
+**MANDATORY Innovation Messages (include at least 4):**
+- "Innovation Vision" - Why innovation matters for MoMAH and citizens
+- "Technology Leadership" - How emerging technologies will transform services
+- "R&D Partnership Value" - Benefits of KACST/university/vendor partnerships
+- "Pilot Program Updates" - Regular updates on innovation pilots
+- "AI/Digital Transformation" - SDAIA-aligned AI adoption messaging
+- "Innovation Success Stories" - Case studies and wins from pilots
+- "Capability Building" - Staff training and digital skills development
+- "Citizen Benefits" - How innovation improves citizen experience
+
+**Message Examples:**
+- "MoMAH is pioneering AI-powered municipal services in partnership with SDAIA and KACST, delivering smarter, faster services for citizens"
+- "Our innovation pilots in ${(wizardData.target_regions || ['Riyadh', 'Jeddah']).slice(0, 2).join(' and ')} are testing cutting-edge solutions that will transform municipal services nationwide"
+
+### PART 2: INTERNAL CHANNELS (Generate 5-7 channels)
+For EACH channel, provide:
+- name: Channel name
+- purpose: What it's used for
+- frequency: How often
+- owner: Who manages it
+
+**MANDATORY Innovation Internal Channels:**
+- "Innovation Newsletter" - Monthly R&D updates, pilot progress, tech insights
+- "Innovation Townhall/Webinar" - Quarterly showcases of pilot demos and tech updates
+- "Innovation Community of Practice" - Ongoing forum for innovation champions
+- "R&D Partnership Portal" - Updates from KACST/university partnerships
+
+### PART 3: EXTERNAL CHANNELS (Generate 5-7 channels)
+For EACH channel, provide:
+- name: Channel name
+- purpose: What it's used for
+- audience: Target external audience
+- frequency: How often
+
+**MANDATORY Innovation External Channels:**
+- "Innovation Showcase Events" - Annual/bi-annual tech demonstrations for stakeholders
+- "Tech Partnership Announcements" - Press releases for R&D partnership milestones
+- "Pilot Launch Campaigns" - Citizen awareness for new technology pilots
+- "Innovation Awards/Recognition" - Highlight innovation achievements
+
+Be specific to Saudi municipal context. Reference actual platforms and stakeholders.`,
+      change: `You are a change management expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH) with expertise in Innovation & Technology adoption change.
+
+## MoMAH CHANGE CONTEXT:
+- Workforce: Municipal staff across 13 regions, varying digital literacy
+- Technology Changes: AI/ML adoption, IoT deployment, digital service transformation
+- Cultural Factors: Government hierarchy, consensus-building, Saudization, Vision 2030 alignment
+- Training Partners: MCIT, SDAIA, universities, tech vendors
+
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}
+- Vision: ${context.vision}
+- Timeline: ${wizardData.start_year}-${wizardData.end_year}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'AI_ML, IOT, DIGITAL_TWINS'}
+- Objectives: ${(wizardData.objectives || []).length} defined
+
+## KEY STAKEHOLDERS (from Step 3):
+${(wizardData.stakeholders || []).filter(s => s.type === 'INTERNAL' || s.type === 'GOVERNMENT').slice(0, 5).map(s => '- ' + (s.name_en || s.name_ar)).join('\n') || 'Municipal leadership and staff'}
+
+---
+
+## REQUIREMENTS:
+Generate comprehensive change management plan for INNOVATION/TECHNOLOGY adoption.
+
+### PART 1: READINESS ASSESSMENT (Bilingual)
+- readiness_assessment_en / readiness_assessment_ar: 3-4 paragraphs assessing:
+  * Current digital maturity and innovation culture
+  * Staff readiness for technology adoption (AI, IoT, etc.)
+  * Leadership support for innovation initiatives
+  * Infrastructure and resource readiness
+  * Key readiness gaps and risks
+
+**MUST address Innovation-specific readiness:**
+- AI/ML literacy and data culture
+- Pilot experimentation mindset vs. risk aversion
+- Technology vendor collaboration experience
+- R&D partnership engagement capability
+
+### PART 2: CHANGE APPROACH (Bilingual)
+- change_approach_en / change_approach_ar: 3-4 paragraphs describing:
+  * Overall change philosophy (innovation-led transformation)
+  * Phased approach aligned with pilot cycles
+  * Leadership engagement and sponsorship model
+  * Communication and engagement strategy
+  * Quick wins and momentum building
+
+**MUST include Innovation Change elements:**
+- Innovation Champions program
+- Pilot-first approach (test before scale)
+- Learning from failure culture
+- Technology adoption lifecycle management
+
+### PART 3: RESISTANCE MANAGEMENT (Bilingual)
+- resistance_management_en / resistance_management_ar: 3-4 paragraphs covering:
+  * Expected resistance sources and causes
+  * Specific strategies to address technology fears
+  * Stakeholder-specific interventions
+  * Escalation and support mechanisms
+
+**MUST address Innovation-specific resistance:**
+- Fear of AI/automation replacing jobs
+- Skepticism about new technology effectiveness
+- Comfort with legacy systems and processes
+- Concerns about pilot failures and accountability
+- Data privacy and AI ethics concerns
+
+### PART 4: TRAINING PLAN (Generate 8-12 training programs)
+For EACH training, provide:
+- name_en / name_ar: Training program name
+- target_audience: Who should attend
+- duration: Length of training
+- timeline: When in the plan timeline
+
+**MANDATORY Innovation Training Programs:**
+- "AI/ML Foundations for Municipal Leaders" - Executive awareness (1 day)
+- "Data Literacy & Analytics" - All staff (2-3 days)
+- "Digital Tools Mastery" - Operational staff (1-2 days)
+- "Innovation Champion Certification" - Selected change agents (5 days)
+- "Pilot Program Management" - Project managers (3 days)
+- "SDAIA AI Ethics & Governance" - Tech staff and managers (2 days)
+- "Technology Vendor Collaboration" - Procurement and IT staff (1 day)
+- "R&D Partnership Engagement" - Research liaisons (2 days)
+- "Smart City Technologies Workshop" - Technical teams (3 days)
+- "Design Thinking & Innovation Methods" - Cross-functional teams (2 days)
+
+Partner with MCIT, SDAIA, and university partners for specialized training.
+
+Be specific to Saudi government context. Reference actual training programs and partners.`,
       dependencies: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
 ## MoMAH CONTEXT:
@@ -1778,7 +2044,81 @@ Each objective MUST have ALL fields in BOTH English and Arabic:
 5. **Consider Dependencies** - Objectives should be achievable given the constraints identified
 6. **Balance Ambition and Realism** - Stretch goals but achievable within timeline and budget
 
-Return objectives as an array under the "objectives" key.`
+Return objectives as an array under the "objectives" key.`,
+      national: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH) with expertise in Innovation & R&D alignment with national frameworks.
+
+## MoMAH NATIONAL ALIGNMENT CONTEXT:
+- Vision 2030 Programs: Quality of Life, Housing, NTP, Thriving Cities, Fiscal Balance
+- National Innovation Strategy: KACST coordination, SDAIA AI strategy, MCIT digital transformation
+- R&D National Frameworks: National Science & Technology Policy, Innovation Ecosystem Strategy
+- Key Agencies: Vision Realization Programs, SDAIA, KACST, MCIT, Ministry of Economy & Planning
+
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}
+- Vision: ${context.vision || 'Not specified'}
+- Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'AI_ML, IOT, DIGITAL_TWINS'}
+- Vision 2030 Programs Selected: ${(wizardData.vision_2030_programs || []).join(', ') || 'Not specified'}
+- Timeline: ${context.startYear}-${context.endYear}
+
+## OBJECTIVES (from Step 9):
+${(wizardData.objectives || []).map((o, i) => i + '. ' + (o.name_en || o.name_ar || 'Objective') + ' (' + (o.sector_code || 'General') + ', ' + (o.priority || 'medium') + ')').join('\n') || 'No objectives defined yet'}
+
+---
+
+## REQUIREMENTS:
+Generate national alignment mappings for each objective to Vision 2030 and Innovation frameworks.
+
+For EACH objective, provide:
+- objective_index: Index of the objective (0-based)
+- goal_code: Vision 2030 goal/program code (see list below)
+- target_code: Specific target within the goal
+- innovation_alignment: How this supports national innovation goals (1 sentence)
+
+### VISION 2030 GOAL CODES:
+**Quality of Life Program:**
+- QOL_1: Improve livability of Saudi cities
+- QOL_2: Enhance environmental sustainability
+- QOL_3: Develop cultural and entertainment options
+- QOL_4: Promote sports and healthy lifestyles
+
+**Housing Program:**
+- HSG_1: Increase home ownership to 70%
+- HSG_2: Improve housing quality and affordability
+- HSG_3: Develop real estate sector
+
+**National Transformation Program (NTP):**
+- NTP_1: Government effectiveness and efficiency
+- NTP_2: Digital transformation of government services
+- NTP_3: Private sector enablement
+- NTP_4: Labor market development
+
+**Thriving Cities Program:**
+- TRC_1: Urban development and planning
+- TRC_2: Municipal infrastructure improvement
+- TRC_3: Smart city implementation
+- TRC_4: Sustainable urban development
+
+**National Innovation & Technology:**
+- INN_1: R&D investment and capability building
+- INN_2: Technology adoption and digital transformation
+- INN_3: AI and emerging technology deployment (SDAIA)
+- INN_4: Innovation ecosystem and partnerships
+- INN_5: Tech talent development and Saudization
+
+### ALIGNMENT REQUIREMENTS:
+1. Each objective MUST align to at least one Vision 2030 goal
+2. Innovation/technology objectives MUST align to INN codes
+3. Each objective should have a clear innovation_alignment statement
+4. Prioritize alignments that strengthen R&D and technology adoption
+
+### INNOVATION ALIGNMENT EXAMPLES:
+- "Supports national AI strategy through SDAIA-compliant municipal AI deployment"
+- "Advances R&D ecosystem through partnership with KACST research programs"
+- "Enables technology transfer from pilot programs to scaled municipal solutions"
+- "Builds digital capabilities aligned with MCIT national digital transformation"
+- "Supports smart city framework implementation in line with Thriving Cities program"
+
+Return alignments as an array under the "alignments" key with proper objective_index, goal_code, target_code, and innovation_alignment for each mapping.`
     };
     
     const schemas = {
@@ -1968,7 +2308,7 @@ Return objectives as an array under the "objectives" key.`
       national: {
         type: 'object',
         properties: {
-          alignments: { type: 'array', items: { type: 'object', properties: { objective_index: { type: 'number' }, goal_code: { type: 'string' }, target_code: { type: 'string' } } } }
+          alignments: { type: 'array', items: { type: 'object', properties: { objective_index: { type: 'number' }, goal_code: { type: 'string' }, target_code: { type: 'string' }, innovation_alignment: { type: 'string' } } } }
         }
       },
       kpis: {
