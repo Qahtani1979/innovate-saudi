@@ -406,7 +406,7 @@ export default function StrategyWizardWrapper() {
     }
   });
 
-  // AI generation for each step
+  // AI generation for each step - uses specialized edge functions when available
   const generateForStep = async (step) => {
     if (!aiAvailable) {
       toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
@@ -416,6 +416,8 @@ export default function StrategyWizardWrapper() {
     setGeneratingStep(step);
     
     const stepConfig = WIZARD_STEPS.find(s => s.num === step);
+    const edgeFunctionName = getEdgeFunctionForStep(step);
+    const useSpecializedFunction = usesSpecializedEdgeFunction(step);
     const stepKey = stepConfig?.key || '';
     
     // Build comprehensive context from existing data
@@ -2691,11 +2693,46 @@ Return alignments as an array under the "alignments" key with proper objective_i
     const schema = schemas[stepKey];
     
     try {
-      const { success, data } = await invokeAI({
-        prompt,
-        response_json_schema: schema,
-        system_prompt: 'You are an expert in Saudi Arabian strategic planning and Vision 2030. Generate professional content in both English and Arabic. Use formal language appropriate for government documents.'
-      });
+      let success = false;
+      let data = null;
+
+      if (useSpecializedFunction) {
+        // Use specialized edge function for this step
+        console.log(`[Wizard AI] Using specialized edge function: ${edgeFunctionName} for step ${step}`);
+        
+        const { data: fnData, error: fnError } = await supabase.functions.invoke(edgeFunctionName, {
+          body: {
+            strategic_plan_id: planId,
+            context: {
+              ...context,
+              wizardData,
+              prompt,
+              schema
+            },
+            language: language
+          }
+        });
+
+        if (fnError) {
+          console.error(`[Wizard AI] Edge function error:`, fnError);
+          throw fnError;
+        }
+
+        success = fnData?.success !== false;
+        data = fnData?.data || fnData;
+      } else {
+        // Use generic invoke-llm for this step
+        console.log(`[Wizard AI] Using generic invoke-llm for step ${step}`);
+        
+        const result = await invokeAI({
+          prompt,
+          response_json_schema: schema,
+          system_prompt: `${SAUDI_CONTEXT.FULL}\n\nYou are an expert in Saudi Arabian strategic planning and Vision 2030. Generate professional content in both English and Arabic. Use formal language appropriate for government documents.`
+        });
+        
+        success = result.success;
+        data = result.data;
+      }
       
       if (success && data) {
         // Merge AI response into wizard data based on step
