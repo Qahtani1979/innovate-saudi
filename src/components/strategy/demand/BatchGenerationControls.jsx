@@ -181,13 +181,13 @@ export default function BatchGenerationControls({ strategicPlanId }) {
     const map = {
       challenge: 'strategy-challenge-generator',
       pilot: 'strategy-pilot-generator',
-      program: 'strategy-program-theme-generator',
+      program: 'strategy-program-generator',
       campaign: 'strategy-campaign-generator',
       event: 'strategy-event-planner',
       policy: 'strategy-policy-generator',
       partnership: 'strategy-partnership-matcher',
       rd_call: 'strategy-rd-call-generator',
-      living_lab: 'strategy-lab-research-generator' // FIXED: was incorrectly using challenge-generator
+      living_lab: 'strategy-lab-research-generator'
     };
     return map[entityType] || 'strategy-challenge-generator';
   };
