@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +69,7 @@ export default function AIStrategicPlanAnalyzer({
   const { language, t, isRTL } = useLanguage();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const [analysisLanguage, setAnalysisLanguage] = useState(null); // Track which language the analysis was done in
   const [error, setError] = useState(null);
   const [applyingItems, setApplyingItems] = useState({});
   const [creatingTasks, setCreatingTasks] = useState({});
@@ -80,6 +81,14 @@ export default function AIStrategicPlanAnalyzer({
     kpis: false,
     recommendations: true
   });
+
+  // Clear analysis when language changes
+  useEffect(() => {
+    if (analysis && analysisLanguage && analysisLanguage !== language) {
+      setAnalysis(null);
+      setAnalysisLanguage(null);
+    }
+  }, [language, analysis, analysisLanguage]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -98,6 +107,7 @@ export default function AIStrategicPlanAnalyzer({
       if (data.error) throw new Error(data.error);
       
       setAnalysis(data.analysis);
+      setAnalysisLanguage(language); // Store which language the analysis was done in
       toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
     } catch (err) {
       console.error('Analysis error:', err);
@@ -218,7 +228,6 @@ export default function AIStrategicPlanAnalyzer({
     <CollapsibleTrigger asChild>
       <div 
         className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 rounded-lg transition-colors"
-        onClick={() => toggleSection(sectionKey)}
       >
         <div className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-primary" />
