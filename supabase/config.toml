@@ -239,3 +239,6 @@ verify_jwt = false
 
 [functions.analyze-strategic-plan]
 verify_jwt = false
+
+[functions.strategy-program-generator]
+verify_jwt = false
