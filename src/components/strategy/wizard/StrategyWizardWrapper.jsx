@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+/* @refresh reset */
+import React, { useState, useCallback, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
