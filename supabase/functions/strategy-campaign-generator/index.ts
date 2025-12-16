@@ -15,14 +15,27 @@ serve(async (req) => {
   }
 
   try {
-    const { strategic_context, campaign_count } = await req.json();
+    const { 
+      strategic_context, 
+      campaign_count,
+      strategic_plan_id,
+      prefilled_spec,
+      save_to_db = false
+    } = await req.json();
+
+    console.log("Starting strategy-campaign-generator:", { strategic_plan_id, save_to_db });
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const prompt = `You are an expert marketing strategist for Saudi municipal innovation initiatives.
 
-Generate ${campaign_count || 3} marketing campaign concepts based on:
+Generate ${campaign_count || 1} marketing campaign concepts based on:
 
 STRATEGIC CONTEXT:
-${strategic_context || 'Municipal innovation and digital transformation'}
+${strategic_context || prefilled_spec?.description_en || 'Municipal innovation and digital transformation'}
+${prefilled_spec ? `PREFILLED SPEC: ${JSON.stringify(prefilled_spec)}` : ''}
 
 For each campaign, provide:
 1. name_en & name_ar: Campaign name
@@ -63,7 +76,7 @@ Ensure campaigns:
         if (content) {
           try {
             const parsed = JSON.parse(content);
-            campaigns = parsed.campaigns || [];
+            campaigns = parsed.campaigns || [parsed.campaign] || [];
           } catch (e) {
             console.error("Parse error:", e);
           }
@@ -71,46 +84,62 @@ Ensure campaigns:
       }
     }
 
-    // Fallback campaigns
+    // Fallback campaign
     if (campaigns.length === 0) {
-      campaigns = [
-        {
-          name_en: "Smart City, Better Life",
-          name_ar: "مدينة ذكية، حياة أفضل",
-          objective_en: "Increase citizen awareness of digital municipal services",
-          objective_ar: "زيادة وعي المواطنين بالخدمات البلدية الرقمية",
-          target_audience_en: "Residents aged 25-55, tech-savvy citizens",
-          target_audience_ar: "السكان من 25-55 سنة، المواطنين المتمرسين تقنياً",
-          duration: "3 months",
-          channels: ["Social Media", "SMS", "Municipal App", "Community Centers"],
-          kpis: ["Reach: 100,000 citizens", "Engagement Rate: 15%", "App Downloads: +30%"]
-        },
-        {
-          name_en: "Innovation Champions",
-          name_ar: "أبطال الابتكار",
-          objective_en: "Encourage citizen participation in innovation initiatives",
-          objective_ar: "تشجيع مشاركة المواطنين في مبادرات الابتكار",
-          target_audience_en: "Young professionals, entrepreneurs, university students",
-          target_audience_ar: "المهنيون الشباب، رواد الأعمال، طلاب الجامعات",
-          duration: "6 months",
-          channels: ["Universities", "Co-working Spaces", "Digital Ads", "Influencer Partnerships"],
-          kpis: ["Challenge Submissions: 500+", "Youth Engagement: 40%", "Media Mentions: 50+"]
-        },
-        {
-          name_en: "Sustainable Future Together",
-          name_ar: "مستقبل مستدام معاً",
-          objective_en: "Promote environmental innovation and sustainability",
-          objective_ar: "تعزيز الابتكار البيئي والاستدامة",
-          target_audience_en: "Families, schools, environmental organizations",
-          target_audience_ar: "الأسر، المدارس، المنظمات البيئية",
-          duration: "4 months",
-          channels: ["Schools", "Environmental Events", "Outdoor Advertising", "Community Programs"],
-          kpis: ["Recycling Adoption: +25%", "School Participation: 100 schools", "Carbon Awareness: 80%"]
-        }
-      ].slice(0, campaign_count || 3);
+      campaigns = [{
+        name_en: prefilled_spec?.title_en || "Smart City, Better Life",
+        name_ar: prefilled_spec?.title_ar || "مدينة ذكية، حياة أفضل",
+        objective_en: "Increase citizen awareness of digital municipal services",
+        objective_ar: "زيادة وعي المواطنين بالخدمات البلدية الرقمية",
+        target_audience_en: "Residents aged 25-55, tech-savvy citizens",
+        target_audience_ar: "السكان من 25-55 سنة، المواطنين المتمرسين تقنياً",
+        duration: "3 months",
+        channels: ["Social Media", "SMS", "Municipal App", "Community Centers"],
+        kpis: ["Reach: 100,000 citizens", "Engagement Rate: 15%", "App Downloads: +30%"]
+      }];
     }
 
-    return new Response(JSON.stringify({ success: true, campaigns }), {
+    // Save to database if requested (using events table as proxy for campaigns)
+    const savedCampaigns = [];
+    if (save_to_db) {
+      for (const campaign of campaigns) {
+        // Save as event with campaign type
+        const campaignData = {
+          title_en: campaign.name_en,
+          title_ar: campaign.name_ar,
+          description_en: campaign.objective_en,
+          description_ar: campaign.objective_ar,
+          event_type: 'marketing_campaign',
+          strategic_plan_ids: strategic_plan_id ? [strategic_plan_id] : [],
+          target_audience: campaign.target_audience_en,
+          channels: campaign.channels,
+          kpis: campaign.kpis,
+          duration: campaign.duration,
+          status: 'draft',
+          is_strategy_derived: true
+        };
+
+        const { data: saved, error } = await supabase
+          .from('events')
+          .insert(campaignData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Failed to save campaign:", error);
+        } else {
+          savedCampaigns.push(saved);
+          console.log("Campaign saved with ID:", saved.id);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      campaigns: save_to_db ? savedCampaigns : campaigns,
+      id: savedCampaigns[0]?.id || null,
+      saved: savedCampaigns.length > 0
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
