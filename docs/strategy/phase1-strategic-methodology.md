@@ -83,7 +83,7 @@ Phase 1 components are **100% complete and verified against codebase** (2025-12-
 |-------|--------|--------|-----------|
 | Government policy directions | Official gazettes, ministry announcements | Document review | Continuous |
 | Vision 2030 updates & priorities | National strategy documents | Alignment mapping | Quarterly |
-| Municipal mandates & regulations | MOMRA directives | Policy tracking | Monthly |
+| Municipal mandates & regulations | MoMAH directives | Policy tracking | Monthly |
 | Leadership priorities | Mayoral/executive statements | Stakeholder interviews | Bi-annually |
 | Inter-governmental relationships | MoU registry, coordination meetings | Relationship mapping | Quarterly |
 
