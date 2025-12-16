@@ -37,3 +37,12 @@ export { useStrategyEvaluation } from './useStrategyEvaluation';
 
 // Phase 8: Recalibration Hooks
 export { useStrategyRecalibration } from './useStrategyRecalibration';
+
+// Centralized Wizard AI Router
+export { 
+  useWizardAI, 
+  usesSpecializedEdgeFunction, 
+  getEdgeFunctionForStep, 
+  getPromptKeyForStep,
+  SAUDI_CONTEXT 
+} from './useWizardAI';
