@@ -2720,8 +2720,8 @@ Return alignments as an array under the "alignments" key with proper objective_i
           language: language
         };
 
-        // Steps 1-8 need taxonomy data for context-aware generation
-        if (step >= 1 && step <= 8) {
+        // Steps 1-9 need taxonomy data for context-aware generation
+        if (step >= 1 && step <= 9) {
           requestBody.taxonomyData = {
             sectors: sectors || [],
             regions: regions || [],

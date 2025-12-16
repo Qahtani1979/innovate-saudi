@@ -1,284 +1,198 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const LOVABLE_API_URL = "https://api.lovable.dev/v1/chat/completions";
+const COMPACT_SAUDI_CONTEXT = `MoMAH - Saudi Ministry of Municipalities & Housing. Vision 2030 aligned.
+13 regions, 285+ municipalities. Programs: Sakani, Wafi, Ejar.
+Key systems: Balady Platform, Sakani Portal, ANSA, Mostadam.
+Partners: KACST, SDAIA, MCIT, KAUST, KFUPM, Monsha'at.`;
+
+const OBJECTIVE_CONTEXT = `Strategic Objectives Best Practices:
+- SMART: Specific, Measurable, Achievable, Relevant, Time-bound
+- Align with Vision 2030 goals and national priorities
+- Balance across sectors: Municipal Services, Housing, Urban Planning, Environment, Technology
+- Include digital transformation and sustainability dimensions
+- Consider citizen experience and service quality improvements
+
+Priority Levels:
+- high: Critical for Vision 2030 targets, immediate attention needed
+- medium: Important for strategic success, standard timeline
+- low: Supportive objectives, flexible timeline`;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { 
-      strategic_plan_id,
-      pillar_id,
-      pillar_name,
-      vision_statement,
-      objectives_per_pillar = 3,
-      include_kpis = true
-    } = await req.json();
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Fetch strategic plan
-    let strategicPlanData = null;
-    let pillars = [];
-    if (strategic_plan_id) {
-      const { data } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('id', strategic_plan_id)
-        .single();
-      strategicPlanData = data;
-      pillars = data?.pillars || [];
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const targetPillars = pillar_id 
-      ? pillars.filter((p: any) => p.id === pillar_id || p.name_en === pillar_name)
-      : pillars;
+    const { context, language = 'en' } = await req.json();
+    
+    const wizardData = context?.wizardData || context?.planData || {};
+    const pillars = wizardData.strategic_pillars || [];
+    const swot = wizardData.swot || {};
+    const risks = wizardData.risks || [];
+    
+    // Get sectors from taxonomy
+    const sectors = context?.taxonomyData?.sectors || [];
+    const sectorCodes = sectors.length > 0 
+      ? sectors.map((s: any) => s.code)
+      : ['MUNICIPAL_SERVICES', 'HOUSING', 'URBAN_PLANNING', 'ENVIRONMENT', 'TECHNOLOGY', 'INNOVATION'];
 
-    const prompt = `You are a strategic planning expert for Saudi municipal governance aligned with Vision 2030.
+    const contextSummary = `
+PLAN CONTEXT:
+- Plan Name: ${wizardData.name_en || 'Strategic Plan'}
+- Duration: ${wizardData.duration_years || 5} years (${wizardData.start_year || ''} - ${wizardData.end_year || ''})
+- Vision: ${wizardData.vision_en || 'Not specified'}
+- Mission: ${wizardData.mission_en || 'Not specified'}
 
-Generate SMART strategic objectives with KPIs for the following strategic plan.
+STRATEGIC PILLARS:
+${pillars.map((p: any, i: number) => `${i + 1}. ${p.title_en || p.name_en || p.title || ''}`).join('\n') || 'None defined'}
 
-Context:
-- Strategic Plan: ${strategicPlanData?.title_en || 'Municipal Innovation Strategy'}
-- Vision: ${vision_statement || strategicPlanData?.vision_en || 'Municipal innovation excellence'}
-- Pillars: ${JSON.stringify(targetPillars.length > 0 ? targetPillars : [{ name_en: pillar_name || 'Innovation' }])}
+KEY STRENGTHS:
+${(swot.strengths || []).slice(0, 3).map((s: any) => `- ${s.factor_en || s.description_en || s}`).join('\n') || 'Not analyzed'}
 
-Generate ${objectives_per_pillar} objectives per pillar following SMART criteria:
-- Specific: Clear and unambiguous
-- Measurable: Quantifiable with KPIs
-- Achievable: Realistic given municipal context
-- Relevant: Aligned with Vision 2030
-- Time-bound: With clear timelines
+KEY OPPORTUNITIES:
+${(swot.opportunities || []).slice(0, 3).map((o: any) => `- ${o.factor_en || o.description_en || o}`).join('\n') || 'Not analyzed'}
 
-Return JSON with this structure:
-{
-  "objectives": [
-    {
-      "pillar_name": "The pillar this objective belongs to",
-      "id": "unique_objective_id",
-      "name_en": "Objective name in English",
-      "name_ar": "اسم الهدف بالعربية",
-      "description_en": "Detailed objective description",
-      "description_ar": "وصف تفصيلي للهدف",
-      "target_year": 2026,
-      "baseline_value": 0,
-      "target_value": 100,
-      "unit": "percentage or number or currency",
-      "weight": 25,
-      "status": "not_started",
-      "kpis": [
-        {
-          "id": "kpi_unique_id",
-          "name_en": "KPI name",
-          "name_ar": "اسم المؤشر",
-          "description_en": "What this KPI measures",
-          "unit": "%",
-          "baseline": 0,
-          "target": 80,
-          "frequency": "quarterly",
-          "data_source": "Where data comes from",
-          "formula": "How to calculate"
-        }
-      ],
-      "milestones": [
-        {
-          "year": 2024,
-          "quarter": "Q4",
-          "target_value": 25,
-          "description": "Milestone description"
-        }
-      ],
-      "dependencies": [],
-      "risks": ["potential risk 1", "potential risk 2"],
-      "enablers": ["resource 1", "capability 2"]
-    }
-  ]
-}`;
+HIGH-PRIORITY RISKS:
+${(risks || []).filter((r: any) => (r.risk_score || 0) >= 6).slice(0, 3).map((r: any) => `- ${r.title_en || r.title || ''}`).join('\n') || 'None identified'}
 
-    let objectives = [];
+TARGET END YEAR: ${wizardData.end_year || new Date().getFullYear() + 5}`;
 
-    if (LOVABLE_API_KEY) {
-      try {
-        const response = await fetch(LOVABLE_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-          }),
-        });
+    const prompt = `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
-        if (response.ok) {
-          const data = await response.json();
-          const content = data.choices?.[0]?.message?.content || "";
-          const jsonMatch = content.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            objectives = parsed.objectives || [];
+${COMPACT_SAUDI_CONTEXT}
+
+${OBJECTIVE_CONTEXT}
+
+Based on the following strategic plan context, generate 5-8 strategic objectives:
+
+${contextSummary}
+
+AVAILABLE SECTOR CODES: ${sectorCodes.join(', ')}
+
+Generate objectives that:
+1. Are SMART (Specific, Measurable, Achievable, Relevant, Time-bound)
+2. Align with Vision 2030 and national priorities
+3. Cover multiple sectors for balanced strategic coverage
+4. Include innovation and digital transformation objectives
+5. Address identified risks and leverage opportunities
+6. Support the strategic pillars defined
+
+For each objective provide:
+- Bilingual name and description (English and Arabic)
+- Appropriate sector code from the available list
+- Priority level based on strategic importance
+- Target year for completion`;
+
+    console.log('[strategy-objective-generator] Generating objectives for:', wizardData.name_en || 'plan');
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: 'You are a strategic planning expert. Always respond with valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        tools: [{
+          type: 'function',
+          function: {
+            name: 'generate_strategic_objectives',
+            description: 'Generate strategic objectives for the plan',
+            parameters: {
+              type: 'object',
+              properties: {
+                objectives: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name_en: { type: 'string', description: 'Objective name in English (concise, action-oriented)' },
+                      name_ar: { type: 'string', description: 'Objective name in Arabic' },
+                      description_en: { type: 'string', description: 'Detailed description in English explaining the objective scope and expected outcomes' },
+                      description_ar: { type: 'string', description: 'Detailed description in Arabic' },
+                      sector_code: { type: 'string', description: 'Sector code this objective primarily belongs to' },
+                      priority: { type: 'string', enum: ['high', 'medium', 'low'], description: 'Priority level' },
+                      target_year: { type: 'number', description: 'Target completion year' }
+                    },
+                    required: ['name_en', 'name_ar', 'description_en', 'description_ar', 'sector_code', 'priority', 'target_year'],
+                    additionalProperties: false
+                  }
+                }
+              },
+              required: ['objectives'],
+              additionalProperties: false
+            }
           }
-        }
-      } catch (e) {
-        console.error("AI generation error:", e);
-      }
-    }
-
-    // Fallback objectives if AI fails
-    if (objectives.length === 0) {
-      const fallbackPillar = pillar_name || targetPillars[0]?.name_en || "Digital Transformation";
-      objectives = [
-        {
-          pillar_name: fallbackPillar,
-          id: `obj_${Date.now()}_1`,
-          name_en: "Increase Digital Service Adoption",
-          name_ar: "زيادة اعتماد الخدمات الرقمية",
-          description_en: "Achieve 80% digital adoption rate for municipal services among citizens",
-          description_ar: "تحقيق معدل اعتماد رقمي 80% للخدمات البلدية بين المواطنين",
-          target_year: 2026,
-          baseline_value: 35,
-          target_value: 80,
-          unit: "percentage",
-          weight: 30,
-          status: "not_started",
-          kpis: [
-            {
-              id: `kpi_${Date.now()}_1`,
-              name_en: "Digital Service Adoption Rate",
-              name_ar: "معدل اعتماد الخدمات الرقمية",
-              description_en: "Percentage of citizens using digital municipal services",
-              unit: "%",
-              baseline: 35,
-              target: 80,
-              frequency: "quarterly",
-              data_source: "Digital services portal analytics",
-              formula: "(Digital users / Total service users) × 100"
-            }
-          ],
-          milestones: [
-            { year: 2024, quarter: "Q4", target_value: 50, description: "Launch enhanced digital portal" },
-            { year: 2025, quarter: "Q2", target_value: 65, description: "Mobile app deployment" },
-            { year: 2026, quarter: "Q4", target_value: 80, description: "Full digital transformation" }
-          ],
-          dependencies: ["IT infrastructure upgrade", "Staff training"],
-          risks: ["Digital literacy gaps", "Technical infrastructure limitations"],
-          enablers: ["Cloud infrastructure", "Digital skills program"]
-        },
-        {
-          pillar_name: fallbackPillar,
-          id: `obj_${Date.now()}_2`,
-          name_en: "Reduce Service Processing Time",
-          name_ar: "تقليل وقت معالجة الخدمات",
-          description_en: "Reduce average municipal service processing time by 50%",
-          description_ar: "تقليل متوسط وقت معالجة الخدمات البلدية بنسبة 50%",
-          target_year: 2025,
-          baseline_value: 14,
-          target_value: 7,
-          unit: "days",
-          weight: 25,
-          status: "not_started",
-          kpis: [
-            {
-              id: `kpi_${Date.now()}_2`,
-              name_en: "Average Processing Time",
-              name_ar: "متوسط وقت المعالجة",
-              description_en: "Average days to complete a service request",
-              unit: "days",
-              baseline: 14,
-              target: 7,
-              frequency: "monthly",
-              data_source: "Service management system",
-              formula: "Sum of processing days / Number of completed requests"
-            }
-          ],
-          milestones: [
-            { year: 2024, quarter: "Q3", target_value: 10, description: "Process automation phase 1" },
-            { year: 2025, quarter: "Q2", target_value: 7, description: "AI-assisted processing" }
-          ],
-          dependencies: ["Process redesign", "Automation tools"],
-          risks: ["Change resistance", "Legacy system integration"],
-          enablers: ["BPM platform", "RPA implementation"]
-        },
-        {
-          pillar_name: fallbackPillar,
-          id: `obj_${Date.now()}_3`,
-          name_en: "Improve Citizen Satisfaction",
-          name_ar: "تحسين رضا المواطنين",
-          description_en: "Achieve 90% citizen satisfaction score for municipal services",
-          description_ar: "تحقيق درجة رضا المواطنين 90% للخدمات البلدية",
-          target_year: 2026,
-          baseline_value: 72,
-          target_value: 90,
-          unit: "percentage",
-          weight: 30,
-          status: "not_started",
-          kpis: [
-            {
-              id: `kpi_${Date.now()}_3`,
-              name_en: "Citizen Satisfaction Score",
-              name_ar: "درجة رضا المواطنين",
-              description_en: "Overall satisfaction rating from citizen surveys",
-              unit: "%",
-              baseline: 72,
-              target: 90,
-              frequency: "quarterly",
-              data_source: "Citizen satisfaction surveys",
-              formula: "Average of satisfaction ratings × 100"
-            }
-          ],
-          milestones: [
-            { year: 2024, quarter: "Q4", target_value: 78, description: "Service standards implementation" },
-            { year: 2025, quarter: "Q4", target_value: 85, description: "Continuous improvement program" },
-            { year: 2026, quarter: "Q4", target_value: 90, description: "Excellence certification" }
-          ],
-          dependencies: ["Customer feedback system", "Staff training"],
-          risks: ["Rising expectations", "Resource constraints"],
-          enablers: ["CRM system", "Service excellence framework"]
-        }
-      ];
-    }
-
-    // Save objectives to strategic plan if ID provided
-    if (strategic_plan_id && objectives.length > 0) {
-      const existingObjectives = strategicPlanData?.objectives || [];
-      const updatedObjectives = [...existingObjectives, ...objectives];
-      
-      await supabase
-        .from('strategic_plans')
-        .update({ 
-          objectives: updatedObjectives,
-          objectives_generated_at: new Date().toISOString()
-        })
-        .eq('id', strategic_plan_id);
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        objectives,
-        count: objectives.length
+        }],
+        tool_choice: { type: 'function', function: { name: 'generate_strategic_objectives' } }
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error: unknown) {
-    console.error("Error:", error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ success: false, error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[strategy-objective-generator] AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw new Error(`AI gateway error: ${response.status}`);
+    }
+
+    const aiResponse = await response.json();
+    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+    
+    if (!toolCall?.function?.arguments) {
+      throw new Error('No valid tool call response');
+    }
+
+    const generatedData = JSON.parse(toolCall.function.arguments);
+    const endYear = wizardData.end_year || new Date().getFullYear() + 5;
+
+    const result = {
+      objectives: (generatedData.objectives || []).map((o: any, i: number) => ({
+        id: `obj-${Date.now()}-${i}`,
+        name_en: o.name_en || '',
+        name_ar: o.name_ar || '',
+        description_en: o.description_en || '',
+        description_ar: o.description_ar || '',
+        sector_code: o.sector_code || 'MUNICIPAL_SERVICES',
+        priority: o.priority || 'medium',
+        target_year: o.target_year || endYear
+      }))
+    };
+
+    console.log('[strategy-objective-generator] Generated', result.objectives.length, 'objectives');
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('[strategy-objective-generator] Error:', error);
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      fallback: true
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
