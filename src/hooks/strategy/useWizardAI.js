@@ -19,7 +19,7 @@ const EDGE_FUNCTION_MAP = {
   5: 'strategy-swot-generator',       // SWOT
   6: 'strategy-scenario-generator',   // Scenarios
   7: 'strategy-risk-generator',       // Risks
-  8: 'strategy-pillar-generator',     // Pillars
+  8: 'strategy-dependency-generator', // Dependencies, Constraints, Assumptions
   9: 'strategy-objective-generator',  // Objectives
   10: 'strategy-national-linker',     // National Alignment
   11: 'strategy-kpi-generator',       // KPIs
