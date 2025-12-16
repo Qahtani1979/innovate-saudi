@@ -24,8 +24,6 @@ Phase 8 (Strategy Recalibration) is the **dedicated feedback loop and adjustment
 | NextCycleInitializer | ✅ Complete | `recalibration/NextCycleInitializer.jsx` |
 | useStrategyRecalibration hook | ✅ Complete | `hooks/strategy/useStrategyRecalibration.js` |
 
-See [plan-tracker.md](./plan-tracker.md) for implementation priority and details.
-
 ---
 
 ## Phase Positioning in Strategic Lifecycle

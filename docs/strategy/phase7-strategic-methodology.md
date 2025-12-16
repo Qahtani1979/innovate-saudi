@@ -27,8 +27,6 @@ Phase 7 (Strategy Evaluation & Review) is the **assessment, learning, and contin
 | expert_evaluations table | ✅ Exists | Database |
 | case_studies table | ✅ Exists | Database |
 
-See [strategy-implementation-tasks.md](./strategy-implementation-tasks.md) and [plan-tracker.md](./plan-tracker.md) for full details.
-
 ---
 
 ## Phase Positioning in Strategic Lifecycle
