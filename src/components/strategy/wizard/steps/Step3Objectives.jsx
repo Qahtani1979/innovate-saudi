@@ -151,7 +151,6 @@ export default function Step3Objectives({
     setDifferentiationScore(null);
     setScoreDetails(null);
   };
-  };
 
   // Update proposed objective field
   const updateProposedField = (field, value) => {
