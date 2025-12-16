@@ -27,7 +27,7 @@ ADD COLUMN ministry_id UUID REFERENCES public.ministries(id);
 
 -- Insert MoMAH
 INSERT INTO public.ministries (name_en, name_ar, code, website)
-VALUES ('Ministry of Municipal and Rural Affairs and Housing', 'وزارة الشؤون البلدية والقروية والإسكان', 'MOMAH', 'https://momah.gov.sa');
+VALUES ('Ministry of Municipalities and Housing', 'وزارة البلديات والإسكان', 'MOMAH', 'https://momah.gov.sa');
 
 -- Update all existing municipalities to belong to MoMAH
 UPDATE public.municipalities 
