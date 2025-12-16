@@ -15,9 +15,9 @@ const TEST_USERS = [
   { email: "fatima.ahmed@jeddah.gov.sa", name: "Fatima Ahmed", name_ar: "فاطمة أحمد", persona: "municipality", org: "Jeddah Municipality" },
   { email: "abdullah.salem@dammam.gov.sa", name: "Abdullah Salem", name_ar: "عبدالله سالم", persona: "municipality", org: "Dammam Municipality" },
   
-  // Deputyship (momrah.gov.sa domain)
-  { email: "khalid.nasser@momrah.gov.sa", name: "Khalid Nasser", name_ar: "خالد ناصر", persona: "deputyship", org: "Ministry of Municipal Affairs" },
-  { email: "sara.abdullah@momrah.gov.sa", name: "Sara Abdullah", name_ar: "سارة عبدالله", persona: "deputyship", org: "Ministry of Municipal Affairs" },
+  // Deputyship (momah.gov.sa domain)
+  { email: "khalid.nasser@momah.gov.sa", name: "Khalid Nasser", name_ar: "خالد ناصر", persona: "deputyship", org: "Ministry of Municipalities and Housing" },
+  { email: "sara.abdullah@momah.gov.sa", name: "Sara Abdullah", name_ar: "سارة عبدالله", persona: "deputyship", org: "Ministry of Municipalities and Housing" },
   
   // Executive / GDISB
   { email: "ahmad.executive@gdisb.gov.sa", name: "Ahmad Al-Rashid", name_ar: "أحمد الراشد", persona: "executive", org: "GDISB" },
