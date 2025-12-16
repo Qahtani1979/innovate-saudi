@@ -11,7 +11,8 @@
 | Category | Status | Notes |
 |----------|--------|-------|
 | Entity Integration (Step 12) | ✅ COMPLETE | EntityGenerationPanel, useEntityGeneration hook |
-| Steps 13-17 Entity Propagation | ✅ COMPLETE | EntityAllocationSelector added to all steps |
+| Steps 13-17 Entity Propagation | ✅ COMPLETE | EntityAllocationSelector UI added to all steps |
+| strategicPlanId Prop Passing | ✅ COMPLETE | Both StrategyWizardWrapper & StrategyCreateWizard |
 | Hook Consolidation | ✅ COMPLETE | useEntityGeneration, useDemandQueue connected |
 | Edge Function Integration | ✅ COMPLETE | Generators connected via batch-generator |
 | File Naming | ⚠️ DEFERRED | Low priority - works as-is |
@@ -36,17 +37,17 @@ The wizard step files have inconsistent naming but work correctly with the mappi
 | `Step6ActionPlans.jsx` | Step 12 | ✅ ENHANCED with EntityGenerationPanel |
 | `Step6Scenarios.jsx` | Step 6 | ✅ Working |
 | `Step7Risks.jsx` | Step 7 | ✅ Working |
-| `Step7Timeline.jsx` | Step 14 | ✅ ENHANCED with entity_milestones |
+| `Step7Timeline.jsx` | Step 14 | ✅ ENHANCED with entity_milestones, entity_phases + UI |
 | `Step8Dependencies.jsx` | Step 8 | ✅ Working |
 | `Step8Review.jsx` | - | ⚠️ Legacy, not used |
-| `Step13Resources.jsx` | Step 13 | ✅ ENHANCED with entity_allocations |
+| `Step13Resources.jsx` | Step 13 | ✅ ENHANCED with entity_allocations + UI |
 | `Step15Governance.jsx` | Step 15 | ✅ ENHANCED with strategicPlanId |
-| `Step16Communication.jsx` | Step 16/17 | ✅ ENHANCED with entity_launches/entity_training |
+| `Step16Communication.jsx` | Step 16/17 | ✅ ENHANCED with entity_launches/entity_training + UI |
 | `Step18Review.jsx` | Step 18 | ✅ Working |
 
 ---
 
-## 2. CRITICAL INTEGRATION GAPS - RESOLVED ✅
+## 2. CRITICAL INTEGRATION GAPS - ALL RESOLVED ✅
 
 ### 2.1 Entity Generation Disconnect - FIXED ✅
 **Status:** RESOLVED
@@ -89,11 +90,12 @@ Step6ActionPlans → EntityGenerationPanel → useEntityGeneration hook
 - `src/components/strategy/wizard/steps/Step13Resources.jsx` - Added EntityAllocationSelector UI
 - `src/components/strategy/wizard/steps/Step7Timeline.jsx` - Added EntityAllocationSelector UI for phases & milestones
 - `src/components/strategy/wizard/steps/Step16Communication.jsx` - Added EntityAllocationSelector UI for messages & training
-- `src/components/strategy/wizard/StrategyWizardWrapper.jsx` - Pass strategicPlanId to steps
+- `src/components/strategy/wizard/StrategyWizardWrapper.jsx` - Pass strategicPlanId to steps 12-17
+- `src/components/strategy/wizard/StrategyCreateWizard.jsx` - Pass strategicPlanId={null} to steps 12-17
 
 ---
 
-## 3. DATA STRUCTURE ANALYSIS - UPDATED ✅
+## 3. DATA STRUCTURE ANALYSIS - COMPLETE ✅
 
 ### 3.1 Step6ActionPlans Data Model
 ```javascript
@@ -120,7 +122,7 @@ Step6ActionPlans → EntityGenerationPanel → useEntityGeneration hook
     hr_requirements: [{
       id, name_en, name_ar, quantity, cost,
       notes_en, notes_ar,
-      entity_allocations: [{entity_id, entity_type}]  // ✅ Added
+      entity_allocations: [{entity_id, entity_type}]  // ✅ Added with UI
     }],
     technology_requirements: [...],
     infrastructure_requirements: [...],
@@ -136,13 +138,13 @@ Step6ActionPlans → EntityGenerationPanel → useEntityGeneration hook
   milestones: [{
     name_en, name_ar, date, type, status,
     description_en, description_ar,
-    entity_milestones: [{entity_id, entity_type}]  // ✅ Added
+    entity_milestones: [{entity_id, entity_type}]  // ✅ Added with UI
   }],
   phases: [{
     name_en, name_ar, start_date, end_date,
     description_en, description_ar,
     objectives_covered: [],
-    entity_phases: [{entity_id, entity_type}]  // ✅ Added
+    entity_phases: [{entity_id, entity_type}]  // ✅ Added with UI
   }]
 }
 ```
@@ -154,7 +156,7 @@ Step6ActionPlans → EntityGenerationPanel → useEntityGeneration hook
   communication_plan: {
     key_messages: [{
       id, text_en, text_ar, audience, channel,
-      entity_launches: [{entity_id, entity_type}]  // ✅ Added
+      entity_launches: [{entity_id, entity_type}]  // ✅ Added with UI
     }],
     ...
   }
@@ -171,7 +173,7 @@ Step6ActionPlans → EntityGenerationPanel → useEntityGeneration hook
       target_audience_en, target_audience_ar,
       duration_en, duration_ar,
       timeline_en, timeline_ar,
-      entity_training: [{entity_id, entity_type}]  // ✅ Added
+      entity_training: [{entity_id, entity_type}]  // ✅ Added with UI
     }],
     ...
   }
@@ -180,7 +182,7 @@ Step6ActionPlans → EntityGenerationPanel → useEntityGeneration hook
 
 ---
 
-## 4. HOOK USAGE ANALYSIS - UPDATED ✅
+## 4. HOOK USAGE ANALYSIS - COMPLETE ✅
 
 ### 4.1 Hooks Status
 
@@ -196,7 +198,7 @@ Step6ActionPlans → EntityGenerationPanel → useEntityGeneration hook
 
 ---
 
-## 5. EDGE FUNCTION ANALYSIS - UPDATED ✅
+## 5. EDGE FUNCTION ANALYSIS - COMPLETE ✅
 
 ### 5.1 Generator Functions
 
@@ -236,10 +238,10 @@ The existing `demand_queue` table schema is sufficient:
 
 ---
 
-## 7. UI/UX IMPROVEMENTS - IMPLEMENTED ✅
+## 7. UI/UX IMPROVEMENTS - COMPLETE ✅
 
 ### 7.1 Entity Generation UX
-- ✅ "Generate Entities" collapsible panel in Step 6
+- ✅ "Generate Entities" collapsible panel in Step 12
 - ✅ Entity type selection with visual indicators
 - ✅ Progress tracking with status badges
 - ✅ Queue status dashboard
@@ -252,17 +254,17 @@ The existing `demand_queue` table schema is sufficient:
 
 ---
 
-## 8. RECOMMENDED NEXT STEPS
+## 8. OPTIONAL FUTURE ENHANCEMENTS
 
-### Optional Enhancements (Future)
+### Low Priority (Future)
 1. **EntityStatusDashboard** - Dedicated view of all generated entities
 2. **Entity RACI** - Add entity-specific RACI in Step15Governance
 3. **Entity Timeline View** - Visual Gantt of entity milestones
-4. **File Renaming** - Sequential step numbers (low priority)
+4. **File Renaming** - Sequential step numbers (cosmetic)
 
 ---
 
-## 9. ARCHITECTURE DIAGRAM - UPDATED
+## 9. ARCHITECTURE DIAGRAM - FINAL
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -275,11 +277,11 @@ The existing `demand_queue` table schema is sufficient:
 │ └── EntityGenerationPanel triggers entity generation               │
 │ └── useEntityGeneration hook manages queue and batch generation    │
 ├─────────────────────────────────────────────────────────────────────┤
-│ Step 13: Resources ← ✅ entity_allocations via EntityAllocationSelector │
-│ Step 14: Timeline  ← ✅ entity_milestones, entity_phases           │
+│ Step 13: Resources ← ✅ entity_allocations via EntityAllocationSelector UI │
+│ Step 14: Timeline  ← ✅ entity_milestones, entity_phases with UI   │
 │ Step 15: Governance ← ✅ strategicPlanId passed                    │
-│ Step 16: Communication ← ✅ entity_launches                        │
-│ Step 17: Change Management ← ✅ entity_training                    │
+│ Step 16: Communication ← ✅ entity_launches with UI                │
+│ Step 17: Change Management ← ✅ entity_training with UI            │
 ├─────────────────────────────────────────────────────────────────────┤
 │ Step 18: Final Review                                              │
 │ └── PDF/Excel export works                                         │
@@ -321,7 +323,7 @@ The existing `demand_queue` table schema is sufficient:
 
 ---
 
-## 10. FILES CREATED/MODIFIED
+## 10. FILES CREATED/MODIFIED - COMPLETE LIST
 
 ### New Files Created:
 1. ✅ `src/hooks/strategy/useEntityGeneration.js`
@@ -329,12 +331,12 @@ The existing `demand_queue` table schema is sufficient:
 3. ✅ `src/components/strategy/wizard/EntityAllocationSelector.jsx`
 
 ### Files Modified:
-1. ✅ `src/components/strategy/wizard/steps/Step6ActionPlans.jsx`
-2. ✅ `src/components/strategy/wizard/steps/Step13Resources.jsx`
-3. ✅ `src/components/strategy/wizard/steps/Step7Timeline.jsx`
-4. ✅ `src/components/strategy/wizard/steps/Step16Communication.jsx`
-5. ✅ `src/components/strategy/wizard/StrategyWizardWrapper.jsx`
-6. ✅ `src/components/strategy/wizard/StrategyCreateWizard.jsx`
+1. ✅ `src/components/strategy/wizard/steps/Step6ActionPlans.jsx` - EntityGenerationPanel
+2. ✅ `src/components/strategy/wizard/steps/Step13Resources.jsx` - EntityAllocationSelector UI
+3. ✅ `src/components/strategy/wizard/steps/Step7Timeline.jsx` - EntityAllocationSelector UI for phases & milestones
+4. ✅ `src/components/strategy/wizard/steps/Step16Communication.jsx` - EntityAllocationSelector UI for messages & training
+5. ✅ `src/components/strategy/wizard/StrategyWizardWrapper.jsx` - strategicPlanId to steps 12-17
+6. ✅ `src/components/strategy/wizard/StrategyCreateWizard.jsx` - strategicPlanId={null} to steps 12-17
 
 ---
 
@@ -351,13 +353,15 @@ After fixes, verify:
 - [x] Step 14 shows EntityAllocationSelector UI for phases AND milestones
 - [x] Step 16 shows EntityAllocationSelector UI for key messages
 - [x] Step 17 shows EntityAllocationSelector UI for training items
-- [x] strategicPlanId passed to Steps 12-17
+- [x] strategicPlanId passed to Steps 12-17 in StrategyWizardWrapper
+- [x] strategicPlanId={null} passed to Steps 12-17 in StrategyCreateWizard
 
 ---
 
-**Status:** ✅ IMPLEMENTATION COMPLETE
+**Status:** ✅ ALL IMPLEMENTATION COMPLETE
 
 All critical items from the audit have been implemented. The wizard now supports:
-1. Entity generation from action plans
-2. Entity propagation across Steps 13-17
+1. Entity generation from action plans via demand_queue
+2. Entity propagation across Steps 13-17 with full UI
 3. Full integration with demand_queue and batch generators
+4. Both StrategyWizardWrapper and StrategyCreateWizard properly configured
