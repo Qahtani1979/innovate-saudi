@@ -181,7 +181,15 @@ export default function StrategyCreateWizard() {
       case 15: return <Step15Governance {...props} />;
       case 16: return <Step16Communication {...props} />;
       case 17: return <Step17Change {...props} />;
-      case 18: return <Step18Review data={wizardData} onSave={() => saveMutation.mutate(wizardData)} isSaving={saveMutation.isPending} />;
+      case 18: return (
+        <Step18Review 
+          data={wizardData} 
+          onSave={() => saveMutation.mutate(wizardData)} 
+          onUpdatePlan={updateData}
+          onNavigateToStep={setCurrentStep}
+          isSaving={saveMutation.isPending} 
+        />
+      );
       default: return null;
     }
   };

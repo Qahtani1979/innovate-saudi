@@ -3171,6 +3171,8 @@ Return alignments as an array under the "alignments" key with proper objective_i
           data={wizardData} 
           onSave={() => saveMutation.mutate(wizardData)} 
           onSubmitForApproval={() => submitMutation.mutate(wizardData)}
+          onUpdatePlan={updateData}
+          onNavigateToStep={setCurrentStep}
           isSaving={saveMutation.isPending}
           isSubmitting={submitMutation.isPending}
           mode={mode}
