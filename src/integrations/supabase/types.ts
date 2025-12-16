@@ -5005,6 +5005,84 @@ export type Database = {
           },
         ]
       }
+      lookup_governance_roles: {
+        Row: {
+          code: string
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+        }
+        Relationships: []
+      }
+      lookup_risk_categories: {
+        Row: {
+          code: string
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+        }
+        Relationships: []
+      }
       lookup_specializations: {
         Row: {
           category: string | null
@@ -5038,6 +5116,168 @@ export type Database = {
           name_ar?: string | null
           name_en?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      lookup_stakeholder_types: {
+        Row: {
+          code: string
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+        }
+        Relationships: []
+      }
+      lookup_strategic_themes: {
+        Row: {
+          code: string
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+        }
+        Relationships: []
+      }
+      lookup_technologies: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+        }
+        Relationships: []
+      }
+      lookup_vision_programs: {
+        Row: {
+          code: string
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+          official_url: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          official_url?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          official_url?: string | null
         }
         Relationships: []
       }
@@ -8610,6 +8850,7 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string | null
+          display_order: number | null
           id: string
           is_active: boolean | null
           name_ar: string
@@ -8619,6 +8860,7 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string | null
+          display_order?: number | null
           id?: string
           is_active?: boolean | null
           name_ar: string
@@ -8628,6 +8870,7 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string | null
+          display_order?: number | null
           id?: string
           is_active?: boolean | null
           name_ar?: string
