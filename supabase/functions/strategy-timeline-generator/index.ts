@@ -1,19 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { COMPACT_SAUDI_CONTEXT } from "../_shared/saudiContext.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH):
-- 13 Regions: Riyadh, Makkah, Madinah, Eastern Province, Asir, Tabuk, Hail, Northern Borders, Jazan, Najran, Al-Baha, Al-Jouf, Qassim
-- Major Cities: Riyadh, Jeddah, Makkah Al-Mukarramah, Madinah Al-Munawwarah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif
-- 285+ municipalities and 17 Amanats
-- Vision 2030: Quality of Life Program, Housing Program (70% ownership), National Transformation, Smart Cities
-- Focus: Municipal services, urban planning, housing (Sakani), infrastructure, environment, citizen services, innovation
-- INNOVATION PRIORITY: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems, Robotics
-- Emerging Tech: GovTech, PropTech, CleanTech, Smart City platforms, predictive analytics
-- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,7 +23,7 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert INNOVATION strategist specializing in Saudi Arabian municipal TECHNOLOGY transformation and government innovation projects within the Ministry of Municipalities and Housing (MoMAH).
 
-${SAUDI_CONTEXT}
+${COMPACT_SAUDI_CONTEXT}
 
 Your task is to generate realistic implementation timelines with milestones for strategic objectives with INNOVATION & EMERGING TECHNOLOGY focus. Consider:
 1. Saudi government project timelines and procurement processes

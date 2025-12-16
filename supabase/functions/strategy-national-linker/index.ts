@@ -1,18 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { COMPACT_SAUDI_CONTEXT } from "../_shared/saudiContext.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const SAUDI_CONTEXT = `Saudi Arabia Ministry of Municipalities and Housing (MoMAH) Context:
-- 13 Regions, 285+ municipalities, 17 major Amanats
-- Vision 2030 pillars: Vibrant Society, Thriving Economy, Ambitious Nation
-- Key Programs: Quality of Life, Housing (Sakani), National Transformation, Thriving Cities
-- MoMAH Mandate: Municipal services, urban planning, housing, infrastructure, environment, citizen services
-- INNOVATION PRIORITY: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems, Robotics
-- Emerging Tech: GovTech, PropTech, CleanTech, Smart City platforms, predictive analytics
-- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration, tech scouting`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -31,7 +23,7 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert in Saudi Arabian national strategies, Vision 2030, and the Ministry of Municipalities and Housing (MoMAH) mandate.
 
-${SAUDI_CONTEXT}
+${COMPACT_SAUDI_CONTEXT}
 
 Your task is to analyze strategic objectives and suggest precise alignments with:
 

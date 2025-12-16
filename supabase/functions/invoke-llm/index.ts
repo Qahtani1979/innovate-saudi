@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SAUDI_MOMAH_CONTEXT, COMPACT_SAUDI_CONTEXT, INNOVATION_EMPHASIS } from "../_shared/saudiContext.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -179,21 +180,19 @@ serve(async (req) => {
     const messages: { role: string; content: string }[] = [];
     
     if (system_prompt) {
-      messages.push({ role: "system", content: system_prompt });
+      // If custom system prompt provided, enhance it with Saudi context
+      messages.push({ role: "system", content: `${system_prompt}\n\n${COMPACT_SAUDI_CONTEXT}\n\n${INNOVATION_EMPHASIS}` });
     } else {
+      // Use full Saudi context as default system prompt
       messages.push({ 
         role: "system", 
         content: `You are a helpful AI assistant for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
-INNOVATION & EMERGING TECHNOLOGY FOCUS:
-- Always consider cutting-edge technology solutions (AI, IoT, Blockchain, Digital Twins, Drones, Robotics, 5G/6G)
-- Emphasize R&D, proof-of-concept pilots, and scalable innovation approaches
-- Reference relevant emerging technologies for each challenge or objective
-- Consider innovation partnerships with startups, universities (KAUST, KACST), and tech companies
-- Align with global smart city best practices while respecting Saudi cultural context
-- Propose measurable innovation KPIs and technology adoption metrics
+${SAUDI_MOMAH_CONTEXT}
 
-Respond in the requested format while emphasizing innovation opportunities.` 
+${INNOVATION_EMPHASIS}
+
+Respond in the requested format while emphasizing innovation opportunities. Provide bilingual support (English/Arabic) when appropriate.` 
       });
     }
     

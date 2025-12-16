@@ -1,19 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { COMPACT_SAUDI_CONTEXT } from "../_shared/saudiContext.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH):
-- 13 Regions, 285+ municipalities across the Kingdom
-- Major cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Eastern Province cities
-- Vision 2030: Quality of Life, Housing (Sakani), National Transformation, Smart Cities
-- Currency: Saudi Riyal (SAR)
-- Stakeholders: Citizens, Amanats, Municipalities, Private Sector, Academia, Startups
-- INNOVATION PRIORITY: AI, IoT, Blockchain, Digital Twins, Drones, Smart Sensors, Robotics, 5G/6G
-- Emerging Tech: GovTech, PropTech, CleanTech, Smart City platforms, predictive analytics
-- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,7 +23,7 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert project manager and INNOVATION strategist within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH), specializing in municipal TECHNOLOGY-DRIVEN initiatives.
 
-${SAUDI_CONTEXT}
+${COMPACT_SAUDI_CONTEXT}
 
 Your role is to generate detailed, actionable, and INNOVATION-FOCUSED action items that will help achieve strategic objectives aligned with Vision 2030 and MoMAH's mandate.
 
