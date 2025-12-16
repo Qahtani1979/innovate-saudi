@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Loader2, Plus, X, Target, ChevronDown, ChevronUp } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Sparkles, Loader2, Plus, X, Target, ChevronDown, ChevronUp, Wand2, Check, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../../../LanguageContext';
 import { MOMAH_SECTORS } from '../StrategyWizardSteps';
 
@@ -15,10 +17,15 @@ export default function Step3Objectives({
   data, 
   onChange, 
   onGenerateAI, 
-  isGenerating 
+  isGenerating,
+  onGenerateSingleObjective // New prop for single objective generation
 }) {
   const { language, t, isRTL } = useLanguage();
   const [expandedIndex, setExpandedIndex] = useState(null);
+  const [showProposalModal, setShowProposalModal] = useState(false);
+  const [proposedObjective, setProposedObjective] = useState(null);
+  const [differentiationScore, setDifferentiationScore] = useState(null);
+  const [isGeneratingSingle, setIsGeneratingSingle] = useState(false);
   
   const objectives = data.objectives || [];
 
@@ -58,6 +65,68 @@ export default function Step3Objectives({
     }
   };
 
+  const getDifferentiationColor = (score) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-amber-600';
+    return 'text-red-600';
+  };
+
+  const getDifferentiationLabel = (score) => {
+    if (score >= 80) return t({ en: 'Highly Unique', ar: 'فريد للغاية' });
+    if (score >= 60) return t({ en: 'Moderately Unique', ar: 'فريد بشكل معتدل' });
+    return t({ en: 'Low Uniqueness', ar: 'تفرد منخفض' });
+  };
+
+  // Generate a single new objective using AI
+  const handleGenerateSingleObjective = async () => {
+    setIsGeneratingSingle(true);
+    setShowProposalModal(true);
+    setProposedObjective(null);
+    setDifferentiationScore(null);
+
+    try {
+      if (onGenerateSingleObjective) {
+        const result = await onGenerateSingleObjective(objectives);
+        if (result?.objective) {
+          setProposedObjective(result.objective);
+          setDifferentiationScore(result.differentiation_score || 75);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating single objective:', error);
+    } finally {
+      setIsGeneratingSingle(false);
+    }
+  };
+
+  // Approve and add the proposed objective
+  const handleApproveObjective = () => {
+    if (proposedObjective) {
+      onChange({
+        objectives: [...objectives, {
+          ...proposedObjective,
+          target_year: data.end_year
+        }]
+      });
+      setShowProposalModal(false);
+      setProposedObjective(null);
+      setDifferentiationScore(null);
+      setExpandedIndex(objectives.length);
+    }
+  };
+
+  // Reject and close modal
+  const handleRejectObjective = () => {
+    setShowProposalModal(false);
+    setProposedObjective(null);
+    setDifferentiationScore(null);
+  };
+
+  // Update proposed objective field
+  const updateProposedField = (field, value) => {
+    setProposedObjective(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* AI Generation */}
@@ -78,18 +147,36 @@ export default function Step3Objectives({
         </CardContent>
       </Card>
 
-      {/* Objectives Count */}
-      <div className="flex items-center justify-between">
+      {/* Objectives Count and Actions */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
           <span className="font-semibold">
             {objectives.length} {t({ en: 'Strategic Objectives', ar: 'الأهداف الاستراتيجية' })}
           </span>
         </div>
-        <Button onClick={addObjective} variant="outline" size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {t({ en: 'Add Objective', ar: 'إضافة هدف' })}
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* AI Add Single Objective Button */}
+          <Button 
+            onClick={handleGenerateSingleObjective} 
+            variant="outline" 
+            size="sm"
+            disabled={isGeneratingSingle}
+            className="border-primary/50 text-primary hover:bg-primary/10"
+          >
+            {isGeneratingSingle ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Wand2 className="h-4 w-4 mr-2" />
+            )}
+            {t({ en: 'AI Add Objective', ar: 'إضافة هدف بالذكاء الاصطناعي' })}
+          </Button>
+          {/* Manual Add Button */}
+          <Button onClick={addObjective} variant="outline" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t({ en: 'Add Objective', ar: 'إضافة هدف' })}
+          </Button>
+        </div>
       </div>
 
       {/* Objectives List */}
@@ -259,6 +346,162 @@ export default function Step3Objectives({
           </CardContent>
         </Card>
       )}
+
+      {/* AI Single Objective Proposal Modal */}
+      <Dialog open={showProposalModal} onOpenChange={setShowProposalModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="h-5 w-5 text-primary" />
+              {t({ en: 'AI-Proposed Objective', ar: 'هدف مقترح بالذكاء الاصطناعي' })}
+            </DialogTitle>
+            <DialogDescription>
+              {t({ 
+                en: 'Review the AI-generated objective. You can edit fields before approving.', 
+                ar: 'راجع الهدف المُنشأ بالذكاء الاصطناعي. يمكنك تعديل الحقول قبل الموافقة.' 
+              })}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isGeneratingSingle ? (
+            <div className="py-12 text-center">
+              <Loader2 className="h-12 w-12 mx-auto text-primary animate-spin mb-4" />
+              <p className="text-muted-foreground">
+                {t({ en: 'Generating a unique objective...', ar: 'جارٍ إنشاء هدف فريد...' })}
+              </p>
+            </div>
+          ) : proposedObjective ? (
+            <div className="space-y-4">
+              {/* Differentiation Score */}
+              <Card className={`border-2 ${differentiationScore >= 60 ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+                <CardContent className="py-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">
+                      {t({ en: 'Uniqueness Score', ar: 'درجة التفرد' })}
+                    </span>
+                    <span className={`font-bold ${getDifferentiationColor(differentiationScore)}`}>
+                      {differentiationScore}% - {getDifferentiationLabel(differentiationScore)}
+                    </span>
+                  </div>
+                  <Progress value={differentiationScore} className="h-2" />
+                  {differentiationScore < 60 && (
+                    <div className="flex items-center gap-2 mt-2 text-amber-700 text-sm">
+                      <AlertTriangle className="h-4 w-4" />
+                      {t({ en: 'Consider regenerating for a more unique objective', ar: 'فكر في إعادة الإنشاء للحصول على هدف أكثر تفرداً' })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Editable Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Objective Name (English)', ar: 'اسم الهدف (إنجليزي)' })}</Label>
+                  <Input
+                    value={proposedObjective.name_en || ''}
+                    onChange={(e) => updateProposedField('name_en', e.target.value)}
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Objective Name (Arabic)', ar: 'اسم الهدف (عربي)' })}</Label>
+                  <Input
+                    value={proposedObjective.name_ar || ''}
+                    onChange={(e) => updateProposedField('name_ar', e.target.value)}
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
+                  <Textarea
+                    value={proposedObjective.description_en || ''}
+                    onChange={(e) => updateProposedField('description_en', e.target.value)}
+                    rows={4}
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
+                  <Textarea
+                    value={proposedObjective.description_ar || ''}
+                    onChange={(e) => updateProposedField('description_ar', e.target.value)}
+                    rows={4}
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Sector', ar: 'القطاع' })}</Label>
+                  <Select 
+                    value={proposedObjective.sector_code || ''} 
+                    onValueChange={(v) => updateProposedField('sector_code', v)}
+                  >
+                    <SelectTrigger><SelectValue placeholder={t({ en: 'Select sector', ar: 'اختر القطاع' })} /></SelectTrigger>
+                    <SelectContent>
+                      {MOMAH_SECTORS.map(s => (
+                        <SelectItem key={s.code} value={s.code}>
+                          {language === 'ar' ? s.name_ar : s.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Priority', ar: 'الأولوية' })}</Label>
+                  <Select 
+                    value={proposedObjective.priority || 'medium'} 
+                    onValueChange={(v) => updateProposedField('priority', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">{t({ en: 'High', ar: 'عالي' })}</SelectItem>
+                      <SelectItem value="medium">{t({ en: 'Medium', ar: 'متوسط' })}</SelectItem>
+                      <SelectItem value="low">{t({ en: 'Low', ar: 'منخفض' })}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="py-12 text-center text-muted-foreground">
+              {t({ en: 'Failed to generate objective. Please try again.', ar: 'فشل في إنشاء الهدف. يرجى المحاولة مرة أخرى.' })}
+            </div>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRejectObjective}
+              className="w-full sm:w-auto"
+            >
+              <X className="h-4 w-4 mr-2" />
+              {t({ en: 'Reject', ar: 'رفض' })}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleGenerateSingleObjective}
+              disabled={isGeneratingSingle}
+              className="w-full sm:w-auto"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isGeneratingSingle ? 'animate-spin' : ''}`} />
+              {t({ en: 'Regenerate', ar: 'إعادة الإنشاء' })}
+            </Button>
+            <Button
+              onClick={handleApproveObjective}
+              disabled={!proposedObjective || isGeneratingSingle}
+              className="w-full sm:w-auto"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              {t({ en: 'Approve & Add', ar: 'الموافقة والإضافة' })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -3124,6 +3124,112 @@ Return alignments as an array under the "alignments" key with proper objective_i
     }
   };
 
+  // Generate a single new objective that's different from existing ones
+  const generateSingleObjective = async (existingObjectives) => {
+    if (!aiAvailable) {
+      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
+      return null;
+    }
+
+    const context = {
+      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
+      vision: wizardData.vision_en || wizardData.vision_ar || '',
+      mission: wizardData.mission_en || wizardData.mission_ar || '',
+      sectors: wizardData.target_sectors || [],
+      themes: wizardData.strategic_themes || [],
+      technologies: wizardData.focus_technologies || [],
+      startYear: wizardData.start_year || new Date().getFullYear(),
+      endYear: wizardData.end_year || new Date().getFullYear() + 5,
+      budgetRange: wizardData.budget_range || ''
+    };
+
+    const existingObjectivesSummary = existingObjectives.map((o, i) => 
+      `${i + 1}. ${o.name_en || o.name_ar} (${o.sector_code || 'General'}) - ${o.description_en?.substring(0, 100) || ''}`
+    ).join('\n');
+
+    const singleObjectivePrompt = `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
+
+## STRATEGIC PLAN CONTEXT:
+- Plan Name: ${context.planName}
+- Vision: ${context.vision}
+- Mission: ${context.mission}
+- Sectors: ${context.sectors.join(', ') || 'General'}
+- Technologies: ${context.technologies.join(', ') || 'General'}
+- Timeline: ${context.startYear}-${context.endYear}
+
+## EXISTING OBJECTIVES (${existingObjectives.length} total):
+${existingObjectivesSummary || 'No existing objectives yet'}
+
+---
+
+## TASK:
+Generate EXACTLY ONE new strategic objective that is COMPLETELY DIFFERENT from the existing objectives.
+
+DIFFERENTIATION REQUIREMENTS:
+1. Must target a DIFFERENT sector than majority of existing objectives
+2. Must address a DIFFERENT strategic theme or approach
+3. Must not overlap significantly with any existing objective's scope
+4. Should fill a gap in the strategic plan coverage
+5. Should be innovative and forward-thinking
+
+Also provide a differentiation_score (0-100) indicating how unique this objective is compared to existing ones:
+- 90-100: Completely unique, addresses untouched sector/theme
+- 70-89: Highly unique, minimal overlap with existing objectives
+- 50-69: Moderately unique, some thematic similarity
+- Below 50: Too similar, needs more differentiation
+
+The objective MUST have ALL fields in BOTH English and Arabic:
+- name_en / name_ar: Clear, action-oriented objective title (5-12 words)
+- description_en / description_ar: Detailed description (3-5 sentences)
+- sector_code: One of: ${context.sectors.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES'}
+- priority: "high" | "medium" | "low"
+
+Use formal Arabic (فصحى) for Arabic content. Be specific and innovative.`;
+
+    const singleObjectiveSchema = {
+      type: 'object',
+      required: ['objective', 'differentiation_score'],
+      properties: {
+        objective: {
+          type: 'object',
+          required: ['name_en', 'name_ar', 'description_en', 'description_ar', 'sector_code', 'priority'],
+          properties: {
+            name_en: { type: 'string' },
+            name_ar: { type: 'string' },
+            description_en: { type: 'string' },
+            description_ar: { type: 'string' },
+            sector_code: { type: 'string' },
+            priority: { type: 'string', enum: ['high', 'medium', 'low'] }
+          }
+        },
+        differentiation_score: { type: 'number', minimum: 0, maximum: 100 }
+      }
+    };
+
+    try {
+      const { success, data } = await invokeAI({
+        prompt: singleObjectivePrompt,
+        response_json_schema: singleObjectiveSchema,
+        system_prompt: 'You are a strategic planning AI assistant. Generate exactly ONE unique strategic objective with bilingual content. Return valid JSON matching the schema.'
+      });
+
+      if (success && data?.objective) {
+        return {
+          objective: {
+            ...data.objective,
+            priority: data.objective.priority || 'medium'
+          },
+          differentiation_score: data.differentiation_score || 75
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Single objective generation error:', error);
+      toast.error(t({ en: 'Failed to generate objective', ar: 'فشل في إنشاء الهدف' }));
+      return null;
+    }
+  };
+
   const handleNext = async () => {
     if (currentStep < 18) {
       // Validate current step before proceeding
@@ -3237,7 +3343,7 @@ Return alignments as an array under the "alignments" key with proper objective_i
       case 6: return <Step6Scenarios {...props} />;
       case 7: return <Step7Risks {...props} />;
       case 8: return <Step8Dependencies {...props} />;
-      case 9: return <Step9Objectives {...props} />;
+      case 9: return <Step9Objectives {...props} onGenerateSingleObjective={generateSingleObjective} />;
       case 10: return <Step10National {...props} />;
       case 11: return <Step11KPIs {...props} />;
       case 12: return <Step12Actions {...props} strategicPlanId={planId} wizardData={wizardData} />;
