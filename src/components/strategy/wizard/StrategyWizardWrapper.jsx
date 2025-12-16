@@ -591,7 +591,7 @@ Each stakeholder MUST have ALL fields (bilingual):
 
 **GOVERNMENT (4-5 stakeholders):**
 - Vision Realization Programs (VRO, NTP PMO)
-- Regulatory bodies (MOMRA, CITC, PDPL Authority)
+- Regulatory bodies (MoMAH, CITC, PDPL Authority)
 - Funding agencies (MOF, PIF, NDF)
 - Sister ministries (MCIT, MHRSD, MOT)
 
@@ -1910,7 +1910,7 @@ For EACH dependency, provide ALL fields in BOTH English and Arabic:
 
 **DEPENDENCY TYPE DISTRIBUTION:**
 - internal: 2-3 (cross-department coordination, Amanat approvals, municipal council decisions)
-- external: 2-3 (MCIT, MOMRA, SDAIA, third-party vendors, Vision Realization Programs)
+- external: 2-3 (MCIT, MoMAH, SDAIA, third-party vendors, Vision Realization Programs)
 - technical: 2-3 (Balady integration, GIS platforms, IoT infrastructure, National Data Governance)
 - resource: 2-3 (budget from MOF, specialized staff, Saudization requirements)
 
@@ -1936,7 +1936,7 @@ For EACH constraint, provide ALL fields in BOTH English and Arabic:
 - budget: 1-2 (MOF allocation cycles, municipal revenue limits, SAR procurement thresholds)
 - time: 1-2 (Vision 2030 milestones 2025/2030, NTP deadlines, Quality of Life targets)
 - resource: 1-2 (Saudization requirements, skill gaps in emerging tech, MCIT certification needs)
-- regulatory: 1-2 (PDPL data protection, CITC telecom regulations, MOMRA building codes)
+- regulatory: 1-2 (PDPL data protection, CITC telecom regulations, MoMAH building codes)
 - technical: 1-2 (legacy Baladiya systems, interoperability with national platforms)
 
 **MoMAH-SPECIFIC CONSTRAINT EXAMPLES:**
@@ -1974,7 +1974,7 @@ For EACH assumption, provide ALL fields in BOTH English and Arabic:
 
 ---
 
-Be highly specific to MoMAH's mandate, Vision 2030 alignment, and the Saudi municipal ecosystem. Reference actual systems (Balady, Sakani, ANSA), agencies (SDAIA, MCIT, MOMRA), and frameworks. Avoid generic corporate language.`,
+Be highly specific to MoMAH's mandate, Vision 2030 alignment, and the Saudi municipal ecosystem. Reference actual systems (Balady, Sakani, ANSA), agencies (SDAIA, MCIT, MoMAH), and frameworks. Avoid generic corporate language.`,
       objectives: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
 ## MoMAH CONTEXT:
