@@ -1,8 +1,62 @@
 # Step 12 (Action Plans) - Complete Implementation Plan
 
-> **Version:** 1.2  
+> **Version:** 1.3  
 > **Last Updated:** 2025-12-16  
-> **Status:** Deep Audit Complete | Implementation Pending
+> **Status:** Deep Audit Complete | **NOT READY FOR STEP 12 INJECTION**
+
+---
+
+## 🚨 QUEUE & GENERATOR READINESS MATRIX
+
+**ANSWER: NO - Systems are NOT ready for Step 12 injections.**
+
+| System | Ready? | Blocking Issues |
+|--------|--------|-----------------|
+| `strategy-gap-analysis` | ❌ NO | Only counts 4/9 entities; campaigns queries wrong table (`programs` not `marketing_campaigns`) |
+| `strategy-demand-queue-generator` | ❌ NO | `priorityWeights` missing 5 types; `buildPrefilledSpec` missing 5 types |
+| `strategy-batch-generator` | ❌ NO | `living_lab` maps to wrong function; `program` type missing entirely |
+| `strategy-quality-assessor` | ❌ NO | `getRequiredFields` only handles 4/9 entity types |
+| `BatchGenerationControls.jsx` | ❌ NO | Same issues as batch-generator |
+| `Step6ActionPlans.jsx` | ❌ NO | Wrong entity types; missing `should_create_entity` toggle |
+| `StrategyWizardWrapper.jsx` | ❌ NO | **No code to create demand_queue items from action_plans** |
+
+### What Blocks Step 12 → Entity Generation?
+
+```
+CURRENT STATE (BROKEN):
+┌─────────────────────┐    ┌─────────────────────┐
+│   Step 12 UI        │    │   demand_queue      │
+│   action_plans      │───X│   (no items from    │
+│   (JSONB only)      │    │    Step 12)         │
+└─────────────────────┘    └─────────────────────┘
+                                    │
+                               (nothing)
+                                    ↓
+                           ┌─────────────────────┐
+                           │   Entity Tables     │
+                           │   (never created)   │
+                           └─────────────────────┘
+
+REQUIRED STATE:
+┌─────────────────────┐    ┌─────────────────────┐
+│   Step 12 UI        │───→│   demand_queue      │
+│   with toggle:      │    │   (items created    │
+│   should_create_    │    │    from Step 12)    │
+│   entity: true      │    └─────────────────────┘
+└─────────────────────┘             │
+                                    ↓
+                           ┌─────────────────────┐
+                           │   batch-generator   │
+                           │   (processes queue) │
+                           └─────────────────────┘
+                                    │
+                                    ↓
+                           ┌─────────────────────┐
+                           │   Entity Tables     │
+                           │   (challenges,      │
+                           │    pilots, etc.)    │
+                           └─────────────────────┘
+```
 
 ---
 
