@@ -3056,7 +3056,9 @@ Return alignments as an array under the "alignments" key with proper objective_i
         }
         
         if (Object.keys(updates).length > 0) {
-          setWizardData(prev => ({ ...prev, ...updates }));
+          // Use updateData so AI-generated content is persisted immediately to local storage
+          // and queued for database save (prevents losing work on refresh)
+          updateData(updates);
           toast.success(t({ en: 'AI generation complete', ar: 'تم الإنشاء بالذكاء الاصطناعي' }));
         }
       }
@@ -3145,6 +3147,12 @@ Return alignments as an array under the "alignments" key with proper objective_i
     const draft = loadLocalDraft();
     if (draft) {
       setWizardData({ ...initialWizardData, ...draft });
+      if (draft._savedStep) {
+        const step = Number(draft._savedStep);
+        if (Number.isFinite(step) && step >= 1 && step <= 18) {
+          setCurrentStep(step);
+        }
+      }
       toast.success(t({ en: 'Draft recovered', ar: 'تم استرداد المسودة' }));
     }
     setShowDraftRecovery(false);
