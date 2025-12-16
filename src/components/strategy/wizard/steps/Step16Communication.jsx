@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Megaphone, Plus, X, Users, Radio, Mail, Globe, BookOpen, ChevronUp, ChevronDown } from 'lucide-react';
+import { Sparkles, Megaphone, Plus, X, Users, Radio, Mail, Globe, BookOpen, ChevronUp, ChevronDown, Link2 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import EntityAllocationSelector from '../EntityAllocationSelector';
 
 const AUDIENCE_TYPES = [
   { id: 'citizens', label: { en: 'Citizens', ar: 'المواطنون' }, icon: '👥' },
@@ -41,7 +42,7 @@ const FREQUENCY_OPTIONS = [
 ];
 
 // Step 16: Communication Plan
-export function Step16Communication({ data, onChange, onGenerateAI, isGenerating }) {
+export function Step16Communication({ data, onChange, onGenerateAI, isGenerating, strategicPlanId }) {
   const { language, t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('audiences');
 
@@ -75,7 +76,8 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
       text_en: '',
       text_ar: '',
       audience: '',
-      channel: ''
+      channel: '',
+      entity_launches: [] // NEW: Track which entities this message launches
     };
     updatePlan({ key_messages: [...keyMessages, newMessage] });
   };
@@ -452,7 +454,7 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
 }
 
 // Step 17: Change Management
-export function Step17Change({ data, onChange, onGenerateAI, isGenerating }) {
+export function Step17Change({ data, onChange, onGenerateAI, isGenerating, strategicPlanId }) {
   const { language, t, isRTL } = useLanguage();
 
   const trainingPlan = data.change_management?.training_plan || [];
@@ -469,7 +471,8 @@ export function Step17Change({ data, onChange, onGenerateAI, isGenerating }) {
         duration_en: '', 
         duration_ar: '',
         timeline_en: '', 
-        timeline_ar: ''
+        timeline_ar: '',
+        entity_training: [] // NEW: Track which entities this training supports
       }
     ];
 

@@ -3242,10 +3242,10 @@ Return alignments as an array under the "alignments" key with proper objective_i
       case 11: return <Step11KPIs {...props} />;
       case 12: return <Step12Actions {...props} strategicPlanId={planId} wizardData={wizardData} />;
       case 13: return <Step13Resources {...props} strategicPlanId={planId} />;
-      case 14: return <Step14Timeline {...props} />;
-      case 15: return <Step15Governance {...props} />;
-      case 16: return <Step16Communication {...props} />;
-      case 17: return <Step17Change {...props} />;
+      case 14: return <Step14Timeline {...props} strategicPlanId={planId} />;
+      case 15: return <Step15Governance {...props} strategicPlanId={planId} />;
+      case 16: return <Step16Communication {...props} strategicPlanId={planId} />;
+      case 17: return <Step17Change {...props} strategicPlanId={planId} />;
       case 18: return (
         <Step18Review 
           data={wizardData} 

@@ -7,14 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Loader2, Plus, X, Calendar, Flag } from 'lucide-react';
+import { Sparkles, Loader2, Plus, X, Calendar, Flag, Link2 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import EntityAllocationSelector from '../EntityAllocationSelector';
 
 export default function Step7Timeline({ 
   data, 
   onChange, 
   onGenerateAI, 
-  isGenerating 
+  isGenerating,
+  strategicPlanId 
 }) {
   const { language, t, isRTL } = useLanguage();
   
@@ -31,7 +33,8 @@ export default function Step7Timeline({
         type: 'milestone',
         status: 'planned',
         description_en: '',
-        description_ar: ''
+        description_ar: '',
+        entity_milestones: [] // NEW: Track which entities this milestone relates to
       }]
     });
   };
@@ -54,7 +57,8 @@ export default function Step7Timeline({
         end_date: '',
         description_en: '',
         description_ar: '',
-        objectives_covered: []
+        objectives_covered: [],
+        entity_phases: [] // NEW: Track which entities this phase implements
       }]
     });
   };
