@@ -3148,7 +3148,7 @@ Return alignments as an array under the "alignments" key with proper objective_i
   };
 
   // Generate a single new objective that's different from existing ones
-  const generateSingleObjective = async (existingObjectives) => {
+  const generateSingleObjective = async (existingObjectives, targetSector = null) => {
     if (!aiAvailable) {
       toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
       return null;
@@ -3169,6 +3169,37 @@ Return alignments as an array under the "alignments" key with proper objective_i
     const existingObjectivesSummary = existingObjectives.map((o, i) => 
       `${i + 1}. ${o.name_en || o.name_ar} (${o.sector_code || 'General'}) - ${o.description_en?.substring(0, 100) || ''}`
     ).join('\n');
+
+    // Calculate sector coverage for the prompt
+    const sectorCoverage = [
+      'URBAN_PLANNING', 'HOUSING', 'INFRASTRUCTURE', 'ENVIRONMENT', 
+      'SMART_CITIES', 'DIGITAL_SERVICES', 'CITIZEN_SERVICES', 'RURAL_DEVELOPMENT',
+      'PUBLIC_SPACES', 'WATER_RESOURCES', 'TRANSPORTATION', 'HERITAGE'
+    ].map(code => ({
+      code,
+      count: existingObjectives.filter(o => o.sector_code === code).length
+    }));
+    
+    const sectorCoverageSummary = sectorCoverage
+      .map(s => `${s.code}: ${s.count} objectives`)
+      .join(', ');
+
+    // Build sector targeting instruction
+    const sectorTargetInstruction = targetSector 
+      ? `
+## MANDATORY SECTOR TARGET:
+**YOU MUST generate an objective for sector: ${targetSector}**
+- The sector_code in your response MUST be: "${targetSector}"
+- The objective title, description, and all content MUST be specific to ${targetSector}
+- DO NOT generate an objective for any other sector
+- This is a strict requirement from the user
+`
+      : `
+## SECTOR SELECTION GUIDANCE:
+Based on current coverage: ${sectorCoverageSummary}
+- PRIORITIZE sectors with 0 or 1 objectives for better coverage
+- Avoid sectors that already have 2+ objectives unless specifically relevant
+`;
 
     const singleObjectivePrompt = `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
@@ -3197,6 +3228,9 @@ ${(wizardData.strategic_pillars || []).map((p, i) => `${i + 1}. ${p.name_en || p
 ## EXISTING OBJECTIVES (${existingObjectives.length} total):
 ${existingObjectivesSummary || 'No existing objectives yet'}
 
+## CURRENT SECTOR COVERAGE:
+${sectorCoverageSummary}
+${sectorTargetInstruction}
 ---
 
 ## CRITICAL: THIS MUST BE A HIGH-LEVEL STRATEGIC OBJECTIVE
@@ -3236,9 +3270,10 @@ ${existingObjectivesSummary || 'No existing objectives yet'}
 - The objective MUST focus on EXACTLY ONE sector
 - DO NOT mix multiple sectors in the same objective
 - Title, description, and outcomes must ALL relate to the SAME sector_code
+${targetSector ? `- MANDATORY: Use sector_code = "${targetSector}"` : ''}
 
 ## DIFFERENTIATION REQUIREMENTS:
-1. Must target a DIFFERENT sector than majority of existing objectives
+1. ${targetSector ? `MUST target sector: ${targetSector}` : 'Must target a DIFFERENT sector than majority of existing objectives'}
 2. Must address a DIFFERENT strategic theme or approach
 3. Must not overlap significantly with any existing objective's scope
 4. Should fill a gap in the strategic plan coverage
@@ -3254,7 +3289,7 @@ ${existingObjectivesSummary || 'No existing objectives yet'}
 ## REQUIRED OUTPUT:
 - name_en / name_ar: HIGH-LEVEL strategic objective title (5-12 words)
 - description_en / description_ar: Strategic description explaining broad outcomes and alignment (3-5 sentences)
-- sector_code: EXACTLY ONE of: ${context.sectors.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES'}
+- sector_code: ${targetSector ? `MUST BE "${targetSector}"` : `EXACTLY ONE of: ${context.sectors.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES'}`}
 - priority: "high" | "medium" | "low"
 
 Use formal Arabic (فصحى). Generate a TRUE STRATEGIC OBJECTIVE, not a tactical solution.`;
