@@ -6,12 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
 
 /**
  * AI-powered sector gap analysis from strategic plans
  */
 export default function SectorGapAnalysisWidget({ strategicPlanId }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { getSectorName } = useTaxonomy();
   
   const { data: analysis } = useQuery({
     queryKey: ['sector-gap-analysis', strategicPlanId],
@@ -87,7 +89,7 @@ export default function SectorGapAnalysisWidget({ strategicPlanId }) {
           return (
             <div key={sector} className="p-3 bg-orange-50 rounded border">
               <div className="flex items-center justify-between mb-2">
-                <p className="font-medium text-sm">{sector}</p>
+                <p className="font-medium text-sm">{getSectorName(sector, language)}</p>
                 <Badge className={coverage > 50 ? 'bg-green-600' : 'bg-red-600'}>
                   {coverage}%
                 </Badge>
