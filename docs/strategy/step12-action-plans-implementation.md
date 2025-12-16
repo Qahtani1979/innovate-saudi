@@ -1,96 +1,138 @@
 # Step 12 (Action Plans) - Complete Implementation Plan
 
-> **Version:** 1.4  
+> **Version:** 1.5  
 > **Last Updated:** 2025-12-16  
-> **Status:** Deep Audit Complete | **NOT READY FOR STEP 12 INJECTION**
+> **Status:** DEEP SYSTEM AUDIT COMPLETE | **NOT READY FOR STEP 12 INJECTION**
+
+---
+
+## 🔴🔴🔴 CRITICAL DATABASE FINDINGS (NEW)
+
+### Tables That EXIST with `strategic_plan_ids` (ARRAY):
+| Table | `strategic_plan_id` (single)? | `strategic_plan_ids` (array)? | Notes |
+|-------|-------------------------------|-------------------------------|-------|
+| `challenges` | ❌ NO | ✅ YES | Code must append to array |
+| `pilots` | ❌ NO | ✅ YES | Code must append to array |
+| `programs` | ❌ NO | ✅ YES | Code must append to array |
+| `events` | ❌ NO | ✅ YES | Also has `strategic_objective_ids`, `strategic_pillar_id` |
+| `living_labs` | ❌ NO | ✅ YES | Also has `strategic_objective_ids` |
+| `rd_calls` | ❌ NO | ✅ YES | Code must append to array |
+| `partnerships` | ❌ NO | ✅ YES | Also has `strategic_objective_ids` |
+
+### Tables That DO NOT EXIST:
+| Table | Referenced By | Required Action |
+|-------|---------------|-----------------|
+| ❌ `marketing_campaigns` | `strategy-campaign-generator`, `strategy-gap-analysis` | **CREATE TABLE** or use `communication_plans` |
+| ❌ `policies` | `strategy-policy-generator`, `strategy-batch-generator` | **CREATE TABLE** or use `policy_documents` |
+
+---
+
+## 🔴🔴🔴 CRITICAL GENERATOR OUTPUT MISMATCH (NEW)
+
+**`batch-generator` expects (line 124):** `generated?.id` (single entity with UUID)
+
+**All generators return:** `{ success: true, [entities]: [...] }` (arrays, no IDs, no DB save)
+
+| Generator | Returns | Saves to DB? | ID Available? | FIX NEEDED |
+|-----------|---------|--------------|---------------|------------|
+| `strategy-challenge-generator` | `{ challenges: [...] }` | ❌ NO | ❌ NO | Save to DB, return ID |
+| `strategy-pilot-generator` | `{ pilots: [...] }` | ❌ NO | ❌ NO | Save to DB, return ID |
+| `strategy-campaign-generator` | `{ campaigns: [...] }` | ❌ NO | ❌ NO | Save to DB, return ID |
+| `strategy-event-planner` | `{ events: [...] }` | ❌ NO | ❌ NO | Save to DB, return ID |
+| `strategy-policy-generator` | `{ policies: [...] }` | ❌ NO | ❌ NO | Save to DB, return ID |
+| `strategy-rd-call-generator` | `{ rd_call: {...} }` | ❌ NO | ❌ NO | Save to DB, return ID |
+| `strategy-lab-research-generator` | `{ living_labs: [...] }` | ❌ NO | ❌ NO | Save to DB, return ID |
+| `strategy-partnership-matcher` | ❓ Unknown | ❓ | ❓ | Needs audit |
+
+**Result:** `batch-generator` line 124 always gets `undefined` for `generated?.id` → `demand_queue.generated_entity_id` is always `null`
+
+---
+
+## 🔴🔴🔴 BATCH-GENERATOR MAPPING ERRORS (line 68-78)
+
+```javascript
+const generatorMap: Record<string, string> = {
+  challenge: 'strategy-challenge-generator',     // ✅ Exists
+  pilot: 'strategy-pilot-generator',             // ✅ Exists  
+  solution: 'strategy-challenge-generator',      // ⚠️ Wrong - solutions ≠ challenges
+  campaign: 'strategy-campaign-generator',       // ⚠️ Target table MISSING
+  event: 'strategy-event-planner',               // ✅ Exists
+  policy: 'strategy-policy-generator',           // ⚠️ Target table MISSING
+  partnership: 'strategy-partnership-matcher',   // ✅ Exists
+  rd_call: 'strategy-rd-call-generator',         // ✅ Exists
+  living_lab: 'strategy-challenge-generator'     // ❌ WRONG! Use strategy-lab-research-generator
+};
+// ❌ MISSING: program, initiative, project
+```
 
 ---
 
 ## 🔍 COMPLETE INTEGRATION INSPECTION CHECKLIST
 
-### A. SYSTEMS ALREADY AUDITED ✅
+### A. SYSTEMS AUDITED ✅
 
 | System | Location | Issues Found |
 |--------|----------|--------------|
 | `strategy-gap-analysis` | `supabase/functions/` | Only counts 4/9 entity types |
 | `strategy-demand-queue-generator` | `supabase/functions/` | `priorityWeights` + `buildPrefilledSpec` missing 5 types |
-| `strategy-batch-generator` | `supabase/functions/` | `living_lab` wrong mapping; `program` missing |
-| `strategy-quality-assessor` | `supabase/functions/` | Only handles 4 entity types |
+| `strategy-batch-generator` | `supabase/functions/` | Wrong mappings; expects `id` from generators that don't save |
+| `strategy-quality-assessor` | `supabase/functions/` | `getRequiredFields` only handles 4 entity types |
 | `Step6ActionPlans.jsx` | `src/components/strategy/wizard/steps/` | Types: `initiative`, `program`, `project`, `pilot` |
 | `useDemandQueue.js` | `src/hooks/strategy/` | Works correctly |
 | `useGapAnalysis.js` | `src/hooks/strategy/` | Works correctly |
+| **All entity generators** | `supabase/functions/strategy-*-generator/` | ❌ None save to DB, all return arrays |
+| **Entity tables** | Database | Use `strategic_plan_ids` (array), not single ID |
 
-### B. SYSTEMS REQUIRING INSPECTION 🔍
-
-| Priority | System | Location | What to Check |
-|----------|--------|----------|---------------|
-| 🔴 HIGH | Entity Target Tables | `types.ts` | Schema for `programs`, `marketing_campaigns`, `living_labs`, `policies`, `rd_calls`, `partnerships` |
-| 🔴 HIGH | Entity Generators' Return Format | `supabase/functions/strategy-*-generator/` | Does output match `batch-generator` expectations? |
-| 🔴 HIGH | StrategyWizardWrapper submitMutation | `src/components/strategy/wizard/` | Lines 306-354 - no `demand_queue` injection logic |
-| 🟡 MED | `action_plans` DB Table | Database | Does table exist or only JSONB in `strategic_plans.wizard_data`? |
-| 🟡 MED | Strategic Plan Entity Linkage | Entity tables | Do `challenges`, `pilots`, etc. have `strategic_plan_id` column? |
-| 🟡 MED | `strategy-program-theme-generator` | `supabase/functions/` | Generates themes, not programs - need actual program generator |
-| 🟡 MED | `strategy-lab-research-generator` | `supabase/functions/` | Exists but returns `living_labs`, batch-generator maps `living_lab` → wrong function |
-| 🟠 LOW | `marketing_campaigns` vs `campaigns` | Database | Different tables? Which one to use? |
-| 🟠 LOW | Generation history tracking | `generation_history` table | Verify linkage works |
-
-### C. TYPE MAPPING DISCREPANCIES
+### B. TYPE MAPPING DISCREPANCIES
 
 ```
 Step 12 UI Types:        demand_queue Types:       Entity Tables:
 ─────────────────────    ─────────────────────     ─────────────────────
-• initiative            • challenge ✅             • challenges ✅
+• initiative ❌          • challenge ✅             • challenges ✅
 • program               • pilot ✅                 • pilots ✅
-• project               • campaign                 • marketing_campaigns ❓
-• pilot ✅              • event                    • events ❓
-                        • policy                   • policies ❓
-                        • partnership              • partnerships ❓
-                        • rd_call                  • rd_calls ❓
-                        • living_lab               • living_labs ❓
-                                                   • programs ❓
-                                                   • solutions ❓
+• project ❌            • campaign ❌              • marketing_campaigns ❌ MISSING!
+• pilot ✅              • event ✅                 • events ✅
+                        • policy ❌                • policies ❌ MISSING!
+                        • partnership ✅           • partnerships ✅
+                        • rd_call ✅               • rd_calls ✅
+                        • living_lab ✅            • living_labs ✅
+                                                   • programs ✅
 ```
 
-### D. CRITICAL MISSING GENERATORS
+### C. CRITICAL DATA FLOW BREAKS
 
-| Entity Type | Expected Generator | Actual State |
-|-------------|-------------------|--------------|
-| `program` | `strategy-program-generator` | ❌ MISSING (only theme generator exists) |
-| `initiative` | `strategy-initiative-generator` | ❌ MISSING |
-| `project` | `strategy-project-generator` | ❌ MISSING |
-| `marketing_campaign` | `strategy-campaign-generator` | ⚠️ EXISTS but generates generic campaigns |
-| `living_lab` | `strategy-lab-research-generator` | ⚠️ EXISTS but batch-generator maps wrong |
-
-### E. EDGE FUNCTION INPUT/OUTPUT AUDIT NEEDED
-
-Each generator must be verified for:
-1. **Input parameters** - What does it expect?
-2. **Output format** - Does it return `{ success: true, [entity]s: [...] }`?
-3. **DB insertion** - Does it save to database or just return data?
-4. **Strategic plan linkage** - Does it link to `strategic_plan_id`?
-
+**Break 1: Step 12 → demand_queue (NO CONNECTION)**
 ```
-Generator                        | Input Match | Output Match | Saves to DB | Links to Plan
-─────────────────────────────────|─────────────|──────────────|─────────────|──────────────
-strategy-challenge-generator     | ❓          | ❓           | ❓          | ❓
-strategy-pilot-generator         | ❓          | ❓           | ❌ NO       | ❓
-strategy-campaign-generator      | ❓          | ❓           | ❓          | ❓
-strategy-event-planner           | ❓          | ❓           | ❓          | ❓
-strategy-policy-generator        | ❓          | ❓           | ❌ NO       | ❓
-strategy-partnership-matcher     | ❓          | ❓           | ❓          | ❓
-strategy-rd-call-generator       | ❓          | ❓           | ❓          | ❓
-strategy-lab-research-generator  | ❓          | ❓           | ❌ NO       | ❓
+Step6ActionPlans.jsx → StrategyWizardWrapper submitMutation → strategic_plans.wizard_data
+                                                                       │
+                                                               ✖ STOPS HERE
+                                                                       │
+                                                           demand_queue (empty)
 ```
 
-### F. FINAL VERIFICATION POINTS
+**Break 2: batch-generator → Generators (OUTPUT MISMATCH)**
+```
+batch-generator calls: await supabase.functions.invoke(generatorFn, {...})
+Generator returns: { success: true, challenges: [{...}, {...}] }
+batch-generator expects: generated?.id  ← UNDEFINED!
+Result: generated_entity_id = null (always)
+```
 
-Before Step 12 injection can work, verify:
+**Break 3: Generators → Database (NO SAVE)**
+```
+All generators: Return data only, do NOT save to database
+Result: Entity tables remain empty after generation
+```
 
-1. **UI → Queue Path**: `Step6ActionPlans.jsx` → `StrategyWizardWrapper.jsx` → `demand_queue` table
-2. **Queue → Generator Path**: `demand_queue` → `batch-generator` → correct generator function
-3. **Generator → Entity Path**: Generator function → correct entity table with `strategic_plan_id`
-4. **Entity → Quality Path**: New entity → `quality-assessor` → status update in `demand_queue`
-5. **Quality → History Path**: Assessment result → `generation_history` table
+### D. FINAL VERIFICATION POINTS
+
+Before Step 12 injection can work:
+
+1. ✅ **UI → Queue Path**: Need code in `StrategyWizardWrapper.jsx` to create `demand_queue` items
+2. ❌ **Queue → Generator Path**: `batch-generator` mappings incomplete
+3. ❌ **Generator → Entity Path**: Generators don't save to DB, don't return IDs
+4. ⚠️ **Entity → Quality Path**: Works but receives `undefined` for entity data
+5. ✅ **Quality → History Path**: Works correctly
 
 ---
 
