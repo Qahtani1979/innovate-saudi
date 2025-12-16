@@ -1,8 +1,69 @@
 # Step 12 (Action Plans) - Complete Implementation Plan
 
-> **Version:** 1.5  
+> **Version:** 2.0  
 > **Last Updated:** 2025-12-16  
 > **Status:** DEEP SYSTEM AUDIT COMPLETE | **NOT READY FOR STEP 12 INJECTION**
+
+---
+
+## 🚨 VERSION 2.0 DEEP AUDIT FINDINGS
+
+### CONFIRMED: Only 1 of 9 Generators Actually Works with Batch System
+
+After reading ALL generator source code, **ONLY `strategy-rd-call-generator`** properly saves to DB and returns an ID:
+
+```javascript
+// strategy-rd-call-generator (ONLY WORKING ONE)
+const { data: savedCall, error } = await supabase
+  .from('rd_calls')
+  .insert({...})
+  .select()
+  .single();
+
+return { success: true, rd_call_id: savedCall?.id, ...rd_call };  // ✅ HAS ID
+```
+
+All other generators:
+```javascript
+// strategy-challenge-generator (BROKEN)
+return { success: true, challenges };  // ❌ NO SAVE, NO ID
+
+// strategy-pilot-generator (BROKEN)  
+return { success: true, pilots };  // ❌ NO SAVE, NO ID
+
+// strategy-campaign-generator (BROKEN)
+return { success: true, campaigns };  // ❌ NO SAVE, NO ID
+```
+
+### VERIFIED: Gap Analysis Query Issues
+
+```javascript
+// strategy-gap-analysis lines 63-78
+supabase.from('challenges').contains('strategic_plan_ids', [strategic_plan_id])  // ✅ CORRECT
+supabase.from('pilots').contains('strategic_plan_ids', [strategic_plan_id])      // ✅ CORRECT  
+supabase.from('programs').eq('strategic_plan_id', strategic_plan_id)             // ❌ WRONG COLUMN
+supabase.from('events').eq('strategic_plan_id', strategic_plan_id)               // ❌ VERIFY
+```
+
+### VERIFIED: Step 12 Action Plan Types
+
+From `Step6ActionPlans.jsx` lines 207-212:
+- `initiative` - No table, no generator
+- `program` - Table exists, no generator in batch-generator map
+- `project` - No table, no generator
+- `pilot` - Table exists, generator exists, but generator doesn't save
+
+### NEW: BatchGenerationControls.jsx Has Same Issues
+
+`BatchGenerationControls.jsx` line 179-192 has identical mapping to `strategy-batch-generator`:
+```javascript
+const getGeneratorFunction = (entityType) => {
+  const map = {
+    living_lab: 'strategy-challenge-generator'  // ❌ STILL WRONG
+  };
+  // ...
+};
+```
 
 ---
 
@@ -1262,3 +1323,99 @@ After implementation:
 3. **Demand Queue** supports all entity types for gap-driven generation
 4. **Action Plans** can optionally queue entities for automated generation
 5. **Consistent flow** from wizard → demand_queue → entity tables
+
+---
+
+## 🔴 VERSION 2.0: MASTER FIX PRIORITY LIST
+
+### PRIORITY 1: Database (Must Fix First)
+| Task | Description | Blocks |
+|------|-------------|--------|
+| Create `policies` table | With RLS, `strategic_plan_ids` array | policy generator saving |
+| Create `marketing_campaigns` table | With RLS, `strategic_plan_ids` array | campaign generator saving |
+| Verify `programs` column | Confirm `strategic_plan_ids` is array type | gap analysis queries |
+
+### PRIORITY 2: Generator Output Fix (Critical)
+| Generator | Changes Needed |
+|-----------|----------------|
+| `strategy-challenge-generator` | Add: save to `challenges` table, return `{ id, ...challenge }` |
+| `strategy-pilot-generator` | Add: save to `pilots` table, return `{ id, ...pilot }` |
+| `strategy-campaign-generator` | Add: save to `marketing_campaigns` table, return `{ id, ...campaign }` |
+| `strategy-event-planner` | Verify: saves to `events` table, returns `{ id, ...event }` |
+| `strategy-policy-generator` | Add: save to `policies` table, return `{ id, ...policy }` |
+| `strategy-partnership-matcher` | Add: save to `partnerships` table, return `{ id, ...partnership }` |
+| `strategy-lab-research-generator` | Add: save to `living_labs` table, return `{ id, ...lab }` |
+| **ALL**: Must append `strategic_plan_id` to entity's `strategic_plan_ids` array |
+
+### PRIORITY 3: Batch Generator Mapping Fix
+| Type | Current Mapping | Correct Mapping |
+|------|-----------------|-----------------|
+| `living_lab` | `strategy-challenge-generator` ❌ | `strategy-lab-research-generator` ✅ |
+| `program` | MISSING | Create `strategy-program-generator` |
+| `initiative` | MISSING | Decide: map to programs or create table |
+| `project` | MISSING | Decide: map to existing or create table |
+| `solution` | `strategy-challenge-generator` | REMOVE (orphan type) |
+
+### PRIORITY 4: Gap Analysis Fix
+| Query | Issue | Fix |
+|-------|-------|-----|
+| `programs` | Uses `.eq('strategic_plan_id', id)` | Change to `.contains('strategic_plan_ids', [id])` |
+| `events` | Verify column name | Check if `strategic_plan_ids` array exists |
+| Missing entities | Only counts 4 types | Add: rd_calls, partnerships, living_labs, policies |
+
+### PRIORITY 5: Step 12 → Queue Wiring (New Code)
+```javascript
+// Add to StrategyWizardWrapper.jsx submitMutation after plan save
+const createQueueItemsFromActionPlans = async (planId, actionPlans) => {
+  const queueItems = actionPlans
+    .filter(ap => ap.should_create_entity)
+    .map(ap => ({
+      strategic_plan_id: planId,
+      objective_id: ap.objective_id,
+      entity_type: mapActionTypeToEntityType(ap.type), // initiative→?, program→program, pilot→pilot
+      generator_component: getGeneratorForType(ap.type),
+      priority_score: calculatePriority(ap),
+      prefilled_spec: {
+        title_en: ap.name_en,
+        title_ar: ap.name_ar,
+        description_en: ap.description_en,
+        description_ar: ap.description_ar,
+        budget_estimate: ap.budget_estimate,
+        start_date: ap.start_date,
+        end_date: ap.end_date,
+        deliverables: ap.deliverables,
+        ai_context: {
+          objective_text: getObjectiveTitle(ap.objective_index),
+          plan_vision: wizardData.vision_en
+        }
+      },
+      status: 'pending',
+      attempts: 0,
+      max_attempts: 3
+    }));
+  
+  await supabase.from('demand_queue').insert(queueItems);
+};
+```
+
+---
+
+## 🎯 RECOMMENDED IMPLEMENTATION ORDER
+
+```
+Week 1: Database + Generator Fixes
+├── Day 1-2: Create missing tables (policies, marketing_campaigns)
+├── Day 3-5: Fix all generators to save to DB and return IDs
+└── Day 5: Test generators individually
+
+Week 2: System Integration
+├── Day 1-2: Fix batch-generator and BatchGenerationControls mappings
+├── Day 3: Fix gap-analysis queries
+├── Day 4: Fix quality-assessor entity handlers
+└── Day 5: Test batch generation end-to-end
+
+Week 3: Step 12 Wiring
+├── Day 1-2: Add should_create_entity toggle to Step 12 UI
+├── Day 3-4: Add queue injection code to submitMutation
+└── Day 5: Full integration test
+```
