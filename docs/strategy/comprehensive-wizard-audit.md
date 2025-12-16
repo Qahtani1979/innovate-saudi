@@ -76,19 +76,19 @@ Step6ActionPlans → EntityGenerationPanel → useEntityGeneration hook
 
 | Step | Previous State | Current State |
 |------|----------------|---------------|
-| Step 13 (Resources) | Generic `resource_plan` | ✅ `entity_allocations[]` via EntityAllocationSelector |
-| Step 14 (Timeline) | No entity support | ✅ `entity_milestones[]` and `entity_phases[]` |
+| Step 13 (Resources) | Generic `resource_plan` | ✅ `entity_allocations[]` via EntityAllocationSelector UI |
+| Step 14 (Timeline) | No entity support | ✅ `entity_milestones[]` and `entity_phases[]` with EntityAllocationSelector UI |
 | Step 15 (Governance) | Generic RACI | ✅ `strategicPlanId` passed for future entity_oversight |
-| Step 16 (Communication) | Generic messages | ✅ `entity_launches[]` in key_messages |
-| Step 17 (Change) | Generic training | ✅ `entity_training[]` in training_plan |
+| Step 16 (Communication) | Generic messages | ✅ `entity_launches[]` in key_messages with EntityAllocationSelector UI |
+| Step 17 (Change) | Generic training | ✅ `entity_training[]` in training_plan with EntityAllocationSelector UI |
 
 **Files Created:**
 - `src/components/strategy/wizard/EntityAllocationSelector.jsx` - Reusable entity linking component
 
 **Files Modified:**
-- `src/components/strategy/wizard/steps/Step13Resources.jsx` - Added EntityAllocationSelector
-- `src/components/strategy/wizard/steps/Step7Timeline.jsx` - Added entity fields
-- `src/components/strategy/wizard/steps/Step16Communication.jsx` - Added entity fields
+- `src/components/strategy/wizard/steps/Step13Resources.jsx` - Added EntityAllocationSelector UI
+- `src/components/strategy/wizard/steps/Step7Timeline.jsx` - Added EntityAllocationSelector UI for phases & milestones
+- `src/components/strategy/wizard/steps/Step16Communication.jsx` - Added EntityAllocationSelector UI for messages & training
 - `src/components/strategy/wizard/StrategyWizardWrapper.jsx` - Pass strategicPlanId to steps
 
 ---
@@ -347,10 +347,10 @@ After fixes, verify:
 - [x] Queue population via "Add to Queue" button
 - [x] Batch generation via "Generate Entities" button
 - [x] Entity type counts display correctly
-- [x] Step 13 shows EntityAllocationSelector
-- [x] Step 14 has entity_milestones/entity_phases fields
-- [x] Step 16 has entity_launches field
-- [x] Step 17 has entity_training field
+- [x] Step 13 shows EntityAllocationSelector UI for resources
+- [x] Step 14 shows EntityAllocationSelector UI for phases AND milestones
+- [x] Step 16 shows EntityAllocationSelector UI for key messages
+- [x] Step 17 shows EntityAllocationSelector UI for training items
 - [x] strategicPlanId passed to Steps 12-17
 
 ---
