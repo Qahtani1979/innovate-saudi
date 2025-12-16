@@ -15,8 +15,8 @@ INSERT INTO public.municipalities (
   is_verified
 )
 VALUES (
-  'Ministry of Municipal and Rural Affairs and Housing (National)', 
-  'وزارة الشؤون البلدية والقروية والإسكان (المستوى الوطني)', 
+  'Ministry of Municipalities and Housing (National)', 
+  'وزارة البلديات والإسكان (المستوى الوطني)', 
   'National',
   'national',
   (SELECT id FROM ministries WHERE code = 'MOMAH'),
