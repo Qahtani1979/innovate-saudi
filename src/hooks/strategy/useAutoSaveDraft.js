@@ -43,7 +43,7 @@ export function useAutoSaveDraft({
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
-          if (parsed && parsed.name_en) {
+          if (parsed && (parsed.name_en || parsed.name_ar)) {
             setHasDraft(true);
           }
         } catch (e) {
@@ -78,8 +78,8 @@ export function useAutoSaveDraft({
     }
 
     // Don't save if no meaningful data
-    if (!data.name_en) {
-      console.log('[AutoSave] No name_en, skipping save');
+    if (!data.name_en && !data.name_ar) {
+      console.log('[AutoSave] No plan name (name_en/name_ar), skipping save');
       return { success: false, error: 'No plan name' };
     }
 
@@ -90,7 +90,7 @@ export function useAutoSaveDraft({
       const { data: { user } } = await supabase.auth.getUser();
       
       const saveData = {
-        name_en: data.name_en || 'Untitled Plan',
+        name_en: data.name_en || data.name_ar || 'Untitled Plan',
         name_ar: data.name_ar,
         description_en: data.description_en,
         description_ar: data.description_ar,
