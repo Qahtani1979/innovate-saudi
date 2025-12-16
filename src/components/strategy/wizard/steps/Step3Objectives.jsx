@@ -26,7 +26,7 @@ export default function Step3Objectives({
   const [proposedObjective, setProposedObjective] = useState(null);
   const [differentiationScore, setDifferentiationScore] = useState(null);
   const [isGeneratingSingle, setIsGeneratingSingle] = useState(false);
-  const [targetSector, setTargetSector] = useState(''); // Sector to target for regeneration
+  const [targetSector, setTargetSector] = useState('_any'); // Sector to target for regeneration ('_any' = AI chooses)
   
   const objectives = data.objectives || [];
   
@@ -97,7 +97,7 @@ export default function Step3Objectives({
     try {
       if (onGenerateSingleObjective) {
         // Use sector override, or the selected target sector, or let AI choose
-        const selectedSector = sectorOverride || targetSector || null;
+        const selectedSector = sectorOverride || (targetSector !== '_any' ? targetSector : null);
         const result = await onGenerateSingleObjective(objectives, selectedSector);
         if (result?.objective) {
           setProposedObjective(result.objective);
@@ -117,7 +117,7 @@ export default function Step3Objectives({
 
   // Regenerate with specific sector
   const handleRegenerateWithSector = () => {
-    handleGenerateSingleObjective(targetSector || null);
+    handleGenerateSingleObjective(targetSector !== '_any' ? targetSector : null);
   };
 
   // Approve and add the proposed objective
@@ -511,7 +511,7 @@ export default function Step3Objectives({
                           ? 'bg-primary text-primary-foreground' 
                           : 'hover:bg-primary/10'
                       } ${sector.count === 0 ? 'border-amber-400' : ''}`}
-                      onClick={() => setTargetSector(targetSector === sector.code ? '' : sector.code)}
+                      onClick={() => setTargetSector(targetSector === sector.code ? '_any' : sector.code)}
                     >
                       {language === 'ar' ? sector.name_ar : sector.name_en}
                       <span className="ml-1 opacity-70">({sector.count})</span>
@@ -526,7 +526,7 @@ export default function Step3Objectives({
                     <SelectValue placeholder={t({ en: 'Or select any sector...', ar: 'أو اختر أي قطاع...' })} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t({ en: 'Any Sector (AI chooses)', ar: 'أي قطاع (الذكاء الاصطناعي يختار)' })}</SelectItem>
+                    <SelectItem value="_any">{t({ en: 'Any Sector (AI chooses)', ar: 'أي قطاع (الذكاء الاصطناعي يختار)' })}</SelectItem>
                     {MOMAH_SECTORS.map(s => {
                       const count = objectives.filter(o => o.sector_code === s.code).length;
                       return (
@@ -537,7 +537,7 @@ export default function Step3Objectives({
                     })}
                   </SelectContent>
                 </Select>
-                {targetSector && (
+                {targetSector && targetSector !== '_any' && (
                   <p className="text-xs text-muted-foreground mt-2">
                     {t({ 
                       en: `Will generate an objective specifically for: ${MOMAH_SECTORS.find(s => s.code === targetSector)?.name_en}`, 
@@ -565,7 +565,7 @@ export default function Step3Objectives({
                 className="w-full sm:w-auto"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isGeneratingSingle ? 'animate-spin' : ''}`} />
-                {targetSector 
+                {targetSector && targetSector !== '_any'
                   ? t({ en: 'Regenerate in Sector', ar: 'إعادة الإنشاء في القطاع' })
                   : t({ en: 'Regenerate', ar: 'إعادة الإنشاء' })
                 }
