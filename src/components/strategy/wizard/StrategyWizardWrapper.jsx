@@ -2569,6 +2569,7 @@ Return alignments as an array under the "alignments" key with proper objective_i
       },
       change: {
         type: 'object',
+        required: ['readiness_assessment_en', 'readiness_assessment_ar', 'change_approach_en', 'change_approach_ar', 'resistance_management_en', 'resistance_management_ar', 'training_plan'],
         properties: {
           readiness_assessment_en: { type: 'string' },
           readiness_assessment_ar: { type: 'string' },
@@ -2576,7 +2577,23 @@ Return alignments as an array under the "alignments" key with proper objective_i
           change_approach_ar: { type: 'string' },
           resistance_management_en: { type: 'string' },
           resistance_management_ar: { type: 'string' },
-          training_plan: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, target_audience: { type: 'string' }, duration: { type: 'string' }, timeline: { type: 'string' } } } }
+          training_plan: { 
+            type: 'array', 
+            items: { 
+              type: 'object', 
+              required: ['name_en', 'name_ar', 'target_audience_en', 'target_audience_ar', 'duration_en', 'duration_ar', 'timeline_en', 'timeline_ar'],
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' }, 
+                target_audience_en: { type: 'string' }, 
+                target_audience_ar: { type: 'string' }, 
+                duration_en: { type: 'string' }, 
+                duration_ar: { type: 'string' }, 
+                timeline_en: { type: 'string' }, 
+                timeline_ar: { type: 'string' } 
+              } 
+            } 
+          }
         }
       }
     };
@@ -3015,10 +3032,15 @@ Return alignments as an array under the "alignments" key with proper objective_i
             resistance_management_en: data.resistance_management_en || data.resistance_management || '',
             resistance_management_ar: data.resistance_management_ar || '',
             training_plan: (data.training_plan || []).map((tp, i) => ({ 
-              ...tp, 
               id: Date.now().toString() + 'train' + i,
               name_en: tp.name_en || tp.name || '',
-              name_ar: tp.name_ar || ''
+              name_ar: tp.name_ar || '',
+              target_audience_en: tp.target_audience_en || tp.target_audience || '',
+              target_audience_ar: tp.target_audience_ar || '',
+              duration_en: tp.duration_en || tp.duration || '',
+              duration_ar: tp.duration_ar || '',
+              timeline_en: tp.timeline_en || tp.timeline || '',
+              timeline_ar: tp.timeline_ar || ''
             }))
           };
         }
