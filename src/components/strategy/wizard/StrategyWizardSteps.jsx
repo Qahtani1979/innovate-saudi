@@ -201,102 +201,11 @@ export const WIZARD_STEPS = [
   }
 ];
 
-export const MOMAH_SECTORS = [
-  { code: 'URBAN_PLANNING', name_en: 'Urban Planning', name_ar: 'التخطيط الحضري' },
-  { code: 'HOUSING', name_en: 'Housing', name_ar: 'الإسكان' },
-  { code: 'INFRASTRUCTURE', name_en: 'Infrastructure', name_ar: 'البنية التحتية' },
-  { code: 'ENVIRONMENT', name_en: 'Environment', name_ar: 'البيئة' },
-  { code: 'SMART_CITIES', name_en: 'Smart Cities', name_ar: 'المدن الذكية' },
-  { code: 'DIGITAL_SERVICES', name_en: 'Digital Services', name_ar: 'الخدمات الرقمية' },
-  { code: 'CITIZEN_SERVICES', name_en: 'Citizen Services', name_ar: 'خدمات المواطنين' },
-  { code: 'RURAL_DEVELOPMENT', name_en: 'Rural Development', name_ar: 'التنمية الريفية' },
-  { code: 'PUBLIC_SPACES', name_en: 'Public Spaces', name_ar: 'الأماكن العامة' },
-  { code: 'WATER_RESOURCES', name_en: 'Water Resources', name_ar: 'الموارد المائية' },
-  { code: 'TRANSPORTATION', name_en: 'Transportation', name_ar: 'النقل' },
-  { code: 'HERITAGE', name_en: 'Heritage', name_ar: 'التراث' }
-];
-
-export const STRATEGIC_THEMES = [
-  { code: 'DIGITAL_TRANSFORMATION', name_en: 'Digital Transformation', name_ar: 'التحول الرقمي' },
-  { code: 'SUSTAINABILITY', name_en: 'Sustainability & Green', name_ar: 'الاستدامة والبيئة' },
-  { code: 'CITIZEN_EXPERIENCE', name_en: 'Citizen Experience', name_ar: 'تجربة المواطن' },
-  { code: 'INNOVATION', name_en: 'Innovation & R&D', name_ar: 'الابتكار والبحث' },
-  { code: 'GOVERNANCE', name_en: 'Governance & Compliance', name_ar: 'الحوكمة والامتثال' },
-  { code: 'ECONOMIC_ENABLEMENT', name_en: 'Economic Enablement', name_ar: 'التمكين الاقتصادي' },
-  { code: 'QUALITY_OF_LIFE', name_en: 'Quality of Life', name_ar: 'جودة الحياة' },
-  { code: 'OPERATIONAL_EXCELLENCE', name_en: 'Operational Excellence', name_ar: 'التميز التشغيلي' }
-];
-
-export const VISION_2030_PROGRAMS = [
-  { code: 'QUALITY_OF_LIFE', name_en: 'Quality of Life Program', name_ar: 'برنامج جودة الحياة' },
-  { code: 'HOUSING', name_en: 'Housing Program (Sakani)', name_ar: 'برنامج الإسكان (سكني)' },
-  { code: 'NTP', name_en: 'National Transformation Program', name_ar: 'برنامج التحول الوطني' },
-  { code: 'THRIVING_CITIES', name_en: 'Thriving Cities', name_ar: 'المدن المزدهرة' },
-  { code: 'FISCAL_BALANCE', name_en: 'Fiscal Balance Program', name_ar: 'برنامج التوازن المالي' },
-  { code: 'PRIVATIZATION', name_en: 'Privatization Program', name_ar: 'برنامج التخصيص' },
-  { code: 'DARP', name_en: 'Digital Government', name_ar: 'الحكومة الرقمية' }
-];
-
-export const REGIONS = [
-  { code: 'RIYADH', name_en: 'Riyadh Region', name_ar: 'منطقة الرياض' },
-  { code: 'MAKKAH', name_en: 'Makkah Region', name_ar: 'منطقة مكة المكرمة' },
-  { code: 'MADINAH', name_en: 'Madinah Region', name_ar: 'منطقة المدينة المنورة' },
-  { code: 'EASTERN', name_en: 'Eastern Province', name_ar: 'المنطقة الشرقية' },
-  { code: 'ASIR', name_en: 'Asir Region', name_ar: 'منطقة عسير' },
-  { code: 'TABUK', name_en: 'Tabuk Region', name_ar: 'منطقة تبوك' },
-  { code: 'HAIL', name_en: 'Hail Region', name_ar: 'منطقة حائل' },
-  { code: 'NORTHERN_BORDERS', name_en: 'Northern Borders', name_ar: 'منطقة الحدود الشمالية' },
-  { code: 'JAZAN', name_en: 'Jazan Region', name_ar: 'منطقة جازان' },
-  { code: 'NAJRAN', name_en: 'Najran Region', name_ar: 'منطقة نجران' },
-  { code: 'AL_BAHA', name_en: 'Al-Baha Region', name_ar: 'منطقة الباحة' },
-  { code: 'AL_JOUF', name_en: 'Al-Jouf Region', name_ar: 'منطقة الجوف' },
-  { code: 'QASSIM', name_en: 'Qassim Region', name_ar: 'منطقة القصيم' }
-];
-
-export const EMERGING_TECHNOLOGIES = [
-  { code: 'AI_ML', name_en: 'AI & Machine Learning', name_ar: 'الذكاء الاصطناعي' },
-  { code: 'IOT', name_en: 'Internet of Things', name_ar: 'إنترنت الأشياء' },
-  { code: 'BLOCKCHAIN', name_en: 'Blockchain', name_ar: 'البلوكتشين' },
-  { code: 'DIGITAL_TWINS', name_en: 'Digital Twins', name_ar: 'التوائم الرقمية' },
-  { code: 'DRONES', name_en: 'Drones & UAVs', name_ar: 'الطائرات المسيرة' },
-  { code: '5G_6G', name_en: '5G/6G Networks', name_ar: 'شبكات الجيل الخامس' },
-  { code: 'ROBOTICS', name_en: 'Robotics & Automation', name_ar: 'الروبوتات والأتمتة' },
-  { code: 'AR_VR', name_en: 'AR/VR/XR', name_ar: 'الواقع المعزز والافتراضي' },
-  { code: 'BIM', name_en: 'BIM & GIS', name_ar: 'نمذجة معلومات البناء' },
-  { code: 'CLEANTECH', name_en: 'CleanTech', name_ar: 'التقنيات النظيفة' }
-];
-
-export const STAKEHOLDER_TYPES = [
-  { code: 'INTERNAL', name_en: 'Internal', name_ar: 'داخلي' },
-  { code: 'GOVERNMENT', name_en: 'Government Entity', name_ar: 'جهة حكومية' },
-  { code: 'PRIVATE', name_en: 'Private Sector', name_ar: 'القطاع الخاص' },
-  { code: 'CITIZEN', name_en: 'Citizens', name_ar: 'المواطنون' },
-  { code: 'VENDOR', name_en: 'Vendors/Suppliers', name_ar: 'الموردون' },
-  { code: 'NGO', name_en: 'NGO/Non-profit', name_ar: 'منظمات غير ربحية' },
-  { code: 'ACADEMIA', name_en: 'Academia/Research', name_ar: 'الأكاديميا والبحث' },
-  { code: 'MEDIA', name_en: 'Media', name_ar: 'الإعلام' }
-];
-
-export const RISK_CATEGORIES = [
-  { code: 'STRATEGIC', name_en: 'Strategic', name_ar: 'استراتيجي' },
-  { code: 'OPERATIONAL', name_en: 'Operational', name_ar: 'تشغيلي' },
-  { code: 'FINANCIAL', name_en: 'Financial', name_ar: 'مالي' },
-  { code: 'REGULATORY', name_en: 'Regulatory/Compliance', name_ar: 'تنظيمي/امتثال' },
-  { code: 'TECHNOLOGY', name_en: 'Technology', name_ar: 'تقني' },
-  { code: 'REPUTATIONAL', name_en: 'Reputational', name_ar: 'سمعة' },
-  { code: 'POLITICAL', name_en: 'Political', name_ar: 'سياسي' },
-  { code: 'ENVIRONMENTAL', name_en: 'Environmental', name_ar: 'بيئي' }
-];
-
-export const GOVERNANCE_ROLES = [
-  { code: 'STEERING_COMMITTEE', name_en: 'Steering Committee', name_ar: 'اللجنة التوجيهية' },
-  { code: 'EXECUTIVE_SPONSOR', name_en: 'Executive Sponsor', name_ar: 'الراعي التنفيذي' },
-  { code: 'PROGRAM_MANAGER', name_en: 'Program Manager', name_ar: 'مدير البرنامج' },
-  { code: 'WORKSTREAM_LEAD', name_en: 'Workstream Lead', name_ar: 'قائد مسار العمل' },
-  { code: 'PMO', name_en: 'PMO', name_ar: 'مكتب إدارة المشاريع' },
-  { code: 'QUALITY_ASSURANCE', name_en: 'Quality Assurance', name_ar: 'ضمان الجودة' },
-  { code: 'CHANGE_BOARD', name_en: 'Change Control Board', name_ar: 'لجنة التحكم بالتغيير' }
-];
+// NOTE: Legacy constants (MOMAH_SECTORS, STRATEGIC_THEMES, VISION_2030_PROGRAMS, 
+// REGIONS, EMERGING_TECHNOLOGIES, STAKEHOLDER_TYPES, RISK_CATEGORIES, GOVERNANCE_ROLES)
+// have been migrated to database lookup tables and are now accessed via useTaxonomy() hook.
+// See: lookup_strategic_themes, lookup_technologies, lookup_vision_programs,
+// lookup_stakeholder_types, lookup_risk_categories, lookup_governance_roles tables.
 
 export const initialWizardData = {
   // Step 1: Context & Discovery
