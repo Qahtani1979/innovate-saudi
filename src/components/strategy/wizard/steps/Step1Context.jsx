@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Loader2, X } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { 
-  MOMAH_SECTORS, STRATEGIC_THEMES, VISION_2030_PROGRAMS, 
+  STRATEGIC_THEMES, VISION_2030_PROGRAMS, 
   REGIONS, EMERGING_TECHNOLOGIES 
 } from '../StrategyWizardSteps';
 
@@ -21,6 +22,7 @@ export default function Step1Context({
   isGenerating 
 }) {
   const { language, t, isRTL } = useLanguage();
+  const { sectors } = useTaxonomy();
 
   const toggleItem = (field, code) => {
     const current = data[field] || [];
@@ -206,7 +208,7 @@ export default function Step1Context({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {MOMAH_SECTORS.map(sector => (
+            {sectors.map(sector => (
               <Badge 
                 key={sector.code}
                 variant={data.target_sectors?.includes(sector.code) ? 'default' : 'outline'}
