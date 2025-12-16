@@ -44,25 +44,22 @@ serve(async (req) => {
 
     const { context, language = 'en' } = await req.json();
     
-    const planContext = context?.planData || {};
-    const contextData = planContext.step1 || {};
-    const visionData = planContext.step2 || {};
-    const stakeholders = planContext.step3?.stakeholders || [];
-    const risks = planContext.step7?.risks || [];
+    const wizardData = context?.wizardData || context?.planData || {};
+    const stakeholders = wizardData.stakeholders || [];
+    const risks = wizardData.risks || [];
 
     const contextSummary = `
 PLAN CONTEXT:
-- Entity: ${contextData.entity_name_en || contextData.entity_name || 'Municipality/Entity'}
-- Type: ${contextData.entity_type || 'municipality'}
-- Duration: ${contextData.duration_years || 5} years
-- Vision: ${visionData.vision_en || 'Not specified'}
-- Strategic Pillars: ${(visionData.strategic_pillars || []).map((p: any) => p.title_en || p.name_en).slice(0, 4).join(', ')}
+- Plan Name: ${wizardData.name_en || 'Strategic Plan'}
+- Duration: ${wizardData.duration_years || 5} years (${wizardData.start_year || ''} - ${wizardData.end_year || ''})
+- Vision: ${wizardData.vision_en || 'Not specified'}
+- Strategic Pillars: ${(wizardData.strategic_pillars || []).map((p: any) => p.title_en || p.name_en || p.title || p.name).slice(0, 4).join(', ')}
 
 KEY STAKEHOLDERS (${stakeholders.length} total):
-${stakeholders.slice(0, 5).map((s: any) => `- ${s.name_en || s.name}: ${s.type || 'stakeholder'}`).join('\n')}
+${stakeholders.slice(0, 5).map((s: any) => `- ${s.name_en || s.name || ''}: ${s.type || 'stakeholder'}`).join('\n')}
 
 HIGH-PRIORITY RISKS:
-${risks.filter((r: any) => r.risk_score >= 6).slice(0, 3).map((r: any) => `- ${r.title_en}`).join('\n') || 'None identified'}`;
+${(risks || []).filter((r: any) => (r.risk_score || 0) >= 6).slice(0, 3).map((r: any) => `- ${r.title_en || r.title || ''}`).join('\n') || 'None identified'}`;
 
     const prompt = `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
@@ -82,7 +79,7 @@ Generate:
 For each item provide bilingual content (English and Arabic).
 Consider Saudi-specific factors like Vision 2030 alignment, Saudization, digital transformation mandates.`;
 
-    console.log('[strategy-dependency-generator] Generating for:', contextData.entity_name_en || 'entity');
+    console.log('[strategy-dependency-generator] Generating for:', wizardData.name_en || 'plan');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -186,26 +183,32 @@ Consider Saudi-specific factors like Vision 2030 alignment, Saudization, digital
 
     const generatedData = JSON.parse(toolCall.function.arguments);
 
-    // Add IDs to all items
+    // Add IDs to all items + ensure UI never receives undefined/empty-critical fields
+    const fallbackEn = 'TBD';
+    const fallbackAr = 'يتم التحديد لاحقاً';
+
     const result = {
       dependencies: (generatedData.dependencies || []).map((d: any, i: number) => ({
         ...d,
         id: `dep-${Date.now()}-${i}`,
-        source: d.source || '',
-        target: d.target || '',
-        notes: d.notes || ''
+        type: d.type || 'internal',
+        criticality: d.criticality || 'medium',
+        status: d.status || 'pending',
+        source: (d.source && String(d.source).trim()) ? d.source : fallbackEn,
+        target: (d.target && String(d.target).trim()) ? d.target : fallbackEn,
+        notes: (d.notes && String(d.notes).trim()) ? d.notes : fallbackEn
       })),
       constraints: (generatedData.constraints || []).map((c: any, i: number) => ({
         ...c,
         id: `con-${Date.now()}-${i}`,
-        mitigation_en: c.mitigation_en || '',
-        mitigation_ar: c.mitigation_ar || ''
+        mitigation_en: (c.mitigation_en && String(c.mitigation_en).trim()) ? c.mitigation_en : fallbackEn,
+        mitigation_ar: (c.mitigation_ar && String(c.mitigation_ar).trim()) ? c.mitigation_ar : fallbackAr
       })),
       assumptions: (generatedData.assumptions || []).map((a: any, i: number) => ({
         ...a,
         id: `asm-${Date.now()}-${i}`,
-        validation_method_en: a.validation_method_en || '',
-        validation_method_ar: a.validation_method_ar || ''
+        validation_method_en: (a.validation_method_en && String(a.validation_method_en).trim()) ? a.validation_method_en : fallbackEn,
+        validation_method_ar: (a.validation_method_ar && String(a.validation_method_ar).trim()) ? a.validation_method_ar : fallbackAr
       }))
     };
 

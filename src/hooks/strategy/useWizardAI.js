@@ -78,7 +78,7 @@ const STEP_PROMPT_KEYS = {
   5: 'swot',
   6: 'scenarios',
   7: 'risks',
-  8: 'pillars',
+  8: 'dependencies',
   9: 'objectives',
   10: 'national',
   11: 'kpis',
