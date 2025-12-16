@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -7,14 +7,37 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sparkles, AlertTriangle, Plus, X, Shield } from 'lucide-react';
+import { Sparkles, AlertTriangle, Plus, X, Shield, Save } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
+import { useRiskAssessment } from '@/hooks/strategy/useRiskAssessment';
 import { cn } from '@/lib/utils';
 
-export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating }) {
+export default function Step7Risks({ 
+  data, 
+  onChange, 
+  onGenerateAI, 
+  isGenerating,
+  strategicPlanId = null // Optional: for DB persistence
+}) {
   const { language, t, isRTL } = useLanguage();
   const { riskCategories } = useTaxonomy();
+  
+  // DB persistence hook
+  const {
+    risks: dbRisks,
+    loading: dbLoading,
+    saving: dbSaving,
+    saveRisk,
+    deleteRisk
+  } = useRiskAssessment(strategicPlanId);
+  
+  // Sync DB data on load
+  useEffect(() => {
+    if (strategicPlanId && dbRisks?.length > 0 && !dbLoading && !data.risks?.length) {
+      onChange({ risks: dbRisks });
+    }
+  }, [strategicPlanId, dbRisks, dbLoading]);
 
   const addRisk = () => {
     const newRisk = {

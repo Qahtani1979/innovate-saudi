@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Globe, Plus, X, Building2, DollarSign, Users, Cpu, Leaf, Scale } from 'lucide-react';
+import { Sparkles, Globe, Plus, X, Building2, DollarSign, Users, Cpu, Leaf, Scale, Save } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';
 import { cn } from '@/lib/utils';
 
 const PESTEL_CATEGORIES = [
@@ -60,8 +61,23 @@ const PESTEL_CATEGORIES = [
   }
 ];
 
-export default function Step4PESTEL({ data, onChange, onGenerateAI, isGenerating }) {
+export default function Step4PESTEL({ 
+  data, 
+  onChange, 
+  onGenerateAI, 
+  isGenerating,
+  strategicPlanId = null // Optional: for DB persistence
+}) {
   const { language, t, isRTL } = useLanguage();
+  
+  // DB persistence hook (PESTEL uses environmental factors)
+  const {
+    factors: dbFactors,
+    loading: dbLoading,
+    saving: dbSaving,
+    saveFactor,
+    deleteFactor
+  } = useEnvironmentalFactors(strategicPlanId);
 
   const addFactor = (category) => {
     const newFactor = { 

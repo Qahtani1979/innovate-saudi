@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Megaphone, Plus, X, Users, Radio, Mail, Globe, BookOpen, ChevronUp, ChevronDown, Link2 } from 'lucide-react';
+import { Sparkles, Megaphone, Plus, X, Users, Radio, Mail, Globe, BookOpen, ChevronUp, ChevronDown, Link2, MessageSquare, Calendar } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import { useCommunicationAI } from '@/hooks/strategy/useCommunicationAI';
+import { useCommunicationPlans } from '@/hooks/strategy/useCommunicationPlans';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 
 const AUDIENCE_TYPES = [
@@ -45,6 +47,10 @@ const FREQUENCY_OPTIONS = [
 export function Step16Communication({ data, onChange, onGenerateAI, isGenerating, strategicPlanId }) {
   const { language, t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('audiences');
+  
+  // Specialized AI hooks for communication
+  const { generateKeyMessages, suggestChannelStrategy, generateContentCalendar, isLoading: commAILoading } = useCommunicationAI();
+  const { plans: commPlans, createPlan, isCreating: planCreating } = useCommunicationPlans(strategicPlanId);
 
   const communicationPlan = data.communication_plan || {};
   const targetAudiences = communicationPlan.target_audiences || [];

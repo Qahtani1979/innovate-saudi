@@ -11,10 +11,12 @@ import {
   Lightbulb, Calendar, FileText, Save, Loader2, Send,
   Users, Globe, Shield, Megaphone, DollarSign, Download, FileSpreadsheet,
   ChevronDown, ChevronRight, TrendingUp, BarChart3, Clock, Building,
-  AlertCircle, Briefcase, PieChart, MessageSquare, RefreshCw
+  AlertCircle, Briefcase, PieChart, MessageSquare, RefreshCw, GitBranch
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
+import { useWorkflowAI } from '@/hooks/strategy/useWorkflowAI';
+import { useStrategyVersions } from '@/hooks/strategy/useStrategyVersions';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -29,10 +31,16 @@ export default function Step18Review({
   isSaving,
   isSubmitting,
   validationErrors = [],
-  mode = 'create'
+  mode = 'create',
+  strategicPlanId = null
 }) {
   const { language, t, isRTL } = useLanguage();
   const { getSectorName: getTaxonomySectorName, strategicThemes, technologies, visionPrograms } = useTaxonomy();
+  
+  // Workflow and versioning AI hooks
+  const { optimizeWorkflow, validatePlan, isLoading: workflowLoading } = useWorkflowAI();
+  const { versions, createVersion, isLoading: versionsLoading } = useStrategyVersions(strategicPlanId);
+  
   const [isExporting, setIsExporting] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     overview: true,
