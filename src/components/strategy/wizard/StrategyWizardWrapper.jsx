@@ -2999,7 +2999,12 @@ Return alignments as an array under the "alignments" key with proper objective_i
               id: Date.now().toString() + i,
               name_en: d.name_en || d.name || '',
               name_ar: d.name_ar || '',
-              status: 'pending'
+              type: d.type || 'internal',
+              source: d.source || '',
+              target: d.target || '',
+              criticality: d.criticality || 'medium',
+              status: d.status || 'pending',
+              notes: d.notes || ''
             }));
           }
           if (data.constraints) {
