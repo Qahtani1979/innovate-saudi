@@ -18,6 +18,7 @@ import { MOMAH_SECTORS, STRATEGIC_THEMES, VISION_2030_PROGRAMS, EMERGING_TECHNOL
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
+import AIStrategicPlanAnalyzer from '../AIStrategicPlanAnalyzer';
 
 export default function Step18Review({ 
   data, 
@@ -439,6 +440,9 @@ export default function Step18Review({
           </AlertDescription>
         </Alert>
       )}
+
+      {/* AI Plan Analyzer */}
+      <AIStrategicPlanAnalyzer planData={data} />
 
       {/* Completeness Overview */}
       <Card>

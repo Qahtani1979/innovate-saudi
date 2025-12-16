@@ -236,3 +236,6 @@ verify_jwt = false
 
 [functions.strategy-scheduled-analysis]
 verify_jwt = false
+
+[functions.analyze-strategic-plan]
+verify_jwt = false
