@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useStakeholderAnalysis } from '@/hooks/strategy/useStakeholderAnalysis';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,14 +29,14 @@ import {
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Stakeholder types
-const STAKEHOLDER_TYPES = [
-  { value: 'government', labelEn: 'Government', labelAr: 'حكومي', color: 'bg-blue-500' },
-  { value: 'private', labelEn: 'Private Sector', labelAr: 'القطاع الخاص', color: 'bg-green-500' },
-  { value: 'academic', labelEn: 'Academic', labelAr: 'أكاديمي', color: 'bg-purple-500' },
-  { value: 'ngo', labelEn: 'NGO/Non-profit', labelAr: 'منظمة غير ربحية', color: 'bg-orange-500' },
-  { value: 'citizen', labelEn: 'Citizens', labelAr: 'المواطنون', color: 'bg-teal-500' },
-  { value: 'international', labelEn: 'International', labelAr: 'دولي', color: 'bg-indigo-500' }
+// Fallback stakeholder types (used when taxonomy not loaded)
+const FALLBACK_STAKEHOLDER_TYPES = [
+  { value: 'GOVERNMENT', labelEn: 'Government', labelAr: 'حكومي', color: 'bg-blue-500' },
+  { value: 'PRIVATE_SECTOR', labelEn: 'Private Sector', labelAr: 'القطاع الخاص', color: 'bg-green-500' },
+  { value: 'ACADEMIC', labelEn: 'Academic', labelAr: 'أكاديمي', color: 'bg-purple-500' },
+  { value: 'NGO', labelEn: 'NGO/Non-profit', labelAr: 'منظمة غير ربحية', color: 'bg-orange-500' },
+  { value: 'CITIZENS', labelEn: 'Citizens', labelAr: 'المواطنون', color: 'bg-teal-500' },
+  { value: 'INTERNATIONAL', labelEn: 'International', labelAr: 'دولي', color: 'bg-indigo-500' }
 ];
 
 // Engagement strategies based on quadrant
@@ -67,7 +68,7 @@ const ENGAGEMENT_STRATEGIES = {
 };
 
 // Power/Interest Grid Component
-function PowerInterestGrid({ stakeholders, onSelectStakeholder, selectedId, language }) {
+function PowerInterestGrid({ stakeholders, onSelectStakeholder, selectedId, language, stakeholderTypes }) {
   const gridRef = React.useRef(null);
   
   // Calculate position based on power and interest (0-100 scale)
@@ -131,7 +132,7 @@ function PowerInterestGrid({ stakeholders, onSelectStakeholder, selectedId, lang
         {/* Stakeholder points */}
         <TooltipProvider>
           {stakeholders.map((stakeholder) => {
-            const typeConfig = STAKEHOLDER_TYPES.find(t => t.value === stakeholder.type);
+            const typeConfig = stakeholderTypes.find(t => t.value === stakeholder.type || t.code === stakeholder.type);
             const position = getPosition(stakeholder.power, stakeholder.interest);
             const isSelected = selectedId === stakeholder.id;
             
@@ -152,7 +153,7 @@ function PowerInterestGrid({ stakeholders, onSelectStakeholder, selectedId, lang
                 <TooltipContent>
                   <div className="text-sm">
                     <p className="font-medium">{language === 'ar' && stakeholder.name_ar ? stakeholder.name_ar : stakeholder.name_en}</p>
-                    <p className="text-muted-foreground">{language === 'ar' ? typeConfig?.labelAr : typeConfig?.labelEn}</p>
+                    <p className="text-muted-foreground">{language === 'ar' ? (typeConfig?.labelAr || typeConfig?.name_ar) : (typeConfig?.labelEn || typeConfig?.name_en)}</p>
                     <p className="text-xs mt-1">
                       {language === 'ar' ? 'القوة' : 'Power'}: {stakeholder.power}% | {language === 'ar' ? 'الاهتمام' : 'Interest'}: {stakeholder.interest}%
                     </p>
@@ -168,7 +169,7 @@ function PowerInterestGrid({ stakeholders, onSelectStakeholder, selectedId, lang
 }
 
 // Stakeholder Dialog
-function StakeholderDialog({ open, onOpenChange, stakeholder, onSave, language, t }) {
+function StakeholderDialog({ open, onOpenChange, stakeholder, onSave, language, t, stakeholderTypes }) {
   const [formData, setFormData] = useState(stakeholder || {
     name_en: '',
     name_ar: '',
@@ -261,11 +262,11 @@ function StakeholderDialog({ open, onOpenChange, stakeholder, onSave, language, 
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {STAKEHOLDER_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
+                {stakeholderTypes.map((type) => (
+                  <SelectItem key={type.value || type.code} value={type.value || type.code}>
                     <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${type.color}`} />
-                      {language === 'ar' ? type.labelAr : type.labelEn}
+                      <div className={`w-3 h-3 rounded-full ${type.color || 'bg-primary'}`} />
+                      {language === 'ar' ? (type.labelAr || type.name_ar) : (type.labelEn || type.name_en)}
                     </div>
                   </SelectItem>
                 ))}
@@ -373,6 +374,7 @@ export default function StakeholderAnalysisWidget({
   className = ''
 }) {
   const { language, t } = useLanguage();
+  const { stakeholderTypes: taxonomyTypes } = useTaxonomy();
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
   
   // Database integration hook
@@ -383,6 +385,22 @@ export default function StakeholderAnalysisWidget({
     saveStakeholder: saveToDb,
     deleteStakeholder: deleteFromDb 
   } = useStakeholderAnalysis(strategicPlanId);
+  
+  // Compute stakeholder types from taxonomy with fallback
+  const stakeholderTypes = useMemo(() => {
+    if (taxonomyTypes && taxonomyTypes.length > 0) {
+      return taxonomyTypes.map(t => ({
+        value: t.code,
+        code: t.code,
+        labelEn: t.name_en,
+        labelAr: t.name_ar,
+        name_en: t.name_en,
+        name_ar: t.name_ar,
+        color: 'bg-primary'
+      }));
+    }
+    return FALLBACK_STAKEHOLDER_TYPES;
+  }, [taxonomyTypes]);
   
   const [stakeholders, setStakeholders] = useState(initialData?.stakeholders || []);
   const [dialogState, setDialogState] = useState({ open: false, stakeholder: null });
@@ -621,6 +639,7 @@ Identify 5-8 key stakeholders for this initiative. For each, provide:
               onSelectStakeholder={setSelectedStakeholder}
               selectedId={selectedStakeholder?.id}
               language={language}
+              stakeholderTypes={stakeholderTypes}
             />
             <Button
               variant="outline"
@@ -761,6 +780,7 @@ Identify 5-8 key stakeholders for this initiative. For each, provide:
         onSave={handleSaveStakeholder}
         language={language}
         t={t}
+        stakeholderTypes={stakeholderTypes}
       />
     </div>
   );

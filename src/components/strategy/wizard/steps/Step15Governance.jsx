@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Building2, Plus, X, AlertTriangle, Users, LayoutDashboard, Grid3X3, ChevronUp, ChevronDown, ArrowDown } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { GOVERNANCE_ROLES } from '../StrategyWizardSteps';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 
 const ROLE_TYPES = [
   { value: 'executive', label: { en: 'Executive', ar: 'تنفيذي' } },

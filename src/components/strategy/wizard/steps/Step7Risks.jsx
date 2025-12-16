@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sparkles, AlertTriangle, Plus, X, Shield } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { RISK_CATEGORIES } from '../StrategyWizardSteps';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { cn } from '@/lib/utils';
 
 export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating }) {
   const { language, t, isRTL } = useLanguage();
+  const { riskCategories } = useTaxonomy();
 
   const addRisk = () => {
     const newRisk = {
@@ -237,7 +238,7 @@ export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating 
                         {t({ en: 'Score:', ar: 'الدرجة:' })} {risk.risk_score || 0}
                       </Badge>
                       <Badge variant="outline">
-                        {RISK_CATEGORIES.find(c => c.code === risk.category)?.[`name_${language}`] || risk.category}
+                        {riskCategories.find(c => c.code === risk.category)?.[`name_${language}`] || risk.category}
                       </Badge>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => removeRisk(index)}>
@@ -277,7 +278,7 @@ export default function Step7Risks({ data, onChange, onGenerateAI, isGenerating 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {RISK_CATEGORIES.map(cat => (
+                          {riskCategories.map(cat => (
                             <SelectItem key={cat.code} value={cat.code}>
                               {cat[`name_${language}`]}
                             </SelectItem>

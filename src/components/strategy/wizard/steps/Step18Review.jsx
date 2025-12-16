@@ -14,8 +14,7 @@ import {
   AlertCircle, Briefcase, PieChart, MessageSquare, RefreshCw
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { STRATEGIC_THEMES, VISION_2030_PROGRAMS, EMERGING_TECHNOLOGIES } from '../StrategyWizardSteps';
-import { useTaxonomy } from '@/hooks/useTaxonomy';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -33,7 +32,7 @@ export default function Step18Review({
   mode = 'create'
 }) {
   const { language, t, isRTL } = useLanguage();
-  const { getSectorName: getTaxonomySectorName } = useTaxonomy();
+  const { getSectorName: getTaxonomySectorName, themes, technologies, visionPrograms } = useTaxonomy();
   const [isExporting, setIsExporting] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     overview: true,
@@ -85,17 +84,17 @@ export default function Step18Review({
   const getSectorName = (code) => getTaxonomySectorName(code, language);
 
   const getThemeName = (code) => {
-    const theme = STRATEGIC_THEMES.find(t => t.code === code);
+    const theme = themes.find(t => t.code === code);
     return theme ? getText(theme.name_en, theme.name_ar) : code;
   };
 
   const getTechName = (code) => {
-    const tech = EMERGING_TECHNOLOGIES.find(t => t.code === code);
+    const tech = technologies.find(t => t.code === code);
     return tech ? getText(tech.name_en, tech.name_ar) : code;
   };
 
   const getProgramName = (code) => {
-    const program = VISION_2030_PROGRAMS.find(p => p.code === code);
+    const program = visionPrograms.find(p => p.code === code);
     return program ? getText(program.name_en, program.name_ar) : code;
   };
 

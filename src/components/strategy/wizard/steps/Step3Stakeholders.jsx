@@ -8,11 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Users, Plus, X, Grid3X3 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { STAKEHOLDER_TYPES } from '../StrategyWizardSteps';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { cn } from '@/lib/utils';
 
 export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGenerating }) {
   const { language, t, isRTL } = useLanguage();
+  const { stakeholderTypes } = useTaxonomy();
 
   const addStakeholder = () => {
     const newStakeholder = { 
@@ -200,7 +201,7 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{quadrant.name}</Badge>
                         <Badge variant="secondary">
-                          {STAKEHOLDER_TYPES.find(t => t.code === stakeholder.type)?.[`name_${language}`] || stakeholder.type}
+                          {stakeholderTypes.find(t => t.code === stakeholder.type)?.[`name_${language}`] || stakeholder.type}
                         </Badge>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => removeStakeholder(index)}>
@@ -239,7 +240,7 @@ export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGene
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {STAKEHOLDER_TYPES.map(type => (
+                            {stakeholderTypes.map(type => (
                               <SelectItem key={type.code} value={type.code}>
                                 {type[`name_${language}`]}
                               </SelectItem>
