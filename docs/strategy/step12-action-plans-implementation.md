@@ -1,14 +1,28 @@
 # Step 12 (Action Plans) - Complete Implementation Plan
 
-> **Version:** 1.1  
+> **Version:** 1.2  
 > **Last Updated:** 2025-12-16  
-> **Status:** Gap Analysis Complete | Implementation Pending
+> **Status:** Deep Audit Complete | Implementation Pending
 
 ---
 
 ## 📋 Executive Summary
 
 This document provides a complete implementation plan for fixing Step 12 (Action Plans) in the Strategic Plan Builder wizard to align with the Entity Integration Model. It identifies ALL pages, components, hooks, edge functions, tables, and AI schemas that need updates.
+
+**CRITICAL GAPS CONFIRMED:**
+
+| Gap | Location | Severity |
+|-----|----------|----------|
+| ❌ "project" type in UI but no `projects` table | Step6ActionPlans.jsx line 210 | 🔴 HIGH |
+| ❌ AI schema has no `type` enum | StrategyWizardWrapper.jsx line 2403 | 🔴 HIGH |
+| ❌ `strategy-program-generator` edge function missing | supabase/functions/ | 🔴 HIGH |
+| ❌ `strategy-gap-analysis` missing 5 entity types | Only counts challenges, pilots, campaigns, events | 🔴 HIGH |
+| ❌ `strategy-demand-queue-generator` missing 5 entity types | priorityWeights line 44-49 | 🔴 HIGH |
+| ❌ `strategy-batch-generator` wrong fallback for living_lab | generatorMap line 77 | 🟡 MEDIUM |
+| ⚠️ `StrategyToProgramGenerator` in wrong folder | src/components/strategy/ not cascade/ | 🟡 MEDIUM |
+| ⚠️ Step 12 Summary shows "Projects" count | Line 316-317 | 🟡 MEDIUM |
+| ⚠️ No `should_create_entity` toggle in UI | Step6ActionPlans.jsx | 🟡 MEDIUM |
 
 ---
 
@@ -27,56 +41,57 @@ This document provides a complete implementation plan for fixing Step 12 (Action
 
 | Component | File Path | Priority | Changes Required |
 |-----------|-----------|----------|------------------|
-| **Step6ActionPlans** | `src/components/strategy/wizard/steps/Step6ActionPlans.jsx` | 🔴 HIGH | Update action types, add colors, add cascade toggle |
-| **StrategyWizardWrapper** | `src/components/strategy/wizard/StrategyWizardWrapper.jsx` | 🔴 HIGH | Update AI schema enum, add demand queue creation on save |
+| **Step6ActionPlans** | `src/components/strategy/wizard/steps/Step6ActionPlans.jsx` | 🔴 HIGH | Update action types (lines 207-212), add colors (lines 71-79), add cascade toggle, fix summary (lines 306-324) |
+| **StrategyWizardWrapper** | `src/components/strategy/wizard/StrategyWizardWrapper.jsx` | 🔴 HIGH | Update AI schema enum (line 2403), add demand queue creation on save |
 | **DemandDashboard** | `src/components/strategy/demand/DemandDashboard.jsx` | 🟡 MEDIUM | Add support for new entity types in UI |
 | **BatchGenerationControls** | `src/components/strategy/demand/BatchGenerationControls.jsx` | 🟡 MEDIUM | Add new entity type handlers |
-| **QueueAwareGeneratorWrapper** | `src/components/strategy/demand/QueueAwareGeneratorWrapper.jsx` | 🟡 MEDIUM | Add new generator mappings |
+| **QueueAwareGeneratorWrapper** | `src/components/strategy/demand/QueueAwareGeneratorWrapper.jsx` | 🟢 OK | Generic - no changes needed |
 | **ActionPlanBuilder** | `src/components/strategy/creation/ActionPlanBuilder.jsx` | 🟢 LOW | Optional: Add entity cascade option |
 
 ### C. CASCADE GENERATORS (Components)
 
-| Generator | File Path | Status | Table Target |
-|-----------|-----------|--------|--------------|
-| StrategyChallengeGenerator | `src/components/strategy/cascade/StrategyChallengeGenerator.jsx` | ✅ EXISTS | `challenges` |
-| StrategyToPilotGenerator | `src/components/strategy/cascade/StrategyToPilotGenerator.jsx` | ✅ EXISTS | `pilots` |
-| StrategyToCampaignGenerator | `src/components/strategy/cascade/StrategyToCampaignGenerator.jsx` | ✅ EXISTS | `marketing_campaigns` |
-| StrategyToEventGenerator | `src/components/strategy/cascade/StrategyToEventGenerator.jsx` | ✅ EXISTS | `events` |
-| StrategyToPolicyGenerator | `src/components/strategy/cascade/StrategyToPolicyGenerator.jsx` | ✅ EXISTS | `policy_documents` |
-| StrategyToRDCallGenerator | `src/components/strategy/cascade/StrategyToRDCallGenerator.jsx` | ✅ EXISTS | `rd_calls` |
-| StrategyToPartnershipGenerator | `src/components/strategy/cascade/StrategyToPartnershipGenerator.jsx` | ✅ EXISTS | `partnerships` |
-| StrategyToLivingLabGenerator | `src/components/strategy/cascade/StrategyToLivingLabGenerator.jsx` | ✅ EXISTS | `living_labs` |
-| **StrategyToProgramGenerator** | `src/components/strategy/StrategyToProgramGenerator.jsx` | ⚠️ WRONG LOCATION | Move to `cascade/` folder |
-| StrategyToSandboxGenerator | N/A | ❌ MISSING | `sandboxes` (optional) |
+| Generator | File Path | Status | Table Target | Edge Function |
+|-----------|-----------|--------|--------------|---------------|
+| StrategyChallengeGenerator | `src/components/strategy/cascade/StrategyChallengeGenerator.jsx` | ✅ EXISTS | `challenges` | strategy-challenge-generator ✅ |
+| StrategyToPilotGenerator | `src/components/strategy/cascade/StrategyToPilotGenerator.jsx` | ✅ EXISTS | `pilots` | strategy-pilot-generator ✅ |
+| StrategyToCampaignGenerator | `src/components/strategy/cascade/StrategyToCampaignGenerator.jsx` | ✅ EXISTS | `marketing_campaigns` | strategy-campaign-generator ✅ |
+| StrategyToEventGenerator | `src/components/strategy/cascade/StrategyToEventGenerator.jsx` | ✅ EXISTS | `events` | strategy-event-planner ✅ |
+| StrategyToPolicyGenerator | `src/components/strategy/cascade/StrategyToPolicyGenerator.jsx` | ✅ EXISTS | `policy_documents` | strategy-policy-generator ✅ |
+| StrategyToRDCallGenerator | `src/components/strategy/cascade/StrategyToRDCallGenerator.jsx` | ✅ EXISTS | `rd_calls` | strategy-rd-call-generator ✅ |
+| StrategyToPartnershipGenerator | `src/components/strategy/cascade/StrategyToPartnershipGenerator.jsx` | ✅ EXISTS | `partnerships` | strategy-partnership-matcher ✅ |
+| StrategyToLivingLabGenerator | `src/components/strategy/cascade/StrategyToLivingLabGenerator.jsx` | ✅ EXISTS | `living_labs` | strategy-lab-research-generator ✅ |
+| **StrategyToProgramGenerator** | `src/components/strategy/StrategyToProgramGenerator.jsx` | ⚠️ WRONG LOCATION | `programs` | ❌ MISSING |
+| StrategyToSandboxGenerator | N/A | ❌ MISSING | `sandboxes` | N/A (not cascadable) |
 
 ### D. HOOKS TO UPDATE
 
 | Hook | File Path | Priority | Changes Required |
 |------|-----------|----------|------------------|
-| **useDemandQueue** | `src/hooks/strategy/useDemandQueue.js` | 🟢 LOW | No changes needed - generic |
-| **useGapAnalysis** | `src/hooks/strategy/useGapAnalysis.js` | 🟡 MEDIUM | Ensure all entity types supported |
+| **useDemandQueue** | `src/hooks/strategy/useDemandQueue.js` | 🟢 OK | Generic - no changes |
+| **useGapAnalysis** | `src/hooks/strategy/useGapAnalysis.js` | 🟢 OK | Calls edge function - no changes |
 | **useActionPlans** | `src/hooks/strategy/useActionPlans.js` | 🟡 MEDIUM | Add `cascade_entity_type` support |
-| **useQueueAutoPopulation** | `src/hooks/strategy/useQueueAutoPopulation.js` | 🟢 LOW | No changes needed |
-| **useQueueNotifications** | `src/hooks/strategy/useQueueNotifications.js` | 🟢 LOW | No changes needed |
-| **useAutoSaveDraft** | `src/hooks/strategy/useAutoSaveDraft.js` | 🟡 MEDIUM | Ensure new fields are saved |
+| **useQueueAutoPopulation** | `src/hooks/strategy/useQueueAutoPopulation.js` | 🟢 OK | Generic - no changes |
+| **useQueueNotifications** | `src/hooks/strategy/useQueueNotifications.js` | 🟢 OK | Generic - no changes |
+| **useAutoSaveDraft** | `src/hooks/strategy/useAutoSaveDraft.js` | 🟡 MEDIUM | Ensure new fields (should_create_entity) are saved |
 
-### E. EDGE FUNCTIONS TO UPDATE
+### E. EDGE FUNCTIONS - DETAILED AUDIT
 
-| Edge Function | File Path | Status | Changes Required |
-|---------------|-----------|--------|------------------|
-| **strategy-demand-queue-generator** | `supabase/functions/strategy-demand-queue-generator/index.ts` | 🔴 HIGH | Add missing entity types (programs, rd_calls, partnerships, living_labs) |
-| **strategy-batch-generator** | `supabase/functions/strategy-batch-generator/index.ts` | 🟡 MEDIUM | Add new generator mappings |
-| strategy-action-plan-generator | `supabase/functions/strategy-action-plan-generator/index.ts` | 🟢 LOW | Optional: Add cascade_entity_type |
-| strategy-challenge-generator | `supabase/functions/strategy-challenge-generator/index.ts` | ✅ OK | No changes |
-| strategy-pilot-generator | `supabase/functions/strategy-pilot-generator/index.ts` | ✅ OK | No changes |
-| strategy-campaign-generator | `supabase/functions/strategy-campaign-generator/index.ts` | ✅ OK | No changes |
-| strategy-event-planner | `supabase/functions/strategy-event-planner/index.ts` | ✅ OK | No changes |
-| strategy-policy-generator | `supabase/functions/strategy-policy-generator/index.ts` | ✅ OK | No changes |
-| strategy-rd-call-generator | `supabase/functions/strategy-rd-call-generator/index.ts` | ✅ OK | No changes |
-| strategy-partnership-matcher | `supabase/functions/strategy-partnership-matcher/index.ts` | ✅ OK | No changes |
-| **strategy-program-generator** | N/A | ❌ MISSING | CREATE NEW |
-| strategy-gap-analysis | `supabase/functions/strategy-gap-analysis/index.ts` | 🟡 MEDIUM | Add program coverage metrics |
-| strategy-quality-assessor | `supabase/functions/strategy-quality-assessor/index.ts` | ✅ OK | No changes |
+| Edge Function | Status | Current Entity Support | Missing Entities |
+|---------------|--------|------------------------|------------------|
+| **strategy-gap-analysis** | 🔴 INCOMPLETE | challenges, pilots, campaigns, events | programs, policies, rd_calls, partnerships, living_labs |
+| **strategy-demand-queue-generator** | 🔴 INCOMPLETE | challenges, pilots, campaigns, events, policies | programs, rd_calls, partnerships, living_labs |
+| **strategy-batch-generator** | 🟡 PARTIAL | challenge, pilot, campaign, event, policy, partnership, rd_call, living_lab | living_lab uses wrong fallback |
+| strategy-challenge-generator | ✅ OK | challenges | - |
+| strategy-pilot-generator | ✅ OK | pilots | - |
+| strategy-campaign-generator | ✅ OK | marketing_campaigns | - |
+| strategy-event-planner | ✅ OK | events | - |
+| strategy-policy-generator | ✅ OK | policy_documents | - |
+| strategy-rd-call-generator | ✅ OK | rd_calls | - |
+| strategy-partnership-matcher | ✅ OK | partnerships | - |
+| strategy-lab-research-generator | ✅ OK | living_labs | - |
+| **strategy-program-generator** | ❌ MISSING | N/A | CREATE NEW |
+| strategy-action-plan-generator | ✅ OK | action_plans | - |
+| strategy-quality-assessor | ✅ OK | generic | - |
 
 ### F. DATABASE TABLES
 
@@ -100,100 +115,363 @@ This document provides a complete implementation plan for fixing Step 12 (Action
 
 ---
 
-## 📊 Current State Analysis
+## 📊 Current State Analysis (Code Evidence)
 
-### A. Step 12 Wizard Component
+### A. Step 12 Wizard Component - ACTUAL CODE
 
 **File**: `src/components/strategy/wizard/steps/Step6ActionPlans.jsx`
 
-| Aspect | Current State | Gap |
-|--------|---------------|-----|
-| **Data Storage** | JSONB in `wizard_data.action_plans` | ❌ Not using `action_plans` table |
-| **Action Types** | `initiative`, `program`, `project`, `pilot` | ❌ "project" is NOT an entity |
-| **AI Schema** | `type: { type: 'string' }` (no enum) | ❌ No entity-type validation |
-| **Entity Linkage** | Uses `objective_index` (0-based) | ❌ Should use `objective_id` (UUID) |
-| **Cascade Integration** | None | ❌ No `demand_queue` items created |
-
-### B. Entity Integration Model (10 Direct Entities)
-
-| Entity | DB Table | Cascade Generator | Demand Queue | Status |
-|--------|----------|-------------------|--------------|--------|
-| Challenges | `challenges` | ✅ StrategyChallengeGenerator | ✅ | Complete |
-| Pilots | `pilots` | ✅ StrategyToPilotGenerator | ✅ | Complete |
-| Programs | `programs` | ⚠️ StrategyToProgramGenerator (wrong location) | ❌ | **GAP** |
-| Living Labs | `living_labs` | ✅ StrategyToLivingLabGenerator | ❌ | Partial |
-| Sandboxes | `sandboxes` | ❌ N/A | ❌ | Not cascadable |
-| Partnerships | `partnerships` | ✅ StrategyToPartnershipGenerator | ❌ | Partial |
-| Events | `events` | ✅ StrategyToEventGenerator | ✅ | Complete |
-| Policies | `policy_documents` | ✅ StrategyToPolicyGenerator | ✅ | Complete |
-| R&D Calls | `rd_calls` | ✅ StrategyToRDCallGenerator | ❌ | Partial |
-| Campaigns | `marketing_campaigns` | ✅ StrategyToCampaignGenerator | ✅ | Complete |
-
-### C. When Does Entity Generation Happen?
-
+**Lines 207-212 (Current Action Types):**
+```jsx
+<SelectItem value="initiative">{t({ en: 'Initiative', ar: 'مبادرة' })}</SelectItem>
+<SelectItem value="program">{t({ en: 'Program', ar: 'برنامج' })}</SelectItem>
+<SelectItem value="project">{t({ en: 'Project', ar: 'مشروع' })}</SelectItem>  // ❌ NOT AN ENTITY
+<SelectItem value="pilot">{t({ en: 'Pilot', ar: 'تجريبي' })}</SelectItem>
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                    ENTITY GENERATION PATHWAYS                                   │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  PATH 1: MANUAL CASCADE (Strategy Hub → Cascade Tab)                           │
-│  ───────────────────────────────────────────────────                           │
-│  User selects objective → Opens Generator → AI generates → Saves to entity     │
-│  Files: src/components/strategy/cascade/Strategy*Generator.jsx                  │
-│  Saves to: challenges, pilots, events, etc. (with strategic_plan_ids[])        │
-│                                                                                 │
-│  PATH 2: DEMAND-DRIVEN QUEUE (Gap Analysis → Queue → Batch Generation)         │
-│  ─────────────────────────────────────────────────────────────────────         │
-│  Gap Analysis → demand_queue items → QueueAwareGeneratorWrapper → Entity       │
-│  Edge Functions:                                                                │
-│    - strategy-gap-analysis → Identifies coverage gaps                          │
-│    - strategy-demand-queue-generator → Creates queue items                     │
-│    - strategy-batch-generator → Processes queue automatically                  │
-│  Tables: demand_queue, generation_history, coverage_snapshots                  │
-│                                                                                 │
-│  PATH 3: ACTION PLAN BUILDER (Standalone Page)                                 │
-│  ─────────────────────────────────────────────                                 │
-│  /action-plan-page → ActionPlanBuilder → useActionPlans hook                   │
-│  Saves to: action_plans, action_items tables (relational)                      │
-│  Edge Function: strategy-action-plan-generator                                 │
-│  ❌ Does NOT create entities - just plans/items                                │
-│                                                                                 │
-│  PATH 4: WIZARD STEP 12 (Current - BROKEN)                                     │
-│  ─────────────────────────────────────────                                     │
-│  StrategicPlanBuilder → Step6ActionPlans                                       │
-│  Saves to: wizard_data.action_plans (JSONB only)                               │
-│  ❌ Does NOT save to action_plans table                                        │
-│  ❌ Does NOT create demand_queue items                                         │
-│  ❌ Does NOT generate entities                                                 │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+
+**Lines 71-79 (Current Type Colors):**
+```jsx
+const getTypeColor = (type) => {
+  switch (type) {
+    case 'initiative': return 'bg-blue-100 text-blue-700';
+    case 'program': return 'bg-purple-100 text-purple-700';
+    case 'project': return 'bg-cyan-100 text-cyan-700';  // ❌ project not an entity
+    case 'pilot': return 'bg-orange-100 text-orange-700';
+    default: return 'bg-muted';
+  }
+};
+```
+
+**Lines 306-322 (Summary - Shows "Projects"):**
+```jsx
+<div className="grid grid-cols-4 gap-4 text-center">
+  <div>
+    <p className="text-2xl font-bold text-blue-600">{actionPlans.filter(ap => ap.type === 'initiative').length}</p>
+    <p className="text-sm text-muted-foreground">{t({ en: 'Initiatives', ar: 'مبادرات' })}</p>
+  </div>
+  <div>
+    <p className="text-2xl font-bold text-purple-600">{actionPlans.filter(ap => ap.type === 'program').length}</p>
+    <p className="text-sm text-muted-foreground">{t({ en: 'Programs', ar: 'برامج' })}</p>
+  </div>
+  <div>
+    <p className="text-2xl font-bold text-cyan-600">{actionPlans.filter(ap => ap.type === 'project').length}</p>  // ❌
+    <p className="text-sm text-muted-foreground">{t({ en: 'Projects', ar: 'مشاريع' })}</p>  // ❌
+  </div>
+  ...
+</div>
+```
+
+### B. AI Schema - ACTUAL CODE
+
+**File**: `src/components/strategy/wizard/StrategyWizardWrapper.jsx`
+
+**Lines 2390-2414 (Current AI Schema for actions):**
+```javascript
+actions: {
+  type: 'object',
+  properties: {
+    action_plans: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name_en: { type: 'string' },
+          name_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' },
+          objective_index: { type: 'number' },
+          type: { type: 'string' },  // ❌ NO ENUM - AI can generate any type
+          priority: { type: 'string' },
+          ...
+        }
+      }
+    }
+  }
+}
+```
+
+### C. Gap Analysis Edge Function - ACTUAL CODE
+
+**File**: `supabase/functions/strategy-gap-analysis/index.ts`
+
+**Lines 56-79 (Only counts 4 entities):**
+```typescript
+const [
+  { count: challengeCount },
+  { count: pilotCount },
+  { count: campaignCount },  // Actually queries 'programs' table but calls it campaign
+  { count: eventCount }
+] = await Promise.all([
+  supabase.from('challenges')...,
+  supabase.from('pilots')...,
+  supabase.from('programs')...,   // ❌ Mislabeled as campaigns
+  supabase.from('events')...
+]);
+// MISSING: policies, rd_calls, partnerships, living_labs, actual campaigns
+```
+
+### D. Demand Queue Generator - ACTUAL CODE
+
+**File**: `supabase/functions/strategy-demand-queue-generator/index.ts`
+
+**Lines 44-49 (priorityWeights):**
+```typescript
+const priorityWeights = {
+  challenges: 100,
+  pilots: 80,
+  campaigns: 60,
+  events: 40
+  // ❌ MISSING: programs, policies, rd_calls, partnerships, living_labs
+};
+```
+
+**Lines 146-159 (getGeneratorComponent):**
+```typescript
+const mapping: Record<string, string> = {
+  challenges: 'StrategyChallengeGenerator',
+  challenge: 'StrategyChallengeGenerator',
+  pilots: 'StrategyToPilotGenerator',
+  pilot: 'StrategyToPilotGenerator',
+  campaigns: 'StrategyToCampaignGenerator',
+  campaign: 'StrategyToCampaignGenerator',
+  events: 'StrategyToEventGenerator',
+  event: 'StrategyToEventGenerator',
+  policies: 'StrategyToPolicyGenerator',
+  policy: 'StrategyToPolicyGenerator'
+  // ❌ MISSING: programs, rd_calls, partnerships, living_labs
+};
+```
+
+### E. Batch Generator - ACTUAL CODE
+
+**File**: `supabase/functions/strategy-batch-generator/index.ts`
+
+**Lines 67-78 (generatorMap):**
+```typescript
+const generatorMap: Record<string, string> = {
+  challenge: 'strategy-challenge-generator',
+  pilot: 'strategy-pilot-generator',
+  solution: 'strategy-challenge-generator',
+  campaign: 'strategy-campaign-generator',
+  event: 'strategy-event-planner',
+  policy: 'strategy-policy-generator',
+  partnership: 'strategy-partnership-matcher',
+  rd_call: 'strategy-rd-call-generator',
+  living_lab: 'strategy-challenge-generator'  // ❌ WRONG - should be strategy-lab-research-generator
+  // ❌ MISSING: program -> strategy-program-generator
+};
 ```
 
 ---
 
 ## 🎯 Implementation Plan
 
-### Phase 1: Fix Action Type Consistency
+### Phase 1: Fix Action Type Consistency (Step6ActionPlans.jsx)
 
-#### 1.1 Update Step 12 UI Types
+#### 1.1 Update Action Types (Lines 207-212)
 
-**File**: `src/components/strategy/wizard/steps/Step6ActionPlans.jsx`
+**BEFORE:**
+```jsx
+<SelectItem value="initiative">{t({ en: 'Initiative', ar: 'مبادرة' })}</SelectItem>
+<SelectItem value="program">{t({ en: 'Program', ar: 'برنامج' })}</SelectItem>
+<SelectItem value="project">{t({ en: 'Project', ar: 'مشروع' })}</SelectItem>
+<SelectItem value="pilot">{t({ en: 'Pilot', ar: 'تجريبي' })}</SelectItem>
+```
 
-Replace current types with entity-aligned types:
+**AFTER:**
+```jsx
+<SelectItem value="initiative">{t({ en: 'Initiative', ar: 'مبادرة' })}</SelectItem>
+<SelectItem value="program">{t({ en: 'Program', ar: 'برنامج' })}</SelectItem>
+<SelectItem value="pilot">{t({ en: 'Pilot', ar: 'تجريبي' })}</SelectItem>
+<SelectItem value="challenge">{t({ en: 'Challenge', ar: 'تحدي' })}</SelectItem>
+<SelectItem value="rd_call">{t({ en: 'R&D Call', ar: 'دعوة بحث وتطوير' })}</SelectItem>
+<SelectItem value="partnership">{t({ en: 'Partnership', ar: 'شراكة' })}</SelectItem>
+<SelectItem value="event">{t({ en: 'Event', ar: 'فعالية' })}</SelectItem>
+<SelectItem value="policy">{t({ en: 'Policy', ar: 'سياسة' })}</SelectItem>
+<SelectItem value="living_lab">{t({ en: 'Living Lab', ar: 'مختبر حي' })}</SelectItem>
+<SelectItem value="campaign">{t({ en: 'Campaign', ar: 'حملة' })}</SelectItem>
+```
 
-| Current Type | New Type | Maps To | Can Cascade? |
-|--------------|----------|---------|--------------|
-| `initiative` | `initiative` | Narrative only | ❌ No |
-| `program` | `program` | `programs` table | ✅ Yes |
-| `project` | ❌ **REMOVE** | N/A | N/A |
-| `pilot` | `pilot` | `pilots` table | ✅ Yes |
-| — | `challenge` | `challenges` table | ✅ Yes |
-| — | `rd_call` | `rd_calls` table | ✅ Yes |
-| — | `partnership` | `partnerships` table | ✅ Yes |
-| — | `event` | `events` table | ✅ Yes |
-| — | `policy` | `policy_documents` table | ✅ Yes |
-| — | `living_lab` | `living_labs` table | ✅ Yes |
-| — | `campaign` | `marketing_campaigns` table | ✅ Yes |
+#### 1.2 Update Type Colors (Lines 71-79)
+
+```javascript
+const getTypeColor = (type) => {
+  const colors = {
+    initiative: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    program: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+    pilot: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+    challenge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+    rd_call: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+    partnership: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    event: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+    policy: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300',
+    living_lab: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+    campaign: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+  };
+  return colors[type] || 'bg-muted';
+};
+```
+
+#### 1.3 Update Summary Section (Lines 306-324)
+
+Replace fixed 4-column grid with dynamic entity type counts.
+
+### Phase 2: Fix AI Schema (StrategyWizardWrapper.jsx)
+
+#### 2.1 Add Type Enum (Line 2403)
+
+**BEFORE:**
+```javascript
+type: { type: 'string' },
+```
+
+**AFTER:**
+```javascript
+type: { 
+  type: 'string',
+  enum: ['initiative', 'program', 'pilot', 'challenge', 'rd_call', 
+         'partnership', 'event', 'policy', 'living_lab', 'campaign']
+},
+```
+
+### Phase 3: Fix Edge Functions
+
+#### 3.1 Create `strategy-program-generator` (NEW)
+
+**File**: `supabase/functions/strategy-program-generator/index.ts`
+
+```typescript
+// AI-powered program generation from strategic objectives
+// Pattern: Copy from strategy-pilot-generator and adapt
+```
+
+#### 3.2 Update `strategy-gap-analysis`
+
+Add counts for ALL entity types:
+- challenges, pilots, programs, campaigns, events, policies, rd_calls, partnerships, living_labs
+
+#### 3.3 Update `strategy-demand-queue-generator`
+
+**priorityWeights:**
+```typescript
+const priorityWeights = {
+  challenges: 100,
+  pilots: 80,
+  programs: 75,
+  rd_calls: 70,
+  partnerships: 65,
+  living_labs: 60,
+  campaigns: 55,
+  events: 50,
+  policies: 45
+};
+```
+
+**getGeneratorComponent:**
+```typescript
+const mapping: Record<string, string> = {
+  // ... existing
+  programs: 'StrategyToProgramGenerator',
+  program: 'StrategyToProgramGenerator',
+  rd_calls: 'StrategyToRDCallGenerator',
+  rd_call: 'StrategyToRDCallGenerator',
+  partnerships: 'StrategyToPartnershipGenerator',
+  partnership: 'StrategyToPartnershipGenerator',
+  living_labs: 'StrategyToLivingLabGenerator',
+  living_lab: 'StrategyToLivingLabGenerator'
+};
+```
+
+#### 3.4 Update `strategy-batch-generator`
+
+**generatorMap:**
+```typescript
+const generatorMap: Record<string, string> = {
+  challenge: 'strategy-challenge-generator',
+  pilot: 'strategy-pilot-generator',
+  program: 'strategy-program-generator',  // NEW
+  campaign: 'strategy-campaign-generator',
+  event: 'strategy-event-planner',
+  policy: 'strategy-policy-generator',
+  partnership: 'strategy-partnership-matcher',
+  rd_call: 'strategy-rd-call-generator',
+  living_lab: 'strategy-lab-research-generator'  // FIX: was strategy-challenge-generator
+};
+```
+
+### Phase 4: Move/Fix Components
+
+#### 4.1 Move StrategyToProgramGenerator
+
+**FROM**: `src/components/strategy/StrategyToProgramGenerator.jsx`
+**TO**: `src/components/strategy/cascade/StrategyToProgramGenerator.jsx`
+
+### Phase 5: Wire Step 12 to Demand Queue (Optional)
+
+Add `should_create_entity` toggle and create demand_queue items on wizard save.
+
+---
+
+## 📁 Complete File Change Summary
+
+### Files to MODIFY
+
+| File | Line Numbers | Changes | Priority |
+|------|--------------|---------|----------|
+| `src/components/strategy/wizard/steps/Step6ActionPlans.jsx` | 71-79, 207-212, 306-324 | Update types, colors, summary | 🔴 HIGH |
+| `src/components/strategy/wizard/StrategyWizardWrapper.jsx` | 2403 | Add enum to AI schema | 🔴 HIGH |
+| `supabase/functions/strategy-gap-analysis/index.ts` | 56-105 | Add 5 missing entity counts | 🔴 HIGH |
+| `supabase/functions/strategy-demand-queue-generator/index.ts` | 44-49, 146-159, 162-223 | Add missing entity types | 🔴 HIGH |
+| `supabase/functions/strategy-batch-generator/index.ts` | 67-78 | Fix living_lab, add program | 🟡 MEDIUM |
+
+### Files to CREATE
+
+| File | Purpose | Priority |
+|------|---------|----------|
+| `supabase/functions/strategy-program-generator/index.ts` | AI program generation edge function | 🔴 HIGH |
+
+### Files to MOVE
+
+| From | To | Reason |
+|------|----|--------|
+| `src/components/strategy/StrategyToProgramGenerator.jsx` | `src/components/strategy/cascade/StrategyToProgramGenerator.jsx` | Consistency with other generators |
+
+---
+
+## ✅ Implementation Checklist
+
+### Phase 1: Fix Step 12 UI
+- [ ] **1.1**: Remove "project", add 7 new entity types (lines 207-212)
+- [ ] **1.2**: Update getTypeColor function (lines 71-79)
+- [ ] **1.3**: Update summary section (lines 306-324)
+
+### Phase 2: Fix AI Schema
+- [ ] **2.1**: Add enum constraint to type field (line 2403)
+
+### Phase 3: Fix Edge Functions
+- [ ] **3.1**: Create strategy-program-generator
+- [ ] **3.2**: Update strategy-gap-analysis (add 5 entity counts)
+- [ ] **3.3**: Update strategy-demand-queue-generator (priorityWeights + getGeneratorComponent + buildPrefilledSpec)
+- [ ] **3.4**: Fix strategy-batch-generator (living_lab mapping + add program)
+
+### Phase 4: Fix Components
+- [ ] **4.1**: Move StrategyToProgramGenerator to cascade/ folder
+
+### Phase 5: Optional Enhancements
+- [ ] **5.1**: Add should_create_entity toggle to Step 12
+- [ ] **5.2**: Create demand_queue items on wizard finalize
+- [ ] **5.3**: Sync to action_plans relational table
+
+---
+
+## 🔗 Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [strategy-design.md](./strategy-design.md) | Entity Integration Model |
+| [demand-driven-implementation-plan.md](./demand-driven-implementation-plan.md) | Cascade system |
+| [strategy-integration-matrix.md](./strategy-integration-matrix.md) | Entity integrations |
+| [STRATEGIC_WIZARD_DESIGN.md](./STRATEGIC_WIZARD_DESIGN.md) | Wizard design |
 
 **Code Change**:
 ```jsx
