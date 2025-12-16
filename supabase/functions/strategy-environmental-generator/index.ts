@@ -67,6 +67,21 @@ const INNOVATION_EMPHASIS = `Innovation & Technology Integration:
 - PropTech: BIM, modular construction, 3D printing, smart homes
 - Green Building: Mostadam certification, energy efficiency, sustainability`;
 
+// Schema for PESTEL factor - matches UI expectations exactly
+const pestelFactorSchema = {
+  type: "object",
+  properties: {
+    factor_en: { type: "string", description: "Factor name/title in English" },
+    factor_ar: { type: "string", description: "Factor name/title in Arabic" },
+    impact: { type: "string", enum: ["high", "medium", "low"], description: "Impact level" },
+    trend: { type: "string", enum: ["growing", "stable", "declining"], description: "Current trend direction" },
+    timeframe: { type: "string", enum: ["short_term", "medium_term", "long_term"], description: "Timeframe for impact" },
+    implications_en: { type: "string", description: "Strategic implications in English (1-2 sentences)" },
+    implications_ar: { type: "string", description: "Strategic implications in Arabic (1-2 sentences)" }
+  },
+  required: ["factor_en", "factor_ar", "impact", "trend", "timeframe", "implications_en", "implications_ar"]
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -94,15 +109,7 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = language === 'ar' 
-      ? `أنت خبير استراتيجي متخصص في تحليل البيئة الخارجية (PESTEL) لوزارة الشؤون البلدية والقروية والإسكان في المملكة العربية السعودية.
-${COMPACT_SAUDI_CONTEXT}
-${PESTEL_CONTEXT}
-${INNOVATION_EMPHASIS}
-${taxonomyContext}
-
-قم بتحليل العوامل البيئية الخارجية بناءً على السياق المقدم وأنشئ تحليل PESTEL شامل.`
-      : `You are a strategic planning expert specializing in environmental scanning and PESTEL analysis for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
+    const systemPrompt = `You are a strategic planning expert specializing in environmental scanning and PESTEL analysis for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
 ${COMPACT_SAUDI_CONTEXT}
 
@@ -111,45 +118,30 @@ ${PESTEL_CONTEXT}
 ${INNOVATION_EMPHASIS}
 ${taxonomyContext}
 
-Analyze the external environment based on the provided context and generate a comprehensive PESTEL analysis with specific, actionable insights for the Saudi municipal and housing sector.`;
+CRITICAL INSTRUCTIONS:
+1. Generate EXACTLY 4 factors for EACH of the 6 PESTEL categories (24 total factors)
+2. Each factor MUST have ALL fields filled: factor_en, factor_ar, impact, trend, timeframe, implications_en, implications_ar
+3. Use ONLY these exact values:
+   - impact: "high", "medium", or "low"
+   - trend: "growing", "stable", or "declining"  
+   - timeframe: "short_term", "medium_term", or "long_term"
+4. Provide meaningful Arabic translations for factor_ar and implications_ar
+5. Be specific to Saudi municipal and housing sector context`;
 
-    const userPrompt = language === 'ar'
-      ? `بناءً على السياق التالي، قم بإنشاء تحليل PESTEL شامل:
+    const userPrompt = `Based on the following strategic plan context, generate a comprehensive PESTEL analysis:
 
+Plan Details:
 ${JSON.stringify(context, null, 2)}
 
-قم بإنشاء تحليل مفصل يتضمن:
-1. العوامل السياسية (3-5 عوامل مع التأثير والتوصيات)
-2. العوامل الاقتصادية (3-5 عوامل مع التأثير والتوصيات)
-3. العوامل الاجتماعية (3-5 عوامل مع التأثير والتوصيات)
-4. العوامل التقنية (3-5 عوامل مع التأثير والتوصيات)
-5. العوامل البيئية (3-5 عوامل مع التأثير والتوصيات)
-6. العوامل القانونية (3-5 عوامل مع التأثير والتوصيات)
+Generate EXACTLY 4 factors for each category with ALL required fields:
+- Political: Government policies, Vision 2030, municipal reforms
+- Economic: Diversification, real estate, PPP, investment
+- Social: Demographics, urbanization, citizen expectations
+- Technological: Digital transformation, smart cities, AI/IoT
+- Environmental: Sustainability, climate, green initiatives
+- Legal: Regulations, compliance, building codes
 
-لكل عامل، حدد:
-- الوصف والأثر المحتمل
-- مستوى التأثير (عالي/متوسط/منخفض)
-- الإطار الزمني (قصير/متوسط/طويل المدى)
-- التوصيات الاستراتيجية`
-      : `Based on the following context, generate a comprehensive PESTEL analysis:
-
-${JSON.stringify(context, null, 2)}
-
-Generate a detailed analysis including:
-1. Political Factors (3-5 factors with impact and recommendations)
-2. Economic Factors (3-5 factors with impact and recommendations)
-3. Social Factors (3-5 factors with impact and recommendations)
-4. Technological Factors (3-5 factors with impact and recommendations)
-5. Environmental Factors (3-5 factors with impact and recommendations)
-6. Legal Factors (3-5 factors with impact and recommendations)
-
-For each factor, specify:
-- Description and potential impact
-- Impact level (High/Medium/Low)
-- Timeframe (Short/Medium/Long-term)
-- Strategic recommendations
-
-Focus on factors most relevant to the Saudi municipal and housing sector context.`;
+IMPORTANT: Every factor must include factor_en, factor_ar, impact, trend, timeframe, implications_en, and implications_ar.`;
 
     console.log(`Generating PESTEL analysis for plan: ${strategic_plan_id}, language: ${language}`);
 
@@ -170,118 +162,42 @@ Focus on factors most relevant to the Saudi municipal and housing sector context
             type: "function",
             function: {
               name: "generate_pestel_analysis",
-              description: "Generate a comprehensive PESTEL environmental analysis",
+              description: "Generate a comprehensive PESTEL environmental analysis with bilingual content",
               parameters: {
                 type: "object",
                 properties: {
                   political: {
                     type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        factor: { type: "string", description: "Political factor name" },
-                        description: { type: "string", description: "Detailed description" },
-                        impact: { type: "string", enum: ["high", "medium", "low"] },
-                        trend: { type: "string", enum: ["positive", "negative", "neutral"] },
-                        timeframe: { type: "string", enum: ["short", "medium", "long"] },
-                        implications: { type: "string", description: "Strategic implications" },
-                        recommendations: { type: "array", items: { type: "string" } }
-                      },
-                      required: ["factor", "description", "impact", "trend", "timeframe", "implications", "recommendations"]
-                    }
+                    description: "Political factors (exactly 4)",
+                    items: pestelFactorSchema
                   },
                   economic: {
                     type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        factor: { type: "string" },
-                        description: { type: "string" },
-                        impact: { type: "string", enum: ["high", "medium", "low"] },
-                        trend: { type: "string", enum: ["positive", "negative", "neutral"] },
-                        timeframe: { type: "string", enum: ["short", "medium", "long"] },
-                        implications: { type: "string" },
-                        recommendations: { type: "array", items: { type: "string" } }
-                      },
-                      required: ["factor", "description", "impact", "trend", "timeframe", "implications", "recommendations"]
-                    }
+                    description: "Economic factors (exactly 4)",
+                    items: pestelFactorSchema
                   },
                   social: {
                     type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        factor: { type: "string" },
-                        description: { type: "string" },
-                        impact: { type: "string", enum: ["high", "medium", "low"] },
-                        trend: { type: "string", enum: ["positive", "negative", "neutral"] },
-                        timeframe: { type: "string", enum: ["short", "medium", "long"] },
-                        implications: { type: "string" },
-                        recommendations: { type: "array", items: { type: "string" } }
-                      },
-                      required: ["factor", "description", "impact", "trend", "timeframe", "implications", "recommendations"]
-                    }
+                    description: "Social factors (exactly 4)",
+                    items: pestelFactorSchema
                   },
                   technological: {
                     type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        factor: { type: "string" },
-                        description: { type: "string" },
-                        impact: { type: "string", enum: ["high", "medium", "low"] },
-                        trend: { type: "string", enum: ["positive", "negative", "neutral"] },
-                        timeframe: { type: "string", enum: ["short", "medium", "long"] },
-                        implications: { type: "string" },
-                        recommendations: { type: "array", items: { type: "string" } }
-                      },
-                      required: ["factor", "description", "impact", "trend", "timeframe", "implications", "recommendations"]
-                    }
+                    description: "Technological factors (exactly 4)",
+                    items: pestelFactorSchema
                   },
                   environmental: {
                     type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        factor: { type: "string" },
-                        description: { type: "string" },
-                        impact: { type: "string", enum: ["high", "medium", "low"] },
-                        trend: { type: "string", enum: ["positive", "negative", "neutral"] },
-                        timeframe: { type: "string", enum: ["short", "medium", "long"] },
-                        implications: { type: "string" },
-                        recommendations: { type: "array", items: { type: "string" } }
-                      },
-                      required: ["factor", "description", "impact", "trend", "timeframe", "implications", "recommendations"]
-                    }
+                    description: "Environmental factors (exactly 4)",
+                    items: pestelFactorSchema
                   },
                   legal: {
                     type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        factor: { type: "string" },
-                        description: { type: "string" },
-                        impact: { type: "string", enum: ["high", "medium", "low"] },
-                        trend: { type: "string", enum: ["positive", "negative", "neutral"] },
-                        timeframe: { type: "string", enum: ["short", "medium", "long"] },
-                        implications: { type: "string" },
-                        recommendations: { type: "array", items: { type: "string" } }
-                      },
-                      required: ["factor", "description", "impact", "trend", "timeframe", "implications", "recommendations"]
-                    }
-                  },
-                  summary: {
-                    type: "object",
-                    properties: {
-                      key_opportunities: { type: "array", items: { type: "string" } },
-                      key_threats: { type: "array", items: { type: "string" } },
-                      critical_success_factors: { type: "array", items: { type: "string" } },
-                      priority_actions: { type: "array", items: { type: "string" } }
-                    },
-                    required: ["key_opportunities", "key_threats", "critical_success_factors", "priority_actions"]
+                    description: "Legal factors (exactly 4)",
+                    items: pestelFactorSchema
                   }
                 },
-                required: ["political", "economic", "social", "technological", "environmental", "legal", "summary"]
+                required: ["political", "economic", "social", "technological", "environmental", "legal"]
               }
             }
           }
@@ -315,6 +231,25 @@ Focus on factors most relevant to the Saudi municipal and housing sector context
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       const pestelData = JSON.parse(toolCall.function.arguments);
+      
+      // Validate and ensure all fields are present
+      const categories = ['political', 'economic', 'social', 'technological', 'environmental', 'legal'];
+      for (const cat of categories) {
+        if (!Array.isArray(pestelData[cat])) {
+          pestelData[cat] = [];
+        }
+        // Ensure each factor has all required fields
+        pestelData[cat] = pestelData[cat].map((factor: any, idx: number) => ({
+          factor_en: factor.factor_en || factor.factor || `${cat} factor ${idx + 1}`,
+          factor_ar: factor.factor_ar || '',
+          impact: ['high', 'medium', 'low'].includes(factor.impact) ? factor.impact : 'medium',
+          trend: ['growing', 'stable', 'declining'].includes(factor.trend) ? factor.trend : 'stable',
+          timeframe: ['short_term', 'medium_term', 'long_term'].includes(factor.timeframe) ? factor.timeframe : 'medium_term',
+          implications_en: factor.implications_en || factor.implications || '',
+          implications_ar: factor.implications_ar || ''
+        }));
+      }
+      
       return new Response(JSON.stringify({
         success: true,
         data: pestelData,
