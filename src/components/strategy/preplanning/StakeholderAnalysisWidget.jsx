@@ -677,7 +677,7 @@ Identify 5-8 key stakeholders for this initiative. For each, provide:
                         </p>
                       ) : (
                         stakeholdersByQuadrant[key].map((s) => {
-                          const typeConfig = STAKEHOLDER_TYPES.find(t => t.value === s.type);
+                          const typeConfig = stakeholderTypes.find(t => t.value === s.type || t.code === s.type);
                           return (
                             <div 
                               key={s.id}
@@ -740,7 +740,10 @@ Identify 5-8 key stakeholders for this initiative. For each, provide:
               <CardTitle className="text-base flex items-center gap-2">
                 {language === 'ar' && selectedStakeholder.name_ar ? selectedStakeholder.name_ar : selectedStakeholder.name_en}
                 <Badge variant="secondary">
-                  {STAKEHOLDER_TYPES.find(t => t.value === selectedStakeholder.type)?.[language === 'ar' ? 'labelAr' : 'labelEn']}
+                  {(() => {
+                    const typeConfig = stakeholderTypes.find(t => t.value === selectedStakeholder.type || t.code === selectedStakeholder.type);
+                    return typeConfig ? (language === 'ar' ? (typeConfig.labelAr || typeConfig.name_ar) : (typeConfig.labelEn || typeConfig.name_en)) : selectedStakeholder.type;
+                  })()}
                 </Badge>
               </CardTitle>
               <Button 

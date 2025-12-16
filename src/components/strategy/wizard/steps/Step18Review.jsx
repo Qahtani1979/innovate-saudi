@@ -32,7 +32,7 @@ export default function Step18Review({
   mode = 'create'
 }) {
   const { language, t, isRTL } = useLanguage();
-  const { getSectorName: getTaxonomySectorName, themes, technologies, visionPrograms } = useTaxonomy();
+  const { getSectorName: getTaxonomySectorName, strategicThemes, technologies, visionPrograms } = useTaxonomy();
   const [isExporting, setIsExporting] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     overview: true,
@@ -84,7 +84,7 @@ export default function Step18Review({
   const getSectorName = (code) => getTaxonomySectorName(code, language);
 
   const getThemeName = (code) => {
-    const theme = themes.find(t => t.code === code);
+    const theme = strategicThemes.find(t => t.code === code);
     return theme ? getText(theme.name_en, theme.name_ar) : code;
   };
 
