@@ -175,7 +175,7 @@ export default function StrategyCreateWizard() {
       case 9: return <Step9Objectives {...props} />;
       case 10: return <Step10National {...props} />;
       case 11: return <Step11KPIs {...props} />;
-      case 12: return <Step12Actions {...props} />;
+      case 12: return <Step12Actions {...props} strategicPlanId={null} wizardData={wizardData} />;
       case 13: return <Step13Resources {...props} />;
       case 14: return <Step14Timeline {...props} />;
       case 15: return <Step15Governance {...props} />;

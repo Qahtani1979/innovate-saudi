@@ -4,10 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, DollarSign, Users, Cpu, Building, Plus, X, StickyNote } from 'lucide-react';
+import { Sparkles, DollarSign, Users, Cpu, Building, Plus, X, StickyNote, Link2 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import EntityAllocationSelector from '../EntityAllocationSelector';
 
-export default function Step13Resources({ data, onChange, onGenerateAI, isGenerating }) {
+export default function Step13Resources({ data, onChange, onGenerateAI, isGenerating, strategicPlanId }) {
   const { language, t, isRTL } = useLanguage();
 
   const resourceTypes = [
@@ -26,7 +27,8 @@ export default function Step13Resources({ data, onChange, onGenerateAI, isGenera
       quantity: '', 
       cost: '', 
       notes_en: '',
-      notes_ar: ''
+      notes_ar: '',
+      entity_allocations: [] // NEW: Track which entities this resource supports
     };
     onChange({ resource_plan: { ...data.resource_plan, [type]: [...current, newItem] } });
   };
@@ -140,6 +142,22 @@ export default function Step13Resources({ data, onChange, onGenerateAI, isGenera
                         onChange={(e) => updateResource(key, idx, 'notes_ar', e.target.value)}
                       />
                     </div>
+                  </div>
+
+                  {/* Entity Allocation - Link resource to generated entities */}
+                  <div className="space-y-1 pt-2 border-t">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Link2 className="h-3 w-3" />
+                      {t({ en: 'Link to Entities', ar: 'ربط بالكيانات' })}
+                    </Label>
+                    <EntityAllocationSelector
+                      strategicPlanId={strategicPlanId}
+                      value={item.entity_allocations || []}
+                      onChange={(allocations) => updateResource(key, idx, 'entity_allocations', allocations)}
+                      multiple={true}
+                      showDetails={true}
+                      placeholder={t({ en: 'Select entities this resource supports...', ar: 'اختر الكيانات التي يدعمها هذا المورد...' })}
+                    />
                   </div>
                 </div>
               ))

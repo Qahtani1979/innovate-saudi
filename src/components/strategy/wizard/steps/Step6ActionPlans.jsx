@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Sparkles, Loader2, Plus, X, Lightbulb, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
+import EntityGenerationPanel from '../EntityGenerationPanel';
 
 // Entity type configuration aligned with demand_queue and generators
 const ENTITY_TYPES = [
@@ -28,7 +29,9 @@ export default function Step6ActionPlans({
   data, 
   onChange, 
   onGenerateAI, 
-  isGenerating 
+  isGenerating,
+  strategicPlanId,
+  wizardData 
 }) {
   const { language, t, isRTL } = useLanguage();
   const [expandedIndex, setExpandedIndex] = useState(null);
@@ -93,6 +96,19 @@ export default function Step6ActionPlans({
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Entity Generation Panel - connects action plans to demand_queue */}
+      {strategicPlanId && (
+        <EntityGenerationPanel
+          strategicPlanId={strategicPlanId}
+          actionPlans={actionPlans}
+          objectives={objectives}
+          wizardData={wizardData || data}
+          onEntitiesGenerated={() => {
+            // Refresh can be handled by parent component
+          }}
+        />
+      )}
+
       {/* AI Generation */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-4">
