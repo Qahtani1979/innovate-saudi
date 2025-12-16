@@ -2447,7 +2447,18 @@ Return alignments as an array under the "alignments" key with proper objective_i
       national: {
         type: 'object',
         properties: {
-          alignments: { type: 'array', items: { type: 'object', properties: { objective_index: { type: 'number' }, goal_code: { type: 'string' }, target_code: { type: 'string' }, innovation_alignment: { type: 'string' } } } }
+          alignments: { 
+            type: 'array', 
+            items: { 
+              type: 'object', 
+              properties: { 
+                objective_index: { type: 'number' }, 
+                goal_code: { type: 'string' }, 
+                target_code: { type: 'string' }, 
+                innovation_alignment: { type: 'string' } 
+              } 
+            } 
+          }
         }
       },
       kpis: {
@@ -3035,10 +3046,12 @@ Return alignments as an array under the "alignments" key with proper objective_i
           }));
         } else if (stepKey === 'national' && data.alignments) {
           updates.national_alignments = data.alignments.map(a => ({
-            key: `${a.objective_index}-${a.goal_code}${a.target_code ? `-${a.target_code}` : ''}`,
+            key: `${a.objective_index}-${a.target_code}`,
             objective_index: a.objective_index,
             goal_code: a.goal_code,
-            target_code: a.target_code
+            target_code: a.target_code,
+            objective_name: (wizardData.objectives || [])[a.objective_index]?.name_en || '',
+            innovation_alignment: a.innovation_alignment || ''
           }));
         } else if (stepKey === 'kpis' && data.kpis) {
           updates.kpis = data.kpis.map((k, i) => ({
