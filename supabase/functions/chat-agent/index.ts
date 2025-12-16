@@ -1,26 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SAUDI_MOMAH_CONTEXT, INNOVATION_EMPHASIS } from "../_shared/saudiContext.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SAUDI_CONTEXT = `You are operating within the context of Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
+const SAUDI_CONTEXT = `${SAUDI_MOMAH_CONTEXT}
 
-KEY CONTEXT:
-- Kingdom of Saudi Arabia: 13 Administrative Regions, 285+ municipalities, 17 major Amanats
-- Major Saudi cities: Riyadh (capital), Jeddah, Makkah Al-Mukarramah, Madinah Al-Munawwarah, Dammam, Khobar, Dhahran, Tabuk, Abha, Buraidah, Taif
-- Vision 2030 alignment is critical: Quality of Life Program, Housing Program (Sakani - 70% ownership), National Transformation, Thriving Cities
-- MoMAH Focus areas: Smart Cities, Sustainable Development, Citizen Services (Baladi), Urban Planning, Housing, Infrastructure, Rural Development, Municipal Innovation
-- Key Stakeholders: Saudi Citizens, Residents, Municipalities, Private Sector, Academia, Startups, Government Partners
-
-INNOVATION & EMERGING TECHNOLOGY PRIORITY:
-- Emerging Technologies: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems, Robotics, AR/VR
-- GovTech & PropTech: Digital permits, smart buildings, BIM, construction automation
-- CleanTech: Renewable energy, smart waste management, water recycling, carbon reduction
-- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration
-- Always propose technology-driven solutions and innovation approaches
+${INNOVATION_EMPHASIS}
 
 Always consider Saudi cultural context, Vision 2030 goals, innovation opportunities, and MoMAH's mandate in your responses. Provide bilingual support (English/Arabic) when appropriate.`;
 

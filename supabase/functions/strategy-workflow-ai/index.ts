@@ -1,19 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { COMPACT_SAUDI_CONTEXT } from "../_shared/saudiContext.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH):
-- 13 Regions, 285+ municipalities, 17 Amanats across Saudi Arabia
-- Major cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Eastern Province
-- Vision 2030 alignment: Quality of Life, Housing, Smart Cities, Sustainability
-- Focus: Municipal services, urban planning, housing, infrastructure, citizen services, innovation
-- INNOVATION PRIORITY: AI, IoT, Blockchain, Digital Twins, Drones, Smart Sensors, Robotics
-- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration
-- Always consider technology-driven solutions and emerging tech integration opportunities`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -33,7 +25,7 @@ serve(async (req) => {
       case 'optimize_workflow':
         systemPrompt = `You are an expert in workflow optimization and process improvement for Saudi Arabian government strategic planning within MoMAH (Ministry of Municipalities and Housing).
 
-${SAUDI_CONTEXT}
+${COMPACT_SAUDI_CONTEXT}
 
 Analyze municipal workflows considering Saudi government regulations, Vision 2030 goals, and local context. Suggest improvements aligned with national transformation objectives.`;
         userPrompt = `Current Workflow: ${JSON.stringify(workflowData)}

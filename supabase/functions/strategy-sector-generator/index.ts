@@ -1,19 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { COMPACT_SAUDI_CONTEXT } from "../_shared/saudiContext.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const SAUDI_CONTEXT = `Operating within Saudi Arabia's Ministry of Municipalities and Housing (MoMAH):
-- 13 Administrative Regions across the Kingdom
-- Major Saudi Cities: Riyadh, Jeddah, Makkah, Madinah, Dammam, Khobar, Tabuk, Abha, Buraidah, Taif, Najran, Jazan
-- Vision 2030 Programs: Quality of Life, Housing (Sakani - 70% ownership), National Transformation, Thriving Cities
-- Key Sectors: Transportation, Environment, Urban Planning, Digital Services, Public Safety, Infrastructure, Housing, Smart City, Waste Management, Water Resources
-- Stakeholders: Citizens, Municipalities, Private Sector, Academia, Startups, Government Partners
-- INNOVATION PRIORITY: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems, Robotics, AR/VR
-- Emerging Tech: GovTech, PropTech, CleanTech, Smart City platforms, predictive analytics
-- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration, tech scouting`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,7 +23,7 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert Saudi Arabian municipal INNOVATION strategist within the Ministry of Municipalities and Housing (MoMAH), specializing in sector-specific strategy development with EMERGING TECHNOLOGY focus.
 
-${SAUDI_CONTEXT}
+${COMPACT_SAUDI_CONTEXT}
 
 Your role is to generate comprehensive sector strategies for Saudi municipalities that:
 1. Align with Vision 2030 goals and MoMAH's mandate

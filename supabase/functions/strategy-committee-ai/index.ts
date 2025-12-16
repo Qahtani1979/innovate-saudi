@@ -1,19 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { COMPACT_SAUDI_CONTEXT } from "../_shared/saudiContext.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const SAUDI_CONTEXT = `Saudi Arabia Ministry of Municipalities and Housing (MoMAH) Context:
-- 13 Regions, 285+ municipalities, 17 major Amanats
-- Vision 2030: Quality of Life, Housing, National Transformation, Smart Cities
-- Committee types: Strategy Board, Innovation Committee, Budget Committee, Technical Committee
-- Decision-making aligned with Saudi government protocols and Vision 2030 objectives
-- INNOVATION PRIORITY: AI/ML, IoT, Blockchain, Digital Twins, Drones, 5G/6G, Autonomous Systems
-- R&D Ecosystem: Innovation labs, PoC programs, KAUST/KACST partnerships, startup collaboration
-- Committees should prioritize technology adoption, innovation initiatives, and digital transformation`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -39,7 +31,9 @@ serve(async (req) => {
       case 'prioritize_agenda':
         systemPrompt = `You are an expert in Saudi government executive committee management and meeting facilitation within MoMAH (Ministry of Municipalities and Housing).
 
-${SAUDI_CONTEXT}
+${COMPACT_SAUDI_CONTEXT}
+
+Committee types: Strategy Board, Innovation Committee, Budget Committee, Technical Committee. Decision-making aligned with Saudi government protocols and Vision 2030 objectives. Committees should prioritize technology adoption, innovation initiatives, and digital transformation.
 
 Prioritize agenda items based on Vision 2030 strategic importance, urgency, stakeholder impact, and dependencies. Consider Saudi business protocols and decision-making culture.`;
         userPrompt = `Agenda Items: ${JSON.stringify(agendaItems)}
