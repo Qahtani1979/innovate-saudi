@@ -2720,9 +2720,9 @@ Return alignments as an array under the "alignments" key with proper objective_i
           language: language
         };
 
-        // Step 1 (Context Generator) needs taxonomy data for theme/tech suggestions
-        if (step === 1) {
-          requestBody.taxonomy_data = {
+        // Step 1 (Context Generator) and Step 2 (Vision/Values Generator) need taxonomy data
+        if (step === 1 || step === 2) {
+          requestBody.taxonomy = {
             sectors: sectors || [],
             regions: regions || [],
             strategicThemes: strategicThemes || [],
@@ -2731,6 +2731,8 @@ Return alignments as an array under the "alignments" key with proper objective_i
             stakeholderTypes: stakeholderTypes || [],
             riskCategories: riskCategories || []
           };
+          // Also include as taxonomy_data for backward compatibility
+          requestBody.taxonomy_data = requestBody.taxonomy;
         }
         
         const { data: fnData, error: fnError } = await supabase.functions.invoke(edgeFunctionName, {
