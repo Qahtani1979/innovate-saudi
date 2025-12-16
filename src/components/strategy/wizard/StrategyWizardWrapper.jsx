@@ -2542,6 +2542,9 @@ Return alignments as an array under the "alignments" key with proper objective_i
                 owner: { type: 'string' },
                 deliverables: { type: 'array', items: { type: 'string' } },
                 dependencies: { type: 'array', items: { type: 'string' } },
+                innovation_impact: { type: 'number', minimum: 1, maximum: 4 },
+                success_criteria_en: { type: 'string' },
+                success_criteria_ar: { type: 'string' },
                 should_create_entity: { type: 'boolean' }
               }
             }
@@ -3116,14 +3119,19 @@ Return alignments as an array under the "alignments" key with proper objective_i
             description_en: a.description_en || '',
             description_ar: a.description_ar || '',
             objective_index: typeof a.objective_index === 'number' ? a.objective_index : null,
-            type: a.type || 'initiative',
+            type: a.type || 'challenge',
             priority: a.priority || 'medium',
             budget_estimate: a.budget_estimate || '',
             start_date: a.start_date || '',
             end_date: a.end_date || '',
             owner: a.owner || '',
             deliverables: Array.isArray(a.deliverables) ? a.deliverables : [],
-            dependencies: Array.isArray(a.dependencies) ? a.dependencies : []
+            dependencies: Array.isArray(a.dependencies) ? a.dependencies : [],
+            innovation_impact: typeof a.innovation_impact === 'number' ? a.innovation_impact : 2,
+            success_criteria_en: a.success_criteria_en || '',
+            success_criteria_ar: a.success_criteria_ar || '',
+            linked_risks: Array.isArray(a.linked_risks) ? a.linked_risks : [],
+            should_create_entity: a.should_create_entity || false
           }));
         } else if (stepKey === 'resources') {
           const mapResource = (r, i, prefix) => ({
