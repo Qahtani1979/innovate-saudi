@@ -2720,9 +2720,9 @@ Return alignments as an array under the "alignments" key with proper objective_i
           language: language
         };
 
-        // Steps 1-3 need taxonomy data for context-aware generation
-        if (step >= 1 && step <= 3) {
-          requestBody.taxonomy = {
+        // Steps 1-4 need taxonomy data for context-aware generation
+        if (step >= 1 && step <= 4) {
+          requestBody.taxonomyData = {
             sectors: sectors || [],
             regions: regions || [],
             strategicThemes: strategicThemes || [],
@@ -2731,8 +2731,9 @@ Return alignments as an array under the "alignments" key with proper objective_i
             stakeholderTypes: stakeholderTypes || [],
             riskCategories: riskCategories || []
           };
-          // Also include as taxonomy_data for backward compatibility
-          requestBody.taxonomy_data = requestBody.taxonomy;
+          // Also include as taxonomy for backward compatibility
+          requestBody.taxonomy = requestBody.taxonomyData;
+          requestBody.taxonomy_data = requestBody.taxonomyData;
         }
         
         const { data: fnData, error: fnError } = await supabase.functions.invoke(edgeFunctionName, {
@@ -2891,16 +2892,19 @@ Return alignments as an array under the "alignments" key with proper objective_i
             updates.stakeholder_engagement_plan_en = data.stakeholder_engagement_plan;
           }
         } else if (stepKey === 'pestel') {
-          // PESTEL UI expects bilingual objects
+          // PESTEL UI expects bilingual objects with extended fields
           const mapPestelItems = (items) => (items || []).map((item, i) => ({
             id: Date.now().toString() + i,
             factor_en: item.factor_en || item.factor || '',
             factor_ar: item.factor_ar || '',
+            description_en: item.description_en || item.description || '',
+            description_ar: item.description_ar || '',
             impact: item.impact || 'medium',
             trend: item.trend || 'stable',
             timeframe: item.timeframe || 'medium_term',
             implications_en: item.implications_en || item.implications || '',
-            implications_ar: item.implications_ar || ''
+            implications_ar: item.implications_ar || '',
+            recommendations: Array.isArray(item.recommendations) ? item.recommendations : []
           }));
           updates.pestel = {
             political: mapPestelItems(data.political),
@@ -2910,6 +2914,15 @@ Return alignments as an array under the "alignments" key with proper objective_i
             environmental: mapPestelItems(data.environmental),
             legal: mapPestelItems(data.legal)
           };
+          // Include summary if provided
+          if (data.summary) {
+            updates.pestel_summary = {
+              key_opportunities: data.summary.key_opportunities || [],
+              key_threats: data.summary.key_threats || [],
+              critical_success_factors: data.summary.critical_success_factors || [],
+              priority_actions: data.summary.priority_actions || []
+            };
+          }
         } else if (stepKey === 'swot') {
           // SWOT UI expects bilingual objects
           const mapSwotItems = (items) => (items || []).map((item, i) => ({
