@@ -242,3 +242,6 @@ verify_jwt = false
 
 [functions.strategy-program-generator]
 verify_jwt = false
+
+[functions.strategy-context-generator]
+verify_jwt = false
