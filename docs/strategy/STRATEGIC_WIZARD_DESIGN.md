@@ -248,4 +248,4 @@ Strategy Hub (/strategy-hub)
 | [strategy-design.md](./strategy-design.md) | Complete 8-phase lifecycle |
 | [STRATEGY_TEMPLATES_DESIGN.md](./STRATEGY_TEMPLATES_DESIGN.md) | Template system |
 | [strategy-integration-matrix.md](./strategy-integration-matrix.md) | Entity integrations |
-| [plan-tracker.md](./plan-tracker.md) | Implementation tracking |
+| [wizard-implementation-status.md](./wizard-implementation-status.md) | Current wizard status |

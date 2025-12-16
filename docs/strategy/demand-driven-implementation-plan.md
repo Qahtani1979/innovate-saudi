@@ -264,4 +264,4 @@ Wrapper that adds queue awareness to any generator:
 |----------|---------|
 | [strategy-design.md](./strategy-design.md) | Phase 3 Cascade design |
 | [strategy-integration-matrix.md](./strategy-integration-matrix.md) | Entity generation specs |
-| [plan-tracker.md](./plan-tracker.md) | Implementation status |
+| [wizard-implementation-status.md](./wizard-implementation-status.md) | Wizard implementation |

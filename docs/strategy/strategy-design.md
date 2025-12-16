@@ -87,12 +87,12 @@ The Strategy System provides comprehensive strategic planning and execution mana
 
 | Document | Purpose | Status |
 |----------|---------|--------|
-| [plan-tracker.md](./plan-tracker.md) | Implementation tracking | ✅ Updated v6.0 |
-| [strategy-integration-matrix.md](./strategy-integration-matrix.md) | Platform integrations | ✅ Updated v6.0 |
-| [strategy-system-gaps-analysis.md](./strategy-system-gaps-analysis.md) | Gaps & conflicts | ✅ Updated v10 |
-| [strategy-system-inventory.md](./strategy-system-inventory.md) | Complete inventory | ✅ Updated v6.0 |
+| [strategy-integration-matrix.md](./strategy-integration-matrix.md) | Platform integrations | ✅ Updated |
+| [strategy-system-inventory.md](./strategy-system-inventory.md) | Complete inventory | ✅ Updated |
 | [STRATEGIC_WIZARD_DESIGN.md](./STRATEGIC_WIZARD_DESIGN.md) | Wizard design | ✅ Updated v2.0 |
 | [STRATEGY_TEMPLATES_DESIGN.md](./STRATEGY_TEMPLATES_DESIGN.md) | Templates design | ✅ Updated v2.2 |
+| [wizard-implementation-status.md](./wizard-implementation-status.md) | 18-step wizard status | ✅ Current |
+| [ai-integration-status.md](./ai-integration-status.md) | AI coverage by phase | ✅ Current |
 | [demand-driven-implementation-plan.md](./demand-driven-implementation-plan.md) | Cascade system | ✅ Updated |
 
 ---
