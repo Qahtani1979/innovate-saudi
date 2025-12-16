@@ -201,40 +201,9 @@ The following innovation vehicles are generated and managed across the lifecycle
 
 ## AI Integration Across Phases
 
-### Current AI Status Summary
+See [AI Integration Status](./ai-integration-status.md) for detailed AI coverage by phase.
 
-| Phase | Component | AI Status | Priority |
-|-------|-----------|-----------|----------|
-| **Phase 1** | Pre-Planning Analysis | ✅ Real AI | - |
-| **Phase 1** | Trend Detection | ✅ Real AI | - |
-| **Phase 2** | ActionPlanBuilder | ⚠️ MOCK | High |
-| **Phase 2** | NationalStrategyLinker | ⚠️ MOCK | High |
-| **Phase 2** | SectorStrategyBuilder | ⚠️ MOCK | High |
-| **Phase 2** | StrategyTimelinePlanner | ❌ NONE | Medium |
-| **Phase 3** | ChallengeGenerator | ✅ Real AI | - |
-| **Phase 3** | AISuggestionEngine | ✅ Real AI | - |
-| **Phase 4** | ApprovalRecommender | ❌ NONE | Medium |
-| **Phase 5** | ImpactStoryGenerator | ✅ Real AI | - |
-| **Phase 5** | PortfolioHealthMonitor | ✅ Real AI | - |
-| **Phase 6** | AIThresholdSuggester | ❌ NONE | High |
-| **Phase 6** | AIHealthPredictor | ❌ NONE | High |
-| **Phase 6** | AIAnomalyDetector | ❌ NONE | Medium |
-| **Phase 7** | UnifiedEvaluationForm | ✅ Real AI | - |
-| **Phase 7** | ImpactReportGenerator | ✅ Real AI | - |
-| **Phase 7** | LessonsQualityAnalyzer | ❌ NONE | Medium |
-| **Phase 8** | PatternRecognitionEngine | ❌ NONE | High |
-| **Phase 8** | AdjustmentRecommender | ❌ NONE | High |
-| **Phase 8** | ChangeRiskAnalyzer | ❌ NONE | Medium |
-| **Phase 8** | ImpactPredictor | ❌ NONE | Medium |
-
-### Recommended AI Implementation Priority
-
-1. **Critical (Phase 2)**: Convert mock AI to real AI for strategy creation components
-2. **High (Phase 6)**: Add predictive analytics for monitoring
-3. **High (Phase 8)**: Add pattern recognition and adjustment recommendation AI
-4. **Medium (Phase 4)**: Add AI-powered approval recommendations
-5. **Medium (Phase 7)**: Add lessons learned quality analysis
-6. **Medium (Phase 8)**: Add change risk analysis AI
+**Summary:** ~75% AI coverage. Phase 1, 3, and 6 have strong AI support. Enhancement opportunities exist in Phases 4, 5, 7, and 8.
 
 ---
 

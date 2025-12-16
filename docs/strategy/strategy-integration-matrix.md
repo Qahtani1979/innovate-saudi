@@ -307,5 +307,5 @@ This matrix documents all integrations for the complete Strategy Leader Workflow
 |----------|---------|
 | [strategy-design.md](./strategy-design.md) | Complete 8-phase lifecycle |
 | [strategy-system-inventory.md](./strategy-system-inventory.md) | Full system inventory |
-| [plan-tracker.md](./plan-tracker.md) | Implementation tracking |
-| [strategy-system-gaps-analysis.md](./strategy-system-gaps-analysis.md) | Gaps analysis |
+| [wizard-implementation-status.md](./wizard-implementation-status.md) | 18-step wizard status |
+| [ai-integration-status.md](./ai-integration-status.md) | AI coverage by phase |

@@ -8,14 +8,6 @@
 
 ---
 
-## 🔗 Navigation
-
-| ⬆️ Parent | ➡️ Next |
-|-----------|---------|
-| [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Challenges →](../challenges/challenges-system-inventory.md) |
-
----
-
 ## Overview
 
 The Strategy System is the core strategic planning and execution framework spanning all 8 phases of the strategic methodology. This document provides a complete inventory of all pages, components, hooks, and their relationships.
@@ -388,5 +380,5 @@ The Strategy Hub (`/strategy-hub`) serves as the **central command center** for 
 |----------|---------|
 | [strategy-design.md](./strategy-design.md) | Complete 8-phase lifecycle design |
 | [strategy-integration-matrix.md](./strategy-integration-matrix.md) | Entity integrations |
-| [plan-tracker.md](./plan-tracker.md) | Implementation tracking |
+| [wizard-implementation-status.md](./wizard-implementation-status.md) | 18-step wizard status |
 | [demand-driven-implementation-plan.md](./demand-driven-implementation-plan.md) | Cascade demand system |

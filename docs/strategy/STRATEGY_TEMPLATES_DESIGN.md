@@ -234,4 +234,4 @@ src/
 |----------|---------|
 | [STRATEGIC_WIZARD_DESIGN.md](./STRATEGIC_WIZARD_DESIGN.md) | Wizard design |
 | [strategy-design.md](./strategy-design.md) | Complete 8-phase lifecycle |
-| [plan-tracker.md](./plan-tracker.md) | Implementation tracking |
+| [wizard-implementation-status.md](./wizard-implementation-status.md) | Current wizard status |
