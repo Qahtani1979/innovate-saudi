@@ -3283,9 +3283,29 @@ Return alignments as an array under the "alignments" key with proper objective_i
       budgetRange: wizardData.budget_range || ''
     };
 
+    // Build detailed existing objectives summary with full context
     const existingObjectivesSummary = existingObjectives.map((o, i) => 
-      `${i + 1}. ${o.name_en || o.name_ar} (${o.sector_code || 'General'}) - ${o.description_en?.substring(0, 100) || ''}`
-    ).join('\n');
+      `${i + 1}. [${o.sector_code || 'General'}] "${o.name_en || o.name_ar}"
+   - EN Description: ${o.description_en || 'N/A'}
+   - AR Description: ${o.description_ar || 'N/A'}
+   - Priority: ${o.priority || 'medium'}
+   - Key themes: ${extractKeyThemes(o.name_en, o.description_en)}`
+    ).join('\n\n');
+    
+    // Helper to extract key themes from text
+    function extractKeyThemes(name, description) {
+      const text = `${name || ''} ${description || ''}`.toLowerCase();
+      const themes = [];
+      if (text.includes('digital') || text.includes('smart') || text.includes('technology')) themes.push('Digital/Tech');
+      if (text.includes('citizen') || text.includes('service') || text.includes('satisfaction')) themes.push('Citizen Services');
+      if (text.includes('housing') || text.includes('residential')) themes.push('Housing');
+      if (text.includes('infrastructure') || text.includes('urban')) themes.push('Infrastructure');
+      if (text.includes('environment') || text.includes('sustainable') || text.includes('green')) themes.push('Environment');
+      if (text.includes('innovation') || text.includes('research') || text.includes('development')) themes.push('Innovation');
+      if (text.includes('governance') || text.includes('policy') || text.includes('regulation')) themes.push('Governance');
+      if (text.includes('capacity') || text.includes('training') || text.includes('talent')) themes.push('Capacity Building');
+      return themes.length > 0 ? themes.join(', ') : 'General';
+    }
 
     // Calculate sector coverage for the prompt using dynamic sectors
     const sectorCoverage = sectors.map(s => ({
@@ -3440,12 +3460,46 @@ Use formal Arabic (فصحى). Generate a TRUE STRATEGIC OBJECTIVE, not a tactica
       });
 
       if (success && data?.objective) {
+        const newObjective = {
+          ...data.objective,
+          priority: data.objective.priority || 'medium'
+        };
+        
+        // Calculate REAL uniqueness score using algorithmic similarity
+        let realUniquenessScore = 75; // Default fallback
+        let scoreDetails = null;
+        
+        try {
+          console.log('[Objective] Calculating real uniqueness score...');
+          const { data: similarityData, error: similarityError } = await supabase.functions.invoke('strategy-objective-similarity', {
+            body: {
+              newObjective,
+              existingObjectives
+            }
+          });
+          
+          if (!similarityError && similarityData?.uniqueness_score) {
+            realUniquenessScore = similarityData.uniqueness_score;
+            scoreDetails = {
+              max_similarity: similarityData.max_similarity,
+              most_similar_to: similarityData.most_similar_to,
+              sector_coverage_bonus: similarityData.sector_coverage_bonus,
+              strategic_level_score: similarityData.strategic_level_score
+            };
+            console.log('[Objective] Real uniqueness score:', realUniquenessScore, scoreDetails);
+          } else {
+            console.warn('[Objective] Similarity calculation failed, using AI score:', similarityError);
+            realUniquenessScore = data.differentiation_score || 75;
+          }
+        } catch (simError) {
+          console.warn('[Objective] Similarity service error:', simError);
+          realUniquenessScore = data.differentiation_score || 75;
+        }
+        
         return {
-          objective: {
-            ...data.objective,
-            priority: data.objective.priority || 'medium'
-          },
-          differentiation_score: data.differentiation_score || 75
+          objective: newObjective,
+          differentiation_score: realUniquenessScore,
+          score_details: scoreDetails
         };
       }
       return null;

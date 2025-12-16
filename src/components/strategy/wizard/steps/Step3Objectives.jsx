@@ -26,6 +26,7 @@ export default function Step3Objectives({
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [proposedObjective, setProposedObjective] = useState(null);
   const [differentiationScore, setDifferentiationScore] = useState(null);
+  const [scoreDetails, setScoreDetails] = useState(null); // New: store detailed score breakdown
   const [isGeneratingSingle, setIsGeneratingSingle] = useState(false);
   const [targetSector, setTargetSector] = useState('_any'); // Sector to target for regeneration ('_any' = AI chooses)
   
@@ -94,6 +95,7 @@ export default function Step3Objectives({
     setShowProposalModal(true);
     setProposedObjective(null);
     setDifferentiationScore(null);
+    setScoreDetails(null);
 
     try {
       if (onGenerateSingleObjective) {
@@ -103,6 +105,10 @@ export default function Step3Objectives({
         if (result?.objective) {
           setProposedObjective(result.objective);
           setDifferentiationScore(result.differentiation_score || 75);
+          // Store score details if available
+          if (result.score_details) {
+            setScoreDetails(result.score_details);
+          }
           // Auto-set target sector to the generated one for easy regeneration in same sector
           if (result.objective.sector_code) {
             setTargetSector(result.objective.sector_code);
@@ -133,6 +139,7 @@ export default function Step3Objectives({
       setShowProposalModal(false);
       setProposedObjective(null);
       setDifferentiationScore(null);
+      setScoreDetails(null);
       setExpandedIndex(objectives.length);
     }
   };
@@ -142,6 +149,8 @@ export default function Step3Objectives({
     setShowProposalModal(false);
     setProposedObjective(null);
     setDifferentiationScore(null);
+    setScoreDetails(null);
+  };
   };
 
   // Update proposed objective field
@@ -395,21 +404,49 @@ export default function Step3Objectives({
           ) : proposedObjective ? (
             <div className="space-y-4">
               {/* Differentiation Score */}
-              <Card className={`border-2 ${differentiationScore >= 60 ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+              <Card className={`border-2 ${differentiationScore >= 60 ? 'border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800' : 'border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800'}`}>
                 <CardContent className="py-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">
-                      {t({ en: 'Uniqueness Score', ar: 'درجة التفرد' })}
+                      {t({ en: 'Uniqueness Score (Algorithmic)', ar: 'درجة التفرد (خوارزمية)' })}
                     </span>
                     <span className={`font-bold ${getDifferentiationColor(differentiationScore)}`}>
                       {differentiationScore}% - {getDifferentiationLabel(differentiationScore)}
                     </span>
                   </div>
                   <Progress value={differentiationScore} className="h-2" />
+                  
+                  {/* Score Breakdown Details */}
+                  {scoreDetails && (
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                      <div className="p-2 bg-background/50 rounded">
+                        <div className="text-muted-foreground">{t({ en: 'Max Similarity', ar: 'أقصى تشابه' })}</div>
+                        <div className="font-semibold">{scoreDetails.max_similarity || 0}%</div>
+                      </div>
+                      <div className="p-2 bg-background/50 rounded">
+                        <div className="text-muted-foreground">{t({ en: 'Sector Bonus', ar: 'مكافأة القطاع' })}</div>
+                        <div className="font-semibold text-green-600">+{scoreDetails.sector_coverage_bonus || 0}</div>
+                      </div>
+                      <div className="p-2 bg-background/50 rounded">
+                        <div className="text-muted-foreground">{t({ en: 'Strategic Level', ar: 'المستوى الاستراتيجي' })}</div>
+                        <div className="font-semibold">{scoreDetails.strategic_level_score || 70}%</div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {differentiationScore < 60 && (
-                    <div className="flex items-center gap-2 mt-2 text-amber-700 text-sm">
+                    <div className="flex items-center gap-2 mt-2 text-amber-700 dark:text-amber-400 text-sm">
                       <AlertTriangle className="h-4 w-4" />
                       {t({ en: 'Consider regenerating for a more unique objective', ar: 'فكر في إعادة الإنشاء للحصول على هدف أكثر تفرداً' })}
+                    </div>
+                  )}
+                  
+                  {scoreDetails?.most_similar_to !== null && scoreDetails?.most_similar_to !== undefined && objectives[scoreDetails.most_similar_to] && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {t({ en: 'Most similar to: ', ar: 'الأكثر تشابهاً مع: ' })}
+                      <span className="font-medium">
+                        {objectives[scoreDetails.most_similar_to]?.name_en || objectives[scoreDetails.most_similar_to]?.name_ar || `Objective #${scoreDetails.most_similar_to + 1}`}
+                      </span>
                     </div>
                   )}
                 </CardContent>
