@@ -266,6 +266,32 @@ The following innovation vehicles are generated and managed across the lifecycle
 
 ## Document Index
 
+### Core Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Strategy Design](./strategy-design.md) | Complete 8-phase system architecture (v11.0) |
+| [System Inventory](./strategy-system-inventory.md) | Full component inventory (180+ files) |
+| [Integration Matrix](./strategy-integration-matrix.md) | Cross-system integration verification |
+
+### Wizard & Templates
+
+| Document | Description |
+|----------|-------------|
+| [Wizard Design](./STRATEGIC_WIZARD_DESIGN.md) | 18-step wizard architecture (v2.0) |
+| [Wizard Status](./wizard-implementation-status.md) | Current 18-step implementation status |
+| [Templates Design](./STRATEGY_TEMPLATES_DESIGN.md) | Template system design (v2.2) |
+
+### AI & Demand Generation
+
+| Document | Description |
+|----------|-------------|
+| [AI Integration](./ai-integration-status.md) | AI component coverage by phase |
+| [Demand Generation Design](./demand-driven-generation-design.md) | AI-driven cascade system design |
+| [Demand Implementation](./demand-driven-implementation-plan.md) | Demand system implementation status |
+
+### Phase Methodology Guides
+
 | Document | Description |
 |----------|-------------|
 | [Phase 1: Pre-Planning](./phase1-strategic-methodology.md) | Intelligence gathering & foundation building |
