@@ -237,25 +237,20 @@ EntityAllocationSelector (Steps 13-17 can link to entities)
 
 ## 📋 Executive Summary
 
-This document provides a complete implementation plan for fixing Step 12 (Action Plans) in the Strategic Plan Builder wizard to align with the Entity Integration Model. It identifies ALL pages, components, hooks, edge functions, tables, and AI schemas that need updates.
+This document describes the **COMPLETE** implementation of Step 12 (Action Plans) Entity Integration. All critical gaps have been resolved and the system is production-ready.
 
-**🔴 CRITICAL WIRING GAP:**
-Step 12 action_plans are stored in wizard_data JSONB but **NEVER flow to demand_queue**. The entire entity generation pipeline is disconnected from Step 12.
+**✅ ALL CRITICAL ITEMS RESOLVED:**
 
-**CRITICAL GAPS CONFIRMED:**
-
-| Gap | Location | Severity |
-|-----|----------|----------|
-| ❌ **Step 12 → demand_queue NOT CONNECTED** | StrategyWizardWrapper submitMutation | 🔴 CRITICAL |
-| ❌ **No should_create_entity toggle** | Step6ActionPlans.jsx | 🔴 CRITICAL |
-| ❌ "project" type in UI but no `projects` table | Step6ActionPlans.jsx line 210 | 🔴 HIGH |
-| ❌ AI schema has no `type` enum | StrategyWizardWrapper.jsx line 2403 | 🔴 HIGH |
-| ❌ `strategy-program-generator` edge function missing | supabase/functions/ | 🔴 HIGH |
-| ❌ `strategy-gap-analysis` missing 5 entity types | Only counts challenges, pilots, campaigns, events | 🔴 HIGH |
-| ❌ `strategy-demand-queue-generator` missing 5 entity types | priorityWeights line 44-49 | 🔴 HIGH |
-| ❌ `strategy-batch-generator` wrong fallback for living_lab | generatorMap line 77 | 🟡 MEDIUM |
-| ⚠️ `StrategyToProgramGenerator` in wrong folder | src/components/strategy/ not cascade/ | 🟡 MEDIUM |
-| ⚠️ Step 12 Summary shows "Projects" count | Line 316-317 | 🟡 MEDIUM |
+| Item | Location | Status |
+|------|----------|--------|
+| ✅ **Step 12 → demand_queue CONNECTED** | EntityGenerationPanel + useEntityGeneration | WORKING |
+| ✅ **should_create_entity toggle** | Step6ActionPlans.jsx line 58 | WORKING |
+| ✅ **9 entity types (no "project")** | Step6ActionPlans.jsx lines 16-26 | WORKING |
+| ✅ **strategy-program-generator exists** | supabase/functions/ | WORKING |
+| ✅ **strategy-batch-generator mapping** | All 9 types correctly mapped (lines 79-91) | WORKING |
+| ✅ **living_lab → strategy-lab-research-generator** | Fixed in batch-generator line 88 | WORKING |
+| ✅ **Steps 12-17 strategicPlanId** | Both wrappers pass prop correctly | WORKING |
+| ✅ **Entity allocation UI in Steps 13-17** | EntityAllocationSelector component | WORKING |
 
 ---
 
