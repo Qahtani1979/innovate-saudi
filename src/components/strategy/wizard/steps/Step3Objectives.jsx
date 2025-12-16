@@ -26,8 +26,18 @@ export default function Step3Objectives({
   const [proposedObjective, setProposedObjective] = useState(null);
   const [differentiationScore, setDifferentiationScore] = useState(null);
   const [isGeneratingSingle, setIsGeneratingSingle] = useState(false);
+  const [targetSector, setTargetSector] = useState(''); // Sector to target for regeneration
   
   const objectives = data.objectives || [];
+  
+  // Get sectors with lowest coverage for suggestions
+  const getSectorCoverage = () => {
+    const coverage = MOMAH_SECTORS.map(sector => ({
+      ...sector,
+      count: objectives.filter(o => o.sector_code === sector.code).length
+    }));
+    return coverage.sort((a, b) => a.count - b.count);
+  };
 
   const addObjective = () => {
     onChange({
@@ -78,7 +88,7 @@ export default function Step3Objectives({
   };
 
   // Generate a single new objective using AI
-  const handleGenerateSingleObjective = async () => {
+  const handleGenerateSingleObjective = async (sectorOverride = null) => {
     setIsGeneratingSingle(true);
     setShowProposalModal(true);
     setProposedObjective(null);
@@ -86,10 +96,16 @@ export default function Step3Objectives({
 
     try {
       if (onGenerateSingleObjective) {
-        const result = await onGenerateSingleObjective(objectives);
+        // Use sector override, or the selected target sector, or let AI choose
+        const selectedSector = sectorOverride || targetSector || null;
+        const result = await onGenerateSingleObjective(objectives, selectedSector);
         if (result?.objective) {
           setProposedObjective(result.objective);
           setDifferentiationScore(result.differentiation_score || 75);
+          // Auto-set target sector to the generated one for easy regeneration in same sector
+          if (result.objective.sector_code) {
+            setTargetSector(result.objective.sector_code);
+          }
         }
       }
     } catch (error) {
@@ -97,6 +113,11 @@ export default function Step3Objectives({
     } finally {
       setIsGeneratingSingle(false);
     }
+  };
+
+  // Regenerate with specific sector
+  const handleRegenerateWithSector = () => {
+    handleGenerateSingleObjective(targetSector || null);
   };
 
   // Approve and add the proposed objective
@@ -473,32 +494,91 @@ export default function Step3Objectives({
             </div>
           )}
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={handleRejectObjective}
-              className="w-full sm:w-auto"
-            >
-              <X className="h-4 w-4 mr-2" />
-              {t({ en: 'Reject', ar: 'رفض' })}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleGenerateSingleObjective}
-              disabled={isGeneratingSingle}
-              className="w-full sm:w-auto"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isGeneratingSingle ? 'animate-spin' : ''}`} />
-              {t({ en: 'Regenerate', ar: 'إعادة الإنشاء' })}
-            </Button>
-            <Button
-              onClick={handleApproveObjective}
-              disabled={!proposedObjective || isGeneratingSingle}
-              className="w-full sm:w-auto"
-            >
-              <Check className="h-4 w-4 mr-2" />
-              {t({ en: 'Approve & Add', ar: 'الموافقة والإضافة' })}
-            </Button>
+          <DialogFooter className="flex-col gap-3">
+            {/* Sector Selection for Regeneration */}
+            {proposedObjective && (
+              <div className="w-full border rounded-lg p-3 bg-muted/30">
+                <Label className="text-sm font-medium mb-2 block">
+                  {t({ en: 'Target Sector for Regeneration', ar: 'القطاع المستهدف لإعادة الإنشاء' })}
+                </Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {getSectorCoverage().slice(0, 6).map(sector => (
+                    <Badge 
+                      key={sector.code}
+                      variant={targetSector === sector.code ? 'default' : 'outline'}
+                      className={`cursor-pointer transition-colors ${
+                        targetSector === sector.code 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'hover:bg-primary/10'
+                      } ${sector.count === 0 ? 'border-amber-400' : ''}`}
+                      onClick={() => setTargetSector(targetSector === sector.code ? '' : sector.code)}
+                    >
+                      {language === 'ar' ? sector.name_ar : sector.name_en}
+                      <span className="ml-1 opacity-70">({sector.count})</span>
+                    </Badge>
+                  ))}
+                </div>
+                <Select 
+                  value={targetSector} 
+                  onValueChange={(v) => setTargetSector(v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t({ en: 'Or select any sector...', ar: 'أو اختر أي قطاع...' })} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">{t({ en: 'Any Sector (AI chooses)', ar: 'أي قطاع (الذكاء الاصطناعي يختار)' })}</SelectItem>
+                    {MOMAH_SECTORS.map(s => {
+                      const count = objectives.filter(o => o.sector_code === s.code).length;
+                      return (
+                        <SelectItem key={s.code} value={s.code}>
+                          {language === 'ar' ? s.name_ar : s.name_en} ({count} {t({ en: 'existing', ar: 'موجود' })})
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {targetSector && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {t({ 
+                      en: `Will generate an objective specifically for: ${MOMAH_SECTORS.find(s => s.code === targetSector)?.name_en}`, 
+                      ar: `سيتم إنشاء هدف خاص بـ: ${MOMAH_SECTORS.find(s => s.code === targetSector)?.name_ar}` 
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <Button
+                variant="outline"
+                onClick={handleRejectObjective}
+                className="w-full sm:w-auto"
+              >
+                <X className="h-4 w-4 mr-2" />
+                {t({ en: 'Reject', ar: 'رفض' })}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleRegenerateWithSector}
+                disabled={isGeneratingSingle}
+                className="w-full sm:w-auto"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isGeneratingSingle ? 'animate-spin' : ''}`} />
+                {targetSector 
+                  ? t({ en: 'Regenerate in Sector', ar: 'إعادة الإنشاء في القطاع' })
+                  : t({ en: 'Regenerate', ar: 'إعادة الإنشاء' })
+                }
+              </Button>
+              <Button
+                onClick={handleApproveObjective}
+                disabled={!proposedObjective || isGeneratingSingle}
+                className="w-full sm:w-auto"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                {t({ en: 'Approve & Add', ar: 'الموافقة والإضافة' })}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
