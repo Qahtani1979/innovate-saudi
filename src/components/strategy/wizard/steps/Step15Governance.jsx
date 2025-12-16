@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Building2, Plus, X, AlertTriangle, Users, LayoutDashboard, Grid3X3, ChevronUp, ChevronDown, ArrowDown } from 'lucide-react';
+import { Sparkles, Building2, Plus, X, AlertTriangle, Users, LayoutDashboard, Grid3X3, ChevronUp, ChevronDown, ArrowDown, UserCheck, Brain } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
+import { useSignoffAI } from '@/hooks/strategy/useSignoffAI';
+import { useCommitteeAI } from '@/hooks/strategy/useCommitteeAI';
 
 const ROLE_TYPES = [
   { value: 'executive', label: { en: 'Executive', ar: 'تنفيذي' } },
@@ -45,8 +47,13 @@ const RACI_VALUES = [
   { value: 'I', label: { en: 'I - Informed', ar: 'ع - مطلع' }, color: 'bg-gray-400' }
 ];
 
-export default function Step15Governance({ data, onChange, onGenerateAI, isGenerating }) {
+export default function Step15Governance({ data, onChange, onGenerateAI, isGenerating, strategicPlanId = null }) {
   const { language, t, isRTL } = useLanguage();
+  const [activeTab, setActiveTab] = useState('committees');
+  
+  // Specialized AI hooks for governance
+  const { suggestStakeholders, predictApprovalRisk, isLoading: signoffLoading } = useSignoffAI();
+  const { prioritizeAgenda, generateActionItems, isLoading: committeeLoading } = useCommitteeAI();
 
   const committees = data.governance?.committees || [];
   const roles = data.governance?.roles || [];

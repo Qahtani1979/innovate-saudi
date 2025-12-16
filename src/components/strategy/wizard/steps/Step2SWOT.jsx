@@ -1,20 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Loader2, Plus, X, TrendingUp, TrendingDown, Target, AlertTriangle } from 'lucide-react';
+import { Sparkles, Loader2, Plus, X, TrendingUp, TrendingDown, Target, AlertTriangle, Save } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import { useSwotAnalysis } from '@/hooks/strategy/useSwotAnalysis';
 
 export default function Step2SWOT({ 
   data, 
   onChange, 
   onGenerateAI, 
-  isGenerating 
+  isGenerating,
+  strategicPlanId = null // Optional: for DB persistence
 }) {
   const { language, t, isRTL } = useLanguage();
   const [newItems, setNewItems] = useState({ strengths: { en: '', ar: '' }, weaknesses: { en: '', ar: '' }, opportunities: { en: '', ar: '' }, threats: { en: '', ar: '' } });
+  
+  // DB persistence hook - only active when strategicPlanId is provided
+  const { 
+    swotData: dbSwotData, 
+    loading: dbLoading, 
+    saving: dbSaving, 
+    saveSwotAnalysis 
+  } = useSwotAnalysis(strategicPlanId);
+  
+  // Sync DB data to local state on load (only if planId exists and DB has data)
+  useEffect(() => {
+    if (strategicPlanId && dbSwotData && !dbLoading) {
+      const hasDbData = ['strengths', 'weaknesses', 'opportunities', 'threats'].some(
+        key => dbSwotData[key]?.length > 0
+      );
+      if (hasDbData && !data.swot) {
+        onChange({ swot: dbSwotData });
+      }
+    }
+  }, [strategicPlanId, dbSwotData, dbLoading]);
 
   const swot = data.swot || { strengths: [], weaknesses: [], opportunities: [], threats: [] };
 

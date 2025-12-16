@@ -18,6 +18,7 @@ import { useAutoSaveDraft } from '@/hooks/strategy/useAutoSaveDraft';
 // NOTE: templates are applied via a lightweight helper in this file to avoid hook dispatcher crashes
 import { useWizardValidation } from '@/hooks/strategy/useWizardValidation';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useWizardAI, getEdgeFunctionForStep, usesSpecializedEdgeFunction, SAUDI_CONTEXT } from '@/hooks/strategy/useWizardAI';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';

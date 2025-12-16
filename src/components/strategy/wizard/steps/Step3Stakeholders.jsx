@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -6,14 +6,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Users, Plus, X, Grid3X3 } from 'lucide-react';
+import { Sparkles, Users, Plus, X, Grid3X3, Save } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
+import { useStakeholderAnalysis } from '@/hooks/strategy/useStakeholderAnalysis';
 import { cn } from '@/lib/utils';
 
-export default function Step3Stakeholders({ data, onChange, onGenerateAI, isGenerating }) {
+export default function Step3Stakeholders({ 
+  data, 
+  onChange, 
+  onGenerateAI, 
+  isGenerating,
+  strategicPlanId = null // Optional: for DB persistence
+}) {
   const { language, t, isRTL } = useLanguage();
   const { stakeholderTypes } = useTaxonomy();
+  
+  // DB persistence hook
+  const {
+    stakeholders: dbStakeholders,
+    loading: dbLoading,
+    saving: dbSaving,
+    saveStakeholder,
+    deleteStakeholder
+  } = useStakeholderAnalysis(strategicPlanId);
+  
+  // Sync DB data on load
+  useEffect(() => {
+    if (strategicPlanId && dbStakeholders?.length > 0 && !dbLoading && !data.stakeholders?.length) {
+      onChange({ stakeholders: dbStakeholders });
+    }
+  }, [strategicPlanId, dbStakeholders, dbLoading]);
 
   const addStakeholder = () => {
     const newStakeholder = { 
