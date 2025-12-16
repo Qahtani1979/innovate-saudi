@@ -38,7 +38,7 @@ import Step13Resources from './steps/Step13Resources';
 import Step14Timeline from './steps/Step7Timeline';
 import Step15Governance from './steps/Step15Governance';
 import { Step16Communication, Step17Change } from './steps/Step16Communication';
-import Step18Review from './steps/Step8Review';
+import Step18Review from './steps/Step18Review';
 
 /**
  * StrategyWizardWrapper
