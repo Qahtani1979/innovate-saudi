@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useRiskAssessment } from '@/hooks/strategy/useRiskAssessment';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,16 +29,16 @@ import {
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Risk categories
-const RISK_CATEGORIES = [
-  { value: 'strategic', labelEn: 'Strategic', labelAr: 'استراتيجي', color: 'bg-purple-500' },
-  { value: 'operational', labelEn: 'Operational', labelAr: 'تشغيلي', color: 'bg-blue-500' },
-  { value: 'financial', labelEn: 'Financial', labelAr: 'مالي', color: 'bg-green-500' },
-  { value: 'compliance', labelEn: 'Compliance', labelAr: 'امتثال', color: 'bg-amber-500' },
-  { value: 'reputational', labelEn: 'Reputational', labelAr: 'سمعة', color: 'bg-rose-500' },
-  { value: 'technology', labelEn: 'Technology', labelAr: 'تقني', color: 'bg-cyan-500' },
-  { value: 'political', labelEn: 'Political', labelAr: 'سياسي', color: 'bg-indigo-500' },
-  { value: 'environmental', labelEn: 'Environmental', labelAr: 'بيئي', color: 'bg-teal-500' }
+// Fallback risk categories (used when taxonomy not loaded)
+const FALLBACK_RISK_CATEGORIES = [
+  { value: 'STRATEGIC', labelEn: 'Strategic', labelAr: 'استراتيجي', color: 'bg-purple-500' },
+  { value: 'OPERATIONAL', labelEn: 'Operational', labelAr: 'تشغيلي', color: 'bg-blue-500' },
+  { value: 'FINANCIAL', labelEn: 'Financial', labelAr: 'مالي', color: 'bg-green-500' },
+  { value: 'COMPLIANCE', labelEn: 'Compliance', labelAr: 'امتثال', color: 'bg-amber-500' },
+  { value: 'REPUTATIONAL', labelEn: 'Reputational', labelAr: 'سمعة', color: 'bg-rose-500' },
+  { value: 'TECHNOLOGY', labelEn: 'Technology', labelAr: 'تقني', color: 'bg-cyan-500' },
+  { value: 'POLITICAL', labelEn: 'Political', labelAr: 'سياسي', color: 'bg-indigo-500' },
+  { value: 'ENVIRONMENTAL', labelEn: 'Environmental', labelAr: 'بيئي', color: 'bg-teal-500' }
 ];
 
 // Risk status
@@ -59,7 +60,7 @@ const getRiskLevel = (probability, impact) => {
 };
 
 // Risk Matrix Component
-function RiskMatrix({ risks, onSelectRisk, selectedId, language }) {
+function RiskMatrix({ risks, onSelectRisk, selectedId, language, riskCategories }) {
   // 5x5 probability/impact matrix
   const matrixCells = [];
   for (let impact = 5; impact >= 1; impact--) {
@@ -98,7 +99,7 @@ function RiskMatrix({ risks, onSelectRisk, selectedId, language }) {
             {cell.risks.length > 0 && (
               <div className="flex flex-wrap gap-0.5 justify-center p-1">
                 {cell.risks.slice(0, 3).map((risk) => {
-                  const category = RISK_CATEGORIES.find(c => c.value === risk.category);
+                  const category = riskCategories.find(c => c.value === risk.category || c.code === risk.category);
                   return (
                     <motion.button
                       key={risk.id}
@@ -129,7 +130,7 @@ function RiskMatrix({ risks, onSelectRisk, selectedId, language }) {
 }
 
 // Risk Dialog
-function RiskDialog({ open, onOpenChange, risk, onSave, language, t }) {
+function RiskDialog({ open, onOpenChange, risk, onSave, language, t, riskCategories }) {
   const [formData, setFormData] = useState(risk || {
     name_en: '',
     name_ar: '',
@@ -238,11 +239,11 @@ function RiskDialog({ open, onOpenChange, risk, onSave, language, t }) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {RISK_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
+                  {riskCategories.map((cat) => (
+                    <SelectItem key={cat.value || cat.code} value={cat.value || cat.code}>
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${cat.color}`} />
-                        {language === 'ar' ? cat.labelAr : cat.labelEn}
+                        <div className={`w-3 h-3 rounded-full ${cat.color || 'bg-primary'}`} />
+                        {language === 'ar' ? (cat.labelAr || cat.name_ar) : (cat.labelEn || cat.name_en)}
                       </div>
                     </SelectItem>
                   ))}
@@ -425,7 +426,24 @@ export default function RiskAssessmentBuilder({
   className = ''
 }) {
   const { language, t } = useLanguage();
+  const { riskCategories: taxonomyCategories } = useTaxonomy();
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
+  
+  // Compute risk categories from taxonomy with fallback
+  const riskCategories = useMemo(() => {
+    if (taxonomyCategories && taxonomyCategories.length > 0) {
+      return taxonomyCategories.map(c => ({
+        value: c.code,
+        code: c.code,
+        labelEn: c.name_en,
+        labelAr: c.name_ar,
+        name_en: c.name_en,
+        name_ar: c.name_ar,
+        color: 'bg-primary'
+      }));
+    }
+    return FALLBACK_RISK_CATEGORIES;
+  }, [taxonomyCategories]);
   
   // Database integration hook
   const { 
@@ -641,6 +659,7 @@ Identify 5-8 key risks for this initiative. For each, provide:
               onSelectRisk={setSelectedRisk}
               selectedId={selectedRisk?.id}
               language={language}
+              riskCategories={riskCategories}
             />
             <Button
               variant="outline"
@@ -801,6 +820,7 @@ Identify 5-8 key risks for this initiative. For each, provide:
         onSave={handleSaveRisk}
         language={language}
         t={t}
+        riskCategories={riskCategories}
       />
     </div>
   );

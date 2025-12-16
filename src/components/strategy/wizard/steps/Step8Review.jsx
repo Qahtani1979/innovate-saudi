@@ -11,8 +11,8 @@ import {
   Users, Globe, Shield, Megaphone, DollarSign, Download, FileSpreadsheet
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { STRATEGIC_THEMES, VISION_2030_PROGRAMS, EMERGING_TECHNOLOGIES, WIZARD_STEPS } from '../StrategyWizardSteps';
-import { useTaxonomy } from '@/hooks/useTaxonomy';
+import { WIZARD_STEPS } from '../StrategyWizardSteps';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -27,7 +27,7 @@ export default function Step8Review({
   mode = 'create'
 }) {
   const { language, t, isRTL } = useLanguage();
-  const { getSectorName: getTaxonomySectorName } = useTaxonomy();
+  const { getSectorName: getTaxonomySectorName, themes, technologies, visionPrograms } = useTaxonomy();
   const [isExporting, setIsExporting] = useState(false);
 
   // Data extraction - define early for use in export functions
@@ -45,12 +45,12 @@ export default function Step8Review({
   const getSectorName = (code) => getTaxonomySectorName(code, language);
 
   const getThemeName = (code) => {
-    const theme = STRATEGIC_THEMES.find(t => t.code === code);
+    const theme = themes.find(t => t.code === code);
     return theme ? (language === 'ar' ? theme.name_ar : theme.name_en) : code;
   };
 
   const getTechName = (code) => {
-    const tech = EMERGING_TECHNOLOGIES.find(t => t.code === code);
+    const tech = technologies.find(t => t.code === code);
     return tech ? (language === 'ar' ? tech.name_ar : tech.name_en) : code;
   };
 
