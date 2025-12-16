@@ -1,34 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
-import { Zap, Play, RefreshCw, Loader2 } from 'lucide-react';
+import { Zap, Play, RefreshCw, Loader2, Settings2 } from 'lucide-react';
 import { Slider } from "@/components/ui/slider";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export default function WhatIfSimulator({ currentState }) {
   const { language, isRTL, t } = useLanguage();
-  const [budgetAllocation, setBudgetAllocation] = useState({
-    transport: 30,
-    environment: 20,
-    digital: 25,
-    urban: 25
-  });
+  const { sectors, isLoading: taxonomyLoading } = useTaxonomy();
+  
+  const [selectedSectorIds, setSelectedSectorIds] = useState([]);
+  const [budgetAllocation, setBudgetAllocation] = useState({});
   const [predictions, setPredictions] = useState(null);
+  const [showSectorSelector, setShowSectorSelector] = useState(false);
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
     fallbackData: null
   });
 
-  const runSimulation = async () => {
-    const result = await invokeAI({
-      prompt: `Predict KPI impacts of this budget reallocation:
+  // Initialize with first 4 sectors when taxonomy loads
+  useEffect(() => {
+    if (sectors.length > 0 && selectedSectorIds.length === 0) {
+      const initialSectors = sectors.slice(0, 4).map(s => s.id);
+      setSelectedSectorIds(initialSectors);
+      
+      // Initialize equal budget allocation
+      const equalShare = Math.floor(100 / initialSectors.length);
+      const allocation = {};
+      initialSectors.forEach((id, idx) => {
+        allocation[id] = idx === initialSectors.length - 1 
+          ? 100 - (equalShare * (initialSectors.length - 1)) 
+          : equalShare;
+      });
+      setBudgetAllocation(allocation);
+    }
+  }, [sectors]);
 
-Current: Transport 30%, Environment 20%, Digital 25%, Urban 25%
-Proposed: ${JSON.stringify(budgetAllocation)}
+  const toggleSector = (sectorId) => {
+    setSelectedSectorIds(prev => {
+      const isSelected = prev.includes(sectorId);
+      let newSelection;
+      
+      if (isSelected) {
+        if (prev.length <= 2) return prev; // Minimum 2 sectors
+        newSelection = prev.filter(id => id !== sectorId);
+      } else {
+        if (prev.length >= 6) return prev; // Maximum 6 sectors
+        newSelection = [...prev, sectorId];
+      }
+      
+      // Redistribute budget equally
+      const equalShare = Math.floor(100 / newSelection.length);
+      const newAllocation = {};
+      newSelection.forEach((id, idx) => {
+        newAllocation[id] = idx === newSelection.length - 1 
+          ? 100 - (equalShare * (newSelection.length - 1)) 
+          : equalShare;
+      });
+      setBudgetAllocation(newAllocation);
+      
+      return newSelection;
+    });
+  };
+
+  const getSectorName = (sectorId) => {
+    const sector = sectors.find(s => s.id === sectorId);
+    if (!sector) return sectorId;
+    return language === 'ar' ? (sector.name_ar || sector.name_en) : sector.name_en;
+  };
+
+  const runSimulation = async () => {
+    const sectorNames = selectedSectorIds.map(id => getSectorName(id));
+    const allocationText = selectedSectorIds.map(id => 
+      `${getSectorName(id)}: ${budgetAllocation[id]}%`
+    ).join(', ');
+
+    const result = await invokeAI({
+      prompt: `Predict KPI impacts of this budget reallocation across municipal sectors:
+
+Sectors included: ${sectorNames.join(', ')}
+Proposed allocation: ${allocationText}
 
 Predict changes to:
 - Pilot success rate
@@ -36,7 +98,7 @@ Predict changes to:
 - Average MII score
 - R&D to pilot conversion
 
-Provide specific percentage changes`,
+Provide specific percentage changes for each KPI based on the budget distribution.`,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -63,31 +125,97 @@ Provide specific percentage changes`,
   };
 
   const reset = () => {
-    setBudgetAllocation({ transport: 30, environment: 20, digital: 25, urban: 25 });
+    if (sectors.length > 0) {
+      const initialSectors = sectors.slice(0, 4).map(s => s.id);
+      setSelectedSectorIds(initialSectors);
+      const equalShare = Math.floor(100 / initialSectors.length);
+      const allocation = {};
+      initialSectors.forEach((id, idx) => {
+        allocation[id] = idx === initialSectors.length - 1 
+          ? 100 - (equalShare * (initialSectors.length - 1)) 
+          : equalShare;
+      });
+      setBudgetAllocation(allocation);
+    }
     setPredictions(null);
   };
+
+  if (taxonomyLoading) {
+    return (
+      <Card className="border-2 border-purple-200">
+        <CardContent className="p-6 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-2 border-purple-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-purple-900">
-          <Zap className="h-5 w-5" />
-          {t({ en: 'What-If Simulator', ar: 'محاكي السيناريوهات' })}
+        <CardTitle className="flex items-center justify-between text-purple-900">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            {t({ en: 'What-If Simulator', ar: 'محاكي السيناريوهات' })}
+          </div>
+          <Badge variant="outline" className="text-xs">
+            {selectedSectorIds.length} {t({ en: 'sectors', ar: 'قطاعات' })}
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
         
+        {/* Sector Selector */}
+        <Collapsible open={showSectorSelector} onOpenChange={setShowSectorSelector}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full justify-between">
+              <span className="flex items-center gap-2">
+                <Settings2 className="h-4 w-4" />
+                {t({ en: 'Configure Sectors', ar: 'تكوين القطاعات' })}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {t({ en: '2-6 sectors', ar: '2-6 قطاعات' })}
+              </span>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3">
+            <div className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-lg">
+              {sectors.map(sector => (
+                <label
+                  key={sector.id}
+                  className="flex items-center gap-2 text-sm cursor-pointer hover:bg-background/50 p-1.5 rounded"
+                >
+                  <Checkbox
+                    checked={selectedSectorIds.includes(sector.id)}
+                    onCheckedChange={() => toggleSector(sector.id)}
+                    disabled={
+                      (selectedSectorIds.includes(sector.id) && selectedSectorIds.length <= 2) ||
+                      (!selectedSectorIds.includes(sector.id) && selectedSectorIds.length >= 6)
+                    }
+                  />
+                  <span className="truncate">
+                    {language === 'ar' ? (sector.name_ar || sector.name_en) : sector.name_en}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Budget Sliders */}
         <div className="space-y-4">
-          {Object.keys(budgetAllocation).map(sector => (
-            <div key={sector}>
+          {selectedSectorIds.map(sectorId => (
+            <div key={sectorId}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium capitalize">{sector}</span>
-                <Badge>{budgetAllocation[sector]}%</Badge>
+                <span className="text-sm font-medium truncate max-w-[60%]">
+                  {getSectorName(sectorId)}
+                </span>
+                <Badge>{budgetAllocation[sectorId] || 0}%</Badge>
               </div>
               <Slider
-                value={[budgetAllocation[sector]]}
-                onValueChange={([val]) => setBudgetAllocation({ ...budgetAllocation, [sector]: val })}
+                value={[budgetAllocation[sectorId] || 0]}
+                onValueChange={([val]) => setBudgetAllocation({ ...budgetAllocation, [sectorId]: val })}
                 max={50}
                 step={5}
               />
