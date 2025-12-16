@@ -1193,7 +1193,7 @@ For EACH risk, provide ALL fields (bilingual):
 - "VC/Startup Partner Failure" - Innovation partners face funding or business challenges
 
 Be specific to plan context. Reference actual Saudi systems, agencies, and innovation ecosystem.`,
-      kpis: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
+      kpis: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH) specializing in SMART KPI development.
 
 ## MoMAH CONTEXT:
 - Vision 2030 Programs: Quality of Life, Housing, NTP, Thriving Cities
@@ -1204,99 +1204,122 @@ Be specific to plan context. Reference actual Saudi systems, agencies, and innov
 ## STRATEGIC PLAN CONTEXT:
 - Plan Name: ${context.planName}
 - Vision: ${context.vision || 'Not specified'}
-- Timeline: ${context.startYear}-${context.endYear}
+- Timeline: ${context.startYear}-${context.endYear} (${context.endYear - context.startYear} years)
 - Focus Technologies: ${(wizardData.focus_technologies || []).join(', ') || 'Not specified'}
 - Budget Range: ${wizardData.budget_range || 'Not specified'}
 
 ## OBJECTIVES (from Step 9):
-${context.objectives.map((o, i) => (i + 1) + '. ' + (o.name_en || o.name_ar) + ' (' + (o.priority || 'medium') + ' priority)').join('\n') || 'Not defined yet'}
+${context.objectives.map((o, i) => (i + 1) + '. ' + (o.name_en || o.name_ar) + ' (' + (o.sector_code || 'General') + ', ' + (o.priority || 'medium') + ' priority)').join('\n') || 'Not defined yet'}
 
 ---
 
 ## REQUIREMENTS:
-Generate 2-4 KPIs per objective, including INNOVATION-SPECIFIC KPIs.
+Generate 2-4 SMART KPIs per objective with BALANCED leading and lagging indicators.
 
 For EACH KPI, provide ALL fields (bilingual):
-- name_en / name_ar: Clear KPI name
-- unit: Measurement unit (%, count, SAR, days, score, etc.)
-- baseline_value: Current/starting value
+- name_en / name_ar: Specific, measurable KPI name (avoid vague terms like "improve" or "enhance")
+- category: EXACTLY ONE of "outcome" (lagging) | "output" (lagging) | "process" (leading) | "input" (leading)
+- unit: Measurement unit (%, count, SAR, days, score, rating, etc.)
+- baseline_value: Current/starting value (be specific, not "TBD")
 - target_value: Target to achieve by end of plan
 - objective_index: Which objective this KPI measures (0-based index)
-- frequency: "monthly" | "quarterly" | "annual"
-- data_source: Where data will come from
-- owner: Role/department responsible
+- frequency: "monthly" | "quarterly" | "biannual" | "annual"
+- data_source: Specific system/platform where data comes from
+- data_collection_method: How data will be collected (e.g., "Automated API", "Quarterly Survey", "Manual Report")
+- owner: Role/department responsible for tracking
+- milestones: Array of year-by-year targets from ${context.startYear} to ${context.endYear}
 
 ---
 
-## KPI CATEGORIES (MUST include mix):
+## KPI CATEGORIES (BALANCED MIX REQUIRED):
 
-### OUTCOME KPIs (Impact):
-- Citizen satisfaction scores
-- Service delivery improvements
-- Quality of life indicators
-- Housing/infrastructure targets
+### 1. OUTCOME KPIs (Lagging - measures final results):
+- Citizen satisfaction scores (e.g., CSAT, NPS)
+- Quality of life improvements
+- Housing/infrastructure completion rates
+- Service quality ratings
+**EXAMPLE:** "Citizen Satisfaction Score" - baseline: 72%, target: 90%
 
-### OUTPUT KPIs (Deliverables):
-- Projects completed
-- Services launched
-- Units delivered
+### 2. OUTPUT KPIs (Lagging - measures deliverables):
+- Projects/services delivered
+- Units completed
 - Systems deployed
+- Transactions processed
+**EXAMPLE:** "Smart Services Launched" - baseline: 15, target: 45
 
-### EFFICIENCY KPIs (Process):
-- Cost per transaction
-- Processing time reduction
+### 3. PROCESS KPIs (Leading - predicts future performance):
+- Processing time metrics
+- Efficiency ratios
 - Resource utilization
-- Budget variance
+- Compliance rates
+**EXAMPLE:** "Permit Processing Time" - baseline: 14 days, target: 3 days
 
-### INNOVATION KPIs (MANDATORY - include 1-2 per objective where relevant):
+### 4. INPUT KPIs (Leading - measures resources applied):
+- Training hours completed
+- Budget utilized
+- Staff certified
+- Technology investments
+**EXAMPLE:** "Staff Digital Certification Rate" - baseline: 25%, target: 80%
+
+---
+
+## INNOVATION KPIs (MANDATORY - include 1-2 per objective):
+
 **R&D Investment:**
-- "R&D Spending as % of Budget" - Target: 3-5% of total budget
-- "Innovation Fund Utilization Rate" - % of allocated innovation budget spent
+- "R&D Budget Utilization Rate" - % of innovation budget spent effectively
+- "Innovation Projects as % of Portfolio" - Target: 15-20%
 
-**Pilot & Experimentation:**
-- "Pilot Projects Launched" - Number of innovation pilots initiated
-- "Pilot Success Rate" - % of pilots achieving success criteria
-- "Pilot-to-Production Conversion" - % of successful pilots scaled
+**Pilot Programs:**
+- "Pilot Projects Launched" - Number of innovation pilots
+- "Pilot-to-Scale Conversion Rate" - % of pilots scaled successfully
 
 **Technology Adoption:**
-- "Digital Service Adoption Rate" - % of citizens using digital services
-- "AI/ML Models Deployed" - Number of AI solutions in production
-- "IoT Sensors Deployed" - Connected devices per city/region
-- "Smart City Index Score" - Composite smart city rating
+- "Digital Service Adoption Rate" - % of citizens using digital channels
+- "AI/ML Models in Production" - Deployed AI solutions
+- "IoT Device Deployment Coverage" - Sensors per sq km
 
-**Innovation Partnerships:**
-- "Active R&D Partnerships" - Number with KACST, universities, startups
-- "Technology Transfer Agreements" - Commercialized research outputs
-- "Startup Collaborations" - Pilots with GovTech/PropTech startups
+**Partnerships:**
+- "Active R&D Partnerships" - With KACST, KAUST, startups
+- "Technology Transfer Agreements" - Commercialized outputs
 
-**Capability Building:**
-- "Staff with Digital Certifications" - % MCIT-certified
-- "Innovation Training Hours" - Per employee annually
-- "Internal Innovation Ideas Submitted" - Employee suggestions
+---
 
-**IP & Knowledge:**
-- "Patents Filed" - Innovation IP protection
-- "Research Publications" - Academic collaborations
-- "Best Practices Documented" - Knowledge management
+## MILESTONE TRAJECTORY REQUIREMENTS:
+For each KPI, provide realistic year-by-year targets:
+- Year 1 (${context.startYear}): Foundation/baseline establishment
+- Year 2-3: Early progress (30-50% of total improvement)
+- Year 4-5: Acceleration (70-90% of target)
+- Final Year (${context.endYear}): Full target achievement
+
+**EXAMPLE MILESTONES for "Digital Adoption Rate" (baseline: 40%, target: 90%):**
+[
+  { "year": ${context.startYear}, "target": "40" },
+  { "year": ${context.startYear + 1}, "target": "55" },
+  { "year": ${context.startYear + 2}, "target": "70" },
+  { "year": ${context.startYear + 3}, "target": "80" },
+  { "year": ${context.endYear}, "target": "90" }
+]
 
 ---
 
 ## DISTRIBUTION REQUIREMENTS:
 - Each objective: 2-4 KPIs
-- At least 30% should be Innovation/R&D KPIs
-- Mix of leading (predictive) and lagging (outcome) indicators
-- Realistic baselines and targets for Saudi municipal context
+- Category balance: ~25% each (outcome, output, process, input)
+- At least 30% should be Innovation/R&D focused
+- Leading indicators (process + input): 30-40% of total
+- Realistic Saudi municipal benchmarks
 
-## DATA SOURCE EXAMPLES:
+## DATA SOURCES (be specific):
 - Balady Platform Analytics
-- Citizen Satisfaction Surveys
-- SDAIA AI Governance Reports
-- Municipal Finance Systems
-- IoT Platform Dashboards
-- HR Training Management System
+- Citizen Pulse Survey System
+- SDAIA AI Governance Dashboard
+- Municipal ERP/Finance System
+- IoT Command Center Platform
+- HR LMS (Learning Management System)
 - Innovation Portfolio Tracker
+- Smart City Operations Center
 
-Be specific. Use realistic Saudi municipal benchmarks.`,
+Be specific. Use realistic Saudi municipal benchmarks. Ensure SMART criteria compliance.`,
       actions: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
 ## MoMAH CONTEXT:
@@ -2471,13 +2494,25 @@ Return alignments as an array under the "alignments" key with proper objective_i
               properties: {
                 name_en: { type: 'string' },
                 name_ar: { type: 'string' },
+                category: { type: 'string', enum: ['outcome', 'output', 'process', 'input'] },
                 unit: { type: 'string' },
                 baseline_value: { type: 'string' },
                 target_value: { type: 'string' },
                 objective_index: { type: 'number' },
-                frequency: { type: 'string' },
+                frequency: { type: 'string', enum: ['monthly', 'quarterly', 'biannual', 'annual'] },
                 data_source: { type: 'string' },
-                owner: { type: 'string' }
+                data_collection_method: { type: 'string' },
+                owner: { type: 'string' },
+                milestones: { 
+                  type: 'array', 
+                  items: { 
+                    type: 'object', 
+                    properties: { 
+                      year: { type: 'number' }, 
+                      target: { type: 'string' } 
+                    } 
+                  } 
+                }
               }
             }
           }
@@ -3058,6 +3093,7 @@ Return alignments as an array under the "alignments" key with proper objective_i
             id: Date.now().toString() + i,
             name_en: k.name_en || '',
             name_ar: k.name_ar || '',
+            category: k.category || 'outcome',
             objective_index: typeof k.objective_index === 'number' ? k.objective_index : null,
             unit: k.unit || '',
             baseline_value: String(k.baseline_value ?? k.baseline ?? ''),
@@ -3065,7 +3101,12 @@ Return alignments as an array under the "alignments" key with proper objective_i
             target_year: wizardData.end_year,
             frequency: k.frequency || 'quarterly',
             data_source: k.data_source || '',
-            owner: k.owner || ''
+            data_collection_method: k.data_collection_method || '',
+            owner: k.owner || '',
+            milestones: Array.isArray(k.milestones) ? k.milestones.map(m => ({
+              year: m.year,
+              target: String(m.target || '')
+            })) : []
           }));
         } else if (stepKey === 'actions' && data.action_plans) {
           updates.action_plans = data.action_plans.map((a, i) => ({ 
