@@ -267,5 +267,5 @@ verify_jwt = false
 [functions.strategy-dependency-generator]
 verify_jwt = false
 
-[functions.strategy-objective-generator]
+[functions.strategy-objective-similarity]
 verify_jwt = false
