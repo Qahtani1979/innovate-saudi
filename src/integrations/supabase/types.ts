@@ -2839,6 +2839,101 @@ export type Database = {
           },
         ]
       }
+      deputyships: {
+        Row: {
+          code: string
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          display_order: number | null
+          domain_id: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          domain_id?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          domain_id?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deputyships_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      domains: {
+        Row: {
+          code: string
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string | null
+          name_en: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string | null
+          name_en?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_campaigns: {
         Row: {
           audience_filter: Json | null
@@ -9603,8 +9698,10 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string | null
+          deputyship_id: string | null
           description_ar: string | null
           description_en: string | null
+          display_order: number | null
           icon: string | null
           id: string
           is_active: boolean | null
@@ -9615,8 +9712,10 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string | null
+          deputyship_id?: string | null
           description_ar?: string | null
           description_en?: string | null
+          display_order?: number | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
@@ -9627,8 +9726,10 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string | null
+          deputyship_id?: string | null
           description_ar?: string | null
           description_en?: string | null
+          display_order?: number | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
@@ -9636,7 +9737,15 @@ export type Database = {
           name_en?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sectors_deputyship_id_fkey"
+            columns: ["deputyship_id"]
+            isOneToOne: false
+            referencedRelation: "deputyships"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       services: {
         Row: {
@@ -11348,6 +11457,7 @@ export type Database = {
           created_at: string | null
           description_ar: string | null
           description_en: string | null
+          display_order: number | null
           id: string
           is_active: boolean | null
           name_ar: string | null
@@ -11360,6 +11470,7 @@ export type Database = {
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
+          display_order?: number | null
           id?: string
           is_active?: boolean | null
           name_ar?: string | null
@@ -11372,6 +11483,7 @@ export type Database = {
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
+          display_order?: number | null
           id?: string
           is_active?: boolean | null
           name_ar?: string | null
