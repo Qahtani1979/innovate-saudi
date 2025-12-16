@@ -11,9 +11,10 @@ import { useLanguage } from '../components/LanguageContext';
 import { toast } from 'sonner';
 import { Switch } from "@/components/ui/switch";
 import {
-  MapPin, Building2, Plus, Loader2, Globe, Briefcase, Sparkles, Database, Landmark
+  MapPin, Building2, Plus, Loader2, Globe, Briefcase, Sparkles, Database, Landmark, Target
 } from 'lucide-react';
 import LookupDataManager from '../components/admin/LookupDataManager';
+import StrategyLookupsTab from '../components/admin/lookup/StrategyLookupsTab';
 import EmbeddingManager from '../components/embeddings/EmbeddingManager';
 import SemanticSearchPanel from '../components/embeddings/SemanticSearchPanel';
 import {
@@ -584,7 +585,7 @@ Using web search:
       </div>
 
       <Tabs defaultValue="regions" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="regions">
             <MapPin className="h-4 w-4 mr-2" />
             {t({ en: 'Regions', ar: 'المناطق' })}
@@ -604,6 +605,10 @@ Using web search:
           <TabsTrigger value="lookups">
             <Briefcase className="h-4 w-4 mr-2" />
             {t({ en: 'Lookups', ar: 'القوائم' })}
+          </TabsTrigger>
+          <TabsTrigger value="strategy-lookups">
+            <Target className="h-4 w-4 mr-2" />
+            {t({ en: 'Strategy', ar: 'الاستراتيجية' })}
           </TabsTrigger>
           <TabsTrigger value="quality">
             <Globe className="h-4 w-4 mr-2" />
@@ -659,6 +664,10 @@ Using web search:
 
         <TabsContent value="lookups">
           <LookupDataManager />
+        </TabsContent>
+
+        <TabsContent value="strategy-lookups">
+          <StrategyLookupsTab />
         </TabsContent>
 
         {/* Quality Tab - Migrated from DataQualityDashboard */}

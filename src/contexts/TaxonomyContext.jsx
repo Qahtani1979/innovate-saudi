@@ -356,10 +356,43 @@ export function TaxonomyProvider({ children }) {
   );
 }
 
+// Default empty context for components outside provider
+const defaultContext = {
+  domains: [], deputyships: [], sectors: [], subsectors: [], services: [],
+  regions: [], strategicThemes: [], technologies: [], visionPrograms: [],
+  stakeholderTypes: [], riskCategories: [], governanceRoles: [],
+  domainsWithDeputyships: [], deputyshipsWithSectors: [], sectorsWithSubsectors: [], subsectorsWithServices: [],
+  domainsByCode: {}, domainsById: {}, deputyshipsByCode: {}, deputyshipsById: {},
+  sectorsByCode: {}, sectorsById: {}, subsectorsByCode: {}, subsectorsById: {},
+  servicesByCode: {}, servicesById: {}, regionsByCode: {}, regionsById: {},
+  strategicThemesByCode: {}, technologiesByCode: {}, visionProgramsByCode: {},
+  stakeholderTypesByCode: {}, riskCategoriesByCode: {}, governanceRolesByCode: {},
+  isLoading: false, error: null, refetch: () => {},
+  getDomainByCode: () => null, getDomainById: () => null,
+  getDeputyshipByCode: () => null, getDeputyshipById: () => null,
+  getSectorByCode: () => null, getSectorById: () => null,
+  getSubsectorByCode: () => null, getSubsectorById: () => null,
+  getServiceByCode: () => null, getServiceById: () => null,
+  getRegionByCode: () => null, getStrategicThemeByCode: () => null,
+  getTechnologyByCode: () => null, getVisionProgramByCode: () => null,
+  getStakeholderTypeByCode: () => null, getRiskCategoryByCode: () => null,
+  getGovernanceRoleByCode: () => null,
+  getDomainName: (code) => code, getDeputyshipName: (code) => code,
+  getSectorName: (code) => code, getSubsectorName: (code) => code,
+  getServiceName: (code) => code, getRegionName: (code) => code,
+  getStrategicThemeName: (code) => code, getTechnologyName: (code) => code,
+  getVisionProgramName: (code) => code,
+  getDeputyshipsForDomain: () => [], getSectorsForDeputyship: () => [],
+  getSubsectorsForSector: () => [], getServicesForSubsector: () => [],
+  getSectorsForSelect: () => []
+};
+
 export function useTaxonomy() {
   const context = useContext(TaxonomyContext);
+  // Return default context if outside provider (prevents crashes during loading)
   if (!context) {
-    throw new Error('useTaxonomy must be used within a TaxonomyProvider');
+    console.warn('useTaxonomy called outside TaxonomyProvider - returning defaults');
+    return defaultContext;
   }
   return context;
 }
