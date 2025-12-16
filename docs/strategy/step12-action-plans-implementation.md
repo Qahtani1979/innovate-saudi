@@ -1418,4 +1418,687 @@ Week 3: Step 12 Wiring
 ├── Day 1-2: Add should_create_entity toggle to Step 12 UI
 ├── Day 3-4: Add queue injection code to submitMutation
 └── Day 5: Full integration test
+
+Week 4: Steps 13-17 Entity Propagation
+├── Day 1: Update data structures with generated_entity_ids
+├── Day 2-3: Update AI schemas for entity-aware generation
+├── Day 4-5: Update UI components for entity references
 ```
+
+---
+
+## 🔗 STEPS 13-17 ENTITY PROPAGATION PLAN
+
+### Overview: The Structural Disconnect
+
+**Current State:** Steps 13-17 operate in data silos without referencing entities generated from Step 12.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           CURRENT ARCHITECTURE (BROKEN)                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   Step 12                Steps 13-17                   Entity Tables         │
+│   ┌──────────┐          ┌──────────────┐              ┌──────────────┐      │
+│   │ Action   │    ✖     │ Resources    │      ✖       │ challenges   │      │
+│   │ Plans    │──────────│ Timeline     │──────────────│ pilots       │      │
+│   │ (JSONB)  │   NO     │ Governance   │     NO       │ programs     │      │
+│   │          │  LINK    │ Comms        │   REFERENCE  │ events       │      │
+│   └──────────┘          │ Change Mgmt  │              │ etc.         │      │
+│                         └──────────────┘              └──────────────┘      │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Required State:** Entity IDs flow through the entire wizard, enabling entity-aware planning.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           TARGET ARCHITECTURE (FIXED)                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   Step 12                demand_queue              Entity Tables             │
+│   ┌──────────┐          ┌──────────┐              ┌──────────────┐          │
+│   │ Action   │ ───────→ │ Queue    │ ───────────→ │ challenges   │          │
+│   │ Plans    │          │ Items    │              │ pilots       │          │
+│   │ (toggle) │          └──────────┘              │ programs     │          │
+│   └──────────┘               │                    └──────────────┘          │
+│        │                     │                          │                    │
+│        └─────────────────────┴──────────────────────────┘                    │
+│                              │                                               │
+│                    ┌─────────▼─────────┐                                     │
+│                    │ generated_entity_ │                                     │
+│                    │ ids[] references  │                                     │
+│                    └─────────┬─────────┘                                     │
+│                              │                                               │
+│              ┌───────────────┼───────────────┐                               │
+│              ▼               ▼               ▼                               │
+│         Step 13         Step 14-15      Step 16-17                          │
+│      ┌──────────┐      ┌──────────┐    ┌──────────┐                         │
+│      │ Resources│      │ Timeline │    │ Comms    │                         │
+│      │ per      │      │ with     │    │ with     │                         │
+│      │ entity   │      │ entity   │    │ entity   │                         │
+│      │          │      │ milestones    │ messages │                         │
+│      └──────────┘      └──────────┘    └──────────┘                         │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### STEP 13: Resource Allocation - Entity-Aware Changes
+
+**Current Location:** `src/components/strategy/wizard/steps/Step7Resources.jsx`
+
+**Current Data Structure (wizard_data.resources):**
+```javascript
+{
+  financial: { total_budget, currency, breakdown_by_pillar: [] },
+  human: { total_fte, breakdown_by_role: [] },
+  technology: { systems: [], infrastructure: [] },
+  facilities: []
+}
+```
+
+**Required Data Structure:**
+```javascript
+{
+  financial: {
+    total_budget: number,
+    currency: string,
+    breakdown_by_pillar: [...],
+    // NEW: Entity-specific allocations
+    entity_allocations: [
+      {
+        entity_id: "uuid",           // Reference to generated entity
+        entity_type: "challenge",     // Type from demand_queue
+        entity_title: "...",          // Cached for display
+        allocated_budget: 50000,
+        allocation_percentage: 15,
+        funding_source: "operating_budget",
+        notes: ""
+      }
+    ]
+  },
+  human: {
+    total_fte: number,
+    breakdown_by_role: [...],
+    // NEW: Entity-specific assignments
+    entity_assignments: [
+      {
+        entity_id: "uuid",
+        entity_type: "pilot",
+        entity_title: "...",
+        assigned_fte: 2.5,
+        roles: ["project_manager", "developer"],
+        team_members: []
+      }
+    ]
+  },
+  technology: {
+    systems: [...],
+    // NEW: Entity-system mappings
+    entity_systems: [
+      {
+        entity_id: "uuid",
+        entity_type: "program",
+        required_systems: ["crm", "analytics"],
+        new_systems_needed: []
+      }
+    ]
+  }
+}
+```
+
+**UI Changes Required:**
+1. Add "Allocate to Entities" tab showing generated entities from Step 12
+2. Show entity cards with allocation inputs
+3. Auto-calculate totals per entity vs per pillar
+
+**AI Schema Update:**
+```javascript
+// Add to resource_allocation schema
+entity_allocations: z.array(z.object({
+  entity_id: z.string().uuid(),
+  entity_type: z.enum(['challenge', 'pilot', 'program', 'event', 'campaign', 'policy', 'partnership', 'rd_call', 'living_lab']),
+  allocated_budget: z.number().optional(),
+  allocated_fte: z.number().optional(),
+  systems_assigned: z.array(z.string()).optional()
+})).optional()
+```
+
+---
+
+### STEP 14: Timeline & Milestones - Entity-Aware Changes
+
+**Current Location:** `src/components/strategy/wizard/steps/Step8Timeline.jsx`
+
+**Current Data Structure (wizard_data.timeline):**
+```javascript
+{
+  phases: [
+    { name, start_date, end_date, objectives: [] }
+  ],
+  milestones: [
+    { title, date, description, linked_objective_index }
+  ]
+}
+```
+
+**Required Data Structure:**
+```javascript
+{
+  phases: [...],
+  milestones: [
+    {
+      title: "...",
+      date: "2025-06-15",
+      description: "...",
+      linked_objective_index: 0,
+      // NEW: Entity linkage
+      linked_entity_id: "uuid",       // Optional: specific entity
+      linked_entity_type: "pilot",
+      milestone_type: "entity_launch" // NEW: enum
+    }
+  ],
+  // NEW: Entity-specific timelines
+  entity_timelines: [
+    {
+      entity_id: "uuid",
+      entity_type: "challenge",
+      entity_title: "...",
+      planned_start: "2025-03-01",
+      planned_end: "2025-09-30",
+      key_milestones: [
+        { title: "Challenge Published", date: "2025-03-15", type: "publish" },
+        { title: "Solutions Received", date: "2025-06-01", type: "submission_deadline" },
+        { title: "Winner Selected", date: "2025-07-15", type: "selection" }
+      ],
+      dependencies: ["other_entity_uuid"]
+    }
+  ]
+}
+```
+
+**UI Changes Required:**
+1. Add Gantt-style view showing entity timelines
+2. Entity cards with date pickers
+3. Dependency mapping between entities
+4. Auto-generate milestones based on entity type templates
+
+**Milestone Type Templates by Entity:**
+```javascript
+const ENTITY_MILESTONE_TEMPLATES = {
+  challenge: ['publish', 'submission_deadline', 'evaluation', 'winner_selection', 'implementation'],
+  pilot: ['kickoff', 'prototype', 'testing', 'evaluation', 'scale_decision'],
+  program: ['launch', 'quarterly_review', 'mid_term_evaluation', 'completion'],
+  event: ['planning_complete', 'registration_open', 'event_date', 'post_event_report'],
+  campaign: ['creative_approved', 'launch', 'mid_campaign_review', 'completion', 'roi_analysis'],
+  policy: ['draft', 'stakeholder_review', 'approval', 'implementation', 'review'],
+  rd_call: ['announcement', 'submission_deadline', 'review', 'award', 'reporting'],
+  partnership: ['mou_signed', 'kickoff', 'quarterly_review', 'renewal_decision'],
+  living_lab: ['setup', 'recruitment', 'experimentation', 'analysis', 'scale_decision']
+};
+```
+
+---
+
+### STEP 15: Governance - Entity-Aware Changes
+
+**Current Location:** `src/components/strategy/wizard/steps/Step9Governance.jsx`
+
+**Current Data Structure (wizard_data.governance):**
+```javascript
+{
+  oversight_committee: { name, chair, members: [] },
+  meeting_cadence: "monthly",
+  decision_rights: [],
+  raci_matrix: [
+    { activity, responsible, accountable, consulted, informed }
+  ],
+  escalation_process: []
+}
+```
+
+**Required Data Structure:**
+```javascript
+{
+  oversight_committee: {...},
+  meeting_cadence: "monthly",
+  decision_rights: [...],
+  
+  // NEW: Entity-type governance
+  entity_governance: {
+    challenge: {
+      approval_authority: "innovation_committee",
+      review_cadence: "weekly_during_active",
+      required_approvals: ["legal", "procurement"],
+      escalation_threshold: "budget_over_100k"
+    },
+    pilot: {
+      approval_authority: "steering_committee",
+      review_cadence: "biweekly",
+      go_no_go_criteria: ["success_metrics_met", "budget_on_track"],
+      scale_approval_authority: "executive_sponsor"
+    },
+    // ... other entity types
+  },
+  
+  // NEW: Entity-specific RACI
+  entity_raci: [
+    {
+      entity_id: "uuid",
+      entity_type: "pilot",
+      entity_title: "...",
+      raci: [
+        { activity: "Budget Approval", R: "PM", A: "Sponsor", C: "Finance", I: "Team" },
+        { activity: "Go/No-Go Decision", R: "Sponsor", A: "SteerCo", C: "PM", I: "All" }
+      ]
+    }
+  ],
+  
+  raci_matrix: [...] // Keep existing for overall strategy
+}
+```
+
+**UI Changes Required:**
+1. Add "Entity Governance" tab
+2. Template-based governance rules per entity type
+3. Entity-specific RACI builder
+4. Approval workflow visualization
+
+---
+
+### STEP 16: Communication Plan - Entity-Aware Changes
+
+**Current Location:** `src/components/strategy/wizard/steps/Step10Communication.jsx`
+
+**Current Data Structure (wizard_data.communication_plan):**
+```javascript
+{
+  key_messages: [
+    { audience, message, channel, frequency }
+  ],
+  stakeholder_engagement: [],
+  communication_calendar: []
+}
+```
+
+**Required Data Structure:**
+```javascript
+{
+  key_messages: [...],
+  stakeholder_engagement: [...],
+  
+  // NEW: Entity-specific messaging
+  entity_communications: [
+    {
+      entity_id: "uuid",
+      entity_type: "challenge",
+      entity_title: "...",
+      launch_announcement: {
+        date: "2025-03-01",
+        channels: ["website", "social_media", "email"],
+        target_audiences: ["innovators", "startups", "researchers"],
+        key_messages: ["..."],
+        call_to_action: "Submit your solution"
+      },
+      milestone_communications: [
+        {
+          milestone: "submission_deadline",
+          date: "2025-06-01",
+          message_type: "reminder",
+          channels: ["email", "social_media"]
+        }
+      ],
+      success_story_plan: {
+        publish_date: "2025-09-15",
+        format: "case_study",
+        distribution: ["website", "newsletter", "press_release"]
+      }
+    }
+  ],
+  
+  // NEW: Integrated calendar
+  integrated_calendar: [
+    {
+      date: "2025-03-01",
+      type: "entity_launch",
+      entity_id: "uuid",
+      entity_type: "challenge",
+      communication_items: ["press_release", "social_post", "email_blast"]
+    }
+  ]
+}
+```
+
+**UI Changes Required:**
+1. Entity communication cards with templates
+2. Integrated calendar showing all entity communications
+3. Channel allocation per entity
+4. Auto-generate comms from entity milestones
+
+---
+
+### STEP 17: Change Management - Entity-Aware Changes
+
+**Current Location:** `src/components/strategy/wizard/steps/Step11ChangeManagement.jsx`
+
+**Current Data Structure (wizard_data.change_management):**
+```javascript
+{
+  readiness_assessment: { score, gaps: [] },
+  training_plan: [],
+  resistance_mitigation: [],
+  success_metrics: []
+}
+```
+
+**Required Data Structure:**
+```javascript
+{
+  readiness_assessment: {...},
+  
+  // NEW: Entity impact assessment
+  entity_impacts: [
+    {
+      entity_id: "uuid",
+      entity_type: "program",
+      entity_title: "...",
+      affected_departments: ["operations", "it", "hr"],
+      affected_roles: ["service_agents", "managers"],
+      impact_level: "high", // high/medium/low
+      change_type: "process_change", // process/technology/culture/structure
+      readiness_score: 65,
+      gaps: ["training_needed", "system_access"]
+    }
+  ],
+  
+  // NEW: Entity-specific training
+  entity_training: [
+    {
+      entity_id: "uuid",
+      entity_type: "pilot",
+      training_modules: [
+        {
+          title: "New System Training",
+          target_audience: ["pilot_participants"],
+          format: "workshop",
+          duration_hours: 4,
+          scheduled_date: "2025-03-10",
+          prerequisites: []
+        }
+      ]
+    }
+  ],
+  
+  // NEW: Entity adoption metrics
+  entity_adoption_metrics: [
+    {
+      entity_id: "uuid",
+      entity_type: "program",
+      metrics: [
+        { name: "user_adoption_rate", target: 80, measurement: "percentage" },
+        { name: "training_completion", target: 100, measurement: "percentage" },
+        { name: "satisfaction_score", target: 4.0, measurement: "scale_1_5" }
+      ]
+    }
+  ],
+  
+  training_plan: [...], // Keep existing
+  resistance_mitigation: [...],
+  success_metrics: [...]
+}
+```
+
+**UI Changes Required:**
+1. Entity impact matrix visualization
+2. Training assignment per entity
+3. Adoption dashboard mockup
+4. Change readiness heatmap by entity
+
+---
+
+### IMPLEMENTATION COMPONENTS MATRIX
+
+| Step | Component File | Data Field | New Sub-fields | AI Schema Changes |
+|------|----------------|------------|----------------|-------------------|
+| 13 | Step7Resources.jsx | `resources` | `entity_allocations`, `entity_assignments`, `entity_systems` | Add entity allocation schema |
+| 14 | Step8Timeline.jsx | `timeline` | `entity_timelines`, milestone `linked_entity_id` | Add entity timeline schema |
+| 15 | Step9Governance.jsx | `governance` | `entity_governance`, `entity_raci` | Add entity RACI schema |
+| 16 | Step10Communication.jsx | `communication_plan` | `entity_communications`, `integrated_calendar` | Add entity comms schema |
+| 17 | Step11ChangeManagement.jsx | `change_management` | `entity_impacts`, `entity_training`, `entity_adoption_metrics` | Add entity change schema |
+
+---
+
+### NEW SHARED COMPONENTS NEEDED
+
+```
+src/components/strategy/wizard/shared/
+├── EntitySelector.jsx              # Dropdown to select from generated entities
+├── EntityCard.jsx                  # Display card for entity with type icon
+├── EntityAllocationTable.jsx       # Table for resource allocation per entity
+├── EntityTimelineGantt.jsx         # Gantt chart showing entity timelines
+├── EntityRACIBuilder.jsx           # RACI matrix builder for specific entity
+├── EntityCommunicationPlanner.jsx  # Communication planning per entity
+├── EntityImpactAssessment.jsx      # Change impact form per entity
+└── EntityReferenceContext.jsx      # React context for entity data sharing
+```
+
+---
+
+### REQUIRED HOOKS
+
+```javascript
+// New hook: useGeneratedEntities.js
+export function useGeneratedEntities(strategicPlanId) {
+  // Fetches all entities generated from demand_queue for this plan
+  // Returns { entities: [], isLoading, entityTypes: [], getEntitiesByType }
+}
+
+// New hook: useEntityReferences.js  
+export function useEntityReferences(wizardData) {
+  // Extracts entity_id references from all steps
+  // Returns { allReferencedIds: [], getReferencesForEntity, validateReferences }
+}
+```
+
+---
+
+### AI SCHEMA UPDATES FOR STEPS 13-17
+
+Add to `StrategyWizardWrapper.jsx` AI schemas:
+
+```javascript
+// Step 13 Resources - Add to existing schema
+const step13EntitySchema = z.object({
+  entity_allocations: z.array(z.object({
+    entity_id: z.string().uuid(),
+    entity_type: z.enum([...ENTITY_TYPES]),
+    allocated_budget: z.number().optional(),
+    allocated_fte: z.number().optional(),
+    priority: z.enum(['critical', 'high', 'medium', 'low']).optional()
+  })).optional()
+});
+
+// Step 14 Timeline - Add to existing schema
+const step14EntitySchema = z.object({
+  entity_timelines: z.array(z.object({
+    entity_id: z.string().uuid(),
+    entity_type: z.enum([...ENTITY_TYPES]),
+    planned_start: z.string(),
+    planned_end: z.string(),
+    key_milestones: z.array(z.object({
+      title: z.string(),
+      date: z.string(),
+      type: z.string()
+    }))
+  })).optional()
+});
+
+// Step 15 Governance - Add to existing schema
+const step15EntitySchema = z.object({
+  entity_raci: z.array(z.object({
+    entity_id: z.string().uuid(),
+    entity_type: z.enum([...ENTITY_TYPES]),
+    raci: z.array(z.object({
+      activity: z.string(),
+      responsible: z.string(),
+      accountable: z.string(),
+      consulted: z.string().optional(),
+      informed: z.string().optional()
+    }))
+  })).optional()
+});
+
+// Step 16 Communication - Add to existing schema
+const step16EntitySchema = z.object({
+  entity_communications: z.array(z.object({
+    entity_id: z.string().uuid(),
+    entity_type: z.enum([...ENTITY_TYPES]),
+    launch_announcement: z.object({
+      date: z.string(),
+      channels: z.array(z.string()),
+      key_messages: z.array(z.string())
+    }).optional(),
+    milestone_communications: z.array(z.object({
+      milestone: z.string(),
+      date: z.string(),
+      channels: z.array(z.string())
+    })).optional()
+  })).optional()
+});
+
+// Step 17 Change Management - Add to existing schema
+const step17EntitySchema = z.object({
+  entity_impacts: z.array(z.object({
+    entity_id: z.string().uuid(),
+    entity_type: z.enum([...ENTITY_TYPES]),
+    affected_departments: z.array(z.string()),
+    impact_level: z.enum(['high', 'medium', 'low']),
+    readiness_score: z.number().min(0).max(100)
+  })).optional(),
+  entity_training: z.array(z.object({
+    entity_id: z.string().uuid(),
+    training_modules: z.array(z.object({
+      title: z.string(),
+      target_audience: z.array(z.string()),
+      duration_hours: z.number()
+    }))
+  })).optional()
+});
+```
+
+---
+
+### DEPENDENCY GRAPH
+
+```
+                    ┌─────────────────────────────────────────┐
+                    │           DEPENDENCY ORDER               │
+                    └─────────────────────────────────────────┘
+
+     ┌──────────────────────────────────────────────────────────────┐
+     │  PHASE 0: Prerequisites (Step 12 Fixes)                      │
+     │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+     │  │ Generator   │→ │ Batch       │→ │ Step 12     │          │
+     │  │ Output Fix  │  │ Mapping Fix │  │ Queue Wire  │          │
+     │  └─────────────┘  └─────────────┘  └─────────────┘          │
+     └──────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+     ┌──────────────────────────────────────────────────────────────┐
+     │  PHASE 1: Shared Infrastructure                              │
+     │  ┌─────────────────────┐  ┌─────────────────────┐           │
+     │  │ useGeneratedEntities│  │ EntityReferenceCtx  │           │
+     │  │ hook                │  │ context             │           │
+     │  └─────────────────────┘  └─────────────────────┘           │
+     └──────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+     ┌──────────────────────────────────────────────────────────────┐
+     │  PHASE 2: Shared Components                                  │
+     │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
+     │  │ Entity   │  │ Entity   │  │ Entity   │  │ Entity   │    │
+     │  │ Selector │  │ Card     │  │ Table    │  │ Timeline │    │
+     │  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │
+     └──────────────────────────────────────────────────────────────┘
+                                    │
+          ┌─────────────────────────┼─────────────────────────┐
+          ▼                         ▼                         ▼
+     ┌──────────┐             ┌──────────┐             ┌──────────┐
+     │ Step 13  │             │ Step 14  │             │ Step 15  │
+     │ Resources│             │ Timeline │             │ Governance
+     └──────────┘             └──────────┘             └──────────┘
+          │                         │                         │
+          └─────────────────────────┼─────────────────────────┘
+                                    ▼
+          ┌─────────────────────────┼─────────────────────────┐
+          ▼                                                   ▼
+     ┌──────────┐                                       ┌──────────┐
+     │ Step 16  │                                       │ Step 17  │
+     │ Comms    │                                       │ Change   │
+     └──────────┘                                       └──────────┘
+```
+
+---
+
+### DETAILED IMPLEMENTATION TIMELINE
+
+```
+Week 4: Steps 13-17 Entity Propagation
+├── Day 1: Infrastructure
+│   ├── Create useGeneratedEntities hook
+│   ├── Create EntityReferenceContext
+│   └── Update wizard data types
+│
+├── Day 2: Shared Components
+│   ├── EntitySelector.jsx
+│   ├── EntityCard.jsx
+│   ├── EntityAllocationTable.jsx
+│   └── EntityTimelineGantt.jsx (basic)
+│
+├── Day 3: Step 13 & 14 Updates
+│   ├── Step7Resources.jsx - Add entity allocations tab
+│   ├── Step8Timeline.jsx - Add entity timelines tab
+│   ├── Update AI schemas for Steps 13-14
+│   └── Test entity references in resources/timeline
+│
+├── Day 4: Step 15 & 16 Updates
+│   ├── Step9Governance.jsx - Add entity governance tab
+│   ├── Step10Communication.jsx - Add entity comms tab
+│   ├── Update AI schemas for Steps 15-16
+│   └── Test entity references in governance/comms
+│
+└── Day 5: Step 17 & Integration Testing
+    ├── Step11ChangeManagement.jsx - Add entity impacts tab
+    ├── Update AI schema for Step 17
+    ├── End-to-end test: Step 12 → entity generation → Steps 13-17
+    └── Fix any reference integrity issues
+```
+
+---
+
+### SUCCESS CRITERIA
+
+| Criterion | Validation Method |
+|-----------|-------------------|
+| Step 12 entities appear in Steps 13-17 | UI shows entity selector with correct items |
+| Resources can be allocated per entity | Allocation saves to wizard_data with entity_id |
+| Timeline shows entity milestones | Gantt view displays entity-specific timelines |
+| Governance has entity-specific RACI | RACI builder shows per-entity activities |
+| Communications link to entities | Calendar shows entity launch dates |
+| Change management maps to entities | Impact assessment shows per-entity scores |
+| AI generates entity-aware content | AI schemas accept and produce entity references |
+| Data integrity on save | wizard_data contains valid entity_id UUIDs |
+
+---
+
+### ROLLBACK PLAN
+
+If entity propagation causes issues:
+
+1. **Feature flags**: Add `ENABLE_ENTITY_REFERENCES` flag per step
+2. **Graceful degradation**: Steps work without entity data (existing behavior)
+3. **Data migration**: Entity references are optional fields, no schema breaks
+4. **Incremental rollout**: Enable per step, not all at once
