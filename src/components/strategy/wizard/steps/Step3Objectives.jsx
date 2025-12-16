@@ -32,6 +32,20 @@ export default function Step3Objectives({
   
   const objectives = data.objectives || [];
   
+  // Priority order for sorting (high first)
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
+  
+  // Sort objectives by sector code, then by priority
+  const sortedObjectives = [...objectives].map((obj, originalIndex) => ({ ...obj, originalIndex }))
+    .sort((a, b) => {
+      // First sort by sector code
+      const sectorA = a.sector_code || 'zzz'; // Put empty sectors at end
+      const sectorB = b.sector_code || 'zzz';
+      if (sectorA !== sectorB) return sectorA.localeCompare(sectorB);
+      // Then sort by priority (high > medium > low)
+      return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
+    });
+  
   // Get sectors with lowest coverage for suggestions
   const getSectorCoverage = () => {
     const coverage = sectors.map(sector => ({
@@ -211,14 +225,16 @@ export default function Step3Objectives({
 
       {/* Objectives List */}
       <div className="space-y-3">
-        {objectives.map((obj, index) => (
-          <Card key={index} className={expandedIndex === index ? 'ring-2 ring-primary' : ''}>
-            <Collapsible open={expandedIndex === index} onOpenChange={(open) => setExpandedIndex(open ? index : null)}>
+        {sortedObjectives.map((obj, displayIndex) => {
+          const originalIndex = obj.originalIndex;
+          return (
+          <Card key={originalIndex} className={expandedIndex === originalIndex ? 'ring-2 ring-primary' : ''}>
+            <Collapsible open={expandedIndex === originalIndex} onOpenChange={(open) => setExpandedIndex(open ? originalIndex : null)}>
               <CollapsibleTrigger asChild>
                 <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="text-xs">#{index + 1}</Badge>
+                      <Badge variant="outline" className="text-xs">#{displayIndex + 1}</Badge>
                       {obj.sector_code && (
                         <Badge className="text-xs bg-primary/10 text-primary">
                           {getSectorName(obj.sector_code, language)}
@@ -232,7 +248,7 @@ export default function Step3Objectives({
                       <Badge className={`text-xs ${getPriorityColor(obj.priority)}`}>
                         {obj.priority || 'medium'}
                       </Badge>
-                      {expandedIndex === index ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {expandedIndex === originalIndex ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
                   </div>
                 </CardHeader>
@@ -245,7 +261,7 @@ export default function Step3Objectives({
                       <Label>{t({ en: 'Objective Name (English)', ar: 'اسم الهدف (إنجليزي)' })}</Label>
                       <Input
                         value={obj.name_en}
-                        onChange={(e) => updateObjective(index, { name_en: e.target.value })}
+                        onChange={(e) => updateObjective(originalIndex, { name_en: e.target.value })}
                         placeholder={t({ en: 'Clear, actionable objective', ar: 'هدف واضح وقابل للتنفيذ' })}
                         dir="ltr"
                       />
@@ -254,7 +270,7 @@ export default function Step3Objectives({
                       <Label>{t({ en: 'Objective Name (Arabic)', ar: 'اسم الهدف (عربي)' })}</Label>
                       <Input
                         value={obj.name_ar}
-                        onChange={(e) => updateObjective(index, { name_ar: e.target.value })}
+                        onChange={(e) => updateObjective(originalIndex, { name_ar: e.target.value })}
                         dir="rtl"
                       />
                     </div>
@@ -265,7 +281,7 @@ export default function Step3Objectives({
                       <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
                       <Textarea
                         value={obj.description_en}
-                        onChange={(e) => updateObjective(index, { description_en: e.target.value })}
+                        onChange={(e) => updateObjective(originalIndex, { description_en: e.target.value })}
                         rows={3}
                         dir="ltr"
                       />
@@ -274,7 +290,7 @@ export default function Step3Objectives({
                       <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
                       <Textarea
                         value={obj.description_ar}
-                        onChange={(e) => updateObjective(index, { description_ar: e.target.value })}
+                        onChange={(e) => updateObjective(originalIndex, { description_ar: e.target.value })}
                         rows={3}
                         dir="rtl"
                       />
@@ -286,7 +302,7 @@ export default function Step3Objectives({
                       <Label>{t({ en: 'Sector', ar: 'القطاع' })}</Label>
                       <Select 
                         value={obj.sector_code} 
-                        onValueChange={(v) => updateObjective(index, { sector_code: v })}
+                        onValueChange={(v) => updateObjective(originalIndex, { sector_code: v })}
                       >
                         <SelectTrigger><SelectValue placeholder={t({ en: 'Select sector', ar: 'اختر القطاع' })} /></SelectTrigger>
                         <SelectContent>
@@ -302,7 +318,7 @@ export default function Step3Objectives({
                       <Label>{t({ en: 'Priority', ar: 'الأولوية' })}</Label>
                       <Select 
                         value={obj.priority} 
-                        onValueChange={(v) => updateObjective(index, { priority: v })}
+                        onValueChange={(v) => updateObjective(originalIndex, { priority: v })}
                       >
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -316,7 +332,7 @@ export default function Step3Objectives({
                       <Label>{t({ en: 'Target Year', ar: 'السنة المستهدفة' })}</Label>
                       <Select 
                         value={String(obj.target_year)} 
-                        onValueChange={(v) => updateObjective(index, { target_year: parseInt(v) })}
+                        onValueChange={(v) => updateObjective(originalIndex, { target_year: parseInt(v) })}
                       >
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -329,7 +345,7 @@ export default function Step3Objectives({
                   </div>
 
                   <div className="flex justify-end">
-                    <Button variant="destructive" size="sm" onClick={() => removeObjective(index)}>
+                    <Button variant="destructive" size="sm" onClick={() => removeObjective(originalIndex)}>
                       <X className="h-4 w-4 mr-2" />
                       {t({ en: 'Remove Objective', ar: 'حذف الهدف' })}
                     </Button>
@@ -338,7 +354,8 @@ export default function Step3Objectives({
               </CollapsibleContent>
             </Collapsible>
           </Card>
-        ))}
+          );
+        })}
 
         {objectives.length === 0 && (
           <Card className="border-dashed">
