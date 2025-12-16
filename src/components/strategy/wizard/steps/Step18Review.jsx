@@ -24,6 +24,8 @@ export default function Step18Review({
   data, 
   onSave,
   onSubmitForApproval,
+  onUpdatePlan,
+  onNavigateToStep,
   isSaving,
   isSubmitting,
   validationErrors = [],
@@ -100,6 +102,103 @@ export default function Step18Review({
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // AI Action Handlers
+  const handleNavigateToStep = (step) => {
+    if (onNavigateToStep) {
+      onNavigateToStep(step);
+    }
+  };
+
+  const handleApplySuggestion = async (type, item) => {
+    if (!onUpdatePlan) {
+      toast.info(t({ en: 'Auto-apply not available in this mode', ar: 'التطبيق التلقائي غير متاح في هذا الوضع' }));
+      return;
+    }
+
+    // Handle different suggestion types
+    switch (type) {
+      case 'quick_win':
+        // Quick wins are text suggestions - could add to notes or action items
+        toast.success(t({ en: 'Quick win noted - navigate to relevant section to apply', ar: 'تم تسجيل المكسب السريع - انتقل للقسم المناسب للتطبيق' }));
+        break;
+      
+      case 'gap_fix':
+        // Navigate to the section with the gap
+        const gapSection = item.area;
+        toast.info(t({ en: `Review ${gapSection} to address this gap`, ar: `راجع ${gapSection} لمعالجة هذه الفجوة` }));
+        break;
+      
+      case 'section_recommendation':
+        // Navigate to the section
+        toast.info(t({ en: `Review ${item.section} to apply recommendation`, ar: `راجع ${item.section} لتطبيق التوصية` }));
+        break;
+      
+      case 'kpi_fix':
+        // Navigate to KPI section
+        if (onNavigateToStep) onNavigateToStep(11);
+        toast.info(t({ en: 'Navigate to KPIs section to fix this issue', ar: 'انتقل إلى قسم المؤشرات لإصلاح هذه المشكلة' }));
+        break;
+      
+      case 'recommendation':
+        // Add to action plans or notes
+        const newActionItem = {
+          id: `ai-rec-${Date.now()}`,
+          title_en: item.title,
+          title_ar: item.title,
+          description: item.description,
+          status: 'pending',
+          priority: item.impact,
+          source: 'ai_recommendation'
+        };
+        
+        const updatedActionPlans = [...(data.action_plans || []), newActionItem];
+        await onUpdatePlan({ action_plans: updatedActionPlans });
+        toast.success(t({ en: 'Recommendation added to action plans', ar: 'تمت إضافة التوصية إلى خطط العمل' }));
+        break;
+      
+      default:
+        toast.info(t({ en: 'Suggestion noted', ar: 'تم تسجيل الاقتراح' }));
+    }
+  };
+
+  const handleCreateTask = async (taskData) => {
+    if (!onUpdatePlan) {
+      toast.info(t({ en: 'Task creation not available in this mode', ar: 'إنشاء المهام غير متاح في هذا الوضع' }));
+      return;
+    }
+
+    // Add task to action items
+    const newTask = {
+      id: `task-${Date.now()}`,
+      title_en: taskData.title,
+      title_ar: taskData.title,
+      description: taskData.description,
+      status: 'not_started',
+      priority: taskData.priority || 'medium',
+      effort: taskData.effort || 'medium',
+      source: taskData.source || 'ai_analysis',
+      created_at: new Date().toISOString()
+    };
+
+    // Add to action_items within action_plans or create a dedicated tasks array
+    const currentActionPlans = data.action_plans || [];
+    const aiTasksPlan = currentActionPlans.find(p => p.source === 'ai_tasks') || {
+      id: 'ai-tasks-plan',
+      title_en: 'AI-Generated Tasks',
+      title_ar: 'المهام المُولَّدة بالذكاء الاصطناعي',
+      source: 'ai_tasks',
+      status: 'active',
+      action_items: []
+    };
+
+    aiTasksPlan.action_items = [...(aiTasksPlan.action_items || []), newTask];
+    
+    const updatedPlans = currentActionPlans.filter(p => p.source !== 'ai_tasks');
+    updatedPlans.push(aiTasksPlan);
+    
+    await onUpdatePlan({ action_plans: updatedPlans });
   };
 
   // PDF Export Function
@@ -442,7 +541,12 @@ export default function Step18Review({
       )}
 
       {/* AI Plan Analyzer */}
-      <AIStrategicPlanAnalyzer planData={data} />
+      <AIStrategicPlanAnalyzer 
+        planData={data} 
+        onNavigateToStep={handleNavigateToStep}
+        onApplySuggestion={handleApplySuggestion}
+        onCreateTask={handleCreateTask}
+      />
 
       {/* Completeness Overview */}
       <Card>
