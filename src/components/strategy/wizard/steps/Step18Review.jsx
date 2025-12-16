@@ -14,7 +14,8 @@ import {
   AlertCircle, Briefcase, PieChart, MessageSquare, RefreshCw
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { MOMAH_SECTORS, STRATEGIC_THEMES, VISION_2030_PROGRAMS, EMERGING_TECHNOLOGIES } from '../StrategyWizardSteps';
+import { STRATEGIC_THEMES, VISION_2030_PROGRAMS, EMERGING_TECHNOLOGIES } from '../StrategyWizardSteps';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -32,6 +33,7 @@ export default function Step18Review({
   mode = 'create'
 }) {
   const { language, t, isRTL } = useLanguage();
+  const { getSectorName: getTaxonomySectorName } = useTaxonomy();
   const [isExporting, setIsExporting] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     overview: true,
@@ -80,10 +82,7 @@ export default function Step18Review({
   const dependencies = data.dependencies || [];
   const constraints = data.constraints || [];
 
-  const getSectorName = (code) => {
-    const sector = MOMAH_SECTORS.find(s => s.code === code);
-    return sector ? getText(sector.name_en, sector.name_ar) : code;
-  };
+  const getSectorName = (code) => getTaxonomySectorName(code, language);
 
   const getThemeName = (code) => {
     const theme = STRATEGIC_THEMES.find(t => t.code === code);

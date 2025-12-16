@@ -11,7 +11,8 @@ import {
   Users, Globe, Shield, Megaphone, DollarSign, Download, FileSpreadsheet
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { MOMAH_SECTORS, STRATEGIC_THEMES, VISION_2030_PROGRAMS, EMERGING_TECHNOLOGIES, WIZARD_STEPS } from '../StrategyWizardSteps';
+import { STRATEGIC_THEMES, VISION_2030_PROGRAMS, EMERGING_TECHNOLOGIES, WIZARD_STEPS } from '../StrategyWizardSteps';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -26,6 +27,7 @@ export default function Step8Review({
   mode = 'create'
 }) {
   const { language, t, isRTL } = useLanguage();
+  const { getSectorName: getTaxonomySectorName } = useTaxonomy();
   const [isExporting, setIsExporting] = useState(false);
 
   // Data extraction - define early for use in export functions
@@ -40,10 +42,7 @@ export default function Step8Review({
   const risks = data.risks || [];
   const governance = data.governance || {};
 
-  const getSectorName = (code) => {
-    const sector = MOMAH_SECTORS.find(s => s.code === code);
-    return sector ? (language === 'ar' ? sector.name_ar : sector.name_en) : code;
-  };
+  const getSectorName = (code) => getTaxonomySectorName(code, language);
 
   const getThemeName = (code) => {
     const theme = STRATEGIC_THEMES.find(t => t.code === code);
