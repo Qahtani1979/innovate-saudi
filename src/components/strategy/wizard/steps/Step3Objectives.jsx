@@ -11,7 +11,7 @@ import { Sparkles, Loader2, Plus, X, Target, ChevronDown, ChevronUp, Wand2, Chec
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../../../LanguageContext';
-import { MOMAH_SECTORS } from '../StrategyWizardSteps';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 
 export default function Step3Objectives({ 
   data, 
@@ -21,6 +21,7 @@ export default function Step3Objectives({
   onGenerateSingleObjective // New prop for single objective generation
 }) {
   const { language, t, isRTL } = useLanguage();
+  const { sectors, getSectorName, isLoading: isTaxonomyLoading } = useTaxonomy();
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [proposedObjective, setProposedObjective] = useState(null);
@@ -32,7 +33,7 @@ export default function Step3Objectives({
   
   // Get sectors with lowest coverage for suggestions
   const getSectorCoverage = () => {
-    const coverage = MOMAH_SECTORS.map(sector => ({
+    const coverage = sectors.map(sector => ({
       ...sector,
       count: objectives.filter(o => o.sector_code === sector.code).length
     }));
@@ -212,7 +213,7 @@ export default function Step3Objectives({
                       <Badge variant="outline" className="text-xs">#{index + 1}</Badge>
                       {obj.sector_code && (
                         <Badge className="text-xs bg-primary/10 text-primary">
-                          {MOMAH_SECTORS.find(s => s.code === obj.sector_code)?.[language === 'ar' ? 'name_ar' : 'name_en'] || obj.sector_code}
+                          {getSectorName(obj.sector_code, language)}
                         </Badge>
                       )}
                       <span className="font-medium text-sm line-clamp-1">
@@ -281,7 +282,7 @@ export default function Step3Objectives({
                       >
                         <SelectTrigger><SelectValue placeholder={t({ en: 'Select sector', ar: 'اختر القطاع' })} /></SelectTrigger>
                         <SelectContent>
-                          {MOMAH_SECTORS.map(s => (
+                          {sectors.map(s => (
                             <SelectItem key={s.code} value={s.code}>
                               {language === 'ar' ? s.name_ar : s.name_en}
                             </SelectItem>
@@ -351,7 +352,7 @@ export default function Step3Objectives({
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {MOMAH_SECTORS.map(sector => {
+              {sectors.map(sector => {
                 const count = objectives.filter(o => o.sector_code === sector.code).length;
                 return (
                   <Badge 
@@ -464,7 +465,7 @@ export default function Step3Objectives({
                   >
                     <SelectTrigger><SelectValue placeholder={t({ en: 'Select sector', ar: 'اختر القطاع' })} /></SelectTrigger>
                     <SelectContent>
-                      {MOMAH_SECTORS.map(s => (
+                      {sectors.map(s => (
                         <SelectItem key={s.code} value={s.code}>
                           {language === 'ar' ? s.name_ar : s.name_en}
                         </SelectItem>
@@ -527,7 +528,7 @@ export default function Step3Objectives({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_any">{t({ en: 'Any Sector (AI chooses)', ar: 'أي قطاع (الذكاء الاصطناعي يختار)' })}</SelectItem>
-                    {MOMAH_SECTORS.map(s => {
+                    {sectors.map(s => {
                       const count = objectives.filter(o => o.sector_code === s.code).length;
                       return (
                         <SelectItem key={s.code} value={s.code}>
@@ -540,8 +541,8 @@ export default function Step3Objectives({
                 {targetSector && targetSector !== '_any' && (
                   <p className="text-xs text-muted-foreground mt-2">
                     {t({ 
-                      en: `Will generate an objective specifically for: ${MOMAH_SECTORS.find(s => s.code === targetSector)?.name_en}`, 
-                      ar: `سيتم إنشاء هدف خاص بـ: ${MOMAH_SECTORS.find(s => s.code === targetSector)?.name_ar}` 
+                      en: `Will generate an objective specifically for: ${getSectorName(targetSector, 'en')}`, 
+                      ar: `سيتم إنشاء هدف خاص بـ: ${getSectorName(targetSector, 'ar')}` 
                     })}
                   </p>
                 )}

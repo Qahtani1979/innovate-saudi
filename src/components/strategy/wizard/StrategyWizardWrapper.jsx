@@ -18,7 +18,7 @@ import { useAutoSaveDraft } from '@/hooks/strategy/useAutoSaveDraft';
 // NOTE: templates are applied via a lightweight helper in this file to avoid hook dispatcher crashes
 import { useWizardValidation } from '@/hooks/strategy/useWizardValidation';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';
 import PlanSelectionDialog from './PlanSelectionDialog';
@@ -53,6 +53,7 @@ import AIStrategicPlanAnalyzer from './AIStrategicPlanAnalyzer';
  */
 export default function StrategyWizardWrapper() {
   const { language, t, isRTL } = useLanguage();
+  const { sectors } = useTaxonomy();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -3170,19 +3171,18 @@ Return alignments as an array under the "alignments" key with proper objective_i
       `${i + 1}. ${o.name_en || o.name_ar} (${o.sector_code || 'General'}) - ${o.description_en?.substring(0, 100) || ''}`
     ).join('\n');
 
-    // Calculate sector coverage for the prompt
-    const sectorCoverage = [
-      'URBAN_PLANNING', 'HOUSING', 'INFRASTRUCTURE', 'ENVIRONMENT', 
-      'SMART_CITIES', 'DIGITAL_SERVICES', 'CITIZEN_SERVICES', 'RURAL_DEVELOPMENT',
-      'PUBLIC_SPACES', 'WATER_RESOURCES', 'TRANSPORTATION', 'HERITAGE'
-    ].map(code => ({
-      code,
-      count: existingObjectives.filter(o => o.sector_code === code).length
+    // Calculate sector coverage for the prompt using dynamic sectors
+    const sectorCoverage = sectors.map(s => ({
+      code: s.code,
+      name: s.name_en,
+      count: existingObjectives.filter(o => o.sector_code === s.code).length
     }));
     
     const sectorCoverageSummary = sectorCoverage
       .map(s => `${s.code}: ${s.count} objectives`)
       .join(', ');
+    
+    const availableSectorsList = sectors.map(s => `${s.code} (${s.name_en})`).join(', ');
 
     // Build sector targeting instruction
     const sectorTargetInstruction = targetSector 

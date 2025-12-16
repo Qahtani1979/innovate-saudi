@@ -10,6 +10,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/components/LanguageContext';
 import { StrategicPlanProvider } from '@/contexts/StrategicPlanContext';
+import { TaxonomyProvider } from '@/contexts/TaxonomyContext';
 import LanguagePersistence from '@/components/ui/LanguagePersistence';
 import PublicLayout from '@/components/layout/PublicLayout';
 import PublicPortal from './pages/PublicPortal';
@@ -148,14 +149,16 @@ function App() {
       <LanguageProvider>
         <LanguagePersistence />
         <AuthProvider>
-          <StrategicPlanProvider>
-            <Router>
-              <NavigationTracker />
-              <AuthenticatedApp />
-              <Toaster />
-            </Router>
-            <VisualEditAgent />
-          </StrategicPlanProvider>
+          <TaxonomyProvider>
+            <StrategicPlanProvider>
+              <Router>
+                <NavigationTracker />
+                <AuthenticatedApp />
+                <Toaster />
+              </Router>
+              <VisualEditAgent />
+            </StrategicPlanProvider>
+          </TaxonomyProvider>
         </AuthProvider>
       </LanguageProvider>
     </QueryClientProvider>
