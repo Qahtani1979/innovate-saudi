@@ -1,7 +1,8 @@
 /**
  * Centralized AI Router for Strategy Wizard
  * Routes AI generation requests to appropriate edge functions based on step
- * @version 1.0.0
+ * Uses comprehensive Saudi/MoMAH context from saudiContext.ts
+ * @version 2.0.0
  */
 
 import { useCallback, useState } from 'react';
@@ -9,16 +10,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { toast } from 'sonner';
 
-// Edge function mapping per step
+// Edge function mapping per step - specialized functions for most steps
 const EDGE_FUNCTION_MAP = {
-  1: 'invoke-llm',                    // Context Definition
+  1: 'strategy-context-generator',    // Context Definition (NEW - specialized)
   2: 'invoke-llm',                    // Vision & Mission
   3: 'strategy-stakeholder-generator', // Stakeholders
   4: 'strategy-environmental-generator', // PESTEL
   5: 'strategy-swot-generator',       // SWOT
   6: 'invoke-llm',                    // Scenarios
   7: 'strategy-risk-generator',       // Risks
-  8: 'strategy-pillar-generator',     // Pillars (in Step 2 UI but separate)
+  8: 'strategy-pillar-generator',     // Pillars
   9: 'strategy-objective-generator',  // Objectives
   10: 'strategy-national-linker',     // National Alignment
   11: 'strategy-kpi-generator',       // KPIs
@@ -31,20 +32,41 @@ const EDGE_FUNCTION_MAP = {
   18: 'strategy-validation-ai'        // Review & Submit
 };
 
-// Context constants for prompts
+// Comprehensive Saudi context for prompts - aligned with saudiContext.ts exports
 export const SAUDI_CONTEXT = {
-  FULL: `MoMAH oversees municipal services across 13 administrative regions, 285+ municipalities.
-Vision 2030 Programs: Quality of Life, Housing, NTP, Thriving Cities.
-Innovation Ecosystem: KACST, SDAIA, MCIT, Monsha'at, university R&D.
-Key Systems: Balady Platform, Sakani, ANSA, Baladiya Systems.`,
-  
-  COMPACT: `MoMAH - Saudi Ministry of Municipalities. Vision 2030 aligned.
-Innovation partners: KACST, SDAIA, MCIT. Key platforms: Balady, Sakani.`,
-  
+  FULL: `MoMAH (Ministry of Municipalities and Housing) oversees:
+- 13 administrative regions, 285+ municipalities, 17 Amanats
+- Municipal services: waste, lighting, parks, markets, permits, inspections
+- Housing programs: Sakani, Wafi, Ejar, Mulkiya, REDF, NHC
+- Vision 2030: Quality of Life, Housing (70% ownership), NTP, Thriving Cities
+- Innovation: AI/ML, IoT, Digital Twins, Smart Cities, GovTech, PropTech, ConTech
+- Partners: KACST, SDAIA, MCIT, KAUST, KFUPM, Monsha'at
+- Systems: Balady Platform, Sakani, ANSA, Baladiya, Mostadam`,
+
+  COMPACT: `MoMAH - Saudi Ministry of Municipalities & Housing. Vision 2030 aligned.
+13 regions, 285+ municipalities. Programs: Sakani, Wafi, Ejar.
+Innovation: KACST, SDAIA, MCIT. Platforms: Balady, Sakani, Mostadam.`,
+
   INNOVATION: `CRITICAL: Include innovation/R&D focus in all outputs.
-- Reference: AI/ML, IoT, Digital Twins, Smart Cities, GovTech
-- Partners: KACST, SDAIA, KAUST, KFUPM
-- Metrics: Pilot success rates, technology adoption, R&D investment %`
+- Technologies: AI/ML, IoT, Digital Twins, Smart Cities, GovTech, PropTech, ConTech
+- Innovation Partners: KACST, SDAIA, KAUST, KFUPM, Monsha'at, Badir Program
+- PropTech: BIM, modular construction, 3D printing, smart homes
+- Metrics: Pilot success rates, technology adoption %, R&D investment %
+- Green Building: Mostadam certification, energy efficiency, sustainability`,
+
+  HOUSING: `Housing Mandate (Critical Priority):
+- Goal: 70% homeownership by 2030 (from 47% baseline)
+- Programs: Sakani (subsidies), Wafi (off-plan), Ejar (rental), Mulkiya (ownership)
+- Finance: REDF mortgages, SRC refinancing
+- Stakeholders: NHC, REDF, SRC, developers, PropTech startups
+- Innovation: BIM, modular, 3D printing, smart homes, Mostadam green buildings`,
+
+  MUNICIPAL: `Municipal Operations:
+- Services: Waste, lighting, parks, markets, drainage, permits, inspections
+- Platforms: Balady (citizen services), unified CRM
+- Governance: Amanat (17 major cities), municipalities (285+), districts
+- Compliance: Saudi Building Code, fire safety, accessibility standards
+- Investment: PPP, concessions, asset commercialization`
 };
 
 // Step to prompt key mapping

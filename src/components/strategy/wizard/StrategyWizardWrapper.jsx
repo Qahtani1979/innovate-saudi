@@ -54,8 +54,17 @@ import AIStrategicPlanAnalyzer from './AIStrategicPlanAnalyzer';
  */
 export default function StrategyWizardWrapper() {
   const { language, t, isRTL } = useLanguage();
-  const { sectors } = useTaxonomy();
+  const { 
+    sectors, 
+    regions, 
+    strategicThemes, 
+    technologies, 
+    visionPrograms,
+    stakeholderTypes,
+    riskCategories 
+  } = useTaxonomy();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -2700,17 +2709,33 @@ Return alignments as an array under the "alignments" key with proper objective_i
         // Use specialized edge function for this step
         console.log(`[Wizard AI] Using specialized edge function: ${edgeFunctionName} for step ${step}`);
         
+        // Build request body - include taxonomy data for Step 1 (Context)
+        const requestBody = {
+          strategic_plan_id: planId,
+          context: {
+            ...context,
+            wizardData,
+            prompt,
+            schema
+          },
+          language: language
+        };
+
+        // Step 1 (Context Generator) needs taxonomy data for theme/tech suggestions
+        if (step === 1) {
+          requestBody.taxonomy_data = {
+            sectors: sectors || [],
+            regions: regions || [],
+            strategicThemes: strategicThemes || [],
+            technologies: technologies || [],
+            visionPrograms: visionPrograms || [],
+            stakeholderTypes: stakeholderTypes || [],
+            riskCategories: riskCategories || []
+          };
+        }
+        
         const { data: fnData, error: fnError } = await supabase.functions.invoke(edgeFunctionName, {
-          body: {
-            strategic_plan_id: planId,
-            context: {
-              ...context,
-              wizardData,
-              prompt,
-              schema
-            },
-            language: language
-          }
+          body: requestBody
         });
 
         if (fnError) {
@@ -2754,10 +2779,40 @@ Return alignments as an array under the "alignments" key with proper objective_i
 
           // Target Sectors, Themes, Technologies, Programs, Regions
           if (Array.isArray(data.target_sectors)) updates.target_sectors = data.target_sectors;
-          if (Array.isArray(data.strategic_themes)) updates.strategic_themes = data.strategic_themes;
-          if (Array.isArray(data.focus_technologies)) updates.focus_technologies = data.focus_technologies;
-          if (Array.isArray(data.vision_2030_programs)) updates.vision_2030_programs = data.vision_2030_programs;
+          // Handle both strategic_themes and suggested_themes from AI
+          if (Array.isArray(data.strategic_themes)) {
+            updates.strategic_themes = data.strategic_themes;
+          } else if (Array.isArray(data.suggested_themes)) {
+            updates.strategic_themes = data.suggested_themes;
+          }
+          // Handle both focus_technologies and suggested_technologies from AI
+          if (Array.isArray(data.focus_technologies)) {
+            updates.focus_technologies = data.focus_technologies;
+          } else if (Array.isArray(data.suggested_technologies)) {
+            updates.focus_technologies = data.suggested_technologies;
+          }
+          // Handle both vision_2030_programs and suggested_vision_programs from AI
+          if (Array.isArray(data.vision_2030_programs)) {
+            updates.vision_2030_programs = data.vision_2030_programs;
+          } else if (Array.isArray(data.suggested_vision_programs)) {
+            updates.vision_2030_programs = data.suggested_vision_programs;
+          }
           if (Array.isArray(data.target_regions)) updates.target_regions = data.target_regions;
+
+          // Core values from AI (Step 1 can pre-generate these)
+          if (Array.isArray(data.core_values) && data.core_values.length > 0) {
+            updates.core_values = data.core_values.map((v, i) => ({ 
+              ...v, 
+              id: Date.now().toString() + 'cv' + i,
+              name_en: v.name_en || '',
+              name_ar: v.name_ar || '',
+              description_en: v.description_en || ''
+            }));
+          }
+
+          // Innovation focus and strategic rationale metadata
+          if (data.innovation_focus) updates.innovation_focus = data.innovation_focus;
+          if (data.strategic_rationale) updates.strategic_rationale = data.strategic_rationale;
 
           // Bilingual stakeholders
           if (Array.isArray(data.quick_stakeholders)) {
