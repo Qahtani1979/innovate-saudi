@@ -299,7 +299,7 @@ As a PUBLIC POLICY EXPERT, develop a comprehensive, actionable policy recommenda
    - Align with Saudi Vision 2030 and municipal modernization
    - Use formal policy language suitable for government gazette
 
-3. REGULATORY FRAMEWORK: Cite specific Saudi laws (e.g., "Municipal Affairs Law 1397H, Article 12", "Municipal Services Regulation 2020, Section 4")
+3. REGULATORY FRAMEWORK: Cite specific Saudi laws (e.g., "Municipalities Law 1397H, Article 12", "Municipal Services Regulation 2020, Section 4")
 
 4. REGULATORY CHANGE NEEDED: true if legislative amendment required, false if administrative
 
@@ -308,14 +308,14 @@ As a PUBLIC POLICY EXPERT, develop a comprehensive, actionable policy recommenda
 6. IMPLEMENTATION STEPS (5-7 steps following POLICY DEVELOPMENT LIFECYCLE):
    Each bilingual (EN + AR), following:
    - Policy drafting & legal review by municipal legal team
-   - Inter-agency consultation (Ministry of Municipal Affairs, relevant authorities)
+   - Inter-agency consultation (Ministry of Municipalities and Housing, relevant authorities)
    - Public consultation period (30-60 days if applicable)
    - Municipal council or ministerial approval
    - Official gazette publication and communication
    - Grace period for compliance transition
    - Monitoring, compliance verification, and enforcement
 
-7. STAKEHOLDER INVOLVEMENT (bilingual EN+AR): Key government entities required (e.g., EN: "Ministry of Municipal Affairs, Legal Affairs Committee, Municipal Council", AR: "وزارة الشؤون البلدية، اللجنة القانونية، المجلس البلدي")
+7. STAKEHOLDER INVOLVEMENT (bilingual EN+AR): Key government entities required (e.g., EN: "Ministry of Municipalities and Housing, Legal Affairs Committee, Municipal Council", AR: "وزارة البلديات والإسكان، اللجنة القانونية، المجلس البلدي")
 
 8. AFFECTED STAKEHOLDERS (array of 4-6): Groups impacted (e.g., "Municipal service providers", "Property developers", "Environmental officers", "Local businesses", "Citizens accessing service X")
 
@@ -979,7 +979,7 @@ CRITICAL: All text fields must be in ARABIC. This is for Saudi government use.`,
               value={formData.stakeholder_involvement_ar || ''}
               onChange={(e) => setFormData({...formData, stakeholder_involvement_ar: e.target.value})}
               rows={4}
-              placeholder="وزارة الشؤون البلدية، اللجنة القانونية، المجلس البلدي..."
+              placeholder="وزارة البلديات والإسكان، اللجنة القانونية، المجلس البلدي..."
               dir="rtl"
             />
           </div>

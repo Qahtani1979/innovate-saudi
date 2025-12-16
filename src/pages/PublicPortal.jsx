@@ -530,7 +530,7 @@ function PublicPortal() {
             </div>
             
             <p className="text-sm text-slate-500">
-              © 2024 {t({ en: 'Ministry of Municipal and Rural Affairs', ar: 'وزارة الشؤون البلدية والقروية' })}
+              © 2024 {t({ en: 'Ministry of Municipalities and Housing', ar: 'وزارة البلديات والإسكان' })}
             </p>
           </div>
         </div>

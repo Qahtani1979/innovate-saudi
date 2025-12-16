@@ -111,8 +111,8 @@ function Contact() {
                   </p>
                   <p className="text-sm text-slate-600">
                     {t({ 
-                      en: 'Ministry of Municipal and Rural Affairs\nRiyadh, Saudi Arabia', 
-                      ar: 'وزارة الشؤون البلدية والقروية والإسكان\nالرياض، المملكة العربية السعودية' 
+                      en: 'Ministry of Municipalities and Housing\nRiyadh, Saudi Arabia', 
+                      ar: 'وزارة البلديات والإسكان\nالرياض، المملكة العربية السعودية' 
                     })}
                   </p>
                 </div>

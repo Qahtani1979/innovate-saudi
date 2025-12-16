@@ -40,8 +40,8 @@ You MUST return ALL text in BILINGUAL format: {"en": "English text", "ar": "ال
 ✅ CORRECT - YOU MUST DO THIS:
 {
   "notes": {
-    "en": "Legal citations from the Municipal Affairs Law and Saudi Traffic Law have been identified and confirmed",
-    "ar": "تم تحديد وتأكيد الاستشهادات القانونية من قانون الشؤون البلدية وقانون المرور السعودي"
+    "en": "Legal citations from the Municipalities Law and Saudi Traffic Law have been identified and confirmed",
+    "ar": "تم تحديد وتأكيد الاستشهادات القانونية من نظام البلديات وقانون المرور السعودي"
   },
   "overall_assessment": {
     "en": "The policy recommendation is fully prepared for legal review approval",
@@ -73,8 +73,8 @@ YOU MUST RETURN JSON MATCHING THIS EXACT STRUCTURE - NO EXCEPTIONS:
       "status": "complete",
       "ai_verified": true,
       "notes": {
-        "en": "Legal citations from the Municipal Affairs Law have been identified",
-        "ar": "تم تحديد الاستشهادات القانونية من قانون الشؤون البلدية"
+        "en": "Legal citations from the Municipalities Law have been identified",
+        "ar": "تم تحديد الاستشهادات القانونية من نظام البلديات"
       }
     }
   ],

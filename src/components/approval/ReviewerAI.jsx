@@ -30,7 +30,7 @@ You MUST return ALL text fields in BILINGUAL format: {"en": "English", "ar": "ا
 
 ❌ WRONG - DO NOT RETURN THIS:
 {
-  "compliance_details": "The proposal aligns with the Municipal Affairs Law",
+  "compliance_details": "The proposal aligns with the Municipalities Law",
   "concerns": ["Initial costs may be high", "Potential pushback from businesses"],
   "decision_rationale": "The benefits outweigh the identified risks"
 }
@@ -38,8 +38,8 @@ You MUST return ALL text fields in BILINGUAL format: {"en": "English", "ar": "ا
 ✅ CORRECT - YOU MUST RETURN THIS:
 {
   "compliance_details": {
-    "en": "The proposal aligns with the Municipal Affairs Law and the Saudi Traffic Law. All regulatory citations have been verified as accurate, and no legal conflicts were detected.",
-    "ar": "المقترح يتوافق مع قانون الشؤون البلدية وقانون المرور السعودي. تم التحقق من دقة جميع الاستشهادات التنظيمية، ولم يتم اكتشاف أي تعارضات قانونية."
+    "en": "The proposal aligns with the Municipalities Law and the Saudi Traffic Law. All regulatory citations have been verified as accurate, and no legal conflicts were detected.",
+    "ar": "المقترح يتوافق مع نظام البلديات وقانون المرور السعودي. تم التحقق من دقة جميع الاستشهادات التنظيمية، ولم يتم اكتشاف أي تعارضات قانونية."
   },
   "concerns": [
     {

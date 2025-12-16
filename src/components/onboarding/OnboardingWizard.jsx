@@ -69,7 +69,7 @@ const sendRoleRequestNotification = async (type, requestData) => {
 const AUTO_APPROVED_ROLES = ['citizen', 'viewer'];
 const REQUIRES_APPROVAL_ROLES = ['municipality_staff', 'provider', 'researcher', 'expert', 'deputyship'];
 
-// MoMAH (Ministry of Municipal, Housing and Rural Affairs) domain for auto-detecting deputyship users
+// MoMAH (Ministry of Municipalities and Housing) domain for auto-detecting deputyship users
 const MOMAH_DOMAINS = ['momah.gov.sa', 'momra.gov.sa', 'housing.gov.sa'];
 
 // Helper to detect if email belongs to MoMAH
@@ -86,8 +86,8 @@ const PERSONAS = [
     color: 'from-indigo-500 to-indigo-700',
     bgColor: 'bg-indigo-50',
     borderColor: 'border-indigo-200',
-    title: { en: 'MoMAH / Deputyship', ar: 'وزارة الشؤون البلدية / الوكالة' },
-    description: { en: 'I work at MoMAH and oversee municipal innovation nationally', ar: 'أعمل في وزارة الشؤون البلدية وأشرف على الابتكار البلدي وطنياً' },
+    title: { en: 'MoMAH / Deputyship', ar: 'وزارة البلديات والإسكان / الوكالة' },
+    description: { en: 'I work at MoMAH and oversee municipal innovation nationally', ar: 'أعمل في وزارة البلديات والإسكان وأشرف على الابتكار البلدي وطنياً' },
     landingPage: 'ExecutiveDashboard',
     requiresApproval: true,
     domainHint: MOMAH_DOMAINS

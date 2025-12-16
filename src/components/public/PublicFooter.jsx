@@ -92,7 +92,7 @@ export default function PublicFooter() {
         {/* Bottom Bar */}
         <div className="border-t border-slate-700 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-slate-500">
-            © {new Date().getFullYear()} {t({ en: 'Ministry of Municipal and Rural Affairs. All rights reserved.', ar: 'وزارة الشؤون البلدية والقروية. جميع الحقوق محفوظة.' })}
+            © {new Date().getFullYear()} {t({ en: 'Ministry of Municipalities and Housing. All rights reserved.', ar: 'وزارة البلديات والإسكان. جميع الحقوق محفوظة.' })}
           </p>
           <div className="flex items-center gap-4">
             <Link to="#" className="text-slate-400 hover:text-white">
