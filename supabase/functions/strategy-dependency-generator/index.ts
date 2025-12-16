@@ -111,14 +111,15 @@ Consider Saudi-specific factors like Vision 2030 alignment, Saudization, digital
                     properties: {
                       name_en: { type: 'string', description: 'Dependency name in English' },
                       name_ar: { type: 'string', description: 'Dependency name in Arabic' },
-                      type: { type: 'string', enum: ['internal', 'external', 'technical', 'resource'] },
-                      source: { type: 'string', description: 'Where the dependency comes from' },
-                      target: { type: 'string', description: 'What depends on this' },
-                      criticality: { type: 'string', enum: ['low', 'medium', 'high'] },
-                      status: { type: 'string', enum: ['pending', 'resolved', 'blocked'] },
-                      notes: { type: 'string', description: 'Additional notes' }
+                      type: { type: 'string', enum: ['internal', 'external', 'technical', 'resource'], description: 'Type of dependency' },
+                      source: { type: 'string', description: 'Where the dependency originates from (department, system, or entity)' },
+                      target: { type: 'string', description: 'What component or initiative depends on this' },
+                      criticality: { type: 'string', enum: ['low', 'medium', 'high'], description: 'How critical is this dependency' },
+                      status: { type: 'string', enum: ['pending', 'resolved', 'blocked'], description: 'Current status' },
+                      notes: { type: 'string', description: 'Additional notes or context' }
                     },
-                    required: ['name_en', 'name_ar', 'type', 'criticality', 'status']
+                    required: ['name_en', 'name_ar', 'type', 'source', 'target', 'criticality', 'status', 'notes'],
+                    additionalProperties: false
                   }
                 },
                 constraints: {
@@ -128,12 +129,13 @@ Consider Saudi-specific factors like Vision 2030 alignment, Saudization, digital
                     properties: {
                       description_en: { type: 'string', description: 'Constraint description in English' },
                       description_ar: { type: 'string', description: 'Constraint description in Arabic' },
-                      type: { type: 'string', enum: ['budget', 'time', 'resource', 'regulatory', 'technical'] },
-                      impact: { type: 'string', enum: ['low', 'medium', 'high'] },
-                      mitigation_en: { type: 'string', description: 'Mitigation approach in English' },
-                      mitigation_ar: { type: 'string', description: 'Mitigation approach in Arabic' }
+                      type: { type: 'string', enum: ['budget', 'time', 'resource', 'regulatory', 'technical'], description: 'Type of constraint' },
+                      impact: { type: 'string', enum: ['low', 'medium', 'high'], description: 'Impact level of this constraint' },
+                      mitigation_en: { type: 'string', description: 'How to mitigate or work around this constraint in English' },
+                      mitigation_ar: { type: 'string', description: 'How to mitigate or work around this constraint in Arabic' }
                     },
-                    required: ['description_en', 'description_ar', 'type', 'impact']
+                    required: ['description_en', 'description_ar', 'type', 'impact', 'mitigation_en', 'mitigation_ar'],
+                    additionalProperties: false
                   }
                 },
                 assumptions: {
@@ -143,16 +145,18 @@ Consider Saudi-specific factors like Vision 2030 alignment, Saudization, digital
                     properties: {
                       statement_en: { type: 'string', description: 'Assumption statement in English' },
                       statement_ar: { type: 'string', description: 'Assumption statement in Arabic' },
-                      category: { type: 'string', enum: ['operational', 'financial', 'market', 'stakeholder', 'regulatory'] },
-                      confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
-                      validation_method_en: { type: 'string', description: 'How to validate in English' },
-                      validation_method_ar: { type: 'string', description: 'How to validate in Arabic' }
+                      category: { type: 'string', enum: ['operational', 'financial', 'market', 'stakeholder', 'regulatory'], description: 'Category of assumption' },
+                      confidence: { type: 'string', enum: ['low', 'medium', 'high'], description: 'Confidence level in this assumption' },
+                      validation_method_en: { type: 'string', description: 'Method to validate this assumption in English' },
+                      validation_method_ar: { type: 'string', description: 'Method to validate this assumption in Arabic' }
                     },
-                    required: ['statement_en', 'statement_ar', 'category', 'confidence']
+                    required: ['statement_en', 'statement_ar', 'category', 'confidence', 'validation_method_en', 'validation_method_ar'],
+                    additionalProperties: false
                   }
                 }
               },
-              required: ['dependencies', 'constraints', 'assumptions']
+              required: ['dependencies', 'constraints', 'assumptions'],
+              additionalProperties: false
             }
           }
         }],
