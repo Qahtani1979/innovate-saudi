@@ -3267,11 +3267,15 @@ Return alignments as an array under the "alignments" key with proper objective_i
       return null;
     }
 
+    // Build sector codes from taxonomy for consistent usage
+    const taxonomySectorCodes = sectors.map(s => s.code);
+    const taxonomySectorList = sectors.map(s => `${s.code} (${s.name_en})`).join(', ');
+    
     const context = {
       planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
       vision: wizardData.vision_en || wizardData.vision_ar || '',
       mission: wizardData.mission_en || wizardData.mission_ar || '',
-      sectors: wizardData.target_sectors || [],
+      sectors: taxonomySectorCodes, // Use taxonomy sectors
       themes: wizardData.strategic_themes || [],
       technologies: wizardData.focus_technologies || [],
       startYear: wizardData.start_year || new Date().getFullYear(),
@@ -3326,7 +3330,7 @@ MoMAH oversees municipal services across 13 administrative regions, 285+ municip
 - Plan Name: ${context.planName}
 - Vision: ${context.vision}
 - Mission: ${context.mission}
-- Sectors: ${context.sectors.join(', ') || 'General'}
+- Available Sectors: ${taxonomySectorList || 'General sectors'}
 - Technologies: ${context.technologies.join(', ') || 'General'}
 - Timeline: ${context.startYear}-${context.endYear} (${context.endYear - context.startYear} years)
 
@@ -3401,7 +3405,7 @@ ${targetSector ? `- MANDATORY: Use sector_code = "${targetSector}"` : ''}
 ## REQUIRED OUTPUT:
 - name_en / name_ar: HIGH-LEVEL strategic objective title (5-12 words)
 - description_en / description_ar: Strategic description explaining broad outcomes and alignment (3-5 sentences)
-- sector_code: ${targetSector ? `MUST BE "${targetSector}"` : `EXACTLY ONE of: ${context.sectors.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES'}`}
+- sector_code: ${targetSector ? `MUST BE "${targetSector}"` : `EXACTLY ONE of: ${taxonomySectorCodes.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES'}`}
 - priority: "high" | "medium" | "low"
 
 Use formal Arabic (فصحى). Generate a TRUE STRATEGIC OBJECTIVE, not a tactical solution.`;

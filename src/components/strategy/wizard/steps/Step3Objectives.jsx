@@ -499,53 +499,69 @@ export default function Step3Objectives({
             {/* Sector Selection for Regeneration */}
             {proposedObjective && (
               <div className="w-full border rounded-lg p-3 bg-muted/30">
-                <Label className="text-sm font-medium mb-2 block">
-                  {t({ en: 'Target Sector for Regeneration', ar: 'القطاع المستهدف لإعادة الإنشاء' })}
-                </Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {getSectorCoverage().slice(0, 6).map(sector => (
-                    <Badge 
-                      key={sector.code}
-                      variant={targetSector === sector.code ? 'default' : 'outline'}
-                      className={`cursor-pointer transition-colors ${
-                        targetSector === sector.code 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'hover:bg-primary/10'
-                      } ${sector.count === 0 ? 'border-amber-400' : ''}`}
-                      onClick={() => setTargetSector(targetSector === sector.code ? '_any' : sector.code)}
-                    >
-                      {language === 'ar' ? sector.name_ar : sector.name_en}
-                      <span className="ml-1 opacity-70">({sector.count})</span>
-                    </Badge>
-                  ))}
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-sm font-medium">
+                    {t({ en: 'Target Sector for Regeneration', ar: 'القطاع المستهدف لإعادة الإنشاء' })}
+                  </Label>
+                  {isTaxonomyLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
                 </div>
-                <Select 
-                  value={targetSector} 
-                  onValueChange={(v) => setTargetSector(v)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t({ en: 'Or select any sector...', ar: 'أو اختر أي قطاع...' })} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_any">{t({ en: 'Any Sector (AI chooses)', ar: 'أي قطاع (الذكاء الاصطناعي يختار)' })}</SelectItem>
-                    {sectors.map(s => {
-                      const count = objectives.filter(o => o.sector_code === s.code).length;
-                      return (
-                        <SelectItem key={s.code} value={s.code}>
-                          {language === 'ar' ? s.name_ar : s.name_en} ({count} {t({ en: 'existing', ar: 'موجود' })})
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                {targetSector && targetSector !== '_any' && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {t({ 
-                      en: `Will generate an objective specifically for: ${getSectorName(targetSector, 'en')}`, 
-                      ar: `سيتم إنشاء هدف خاص بـ: ${getSectorName(targetSector, 'ar')}` 
-                    })}
-                  </p>
-                )}
+                
+                {/* Scrollable Sector Badges - Similar to Sector Coverage */}
+                <div className="max-h-32 overflow-y-auto border rounded-md p-2 bg-background mb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {/* Any Sector Option */}
+                    <Badge 
+                      variant={targetSector === '_any' ? 'default' : 'outline'}
+                      className={`cursor-pointer transition-colors shrink-0 ${
+                        targetSector === '_any' 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'hover:bg-primary/10 border-dashed'
+                      }`}
+                      onClick={() => setTargetSector('_any')}
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      {t({ en: 'AI Chooses', ar: 'الذكاء يختار' })}
+                    </Badge>
+                    
+                    {/* All Sectors from Taxonomy */}
+                    {getSectorCoverage().map(sector => (
+                      <Badge 
+                        key={sector.code}
+                        variant={targetSector === sector.code ? 'default' : 'outline'}
+                        className={`cursor-pointer transition-colors shrink-0 ${
+                          targetSector === sector.code 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'hover:bg-primary/10'
+                        } ${sector.count === 0 ? 'border-amber-400 bg-amber-50' : ''}`}
+                        onClick={() => setTargetSector(targetSector === sector.code ? '_any' : sector.code)}
+                      >
+                        {language === 'ar' ? sector.name_ar : sector.name_en}
+                        <span className={`ml-1 ${sector.count === 0 ? 'text-amber-600 font-medium' : 'opacity-70'}`}>
+                          ({sector.count})
+                        </span>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Coverage hint */}
+                <div className="text-xs text-muted-foreground">
+                  {targetSector === '_any' ? (
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      {t({ en: 'AI will prioritize uncovered sectors', ar: 'سيعطي الذكاء الاصطناعي الأولوية للقطاعات غير المغطاة' })}
+                    </span>
+                  ) : (
+                    <span>
+                      {t({ 
+                        en: `Will generate for: ${getSectorName(targetSector, 'en')}`, 
+                        ar: `سيتم إنشاء هدف لـ: ${getSectorName(targetSector, 'ar')}` 
+                      })}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
             

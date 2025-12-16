@@ -41,11 +41,21 @@ serve(async (req) => {
     const swot = wizardData.swot || {};
     const risks = wizardData.risks || [];
     
-    // Get sectors from taxonomy
+    // Get sectors from taxonomy with full details
     const sectors = context?.taxonomyData?.sectors || [];
     const sectorCodes = sectors.length > 0 
       ? sectors.map((s: any) => s.code)
       : ['MUNICIPAL_SERVICES', 'HOUSING', 'URBAN_PLANNING', 'ENVIRONMENT', 'TECHNOLOGY', 'INNOVATION'];
+    
+    // Build sector catalog for richer context
+    const sectorCatalog = sectors.length > 0
+      ? sectors.map((s: any) => `- ${s.code}: ${s.name_en} (${s.name_ar})`).join('\n')
+      : `- MUNICIPAL_SERVICES: Municipal Services (الخدمات البلدية)
+- HOUSING: Housing & Real Estate (الإسكان والعقارات)
+- URBAN_PLANNING: Urban Planning (التخطيط الحضري)
+- ENVIRONMENT: Environment & Sustainability (البيئة والاستدامة)
+- TECHNOLOGY: Technology & Digital (التقنية والرقمنة)
+- INNOVATION: Innovation & R&D (الابتكار والبحث والتطوير)`;
 
     const contextSummary = `
 PLAN CONTEXT:
@@ -78,7 +88,18 @@ Based on the following strategic plan context, generate 5-8 strategic objectives
 
 ${contextSummary}
 
-AVAILABLE SECTOR CODES: ${sectorCodes.join(', ')}
+## AVAILABLE SECTORS (use ONLY these codes):
+${sectorCatalog}
+
+## SECTOR CODES FOR REFERENCE:
+${sectorCodes.join(', ')}
+
+## REQUIREMENTS:
+1. Each objective MUST use a sector_code from the list above
+2. Ensure balanced coverage across multiple sectors
+3. Prioritize sectors most relevant to the plan's vision and pillars
+4. Include at least one objective for HOUSING and MUNICIPAL_SERVICES sectors
+5. If INNOVATION or TECHNOLOGY sectors exist, include at least one digital transformation objective
 
 Generate objectives that:
 1. Are SMART (Specific, Measurable, Achievable, Relevant, Time-bound)
@@ -93,7 +114,6 @@ For each objective provide:
 - Appropriate sector code from the available list
 - Priority level based on strategic importance
 - Target year for completion`;
-
     console.log('[strategy-objective-generator] Generating objectives for:', wizardData.name_en || 'plan');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -165,6 +185,16 @@ For each objective provide:
 
     const generatedData = JSON.parse(toolCall.function.arguments);
     const endYear = wizardData.end_year || new Date().getFullYear() + 5;
+    
+    // Validate sector codes against allowed list
+    const validateSectorCode = (code: string) => {
+      if (sectorCodes.includes(code)) return code;
+      // Try case-insensitive match
+      const match = sectorCodes.find((s: string) => s.toLowerCase() === code?.toLowerCase());
+      if (match) return match;
+      // Default to first available sector
+      return sectorCodes[0] || 'MUNICIPAL_SERVICES';
+    };
 
     const result = {
       objectives: (generatedData.objectives || []).map((o: any, i: number) => ({
@@ -173,7 +203,7 @@ For each objective provide:
         name_ar: o.name_ar || '',
         description_en: o.description_en || '',
         description_ar: o.description_ar || '',
-        sector_code: o.sector_code || 'MUNICIPAL_SERVICES',
+        sector_code: validateSectorCode(o.sector_code),
         priority: o.priority || 'medium',
         target_year: o.target_year || endYear
       }))
