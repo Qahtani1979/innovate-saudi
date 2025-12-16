@@ -3420,10 +3420,12 @@ Use formal Arabic (فصحى). Generate a TRUE STRATEGIC OBJECTIVE, not a tactica
             description_ar: { type: 'string' },
             sector_code: { type: 'string' },
             priority: { type: 'string', enum: ['high', 'medium', 'low'] }
-          }
+          },
+          additionalProperties: false
         },
         differentiation_score: { type: 'number', minimum: 0, maximum: 100 }
-      }
+      },
+      additionalProperties: false
     };
 
     try {
