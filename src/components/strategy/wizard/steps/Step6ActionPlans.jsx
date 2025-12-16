@@ -6,9 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Loader2, Plus, X, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+import { Sparkles, Loader2, Plus, X, Lightbulb, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
+
+// Entity type configuration aligned with demand_queue and generators
+const ENTITY_TYPES = [
+  { value: 'challenge', label_en: 'Challenge', label_ar: 'تحدي', color: 'bg-red-100 text-red-700' },
+  { value: 'pilot', label_en: 'Pilot', label_ar: 'تجريبي', color: 'bg-orange-100 text-orange-700' },
+  { value: 'program', label_en: 'Program', label_ar: 'برنامج', color: 'bg-purple-100 text-purple-700' },
+  { value: 'campaign', label_en: 'Campaign', label_ar: 'حملة', color: 'bg-pink-100 text-pink-700' },
+  { value: 'event', label_en: 'Event', label_ar: 'فعالية', color: 'bg-blue-100 text-blue-700' },
+  { value: 'policy', label_en: 'Policy', label_ar: 'سياسة', color: 'bg-slate-100 text-slate-700' },
+  { value: 'rd_call', label_en: 'R&D Call', label_ar: 'دعوة بحثية', color: 'bg-emerald-100 text-emerald-700' },
+  { value: 'partnership', label_en: 'Partnership', label_ar: 'شراكة', color: 'bg-cyan-100 text-cyan-700' },
+  { value: 'living_lab', label_en: 'Living Lab', label_ar: 'مختبر حي', color: 'bg-amber-100 text-amber-700' },
+];
 
 export default function Step6ActionPlans({ 
   data, 
@@ -30,14 +44,15 @@ export default function Step6ActionPlans({
         description_en: '',
         description_ar: '',
         objective_index: objectiveIndex,
-        type: 'initiative',
+        type: 'challenge',
         priority: 'medium',
         budget_estimate: '',
         start_date: '',
         end_date: '',
         owner: '',
         deliverables: [],
-        dependencies: []
+        dependencies: [],
+        should_create_entity: false // Toggle for entity generation
       }]
     });
     setExpandedIndex(actionPlans.length);
@@ -68,14 +83,12 @@ export default function Step6ActionPlans({
     }
   };
 
+  const getTypeConfig = (type) => {
+    return ENTITY_TYPES.find(et => et.value === type) || ENTITY_TYPES[0];
+  };
+
   const getTypeColor = (type) => {
-    switch (type) {
-      case 'initiative': return 'bg-blue-100 text-blue-700';
-      case 'program': return 'bg-purple-100 text-purple-700';
-      case 'project': return 'bg-cyan-100 text-cyan-700';
-      case 'pilot': return 'bg-orange-100 text-orange-700';
-      default: return 'bg-muted';
-    }
+    return getTypeConfig(type).color;
   };
 
   return (
@@ -199,16 +212,34 @@ export default function Step6ActionPlans({
                                     </div>
                                   </div>
 
+                                  {/* Entity Creation Toggle */}
+                                  <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                                    <div className="flex items-center gap-2">
+                                      <Zap className="h-4 w-4 text-primary" />
+                                      <div>
+                                        <Label className="text-sm font-medium">{t({ en: 'Auto-Create Entity', ar: 'إنشاء كيان تلقائياً' })}</Label>
+                                        <p className="text-xs text-muted-foreground">
+                                          {t({ en: 'Queue this for automatic generation', ar: 'إضافة للقائمة للإنشاء التلقائي' })}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Switch
+                                      checked={ap.should_create_entity || false}
+                                      onCheckedChange={(checked) => updateActionPlan(apIndex, { should_create_entity: checked })}
+                                    />
+                                  </div>
+
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     <div className="space-y-1">
-                                      <Label className="text-xs">{t({ en: 'Type', ar: 'النوع' })}</Label>
+                                      <Label className="text-xs">{t({ en: 'Entity Type', ar: 'نوع الكيان' })}</Label>
                                       <Select value={ap.type} onValueChange={(v) => updateActionPlan(apIndex, { type: v })}>
                                         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                                         <SelectContent>
-                                          <SelectItem value="initiative">{t({ en: 'Initiative', ar: 'مبادرة' })}</SelectItem>
-                                          <SelectItem value="program">{t({ en: 'Program', ar: 'برنامج' })}</SelectItem>
-                                          <SelectItem value="project">{t({ en: 'Project', ar: 'مشروع' })}</SelectItem>
-                                          <SelectItem value="pilot">{t({ en: 'Pilot', ar: 'تجريبي' })}</SelectItem>
+                                          {ENTITY_TYPES.map(et => (
+                                            <SelectItem key={et.value} value={et.value}>
+                                              {language === 'ar' ? et.label_ar : et.label_en}
+                                            </SelectItem>
+                                          ))}
                                         </SelectContent>
                                       </Select>
                                     </div>
@@ -301,25 +332,34 @@ export default function Step6ActionPlans({
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">{t({ en: 'Action Plans Summary', ar: 'ملخص خطط العمل' })}</CardTitle>
+              <CardDescription>
+                {t({ 
+                  en: `${actionPlans.filter(ap => ap.should_create_entity).length} queued for entity generation`, 
+                  ar: `${actionPlans.filter(ap => ap.should_create_entity).length} في قائمة الإنشاء التلقائي` 
+                })}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-blue-600">{actionPlans.filter(ap => ap.type === 'initiative').length}</p>
-                  <p className="text-sm text-muted-foreground">{t({ en: 'Initiatives', ar: 'مبادرات' })}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-purple-600">{actionPlans.filter(ap => ap.type === 'program').length}</p>
-                  <p className="text-sm text-muted-foreground">{t({ en: 'Programs', ar: 'برامج' })}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-cyan-600">{actionPlans.filter(ap => ap.type === 'project').length}</p>
-                  <p className="text-sm text-muted-foreground">{t({ en: 'Projects', ar: 'مشاريع' })}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-orange-600">{actionPlans.filter(ap => ap.type === 'pilot').length}</p>
-                  <p className="text-sm text-muted-foreground">{t({ en: 'Pilots', ar: 'تجريبي' })}</p>
-                </div>
+              <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 text-center">
+                {ENTITY_TYPES.map(et => {
+                  const count = actionPlans.filter(ap => ap.type === et.value).length;
+                  const queuedCount = actionPlans.filter(ap => ap.type === et.value && ap.should_create_entity).length;
+                  return (
+                    <div key={et.value} className="p-2 rounded-lg bg-muted/50">
+                      <p className={`text-xl font-bold ${et.color.replace('bg-', 'text-').replace('-100', '-600').replace('text-', '')}`}>
+                        {count}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {language === 'ar' ? et.label_ar : et.label_en}
+                      </p>
+                      {queuedCount > 0 && (
+                        <Badge variant="outline" className="text-xs mt-1">
+                          <Zap className="h-3 w-3 mr-1" />{queuedCount}
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

@@ -338,6 +338,56 @@ export default function StrategyWizardWrapper() {
         gateName: 'plan_approval'
       });
       
+      // Create demand_queue items from action_plans with should_create_entity=true
+      const cascadableActions = data.action_plans?.filter(
+        ap => ap.should_create_entity && ap.type
+      ) || [];
+      
+      if (cascadableActions.length > 0) {
+        const generatorMapping = {
+          challenge: 'StrategyChallengeGenerator',
+          pilot: 'StrategyToPilotGenerator',
+          program: 'StrategyToProgramGenerator',
+          campaign: 'StrategyToCampaignGenerator',
+          event: 'StrategyToEventGenerator',
+          policy: 'StrategyToPolicyGenerator',
+          rd_call: 'StrategyToRDCallGenerator',
+          partnership: 'StrategyToPartnershipGenerator',
+          living_lab: 'StrategyToLivingLabGenerator'
+        };
+        
+        const priorityScores = { high: 100, medium: 60, low: 30 };
+        
+        const queueItems = cascadableActions.map((ap, index) => ({
+          strategic_plan_id: saveResult.id,
+          objective_id: data.objectives?.[ap.objective_index]?.id || null,
+          entity_type: ap.type,
+          generator_component: generatorMapping[ap.type] || 'StrategyChallengeGenerator',
+          priority_score: priorityScores[ap.priority] || 60,
+          prefilled_spec: {
+            title_en: ap.name_en,
+            title_ar: ap.name_ar,
+            description_en: ap.description_en,
+            description_ar: ap.description_ar,
+            budget_estimate: ap.budget_estimate,
+            start_date: ap.start_date,
+            end_date: ap.end_date,
+            owner: ap.owner,
+            deliverables: ap.deliverables,
+            source: 'wizard_step12',
+            source_index: index
+          },
+          status: 'pending',
+          created_by: user?.email
+        }));
+        
+        const { error: queueError } = await supabase.from('demand_queue').insert(queueItems);
+        if (queueError) {
+          console.error('Failed to create demand queue items:', queueError);
+          // Don't throw - plan is saved, queue items are optional
+        }
+      }
+      
       return saveResult;
     },
     onSuccess: () => {
@@ -2400,14 +2450,18 @@ Return alignments as an array under the "alignments" key with proper objective_i
                 description_en: { type: 'string' },
                 description_ar: { type: 'string' },
                 objective_index: { type: 'number' },
-                type: { type: 'string' },
-                priority: { type: 'string' },
+                type: { 
+                  type: 'string',
+                  enum: ['challenge', 'pilot', 'program', 'campaign', 'event', 'policy', 'rd_call', 'partnership', 'living_lab']
+                },
+                priority: { type: 'string', enum: ['high', 'medium', 'low'] },
                 budget_estimate: { type: 'string' },
                 start_date: { type: 'string' },
                 end_date: { type: 'string' },
                 owner: { type: 'string' },
                 deliverables: { type: 'array', items: { type: 'string' } },
-                dependencies: { type: 'array', items: { type: 'string' } }
+                dependencies: { type: 'array', items: { type: 'string' } },
+                should_create_entity: { type: 'boolean' }
               }
             }
           }
