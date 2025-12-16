@@ -10,10 +10,15 @@
 
 This document provides a complete implementation plan for fixing Step 12 (Action Plans) in the Strategic Plan Builder wizard to align with the Entity Integration Model. It identifies ALL pages, components, hooks, edge functions, tables, and AI schemas that need updates.
 
+**🔴 CRITICAL WIRING GAP:**
+Step 12 action_plans are stored in wizard_data JSONB but **NEVER flow to demand_queue**. The entire entity generation pipeline is disconnected from Step 12.
+
 **CRITICAL GAPS CONFIRMED:**
 
 | Gap | Location | Severity |
 |-----|----------|----------|
+| ❌ **Step 12 → demand_queue NOT CONNECTED** | StrategyWizardWrapper submitMutation | 🔴 CRITICAL |
+| ❌ **No should_create_entity toggle** | Step6ActionPlans.jsx | 🔴 CRITICAL |
 | ❌ "project" type in UI but no `projects` table | Step6ActionPlans.jsx line 210 | 🔴 HIGH |
 | ❌ AI schema has no `type` enum | StrategyWizardWrapper.jsx line 2403 | 🔴 HIGH |
 | ❌ `strategy-program-generator` edge function missing | supabase/functions/ | 🔴 HIGH |
@@ -22,7 +27,6 @@ This document provides a complete implementation plan for fixing Step 12 (Action
 | ❌ `strategy-batch-generator` wrong fallback for living_lab | generatorMap line 77 | 🟡 MEDIUM |
 | ⚠️ `StrategyToProgramGenerator` in wrong folder | src/components/strategy/ not cascade/ | 🟡 MEDIUM |
 | ⚠️ Step 12 Summary shows "Projects" count | Line 316-317 | 🟡 MEDIUM |
-| ⚠️ No `should_create_entity` toggle in UI | Step6ActionPlans.jsx | 🟡 MEDIUM |
 
 ---
 
@@ -291,10 +295,137 @@ const getGeneratorFunction = (entityType) => {
 
 ---
 
-## 📈 MASTER FIX MATRIX
+## 🔴 CRITICAL WIRING GAP: Step 12 → Demand Queue NOT CONNECTED
+
+### Current Data Flow (BROKEN)
+
+```
+Step 12 (action_plans) 
+    ↓
+wizard_data JSONB in strategic_plans table
+    ↓
+❌ DEAD END - Nothing reads action_plans to create entities
+```
+
+### Required Data Flow
+
+```
+Step 12 (action_plans with should_create_entity=true)
+    ↓
+StrategyWizardWrapper.submitMutation (line 306-354)
+    ↓
+NEW: createDemandQueueItems() function
+    ↓
+demand_queue table (pending items)
+    ↓
+Batch Generator / Manual processing
+    ↓
+Entity tables (challenges, pilots, programs, etc.)
+```
+
+### SYSTEM 9: StrategyWizardWrapper.jsx - WIRING GAP
+
+| Issue | Location | Current | Required |
+|-------|----------|---------|----------|
+| No demand_queue creation on save | saveMutation (line 218-303) | Saves action_plans to JSONB only | Add createDemandQueueItems() call |
+| No demand_queue creation on submit | submitMutation (line 306-354) | Creates approval request only | Add createDemandQueueItems() call |
+| action_plans missing should_create_entity | initialWizardData | No field | Add field to action plan structure |
+| action_plans missing cascade_entity_type | initialWizardData | No field | Add field for explicit entity override |
+
+**Current submitMutation (Lines 306-354):**
+```javascript
+const submitMutation = useMutation({
+  mutationFn: async (data) => {
+    // First save the plan
+    const saveResult = await saveMutation.mutateAsync(data);
+    
+    // Update status to pending approval
+    await supabase.from('strategic_plans').update({...});
+    
+    // Create approval request
+    await createApprovalRequest({...});
+    
+    // ❌ MISSING: Create demand_queue items from action_plans
+    return saveResult;
+  }
+});
+```
+
+**Required Addition:**
+```javascript
+// After createApprovalRequest, add:
+const cascadableActions = data.action_plans?.filter(
+  ap => ap.should_create_entity && ap.type !== 'initiative'
+) || [];
+
+if (cascadableActions.length > 0) {
+  const queueItems = cascadableActions.map((ap, index) => ({
+    strategic_plan_id: saveResult.id,
+    objective_id: data.objectives[ap.objective_index]?.id || null,
+    entity_type: ap.cascade_entity_type || ap.type,
+    generator_component: getGeneratorComponent(ap.type),
+    priority_score: getPriorityScore(ap.priority),
+    prefilled_spec: {
+      title_en: ap.name_en,
+      title_ar: ap.name_ar,
+      description_en: ap.description_en,
+      description_ar: ap.description_ar,
+      budget_estimate: ap.budget_estimate,
+      start_date: ap.start_date,
+      end_date: ap.end_date,
+      owner: ap.owner,
+      deliverables: ap.deliverables,
+      source: 'wizard_step12',
+      source_index: index
+    },
+    status: 'pending'
+  }));
+  
+  await supabase.from('demand_queue').insert(queueItems);
+}
+```
+
+### SYSTEM 10: Step6ActionPlans.jsx - UI WIRING GAP
+
+| Issue | Line | Current | Required |
+|-------|------|---------|----------|
+| No should_create_entity toggle | N/A | Not implemented | Add checkbox per action |
+| No cascade_entity_type override | N/A | Not implemented | Add optional select |
+| Default action structure missing fields | addActionPlan (line 25-43) | Basic fields only | Add should_create_entity, cascade_entity_type |
+
+**Current addActionPlan (Lines 25-43):**
+```javascript
+const addActionPlan = (objectiveIndex = null) => {
+  onChange({
+    action_plans: [...actionPlans, {
+      name_en: '',
+      name_ar: '',
+      description_en: '',
+      description_ar: '',
+      objective_index: objectiveIndex,
+      type: 'initiative',
+      priority: 'medium',
+      budget_estimate: '',
+      start_date: '',
+      end_date: '',
+      owner: '',
+      deliverables: [],
+      dependencies: []
+      // ❌ MISSING: should_create_entity: false
+      // ❌ MISSING: cascade_entity_type: null
+    }]
+  });
+};
+```
+
+---
+
+## 📈 MASTER FIX MATRIX (UPDATED)
 
 | System | File | Fix Required | Priority |
 |--------|------|--------------|----------|
+| **WIRING: Step12→Queue** | StrategyWizardWrapper.jsx | Add createDemandQueueItems on submit | 🔴 CRITICAL |
+| **WIRING: UI Toggle** | Step6ActionPlans.jsx | Add should_create_entity checkbox | 🔴 CRITICAL |
 | Gap Analysis | strategy-gap-analysis/index.ts | Add 5 entity counts, fix campaign table | 🔴 HIGH |
 | Demand Queue Gen | strategy-demand-queue-generator/index.ts | Add 5 types to all mappings | 🔴 HIGH |
 | Batch Generator | strategy-batch-generator/index.ts | Fix living_lab, add program | 🔴 HIGH |
