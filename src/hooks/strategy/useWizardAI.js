@@ -17,7 +17,7 @@ const EDGE_FUNCTION_MAP = {
   3: 'strategy-stakeholder-generator', // Stakeholders
   4: 'strategy-environmental-generator', // PESTEL
   5: 'strategy-swot-generator',       // SWOT
-  6: 'invoke-llm',                    // Scenarios
+  6: 'strategy-scenario-generator',   // Scenarios
   7: 'strategy-risk-generator',       // Risks
   8: 'strategy-pillar-generator',     // Pillars
   9: 'strategy-objective-generator',  // Objectives
