@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import StrategyToProgramGenerator from '../components/strategy/StrategyToProgramGenerator';
+import StrategyToProgramGenerator from '../components/strategy/cascade/StrategyToProgramGenerator';
 import StrategicGapProgramRecommender from '../components/strategy/StrategicGapProgramRecommender';
 import { useStrategicKPI } from '../hooks/useStrategicKPI';
 import ActivePlanBanner from '../components/strategy/ActivePlanBanner';
