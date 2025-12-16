@@ -1094,7 +1094,7 @@ Return actual IDs from the lists provided.`;
                     <Input
                       value={formData.responsible_agency_en || formData.responsible_agency || ''}
                       onChange={(e) => setFormData({ ...formData, responsible_agency_en: e.target.value, responsible_agency: e.target.value })}
-                      placeholder="Ministry of Municipal Affairs"
+                      placeholder="Ministry of Municipalities and Housing"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1102,7 +1102,7 @@ Return actual IDs from the lists provided.`;
                     <Input
                       value={formData.responsible_agency_ar || ''}
                       onChange={(e) => setFormData({ ...formData, responsible_agency_ar: e.target.value })}
-                      placeholder="وزارة الشؤون البلدية"
+                      placeholder="وزارة البلديات والإسكان"
                       dir="rtl"
                     />
                   </div>

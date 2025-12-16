@@ -33,7 +33,7 @@ export default function PolicyTemplateLibrary({ onTemplateSelect }) {
           { ar: 'فترة سماح (60 يوم)' },
           { ar: 'بدء التطبيق' }
         ],
-        stakeholder_involvement_ar: 'وزارة الشؤون البلدية، المجلس البلدي، اللجنة القانونية، مقدمي الخدمات، المواطنين'
+        stakeholder_involvement_ar: 'وزارة البلديات والإسكان، المجلس البلدي، اللجنة القانونية، مقدمي الخدمات، المواطنين'
       }
     },
     {

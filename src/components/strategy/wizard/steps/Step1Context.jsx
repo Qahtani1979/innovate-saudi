@@ -84,7 +84,7 @@ export default function Step1Context({
               <Input
                 value={data.name_en}
                 onChange={(e) => onChange({ name_en: e.target.value })}
-                placeholder={t({ en: 'e.g., MoMAH Digital Transformation Strategy 2025-2030', ar: 'مثال: استراتيجية التحول الرقمي لوزارة الشؤون البلدية' })}
+                placeholder={t({ en: 'e.g., MoMAH Digital Transformation Strategy 2025-2030', ar: 'مثال: استراتيجية التحول الرقمي لوزارة البلديات والإسكان' })}
                 dir="ltr"
               />
             </div>
