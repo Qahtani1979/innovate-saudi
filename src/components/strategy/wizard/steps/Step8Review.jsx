@@ -27,7 +27,7 @@ export default function Step8Review({
   mode = 'create'
 }) {
   const { language, t, isRTL } = useLanguage();
-  const { getSectorName: getTaxonomySectorName, themes, technologies, visionPrograms } = useTaxonomy();
+  const { getSectorName: getTaxonomySectorName, strategicThemes, technologies, visionPrograms } = useTaxonomy();
   const [isExporting, setIsExporting] = useState(false);
 
   // Data extraction - define early for use in export functions
@@ -45,7 +45,7 @@ export default function Step8Review({
   const getSectorName = (code) => getTaxonomySectorName(code, language);
 
   const getThemeName = (code) => {
-    const theme = themes.find(t => t.code === code);
+    const theme = strategicThemes.find(t => t.code === code);
     return theme ? (language === 'ar' ? theme.name_ar : theme.name_en) : code;
   };
 

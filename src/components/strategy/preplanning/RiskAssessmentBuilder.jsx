@@ -701,7 +701,7 @@ Identify 5-8 key risks for this initiative. For each, provide:
                     </TableRow>
                   ) : (
                     risks.map((risk) => {
-                      const category = RISK_CATEGORIES.find(c => c.value === risk.category);
+                      const category = riskCategories.find(c => c.value === risk.category || c.code === risk.category);
                       const riskLevel = getRiskLevel(risk.probability, risk.impact);
                       const status = RISK_STATUSES.find(s => s.value === risk.status);
                       
