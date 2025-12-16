@@ -65,7 +65,6 @@ export default function StrategyWizardWrapper() {
   } = useTaxonomy();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   
   const { createApprovalRequest } = useApprovalRequest();
