@@ -818,6 +818,352 @@ CITY DATA, DIGITAL TWINS & INTELLIGENCE:
 // ============================================================================
 // COMPOSITE CONTEXTS (for convenience)
 // ============================================================================
+// ADVANCED HOUSING & REAL ESTATE CONTEXT DOMAINS
+// ============================================================================
+
+/**
+ * HOUSING ECOSYSTEM CONTEXT (Expanded)
+ * Full housing value chain and stakeholder ecosystem
+ */
+export const HOUSING_ECOSYSTEM_CONTEXT = `
+HOUSING ECOSYSTEM (EXPANDED):
+
+You are operating in Saudi Arabia's housing ecosystem under MoMAH oversight. Consider the full housing value chain:
+- Land readiness
+- Planning and zoning
+- Permits
+- Construction delivery
+- Financing
+- Off-plan sales regulation
+- Tenancy and rental regulation
+- Property registration
+- Inspection and quality assurance
+- Post-handover facility operations
+
+### Key Housing Stakeholders
+- **MoMAH Entities & Programs**: Sakani, Wafi, Ejar, Mulkiya, REDF, NHC
+- **Municipalities (Amanat)**: Local planning, permits, inspections
+- **Private Developers**: Residential and mixed-use development
+- **Contractors**: General contractors, specialized trades
+- **PropTech/ConTech Firms**: Technology enablers
+- **Banks & Mortgage Providers**: Housing finance
+- **Materials Suppliers**: Construction materials and systems
+- **Utilities**: Water, electricity, gas connections
+- **Citizens/Residents**: End beneficiaries and homeowners
+
+### Primary Policy Goals & Outcomes
+- Increase home ownership (70% target by 2030)
+- Improve affordability and housing supply
+- Reduce time-to-market for development
+- Ensure quality and safety standards
+- Enhance neighborhood livability
+- Promote sustainability and green building
+- Enable digital, transparent regulation and service delivery
+`;
+
+/**
+ * MOMAH HOUSING SOLUTIONS CONTEXT
+ * Integrated portfolio of MoMAH housing programs
+ */
+export const MOMAH_HOUSING_SOLUTIONS_CONTEXT = `
+MOMAH HOUSING SOLUTIONS (INTEGRATED PORTFOLIO):
+
+MoMAH housing solutions should be treated as an integrated portfolio (not isolated programs). 
+Each solution influences others via data, regulation, and service workflows:
+
+### Core Programs & Their Functions
+- **Sakani**: Citizen housing enablement, eligibility assessment, product options, allocation and support journey
+- **Wafi**: Off-plan sales regulation, escrow management, developer compliance, buyer protection, project progress transparency
+- **Ejar**: Tenancy regulation and contracts, rental market stability, dispute-ready documentation, compliance monitoring
+- **Mulkiya**: Property ownership registration and documentation, linkage to real estate transactions and mortgage readiness
+- **REDF**: Financing enablement, subsidy/eligibility logic, mortgage facilitation, risk controls
+- **NHC**: Supply-side delivery and large-scale development programs, partnerships, master developments, delivery acceleration
+
+### Cross-Cutting Integration Requirements
+- **Shared Identifiers**: Interoperability across citizen, property, parcel, project, developer, contractor IDs
+- **Unified Compliance Rules**: Inspection triggers across lifecycle stages
+- **Evidence-Based Decisioning**: Documents, progress reports, inspections, geospatial validation
+- **Clear Governance**: Roles of MoMAH vs Amanat vs regulators, escalation pathways
+
+### Data Integration Points
+- Citizen eligibility data (Sakani ↔ REDF)
+- Project progress data (Wafi ↔ Inspections)
+- Ownership records (Mulkiya ↔ Sakani ↔ REDF)
+- Tenancy records (Ejar ↔ Citizen services)
+- Developer performance (Wafi ↔ Licensing)
+`;
+
+/**
+ * HOUSING LIFECYCLE CONTEXT
+ * End-to-end "from land to living"
+ */
+export const HOUSING_LIFECYCLE_CONTEXT = `
+HOUSING LIFECYCLE (END-TO-END):
+
+Model housing as an end-to-end lifecycle with decision gates and risk controls:
+
+### Stage 1: Land Readiness
+- Parcel data and cadastral information
+- Zoning and land use classification
+- Utilities and infrastructure access
+- Environmental constraints and assessments
+- Investment readiness scoring
+
+### Stage 2: Planning & Design
+- Master planning alignment
+- Density and building code compliance
+- BIM readiness requirements
+- Sustainability requirements (Mostadam)
+- Architectural and engineering approvals
+
+### Stage 3: Permits & Approvals
+- Building permit applications
+- Subdivision approvals
+- Utility connection approvals
+- Inter-agency workflow coordination
+- Rework loops and resubmission handling
+
+### Stage 4: Construction Execution
+- Schedule management and milestones
+- Cost control and budget tracking
+- Quality assurance programs
+- HSE (Health, Safety, Environment) compliance
+- Contractor performance monitoring
+- Supply chain reliability management
+
+### Stage 5: Inspections & Compliance
+- Phased inspections (foundation, structure, MEP, finishing)
+- Evidence capture and documentation
+- Noncompliance remediation workflows
+- Closure certificates and sign-offs
+
+### Stage 6: Sales & Financing
+- Off-plan sales management (Wafi)
+- Mortgage facilitation (REDF/banks)
+- Buyer protection mechanisms
+- Contract lifecycle management
+- Payment milestone verification
+
+### Stage 7: Handover & Occupancy
+- Snagging and defects resolution
+- Warranty management activation
+- Occupancy certificates issuance
+- Resident onboarding processes
+- Utility account transfers
+
+### Stage 8: Post-Occupancy Operations
+- Facilities management services
+- Maintenance and repairs
+- Community management
+- Feedback loops and satisfaction surveys
+- QoL outcomes measurement
+
+For any solution, determine which stage(s) it targets and what upstream/downstream dependencies it must integrate with.
+`;
+
+/**
+ * REAL ESTATE MARKET CONTEXT
+ * Supply/Demand + Regulation + Investment
+ */
+export const REAL_ESTATE_MARKET_CONTEXT = `
+REAL ESTATE MARKET CONTEXT:
+
+Saudi real estate context includes residential, commercial, mixed-use, and municipal investment assets.
+
+### Macro Market Drivers
+- Population growth and demographics
+- Urbanization trends and migration patterns
+- Household formation rates
+- Affordability indices and income levels
+- Financing availability and mortgage rates
+- Land pricing and availability
+- Infrastructure readiness and development
+- Developer capacity and pipeline
+- Regulatory timelines and efficiency
+
+### Real Estate Governance Concerns
+- **Transparency**: Consumer protection especially for off-plan sales
+- **Developer Oversight**: Classification and performance history tracking
+- **Financial Controls**: Escrow and milestone verification systems
+- **Dispute Resolution**: Readiness and accessible mechanisms
+- **Anti-Fraud Controls**: Prevention and detection measures
+- **Market Health Indicators**: Early-warning signals and monitoring
+
+### Municipal (Amanat) Role in Real Estate
+- Zoning and land use decisions
+- Permit processing and approvals
+- Construction and occupancy inspections
+- Land development approvals
+- Public realm and infrastructure standards
+- Investment facilitation for strategic zones
+- Developer engagement and attraction
+
+### Market Segments
+- **Affordable Housing**: Government-supported, income-qualified
+- **Mid-Market Housing**: First-time buyers, young families
+- **Premium Housing**: High-end residential, luxury developments
+- **Rental Market**: Regulated tenancies, institutional landlords
+- **Mixed-Use Development**: Residential + commercial integration
+- **Senior/Specialized Housing**: Age-friendly, accessible design
+`;
+
+/**
+ * ADVANCED CONSTRUCTION TECH CONTEXT
+ * ConTech + PropTech + Methods
+ */
+export const ADVANCED_CONSTRUCTION_TECH_CONTEXT = `
+ADVANCED CONSTRUCTION TECHNOLOGY (CONTECH):
+
+Advanced Construction Technology in Saudi housing should be assessed by:
+- Maturity and proven track record
+- Scalability for Saudi conditions
+- Local supply chain readiness
+- Standards and code compliance
+- Cost/time impact and ROI
+- Workforce capability and training needs
+
+### Key ConTech Domains
+
+**BIM and Digital Delivery**
+- 3D/4D/5D BIM modeling and coordination
+- Model-based permit approvals
+- Clash detection and resolution
+- Quantity takeoff and estimation
+- As-built model generation
+
+**Modular / Offsite / Industrialized Construction**
+- Volumetric module manufacturing
+- Panelized systems (walls, floors)
+- Precast concrete components
+- Rapid on-site assembly methods
+- Factory quality control advantages
+
+**3D Printing for Construction**
+- Targeted component printing
+- Full structure printing capabilities
+- Building code compliance pathways
+- Quality assurance methods
+- Materials certification requirements
+
+**Design for Manufacturing and Assembly (DfMA)**
+- Standardization of unit designs
+- Repeatable and scalable components
+- Manufacturing optimization
+- Assembly efficiency gains
+
+**Advanced Materials**
+- High-performance concrete formulations
+- Recycled and composite materials
+- Advanced insulation systems
+- Fire safety materials innovation
+- Sustainable material alternatives
+
+**Site Automation & Robotics**
+- Robotic surveying and layout
+- Automated rebar tying
+- Autonomous equipment operation
+- Safety monitoring systems
+- Productivity enhancement tools
+
+**Drones & Reality Capture**
+- Photogrammetry for progress tracking
+- Progress validation and reporting
+- Compliance documentation
+- Digital twin generation
+- Safety inspections from air
+
+**IoT + Smart Construction Sites**
+- Concrete curing sensors
+- Structural health monitoring
+- Safety geofencing systems
+- Equipment telemetry and tracking
+- Environmental monitoring
+
+**AI for Construction**
+- Schedule risk prediction
+- Change order analysis
+- Productivity optimization
+- Defect detection (computer vision)
+- Resource allocation optimization
+
+**Sustainability & Mostadam Integration**
+- Embodied carbon tracking
+- Energy performance modeling
+- Water efficiency optimization
+- Materials passports and traceability
+- Green building certification support
+
+### Technology Assessment Framework
+For each technology, specify:
+- Target lifecycle stage
+- Required standards and certifications
+- Integration points with existing systems
+- Typical KPIs (time-to-build, cost/m², defect rate, energy performance)
+- Adoption risks and mitigation strategies
+`;
+
+/**
+ * HOUSING INSPECTION & QUALITY CONTEXT
+ * Continuous quality assurance system
+ */
+export const HOUSING_INSPECTION_QUALITY_CONTEXT = `
+HOUSING INSPECTION & QUALITY ASSURANCE:
+
+Housing quality and compliance must be treated as a continuous assurance system, not one-time inspections.
+
+### Stage-Gated Inspection Framework
+1. **Foundation Stage**: Excavation, foundations, waterproofing
+2. **Structure Stage**: Columns, beams, slabs, structural integrity
+3. **MEP Stage**: Mechanical, electrical, plumbing rough-in
+4. **Fire Safety Stage**: Fire suppression, alarms, egress
+5. **Finishing Stage**: Interior/exterior finishes, fixtures
+6. **Handover Stage**: Final walkthrough, snagging, completion
+
+### Evidence Capture Standards
+- High-resolution photos with metadata
+- Video documentation of critical stages
+- Geotagging and GPS coordinates
+- Timestamps and date verification
+- Inspector digital signatures
+- Standardized checklists completion
+
+### Defect Management
+- **Defect Taxonomy**: Structural, MEP, finishing, safety, cosmetic
+- **Severity Scoring**: Critical, major, minor, cosmetic
+- **Remediation Workflows**: Assignment, timeline, verification
+- **Reinspection Loops**: Follow-up until resolution
+- **Warranty Tracking**: Post-handover defect management
+
+### Performance Analytics
+- Contractor/developer performance scoring
+- Recurring defect patterns by:
+  - Contractor
+  - Geographic zone
+  - Material type
+  - Construction method
+- Trend analysis and early warning
+- Benchmarking across projects
+
+### AI Opportunities in Quality Assurance
+- Computer vision-based defect detection
+- Risk-based inspection targeting
+- Automated compliance pre-checking from BIM
+- Document completeness validation
+- Predictive quality scoring
+- Pattern recognition for systemic issues
+
+### Quality Standards Framework
+- Saudi Building Code (SBC) compliance
+- Mostadam sustainability requirements
+- Fire and life safety codes
+- Accessibility standards
+- Energy efficiency requirements
+- Materials testing and certification
+`;
+
+// ============================================================================
+// COMPOSITE CONTEXTS (for convenience)
+// ============================================================================
 
 /**
  * Full operational context combining all domains
@@ -852,6 +1198,19 @@ export const FULL_SMART_CITY_CONTEXT = `
 ${CITY_INTELLIGENCE_CONTEXT}
 ${URBAN_QOL_CONTEXT}
 ${INNOVATION_EMPHASIS}
+`;
+
+/**
+ * Full housing context (comprehensive)
+ */
+export const FULL_HOUSING_CONTEXT = `
+${HOUSING_CONTEXT}
+${HOUSING_ECOSYSTEM_CONTEXT}
+${MOMAH_HOUSING_SOLUTIONS_CONTEXT}
+${HOUSING_LIFECYCLE_CONTEXT}
+${REAL_ESTATE_MARKET_CONTEXT}
+${ADVANCED_CONSTRUCTION_TECH_CONTEXT}
+${HOUSING_INSPECTION_QUALITY_CONTEXT}
 `;
 
 export default SAUDI_MOMAH_CONTEXT;
