@@ -464,9 +464,12 @@ export function Step17Change({ data, onChange, onGenerateAI, isGenerating }) {
         id: Date.now().toString(), 
         name_en: '', 
         name_ar: '',
-        target_audience: '', 
-        duration: '', 
-        timeline: '' 
+        target_audience_en: '', 
+        target_audience_ar: '',
+        duration_en: '', 
+        duration_ar: '',
+        timeline_en: '', 
+        timeline_ar: ''
       }
     ];
 
@@ -643,28 +646,62 @@ export function Step17Change({ data, onChange, onGenerateAI, isGenerating }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">{t({ en: 'Target Audience', ar: 'الفئة المستهدفة' })}</Label>
+                    <Label className="text-xs">{t({ en: 'Target Audience (EN)', ar: 'الفئة المستهدفة (إنجليزي)' })}</Label>
                     <Input 
-                      value={item.target_audience || ''} 
-                      onChange={(e) => updateTraining(item.id, { target_audience: e.target.value })} 
+                      value={item.target_audience_en || item.target_audience || ''} 
+                      onChange={(e) => updateTraining(item.id, { target_audience_en: e.target.value })} 
+                      placeholder={t({ en: 'e.g., IT Staff', ar: 'مثال: موظفو تقنية المعلومات' })}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">{t({ en: 'Duration', ar: 'المدة' })}</Label>
+                    <Label className="text-xs">{t({ en: 'Target Audience (AR)', ar: 'الفئة المستهدفة (عربي)' })}</Label>
                     <Input 
-                      value={item.duration || ''} 
-                      onChange={(e) => updateTraining(item.id, { duration: e.target.value })} 
+                      dir="rtl"
+                      value={item.target_audience_ar || ''} 
+                      onChange={(e) => updateTraining(item.id, { target_audience_ar: e.target.value })} 
+                      placeholder="مثال: موظفو تقنية المعلومات"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Duration (EN)', ar: 'المدة (إنجليزي)' })}</Label>
+                    <Input 
+                      value={item.duration_en || item.duration || ''} 
+                      onChange={(e) => updateTraining(item.id, { duration_en: e.target.value })} 
                       placeholder={t({ en: 'e.g., 2 days', ar: 'مثال: يومان' })} 
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">{t({ en: 'Timeline', ar: 'الجدول الزمني' })}</Label>
+                    <Label className="text-xs">{t({ en: 'Duration (AR)', ar: 'المدة (عربي)' })}</Label>
                     <Input 
-                      value={item.timeline || ''} 
-                      onChange={(e) => updateTraining(item.id, { timeline: e.target.value })} 
+                      dir="rtl"
+                      value={item.duration_ar || ''} 
+                      onChange={(e) => updateTraining(item.id, { duration_ar: e.target.value })} 
+                      placeholder="مثال: يومان"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Timeline (EN)', ar: 'الجدول الزمني (إنجليزي)' })}</Label>
+                    <Input 
+                      value={item.timeline_en || item.timeline || ''} 
+                      onChange={(e) => updateTraining(item.id, { timeline_en: e.target.value })} 
                       placeholder={t({ en: 'e.g., Q2 2026', ar: 'مثال: الربع الثاني 2026' })} 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t({ en: 'Timeline (AR)', ar: 'الجدول الزمني (عربي)' })}</Label>
+                    <Input 
+                      dir="rtl"
+                      value={item.timeline_ar || ''} 
+                      onChange={(e) => updateTraining(item.id, { timeline_ar: e.target.value })} 
+                      placeholder="مثال: الربع الثاني 2026"
                     />
                   </div>
                 </div>
