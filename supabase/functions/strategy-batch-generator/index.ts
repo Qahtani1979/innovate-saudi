@@ -11,6 +11,17 @@ const corsHeaders = {
  * 
  * Processes multiple queue items in batch, calling appropriate generators
  * and tracking results. Used for automated mass generation.
+ * 
+ * SUPPORTED ENTITY TYPES:
+ * - challenge → strategy-challenge-generator → challenges table
+ * - pilot → strategy-pilot-generator → pilots table
+ * - program → strategy-program-generator → programs table
+ * - campaign → strategy-campaign-generator → marketing_campaigns table
+ * - event → strategy-event-planner → events table
+ * - policy → strategy-policy-generator → policy_documents table
+ * - partnership → strategy-partnership-matcher → partnerships table
+ * - rd_call → strategy-rd-call-generator → rd_calls table
+ * - living_lab → strategy-lab-research-generator → living_labs table
  */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -64,21 +75,39 @@ serve(async (req) => {
     const results: any[] = [];
     const batchId = crypto.randomUUID();
 
-    // Generator function mapping
+    // Complete generator function mapping for all 9 entity types
     const generatorMap: Record<string, string> = {
       challenge: 'strategy-challenge-generator',
       pilot: 'strategy-pilot-generator',
-      solution: 'strategy-challenge-generator',
+      program: 'strategy-program-theme-generator', // Programs use theme generator
       campaign: 'strategy-campaign-generator',
       event: 'strategy-event-planner',
       policy: 'strategy-policy-generator',
       partnership: 'strategy-partnership-matcher',
       rd_call: 'strategy-rd-call-generator',
-      living_lab: 'strategy-challenge-generator'
+      living_lab: 'strategy-lab-research-generator', // FIXED: was incorrectly using challenge-generator
+      // Legacy/alias mappings
+      solution: 'strategy-challenge-generator', // Solutions derive from challenges
+    };
+
+    // Table mapping for entity types
+    const tableMap: Record<string, string> = {
+      challenge: 'challenges',
+      pilot: 'pilots',
+      program: 'programs',
+      campaign: 'marketing_campaigns',
+      event: 'events',
+      policy: 'policy_documents',
+      partnership: 'partnerships',
+      rd_call: 'rd_calls',
+      living_lab: 'living_labs',
+      solution: 'solutions'
     };
 
     for (const item of queueItems) {
       try {
+        console.log(`Processing queue item ${item.id}, type: ${item.entity_type}`);
+        
         // Mark as in progress
         await supabase
           .from('demand_queue')
@@ -91,17 +120,33 @@ serve(async (req) => {
 
         // Call appropriate generator
         const generatorFn = generatorMap[item.entity_type] || 'strategy-challenge-generator';
+        console.log(`Using generator: ${generatorFn} for entity type: ${item.entity_type}`);
         
         const { data: generated, error: genError } = await supabase.functions.invoke(generatorFn, {
           body: {
             strategic_plan_id,
             queue_item_id: item.id,
             prefilled_spec: item.prefilled_spec,
-            auto_mode: true
+            auto_mode: true,
+            // Pass objective context for better generation
+            objective_id: item.objective_id,
+            entity_type: item.entity_type
           }
         });
 
         if (genError) throw genError;
+
+        // Extract entity ID from various generator response formats
+        let entityId = generated?.id;
+        if (!entityId) {
+          // Try to get ID from array responses
+          const entityKey = item.entity_type + 's'; // pluralize
+          if (generated?.[entityKey]?.[0]?.id) {
+            entityId = generated[entityKey][0].id;
+          } else if (generated?.[item.entity_type]?.id) {
+            entityId = generated[item.entity_type].id;
+          }
+        }
 
         // Get quality assessment
         const { data: assessment } = await supabase.functions.invoke('strategy-quality-assessor', {
@@ -121,7 +166,7 @@ serve(async (req) => {
           .from('demand_queue')
           .update({
             status,
-            generated_entity_id: generated?.id,
+            generated_entity_id: entityId,
             generated_entity_type: item.entity_type,
             quality_score: qualityScore,
             quality_feedback: assessment,
@@ -136,7 +181,7 @@ serve(async (req) => {
             queue_item_id: item.id,
             strategic_plan_id,
             entity_type: item.entity_type,
-            entity_id: generated?.id,
+            entity_id: entityId,
             attempt_number: item.attempts + 1,
             input_spec: item.prefilled_spec,
             output_entity: generated,
@@ -150,8 +195,11 @@ serve(async (req) => {
           entity_type: item.entity_type,
           status,
           quality_score: qualityScore,
-          generated_id: generated?.id
+          generated_id: entityId,
+          generator_used: generatorFn
         });
+
+        console.log(`Successfully processed ${item.id}, entity_id: ${entityId}, score: ${qualityScore}`);
 
       } catch (itemError: unknown) {
         const errorMessage = itemError instanceof Error ? itemError.message : 'Unknown error';
@@ -181,6 +229,8 @@ serve(async (req) => {
 
     const successCount = results.filter(r => r.status !== 'error').length;
     const errorCount = results.filter(r => r.status === 'error').length;
+
+    console.log(`Batch complete: ${successCount} succeeded, ${errorCount} failed`);
 
     return new Response(JSON.stringify({
       success: true,

@@ -243,10 +243,20 @@ function getRequiredFields(entityType: string): string[] {
       return ['title_en', 'description_en', 'problem_statement_en'];
     case 'pilot':
       return ['name_en', 'description_en', 'duration_months'];
+    case 'program':
+      return ['name_en', 'description_en', 'program_type'];
     case 'campaign':
       return ['title_en', 'description_en', 'campaign_type'];
     case 'event':
       return ['title_en', 'description_en', 'event_type'];
+    case 'policy':
+      return ['title_en', 'description_en', 'policy_type'];
+    case 'rd_call':
+      return ['title_en', 'description_en', 'call_type'];
+    case 'partnership':
+      return ['title_en', 'description_en', 'partnership_type'];
+    case 'living_lab':
+      return ['name_en', 'description_en', 'lab_type'];
     default:
       return ['title_en', 'description_en'];
   }
