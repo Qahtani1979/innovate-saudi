@@ -260,3 +260,6 @@ verify_jwt = false
 
 [functions.strategy-scenario-generator]
 verify_jwt = false
+
+[functions.strategy-risk-generator]
+verify_jwt = false
