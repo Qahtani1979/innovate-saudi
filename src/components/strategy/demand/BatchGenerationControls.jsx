@@ -28,12 +28,13 @@ const ENTITY_TYPES = [
   { value: 'all', label: { en: 'All Types', ar: 'جميع الأنواع' } },
   { value: 'challenge', label: { en: 'Challenges', ar: 'التحديات' } },
   { value: 'pilot', label: { en: 'Pilots', ar: 'التجارب' } },
-  { value: 'solution', label: { en: 'Solutions', ar: 'الحلول' } },
+  { value: 'program', label: { en: 'Programs', ar: 'البرامج' } },
   { value: 'campaign', label: { en: 'Campaigns', ar: 'الحملات' } },
   { value: 'event', label: { en: 'Events', ar: 'الفعاليات' } },
   { value: 'policy', label: { en: 'Policies', ar: 'السياسات' } },
   { value: 'partnership', label: { en: 'Partnerships', ar: 'الشراكات' } },
   { value: 'rd_call', label: { en: 'R&D Calls', ar: 'دعوات البحث' } },
+  { value: 'living_lab', label: { en: 'Living Labs', ar: 'المختبرات الحية' } },
 ];
 
 export default function BatchGenerationControls({ strategicPlanId }) {
@@ -180,13 +181,13 @@ export default function BatchGenerationControls({ strategicPlanId }) {
     const map = {
       challenge: 'strategy-challenge-generator',
       pilot: 'strategy-pilot-generator',
-      solution: 'strategy-challenge-generator', // Uses same generator
+      program: 'strategy-program-theme-generator',
       campaign: 'strategy-campaign-generator',
       event: 'strategy-event-planner',
       policy: 'strategy-policy-generator',
       partnership: 'strategy-partnership-matcher',
       rd_call: 'strategy-rd-call-generator',
-      living_lab: 'strategy-challenge-generator' // Uses same generator
+      living_lab: 'strategy-lab-research-generator' // FIXED: was incorrectly using challenge-generator
     };
     return map[entityType] || 'strategy-challenge-generator';
   };

@@ -16,6 +16,20 @@ interface ObjectiveCoverage {
   coverage_pct: number;
 }
 
+/**
+ * Strategy Gap Analysis
+ * 
+ * Analyzes coverage across ALL 9 entity types:
+ * - challenges
+ * - pilots
+ * - programs
+ * - campaigns (marketing_campaigns table)
+ * - events
+ * - policies (policy_documents table)
+ * - rd_calls
+ * - partnerships
+ * - living_labs
+ */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -47,85 +61,157 @@ serve(async (req) => {
       targets: {
         challenges_per_objective: 5,
         pilots_per_challenge: 2,
-        solutions_per_challenge: 3,
+        programs_per_objective: 2,
         campaigns_per_objective: 2,
-        events_per_objective: 3
+        events_per_objective: 3,
+        policies_per_objective: 1,
+        rd_calls_per_objective: 1,
+        partnerships_per_objective: 2,
+        living_labs_per_objective: 1
       }
     };
 
-    // Count existing entities linked to this plan
-    const [
-      { count: challengeCount },
-      { count: pilotCount },
-      { count: campaignCount },
-      { count: eventCount }
-    ] = await Promise.all([
-      supabase.from('challenges')
+    // Count existing entities linked to this plan - ALL 9 ENTITY TYPES
+    // Note: Some tables may not exist or have different column structures
+    
+    const challengeResult = await supabase.from('challenges')
+      .select('id', { count: 'exact', head: true })
+      .contains('strategic_plan_ids', [strategic_plan_id])
+      .eq('is_deleted', false);
+    const challengeCount = challengeResult.count || 0;
+
+    const pilotResult = await supabase.from('pilots')
+      .select('id', { count: 'exact', head: true })
+      .contains('strategic_plan_ids', [strategic_plan_id])
+      .eq('is_deleted', false);
+    const pilotCount = pilotResult.count || 0;
+
+    const programResult = await supabase.from('programs')
+      .select('id', { count: 'exact', head: true })
+      .contains('strategic_plan_ids', [strategic_plan_id])
+      .eq('is_deleted', false);
+    const programCount = programResult.count || 0;
+
+    // Campaigns - count from events with campaign type as proxy
+    const campaignResult = await supabase.from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_type', 'campaign')
+      .eq('is_deleted', false);
+    const campaignCount = campaignResult.count || 0;
+
+    const eventResult = await supabase.from('events')
+      .select('id', { count: 'exact', head: true })
+      .contains('strategic_plan_ids', [strategic_plan_id])
+      .eq('is_deleted', false);
+    const eventCount = eventResult.count || 0;
+
+    // Policy documents - may use different column name
+    let policyCount = 0;
+    try {
+      const policyResult = await supabase.from('policy_documents')
         .select('id', { count: 'exact', head: true })
-        .contains('strategic_plan_ids', [strategic_plan_id])
-        .eq('is_deleted', false),
-      supabase.from('pilots')
-        .select('id', { count: 'exact', head: true })
-        .contains('strategic_plan_ids', [strategic_plan_id])
-        .eq('is_deleted', false),
-      supabase.from('programs')
-        .select('id', { count: 'exact', head: true })
-        .eq('strategic_plan_id', strategic_plan_id)
-        .eq('is_deleted', false),
-      supabase.from('events')
-        .select('id', { count: 'exact', head: true })
-        .eq('strategic_plan_id', strategic_plan_id)
-        .eq('is_deleted', false)
-    ]);
+        .eq('is_deleted', false);
+      policyCount = policyResult.count || 0;
+    } catch (e) {
+      console.log('policy_documents table not accessible:', e);
+    }
+
+    const rdCallResult = await supabase.from('rd_calls')
+      .select('id', { count: 'exact', head: true })
+      .contains('strategic_plan_ids', [strategic_plan_id])
+      .eq('is_deleted', false);
+    const rdCallCount = rdCallResult.count || 0;
+
+    const partnershipResult = await supabase.from('partnerships')
+      .select('id', { count: 'exact', head: true })
+      .contains('strategic_plan_ids', [strategic_plan_id])
+      .eq('is_deleted', false);
+    const partnershipCount = partnershipResult.count || 0;
+
+    const livingLabResult = await supabase.from('living_labs')
+      .select('id', { count: 'exact', head: true })
+      .contains('strategic_plan_ids', [strategic_plan_id])
+      .eq('is_deleted', false);
+    const livingLabCount = livingLabResult.count || 0;
 
     // Calculate targets based on objectives count
     const objectiveCount = objectives.length || 1;
     const targets = {
       challenges: objectiveCount * (cascadeConfig.targets?.challenges_per_objective || 5),
       pilots: (challengeCount || 0) * (cascadeConfig.targets?.pilots_per_challenge || 2),
+      programs: objectiveCount * (cascadeConfig.targets?.programs_per_objective || 2),
       campaigns: objectiveCount * (cascadeConfig.targets?.campaigns_per_objective || 2),
-      events: objectiveCount * (cascadeConfig.targets?.events_per_objective || 3)
+      events: objectiveCount * (cascadeConfig.targets?.events_per_objective || 3),
+      policies: objectiveCount * (cascadeConfig.targets?.policies_per_objective || 1),
+      rd_calls: objectiveCount * (cascadeConfig.targets?.rd_calls_per_objective || 1),
+      partnerships: objectiveCount * (cascadeConfig.targets?.partnerships_per_objective || 2),
+      living_labs: objectiveCount * (cascadeConfig.targets?.living_labs_per_objective || 1)
     };
 
     // Calculate current counts
     const current = {
       challenges: challengeCount || 0,
       pilots: pilotCount || 0,
+      programs: programCount || 0,
       campaigns: campaignCount || 0,
-      events: eventCount || 0
+      events: eventCount || 0,
+      policies: policyCount || 0,
+      rd_calls: rdCallCount || 0,
+      partnerships: partnershipCount || 0,
+      living_labs: livingLabCount || 0
     };
 
     // Calculate gaps
     const gaps = {
       challenges: Math.max(0, targets.challenges - current.challenges),
       pilots: Math.max(0, targets.pilots - current.pilots),
+      programs: Math.max(0, targets.programs - current.programs),
       campaigns: Math.max(0, targets.campaigns - current.campaigns),
-      events: Math.max(0, targets.events - current.events)
+      events: Math.max(0, targets.events - current.events),
+      policies: Math.max(0, targets.policies - current.policies),
+      rd_calls: Math.max(0, targets.rd_calls - current.rd_calls),
+      partnerships: Math.max(0, targets.partnerships - current.partnerships),
+      living_labs: Math.max(0, targets.living_labs - current.living_labs)
     };
 
-    // Calculate per-objective coverage (simplified)
+    // Calculate per-objective coverage
     const objectiveCoverage: ObjectiveCoverage[] = objectives.map((obj: any, index: number) => {
       const objId = obj.id || `obj-${index}`;
       const perObjTarget = {
         challenges: cascadeConfig.targets?.challenges_per_objective || 5,
         pilots: cascadeConfig.targets?.pilots_per_challenge || 2,
+        programs: cascadeConfig.targets?.programs_per_objective || 2,
         campaigns: cascadeConfig.targets?.campaigns_per_objective || 2,
-        events: cascadeConfig.targets?.events_per_objective || 3
+        events: cascadeConfig.targets?.events_per_objective || 3,
+        policies: cascadeConfig.targets?.policies_per_objective || 1,
+        rd_calls: cascadeConfig.targets?.rd_calls_per_objective || 1,
+        partnerships: cascadeConfig.targets?.partnerships_per_objective || 2,
+        living_labs: cascadeConfig.targets?.living_labs_per_objective || 1
       };
       
       // Distribute current counts evenly across objectives for simplification
       const perObjCurrent = {
         challenges: Math.floor(current.challenges / objectiveCount),
         pilots: Math.floor(current.pilots / objectiveCount),
+        programs: Math.floor(current.programs / objectiveCount),
         campaigns: Math.floor(current.campaigns / objectiveCount),
-        events: Math.floor(current.events / objectiveCount)
+        events: Math.floor(current.events / objectiveCount),
+        policies: Math.floor(current.policies / objectiveCount),
+        rd_calls: Math.floor(current.rd_calls / objectiveCount),
+        partnerships: Math.floor(current.partnerships / objectiveCount),
+        living_labs: Math.floor(current.living_labs / objectiveCount)
       };
       
       const perObjGaps = {
         challenges: Math.max(0, perObjTarget.challenges - perObjCurrent.challenges),
         pilots: Math.max(0, perObjTarget.pilots - perObjCurrent.pilots),
+        programs: Math.max(0, perObjTarget.programs - perObjCurrent.programs),
         campaigns: Math.max(0, perObjTarget.campaigns - perObjCurrent.campaigns),
-        events: Math.max(0, perObjTarget.events - perObjCurrent.events)
+        events: Math.max(0, perObjTarget.events - perObjCurrent.events),
+        policies: Math.max(0, perObjTarget.policies - perObjCurrent.policies),
+        rd_calls: Math.max(0, perObjTarget.rd_calls - perObjCurrent.rd_calls),
+        partnerships: Math.max(0, perObjTarget.partnerships - perObjCurrent.partnerships),
+        living_labs: Math.max(0, perObjTarget.living_labs - perObjCurrent.living_labs)
       };
 
       const totalTarget = Object.values(perObjTarget).reduce((a, b) => a + b, 0);
@@ -134,7 +220,7 @@ serve(async (req) => {
 
       return {
         id: objId,
-        title: obj.title_en || obj.title || `Objective ${index + 1}`,
+        title: obj.title_en || obj.title || obj.name_en || `Objective ${index + 1}`,
         weight: obj.weight || 1,
         current: perObjCurrent,
         target: perObjTarget,
@@ -153,10 +239,26 @@ serve(async (req) => {
     const totalGenerationNeeded = {
       challenges: gaps.challenges,
       pilots: gaps.pilots,
+      programs: gaps.programs,
       campaigns: gaps.campaigns,
       events: gaps.events,
-      total: gaps.challenges + gaps.pilots + gaps.campaigns + gaps.events
+      policies: gaps.policies,
+      rd_calls: gaps.rd_calls,
+      partnerships: gaps.partnerships,
+      living_labs: gaps.living_labs,
+      total: Object.values(gaps).reduce((a, b) => a + b, 0)
     };
+
+    // Calculate coverage percentage for each entity type
+    const entityCoverage: Record<string, { current: number; target: number; coverage_pct: number }> = {};
+    for (const [key, targetValue] of Object.entries(targets)) {
+      const currentValue = current[key as keyof typeof current] || 0;
+      entityCoverage[key] = {
+        current: currentValue,
+        target: targetValue,
+        coverage_pct: targetValue > 0 ? Math.round((currentValue / targetValue) * 100) : 100
+      };
+    }
 
     const result = {
       plan_id: strategic_plan_id,
@@ -169,13 +271,8 @@ serve(async (req) => {
       total_objectives: objectiveCount,
       fully_covered_objectives: fullyCoveredCount,
       
-      // Entity-level coverage
-      entity_coverage: {
-        challenges: { current: current.challenges, target: targets.challenges, coverage_pct: targets.challenges > 0 ? Math.round((current.challenges / targets.challenges) * 100) : 100 },
-        pilots: { current: current.pilots, target: targets.pilots, coverage_pct: targets.pilots > 0 ? Math.round((current.pilots / targets.pilots) * 100) : 100 },
-        campaigns: { current: current.campaigns, target: targets.campaigns, coverage_pct: targets.campaigns > 0 ? Math.round((current.campaigns / targets.campaigns) * 100) : 100 },
-        events: { current: current.events, target: targets.events, coverage_pct: targets.events > 0 ? Math.round((current.events / targets.events) * 100) : 100 }
-      },
+      // Entity-level coverage - ALL 9 TYPES
+      entity_coverage: entityCoverage,
       
       // Per-objective breakdown
       objectives: objectiveCoverage,
@@ -199,7 +296,8 @@ serve(async (req) => {
     console.log('Gap analysis completed:', {
       plan_id: strategic_plan_id,
       overall_coverage: overallCoveragePct,
-      total_needed: totalGenerationNeeded.total
+      total_needed: totalGenerationNeeded.total,
+      entity_counts: current
     });
 
     return new Response(JSON.stringify(result), {
