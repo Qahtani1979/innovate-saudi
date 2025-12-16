@@ -3139,8 +3139,16 @@ Return alignments as an array under the "alignments" key with proper objective_i
             id: Date.now().toString() + prefix + i,
             name_en: r.name_en || r.name || '',
             name_ar: r.name_ar || '',
+            quantity: r.quantity || '1',
+            cost: r.cost || '',
+            category: r.category || '',
+            acquisition_phase: r.acquisition_phase || 'short_term',
+            priority: r.priority || 'medium',
+            justification_en: r.justification_en || r.notes_en || r.notes || '',
+            justification_ar: r.justification_ar || r.notes_ar || '',
             notes_en: r.notes_en || r.notes || '',
-            notes_ar: r.notes_ar || ''
+            notes_ar: r.notes_ar || '',
+            entity_allocations: Array.isArray(r.entity_allocations) ? r.entity_allocations : []
           });
           updates.resource_plan = {
             hr_requirements: (data.hr_requirements || []).map((r, i) => mapResource(r, i, 'hr')),
