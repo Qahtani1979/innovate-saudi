@@ -6,14 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Loader2, X } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
-import { 
-  STRATEGIC_THEMES, VISION_2030_PROGRAMS, 
-  REGIONS, EMERGING_TECHNOLOGIES 
-} from '../StrategyWizardSteps';
 
 export default function Step1Context({ 
   data, 
@@ -22,7 +17,13 @@ export default function Step1Context({
   isGenerating 
 }) {
   const { language, t, isRTL } = useLanguage();
-  const { sectors } = useTaxonomy();
+  const { 
+    sectors, 
+    regions, 
+    strategicThemes, 
+    technologies, 
+    visionPrograms 
+  } = useTaxonomy();
 
   const toggleItem = (field, code) => {
     const current = data[field] || [];
@@ -229,7 +230,7 @@ export default function Step1Context({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {STRATEGIC_THEMES.map(theme => (
+            {strategicThemes.map(theme => (
               <Badge 
                 key={theme.code}
                 variant={data.strategic_themes?.includes(theme.code) ? 'default' : 'outline'}
@@ -251,7 +252,7 @@ export default function Step1Context({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {EMERGING_TECHNOLOGIES.map(tech => (
+            {technologies.map(tech => (
               <Badge 
                 key={tech.code}
                 variant={data.focus_technologies?.includes(tech.code) ? 'default' : 'outline'}
@@ -272,7 +273,7 @@ export default function Step1Context({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {VISION_2030_PROGRAMS.map(program => (
+            {visionPrograms.map(program => (
               <Badge 
                 key={program.code}
                 variant={data.vision_2030_programs?.includes(program.code) ? 'default' : 'outline'}
@@ -294,7 +295,7 @@ export default function Step1Context({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {REGIONS.map(region => (
+            {regions.filter(r => r.code !== 'NATIONAL').map(region => (
               <Badge 
                 key={region.code}
                 variant={data.target_regions?.includes(region.code) ? 'default' : 'outline'}
