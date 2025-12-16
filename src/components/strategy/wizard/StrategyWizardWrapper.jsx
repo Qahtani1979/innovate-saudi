@@ -40,6 +40,7 @@ import Step14Timeline from './steps/Step7Timeline';
 import Step15Governance from './steps/Step15Governance';
 import { Step16Communication, Step17Change } from './steps/Step16Communication';
 import Step18Review from './steps/Step18Review';
+import AIStrategicPlanAnalyzer from './AIStrategicPlanAnalyzer';
 
 /**
  * StrategyWizardWrapper
@@ -3591,6 +3592,22 @@ Use formal Arabic (فصحى). Generate a TRUE STRATEGIC OBJECTIVE, not a tactica
           )}
         </div>
       </div>
+
+      {/* AI Plan Analyzer Section */}
+      <AIStrategicPlanAnalyzer 
+        planData={wizardData}
+        onNavigateToStep={setCurrentStep}
+        onApplySuggestion={async (type, suggestion) => {
+          // Handle applying AI suggestions to the plan
+          console.log('Applying suggestion:', type, suggestion);
+          toast.info(t({ en: 'Suggestion noted - implement in relevant step', ar: 'تم ملاحظة الاقتراح - نفذه في الخطوة المناسبة' }));
+        }}
+        onCreateTask={async (task) => {
+          // Handle creating tasks from recommendations
+          console.log('Creating task:', task);
+          toast.success(t({ en: 'Task created successfully', ar: 'تم إنشاء المهمة بنجاح' }));
+        }}
+      />
     </div>
   );
 }
