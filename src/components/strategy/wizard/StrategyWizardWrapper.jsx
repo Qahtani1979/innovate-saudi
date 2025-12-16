@@ -2084,15 +2084,36 @@ Generate 6-10 Strategic Objectives for this municipal strategic plan.
 Each objective MUST have ALL fields in BOTH English and Arabic:
 - name_en / name_ar: Clear, action-oriented objective title (5-12 words)
 - description_en / description_ar: Detailed description explaining the objective's scope, expected outcomes, and alignment (3-5 sentences)
-- sector_code: One of the target sectors (${context.sectors.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES | CITIZEN_SERVICES | RURAL_DEVELOPMENT | PUBLIC_SPACES | WATER_RESOURCES | TRANSPORTATION | HERITAGE'})
+- sector_code: EXACTLY ONE sector from (${context.sectors.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES | CITIZEN_SERVICES | RURAL_DEVELOPMENT | PUBLIC_SPACES | WATER_RESOURCES | TRANSPORTATION | HERITAGE'})
 - priority: "high" | "medium" | "low"
+
+---
+
+## CRITICAL: SINGLE-SECTOR FOCUS RULE
+
+**EACH OBJECTIVE MUST BELONG TO EXACTLY ONE SECTOR:**
+- DO NOT create objectives that span multiple sectors (e.g., "Improve housing AND transportation")
+- DO NOT mix sector concerns in the same objective name or description
+- If an initiative naturally spans sectors, create SEPARATE objectives for each sector
+- The objective title, description, and outcomes must ALL relate to the SAME sector_code
+
+**BAD EXAMPLES (AVOID):**
+- ❌ "Integrate smart housing with urban transportation systems" (mixes HOUSING + TRANSPORTATION)
+- ❌ "Develop sustainable infrastructure and environmental protection" (mixes INFRASTRUCTURE + ENVIRONMENT)
+- ❌ "Digital transformation for citizen services and smart cities" (mixes DIGITAL_SERVICES + SMART_CITIES)
+
+**GOOD EXAMPLES (FOLLOW):**
+- ✅ "Achieve 95% digital service adoption on Balady platform" (DIGITAL_SERVICES only)
+- ✅ "Develop 50,000 new housing units under Sakani program" (HOUSING only)
+- ✅ "Deploy IoT sensors across 5 major city command centers" (SMART_CITIES only)
+- ✅ "Reduce municipal carbon footprint by 30%" (ENVIRONMENT only)
 
 ---
 
 ## OBJECTIVE DESIGN PRINCIPLES:
 
 **1. SMART Criteria:**
-- Specific: Clear scope and boundaries
+- Specific: Clear scope and boundaries within ONE sector
 - Measurable: Quantifiable outcomes possible
 - Achievable: Realistic within budget and timeline
 - Relevant: Aligned with Vision 2030 and MoMAH mandate
@@ -2101,6 +2122,7 @@ Each objective MUST have ALL fields in BOTH English and Arabic:
 **2. Alignment Requirements:**
 - Each objective MUST directly support at least one Strategic Pillar
 - Each objective MUST align with at least one Vision 2030 program
+- Each objective MUST focus on EXACTLY ONE sector
 - Objectives MUST collectively address the key challenges identified
 - Objectives MUST leverage the focus technologies where relevant
 
@@ -2108,7 +2130,7 @@ Each objective MUST have ALL fields in BOTH English and Arabic:
 - At least 2-3 objectives should be HIGH priority
 - At least 2 objectives should be MEDIUM priority
 - Maximum 1-2 objectives LOW priority
-- Cover at least 4 different target sectors
+- Cover at least 4 different target sectors (via separate objectives)
 - Balance between operational excellence and transformation goals
 
 ---
@@ -3165,26 +3187,34 @@ ${existingObjectivesSummary || 'No existing objectives yet'}
 ## TASK:
 Generate EXACTLY ONE new strategic objective that is COMPLETELY DIFFERENT from the existing objectives.
 
+## CRITICAL: SINGLE-SECTOR FOCUS RULE
+- The objective MUST focus on EXACTLY ONE sector
+- DO NOT create objectives that mix or span multiple sectors
+- The objective title, description, and outcomes must ALL relate to the SAME sector_code
+- Example BAD: "Improve housing AND transportation" (mixes sectors)
+- Example GOOD: "Develop 50,000 new housing units" (single sector: HOUSING)
+
 DIFFERENTIATION REQUIREMENTS:
 1. Must target a DIFFERENT sector than majority of existing objectives
 2. Must address a DIFFERENT strategic theme or approach
 3. Must not overlap significantly with any existing objective's scope
 4. Should fill a gap in the strategic plan coverage
 5. Should be innovative and forward-thinking
+6. Must focus on EXACTLY ONE sector (no mixing)
 
 Also provide a differentiation_score (0-100) indicating how unique this objective is compared to existing ones:
-- 90-100: Completely unique, addresses untouched sector/theme
+- 90-100: Completely unique, addresses untouched sector/theme, single-sector focus
 - 70-89: Highly unique, minimal overlap with existing objectives
 - 50-69: Moderately unique, some thematic similarity
 - Below 50: Too similar, needs more differentiation
 
 The objective MUST have ALL fields in BOTH English and Arabic:
-- name_en / name_ar: Clear, action-oriented objective title (5-12 words)
-- description_en / description_ar: Detailed description (3-5 sentences)
-- sector_code: One of: ${context.sectors.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES'}
+- name_en / name_ar: Clear, action-oriented objective title (5-12 words) - SINGLE SECTOR ONLY
+- description_en / description_ar: Detailed description (3-5 sentences) - SINGLE SECTOR ONLY
+- sector_code: EXACTLY ONE of: ${context.sectors.join(' | ') || 'URBAN_PLANNING | HOUSING | INFRASTRUCTURE | ENVIRONMENT | SMART_CITIES | DIGITAL_SERVICES'}
 - priority: "high" | "medium" | "low"
 
-Use formal Arabic (فصحى) for Arabic content. Be specific and innovative.`;
+Use formal Arabic (فصحى) for Arabic content. Be specific, innovative, and STRICTLY SINGLE-SECTOR.`;
 
     const singleObjectiveSchema = {
       type: 'object',
