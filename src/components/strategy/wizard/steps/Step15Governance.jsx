@@ -449,7 +449,7 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
                            committee.type === 'technical' ? t({ en: 'Technical', ar: 'فنية' }) :
                            committee.type === 'advisory' ? t({ en: 'Advisory', ar: 'استشارية' }) :
                            committee.type === 'innovation' ? t({ en: 'Innovation', ar: 'ابتكار' }) :
-                           GOVERNANCE_ROLES.find(r => r.code === committee.role)?.[`name_${language}`] || committee.type}
+                           committee.type}
                         </Badge>
                         <Button variant="ghost" size="icon" onClick={() => removeCommittee(idx)}>
                           <X className="w-4 h-4" />

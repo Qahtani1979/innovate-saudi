@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Loader2, Link, ExternalLink } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { useTaxonomy } from '@/contexts/TaxonomyContext';
 
 const NATIONAL_GOALS = [
   { 
