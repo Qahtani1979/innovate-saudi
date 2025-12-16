@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const LOCAL_STORAGE_KEY = 'strategic_plan_draft';
-const AUTO_SAVE_DELAY = 30000; // 30 seconds
+const AUTO_SAVE_DELAY = 15000; // 15 seconds - reduced for better reliability
 
 /**
  * useAutoSaveDraft Hook
@@ -13,21 +13,32 @@ const AUTO_SAVE_DELAY = 30000; // 30 seconds
  * - Local storage for immediate recovery
  * - Database sync for persistence
  * - Version control on edit mode
+ * - Callback to update parent planId after first save
  */
 export function useAutoSaveDraft({
   planId = null,
   mode = 'create', // 'create' | 'edit' | 'review'
-  enabled = true
+  enabled = true,
+  onPlanIdChange = null // Callback to update parent's planId
 }) {
   const [lastSaved, setLastSaved] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
+  const [internalPlanId, setInternalPlanId] = useState(planId);
   const saveTimeoutRef = useRef(null);
   const dataRef = useRef(null);
+  const currentStepRef = useRef(0);
+
+  // Sync internal planId with prop
+  useEffect(() => {
+    if (planId && planId !== internalPlanId) {
+      setInternalPlanId(planId);
+    }
+  }, [planId]);
 
   // Check for existing local draft on mount
   useEffect(() => {
-    if (mode === 'create') {
+    if (mode === 'create' && !planId) {
       const savedDraft = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedDraft) {
         try {
@@ -40,28 +51,41 @@ export function useAutoSaveDraft({
         }
       }
     }
-  }, [mode]);
+  }, [mode, planId]);
 
   // Save to local storage
-  const saveToLocal = useCallback((data) => {
-    if (mode === 'create') {
+  const saveToLocal = useCallback((data, step) => {
+    if (mode === 'create' || mode === 'edit') {
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
           ...data,
-          _savedAt: new Date().toISOString()
+          _savedAt: new Date().toISOString(),
+          _savedStep: step,
+          _planId: internalPlanId
         }));
-        setLastSaved(new Date());
+        console.log('[AutoSave] Saved to local storage, step:', step);
       } catch (e) {
         console.warn('Failed to save to local storage:', e);
       }
     }
-  }, [mode]);
+  }, [mode, internalPlanId]);
 
   // Save to database
   const saveToDatabase = useCallback(async (data, currentStep) => {
-    if (!enabled) return { success: false, error: 'Auto-save disabled' };
+    if (!enabled) {
+      console.log('[AutoSave] Disabled, skipping');
+      return { success: false, error: 'Auto-save disabled' };
+    }
+
+    // Don't save if no meaningful data
+    if (!data.name_en) {
+      console.log('[AutoSave] No name_en, skipping save');
+      return { success: false, error: 'No plan name' };
+    }
 
     setIsSaving(true);
+    console.log('[AutoSave] Saving to database, step:', currentStep, 'planId:', internalPlanId);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -109,36 +133,28 @@ export function useAutoSaveDraft({
         initial_constraints: data.initial_constraints || '',
         last_saved_step: currentStep,
         draft_data: data,
-        status: 'draft',
+        status: data.status || 'draft',
         owner_email: user?.email,
         updated_at: new Date().toISOString()
       };
 
       let result;
-      if (mode === 'edit' && planId) {
-        // Update existing plan
+      
+      if (internalPlanId) {
+        // Update existing plan (whether edit or create mode with existing draft)
+        console.log('[AutoSave] Updating existing plan:', internalPlanId);
         const { data: updated, error } = await supabase
           .from('strategic_plans')
           .update(saveData)
-          .eq('id', planId)
+          .eq('id', internalPlanId)
           .select()
           .single();
         
         if (error) throw error;
         result = updated;
-      } else if (mode === 'create' && planId) {
-        // Update draft plan
-        const { data: updated, error } = await supabase
-          .from('strategic_plans')
-          .update(saveData)
-          .eq('id', planId)
-          .select()
-          .single();
-        
-        if (error) throw error;
-        result = updated;
-      } else if (mode === 'create' && data.name_en) {
-        // Create new draft
+      } else if (mode === 'create') {
+        // Create new draft - only if we don't have a planId yet
+        console.log('[AutoSave] Creating new plan');
         const { data: created, error } = await supabase
           .from('strategic_plans')
           .insert(saveData)
@@ -147,21 +163,39 @@ export function useAutoSaveDraft({
         
         if (error) throw error;
         result = created;
+        
+        // CRITICAL: Update internal planId and notify parent
+        if (result?.id) {
+          console.log('[AutoSave] New plan created with ID:', result.id);
+          setInternalPlanId(result.id);
+          if (onPlanIdChange) {
+            onPlanIdChange(result.id);
+          }
+          // Also update local storage with the new planId
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
+            ...data,
+            _savedAt: new Date().toISOString(),
+            _savedStep: currentStep,
+            _planId: result.id
+          }));
+        }
       }
 
       setLastSaved(new Date());
       setIsSaving(false);
+      console.log('[AutoSave] Save successful, planId:', result?.id);
       return { success: true, planId: result?.id };
     } catch (error) {
-      console.error('Auto-save error:', error);
+      console.error('[AutoSave] Error:', error);
       setIsSaving(false);
       return { success: false, error: error.message };
     }
-  }, [planId, mode, enabled]);
+  }, [internalPlanId, mode, enabled, onPlanIdChange]);
 
   // Schedule auto-save
   const scheduleAutoSave = useCallback((data, currentStep) => {
     dataRef.current = data;
+    currentStepRef.current = currentStep;
     
     // Clear existing timeout
     if (saveTimeoutRef.current) {
@@ -169,22 +203,25 @@ export function useAutoSaveDraft({
     }
 
     // Save to local immediately
-    saveToLocal(data);
+    saveToLocal(data, currentStep);
 
     // Schedule database save
-    saveTimeoutRef.current = setTimeout(() => {
+    saveTimeoutRef.current = setTimeout(async () => {
       if (dataRef.current) {
-        saveToDatabase(dataRef.current, currentStep);
+        const result = await saveToDatabase(dataRef.current, currentStepRef.current);
+        if (result.success) {
+          console.log('[AutoSave] Scheduled save completed');
+        }
       }
     }, AUTO_SAVE_DELAY);
   }, [saveToLocal, saveToDatabase]);
 
-  // Manual save
+  // Manual save - returns promise
   const saveNow = useCallback(async (data, currentStep) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-    saveToLocal(data);
+    saveToLocal(data, currentStep);
     return await saveToDatabase(data, currentStep);
   }, [saveToLocal, saveToDatabase]);
 
@@ -193,13 +230,21 @@ export function useAutoSaveDraft({
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // If there's a planId in the draft, use it
+        if (parsed._planId && !internalPlanId) {
+          setInternalPlanId(parsed._planId);
+          if (onPlanIdChange) {
+            onPlanIdChange(parsed._planId);
+          }
+        }
+        return parsed;
       }
     } catch (e) {
       console.warn('Failed to load draft:', e);
     }
     return null;
-  }, []);
+  }, [internalPlanId, onPlanIdChange]);
 
   // Clear local draft
   const clearLocalDraft = useCallback(() => {
@@ -217,6 +262,7 @@ export function useAutoSaveDraft({
         .single();
       
       if (error) throw error;
+      setInternalPlanId(id);
       return data;
     } catch (error) {
       console.error('Failed to load plan:', error);
@@ -241,7 +287,8 @@ export function useAutoSaveDraft({
     loadPlan,
     hasDraft,
     lastSaved,
-    isSaving
+    isSaving,
+    currentPlanId: internalPlanId
   };
 }
 

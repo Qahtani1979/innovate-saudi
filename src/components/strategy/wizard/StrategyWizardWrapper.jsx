@@ -143,7 +143,7 @@ export default function StrategyWizardWrapper() {
     fallbackData: null
   });
 
-  // Auto-save hook
+  // Auto-save hook with planId sync
   const {
     scheduleAutoSave,
     saveNow,
@@ -152,8 +152,17 @@ export default function StrategyWizardWrapper() {
     loadPlan,
     hasDraft,
     lastSaved,
-    isSaving
-  } = useAutoSaveDraft({ planId, mode, enabled: mode !== 'review' });
+    isSaving,
+    currentPlanId
+  } = useAutoSaveDraft({ 
+    planId, 
+    mode, 
+    enabled: mode !== 'review',
+    onPlanIdChange: (newId) => {
+      console.log('[Wizard] Plan ID updated:', newId);
+      setPlanId(newId);
+    }
+  });
 
   // Initialize from URL params or detect draft
   useEffect(() => {
@@ -3059,7 +3068,7 @@ Return alignments as an array under the "alignments" key with proper objective_i
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < 18) {
       // Validate current step before proceeding
       const validation = validateStep(currentStep);
@@ -3072,10 +3081,16 @@ Return alignments as an array under the "alignments" key with proper objective_i
       }
       
       // Save current step data immediately before navigating
-      if (mode !== 'review' && planId) {
-        saveNow(wizardData, currentStep).catch(err => {
+      // This will create a new plan if planId doesn't exist yet
+      if (mode !== 'review') {
+        try {
+          const result = await saveNow(wizardData, currentStep);
+          if (result.success) {
+            console.log('[Navigation] Save successful, planId:', result.planId);
+          }
+        } catch (err) {
           console.warn('Failed to save on navigation:', err);
-        });
+        }
       }
       
       if (!completedSteps.includes(currentStep)) {
@@ -3085,13 +3100,15 @@ Return alignments as an array under the "alignments" key with proper objective_i
     }
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     if (currentStep > 1) {
       // Save current step data immediately before navigating
-      if (mode !== 'review' && planId) {
-        saveNow(wizardData, currentStep).catch(err => {
+      if (mode !== 'review') {
+        try {
+          await saveNow(wizardData, currentStep);
+        } catch (err) {
           console.warn('Failed to save on navigation:', err);
-        });
+        }
       }
       setCurrentStep(currentStep - 1);
     }
@@ -3262,12 +3279,14 @@ Return alignments as an array under the "alignments" key with proper objective_i
       <WizardStepIndicator 
         steps={WIZARD_STEPS} 
         currentStep={currentStep} 
-        onStepClick={(step) => {
+        onStepClick={async (step) => {
           // Save current data before jumping to another step
-          if (mode !== 'review' && planId && step !== currentStep) {
-            saveNow(wizardData, currentStep).catch(err => {
+          if (mode !== 'review' && step !== currentStep) {
+            try {
+              await saveNow(wizardData, currentStep);
+            } catch (err) {
               console.warn('Failed to save on step click:', err);
-            });
+            }
           }
           setCurrentStep(step);
         }} 
@@ -3300,7 +3319,14 @@ Return alignments as an array under the "alignments" key with proper objective_i
           {mode !== 'review' && (
             <Button 
               variant="outline" 
-              onClick={() => saveNow(wizardData, currentStep)}
+              onClick={async () => {
+                const result = await saveNow(wizardData, currentStep);
+                if (result.success) {
+                  toast.success(t({ en: 'Draft saved successfully', ar: 'تم حفظ المسودة بنجاح' }));
+                } else {
+                  toast.error(t({ en: 'Failed to save draft', ar: 'فشل في حفظ المسودة' }));
+                }
+              }}
               disabled={isSaving}
             >
               {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}

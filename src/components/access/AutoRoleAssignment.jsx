@@ -19,7 +19,7 @@ export const useAutoRoleAssignment = () => {
     const jobTitle = userData.job_title?.toLowerCase() || '';
 
     // Email domain analysis
-    if (email.includes('@moi.gov.sa') || email.includes('@momra.gov.sa')) {
+    if (email.includes('@moi.gov.sa') || email.includes('@momah.gov.sa')) {
       suggestions.push('Ministry Innovation Lead');
     }
     if (email.includes('.gov.sa')) {

@@ -70,7 +70,7 @@ const AUTO_APPROVED_ROLES = ['citizen', 'viewer'];
 const REQUIRES_APPROVAL_ROLES = ['municipality_staff', 'provider', 'researcher', 'expert', 'deputyship'];
 
 // MoMAH (Ministry of Municipalities and Housing) domain for auto-detecting deputyship users
-const MOMAH_DOMAINS = ['momah.gov.sa', 'momra.gov.sa', 'housing.gov.sa'];
+const MOMAH_DOMAINS = ['momah.gov.sa', 'housing.gov.sa'];
 
 // Helper to detect if email belongs to MoMAH
 const isMoMAHEmail = (email) => {
