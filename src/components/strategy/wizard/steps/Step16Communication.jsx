@@ -399,6 +399,21 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
                       </Select>
                     </div>
                   </div>
+
+                  {/* Entity Allocation - Link message to entity launches */}
+                  <div className="space-y-1 pt-2 border-t">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Link2 className="h-3 w-3" />
+                      {t({ en: 'Link to Entity Launches', ar: 'ربط بإطلاق الكيانات' })}
+                    </Label>
+                    <EntityAllocationSelector
+                      strategicPlanId={strategicPlanId}
+                      value={msg.entity_launches || []}
+                      onChange={(allocations) => updateKeyMessage(idx, 'entity_launches', allocations)}
+                      multiple={true}
+                      placeholder={t({ en: 'Select entities this message announces...', ar: 'اختر الكيانات التي تعلن عنها هذه الرسالة...' })}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             ))
@@ -707,6 +722,21 @@ export function Step17Change({ data, onChange, onGenerateAI, isGenerating, strat
                       placeholder="مثال: الربع الثاني 2026"
                     />
                   </div>
+                </div>
+
+                {/* Entity Allocation - Link training to entities */}
+                <div className="space-y-1 pt-2 border-t">
+                  <Label className="text-xs flex items-center gap-1">
+                    <Link2 className="h-3 w-3" />
+                    {t({ en: 'Link to Entities', ar: 'ربط بالكيانات' })}
+                  </Label>
+                  <EntityAllocationSelector
+                    strategicPlanId={strategicPlanId}
+                    value={item.entity_training || []}
+                    onChange={(allocations) => updateTraining(item.id, { entity_training: allocations })}
+                    multiple={true}
+                    placeholder={t({ en: 'Select entities this training supports...', ar: 'اختر الكيانات التي يدعمها هذا التدريب...' })}
+                  />
                 </div>
               </div>
             ))

@@ -243,6 +243,21 @@ export default function Step7Timeline({
                       </div>
                     </div>
                   )}
+
+                  {/* Entity Allocation - Link phase to generated entities */}
+                  <div className="space-y-1 pt-2 border-t">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Link2 className="h-3 w-3" />
+                      {t({ en: 'Link to Entities', ar: 'ربط بالكيانات' })}
+                    </Label>
+                    <EntityAllocationSelector
+                      strategicPlanId={strategicPlanId}
+                      value={phase.entity_phases || []}
+                      onChange={(allocations) => updatePhase(index, { entity_phases: allocations })}
+                      multiple={true}
+                      placeholder={t({ en: 'Select entities for this phase...', ar: 'اختر الكيانات لهذه المرحلة...' })}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -339,6 +354,21 @@ export default function Step7Timeline({
                         rows={2}
                       />
                     </div>
+                  </div>
+
+                  {/* Entity Allocation - Link milestone to generated entities */}
+                  <div className="space-y-1 pt-2 border-t">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Link2 className="h-3 w-3" />
+                      {t({ en: 'Link to Entities', ar: 'ربط بالكيانات' })}
+                    </Label>
+                    <EntityAllocationSelector
+                      strategicPlanId={strategicPlanId}
+                      value={milestone.entity_milestones || []}
+                      onChange={(allocations) => updateMilestone(index, { entity_milestones: allocations })}
+                      multiple={true}
+                      placeholder={t({ en: 'Select entities for this milestone...', ar: 'اختر الكيانات لهذا المعلم...' })}
+                    />
                   </div>
                 </div>
               ))}
