@@ -16,15 +16,17 @@ serve(async (req) => {
       strategic_plan_id,
       municipality_id,
       research_focus,
-      target_population
+      target_population,
+      prefilled_spec,
+      save_to_db = false
     } = await req.json();
     
+    console.log("Starting strategy-lab-research-generator:", { strategic_plan_id, save_to_db });
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    console.log(`Generating living lab concepts for plan: ${strategic_plan_id}`);
 
     // Fetch strategic plan
     let plan = null;
@@ -47,12 +49,13 @@ serve(async (req) => {
     }> = [];
 
     if (LOVABLE_API_KEY) {
-      const prompt = `Generate 2-3 living lab concepts for municipal innovation.
+      const prompt = `Generate 1-2 living lab concepts for municipal innovation.
 
-STRATEGIC PLAN: ${plan?.name_en || 'Municipal Innovation Strategy'}
+STRATEGIC PLAN: ${plan?.name_en || prefilled_spec?.title_en || 'Municipal Innovation Strategy'}
 VISION: ${plan?.vision_en || plan?.description_en || ''}
 RESEARCH FOCUS: ${research_focus || 'General innovation'}
 TARGET POPULATION: ${target_population || 'General citizens'}
+${prefilled_spec ? `PREFILLED SPEC: ${JSON.stringify(prefilled_spec)}` : ''}
 
 For each living lab concept, provide:
 1. name_en & name_ar: Living lab name (bilingual)
@@ -87,7 +90,7 @@ Ensure living labs:
         if (content) {
           try {
             const parsed = JSON.parse(content);
-            living_labs = parsed.living_labs || [];
+            living_labs = parsed.living_labs || [parsed.living_lab] || [];
           } catch (e) {
             console.error("Parse error:", e);
           }
@@ -95,39 +98,55 @@ Ensure living labs:
       }
     }
 
-    // Fallback living labs
+    // Fallback living lab
     if (living_labs.length === 0) {
-      living_labs = [
-        {
-          name_en: "Smart Neighborhood Lab",
-          name_ar: "مختبر الحي الذكي",
-          description_en: "A citizen-centric living lab testing smart city solutions in a real neighborhood setting, enabling co-creation with residents.",
-          description_ar: "مختبر حي يركز على المواطن لاختبار حلول المدن الذكية في بيئة حي حقيقية، مما يتيح الإبداع المشترك مع السكان.",
-          research_focus: ["Smart mobility", "Energy efficiency", "Waste management", "Community engagement"],
-          target_outcomes: ["Validated smart solutions", "Citizen feedback integration", "Scalable models", "Reduced environmental impact"]
-        },
-        {
-          name_en: "Digital Services Innovation Lab",
-          name_ar: "مختبر ابتكار الخدمات الرقمية",
-          description_en: "A testing ground for digital municipal services with direct citizen participation in design and evaluation.",
-          description_ar: "أرض اختبار للخدمات البلدية الرقمية مع مشاركة مباشرة للمواطنين في التصميم والتقييم.",
-          research_focus: ["User experience", "Service accessibility", "Process automation", "Digital inclusion"],
-          target_outcomes: ["Improved service satisfaction", "Reduced processing times", "Higher adoption rates", "Inclusive design"]
-        },
-        {
-          name_en: "Sustainable Urban Lab",
-          name_ar: "مختبر الاستدامة الحضرية",
-          description_en: "An innovation space focused on environmental sustainability solutions with community participation.",
-          description_ar: "مساحة ابتكار تركز على حلول الاستدامة البيئية مع مشاركة المجتمع.",
-          research_focus: ["Green infrastructure", "Circular economy", "Urban farming", "Water conservation"],
-          target_outcomes: ["Carbon footprint reduction", "Community ownership", "Replicable practices", "Environmental awareness"]
+      living_labs = [{
+        name_en: prefilled_spec?.title_en || "Smart Neighborhood Lab",
+        name_ar: prefilled_spec?.title_ar || "مختبر الحي الذكي",
+        description_en: prefilled_spec?.description_en || "A citizen-centric living lab testing smart city solutions in a real neighborhood setting, enabling co-creation with residents.",
+        description_ar: "مختبر حي يركز على المواطن لاختبار حلول المدن الذكية في بيئة حي حقيقية، مما يتيح الإبداع المشترك مع السكان.",
+        research_focus: ["Smart mobility", "Energy efficiency", "Waste management", "Community engagement"],
+        target_outcomes: ["Validated smart solutions", "Citizen feedback integration", "Scalable models", "Reduced environmental impact"]
+      }];
+    }
+
+    // Save to database if requested
+    const savedLabs = [];
+    if (save_to_db) {
+      for (const lab of living_labs) {
+        const labData = {
+          name_en: lab.name_en,
+          name_ar: lab.name_ar,
+          description_en: lab.description_en,
+          description_ar: lab.description_ar,
+          research_focus: lab.research_focus,
+          target_outcomes: lab.target_outcomes,
+          strategic_plan_ids: strategic_plan_id ? [strategic_plan_id] : [],
+          municipality_id: municipality_id || null,
+          status: 'proposed',
+          is_strategy_derived: true
+        };
+
+        const { data: saved, error } = await supabase
+          .from('living_labs')
+          .insert(labData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Failed to save living lab:", error);
+        } else {
+          savedLabs.push(saved);
+          console.log("Living lab saved with ID:", saved.id);
         }
-      ];
+      }
     }
 
     return new Response(JSON.stringify({ 
       success: true,
-      living_labs,
+      living_labs: save_to_db ? savedLabs : living_labs,
+      id: savedLabs[0]?.id || null,
+      saved: savedLabs.length > 0,
       strategic_plan_id
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

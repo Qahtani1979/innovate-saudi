@@ -79,7 +79,7 @@ serve(async (req) => {
     const generatorMap: Record<string, string> = {
       challenge: 'strategy-challenge-generator',
       pilot: 'strategy-pilot-generator',
-      program: 'strategy-program-theme-generator', // Programs use theme generator
+      program: 'strategy-program-generator', // Programs use dedicated program generator
       campaign: 'strategy-campaign-generator',
       event: 'strategy-event-planner',
       policy: 'strategy-policy-generator',
@@ -128,6 +128,7 @@ serve(async (req) => {
             queue_item_id: item.id,
             prefilled_spec: item.prefilled_spec,
             auto_mode: true,
+            save_to_db: true, // Enable DB saving to get entity IDs back
             // Pass objective context for better generation
             objective_id: item.objective_id,
             entity_type: item.entity_type

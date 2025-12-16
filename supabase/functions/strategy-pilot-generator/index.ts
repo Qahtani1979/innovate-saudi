@@ -15,18 +15,33 @@ serve(async (req) => {
   }
 
   try {
-    const { challenge_id, solution_id, pilot_duration_months, target_participants, additional_context } = await req.json();
+    const { 
+      challenge_id, 
+      solution_id, 
+      pilot_duration_months, 
+      target_participants, 
+      additional_context,
+      strategic_plan_id,
+      prefilled_spec,
+      save_to_db = false
+    } = await req.json();
+
+    console.log("Starting strategy-pilot-generator:", { strategic_plan_id, challenge_id, save_to_db });
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch challenge
-    const { data: challenge } = await supabase
-      .from("challenges")
-      .select("*")
-      .eq("id", challenge_id)
-      .single();
+    let challenge = null;
+    if (challenge_id) {
+      const { data } = await supabase
+        .from("challenges")
+        .select("*")
+        .eq("id", challenge_id)
+        .single();
+      challenge = data;
+    }
 
     // Fetch solution if provided
     let solution = null;
@@ -41,10 +56,10 @@ serve(async (req) => {
 
     const prompt = `You are an expert in pilot project design for Saudi municipal innovation initiatives.
 
-Design 2-3 pilot project variants for the following context:
+Design 1-2 pilot project variants for the following context:
 
-CHALLENGE: ${challenge?.title_en || 'Municipal Innovation Challenge'}
-PROBLEM: ${challenge?.problem_statement_en || challenge?.description_en || ''}
+CHALLENGE: ${challenge?.title_en || prefilled_spec?.title_en || 'Municipal Innovation Challenge'}
+PROBLEM: ${challenge?.problem_statement_en || challenge?.description_en || prefilled_spec?.description_en || ''}
 DESIRED OUTCOME: ${challenge?.desired_outcome_en || ''}
 
 ${solution ? `PROPOSED SOLUTION: ${solution.name_en}\n${solution.description_en || ''}` : 'No specific solution selected - propose solution approaches.'}
@@ -53,6 +68,7 @@ PILOT PARAMETERS:
 - Duration: ${pilot_duration_months || 3} months
 - Target Participants: ${target_participants || 100}
 ${additional_context ? `- Additional Context: ${additional_context}` : ''}
+${prefilled_spec ? `- Prefilled Spec: ${JSON.stringify(prefilled_spec)}` : ''}
 
 For each pilot design, provide:
 1. name_en & name_ar: Pilot project name
@@ -92,7 +108,7 @@ Ensure pilots are:
         if (content) {
           try {
             const parsed = JSON.parse(content);
-            pilots = parsed.pilots || [];
+            pilots = parsed.pilots || [parsed.pilot] || [];
           } catch (e) {
             console.error("Parse error:", e);
           }
@@ -100,50 +116,73 @@ Ensure pilots are:
       }
     }
 
-    // Fallback pilots
+    // Fallback pilot
     if (pilots.length === 0) {
-      pilots = [
-        {
-          name_en: "Smart Solution Pilot - Phase 1",
-          name_ar: "تجربة الحل الذكي - المرحلة 1",
-          description_en: `A focused pilot to test solutions addressing "${challenge?.title_en || 'the identified challenge'}" with ${target_participants} participants over ${pilot_duration_months} months.`,
-          description_ar: `تجربة مركزة لاختبار الحلول التي تعالج "${challenge?.title_ar || 'التحدي المحدد'}" مع ${target_participants} مشارك على مدى ${pilot_duration_months} أشهر.`,
-          success_criteria: "Achieve 70% user satisfaction and 50% improvement in target metrics",
-          kpis: [
-            { name: "User Satisfaction Score", target: 70, unit: "%" },
-            { name: "Adoption Rate", target: 60, unit: "%" },
-            { name: "Problem Resolution Rate", target: 50, unit: "%" },
-            { name: "Time to Resolution", target: 30, unit: "% reduction" }
-          ],
-          risks: [
-            { risk: "Low user adoption", mitigation: "Intensive onboarding and support program" },
-            { risk: "Technical integration issues", mitigation: "Thorough testing in sandbox environment" },
-            { risk: "Scope creep", mitigation: "Strict change control process" }
-          ],
-          phases: ["Setup & Planning", "Implementation", "Testing", "Evaluation"]
-        },
-        {
-          name_en: "Community-Driven Innovation Pilot",
-          name_ar: "تجربة الابتكار المجتمعي",
-          description_en: `An alternative approach focusing on community engagement and co-creation to address ${challenge?.title_en || 'the challenge'}.`,
-          description_ar: `نهج بديل يركز على المشاركة المجتمعية والإبداع المشترك لمعالجة ${challenge?.title_ar || 'التحدي'}.`,
-          success_criteria: "Engage 80% of target community and generate 3+ viable solutions",
-          kpis: [
-            { name: "Community Engagement", target: 80, unit: "%" },
-            { name: "Ideas Generated", target: 20, unit: "ideas" },
-            { name: "Solutions Validated", target: 3, unit: "solutions" },
-            { name: "Stakeholder Satisfaction", target: 75, unit: "%" }
-          ],
-          risks: [
-            { risk: "Low community participation", mitigation: "Multi-channel engagement strategy" },
-            { risk: "Quality of input varies", mitigation: "Facilitated workshops with guidance" }
-          ],
-          phases: ["Community Mapping", "Engagement", "Co-creation", "Validation", "Reporting"]
-        }
-      ];
+      pilots = [{
+        name_en: prefilled_spec?.title_en || "Smart Solution Pilot - Phase 1",
+        name_ar: prefilled_spec?.title_ar || "تجربة الحل الذكي - المرحلة 1",
+        description_en: prefilled_spec?.description_en || `A focused pilot to test solutions addressing "${challenge?.title_en || 'the identified challenge'}" with ${target_participants} participants over ${pilot_duration_months} months.`,
+        description_ar: `تجربة مركزة لاختبار الحلول التي تعالج "${challenge?.title_ar || 'التحدي المحدد'}" مع ${target_participants} مشارك على مدى ${pilot_duration_months} أشهر.`,
+        success_criteria: "Achieve 70% user satisfaction and 50% improvement in target metrics",
+        kpis: [
+          { name: "User Satisfaction Score", target: 70, unit: "%" },
+          { name: "Adoption Rate", target: 60, unit: "%" },
+          { name: "Problem Resolution Rate", target: 50, unit: "%" },
+          { name: "Time to Resolution", target: 30, unit: "% reduction" }
+        ],
+        risks: [
+          { risk: "Low user adoption", mitigation: "Intensive onboarding and support program" },
+          { risk: "Technical integration issues", mitigation: "Thorough testing in sandbox environment" },
+          { risk: "Scope creep", mitigation: "Strict change control process" }
+        ],
+        phases: ["Setup & Planning", "Implementation", "Testing", "Evaluation"]
+      }];
     }
 
-    return new Response(JSON.stringify({ success: true, pilots }), {
+    // Save to database if requested
+    const savedPilots = [];
+    if (save_to_db) {
+      for (const pilot of pilots) {
+        const pilotData = {
+          name_en: pilot.name_en,
+          name_ar: pilot.name_ar,
+          description_en: pilot.description_en,
+          description_ar: pilot.description_ar,
+          strategic_plan_ids: strategic_plan_id ? [strategic_plan_id] : [],
+          challenge_id: challenge_id || null,
+          solution_id: solution_id || null,
+          duration_months: pilot_duration_months || 3,
+          target_participants: target_participants || 100,
+          success_criteria: pilot.success_criteria,
+          kpis: pilot.kpis,
+          risks: pilot.risks,
+          phases: pilot.phases,
+          status: 'draft',
+          is_strategy_derived: true,
+          strategy_derivation_date: new Date().toISOString()
+        };
+
+        const { data: saved, error } = await supabase
+          .from('pilots')
+          .insert(pilotData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Failed to save pilot:", error);
+        } else {
+          savedPilots.push(saved);
+          console.log("Pilot saved with ID:", saved.id);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      pilots: save_to_db ? savedPilots : pilots,
+      id: savedPilots[0]?.id || null,
+      saved: savedPilots.length > 0
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

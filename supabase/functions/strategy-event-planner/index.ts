@@ -15,18 +15,30 @@ serve(async (req) => {
   }
 
   try {
-    const { strategic_plan_id, event_type, target_audience } = await req.json();
+    const { 
+      strategic_plan_id, 
+      event_type, 
+      target_audience,
+      prefilled_spec,
+      save_to_db = false
+    } = await req.json();
+
+    console.log("Starting strategy-event-planner:", { strategic_plan_id, event_type, save_to_db });
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch strategic plan
-    const { data: plan } = await supabase
-      .from("strategic_plans")
-      .select("*")
-      .eq("id", strategic_plan_id)
-      .single();
+    let plan = null;
+    if (strategic_plan_id) {
+      const { data } = await supabase
+        .from("strategic_plans")
+        .select("*")
+        .eq("id", strategic_plan_id)
+        .single();
+      plan = data;
+    }
 
     const eventTypeLabels: Record<string, string> = {
       conference: 'Innovation Conference',
@@ -39,13 +51,14 @@ serve(async (req) => {
 
     const prompt = `You are an expert in strategic event planning for Saudi municipal innovation initiatives.
 
-Design 2-3 event concepts for the following context:
+Design 1-2 event concepts for the following context:
 
-STRATEGIC PLAN: ${plan?.name_en || 'Municipal Innovation Strategy'}
+STRATEGIC PLAN: ${plan?.name_en || prefilled_spec?.title_en || 'Municipal Innovation Strategy'}
 OBJECTIVES: ${JSON.stringify(plan?.objectives || [])}
 
-EVENT TYPE: ${eventTypeLabels[event_type] || event_type}
+EVENT TYPE: ${eventTypeLabels[event_type] || event_type || 'conference'}
 TARGET AUDIENCE: ${target_audience?.join(', ') || 'General stakeholders'}
+${prefilled_spec ? `PREFILLED SPEC: ${JSON.stringify(prefilled_spec)}` : ''}
 
 For each event concept, provide:
 1. title_en & title_ar: Event name
@@ -86,7 +99,7 @@ Ensure events:
         if (content) {
           try {
             const parsed = JSON.parse(content);
-            events = parsed.events || [];
+            events = parsed.events || [parsed.event] || [];
           } catch (e) {
             console.error("Parse error:", e);
           }
@@ -94,45 +107,66 @@ Ensure events:
       }
     }
 
-    // Fallback events
+    // Fallback event
     if (events.length === 0) {
-      events = [
-        {
-          title_en: `Municipal Innovation ${eventTypeLabels[event_type] || 'Forum'}`,
-          title_ar: `${eventTypeLabels[event_type] === 'Innovation Conference' ? 'مؤتمر' : 'منتدى'} الابتكار البلدي`,
-          description_en: `A strategic ${event_type} bringing together key stakeholders to drive municipal innovation aligned with ${plan?.name_en || 'strategic objectives'}.`,
-          description_ar: `${event_type === 'workshop' ? 'ورشة عمل' : 'فعالية'} استراتيجية تجمع أصحاب المصلحة الرئيسيين لدفع الابتكار البلدي.`,
-          estimated_attendees: event_type === 'conference' ? 300 : event_type === 'workshop' ? 50 : 150,
-          agenda: [
-            'Opening and Vision Address',
-            'Strategic Innovation Panel',
-            'Interactive Session: Challenges & Solutions',
-            'Networking and Partnership Building',
-            'Closing and Next Steps'
-          ],
-          key_outcomes: ['Strategic alignment validation', 'Stakeholder engagement', 'Partnership opportunities identified'],
-          suggested_location: event_type === 'webinar' ? 'Virtual Platform' : 'Convention Center or Municipal Hall'
-        },
-        {
-          title_en: `Future Cities ${eventTypeLabels[event_type] || 'Summit'}`,
-          title_ar: `قمة مدن المستقبل`,
-          description_en: `Exploring innovative solutions for smart city development and citizen-centric services.`,
-          description_ar: `استكشاف الحلول المبتكرة لتطوير المدن الذكية والخدمات المرتكزة على المواطن.`,
-          estimated_attendees: event_type === 'conference' ? 250 : 80,
-          agenda: [
-            'Smart City Showcase',
-            'Citizen Experience Design',
-            'Technology Demonstration',
-            'Collaboration Workshop',
-            'Action Planning'
-          ],
-          key_outcomes: ['Technology partnerships', 'Citizen engagement strategies', 'Implementation roadmap'],
-          suggested_location: 'Smart City Innovation Hub'
-        }
-      ];
+      events = [{
+        title_en: prefilled_spec?.title_en || `Municipal Innovation ${eventTypeLabels[event_type] || 'Forum'}`,
+        title_ar: prefilled_spec?.title_ar || `منتدى الابتكار البلدي`,
+        description_en: prefilled_spec?.description_en || `A strategic ${event_type || 'conference'} bringing together key stakeholders to drive municipal innovation aligned with ${plan?.name_en || 'strategic objectives'}.`,
+        description_ar: `فعالية استراتيجية تجمع أصحاب المصلحة الرئيسيين لدفع الابتكار البلدي.`,
+        estimated_attendees: event_type === 'conference' ? 300 : event_type === 'workshop' ? 50 : 150,
+        agenda: [
+          'Opening and Vision Address',
+          'Strategic Innovation Panel',
+          'Interactive Session: Challenges & Solutions',
+          'Networking and Partnership Building',
+          'Closing and Next Steps'
+        ],
+        key_outcomes: ['Strategic alignment validation', 'Stakeholder engagement', 'Partnership opportunities identified'],
+        suggested_location: event_type === 'webinar' ? 'Virtual Platform' : 'Convention Center or Municipal Hall'
+      }];
     }
 
-    return new Response(JSON.stringify({ success: true, events }), {
+    // Save to database if requested
+    const savedEvents = [];
+    if (save_to_db) {
+      for (const event of events) {
+        const eventData = {
+          title_en: event.title_en,
+          title_ar: event.title_ar,
+          description_en: event.description_en,
+          description_ar: event.description_ar,
+          event_type: event_type || 'conference',
+          strategic_plan_ids: strategic_plan_id ? [strategic_plan_id] : [],
+          estimated_attendees: event.estimated_attendees,
+          agenda: event.agenda,
+          key_outcomes: event.key_outcomes,
+          location: event.suggested_location,
+          status: 'draft',
+          is_strategy_derived: true
+        };
+
+        const { data: saved, error } = await supabase
+          .from('events')
+          .insert(eventData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Failed to save event:", error);
+        } else {
+          savedEvents.push(saved);
+          console.log("Event saved with ID:", saved.id);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      events: save_to_db ? savedEvents : events,
+      id: savedEvents[0]?.id || null,
+      saved: savedEvents.length > 0
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

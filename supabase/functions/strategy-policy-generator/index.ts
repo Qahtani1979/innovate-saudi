@@ -15,14 +15,27 @@ serve(async (req) => {
   }
 
   try {
-    const { strategic_context, policy_count } = await req.json();
+    const { 
+      strategic_context, 
+      policy_count,
+      strategic_plan_id,
+      prefilled_spec,
+      save_to_db = false
+    } = await req.json();
+
+    console.log("Starting strategy-policy-generator:", { strategic_plan_id, save_to_db });
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const prompt = `You are an expert policy advisor for Saudi municipal governance and innovation.
 
-Generate ${policy_count || 3} policy recommendations based on:
+Generate ${policy_count || 1} policy recommendations based on:
 
 STRATEGIC CONTEXT:
-${strategic_context || 'Municipal innovation governance and regulatory framework'}
+${strategic_context || prefilled_spec?.description_en || 'Municipal innovation governance and regulatory framework'}
+${prefilled_spec ? `PREFILLED SPEC: ${JSON.stringify(prefilled_spec)}` : ''}
 
 For each policy, provide (MUST use these exact field names):
 1. title_en & title_ar: Policy title/name (bilingual)
@@ -65,7 +78,7 @@ Ensure policies:
         if (content) {
           try {
             const parsed = JSON.parse(content);
-            policies = parsed.policies || [];
+            policies = parsed.policies || [parsed.policy] || [];
           } catch (e) {
             console.error("Parse error:", e);
           }
@@ -73,61 +86,67 @@ Ensure policies:
       }
     }
 
-    // Fallback policies - mapped to UI expected fields (title_en, description_en, scope)
+    // Fallback policy
     if (policies.length === 0) {
-      policies = [
-        {
-          title_en: "Open Innovation Framework",
-          title_ar: "إطار الابتكار المفتوح",
-          description_en: "Guidelines for external innovation partnerships and collaborations",
-          description_ar: "إرشادات للشراكات والتعاون في مجال الابتكار الخارجي",
-          type: "governance",
-          scope: "External partnerships and collaboration governance",
-          objectives: [
-            "Enable public-private innovation partnerships",
-            "Establish IP sharing frameworks",
-            "Define collaboration governance"
-          ],
-          stakeholders: ["Municipalities", "Technology Providers", "Research Institutions", "Startups"],
-          risk_level: "Medium",
-          implementation_timeframe: "6-12 months"
-        },
-        {
-          title_en: "Digital Service Standards",
-          title_ar: "معايير الخدمات الرقمية",
-          description_en: "Minimum standards for digital municipal service delivery",
-          description_ar: "الحد الأدنى من المعايير لتقديم الخدمات البلدية الرقمية",
-          type: "regulatory",
-          scope: "Digital municipal service delivery standards",
-          objectives: [
-            "Ensure consistent digital experience",
-            "Mandate accessibility compliance",
-            "Define service level agreements"
-          ],
-          stakeholders: ["All Municipal Departments", "Citizens", "IT Vendors"],
-          risk_level: "Low",
-          implementation_timeframe: "3-6 months"
-        },
-        {
-          title_en: "Innovation Incentive Program",
-          title_ar: "برنامج حوافز الابتكار",
-          description_en: "Rewards and recognition for municipal innovation contributions",
-          description_ar: "المكافآت والتقدير للمساهمات في الابتكار البلدي",
-          type: "incentive",
-          scope: "Municipal innovation rewards and recognition",
-          objectives: [
-            "Motivate employee innovation",
-            "Recognize citizen contributions",
-            "Incentivize partner collaboration"
-          ],
-          stakeholders: ["Municipal Employees", "Citizens", "Partners", "HR Department"],
-          risk_level: "Low",
-          implementation_timeframe: "3-4 months"
-        }
-      ].slice(0, policy_count || 3);
+      policies = [{
+        title_en: prefilled_spec?.title_en || "Open Innovation Framework",
+        title_ar: prefilled_spec?.title_ar || "إطار الابتكار المفتوح",
+        description_en: prefilled_spec?.description_en || "Guidelines for external innovation partnerships and collaborations",
+        description_ar: "إرشادات للشراكات والتعاون في مجال الابتكار الخارجي",
+        type: "governance",
+        scope: "External partnerships and collaboration governance",
+        objectives: [
+          "Enable public-private innovation partnerships",
+          "Establish IP sharing frameworks",
+          "Define collaboration governance"
+        ],
+        stakeholders: ["Municipalities", "Technology Providers", "Research Institutions", "Startups"],
+        risk_level: "Medium",
+        implementation_timeframe: "6-12 months"
+      }];
     }
 
-    return new Response(JSON.stringify({ success: true, policies }), {
+    // Save to database if requested (using policy_documents table)
+    const savedPolicies = [];
+    if (save_to_db) {
+      for (const policy of policies) {
+        const policyData = {
+          title_en: policy.title_en,
+          title_ar: policy.title_ar,
+          description_en: policy.description_en,
+          description_ar: policy.description_ar,
+          document_type: policy.type || 'governance',
+          scope: policy.scope,
+          objectives: policy.objectives,
+          stakeholders: policy.stakeholders,
+          risk_level: policy.risk_level,
+          implementation_timeframe: policy.implementation_timeframe,
+          strategic_plan_ids: strategic_plan_id ? [strategic_plan_id] : [],
+          status: 'draft',
+          is_strategy_derived: true
+        };
+
+        const { data: saved, error } = await supabase
+          .from('policy_documents')
+          .insert(policyData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Failed to save policy:", error);
+        } else {
+          savedPolicies.push(saved);
+          console.log("Policy saved with ID:", saved.id);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      policies: save_to_db ? savedPolicies : policies,
+      id: savedPolicies[0]?.id || null,
+      saved: savedPolicies.length > 0
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

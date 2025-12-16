@@ -15,18 +15,30 @@ serve(async (req) => {
   }
 
   try {
-    const { strategic_plan_id, capability_needs, partnership_types } = await req.json();
+    const { 
+      strategic_plan_id, 
+      capability_needs, 
+      partnership_types,
+      prefilled_spec,
+      save_to_db = false
+    } = await req.json();
+
+    console.log("Starting strategy-partnership-matcher:", { strategic_plan_id, save_to_db });
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch strategic plan
-    const { data: plan } = await supabase
-      .from("strategic_plans")
-      .select("*")
-      .eq("id", strategic_plan_id)
-      .single();
+    let plan = null;
+    if (strategic_plan_id) {
+      const { data } = await supabase
+        .from("strategic_plans")
+        .select("*")
+        .eq("id", strategic_plan_id)
+        .single();
+      plan = data;
+    }
 
     // Fetch organizations
     const { data: organizations } = await supabase
@@ -39,17 +51,18 @@ serve(async (req) => {
 
 Analyze and recommend strategic partners based on:
 
-STRATEGIC PLAN: ${plan?.name_en || 'Municipal Innovation Strategy'}
+STRATEGIC PLAN: ${plan?.name_en || prefilled_spec?.title_en || 'Municipal Innovation Strategy'}
 OBJECTIVES: ${JSON.stringify(plan?.objectives || [])}
 
 CAPABILITY NEEDS: ${capability_needs?.join(', ') || 'General innovation support'}
 PREFERRED PARTNERSHIP TYPES: ${partnership_types?.join(', ') || 'Any'}
+${prefilled_spec ? `PREFILLED SPEC: ${JSON.stringify(prefilled_spec)}` : ''}
 
 AVAILABLE ORGANIZATIONS:
 ${(organizations || []).map((o: any) => `- ${o.name_en} (${o.organization_type}): ${o.expertise_areas?.join(', ') || 'General'}`).join('\n')}
 
 For each recommended partner, provide:
-1. organization_id: ID from the list above
+1. organization_id: ID from the list above (or null if generic)
 2. organization_name: Name
 3. match_score: 0-100 based on alignment
 4. capability_match: Array of matching capabilities
@@ -57,7 +70,7 @@ For each recommended partner, provide:
 6. recommended_partnership_type: research/technology/implementation/funding/knowledge
 7. suggested_activities: Array of 2-3 collaboration activities
 
-Recommend top 3-5 partners with highest strategic fit.`;
+Recommend top 1-3 partners with highest strategic fit.`;
 
     let recommendations = [];
 
@@ -84,7 +97,7 @@ Recommend top 3-5 partners with highest strategic fit.`;
         if (content) {
           try {
             const parsed = JSON.parse(content);
-            recommendations = parsed.partner_recommendations || [];
+            recommendations = parsed.partner_recommendations || parsed.partnerships || [parsed.partnership] || [];
           } catch (e) {
             console.error("Parse error:", e);
           }
@@ -92,57 +105,59 @@ Recommend top 3-5 partners with highest strategic fit.`;
       }
     }
 
-    // Fallback recommendations based on actual organizations
-    if (recommendations.length === 0 && organizations && organizations.length > 0) {
-      recommendations = organizations.slice(0, 3).map((org: any, idx: number) => ({
-        organization_id: org.id,
-        organization_name: org.name_en,
-        match_score: 85 - (idx * 10),
-        capability_match: capability_needs?.slice(0, 2) || ['Innovation', 'Technology'],
-        strategic_alignment: `Strong alignment with strategic objectives through ${org.organization_type} capabilities.`,
-        recommended_partnership_type: partnership_types?.[0] || 'research',
-        suggested_activities: [
-          'Joint innovation workshops',
-          'Technology transfer program',
-          'Knowledge sharing sessions'
-        ]
-      }));
-    }
-
-    // If still no recommendations, provide generic ones
+    // Fallback recommendations
     if (recommendations.length === 0) {
-      recommendations = [
-        {
-          organization_id: null,
-          organization_name: "Technology Innovation Partner",
-          match_score: 85,
-          capability_match: ['Digital Transformation', 'AI/ML', 'IoT'],
-          strategic_alignment: "Provides technology capabilities to accelerate digital transformation initiatives.",
-          recommended_partnership_type: "technology",
-          suggested_activities: ['Technology assessment', 'Proof of concept development', 'Training and capacity building']
-        },
-        {
-          organization_id: null,
-          organization_name: "Research & Academic Partner",
-          match_score: 80,
-          capability_match: ['Research', 'Data Analytics', 'Policy Development'],
-          strategic_alignment: "Supports evidence-based decision making and innovation research.",
-          recommended_partnership_type: "research",
-          suggested_activities: ['Joint research projects', 'Data analysis', 'Innovation studies']
-        },
-        {
-          organization_id: null,
-          organization_name: "Implementation Specialist",
-          match_score: 75,
-          capability_match: ['Project Management', 'Change Management', 'Training'],
-          strategic_alignment: "Ensures successful implementation of innovation initiatives.",
-          recommended_partnership_type: "implementation",
-          suggested_activities: ['Implementation support', 'Change management', 'Staff training']
-        }
-      ];
+      recommendations = [{
+        organization_id: organizations?.[0]?.id || null,
+        organization_name: prefilled_spec?.title_en || organizations?.[0]?.name_en || "Technology Innovation Partner",
+        match_score: 85,
+        capability_match: capability_needs?.slice(0, 2) || ['Digital Transformation', 'AI/ML'],
+        strategic_alignment: "Provides technology capabilities to accelerate digital transformation initiatives.",
+        recommended_partnership_type: partnership_types?.[0] || "technology",
+        suggested_activities: ['Technology assessment', 'Proof of concept development', 'Training and capacity building']
+      }];
     }
 
-    return new Response(JSON.stringify({ success: true, partner_recommendations: recommendations }), {
+    // Save to database if requested
+    const savedPartnerships = [];
+    if (save_to_db) {
+      for (const rec of recommendations) {
+        const partnershipData = {
+          title_en: `Partnership with ${rec.organization_name}`,
+          title_ar: `شراكة مع ${rec.organization_name}`,
+          description_en: rec.strategic_alignment,
+          partner_organization_id: rec.organization_id,
+          partner_name: rec.organization_name,
+          partnership_type: rec.recommended_partnership_type,
+          strategic_plan_ids: strategic_plan_id ? [strategic_plan_id] : [],
+          match_score: rec.match_score,
+          capability_areas: rec.capability_match,
+          suggested_activities: rec.suggested_activities,
+          status: 'proposed',
+          is_strategy_derived: true
+        };
+
+        const { data: saved, error } = await supabase
+          .from('partnerships')
+          .insert(partnershipData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Failed to save partnership:", error);
+        } else {
+          savedPartnerships.push(saved);
+          console.log("Partnership saved with ID:", saved.id);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      partner_recommendations: save_to_db ? savedPartnerships : recommendations,
+      id: savedPartnerships[0]?.id || null,
+      saved: savedPartnerships.length > 0
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
