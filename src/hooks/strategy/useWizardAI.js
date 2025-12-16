@@ -12,8 +12,8 @@ import { toast } from 'sonner';
 
 // Edge function mapping per step - specialized functions for most steps
 const EDGE_FUNCTION_MAP = {
-  1: 'strategy-context-generator',    // Context Definition (NEW - specialized)
-  2: 'invoke-llm',                    // Vision & Mission
+  1: 'strategy-context-generator',    // Context Definition (specialized)
+  2: 'strategy-vision-generator',     // Core Values & Strategic Pillars (specialized)
   3: 'strategy-stakeholder-generator', // Stakeholders
   4: 'strategy-environmental-generator', // PESTEL
   5: 'strategy-swot-generator',       // SWOT

@@ -245,3 +245,6 @@ verify_jwt = false
 
 [functions.strategy-context-generator]
 verify_jwt = false
+
+[functions.strategy-vision-generator]
+verify_jwt = false
