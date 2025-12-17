@@ -10,6 +10,8 @@ import { Target, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getStrategicChallengeMapperPrompt, strategicChallengeMapperSchema } from '@/lib/ai/prompts/matchmaker';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function StrategicChallengeMapper({ application, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
@@ -26,46 +28,9 @@ export default function StrategicChallengeMapper({ application, onUpdate }) {
 
   const handleAIMatch = async () => {
     const result = await invokeAI({
-      prompt: `Match this application to strategic challenges for bonus points.
-
-APPLICATION:
-- Organization: ${application.organization_name_en}
-- Sectors: ${application.sectors?.join(', ')}
-- Collaboration: ${application.collaboration_approach}
-
-STRATEGIC CHALLENGES:
-${challenges.map(c => `
-- ID: ${c.id}, Code: ${c.code}
-  Title: ${c.title_en}
-  Sector: ${c.sector}
-  Priority: ${c.priority}
-  Description: ${c.description_en?.substring(0, 150)}
-`).join('\n')}
-
-For each challenge this application could address, return:
-- challenge_id
-- relevance_score (0-100)
-- bonus_points (suggest 5, 10, or 15 based on fit strength)
-- reason_en/reason_ar (why it matches)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          matches: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                challenge_id: { type: 'string' },
-                challenge_code: { type: 'string' },
-                relevance_score: { type: 'number' },
-                bonus_points: { type: 'number' },
-                reason_en: { type: 'string' },
-                reason_ar: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: getStrategicChallengeMapperPrompt({ application, challenges }),
+      system_prompt: getSystemPrompt('COMPACT', true),
+      response_json_schema: strategicChallengeMapperSchema
     });
 
     if (result.success) {
