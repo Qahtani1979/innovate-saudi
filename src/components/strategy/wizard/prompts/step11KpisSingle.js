@@ -39,8 +39,15 @@ MoMAH oversees municipal services across 13 administrative regions, 285+ municip
 ## OBJECTIVES:
 ${objectives.map((o, i) => `${i}. ${o.name_en || o.name_ar} (${o.sector_code || 'General'}, ${o.priority || 'medium'} priority)`).join('\n') || 'Not defined yet'}
 
-## EXISTING KPIs (${existingKpis.length} total):
+## EXISTING KPIs - CRITICAL: DO NOT DUPLICATE (${existingKpis.length} total):
 ${existingKpisSummary || 'No existing KPIs yet'}
+
+**STRICT ANTI-DUPLICATION RULE:**
+- You MUST NOT generate a KPI measuring the same thing as any existing KPI
+- You MUST NOT generate a KPI with the same or similar name as existing ones
+- Each KPI name above is FORBIDDEN - do not create variations of these
+- Check both the metric being measured AND the name to avoid overlap
+- If you generate something similar to existing KPIs, your output will be REJECTED
 
 ## CURRENT CATEGORY COVERAGE:
 ${categoryCoverageSummary}
@@ -147,7 +154,7 @@ export const SINGLE_KPI_SCHEMA = {
  * System prompt for single KPI generation
  */
 export const SINGLE_KPI_SYSTEM_PROMPT = 
-  'You are a strategic planning AI assistant. Generate exactly ONE unique SMART KPI with bilingual content. Return valid JSON matching the schema.';
+  'You are a strategic planning AI assistant. Generate exactly ONE unique SMART KPI with bilingual content. CRITICAL: Check all existing KPIs provided and ensure your output measures something completely different - no similar metrics, names, or measurement areas. Return valid JSON matching the schema.';
 
 export default {
   generateSingleKpiPrompt,

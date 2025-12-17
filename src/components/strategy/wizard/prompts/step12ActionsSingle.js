@@ -44,8 +44,15 @@ ${objectives.map((o, i) => `${i}. ${o.name_en || o.name_ar} (${o.sector_code || 
 ## KEY RISKS:
 ${(wizardData.risks || []).filter(r => r.impact === 'high').slice(0, 3).map(r => '- ' + (r.title_en || r.title_ar)).join('\n') || 'Not assessed'}
 
-## EXISTING ACTIONS (${existingActions.length} total):
+## EXISTING ACTIONS - CRITICAL: DO NOT DUPLICATE (${existingActions.length} total):
 ${existingActionsSummary || 'No existing actions yet'}
+
+**STRICT ANTI-DUPLICATION RULE:**
+- You MUST NOT generate an action with the same or similar name/scope as any existing one
+- You MUST NOT generate an action covering the same activity/initiative as existing ones
+- Each action name above is FORBIDDEN - do not create variations of these
+- Check both the action type AND the specific deliverables to avoid overlap
+- If you generate something similar to existing actions, your output will be REJECTED
 
 ## CURRENT TYPE COVERAGE:
 ${typeCoverageSummary}
@@ -148,7 +155,7 @@ export const SINGLE_ACTION_SCHEMA = {
  * System prompt for single action generation
  */
 export const SINGLE_ACTION_SYSTEM_PROMPT = 
-  'You are a strategic planning AI assistant. Generate exactly ONE unique action plan with bilingual content. Return valid JSON matching the schema.';
+  'You are a strategic planning AI assistant. Generate exactly ONE unique action plan with bilingual content. CRITICAL: Check all existing actions provided and ensure your output is a completely different initiative - no similar names, activities, or deliverables. Return valid JSON matching the schema.';
 
 export default {
   generateSingleActionPrompt,
