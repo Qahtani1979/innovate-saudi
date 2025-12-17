@@ -1,107 +1,220 @@
-# AI Bilingual Implementation Plan - Complete Technical Specification
+# AI Bilingual Implementation Plan - Standardization Strategy
 
-**Generated:** 2025-12-17 (FULLY EXPANDED - 100% AI Coverage Including New AI Features)  
+**Generated:** 2025-12-17  
 **Status:** Ready for Implementation  
-**Total Files to Update:** 100 component files + 98 new prompt files  
-**Estimated Effort:** 7 phases, ~18 days
+**Goal:** Extend Strategy Wizard's proven AI pattern to entire platform
 
 ---
 
-## Table of Contents
+## Current State Analysis
 
-1. [Executive Summary](#executive-summary)
-2. [Architecture Pattern: Strategy Wizard Reference](#architecture-pattern-strategy-wizard-reference)
-3. [Entity Dependencies & Multi-Entity Context](#entity-dependencies--multi-entity-context)
-4. [Database Schema Analysis](#database-schema-analysis)
-5. [Taxonomy & Context Data](#taxonomy--context-data)
-6. [Prompt File Structure](#prompt-file-structure)
-7. [Files Requiring Updates](#files-requiring-updates)
-8. [Detailed Prompt File Specifications](#detailed-prompt-file-specifications)
-9. [Infrastructure Files](#infrastructure-files)
-10. [Testing & Verification](#testing--verification)
+### ✅ EXISTING INFRASTRUCTURE (Do NOT Rebuild)
 
----
+| Component | Location | Status |
+|-----------|----------|--------|
+| Base AI Hook | `src/hooks/useAIWithFallback.js` | ✅ Complete |
+| Saudi Context | `src/hooks/strategy/useWizardAI.js` → `SAUDI_CONTEXT` | ✅ Complete |
+| AI Status Display | `src/components/ai/AIStatusIndicator.jsx` | ✅ Complete |
+| Strategy Wizard Prompts | `src/components/strategy/wizard/prompts/` (24 files) | ✅ Complete |
+| Specialized Edge Functions | 16 strategy-* functions | ✅ Complete |
 
-## Executive Summary
+### ❌ COMPONENTS NEEDING STANDARDIZATION (85 Components)
 
-This document provides a comprehensive plan to standardize AI prompts across the codebase to match the Strategy Wizard's bilingual architecture pattern. **Critically, all AI prompts must be extracted into separate files** following the Strategy Planning approach.
-
-**Key Principles:**
-- **Separated Prompts:** All AI prompts extracted to dedicated `prompts/` directories (NOT inline in components)
-- **Multi-Entity Context:** Each prompt function accepts ALL required entity data as parameters
-- **Consistent Exports:** Each prompt file exports `getXPrompt(context, data)` function and `xSchema` object
-- **Bilingual Fields:** All text fields must have `_en` and `_ar` suffixes
-- **Saudi Context:** All prompts include MoMAH/Vision 2030 context
-- Arabic must be formal (فصحى) suitable for government documents
-
----
-
-## Architecture Pattern: Strategy Wizard Reference
-
-### Current Strategy Wizard Structure (REFERENCE MODEL)
-
-```
-src/components/strategy/wizard/prompts/
-├── index.js                    # Exports all prompts and schemas
-├── step1Context.js             # getStep1Prompt(context) + step1Schema
-├── step2Vision.js              # getStep2Prompt(context, wizardData) + step2Schema
-├── step3Stakeholders.js        # getStep3Prompt(context, wizardData) + step3Schema
-├── step3StakeholdersSingle.js  # generateSingleStakeholderPrompt + SINGLE_STAKEHOLDER_SCHEMA
-├── step4Pestel.js              # getStep4Prompt(context, wizardData) + step4Schema
-├── step5Swot.js                # getStep5Prompt(context, wizardData) + step5Schema
-├── step6Scenarios.js           # ...
-├── step7Risks.js               # getStep7Prompt + step7Schema
-├── step7RisksSingle.js         # generateSingleRiskPrompt + SINGLE_RISK_SCHEMA
-├── ...                         # etc.
-└── step18Review.js             
-```
-
-### Key Pattern Elements:
-
-1. **Prompt Function Signature (with entity data):**
+**Problem Pattern (e.g., `PilotPortfolioOptimizer.jsx`):**
 ```javascript
-export const getStepXPrompt = (context, wizardData, relatedEntities = {}) => {
-  const { challenge, solution, pilot, municipality, sector } = relatedEntities;
-  
-  return `You are a strategic planning expert...
-  
-  ## CONTEXT
-  - Plan Name: ${context.planName}
-  - Vision: ${context.vision}
-  
-  ## RELATED ENTITIES
-  - Challenge: ${challenge?.title_en || 'N/A'} | ${challenge?.title_ar || ''}
-  - Solution: ${solution?.name_en || 'N/A'}
-  - Municipality: ${municipality?.name_en || 'N/A'} | ${municipality?.name_ar || ''}
-  ...
-  
-  ## REQUIREMENTS
-  Generate bilingual output for ALL fields...`;
-};
-```
-
-2. **Schema Export:**
-```javascript
-export const stepXSchema = {
-  type: 'object',
-  required: ['field_en', 'field_ar', ...],
-  properties: {
-    field_en: { type: 'string', description: 'English description' },
-    field_ar: { type: 'string', description: 'الوصف بالعربية' },
-    ...
+// ❌ CURRENT: Inline prompt, no Saudi context, no bilingual schema
+const result = await invokeAI({
+  prompt: `Portfolio optimization analysis...`,  // Inline!
+  response_json_schema: {
+    properties: {
+      accelerate: { type: 'array' },  // Not bilingual!
+      portfolio_health_score: { type: 'number' }
+    }
   }
+});
+```
+
+**Target Pattern (matches Strategy Wizard):**
+```javascript
+// ✅ TARGET: Extracted prompt, Saudi context, bilingual schema
+import { getPortfolioOptimizerPrompt, portfolioOptimizerSchema } from './prompts/portfolioOptimizer';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+
+const result = await invokeAI({
+  prompt: getPortfolioOptimizerPrompt(context, pilots, relatedEntities),
+  response_json_schema: portfolioOptimizerSchema,
+  system_prompt: SAUDI_CONTEXT.FULL
+});
+```
+
+---
+
+## Implementation Phases
+
+### Phase 1: Extract Shared Saudi Context (Day 1)
+
+**Task:** Move `SAUDI_CONTEXT` from `useWizardAI.js` to shared location.
+
+```
+NEW: src/lib/saudiContext.js
+```
+
+```javascript
+// src/lib/saudiContext.js
+export const SAUDI_CONTEXT = {
+  FULL: `MoMAH (Ministry of Municipalities and Housing) oversees...`,
+  COMPACT: `MoMAH - Saudi Ministry of Municipalities & Housing...`,
+  INNOVATION: `CRITICAL: Include innovation/R&D focus...`,
+  HOUSING: `Housing Mandate (Critical Priority)...`,
+  MUNICIPAL: `Municipal Operations...`
+};
+
+export const injectSaudiContext = (prompt, contextType = 'FULL') => {
+  return `${SAUDI_CONTEXT[contextType]}\n\n${prompt}`;
 };
 ```
 
-3. **Index File Aggregation:**
+---
+
+### Phase 2: Portfolio Module (Days 2-3) - 9 Components
+
+| Component | New Prompt File | Key Changes |
+|-----------|-----------------|-------------|
+| `PilotPortfolioOptimizer.jsx` | `prompts/portfolioOptimizer.js` | Extract inline prompt, add bilingual schema |
+| `StrategicGapAnalyzer.jsx` | `prompts/strategicGapAnalyzer.js` | Add `_en`/`_ar` fields |
+| `WhatIfScenarioModeler.jsx` | `prompts/whatIfScenario.js` | Inject Saudi context |
+| `PortfolioGovernancePanel.jsx` | `prompts/portfolioGovernance.js` | Add related entities |
+| `EnhancedPortfolioView.jsx` | `prompts/enhancedPortfolio.js` | Bilingual recommendations |
+| `InnovationPipelineFunnel.jsx` | `prompts/innovationPipeline.js` | Sector context |
+| `TimelineGanttView.jsx` | `prompts/timelineAnalysis.js` | Milestone localization |
+| `ResourceAllocationOptimizer.jsx` | `prompts/resourceAllocation.js` | Budget context |
+| `RiskMitigationPlanner.jsx` | `prompts/riskMitigation.js` | Risk taxonomy |
+
+**Directory Structure:**
+```
+src/components/portfolio/prompts/
+├── index.js
+├── portfolioOptimizer.js
+├── strategicGapAnalyzer.js
+├── whatIfScenario.js
+└── ... (9 files)
+```
+
+---
+
+### Phase 3: Pilot Module (Days 4-6) - 18 Components
+
+| Component | New Prompt File |
+|-----------|-----------------|
+| `PilotDetailCard.jsx` | `prompts/pilotDetails.js` |
+| `PilotKPISetup.jsx` | `prompts/pilotKpis.js` |
+| `PilotMilestoneTracker.jsx` | `prompts/pilotMilestones.js` |
+| `PilotRiskAssessment.jsx` | `prompts/pilotRisks.js` |
+| `PilotTechnologyStack.jsx` | `prompts/pilotTechnology.js` |
+| `PilotEvaluationPanel.jsx` | `prompts/pilotEvaluation.js` |
+| `PilotScalingReadiness.jsx` | `prompts/pilotScalingReadiness.js` |
+| `PilotBenchmarking.jsx` | `prompts/pilotBenchmarking.js` |
+| `PolicyWorkflowCard.jsx` | `prompts/policyWorkflow.js` |
+| ... (18 total) | |
+
+---
+
+### Phase 4: Matchmaker Module (Days 7-8) - 12 Components
+
+| Component | New Prompt File |
+|-----------|-----------------|
+| `ProviderPerformanceScorecard.jsx` | `prompts/providerScorecard.js` |
+| `AutomatedMatchNotifier.jsx` | `prompts/matchNotification.js` |
+| `ProposalGeneratorDialog.jsx` | `prompts/proposalGeneration.js` |
+| `PartnershipAgreementPreview.jsx` | `prompts/partnershipAgreement.js` |
+| `MultiPartyConsortiumBuilder.jsx` | `prompts/multiPartyConsortium.js` |
+| ... (12 total) | |
+
+---
+
+### Phase 5: Sandbox & R&D Modules (Days 9-10) - 14 Components
+
+**Sandbox (7):** `SandboxEnhancement`, `SandboxEvaluation`, `RegulatoryGapAnalyzer`, etc.
+**R&D (7):** `ProposalScoring`, `PortfolioPlanning`, `MultiInstitutionCollaboration`, etc.
+
+---
+
+### Phase 6: Remaining Modules (Days 11-14) - 32 Components
+
+- **Challenge:** 6 components
+- **Solution:** 6 components  
+- **Scaling:** 8 components
+- **Citizen:** 8 components
+- **Analysis:** 4 components
+
+---
+
+### Phase 7: New AI Features (Days 15-18) - 15 Components
+
+Components currently WITHOUT AI that will GET AI capabilities:
+
+| Component | New AI Feature |
+|-----------|----------------|
+| `CitizenFeedbackLoop.jsx` | Sentiment analysis |
+| `ConsensusScoreDisplay.jsx` | Consensus optimization |
+| `FeedbackAggregator.jsx` | Theme extraction |
+| `ClassificationDashboard.jsx` | Auto-categorization |
+| `TRLAssessmentWorkflow.jsx` | TRL level recommendation |
+| `MergeDuplicatesDialog.jsx` | AI merge suggestions |
+| ... (15 total) | |
+
+---
+
+## Standard Prompt File Template
+
 ```javascript
-// index.js
-export { getStep1Prompt, step1Schema } from './step1Context';
-export { getStep2Prompt, step2Schema } from './step2Vision';
-// ...
-export const STEP_PROMPT_MAP = {
-  1: { promptKey: 'getStep1Prompt', schemaKey: 'step1Schema' },
-  // ...
+// src/components/[module]/prompts/[feature].js
+
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+
+/**
+ * [Feature Name] AI Prompt
+ * @param {Object} context - User/plan context
+ * @param {Object} primaryData - Main entity data
+ * @param {Object} relatedEntities - Related entity data
+ */
+export const get[Feature]Prompt = (context, primaryData, relatedEntities = {}) => {
+  const { sector, municipality, challenge } = relatedEntities;
+  
+  return `${SAUDI_CONTEXT.COMPACT}
+
+## CONTEXT
+- Entity: ${primaryData.title_en} | ${primaryData.title_ar || ''}
+- Sector: ${sector?.name_en || 'General'} | ${sector?.name_ar || ''}
+- Municipality: ${municipality?.name_en || 'N/A'}
+
+## DATA
+${JSON.stringify(primaryData, null, 2)}
+
+## REQUIREMENTS
+Generate bilingual output with _en and _ar suffixes for all text fields.
+Arabic must be formal فصحى suitable for government documents.`;
+};
+
+export const [feature]Schema = {
+  type: 'object',
+  properties: {
+    recommendation_en: { type: 'string' },
+    recommendation_ar: { type: 'string' },
+    score: { type: 'number' },
+    insights: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title_en: { type: 'string' },
+          title_ar: { type: 'string' },
+          description_en: { type: 'string' },
+          description_ar: { type: 'string' }
+        }
+      }
+    }
+  }
 };
 ```
 
