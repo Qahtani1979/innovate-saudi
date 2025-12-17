@@ -259,16 +259,20 @@ export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="values" className="flex items-center gap-2">
             <Heart className="h-4 w-4" />
-            {t({ en: 'Core Values', ar: 'القيم الجوهرية' })}
+            <span className="hidden sm:inline">{t({ en: 'Core Values', ar: 'القيم الجوهرية' })}</span>
             <Badge variant="secondary" className="ml-1">{completenessMetrics.values.total}</Badge>
           </TabsTrigger>
           <TabsTrigger value="pillars" className="flex items-center gap-2">
             <Columns className="h-4 w-4" />
-            {t({ en: 'Strategic Pillars', ar: 'الركائز الاستراتيجية' })}
+            <span className="hidden sm:inline">{t({ en: 'Strategic Pillars', ar: 'الركائز الاستراتيجية' })}</span>
             <Badge variant="secondary" className="ml-1">{completenessMetrics.pillars.total}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -635,6 +639,66 @@ export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star className="h-5 w-5 text-primary" />
+                {t({ en: 'Vision Summary', ar: 'ملخص الرؤية' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-gradient-to-br from-pink-500/10 to-pink-600/5 border border-pink-500/20 text-center">
+                  <Heart className="h-6 w-6 text-pink-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-pink-600">{completenessMetrics.values.total}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Core Values', ar: 'القيم الجوهرية' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 text-center">
+                  <Columns className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-blue-600">{completenessMetrics.pillars.total}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Strategic Pillars', ar: 'الركائز' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 text-center">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-green-600">{completenessMetrics.values.complete}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Complete Values', ar: 'قيم مكتملة' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 text-center">
+                  <Target className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-purple-600">{completenessMetrics.pillars.complete}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Complete Pillars', ar: 'ركائز مكتملة' })}</p>
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              <div className="space-y-3">
+                <h4 className="font-medium">{t({ en: 'Recommendations', ar: 'التوصيات' })}</h4>
+                {completenessMetrics.values.total < 3 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    <Heart className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm">{t({ en: 'Define at least 3-5 core values for a strong foundation', ar: 'حدد 3-5 قيم جوهرية على الأقل لأساس قوي' })}</p>
+                  </div>
+                )}
+                {completenessMetrics.pillars.total < 3 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    <Columns className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm">{t({ en: 'Add 3-5 strategic pillars to structure your strategy', ar: 'أضف 3-5 ركائز استراتيجية لهيكلة استراتيجيتك' })}</p>
+                  </div>
+                )}
+                {completenessMetrics.values.score >= 80 && completenessMetrics.pillars.score >= 80 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                    <p className="text-sm">{t({ en: 'Vision is well-defined with strong values and pillars', ar: 'الرؤية محددة جيداً مع قيم وركائز قوية' })}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

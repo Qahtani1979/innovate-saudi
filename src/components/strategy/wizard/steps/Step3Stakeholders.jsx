@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { 
   Sparkles, Users, Plus, X, Grid3X3, ChevronDown, ChevronRight,
   Loader2, Building, User, Briefcase, Globe, CheckCircle2, AlertCircle,
-  UserCheck, UserX, MessageSquare, FileText, TrendingUp
+  UserCheck, UserX, MessageSquare, FileText, TrendingUp, BarChart3
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
@@ -268,19 +268,23 @@ export default function Step3Stakeholders({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="list" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            {t({ en: 'Stakeholders', ar: 'أصحاب المصلحة' })}
+            <span className="hidden sm:inline">{t({ en: 'List', ar: 'القائمة' })}</span>
             <Badge variant="secondary" className="ml-1">{completenessMetrics.total}</Badge>
           </TabsTrigger>
           <TabsTrigger value="matrix" className="flex items-center gap-2">
             <Grid3X3 className="h-4 w-4" />
-            {t({ en: 'Matrix', ar: 'المصفوفة' })}
+            <span className="hidden sm:inline">{t({ en: 'Matrix', ar: 'المصفوفة' })}</span>
           </TabsTrigger>
           <TabsTrigger value="engagement" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            {t({ en: 'Engagement Plan', ar: 'خطة الإشراك' })}
+            <span className="hidden sm:inline">{t({ en: 'Plan', ar: 'الخطة' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -706,6 +710,65 @@ export default function Step3Stakeholders({
                   })}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                {t({ en: 'Stakeholder Summary', ar: 'ملخص أصحاب المصلحة' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Quadrant Distribution */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 text-center">
+                  <p className="text-2xl font-bold text-red-700 dark:text-red-400">{completenessMetrics.byQuadrant.manageClosely}</p>
+                  <p className="text-xs font-medium">{t({ en: 'Manage Closely', ar: 'إدارة عن كثب' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 text-center">
+                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{completenessMetrics.byQuadrant.keepSatisfied}</p>
+                  <p className="text-xs font-medium">{t({ en: 'Keep Satisfied', ar: 'إبقاء الرضا' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-blue-100 dark:bg-blue-900/30 border border-blue-300 text-center">
+                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{completenessMetrics.byQuadrant.keepInformed}</p>
+                  <p className="text-xs font-medium">{t({ en: 'Keep Informed', ar: 'إبقاء على اطلاع' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-300 text-center">
+                  <p className="text-2xl font-bold text-green-700 dark:text-green-400">{completenessMetrics.byQuadrant.monitor}</p>
+                  <p className="text-xs font-medium">{t({ en: 'Monitor', ar: 'مراقبة' })}</p>
+                </div>
+              </div>
+
+              {/* Completion Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-muted/50 border">
+                  <p className="text-sm text-muted-foreground">{t({ en: 'Total Stakeholders', ar: 'إجمالي أصحاب المصلحة' })}</p>
+                  <p className="text-3xl font-bold">{completenessMetrics.total}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50 border">
+                  <p className="text-sm text-muted-foreground">{t({ en: 'Fully Defined', ar: 'محددين بالكامل' })}</p>
+                  <p className="text-3xl font-bold text-green-600">{completenessMetrics.complete}</p>
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              {completenessMetrics.total === 0 && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <Users className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-sm">{t({ en: 'Identify key stakeholders who will be impacted by or influence your strategy', ar: 'حدد أصحاب المصلحة الرئيسيين الذين سيتأثرون أو يؤثرون في استراتيجيتك' })}</p>
+                </div>
+              )}
+              {completenessMetrics.byQuadrant.manageClosely === 0 && completenessMetrics.total > 0 && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                  <AlertCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                  <p className="text-sm">{t({ en: 'Consider identifying high-power, high-interest stakeholders who need close management', ar: 'فكر في تحديد أصحاب المصلحة ذوي القوة والاهتمام العاليين الذين يحتاجون إلى إدارة وثيقة' })}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

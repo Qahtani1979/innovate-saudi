@@ -336,25 +336,29 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dependencies" className="gap-2">
             <GitBranch className="w-4 h-4" />
-            <span className="hidden sm:inline">{t({ en: 'Dependencies', ar: 'التبعيات' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Deps', ar: 'التبعيات' })}</span>
             <Badge variant="secondary" className="ml-1">{stats.totalDeps}</Badge>
           </TabsTrigger>
           <TabsTrigger value="constraints" className="gap-2">
             <AlertCircle className="w-4 h-4" />
-            <span className="hidden sm:inline">{t({ en: 'Constraints', ar: 'القيود' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Const.', ar: 'القيود' })}</span>
             <Badge variant="secondary" className="ml-1">{stats.totalConstraints}</Badge>
           </TabsTrigger>
           <TabsTrigger value="assumptions" className="gap-2">
             <Lightbulb className="w-4 h-4" />
-            <span className="hidden sm:inline">{t({ en: 'Assumptions', ar: 'الافتراضات' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Assump.', ar: 'الافتراضات' })}</span>
             <Badge variant="secondary" className="ml-1">{stats.totalAssumptions}</Badge>
           </TabsTrigger>
           <TabsTrigger value="overview" className="gap-2">
             <Network className="w-4 h-4" />
-            <span className="hidden sm:inline">{t({ en: 'Overview', ar: 'نظرة عامة' })}</span>
+            <span className="hidden sm:inline">{t({ en: 'Overview', ar: 'نظرة' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="gap-2">
+            <BarChart3 className="w-4 h-4" />
+            <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1037,6 +1041,67 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                {t({ en: 'Dependencies Summary', ar: 'ملخص التبعيات' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20">
+                  <GitBranch className="h-5 w-5 text-blue-600 mb-2" />
+                  <p className="text-2xl font-bold text-blue-600">{stats.totalDeps}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Dependencies', ar: 'التبعيات' })}</p>
+                  <p className="text-xs text-green-600">{stats.resolvedDeps} {t({ en: 'resolved', ar: 'محلولة' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20">
+                  <AlertCircle className="h-5 w-5 text-amber-600 mb-2" />
+                  <p className="text-2xl font-bold text-amber-600">{stats.totalConstraints}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Constraints', ar: 'القيود' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
+                  <Lightbulb className="h-5 w-5 text-purple-600 mb-2" />
+                  <p className="text-2xl font-bold text-purple-600">{stats.totalAssumptions}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Assumptions', ar: 'الافتراضات' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20">
+                  <AlertTriangle className="h-5 w-5 text-red-600 mb-2" />
+                  <p className="text-2xl font-bold text-red-600">{stats.highCritDeps}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Critical', ar: 'حرجة' })}</p>
+                </div>
+              </div>
+
+              {/* Risk Indicators */}
+              <div className="space-y-3">
+                <h4 className="font-medium">{t({ en: 'Risk Indicators', ar: 'مؤشرات المخاطر' })}</h4>
+                {stats.blockedDeps > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                    <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                    <p className="text-sm">{stats.blockedDeps} {t({ en: 'blocked dependencies require attention', ar: 'تبعيات محظورة تتطلب الانتباه' })}</p>
+                  </div>
+                )}
+                {stats.lowConfidenceAssumptions > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    <Lightbulb className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm">{stats.lowConfidenceAssumptions} {t({ en: 'low-confidence assumptions need validation', ar: 'افتراضات منخفضة الثقة تحتاج للتحقق' })}</p>
+                  </div>
+                )}
+                {stats.blockedDeps === 0 && stats.lowConfidenceAssumptions === 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                    <p className="text-sm">{t({ en: 'No critical blockers identified', ar: 'لم يتم تحديد عوائق حرجة' })}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

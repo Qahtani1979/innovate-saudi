@@ -1281,10 +1281,10 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
       ) : (
         /* View Mode: Cards (Tabbed) */
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-6 w-full">
             <TabsTrigger value="overview" className="gap-1 text-xs">
               <Eye className="w-4 h-4" />
-              <span className="hidden sm:inline">{t({ en: 'Overview', ar: 'نظرة عامة' })}</span>
+              <span className="hidden sm:inline">{t({ en: 'Overview', ar: 'نظرة' })}</span>
             </TabsTrigger>
             <TabsTrigger value="impacts" className="gap-1 text-xs">
               <Users className="w-4 h-4" />
@@ -1293,7 +1293,7 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
             </TabsTrigger>
             <TabsTrigger value="resistance" className="gap-1 text-xs">
               <Shield className="w-4 h-4" />
-              <span className="hidden sm:inline">{t({ en: 'Resistance', ar: 'المقاومة' })}</span>
+              <span className="hidden sm:inline">{t({ en: 'Resist.', ar: 'المقاومة' })}</span>
               <Badge variant="secondary" className="ml-1 text-xs">{resistanceStrategies.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="training" className="gap-1 text-xs">
@@ -1305,6 +1305,10 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
               <RefreshCw className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Activities', ar: 'الأنشطة' })}</span>
               <Badge variant="secondary" className="ml-1 text-xs">{changeActivities.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="gap-1 text-xs">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1551,6 +1555,47 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                 />
               ))}
             </div>
+          </TabsContent>
+
+          {/* Summary Tab */}
+          <TabsContent value="summary" className="space-y-4 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  {t({ en: 'Change Management Summary', ar: 'ملخص إدارة التغيير' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
+                    <GraduationCap className="h-5 w-5 text-blue-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold">{trainingPlan.length}</p>
+                    <p className="text-xs">{t({ en: 'Training', ar: 'التدريب' })}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 text-center">
+                    <Users className="h-5 w-5 text-purple-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold">{stakeholderImpacts.length}</p>
+                    <p className="text-xs">{t({ en: 'Impacts', ar: 'التأثيرات' })}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-center">
+                    <Shield className="h-5 w-5 text-amber-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold">{resistanceStrategies.length}</p>
+                    <p className="text-xs">{t({ en: 'Resistance', ar: 'المقاومة' })}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-center">
+                    <RefreshCw className="h-5 w-5 text-green-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold">{changeActivities.length}</p>
+                    <p className="text-xs">{t({ en: 'Activities', ar: 'الأنشطة' })}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-teal-50 dark:bg-teal-950/30 text-center">
+                    <Layers className="h-5 w-5 text-teal-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold">{Object.values(CHANGE_PHASES.reduce((acc, p) => { acc[p.value] = changeActivities.filter(a => a.phase === p.value).length; return acc; }, {})).filter(c => c > 0).length}/5</p>
+                    <p className="text-xs">{t({ en: 'ADKAR Phases', ar: 'مراحل ADKAR' })}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       )}
