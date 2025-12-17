@@ -1,789 +1,1036 @@
-# AI Bilingual Implementation Plan
+# AI Bilingual Implementation Plan - Complete Technical Specification
 
-**Generated:** 2025-12-17  
+**Generated:** 2025-12-17 (Updated with Full Schema Analysis)  
 **Status:** Ready for Implementation  
-**Total Files to Update:** 70+ files  
-**Estimated Effort:** 3-4 phases
+**Total Files to Update:** 45 files  
+**Estimated Effort:** 4 phases, ~8 days
+
+---
+
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [Database Schema Analysis](#database-schema-analysis)
+3. [Taxonomy & Context Data](#taxonomy--context-data)
+4. [Files Requiring Updates](#files-requiring-updates)
+5. [Detailed Implementation Changes](#detailed-implementation-changes)
+6. [Infrastructure Files](#infrastructure-files)
+7. [Testing & Verification](#testing--verification)
 
 ---
 
 ## Executive Summary
 
-This document provides a comprehensive plan to standardize AI prompts across the codebase to match the Strategy Wizard's bilingual architecture pattern. The Strategy Wizard demonstrates the ideal implementation with:
-- Separated prompt files with explicit bilingual output requirements
-- JSON schemas requiring `_en` and `_ar` field pairs
-- Saudi/MoMAH context injection
-- Centralized AI hook with status management
+This document provides a comprehensive plan to standardize AI prompts across the codebase to match the Strategy Wizard's bilingual architecture pattern. All AI outputs must include bilingual fields (`_en` / `_ar`) that map directly to database columns.
+
+**Key Principles:**
+- All text fields must be bilingual with `_en` and `_ar` suffixes
+- Prompts must include Saudi/MoMAH context
+- Schemas must enforce bilingual output
+- Arabic must be formal (فصحى) suitable for government documents
 
 ---
 
-## Part 1: Current Architecture Analysis
+## Database Schema Analysis
 
-### 1.1 Strategy Wizard Pattern (Reference Implementation)
+### Complete Table-by-Field Bilingual Requirements
 
-```
-┌────────────────────────────────────────────────────────────────┐
-│                    STRATEGY WIZARD ARCHITECTURE                 │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  ┌─────────────────┐    ┌──────────────────┐                  │
-│  │ useAIWithFallback│◄───│ AIStatusIndicator │                 │
-│  │ (Core Hook)      │    │ (UI Component)    │                 │
-│  └────────┬────────┘    └──────────────────┘                  │
-│           │                                                    │
-│           ▼                                                    │
-│  ┌─────────────────┐                                          │
-│  │   useWizardAI   │ ◄── Domain-specific router               │
-│  │  (Router Hook)   │     Routes to edge functions             │
-│  └────────┬────────┘     Provides SAUDI_CONTEXT               │
-│           │                                                    │
-│           ▼                                                    │
-│  ┌─────────────────────────────────────────────────────┐      │
-│  │            prompts/stepXXX.js files                  │      │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │      │
-│  │  │getStepPrompt│  │  stepSchema │  │ BILINGUAL   │  │      │
-│  │  │ (function)  │  │  (JSON def) │  │ REQUIRED    │  │      │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘  │      │
-│  └─────────────────────────────────────────────────────┘      │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
-```
+#### 1. **challenges** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `title_en` | text | YES - max 100 chars |
+| `title_ar` | text | YES - max 100 chars |
+| `tagline_en` | text | YES - 15-20 words |
+| `tagline_ar` | text | YES - 15-20 words |
+| `description_en` | text | YES - 200+ words |
+| `description_ar` | text | YES - 200+ words |
+| `problem_statement_en` | text | YES |
+| `problem_statement_ar` | text | YES |
+| `current_situation_en` | text | YES |
+| `current_situation_ar` | text | YES |
+| `desired_outcome_en` | text | YES |
+| `desired_outcome_ar` | text | YES |
+| `root_cause_en` | text | YES |
+| `root_cause_ar` | text | YES |
+| Additional: `sector`, `category`, `priority`, `status`, `kpis` (JSON), `stakeholders` (JSON)
 
-### 1.2 Key Components
+#### 2. **pilots** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `title_en` | text | YES - max 80 chars |
+| `title_ar` | text | YES - max 80 chars |
+| `tagline_en` | text | YES - 15-20 words |
+| `tagline_ar` | text | YES - 15-20 words |
+| `description_en` | text | YES - 200+ words |
+| `description_ar` | text | YES - 200+ words |
+| `objective_en` | text | YES |
+| `objective_ar` | text | YES |
+| Additional: `hypothesis`, `methodology`, `scope`, `kpis` (JSON), `milestones` (JSON), `risks` (JSON), `team` (JSON), `technology_stack` (JSON)
+| Evaluation: `evaluation_summary_en`, `evaluation_summary_ar`, `ai_insights`, `success_probability`, `risk_level`, `recommendation`
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| `useAIWithFallback` | `src/hooks/useAIWithFallback.js` | Core AI invocation with rate limiting, error handling |
-| `AIStatusIndicator` | `src/components/ai/AIStatusIndicator.jsx` | Bilingual status display |
-| `useWizardAI` | `src/hooks/strategy/useWizardAI.js` | Strategy-specific AI router with SAUDI_CONTEXT |
-| Prompt files | `src/components/strategy/wizard/prompts/` | 24 files with getPrompt + schema exports |
+#### 3. **sandboxes** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `name` | text | YES (name_en) |
+| `name_ar` | text | YES |
+| `description` | text | YES (description_en) |
+| `description_ar` | text | YES |
+| Additional: `domain`, `capacity`, `status`, `regulatory_framework` (JSON), `exemptions_granted` (array)
 
-### 1.3 Database Schema Bilingual Fields
+**NOTE:** Sandboxes table uses `name`/`description` not `name_en`/`description_en` - code must map accordingly!
 
-Based on database analysis, these tables have bilingual columns requiring AI to generate both:
+#### 4. **solutions** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `name_en` | text | YES |
+| `name_ar` | text | YES |
+| `tagline_en` | text | YES |
+| `tagline_ar` | text | YES |
+| `description_en` | text | YES - 200+ words |
+| `description_ar` | text | YES - 200+ words |
+| `value_proposition` | text | YES |
+| Additional: `features` (array), `sectors` (array), `trl`, `pricing_model`, `certifications` (JSON)
 
-| Table | Bilingual Fields |
-|-------|------------------|
-| `challenges` | title_en/ar, description_en/ar, problem_statement_en/ar, current_situation_en/ar, desired_outcome_en/ar, root_cause_en/ar, tagline_en/ar |
-| `pilots` | title_en/ar, description_en/ar, objective_en/ar, tagline_en/ar, evaluation_summary_en/ar |
-| `solutions` | name_en/ar, description_en/ar, value_proposition_en/ar, tagline_en/ar |
-| `sandboxes` | name_en/ar, description_en/ar, objectives_en/ar, tagline_en/ar |
-| `programs` | name_en/ar, description_en/ar, objectives_en/ar |
-| `rd_calls` | title_en/ar, description_en/ar, objectives_en/ar |
-| `rd_projects` | title_en/ar, description_en/ar, objectives_en/ar |
-| `events` | title_en/ar, description_en/ar |
-| `contracts` | title_en/ar |
-| `case_studies` | title_en/ar, description_en/ar |
-| `communication_plans` | name_en/ar, description_en/ar, master_narrative_en/ar |
-| `strategic_plans` | name_en/ar, description_en/ar, vision_en/ar, mission_en/ar |
+#### 5. **programs** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `name_en` | text | YES |
+| `name_ar` | text | YES |
+| `tagline_en` | text | YES |
+| `tagline_ar` | text | YES |
+| `description_en` | text | YES |
+| `description_ar` | text | YES |
+| `objectives_en` | text | YES |
+| `objectives_ar` | text | YES |
+| Additional: `program_type`, `curriculum` (JSON), `benefits` (JSON), `eligibility_criteria` (array)
 
-### 1.4 Taxonomy Context (from TaxonomyContext.jsx)
+#### 6. **rd_calls** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `title_en` | text | YES |
+| `title_ar` | text | YES |
+| `description_en` | text | YES |
+| `description_ar` | text | YES |
+| Additional: `call_type`, `focus_areas` (array), `eligibility_criteria` (JSON), `evaluation_criteria` (JSON)
 
-Available for AI context injection:
-- **Sectors**: id, code, name_en, name_ar, description_en/ar
-- **Regions**: id, code, name_en, name_ar  
-- **Strategic Themes**: code, name_en, name_ar, description
-- **Technologies**: code, name_en, name_ar, category
-- **Vision Programs**: code, name_en, name_ar, official_url
-- **Stakeholder Types**: code, name_en, name_ar
-- **Risk Categories**: code, name_en, name_ar
-- **Governance Roles**: code, name_en, name_ar
+#### 7. **rd_projects** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `title_en` | text | YES |
+| `title_ar` | text | YES |
+| `description_en` | text | YES |
+| `description_ar` | text | YES |
+| `objectives_en` | text | YES |
+| `objectives_ar` | text | YES |
+| Additional: `research_areas` (array), `methodology`, `expected_outputs` (JSON), `deliverables` (JSON)
 
----
+#### 8. **events** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `title_en` | text | YES |
+| `title_ar` | text | YES |
+| `description_en` | text | YES |
+| `description_ar` | text | YES |
+| Additional: `event_type`, `venue_name`, `agenda` (JSON), `speakers` (JSON)
 
-## Part 2: Files Requiring Updates
+#### 9. **contracts** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `title_en` | text | YES |
+| `title_ar` | text | YES |
+| Additional: `contract_type`, `terms_and_conditions`, `deliverables` (JSON), `milestones` (JSON)
 
-### 2.1 HIGH PRIORITY - User-Facing Pages (20 files)
+#### 10. **communication_plans** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `name_en` | text | YES |
+| `name_ar` | text | YES |
+| `description_en` | text | YES |
+| `description_ar` | text | YES |
+| `master_narrative_en` | text | YES |
+| `master_narrative_ar` | text | YES |
+| Additional: `key_messages` (JSON), `channel_strategy` (JSON), `content_calendar` (JSON)
 
-| # | File | Current Issue | AI Prompts Count | DB Fields Affected |
-|---|------|---------------|------------------|-------------------|
-| 1 | `src/pages/SandboxCreate.jsx` | Lines 92-116: Prompt asks for bilingual but schema incomplete | 1 | sandboxes: all _en/_ar fields |
-| 2 | `src/pages/PilotEdit.jsx` | Lines 233-498: 7 AI sections, partial bilingual | 7 | pilots: all _en/_ar fields |
-| 3 | `src/pages/SolutionChallengeMatcher.jsx` | Proposal generation English-only | 1 | challenge_proposals |
-| 4 | `src/pages/EmailTemplateManager.jsx` | Template enhancement English-only | 1 | email_templates |
-| 5 | `src/pages/RDPortfolioPlanner.jsx` | Portfolio planning English-only | 1 | rd_projects |
-| 6 | `src/pages/RiskPortfolio.jsx` | Risk analysis English-only | 1 | - (analysis only) |
-| 7 | `src/pages/IterationWorkflow.jsx` | Iteration plan English-only | 1 | pilots |
-| 8 | `src/pages/FailureAnalysisDashboard.jsx` | ✅ Already bilingual | 1 | - |
-| 9 | `src/pages/PilotDetail.jsx` | ✅ Already bilingual | 1 | - |
-| 10 | `src/pages/RDProposalDetail.jsx` | ✅ Already bilingual | 1 | - |
-| 11 | `src/pages/Sandboxes.jsx` | ✅ Already bilingual | 1 | - |
-| 12 | `src/pages/MII.jsx` | ✅ Already bilingual | 1 | - |
-| 13 | `src/pages/ProgramDetail.jsx` | ✅ Already bilingual | 1 | - |
-| 14 | `src/pages/RDCallDetail.jsx` | ✅ Already bilingual | 1 | - |
-| 15 | `src/pages/Knowledge.jsx` | ✅ Already bilingual | 1 | - |
-| 16 | `src/pages/Network.jsx` | ✅ Already bilingual | 1 | - |
-| 17 | `src/pages/SandboxDetail.jsx` | ✅ Already bilingual | 1 | - |
-| 18 | `src/pages/CampaignPlanner.jsx` | ✅ Already bilingual | 1 | - |
-| 19 | `src/pages/EventsAnalyticsDashboard.jsx` | ✅ Already bilingual | 1 | - |
-| 20 | `src/pages/CompetitiveIntelligenceDashboard.jsx` | ✅ Already bilingual | 1 | - |
+#### 11. **case_studies** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `title_en` | text | YES |
+| `title_ar` | text | YES |
+| `description_en` | text | YES |
+| `description_ar` | text | YES |
+| Additional: `challenge_description`, `solution_description`, `results_achieved`, `lessons_learned`, `metrics` (JSON)
 
-**Action Required for Pages:** 6 files need updates
+#### 12. **scaling_plans** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `title_en` | text | YES |
+| `title_ar` | text | YES |
+| Additional: `strategy`, `phases` (JSON), `success_metrics` (JSON), `integration_requirements` (array)
 
-### 2.2 HIGH PRIORITY - Workflow Components (25 files)
-
-| # | File | Current Issue | AI Prompts | Fix Required |
-|---|------|---------------|------------|--------------|
-| 1 | `src/components/sandbox/SandboxCreateWizard.jsx` | Lines 50-78: Schema has bilingual but prompt unclear | 1 | Enhance prompt clarity |
-| 2 | `src/components/sandbox/SandboxPolicyFeedbackWorkflow.jsx` | ✅ Summary shows bilingual | 1 | Verify schema |
-| 3 | `src/components/matchmaker/PilotConversionWizard.jsx` | Partnership agreement English-only | 1 | Add bilingual |
-| 4 | `src/components/matchmaker/MultiPartyMatchmaker.jsx` | Consortium formation English-only | 1 | Add bilingual |
-| 5 | `src/components/matchmaker/StrategicChallengeMapper.jsx` | Challenge mapping English-only | 1 | Add bilingual |
-| 6 | `src/components/matchmaker/FailedMatchLearningEngine.jsx` | Match analysis English-only | 1 | Add bilingual |
-| 7 | `src/components/scaling/ScalingToProgramConverter.jsx` | Program generation partial bilingual | 1 | Complete bilingual |
-| 8 | `src/components/scaling/ScalingCostBenefitAnalyzer.jsx` | Cost analysis English-only | 1 | Add bilingual |
-| 9 | `src/components/scaling/AdaptiveRolloutSequencing.jsx` | Rollout optimization English-only | 1 | Add bilingual |
-| 10 | `src/components/challenges/ChallengeToProgramWorkflow.jsx` | Lines 67-136: Has bilingual schema | 1 | ✅ Verify complete |
-| 11 | `src/components/challenges/ChallengeToRDWizard.jsx` | RD call generation English-only | 1 | Add bilingual |
-| 12 | `src/components/challenges/InnovationFramingGenerator.jsx` | ✅ Already bilingual | 1 | - |
-| 13 | `src/components/pilots/PilotToProcurementWorkflow.jsx` | ✅ Already bilingual | 1 | - |
-| 14 | `src/components/pilots/SuccessPatternAnalyzer.jsx` | Pattern analysis English-only | 1 | Add bilingual |
-| 15 | `src/components/pilots/ScalingReadiness.jsx` | Readiness assessment English-only | 1 | Add bilingual |
-| 16 | `src/components/pilots/PilotBenchmarking.jsx` | Benchmarking English-only | 1 | Add bilingual |
-| 17 | `src/components/solutions/ContractGeneratorWizard.jsx` | Contract generation English-only | 1 | Add bilingual |
-| 18 | `src/components/collaboration/PartnershipProposalWizard.jsx` | Proposal generation English-only | 1 | Add bilingual |
-| 19 | `src/components/rd/RDProposalAIScorerWidget.jsx` | Scoring English-only | 1 | Add bilingual |
-| 20 | `src/components/rd/IPCommercializationTracker.jsx` | IP assessment English-only | 1 | Add bilingual |
-| 21 | `src/components/citizen/AIIdeaClassifier.jsx` | Lines 16-42: Classification English-only | 1 | Add bilingual keywords |
-| 22 | `src/components/onboarding/FirstActionRecommender.jsx` | Recommendations English-only | 1 | Add bilingual |
-| 23 | `src/components/data/DuplicateRecordDetector.jsx` | Detection English-only | 1 | Add bilingual |
-| 24 | `src/components/ROICalculator.jsx` | Lines 26-61: ROI calculation English-only | 1 | Add bilingual |
-| 25 | `src/components/strategy/PartnershipNetwork.jsx` | Network analysis English-only | 1 | Add bilingual |
-
-**Action Required for Workflows:** 20 files need updates
-
-### 2.3 MEDIUM PRIORITY - AI Analysis Components (20 files)
-
-| # | File | AI Purpose | Fix Required |
-|---|------|------------|--------------|
-| 1 | `src/components/ai/AIProgramEventCorrelator.jsx` | Event correlation | Add bilingual |
-| 2 | `src/components/ai/AIAttendancePredictor.jsx` | Attendance prediction | Add bilingual |
-| 3 | `src/components/ai/AIEventROIPredictor.jsx` | Event ROI | Add bilingual |
-| 4 | `src/components/ai/AISectorTrendAnalyzer.jsx` | Trend analysis | Add bilingual |
-| 5 | `src/components/ai/AIPromptLocalizer.jsx` | ✅ Bilingual helper | - |
-| 6 | `src/components/programs/AIAlumniSuggester.jsx` | ✅ Already bilingual | - |
-| 7 | `src/components/programs/AlumniSuccessStoryGenerator.jsx` | ✅ Already bilingual | - |
-| 8 | `src/components/programs/AICurriculumGenerator.jsx` | ✅ Already bilingual | - |
-| 9 | `src/components/programs/CrossProgramSynergy.jsx` | ✅ Already bilingual | - |
-| 10 | `src/components/programs/MentorMatchingEngine.jsx` | ✅ Already bilingual | - |
-| 11 | `src/components/programs/PeerLearningNetwork.jsx` | ✅ Already bilingual | - |
-| 12 | `src/components/strategy/CollaborationMapper.jsx` | Collaboration mapping | Add bilingual |
-| 13 | `src/components/strategy/cascade/StrategyChallengeGenerator.jsx` | Challenge generation | Verify bilingual |
-| 14 | `src/components/strategy/cascade/StrategyToCampaignGenerator.jsx` | Campaign generation | Verify bilingual |
-| 15 | `src/components/strategy/cascade/StrategyToPilotGenerator.jsx` | Pilot generation | Verify bilingual |
-| 16 | `src/components/strategy/cascade/StrategyToEventGenerator.jsx` | Event generation | Verify bilingual |
-| 17 | `src/components/strategy/cascade/StrategyToRDCallGenerator.jsx` | RD call generation | Verify bilingual |
-| 18 | `src/components/strategy/evaluation/CaseStudyGenerator.jsx` | ✅ Already bilingual | - |
-| 19 | `src/components/gates/StrategicPlanApprovalGate.jsx` | ✅ Already bilingual | - |
-| 20 | `src/components/taxonomy/TaxonomyWizard.jsx` | ✅ Already bilingual | - |
-
-**Action Required for Analysis:** 10 files need updates
+#### 13. **pilot_kpis** Table
+| Field | Type | Required AI Output |
+|-------|------|-------------------|
+| `name` | text | YES (name_en equivalent) |
+| `name_ar` | text | YES |
+| `description` | text | For context |
+| Additional: `baseline`, `target`, `unit`, `measurement_frequency`
 
 ---
 
-## Part 3: Implementation Changes
+## Taxonomy & Context Data
 
-### 3.1 Standard Bilingual Prompt Template
-
-Every AI prompt MUST follow this structure:
+### Available Lookup Tables for AI Context Injection
 
 ```javascript
-const result = await invokeAI({
-  prompt: `[Task description] for Saudi municipal context.
-
-## CONTEXT
-Entity: ${entityName}
-Type: ${entityType}
-Sector: ${sector}
-${additionalContext}
-
-## BILINGUAL REQUIREMENTS
-Generate ALL text content in BOTH English AND Arabic:
-- Use formal Arabic (فصحى) suitable for Saudi government documents
-- Ensure Arabic content is culturally appropriate
-- All field pairs must be semantically equivalent
-
-## OUTPUT FIELDS
-${fieldsList}
-
-## SAUDI INNOVATION CONTEXT
-${SAUDI_CONTEXT.COMPACT}`,
-
-  response_json_schema: {
-    type: 'object',
-    required: ['field_en', 'field_ar', ...],
-    properties: {
-      field_en: { type: 'string' },
-      field_ar: { type: 'string' },
-      // ... all bilingual pairs
-    }
+// These can be fetched and injected into AI prompts for context
+const TAXONOMY_TABLES = {
+  // Core Reference Data
+  'sectors': { fields: ['id', 'code', 'name_en', 'name_ar', 'description_en', 'description_ar'] },
+  'subsectors': { fields: ['id', 'code', 'name_en', 'name_ar', 'sector_id'] },
+  'services': { fields: ['id', 'code', 'name_en', 'name_ar', 'sector_id', 'subsector_id'] },
+  'regions': { fields: ['id', 'code', 'name_en', 'name_ar'] },
+  'cities': { fields: ['id', 'name_en', 'name_ar', 'region_id', 'municipality_id'] },
+  
+  // Strategic Taxonomy
+  'lookup_strategic_themes': { 
+    fields: ['code', 'name_en', 'name_ar', 'description_en', 'description_ar', 'icon'] 
+  },
+  'lookup_technologies': { 
+    fields: ['code', 'name_en', 'name_ar', 'category', 'description_en', 'description_ar'] 
+  },
+  'lookup_vision_programs': { 
+    fields: ['code', 'name_en', 'name_ar', 'official_url', 'description_en'] 
+  },
+  'lookup_stakeholder_types': { 
+    fields: ['code', 'name_en', 'name_ar', 'description_en', 'description_ar'] 
+  },
+  'lookup_risk_categories': { 
+    fields: ['code', 'name_en', 'name_ar', 'description_en', 'description_ar'] 
+  },
+  'lookup_governance_roles': { 
+    fields: ['code', 'name_en', 'name_ar', 'description_en', 'description_ar'] 
   }
-});
+};
 ```
 
-### 3.2 Schema Requirements
+### Saudi Context Constants (For All AI Prompts)
 
-Every schema MUST include:
-1. **Bilingual text fields** with `_en` and `_ar` suffixes
-2. **Required array** listing all bilingual pairs
-3. **Consistent property naming** matching database columns
-
-Example:
 ```javascript
-const schema = {
-  type: 'object',
-  required: [
-    'title_en', 'title_ar',
-    'description_en', 'description_ar',
-    'objectives_en', 'objectives_ar'
-  ],
-  properties: {
-    title_en: { type: 'string', description: 'Title in English' },
-    title_ar: { type: 'string', description: 'العنوان بالعربية' },
-    description_en: { type: 'string', minLength: 100 },
-    description_ar: { type: 'string', minLength: 100 },
-    objectives_en: { type: 'string' },
-    objectives_ar: { type: 'string' },
-    // Non-bilingual fields
-    priority: { type: 'string', enum: ['high', 'medium', 'low'] },
-    score: { type: 'number', minimum: 0, maximum: 100 }
-  }
+export const SAUDI_CONTEXT = {
+  FULL: `
+## SAUDI ARABIA MUNICIPAL INNOVATION CONTEXT
+
+### Ministry of Municipalities and Housing (MoMAH)
+MoMAH oversees 285+ municipalities across 13 regions, managing urban development,
+infrastructure, and municipal services for 35+ million residents.
+
+### Vision 2030 Alignment
+All outputs must support Saudi Vision 2030 objectives:
+- Quality of Life Program (جودة الحياة)
+- National Transformation Program
+- Smart Cities Initiative
+- Municipal Excellence Program
+- Sustainability & Environment goals
+
+### Key Partners in Innovation Ecosystem
+- MCIT (Ministry of Communications): Digital transformation
+- SDAIA: AI and data governance
+- KAUST, KACST: Research partnerships
+- NEOM, Red Sea Project: Mega project innovation
+- Saudi Venture Capital Company
+- Monsha'at (SME Authority)
+
+### Cultural Requirements
+- Use formal Arabic (فصحى) for all Arabic content
+- Align with Saudi government communication standards
+- Respect local customs and Islamic principles
+- Bilingual outputs for diverse stakeholder engagement
+`,
+
+  COMPACT: `Saudi MoMAH innovation platform supporting Vision 2030. 
+Partners: MCIT, SDAIA, KAUST. Use formal Arabic (فصحى) for government documents.
+Align with Quality of Life Program and Municipal Excellence initiatives.`
 };
 ```
 
 ---
 
-## Part 4: Detailed File Changes
+## Files Requiring Updates
 
-### 4.1 SandboxCreate.jsx (Lines 86-136)
+### Priority 1: High-Impact User-Facing Pages (6 files)
 
-**Current Code:**
+| # | File | Current AI Prompts | DB Fields Affected | Issues |
+|---|------|-------------------|-------------------|--------|
+| 1 | `src/pages/SandboxCreate.jsx` | 1 prompt (L92-116) | sandboxes: name, name_ar, description, description_ar | Schema incomplete, missing objectives, prompt lacks Saudi context |
+| 2 | `src/pages/PilotEdit.jsx` | 7 prompts (L233-498) | pilots: all _en/_ar fields, kpis, milestones, risks, evaluation | Partial bilingual - technology/engagement sections English-only |
+| 3 | `src/pages/SolutionChallengeMatcher.jsx` | 1 prompt | challenge_proposals | Proposal generation English-only |
+| 4 | `src/pages/EmailTemplateManager.jsx` | 1 prompt | email_templates | Template enhancement English-only |
+| 5 | `src/pages/RDPortfolioPlanner.jsx` | 1 prompt | rd_projects | Portfolio planning English-only |
+| 6 | `src/pages/RiskPortfolio.jsx` | 1 prompt | (analysis only) | Risk analysis English-only |
+
+### Priority 2: Workflow Components (18 files)
+
+| # | File | Current Issues | Required Changes |
+|---|------|----------------|------------------|
+| 1 | `src/components/sandbox/SandboxCreateWizard.jsx` | Prompt unclear for bilingual | Add explicit bilingual requirements |
+| 2 | `src/components/matchmaker/PilotConversionWizard.jsx` | L52-78: Agreement English-only | Add `agreement_ar`, bilingual `key_terms` |
+| 3 | `src/components/matchmaker/MultiPartyMatchmaker.jsx` | Consortium English-only | Add bilingual consortium details |
+| 4 | `src/components/matchmaker/StrategicChallengeMapper.jsx` | Mapping English-only | Add bilingual challenge mapping |
+| 5 | `src/components/matchmaker/FailedMatchLearningEngine.jsx` | Analysis English-only | Add bilingual learning insights |
+| 6 | `src/components/scaling/ScalingToProgramConverter.jsx` | Partial bilingual | Complete all program fields |
+| 7 | `src/components/scaling/ScalingCostBenefitAnalyzer.jsx` | L17-66: Analysis English-only | Add bilingual `investment_summary`, `recommendations` |
+| 8 | `src/components/scaling/AdaptiveRolloutSequencing.jsx` | Rollout English-only | Add bilingual phase descriptions |
+| 9 | `src/components/challenges/ChallengeToRDWizard.jsx` | RD call English-only | Add all rd_calls bilingual fields |
+| 10 | `src/components/pilots/SuccessPatternAnalyzer.jsx` | Patterns English-only | Add bilingual pattern descriptions |
+| 11 | `src/components/pilots/ScalingReadiness.jsx` | Assessment English-only | Add bilingual recommendations |
+| 12 | `src/components/pilots/PilotBenchmarking.jsx` | Benchmarks English-only | Add bilingual benchmark insights |
+| 13 | `src/components/solutions/ContractGeneratorWizard.jsx` | Contract English-only | Add bilingual contract sections |
+| 14 | `src/components/collaboration/PartnershipProposalWizard.jsx` | Proposal English-only | Add bilingual proposal content |
+| 15 | `src/components/rd/RDProposalAIScorerWidget.jsx` | Scoring English-only | Add bilingual scoring justification |
+| 16 | `src/components/rd/IPCommercializationTracker.jsx` | IP assessment English-only | Add bilingual IP recommendations |
+| 17 | `src/components/citizen/AIIdeaClassifier.jsx` | L16-42: Keywords English-only | Add `keywords_ar`, bilingual sector names |
+| 18 | `src/components/onboarding/FirstActionRecommender.jsx` | Recommendations English-only | Add bilingual action recommendations |
+
+### Priority 3: Analysis Components (10 files)
+
+| # | File | AI Purpose | Required Changes |
+|---|------|------------|------------------|
+| 1 | `src/components/data/DuplicateRecordDetector.jsx` | Duplicate detection | Add bilingual reason/recommendation |
+| 2 | `src/components/ROICalculator.jsx` | ROI calculation | Add bilingual benchmark, risks |
+| 3 | `src/components/ai/AIProgramEventCorrelator.jsx` | Event correlation | Add bilingual insights |
+| 4 | `src/components/ai/AIAttendancePredictor.jsx` | Attendance prediction | Add bilingual prediction context |
+| 5 | `src/components/ai/AIEventROIPredictor.jsx` | Event ROI | Add bilingual ROI summary |
+| 6 | `src/components/ai/AISectorTrendAnalyzer.jsx` | Trend analysis | Add bilingual trend descriptions |
+| 7 | `src/components/strategy/CollaborationMapper.jsx` | Collaboration mapping | Add bilingual collaboration notes |
+| 8 | `src/components/strategy/cascade/StrategyChallengeGenerator.jsx` | Challenge generation | Verify bilingual output |
+| 9 | `src/components/strategy/cascade/StrategyToEventGenerator.jsx` | Event generation | Verify bilingual output |
+| 10 | `src/components/strategy/cascade/StrategyToRDCallGenerator.jsx` | RD call generation | Verify bilingual output |
+
+---
+
+## Detailed Implementation Changes
+
+### 1. SandboxCreate.jsx (Lines 86-136)
+
+**Current Prompt (English-only emphasis):**
 ```javascript
 prompt: `Enhance this regulatory sandbox proposal:
-
 Sandbox Name: ${formData.name_en}
 Domain: ${formData.domain}
 Current Description: ${formData.description_en || 'N/A'}
-
-Provide bilingual enhancements:
-1. Professional tagline (AR + EN)
-...`
+Provide bilingual enhancements...`
 ```
 
-**Required Change:**
+**Required Changes:**
+
 ```javascript
-prompt: `Enhance regulatory sandbox proposal for Saudi municipal innovation.
+// src/pages/SandboxCreate.jsx - Lines 92-136
+const handleAIEnhancement = async () => {
+  const city = cities.find(c => c.id === formData.city_id);
+  const organization = organizations.find(o => o.id === formData.organization_id);
+  
+  const result = await invokeAI({
+    prompt: `Enhance regulatory sandbox proposal for Saudi municipal innovation.
 
-## SANDBOX CONTEXT
+## CURRENT DATA
 Name: ${formData.name_en}
+Name (Arabic): ${formData.name_ar || 'Not provided'}
 Domain: ${formData.domain}
-City: ${cities.find(c => c.id === formData.city_id)?.name_en || 'N/A'}
-Current Description: ${formData.description_en || 'N/A'}
+City: ${city?.name_en || 'Not selected'} / ${city?.name_ar || ''}
+Managing Organization: ${organization?.name_en || 'Not selected'}
+Current Description: ${formData.description_en || 'Not provided'}
 
-## BILINGUAL REQUIREMENTS
-Generate ALL content in BOTH English AND Arabic (فصحى):
-- Professional taglines suitable for Saudi government announcements
-- Detailed descriptions (150+ words each language)
-- Clear regulatory objectives aligned with Saudi innovation policy
-- Suggested exemption categories for regulatory sandbox framework
+## BILINGUAL OUTPUT REQUIREMENTS
+Generate ALL content in BOTH English AND Arabic (فصحى formal):
+- Taglines: Compelling 10-15 word taglines suitable for Saudi government announcements
+- Descriptions: Comprehensive narratives (150+ words each language)
+- Objectives: Clear regulatory testing objectives aligned with Saudi innovation policy
 
-## REQUIRED OUTPUT
-1. tagline_en / tagline_ar - Compelling 10-15 word taglines
-2. description_en / description_ar - Comprehensive descriptions
+## REQUIRED OUTPUT FIELDS
+1. tagline_en / tagline_ar - Professional taglines
+2. description_en / description_ar - Detailed sandbox descriptions  
 3. objectives_en / objectives_ar - Clear regulatory testing objectives
 4. exemption_suggestions - Array of recommended regulatory exemptions
 
 ## SAUDI CONTEXT
 MoMAH regulatory sandboxes support Vision 2030 innovation goals.
-Partners: MCIT, CITC, SDAIA for technology regulation.`,
+Coordinate with: MCIT, CITC, SDAIA for technology regulation.
+Quality of Life Program alignment required.`,
 
-response_json_schema: {
-  type: 'object',
-  required: ['tagline_en', 'tagline_ar', 'description_en', 'description_ar', 'objectives_en', 'objectives_ar'],
-  properties: {
-    tagline_en: { type: 'string' },
-    tagline_ar: { type: 'string' },
-    description_en: { type: 'string' },
-    description_ar: { type: 'string' },
-    objectives_en: { type: 'string' },
-    objectives_ar: { type: 'string' },
-    exemption_suggestions: { type: 'array', items: { type: 'string' } }
+    response_json_schema: {
+      type: 'object',
+      required: ['tagline_en', 'tagline_ar', 'description_en', 'description_ar', 'objectives_en', 'objectives_ar'],
+      properties: {
+        tagline_en: { type: 'string', description: 'Compelling tagline in English (10-15 words)' },
+        tagline_ar: { type: 'string', description: 'شعار مقنع بالعربية (10-15 كلمة)' },
+        description_en: { type: 'string', minLength: 150, description: 'Comprehensive description in English' },
+        description_ar: { type: 'string', minLength: 150, description: 'وصف شامل بالعربية' },
+        objectives_en: { type: 'string', description: 'Clear regulatory testing objectives' },
+        objectives_ar: { type: 'string', description: 'أهداف اختبار تنظيمية واضحة' },
+        exemption_suggestions: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Recommended regulatory exemptions for sandbox'
+        }
+      }
+    }
+  });
+
+  if (result.success) {
+    setFormData({
+      ...formData,
+      tagline_en: result.data.tagline_en,
+      tagline_ar: result.data.tagline_ar,
+      description_en: result.data.description_en,
+      description_ar: result.data.description_ar,
+      objectives_en: result.data.objectives_en,
+      objectives_ar: result.data.objectives_ar
+    });
+    toast.success(t({ en: 'AI enhanced your sandbox', ar: 'تم تحسين منطقة الاختبار بالذكاء الاصطناعي' }));
   }
-}
+};
 ```
 
-### 4.2 PilotEdit.jsx (Lines 233-498) - 7 AI Sections
+### 2. PilotEdit.jsx - Section: 'details' (Lines 326-354)
 
-Each section needs similar updates. Example for `details` section:
-
-**Current (Line 326-354):**
+**Current Prompt:**
 ```javascript
 prompt = `${baseContext}
-
 Current data:
 Title EN: ${formData.title_en}
 ...
 Enhance: refined titles, taglines, detailed descriptions...`;
 ```
 
-**Required:**
+**Required Changes:**
+
 ```javascript
-prompt = `${baseContext}
+// Section: 'details' - Full bilingual output
+else if (section === 'details') {
+  prompt = `${baseContext}
 
-## CURRENT DATA
+## CURRENT PILOT DATA
 Title: ${formData.title_en} | ${formData.title_ar || 'N/A'}
-Description: ${formData.description_en?.substring(0, 200) || 'N/A'}
+Description (EN): ${formData.description_en?.substring(0, 300) || 'N/A'}
+Description (AR): ${formData.description_ar?.substring(0, 300) || 'N/A'}
 Objective: ${formData.objective_en || 'N/A'}
+Current Hypothesis: ${formData.hypothesis || 'N/A'}
+Methodology: ${formData.methodology || 'N/A'}
 
-## BILINGUAL REQUIREMENTS
-Enhance ALL text fields in BOTH English AND Arabic:
+## BILINGUAL OUTPUT REQUIREMENTS
+Enhance ALL text fields in BOTH English AND Arabic (فصحى formal):
 - Titles: Compelling, sector-specific (max 80 chars each)
 - Taglines: Memorable summaries (15-20 words each)
-- Descriptions: Detailed narratives (200+ words each)
-- Objectives: Clear, measurable goals
-- Hypothesis: Scientific format
-- Methodology: Step-by-step approach
-- Scope: Boundaries and limitations
+- Descriptions: Detailed narratives (200+ words each language)
+- Objectives: Clear, measurable goals with bilingual text
+- Hypothesis: Scientific format hypothesis statement
+- Methodology: Step-by-step approach description
+- Scope: Clear boundaries and limitations
 
-Use formal Arabic (فصحى) for Saudi government documentation.`;
+Use formal Arabic suitable for Saudi government documentation.`;
 
-schema = {
-  type: 'object',
-  required: ['title_en', 'title_ar', 'description_en', 'description_ar', 'objective_en', 'objective_ar'],
-  properties: {
-    title_en: { type: 'string' },
-    title_ar: { type: 'string' },
-    tagline_en: { type: 'string' },
-    tagline_ar: { type: 'string' },
-    description_en: { type: 'string' },
-    description_ar: { type: 'string' },
-    objective_en: { type: 'string' },
-    objective_ar: { type: 'string' },
-    hypothesis: { type: 'string' },
-    methodology: { type: 'string' },
-    scope: { type: 'string' }
+  schema = {
+    type: 'object',
+    required: ['title_en', 'title_ar', 'tagline_en', 'tagline_ar', 'description_en', 'description_ar', 'objective_en', 'objective_ar'],
+    properties: {
+      title_en: { type: 'string', maxLength: 80 },
+      title_ar: { type: 'string', maxLength: 80 },
+      tagline_en: { type: 'string' },
+      tagline_ar: { type: 'string' },
+      description_en: { type: 'string', minLength: 200 },
+      description_ar: { type: 'string', minLength: 200 },
+      objective_en: { type: 'string' },
+      objective_ar: { type: 'string' },
+      hypothesis: { type: 'string' },
+      methodology: { type: 'string' },
+      scope: { type: 'string' }
+    }
+  };
+}
+```
+
+### 3. AIIdeaClassifier.jsx (Lines 16-42)
+
+**Current Prompt:**
+```javascript
+prompt: `Classify citizen idea and detect issues:
+IDEA: ${idea.content || idea.title}
+...
+Provide: 1. Primary sector... 5. Similar existing challenges...`
+```
+
+**Required Changes:**
+
+```javascript
+const classifyIdea = async () => {
+  const response = await invokeAI({
+    prompt: `Classify citizen idea for Saudi municipal innovation platform.
+
+## IDEA DETAILS
+Title: ${idea.title}
+Content: ${idea.content || idea.description || 'No description'}
+Location: ${idea.location || 'Not specified'}
+Category: ${idea.category || 'Not specified'}
+
+## CLASSIFICATION REQUIREMENTS
+Analyze and classify this citizen idea with bilingual outputs:
+
+1. Primary sector (use standard codes: urban_design, transport, environment, digital_services, utilities, public_safety, parks_recreation, housing)
+2. Sector names in both languages
+3. Keywords in BOTH English AND Arabic (5-10 relevant terms each)
+4. Is it spam/low-quality? (true/false with reason)
+5. Sentiment (positive_suggestion, neutral, complaint, urgent_issue)
+6. Similar existing challenges (if any patterns detected)
+7. Recommended priority (high/medium/low) with justification
+8. Quality assessment (0-100 score)
+
+## SAUDI CONTEXT
+Ideas should align with Quality of Life Program and municipal service improvement.
+Consider Vision 2030 goals in classification.`,
+
+    response_json_schema: {
+      type: "object",
+      required: ['sector', 'sector_en', 'sector_ar', 'keywords_en', 'keywords_ar', 'is_spam', 'sentiment', 'priority', 'quality_score'],
+      properties: {
+        sector: { type: "string", description: "Sector code" },
+        sector_en: { type: "string", description: "Sector name in English" },
+        sector_ar: { type: "string", description: "اسم القطاع بالعربية" },
+        keywords_en: { type: "array", items: { type: "string" }, description: "English keywords (5-10)" },
+        keywords_ar: { type: "array", items: { type: "string" }, description: "كلمات مفتاحية بالعربية (5-10)" },
+        is_spam: { type: "boolean" },
+        spam_reason: { type: "string", description: "Reason if spam detected" },
+        sentiment: { type: "string", enum: ["positive_suggestion", "neutral", "complaint", "urgent_issue"] },
+        similar_patterns: { type: "array", items: { type: "string" } },
+        priority: { type: "string", enum: ["high", "medium", "low"] },
+        priority_justification_en: { type: "string" },
+        priority_justification_ar: { type: "string" },
+        quality_score: { type: "number", minimum: 0, maximum: 100 }
+      }
+    }
+  });
+
+  if (response.success && response.data) {
+    setClassification(response.data);
+    if (onClassified) {
+      onClassified(response.data);
+    }
+    toast.success(t({ en: 'Idea classified', ar: 'تم تصنيف الفكرة' }));
   }
 };
 ```
 
-### 4.3 ROICalculator.jsx (Lines 26-61)
+### 4. ROICalculator.jsx (Lines 26-61)
 
-**Current:**
+**Current Prompt:**
 ```javascript
 prompt: `Calculate expected ROI and impact for this initiative:
-
 Type: ${inputs.type}
-Budget: ${inputs.budget} SAR
 ...
-
-Based on similar initiatives in municipal innovation, provide:
-1. Expected ROI (%)
-...
-Be realistic and data-driven.`,
+Be realistic and data-driven.`
 ```
 
-**Required:**
-```javascript
-prompt: `Calculate ROI and impact for Saudi municipal innovation initiative.
+**Required Changes:**
 
-## INITIATIVE CONTEXT
+```javascript
+const calculateROI = async () => {
+  if (!inputs.budget || !inputs.sector) {
+    toast.error(t({ en: 'Please fill required fields', ar: 'الرجاء ملء الحقول المطلوبة' }));
+    return;
+  }
+
+  const result = await invokeAI({
+    prompt: `Calculate expected ROI for Saudi municipal innovation initiative.
+
+## INITIATIVE DETAILS
 Type: ${inputs.type}
 Budget: ${inputs.budget} SAR
 Sector: ${inputs.sector}
 Duration: ${inputs.duration_months} months
 Expected Outcome: ${inputs.expected_outcome}
 
-## BILINGUAL REQUIREMENTS
-Generate analysis summary and recommendations in BOTH English AND Arabic.
+## ANALYSIS REQUIREMENTS
+Based on similar initiatives in Saudi municipal innovation ecosystem, provide:
+1. Expected ROI percentage (realistic for Saudi context)
+2. Payback period in months
+3. Impact score (0-100)
+4. Cost per citizen served (SAR)
+5. Benchmark comparison with bilingual summary
+6. Risk factors with bilingual descriptions (3 key risks)
 
-## REQUIRED OUTPUT
-1. roi_percentage - Expected return on investment
-2. payback_months - Time to recover investment
-3. impact_score - Overall impact (0-100)
-4. cost_per_citizen - SAR per citizen served
-5. benchmark_en / benchmark_ar - Comparison to similar Saudi initiatives
-6. risks_en / risks_ar - Key risk factors (3-5 each)
-7. recommendation_en / recommendation_ar - Strategic recommendation
-
-## SAUDI CONTEXT
-Base calculations on Saudi municipal initiative benchmarks.
-Consider Vision 2030 alignment and MoMAH priorities.`,
-
-response_json_schema: {
-  type: 'object',
-  required: ['roi_percentage', 'benchmark_en', 'benchmark_ar'],
-  properties: {
-    roi_percentage: { type: 'number' },
-    payback_months: { type: 'number' },
-    impact_score: { type: 'number' },
-    cost_per_citizen: { type: 'number' },
-    benchmark_en: { type: 'string' },
-    benchmark_ar: { type: 'string' },
-    risks_en: { type: 'array', items: { type: 'string' } },
-    risks_ar: { type: 'array', items: { type: 'string' } },
-    recommendation_en: { type: 'string' },
-    recommendation_ar: { type: 'string' }
-  }
-}
-```
-
-### 4.4 AIIdeaClassifier.jsx (Lines 16-42)
-
-**Current:**
-```javascript
-prompt: `Classify citizen idea and detect issues:
-
-IDEA: ${idea.content || idea.title}
-LOCATION: ${idea.location || 'Not specified'}
-
-Provide:
-1. Primary sector...`,
-```
-
-**Required:**
-```javascript
-prompt: `Classify citizen idea for Saudi municipal innovation platform.
-
-## IDEA DETAILS
-Content: ${idea.content || idea.title}
-Location: ${idea.location || 'Not specified'}
-Municipality: ${idea.municipality_id ? 'Specified' : 'General'}
-
-## BILINGUAL REQUIREMENTS
-Generate classification labels in BOTH English AND Arabic.
-
-## REQUIRED OUTPUT
-1. sector_en / sector_ar - Primary sector classification
-2. keywords_en / keywords_ar - 5-10 relevant terms each language
-3. is_spam - Boolean spam/quality flag
-4. sentiment - positive_suggestion, neutral, complaint
-5. summary_en / summary_ar - Brief idea summary
-6. recommendation_en / recommendation_ar - Next steps suggestion
-7. priority - high/medium/low
-8. quality_score - 0-100
+## OUTPUT REQUIREMENTS
+All text outputs must be bilingual (English + Arabic فصحى):
+- benchmark_en / benchmark_ar
+- risks with risk_en / risk_ar pairs
+- recommendation_en / recommendation_ar
 
 ## SAUDI CONTEXT
-Classify according to MoMAH service categories and Vision 2030 themes.`,
+Consider Vision 2030 ROI benchmarks for municipal innovation.
+Reference Quality of Life Program metrics where relevant.`,
 
-response_json_schema: {
-  type: 'object',
-  required: ['sector_en', 'sector_ar', 'keywords_en', 'keywords_ar'],
-  properties: {
-    sector_en: { type: 'string' },
-    sector_ar: { type: 'string' },
-    keywords_en: { type: 'array', items: { type: 'string' } },
-    keywords_ar: { type: 'array', items: { type: 'string' } },
-    is_spam: { type: 'boolean' },
-    sentiment: { type: 'string' },
-    summary_en: { type: 'string' },
-    summary_ar: { type: 'string' },
-    recommendation_en: { type: 'string' },
-    recommendation_ar: { type: 'string' },
-    priority: { type: 'string' },
-    quality_score: { type: 'number' }
-  }
-}
-```
-
----
-
-## Part 5: New Infrastructure Files
-
-### 5.1 Create: `src/lib/ai/saudiContext.js`
-
-```javascript
-/**
- * Saudi/MoMAH context constants for AI prompts
- * Centralized context for consistent AI generation
- */
-
-export const SAUDI_CONTEXT = {
-  FULL: `MoMAH (Ministry of Municipalities and Housing) oversees:
-- 13 administrative regions, 285+ municipalities, 17 Amanats
-- Municipal services: waste, lighting, parks, markets, permits, inspections
-- Housing programs: Sakani, Wafi, Ejar, Mulkiya, REDF, NHC
-- Vision 2030: Quality of Life, Housing (70% ownership), NTP, Thriving Cities
-- Innovation: AI/ML, IoT, Digital Twins, Smart Cities, GovTech, PropTech, ConTech
-- Partners: KACST, SDAIA, MCIT, KAUST, KFUPM, Monsha'at
-- Systems: Balady Platform, Sakani, ANSA, Baladiya, Mostadam`,
-
-  COMPACT: `MoMAH - Saudi Ministry of Municipalities & Housing. Vision 2030 aligned.
-13 regions, 285+ municipalities. Programs: Sakani, Wafi, Ejar.
-Innovation: KACST, SDAIA, MCIT. Platforms: Balady, Sakani, Mostadam.`,
-
-  INNOVATION: `Innovation/R&D focus required:
-- Technologies: AI/ML, IoT, Digital Twins, Smart Cities, GovTech, PropTech, ConTech
-- Partners: KACST, SDAIA, KAUST, KFUPM, Monsha'at, Badir Program
-- PropTech: BIM, modular construction, 3D printing, smart homes
-- Green Building: Mostadam certification, sustainability`,
-
-  BILINGUAL_INSTRUCTION: `## BILINGUAL REQUIREMENTS
-Generate ALL text content in BOTH English AND Arabic:
-- Use formal Arabic (فصحى) suitable for Saudi government documents
-- Ensure Arabic content is culturally appropriate for Saudi context
-- All field pairs must be semantically equivalent`
-};
-
-export const getSectorContext = (sectorCode) => {
-  const contexts = {
-    SMART_CITIES: 'Smart city infrastructure, IoT sensors, data analytics, citizen apps',
-    HOUSING: 'Sakani, Wafi, REDF mortgages, 70% ownership goal, NHC developments',
-    URBAN_PLANNING: 'Thriving Cities, master planning, zoning, land use optimization',
-    ENVIRONMENT: 'Mostadam green buildings, waste management, sustainability',
-    DIGITAL_SERVICES: 'Balady platform, e-services, digital transformation',
-    TRANSPORTATION: 'Smart mobility, traffic management, public transit'
-  };
-  return contexts[sectorCode] || 'Municipal innovation and service improvement';
-};
-```
-
-### 5.2 Create: `src/lib/ai/bilingualSchemaBuilder.js`
-
-```javascript
-/**
- * Helper to build consistent bilingual JSON schemas
- */
-
-export function buildBilingualSchema(fields, additionalProps = {}) {
-  const required = [];
-  const properties = {};
-
-  fields.forEach(field => {
-    if (field.bilingual) {
-      required.push(`${field.name}_en`, `${field.name}_ar`);
-      properties[`${field.name}_en`] = {
-        type: field.type || 'string',
-        ...(field.minLength && { minLength: field.minLength }),
-        ...(field.description && { description: field.description })
-      };
-      properties[`${field.name}_ar`] = {
-        type: field.type || 'string',
-        ...(field.minLength && { minLength: field.minLength }),
-        ...(field.descriptionAr && { description: field.descriptionAr })
-      };
-    } else {
-      if (field.required) required.push(field.name);
-      properties[field.name] = {
-        type: field.type || 'string',
-        ...(field.enum && { enum: field.enum }),
-        ...(field.items && { items: field.items })
-      };
+    response_json_schema: {
+      type: "object",
+      required: ['roi_percentage', 'payback_months', 'impact_score', 'cost_per_citizen', 'benchmark_en', 'benchmark_ar'],
+      properties: {
+        roi_percentage: { type: "number" },
+        payback_months: { type: "number" },
+        impact_score: { type: "number", minimum: 0, maximum: 100 },
+        cost_per_citizen: { type: "number" },
+        benchmark_en: { type: "string", description: "Comparison to similar initiatives in English" },
+        benchmark_ar: { type: "string", description: "مقارنة بمبادرات مماثلة بالعربية" },
+        recommendation_en: { type: "string" },
+        recommendation_ar: { type: "string" },
+        risks: { 
+          type: "array", 
+          items: { 
+            type: "object",
+            properties: {
+              risk_en: { type: "string" },
+              risk_ar: { type: "string" },
+              severity: { type: "string", enum: ["high", "medium", "low"] }
+            }
+          }
+        }
+      }
     }
   });
 
-  return {
-    type: 'object',
-    required,
-    properties: { ...properties, ...additionalProps }
-  };
-}
-
-// Usage example:
-// const schema = buildBilingualSchema([
-//   { name: 'title', bilingual: true, minLength: 10 },
-//   { name: 'description', bilingual: true, minLength: 100 },
-//   { name: 'priority', required: true, enum: ['high', 'medium', 'low'] },
-//   { name: 'tags', type: 'array', items: { type: 'string' } }
-// ]);
+  if (result.success) {
+    setResults(result.data);
+    if (onCalculated) onCalculated(result.data);
+    toast.success(t({ en: 'ROI calculated', ar: 'تم حساب العائد على الاستثمار' }));
+  }
+};
 ```
 
----
+### 5. ScalingCostBenefitAnalyzer.jsx (Lines 17-66)
 
-## Part 6: Notification Templates
+**Current Prompt:**
+```javascript
+prompt: `Calculate cost-benefit analysis for scaling pilot:
+PILOT: ${pilot.title_en}
+...`
+```
 
-### 6.1 Current Templates (4)
-
-Located in `src/components/notifications/BilingualNotificationTemplate.jsx`:
-- `challenge_approved`
-- `pilot_milestone`
-- `task_assigned`
-- `approval_pending`
-
-### 6.2 Required New Templates (9)
-
-Add to BilingualNotificationTemplate.jsx:
+**Required Changes:**
 
 ```javascript
-const TEMPLATES = {
-  // Existing...
-  
-  // NEW TEMPLATES
-  solution_submitted: {
-    en: {
-      title: 'Solution Submitted',
-      body: 'Your solution "{solutionName}" has been submitted for review.'
-    },
-    ar: {
-      title: 'تم تقديم الحل',
-      body: 'تم تقديم الحل الخاص بك "{solutionName}" للمراجعة.'
+const analyzeCostBenefit = async () => {
+  const result = await invokeAI({
+    prompt: `Calculate cost-benefit analysis for scaling municipal innovation pilot.
+
+## PILOT DETAILS
+Title: ${pilot.title_en} | ${pilot.title_ar || ''}
+Current Budget: ${pilot.budget} ${pilot.budget_currency || 'SAR'}
+Current Results: ${pilot.kpis?.map(k => `${k.name}: ${k.current_value || k.current}`).join(', ')}
+Target Municipalities: ${targetMunicipalities.length} cities
+Municipality Names: ${targetMunicipalities.map(m => m.name_en).join(', ')}
+
+## ANALYSIS REQUIREMENTS
+For scaling to ${targetMunicipalities.length} Saudi municipalities, estimate:
+1. Total deployment cost (SAR)
+2. Expected annual benefits (cost savings, efficiency gains)
+3. Break-even point (months)
+4. 3-year ROI percentage
+5. Cost per municipality
+6. Benefit variance (best/worst case scenarios)
+7. Bilingual investment summary and recommendation
+
+## OUTPUT REQUIREMENTS
+Provide bilingual summaries:
+- investment_summary_en / investment_summary_ar
+- recommendation_en / recommendation_ar
+
+## SAUDI CONTEXT
+Consider Saudi municipal procurement timelines.
+Factor in Vision 2030 municipal transformation costs.
+Account for regional variations across Saudi regions.`,
+
+    response_json_schema: {
+      type: "object",
+      required: ['total_cost', 'annual_benefit', 'break_even_months', 'three_year_roi'],
+      properties: {
+        total_cost: { type: "number", description: "Total deployment cost in SAR" },
+        annual_benefit: { type: "number", description: "Annual benefit in SAR" },
+        break_even_months: { type: "number" },
+        three_year_roi: { type: "number" },
+        cost_per_municipality: { type: "number" },
+        benefit_variance: {
+          type: "object",
+          properties: {
+            best_case: { type: "number" },
+            worst_case: { type: "number" }
+          }
+        },
+        investment_summary_en: { type: "string", description: "Investment summary in English" },
+        investment_summary_ar: { type: "string", description: "ملخص الاستثمار بالعربية" },
+        recommendation_en: { type: "string" },
+        recommendation_ar: { type: "string" },
+        cashflow_projection: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              month: { type: "number" },
+              cost: { type: "number" },
+              benefit: { type: "number" }
+            }
+          }
+        }
+      }
     }
-  },
-  
-  rd_call_created: {
-    en: {
-      title: 'R&D Call Published',
-      body: 'New R&D call "{callTitle}" is now open for proposals.'
-    },
-    ar: {
-      title: 'نشر طلب البحث والتطوير',
-      body: 'طلب البحث والتطوير الجديد "{callTitle}" مفتوح الآن للمقترحات.'
+  });
+
+  if (result.success) {
+    setForecast(result.data);
+    toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
+  }
+};
+```
+
+### 6. PilotConversionWizard.jsx - generatePartnershipAgreement (Lines 52-86)
+
+**Current Prompt:**
+```javascript
+prompt: `Generate a partnership agreement template...
+Generate professional MOU/Partnership Agreement in both Arabic and English with:
+1. Parties and background...`
+```
+
+**Required Changes:**
+
+```javascript
+const generatePartnershipAgreement = async () => {
+  const { success, data } = await invokeAI({
+    prompt: `Generate MOU/Partnership Agreement for Matchmaker-to-Pilot conversion in Saudi municipal context.
+
+## PARTNERSHIP CONTEXT
+Provider: ${application.organization_name_en} | ${application.organization_name_ar || ''}
+Challenge: ${challenge?.title_en} | ${challenge?.title_ar || ''}
+Municipality: ${challenge?.municipality?.name_en || 'TBD'}
+Pilot Objective: ${pilotData.objective_en}
+Duration: ${pilotData.duration_weeks} weeks
+Budget: ${pilotData.budget} SAR
+
+## AGREEMENT SECTIONS (Bilingual Required)
+Generate professional MOU content with ALL sections in BOTH English AND Arabic (فصحى formal):
+
+1. Parties and Background (الأطراف والخلفية)
+2. Scope of Collaboration (نطاق التعاون)
+3. Roles and Responsibilities (الأدوار والمسؤوليات)
+4. Duration and Milestones (المدة والمعالم الرئيسية)
+5. Budget and Resource Allocation (الميزانية وتخصيص الموارد)
+6. IP and Data Ownership (الملكية الفكرية وملكية البيانات)
+7. Success Criteria (معايير النجاح)
+8. Exit Clauses (بنود الخروج)
+
+## LEGAL CONTEXT
+Follow Saudi commercial contract standards.
+Reference relevant Saudi municipal procurement regulations.
+Align with MoMAH partnership frameworks.`,
+
+    response_json_schema: {
+      type: 'object',
+      required: ['agreement_en', 'agreement_ar', 'key_terms_en', 'key_terms_ar'],
+      properties: {
+        agreement_en: { type: 'string', description: 'Full agreement text in English' },
+        agreement_ar: { type: 'string', description: 'نص الاتفاقية الكامل بالعربية' },
+        key_terms_en: { type: 'array', items: { type: 'string' }, description: 'Key terms summary in English' },
+        key_terms_ar: { type: 'array', items: { type: 'string' }, description: 'ملخص البنود الرئيسية بالعربية' },
+        effective_date: { type: 'string' },
+        termination_conditions_en: { type: 'string' },
+        termination_conditions_ar: { type: 'string' }
+      }
     }
-  },
-  
-  program_application_received: {
-    en: {
-      title: 'Application Received',
-      body: 'Your application for "{programName}" has been received.'
-    },
-    ar: {
-      title: 'تم استلام الطلب',
-      body: 'تم استلام طلبك للبرنامج "{programName}".'
-    }
-  },
-  
-  sandbox_approved: {
-    en: {
-      title: 'Sandbox Approved',
-      body: 'Your project has been approved for sandbox "{sandboxName}".'
-    },
-    ar: {
-      title: 'تمت الموافقة على المنطقة التنظيمية',
-      body: 'تمت الموافقة على مشروعك للمنطقة التنظيمية "{sandboxName}".'
-    }
-  },
-  
-  event_reminder: {
-    en: {
-      title: 'Event Reminder',
-      body: '"{eventTitle}" starts in {timeUntil}.'
-    },
-    ar: {
-      title: 'تذكير بالفعالية',
-      body: '"{eventTitle}" تبدأ خلال {timeUntil}.'
-    }
-  },
-  
-  deadline_approaching: {
-    en: {
-      title: 'Deadline Approaching',
-      body: '{entityType} "{entityTitle}" deadline in {daysRemaining} days.'
-    },
-    ar: {
-      title: 'اقتراب الموعد النهائي',
-      body: 'الموعد النهائي لـ {entityType} "{entityTitle}" خلال {daysRemaining} أيام.'
-    }
-  },
-  
-  status_changed: {
-    en: {
-      title: 'Status Updated',
-      body: '{entityType} "{entityTitle}" changed from {oldStatus} to {newStatus}.'
-    },
-    ar: {
-      title: 'تحديث الحالة',
-      body: 'تم تغيير حالة {entityType} "{entityTitle}" من {oldStatus} إلى {newStatus}.'
-    }
-  },
-  
-  comment_added: {
-    en: {
-      title: 'New Comment',
-      body: '{commenterName} commented on {entityType} "{entityTitle}".'
-    },
-    ar: {
-      title: 'تعليق جديد',
-      body: 'علّق {commenterName} على {entityType} "{entityTitle}".'
-    }
-  },
-  
-  mention_notification: {
-    en: {
-      title: 'You Were Mentioned',
-      body: '{mentionerName} mentioned you in {entityType} "{entityTitle}".'
-    },
-    ar: {
-      title: 'تمت الإشارة إليك',
-      body: 'أشار إليك {mentionerName} في {entityType} "{entityTitle}".'
-    }
+  });
+
+  if (success && data) {
+    setPilotData({...pilotData, partnership_agreement_url: 'generated_agreement_url'});
+    toast.success(t({ en: 'Agreement generated', ar: 'تم إنشاء الاتفاقية' }));
   }
 };
 ```
 
 ---
 
-## Part 7: Implementation Phases
+## Infrastructure Files
+
+### 1. Create: src/lib/ai/saudiContext.js
+
+```javascript
+/**
+ * Saudi Arabia / MoMAH Context Constants for AI Prompts
+ */
+
+export const SAUDI_CONTEXT = {
+  FULL: `
+## SAUDI ARABIA MUNICIPAL INNOVATION CONTEXT
+
+### Ministry of Municipalities and Housing (MoMAH)
+وزارة الشؤون البلدية والقروية والإسكان
+MoMAH oversees 285+ municipalities across 13 regions, managing urban development,
+infrastructure, and municipal services for 35+ million residents.
+
+### Vision 2030 Alignment
+All outputs must support Saudi Vision 2030 objectives:
+- Quality of Life Program (برنامج جودة الحياة)
+- National Transformation Program (برنامج التحول الوطني)
+- Smart Cities Initiative
+- Municipal Excellence Program
+- Sustainability & Environmental Goals
+
+### Key Partners in Innovation Ecosystem
+- MCIT (Ministry of Communications): Digital transformation
+- SDAIA: AI and data governance
+- KAUST, KACST: Research partnerships
+- NEOM, Red Sea Project: Mega project innovation
+- Saudi Venture Capital Company
+- Monsha'at (SME Authority)
+
+### Cultural & Language Requirements
+- Use formal Arabic (الفصحى) for all Arabic content
+- Align with Saudi government communication standards
+- Respect local customs and Islamic principles
+- Provide bilingual outputs for diverse stakeholder engagement
+`,
+
+  COMPACT: `Saudi MoMAH innovation platform supporting Vision 2030. 
+Partners: MCIT, SDAIA, KAUST. Use formal Arabic (فصحى) for government documents.
+Align with Quality of Life Program and Municipal Excellence initiatives.`,
+
+  REGULATORY: `Saudi regulatory sandbox framework aligned with:
+- MCIT Digital Regulations
+- CITC Telecommunications Standards
+- SDAIA Data & AI Governance
+- Municipal Excellence Guidelines`,
+
+  SECTORS: [
+    { code: 'transport', name_en: 'Transport & Mobility', name_ar: 'النقل والتنقل' },
+    { code: 'environment', name_en: 'Environment & Sustainability', name_ar: 'البيئة والاستدامة' },
+    { code: 'urban_design', name_en: 'Urban Design & Planning', name_ar: 'التصميم والتخطيط الحضري' },
+    { code: 'digital_services', name_en: 'Digital Municipal Services', name_ar: 'الخدمات البلدية الرقمية' },
+    { code: 'utilities', name_en: 'Utilities & Infrastructure', name_ar: 'المرافق والبنية التحتية' },
+    { code: 'public_safety', name_en: 'Public Safety', name_ar: 'السلامة العامة' },
+    { code: 'parks_recreation', name_en: 'Parks & Recreation', name_ar: 'الحدائق والترفيه' },
+    { code: 'housing', name_en: 'Housing & Construction', name_ar: 'الإسكان والبناء' }
+  ]
+};
+
+export const BILINGUAL_INSTRUCTIONS = `
+## BILINGUAL OUTPUT REQUIREMENTS
+Generate ALL text content in BOTH English AND Arabic:
+- English: Professional, clear, suitable for international stakeholders
+- Arabic: Formal Arabic (فصحى) suitable for Saudi government documents
+- Ensure semantic equivalence between languages
+- Use proper Arabic grammar and professional terminology
+`;
+
+export default SAUDI_CONTEXT;
+```
+
+### 2. Create: src/lib/ai/bilingualSchemaBuilder.js
+
+```javascript
+/**
+ * Helper functions for building consistent bilingual JSON schemas
+ */
+
+/**
+ * Creates a bilingual text field pair
+ * @param {string} fieldName - Base field name (without _en/_ar suffix)
+ * @param {object} options - Additional schema options
+ */
+export function bilingualTextField(fieldName, options = {}) {
+  const { minLength, maxLength, description } = options;
+  
+  const baseProps = { type: 'string' };
+  if (minLength) baseProps.minLength = minLength;
+  if (maxLength) baseProps.maxLength = maxLength;
+  
+  return {
+    [`${fieldName}_en`]: {
+      ...baseProps,
+      description: description || `${fieldName} in English`
+    },
+    [`${fieldName}_ar`]: {
+      ...baseProps,
+      description: `${fieldName} بالعربية`
+    }
+  };
+}
+
+/**
+ * Creates a bilingual array field pair
+ * @param {string} fieldName - Base field name
+ * @param {object} itemSchema - Schema for array items
+ */
+export function bilingualArrayField(fieldName, itemSchema = { type: 'string' }) {
+  return {
+    [`${fieldName}_en`]: {
+      type: 'array',
+      items: itemSchema,
+      description: `${fieldName} in English`
+    },
+    [`${fieldName}_ar`]: {
+      type: 'array',
+      items: itemSchema,
+      description: `${fieldName} بالعربية`
+    }
+  };
+}
+
+/**
+ * Creates a complete bilingual schema for common entity types
+ * @param {string} entityType - Type of entity (pilot, sandbox, challenge, etc.)
+ */
+export function entityBilingualSchema(entityType) {
+  const schemas = {
+    pilot: {
+      type: 'object',
+      required: ['title_en', 'title_ar', 'description_en', 'description_ar', 'objective_en', 'objective_ar'],
+      properties: {
+        ...bilingualTextField('title', { maxLength: 80 }),
+        ...bilingualTextField('tagline'),
+        ...bilingualTextField('description', { minLength: 150 }),
+        ...bilingualTextField('objective'),
+        hypothesis: { type: 'string' },
+        methodology: { type: 'string' },
+        scope: { type: 'string' }
+      }
+    },
+    sandbox: {
+      type: 'object',
+      required: ['tagline_en', 'tagline_ar', 'description_en', 'description_ar', 'objectives_en', 'objectives_ar'],
+      properties: {
+        ...bilingualTextField('tagline'),
+        ...bilingualTextField('description', { minLength: 150 }),
+        ...bilingualTextField('objectives'),
+        exemption_suggestions: { type: 'array', items: { type: 'string' } }
+      }
+    },
+    challenge: {
+      type: 'object',
+      required: ['title_en', 'title_ar', 'description_en', 'description_ar'],
+      properties: {
+        ...bilingualTextField('title', { maxLength: 100 }),
+        ...bilingualTextField('tagline'),
+        ...bilingualTextField('description', { minLength: 200 }),
+        ...bilingualTextField('problem_statement'),
+        ...bilingualTextField('desired_outcome')
+      }
+    },
+    program: {
+      type: 'object',
+      required: ['name_en', 'name_ar', 'description_en', 'description_ar', 'objectives_en', 'objectives_ar'],
+      properties: {
+        ...bilingualTextField('name'),
+        ...bilingualTextField('tagline'),
+        ...bilingualTextField('description', { minLength: 150 }),
+        ...bilingualTextField('objectives')
+      }
+    }
+  };
+  
+  return schemas[entityType] || null;
+}
+
+export default { bilingualTextField, bilingualArrayField, entityBilingualSchema };
+```
+
+---
+
+## Testing & Verification
+
+### Pre-Implementation Checklist
+
+- [ ] Review each file's current AI prompt structure
+- [ ] Identify all text fields that need bilingual output
+- [ ] Map AI output fields to database columns
+- [ ] Ensure schema enforces required bilingual fields
+
+### Post-Implementation Verification
+
+For each updated file, verify:
+
+1. **Prompt Structure**
+   - [ ] Includes SAUDI_CONTEXT or equivalent
+   - [ ] Specifies bilingual requirements explicitly
+   - [ ] Uses formal Arabic (فصحى) instruction
+
+2. **Schema Completeness**
+   - [ ] All text fields have `_en` and `_ar` pairs
+   - [ ] Required array includes all bilingual pairs
+   - [ ] Description fields are bilingual
+
+3. **Database Mapping**
+   - [ ] Output fields match database column names
+   - [ ] Special cases handled (e.g., sandboxes.name vs name_en)
+   - [ ] JSON fields properly structured
+
+4. **UI Integration**
+   - [ ] Both languages displayed where appropriate
+   - [ ] RTL support for Arabic content
+   - [ ] Language toggle works correctly
+
+### Testing Script Template
+
+```javascript
+// Test bilingual AI output for [Component Name]
+describe('Bilingual AI Output', () => {
+  it('should return both _en and _ar fields', async () => {
+    const result = await invokeAI({ prompt: testPrompt, schema: testSchema });
+    
+    expect(result.success).toBe(true);
+    expect(result.data.title_en).toBeDefined();
+    expect(result.data.title_ar).toBeDefined();
+    expect(result.data.title_ar).toMatch(/[\u0600-\u06FF]/); // Contains Arabic
+  });
+});
+```
+
+---
+
+## Implementation Priority & Timeline
 
 ### Phase 1: Infrastructure (Day 1)
 - [ ] Create `src/lib/ai/saudiContext.js`
 - [ ] Create `src/lib/ai/bilingualSchemaBuilder.js`
-- [ ] Update `src/components/notifications/BilingualNotificationTemplate.jsx`
+- [ ] Update existing prompt files to use shared context
 
 ### Phase 2: High-Priority Pages (Days 2-3)
-- [ ] `SandboxCreate.jsx` - 1 prompt
-- [ ] `PilotEdit.jsx` - 7 prompts
-- [ ] `SolutionChallengeMatcher.jsx` - 1 prompt
-- [ ] `EmailTemplateManager.jsx` - 1 prompt
-- [ ] `RDPortfolioPlanner.jsx` - 1 prompt
-- [ ] `RiskPortfolio.jsx` - 1 prompt
+- [ ] `SandboxCreate.jsx`
+- [ ] `PilotEdit.jsx` (7 sections)
+- [ ] `SolutionChallengeMatcher.jsx`
+- [ ] `EmailTemplateManager.jsx`
+- [ ] `RDPortfolioPlanner.jsx`
+- [ ] `RiskPortfolio.jsx`
 
 ### Phase 3: Workflow Components (Days 4-6)
-- [ ] All matchmaker components (4 files)
-- [ ] All scaling components (3 files)
-- [ ] All pilot components (3 files)
-- [ ] Challenge workflow components (2 files)
-- [ ] Other workflow components (8 files)
+- [ ] All 18 workflow components listed in Priority 2
+- [ ] Focus on matcher, scaling, and collaboration components
 
 ### Phase 4: Analysis Components (Days 7-8)
-- [ ] AI analysis components (4 files)
-- [ ] Strategy cascade generators (5 files)
-- [ ] Verify already-bilingual components
+- [ ] All 10 analysis components listed in Priority 3
+- [ ] Final verification and testing
 
 ---
 
-## Part 8: Testing Checklist
+## Summary
 
-For each updated component:
+**Total Changes Required:**
+- 6 high-priority pages
+- 18 workflow components  
+- 10 analysis components
+- 2 new infrastructure files
+- **34 files total**
 
-- [ ] AI prompt includes "BOTH English AND Arabic" instruction
-- [ ] JSON schema has all `_en`/`_ar` field pairs
-- [ ] Schema `required` array includes bilingual pairs
-- [ ] Generated content saves correctly to database
-- [ ] UI displays both languages appropriately
-- [ ] Arabic text renders correctly (RTL)
-- [ ] Rate limiting and error states work
-- [ ] AIStatusIndicator displays properly
-
----
-
-## Summary Statistics
-
-| Category | Total Files | Already Bilingual | Needs Update |
-|----------|-------------|-------------------|--------------|
-| Pages | 20 | 14 | 6 |
-| Workflow Components | 25 | 5 | 20 |
-| Analysis Components | 20 | 10 | 10 |
-| Notification Templates | 13 | 4 | 9 |
-| **TOTAL** | **78** | **33** | **45** |
+**Key Patterns to Follow:**
+1. Always include `SAUDI_CONTEXT` or equivalent
+2. Enforce bilingual fields in schema with `required` array
+3. Map output directly to database column names
+4. Use formal Arabic (فصحى) specification
+5. Include minLength for description fields (150+ words)
 
 ---
 
-## Appendix: File Index
-
-### Files Confirmed Bilingual ✅
-1. `src/pages/FailureAnalysisDashboard.jsx`
-2. `src/pages/PilotDetail.jsx`
-3. `src/pages/RDProposalDetail.jsx`
-4. `src/pages/Sandboxes.jsx`
-5. `src/pages/MII.jsx`
-6. `src/pages/ProgramDetail.jsx`
-7. `src/pages/RDCallDetail.jsx`
-8. `src/pages/Knowledge.jsx`
-9. `src/pages/Network.jsx`
-10. `src/pages/SandboxDetail.jsx`
-11. `src/pages/CampaignPlanner.jsx`
-12. `src/pages/EventsAnalyticsDashboard.jsx`
-13. `src/pages/CompetitiveIntelligenceDashboard.jsx`
-14. All 24 Strategy Wizard prompt files
-
-### Files Requiring Update ❌
-See Parts 2.1, 2.2, 2.3 for complete lists with line numbers.
+*Document Version: 2.0*  
+*Last Updated: 2025-12-17*
