@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { ShoppingCart, Sparkles, ArrowRight, Loader2, X, FileText, Shield } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { PILOT_PROCUREMENT_SYSTEM_PROMPT, buildPilotProcurementPrompt, PILOT_PROCUREMENT_SCHEMA } from '@/lib/ai/prompts/pilots';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
@@ -39,36 +40,9 @@ export default function PilotToProcurementWorkflow({ pilot, onClose }) {
 
   const generateRFP = async () => {
     const result = await invokeAI({
-      prompt: `Generate procurement RFP based on successful pilot validation:
-
-Pilot: ${pilot.title_en}
-Solution Validated: ${solution?.name_en || 'N/A'}
-Provider: ${solution?.provider_name || 'N/A'}
-Sector: ${pilot.sector}
-Evaluation Score: ${pilot.success_probability || 'N/A'}%
-KPIs Achieved: ${pilot.kpis?.map(k => k.name).join(', ') || 'N/A'}
-
-Generate:
-1. Procurement scope (what is being procured)
-2. Technical specifications (from pilot learnings)
-3. Evaluation criteria for vendor selection
-4. RFP document text (bilingual)
-
-Return in both English and Arabic.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          scope_en: { type: 'string' },
-          scope_ar: { type: 'string' },
-          specs_en: { type: 'string' },
-          specs_ar: { type: 'string' },
-          criteria_en: { type: 'string' },
-          criteria_ar: { type: 'string' },
-          rfp_text_en: { type: 'string' },
-          rfp_text_ar: { type: 'string' },
-          estimated_value: { type: 'number' }
-        }
-      }
+      prompt: buildPilotProcurementPrompt(pilot, solution),
+      system_prompt: PILOT_PROCUREMENT_SYSTEM_PROMPT,
+      response_json_schema: PILOT_PROCUREMENT_SCHEMA
     });
 
     if (result.success) {

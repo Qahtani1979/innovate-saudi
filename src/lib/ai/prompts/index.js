@@ -63,6 +63,9 @@ export * from './strategy';
 // Media prompts
 export * from './media';
 
+// Workflows prompts
+export * from './workflows';
+
 // Taxonomy prompts
 export * from './taxonomy';
 
@@ -109,8 +112,8 @@ export const PROMPT_MODULE_STATUS = {
   portfolio: { status: 'complete', promptCount: 3 },
   events: { status: 'complete', promptCount: 3 },
   challenges: { status: 'complete', promptCount: 8 },
-  pilots: { status: 'complete', promptCount: 4 },
-  matchmaker: { status: 'complete', promptCount: 5 },
+  pilots: { status: 'complete', promptCount: 6 },
+  matchmaker: { status: 'complete', promptCount: 6 },
   sandbox: { status: 'complete', promptCount: 8 },
   rd: { status: 'complete', promptCount: 8 },
   scaling: { status: 'complete', promptCount: 4 },
@@ -132,7 +135,8 @@ export const PROMPT_MODULE_STATUS = {
   content: { status: 'complete', promptCount: 1 },
   uploader: { status: 'complete', promptCount: 1 },
   communications: { status: 'complete', promptCount: 4 },
-  media: { status: 'complete', promptCount: 1 }
+  media: { status: 'complete', promptCount: 1 },
+  workflows: { status: 'complete', promptCount: 1 }
 };
 
 /**

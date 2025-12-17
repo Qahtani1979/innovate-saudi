@@ -9,6 +9,7 @@ import { useLanguage } from './LanguageContext';
 import { RotateCcw, Loader2, AlertTriangle, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { PILOT_PIVOT_SYSTEM_PROMPT, buildPilotPivotPrompt, PILOT_PIVOT_SCHEMA } from '@/lib/ai/prompts/pilots';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function PilotPivotWorkflow({ pilot, onClose }) {
@@ -62,38 +63,9 @@ function PilotPivotWorkflow({ pilot, onClose }) {
 
   const generateImpactAnalysis = async () => {
     const result = await invokeAI({
-      prompt: `Analyze the impact of this proposed pilot pivot:
-
-Pilot: ${pilot.title_en}
-Current Stage: ${pilot.stage}
-Pivot Type: ${pivotType}
-Rationale: ${rationale}
-Proposed Changes: ${proposedChanges}
-
-Current KPIs:
-${pilot.kpis?.map(k => `- ${k.name}: Current ${k.current}, Target ${k.target}`).join('\n') || 'None'}
-
-Provide:
-1. Impact on timeline (estimated delay/acceleration)
-2. Impact on budget (estimated increase/decrease in %)
-3. Impact on success probability (increase/decrease)
-4. Risks introduced by this pivot
-5. Benefits of this pivot
-6. Alternative approaches to consider
-7. Recommendation (approve/defer/reject pivot with rationale)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          timeline_impact: { type: 'string' },
-          budget_impact: { type: 'string' },
-          success_probability_impact: { type: 'string' },
-          new_risks: { type: 'array', items: { type: 'string' } },
-          benefits: { type: 'array', items: { type: 'string' } },
-          alternatives: { type: 'array', items: { type: 'string' } },
-          recommendation: { type: 'string' },
-          rationale_ai: { type: 'string' }
-        }
-      }
+      prompt: buildPilotPivotPrompt(pilot, pivotType, rationale, proposedChanges),
+      system_prompt: PILOT_PIVOT_SYSTEM_PROMPT,
+      response_json_schema: PILOT_PIVOT_SCHEMA
     });
 
     if (result.success) {

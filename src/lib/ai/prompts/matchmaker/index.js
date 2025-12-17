@@ -18,6 +18,13 @@ export { getStrategicChallengeMapperPrompt, strategicChallengeMapperSchema } fro
 // Multi-Party Matchmaker
 export { getMultiPartyMatchmakerPrompt, multiPartyMatchmakerSchema } from './multiPartyMatchmaker';
 
+// Provider Performance Scorecard
+export { 
+  PROVIDER_PERFORMANCE_SYSTEM_PROMPT, 
+  buildProviderPerformancePrompt, 
+  PROVIDER_PERFORMANCE_SCHEMA 
+} from './providerPerformance';
+
 /**
  * Matchmaker module prompt configuration
  */

@@ -15,6 +15,12 @@ export { getPilotBenchmarkingPrompt, pilotBenchmarkingSchema } from './pilotBenc
 // Portfolio Insights
 export { getPilotPortfolioInsightsPrompt, pilotPortfolioInsightsSchema } from './portfolioInsights';
 
+// Pilot Pivot
+export { PILOT_PIVOT_SYSTEM_PROMPT, buildPilotPivotPrompt, PILOT_PIVOT_SCHEMA } from './pilotPivot';
+
+// Pilot to Procurement
+export { PILOT_PROCUREMENT_SYSTEM_PROMPT, buildPilotProcurementPrompt, PILOT_PROCUREMENT_SCHEMA } from './pilotProcurement';
+
 /**
  * Pilots module prompt configuration
  */

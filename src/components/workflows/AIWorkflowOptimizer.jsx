@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Loader2, TrendingUp, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
+import { WORKFLOW_OPTIMIZER_SYSTEM_PROMPT, buildWorkflowOptimizerPrompt, WORKFLOW_OPTIMIZER_SCHEMA } from '@/lib/ai/prompts/workflows';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 
 export default function AIWorkflowOptimizer({ workflowData }) {
@@ -25,24 +26,9 @@ export default function AIWorkflowOptimizer({ workflowData }) {
 
   const handleOptimize = async () => {
     const { success, data } = await invokeAI({
-      prompt: `Analyze this workflow and suggest optimizations:
-Workflow: ${JSON.stringify(workflowData)}
-
-Provide:
-1. Bottleneck identification
-2. Efficiency improvements
-3. Suggested stage reductions or merges
-4. SLA optimization
-5. Automation opportunities`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          bottlenecks: { type: 'array', items: { type: 'object', properties: { stage: { type: 'string' }, issue: { type: 'string' }, impact: { type: 'string' } } } },
-          improvements: { type: 'array', items: { type: 'object', properties: { suggestion: { type: 'string' }, benefit: { type: 'string' } } } },
-          efficiency_score: { type: 'number' },
-          automation_opportunities: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildWorkflowOptimizerPrompt(workflowData),
+      system_prompt: WORKFLOW_OPTIMIZER_SYSTEM_PROMPT,
+      response_json_schema: WORKFLOW_OPTIMIZER_SCHEMA
     });
     
     if (success && data) {

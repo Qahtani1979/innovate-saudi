@@ -8,6 +8,7 @@ import { Award, TrendingUp, Target, Users, Loader2, Sparkles } from 'lucide-reac
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { PROVIDER_PERFORMANCE_SYSTEM_PROMPT, buildProviderPerformancePrompt, PROVIDER_PERFORMANCE_SCHEMA } from '@/lib/ai/prompts/matchmaker';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProviderPerformanceScorecard({ application, pilots = [] }) {
@@ -19,40 +20,9 @@ export default function ProviderPerformanceScorecard({ application, pilots = [] 
     if (!isAvailable) return;
     
     const result = await invokeAI({
-      prompt: `Generate a performance scorecard for this Matchmaker provider:
-
-Organization: ${application.organization_name_en}
-Evaluation Score: ${application.evaluation_score?.total_score}
-Classification: ${application.classification}
-Pilots Converted: ${pilots.length}
-
-Pilot Details:
-${pilots.map(p => `- ${p.title_en}: Stage ${p.stage}, TRL ${p.trl_current}`).join('\n')}
-
-Calculate scores (0-100) for:
-1. Delivery excellence (on-time, quality)
-2. Innovation impact (TRL advancement, outcomes)
-3. Partnership effectiveness (communication, collaboration)
-4. Scalability potential (replicability, market)
-5. Overall provider score (weighted average)
-
-Also provide:
-- strengths (3 bullets)
-- improvement_areas (3 bullets)
-- recommendation (tier_1_partner / tier_2_partner / conditional / review)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          delivery_excellence: { type: 'number' },
-          innovation_impact: { type: 'number' },
-          partnership_effectiveness: { type: 'number' },
-          scalability_potential: { type: 'number' },
-          overall_score: { type: 'number' },
-          strengths: { type: 'array', items: { type: 'string' } },
-          improvement_areas: { type: 'array', items: { type: 'string' } },
-          recommendation: { type: 'string' }
-        }
-      }
+      prompt: buildProviderPerformancePrompt(application, pilots),
+      system_prompt: PROVIDER_PERFORMANCE_SYSTEM_PROMPT,
+      response_json_schema: PROVIDER_PERFORMANCE_SCHEMA
     });
 
     if (result.success && result.data) {
