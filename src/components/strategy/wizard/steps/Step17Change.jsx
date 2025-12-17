@@ -17,7 +17,7 @@ import {
   Calendar, Award, MessageSquare, Lightbulb, Settings, Eye, List, GitBranch
 } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
-import EntityAllocationSelector from '../../EntityAllocationSelector';
+import EntityAllocationSelector from '../EntityAllocationSelector';
 
 // Change Phase Types
 const CHANGE_PHASES = [
