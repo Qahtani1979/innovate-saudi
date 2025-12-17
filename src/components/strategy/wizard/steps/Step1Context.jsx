@@ -22,7 +22,6 @@ import {
   RecommendationsCard 
 } from '../shared';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
-import { useTaxonomy } from '@/contexts/TaxonomyContext';
 
 export default function Step1Context({ 
   data, 
