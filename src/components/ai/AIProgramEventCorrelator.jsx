@@ -8,6 +8,8 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { getProgramEventCorrelatorPrompt, programEventCorrelatorSchema } from '@/lib/ai/prompts/events';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export function AIProgramEventCorrelator({ 
   programs = [],
@@ -19,76 +21,14 @@ export function AIProgramEventCorrelator({
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeCorrelations = async () => {
-    const programSummary = programs.slice(0, 10).map(p => ({
-      id: p.id,
-      name: language === 'ar' ? (p.name_ar || p.name_en) : (p.name_en || p.name_ar),
-      type: p.program_type,
-      status: p.status,
-      has_events: (p.events || []).length > 0
-    }));
-
-    const eventSummary = events.slice(0, 10).map(e => ({
-      id: e.id,
-      title: language === 'ar' ? (e.title_ar || e.title_en) : (e.title_en || e.title_ar),
-      type: e.event_type,
-      program_id: e.program_id,
-      status: e.status
-    }));
-
-    const prompt = `You are an innovation program-event correlation expert.
-
-Analyze these programs and events for a government innovation platform:
-
-Programs (${programs.length} total, showing ${programSummary.length}):
-${JSON.stringify(programSummary, null, 2)}
-
-Events (${events.length} total, showing ${eventSummary.length}):
-${JSON.stringify(eventSummary, null, 2)}
-
-Provide your analysis as a JSON object:
-{
-  "programs_without_events": [
-    {
-      "program_id": "uuid",
-      "program_name": "name",
-      "suggested_events": [
-        {"type": "workshop", "topic": "Topic suggestion", "timing": "Week 2"}
-      ]
-    }
-  ],
-  "event_gaps": [
-    {
-      "gap_type": "audience|timing|topic",
-      "description": "Description of the gap",
-      "recommendation": "What to do"
-    }
-  ],
-  "synergy_opportunities": [
-    {
-      "programs": ["Program A", "Program B"],
-      "opportunity": "Joint workshop opportunity",
-      "impact": "high|medium|low"
-    }
-  ],
-  "overall_health": {
-    "score": 75,
-    "status": "good|needs_attention|critical",
-    "summary": "Brief summary of program-event alignment"
-  }
-}`;
-
+    const prompt = getProgramEventCorrelatorPrompt(programs, events, language);
+    
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          programs_without_events: { type: 'array' },
-          event_gaps: { type: 'array' },
-          synergy_opportunities: { type: 'array' },
-          overall_health: { type: 'object' }
-        }
-      }
+      response_json_schema: programEventCorrelatorSchema,
+      system_prompt: getSystemPrompt('FULL', true)
     });
+    
     if (result.success && result.data) {
       setAnalysis(result.data);
     }
