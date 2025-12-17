@@ -15,6 +15,11 @@ import {
   CheckCircle2, Star, TrendingUp, Award, Gem
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import { 
+  StepDashboardHeader, 
+  QualityMetrics, 
+  RecommendationsCard 
+} from '../shared';
 
 // Icon options for pillars
 const PILLAR_ICONS = [
@@ -164,81 +169,45 @@ export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Dashboard Header */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Overall Score */}
-            <div className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-xl">
-              <div className="relative">
-                <svg className="w-24 h-24 transform -rotate-90">
-                  <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="none" className="text-muted/20" />
-                  <circle 
-                    cx="48" cy="48" r="40" 
-                    stroke="currentColor" 
-                    strokeWidth="8" 
-                    fill="none" 
-                    strokeDasharray={`${completenessMetrics.overallScore * 2.51} 251`}
-                    className={getScoreColor(completenessMetrics.overallScore)}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-2xl font-bold ${getScoreColor(completenessMetrics.overallScore)}`}>
-                    {completenessMetrics.overallScore}%
-                  </span>
-                </div>
-              </div>
-              <span className="text-sm text-muted-foreground mt-2">
-                {t({ en: 'Vision Completeness', ar: 'اكتمال الرؤية' })}
-              </span>
-            </div>
+      {/* Dashboard Header - Using Shared Component */}
+      <StepDashboardHeader
+        score={completenessMetrics.overallScore}
+        title={t({ en: 'Vision & Values', ar: 'الرؤية والقيم' })}
+        subtitle={t({ en: 'Define core values and strategic pillars', ar: 'تحديد القيم الجوهرية والركائز الاستراتيجية' })}
+        language={language}
+        stats={[
+          {
+            icon: Heart,
+            value: completenessMetrics.values.total,
+            label: t({ en: 'Core Values', ar: 'القيم الجوهرية' }),
+            subValue: `${completenessMetrics.values.complete} ${t({ en: 'complete', ar: 'مكتمل' })}`
+          },
+          {
+            icon: Columns,
+            value: completenessMetrics.pillars.total,
+            label: t({ en: 'Pillars', ar: 'الركائز' }),
+            subValue: `${completenessMetrics.pillars.complete} ${t({ en: 'complete', ar: 'مكتمل' })}`
+          },
+          {
+            icon: CheckCircle2,
+            value: `${completenessMetrics.values.score}%`,
+            label: t({ en: 'Values Score', ar: 'نتيجة القيم' }),
+            valueColor: getScoreColor(completenessMetrics.values.score)
+          },
+          {
+            icon: Target,
+            value: `${completenessMetrics.pillars.score}%`,
+            label: t({ en: 'Pillars Score', ar: 'نتيجة الركائز' }),
+            valueColor: getScoreColor(completenessMetrics.pillars.score)
+          }
+        ]}
+      />
 
-            {/* Quick Stats */}
-            <div className="col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 bg-background/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Heart className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Core Values', ar: 'القيم الجوهرية' })}</span>
-                </div>
-                <p className="text-lg font-semibold">{completenessMetrics.values.total}</p>
-                <p className="text-xs text-muted-foreground">
-                  {completenessMetrics.values.complete} {t({ en: 'complete', ar: 'مكتمل' })}
-                </p>
-              </div>
-              <div className="p-3 bg-background/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Columns className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Pillars', ar: 'الركائز' })}</span>
-                </div>
-                <p className="text-lg font-semibold">{completenessMetrics.pillars.total}</p>
-                <p className="text-xs text-muted-foreground">
-                  {completenessMetrics.pillars.complete} {t({ en: 'complete', ar: 'مكتمل' })}
-                </p>
-              </div>
-              <div className="p-3 bg-background/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Values Score', ar: 'نتيجة القيم' })}</span>
-                </div>
-                <p className={`text-lg font-semibold ${getScoreColor(completenessMetrics.values.score)}`}>
-                  {completenessMetrics.values.score}%
-                </p>
-              </div>
-              <div className="p-3 bg-background/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Pillars Score', ar: 'نتيجة الركائز' })}</span>
-                </div>
-                <p className={`text-lg font-semibold ${getScoreColor(completenessMetrics.pillars.score)}`}>
-                  {completenessMetrics.pillars.score}%
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Generation */}
-          {!isReadOnly && (
-            <div className="mt-6 pt-4 border-t flex items-center justify-between">
+      {/* AI Generation Card */}
+      {!isReadOnly && (
+        <Card className="border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-semibold flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
@@ -253,9 +222,9 @@ export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating
                 {t({ en: 'Generate', ar: 'إنشاء' })}
               </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -641,64 +610,32 @@ export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating
           )}
         </TabsContent>
 
-        {/* Summary Tab */}
+        {/* Summary Tab - Using Shared Components */}
         <TabsContent value="summary" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5 text-primary" />
-                {t({ en: 'Vision Summary', ar: 'ملخص الرؤية' })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Metrics Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-lg bg-gradient-to-br from-pink-500/10 to-pink-600/5 border border-pink-500/20 text-center">
-                  <Heart className="h-6 w-6 text-pink-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-pink-600">{completenessMetrics.values.total}</p>
-                  <p className="text-xs text-muted-foreground">{t({ en: 'Core Values', ar: 'القيم الجوهرية' })}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 text-center">
-                  <Columns className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-blue-600">{completenessMetrics.pillars.total}</p>
-                  <p className="text-xs text-muted-foreground">{t({ en: 'Strategic Pillars', ar: 'الركائز' })}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 text-center">
-                  <CheckCircle2 className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-green-600">{completenessMetrics.values.complete}</p>
-                  <p className="text-xs text-muted-foreground">{t({ en: 'Complete Values', ar: 'قيم مكتملة' })}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 text-center">
-                  <Target className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-purple-600">{completenessMetrics.pillars.complete}</p>
-                  <p className="text-xs text-muted-foreground">{t({ en: 'Complete Pillars', ar: 'ركائز مكتملة' })}</p>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Metrics */}
+            <QualityMetrics
+              title={t({ en: 'Vision Metrics', ar: 'مقاييس الرؤية' })}
+              language={language}
+              metrics={[
+                { icon: Heart, value: completenessMetrics.values.total, label: { en: 'Core Values', ar: 'القيم الجوهرية' }, iconColor: 'text-pink-600' },
+                { icon: Columns, value: completenessMetrics.pillars.total, label: { en: 'Strategic Pillars', ar: 'الركائز' }, iconColor: 'text-blue-600' },
+                { icon: CheckCircle2, value: completenessMetrics.values.complete, label: { en: 'Complete Values', ar: 'قيم مكتملة' }, iconColor: 'text-green-600' },
+                { icon: Target, value: completenessMetrics.pillars.complete, label: { en: 'Complete Pillars', ar: 'ركائز مكتملة' }, iconColor: 'text-purple-600' }
+              ]}
+            />
 
-              {/* Recommendations */}
-              <div className="space-y-3">
-                <h4 className="font-medium">{t({ en: 'Recommendations', ar: 'التوصيات' })}</h4>
-                {completenessMetrics.values.total < 3 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                    <Heart className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-sm">{t({ en: 'Define at least 3-5 core values for a strong foundation', ar: 'حدد 3-5 قيم جوهرية على الأقل لأساس قوي' })}</p>
-                  </div>
-                )}
-                {completenessMetrics.pillars.total < 3 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                    <Columns className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-sm">{t({ en: 'Add 3-5 strategic pillars to structure your strategy', ar: 'أضف 3-5 ركائز استراتيجية لهيكلة استراتيجيتك' })}</p>
-                  </div>
-                )}
-                {completenessMetrics.values.score >= 80 && completenessMetrics.pillars.score >= 80 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                    <p className="text-sm">{t({ en: 'Vision is well-defined with strong values and pillars', ar: 'الرؤية محددة جيداً مع قيم وركائز قوية' })}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+            {/* Recommendations */}
+            <RecommendationsCard
+              title={t({ en: 'Recommendations', ar: 'التوصيات' })}
+              language={language}
+              recommendations={[
+                ...(completenessMetrics.values.total < 3 ? [{ type: 'warning', message: { en: 'Define at least 3-5 core values for a strong foundation', ar: 'حدد 3-5 قيم جوهرية على الأقل لأساس قوي' } }] : []),
+                ...(completenessMetrics.pillars.total < 3 ? [{ type: 'warning', message: { en: 'Add 3-5 strategic pillars to structure your strategy', ar: 'أضف 3-5 ركائز استراتيجية لهيكلة استراتيجيتك' } }] : []),
+                ...(completenessMetrics.values.score >= 80 && completenessMetrics.pillars.score >= 80 ? [{ type: 'success', message: { en: 'Vision is well-defined with strong values and pillars', ar: 'الرؤية محددة جيداً مع قيم وركائز قوية' } }] : [])
+              ]}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

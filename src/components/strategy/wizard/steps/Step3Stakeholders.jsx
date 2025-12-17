@@ -18,6 +18,12 @@ import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { useStakeholderAnalysis } from '@/hooks/strategy/useStakeholderAnalysis';
 import { cn } from '@/lib/utils';
+import { 
+  StepDashboardHeader, 
+  QualityMetrics, 
+  RecommendationsCard,
+  DistributionChart 
+} from '../shared';
 
 export default function Step3Stakeholders({ 
   data, 
@@ -174,80 +180,45 @@ export default function Step3Stakeholders({
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Dashboard Header */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Overall Score */}
-            <div className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-xl">
-              <div className="relative">
-                <svg className="w-24 h-24 transform -rotate-90">
-                  <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="none" className="text-muted/20" />
-                  <circle 
-                    cx="48" cy="48" r="40" 
-                    stroke="currentColor" 
-                    strokeWidth="8" 
-                    fill="none" 
-                    strokeDasharray={`${completenessMetrics.score * 2.51} 251`}
-                    className={getScoreColor(completenessMetrics.score)}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-2xl font-bold ${getScoreColor(completenessMetrics.score)}`}>
-                    {completenessMetrics.score}%
-                  </span>
-                </div>
-              </div>
-              <span className="text-sm text-muted-foreground mt-2">
-                {t({ en: 'Analysis Score', ar: 'نتيجة التحليل' })}
-              </span>
-            </div>
+      {/* Dashboard Header - Using Shared Component */}
+      <StepDashboardHeader
+        score={completenessMetrics.score}
+        title={t({ en: 'Stakeholder Analysis', ar: 'تحليل أصحاب المصلحة' })}
+        subtitle={t({ en: 'Identify and analyze key stakeholders', ar: 'تحديد وتحليل أصحاب المصلحة الرئيسيين' })}
+        language={language}
+        stats={[
+          {
+            icon: Users,
+            value: completenessMetrics.total,
+            label: t({ en: 'Total', ar: 'الإجمالي' }),
+            subValue: `${completenessMetrics.complete} ${t({ en: 'complete', ar: 'مكتمل' })}`
+          },
+          {
+            icon: AlertCircle,
+            value: completenessMetrics.byQuadrant.manageClosely,
+            label: t({ en: 'Manage Closely', ar: 'إدارة عن كثب' }),
+            iconColor: 'text-red-600'
+          },
+          {
+            icon: UserCheck,
+            value: completenessMetrics.byQuadrant.keepSatisfied,
+            label: t({ en: 'Keep Satisfied', ar: 'إبقاء الرضا' }),
+            iconColor: 'text-amber-600'
+          },
+          {
+            icon: MessageSquare,
+            value: completenessMetrics.byQuadrant.keepInformed,
+            label: t({ en: 'Keep Informed', ar: 'إبقاء على اطلاع' }),
+            iconColor: 'text-blue-600'
+          }
+        ]}
+      />
 
-            {/* Quick Stats */}
-            <div className="col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 bg-background/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Users className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Total', ar: 'الإجمالي' })}</span>
-                </div>
-                <p className="text-lg font-semibold">{completenessMetrics.total}</p>
-                <p className="text-xs text-muted-foreground">
-                  {completenessMetrics.complete} {t({ en: 'complete', ar: 'مكتمل' })}
-                </p>
-              </div>
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 mb-1">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Manage Closely', ar: 'إدارة عن كثب' })}</span>
-                </div>
-                <p className="text-lg font-semibold text-red-700 dark:text-red-300">
-                  {completenessMetrics.byQuadrant.manageClosely}
-                </p>
-              </div>
-              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-1">
-                  <UserCheck className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Keep Satisfied', ar: 'إبقاء الرضا' })}</span>
-                </div>
-                <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">
-                  {completenessMetrics.byQuadrant.keepSatisfied}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Keep Informed', ar: 'إبقاء على اطلاع' })}</span>
-                </div>
-                <p className="text-lg font-semibold text-blue-700 dark:text-blue-300">
-                  {completenessMetrics.byQuadrant.keepInformed}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Generation */}
-          {!isReadOnly && (
-            <div className="mt-6 pt-4 border-t flex items-center justify-between">
+      {/* AI Generation Card */}
+      {!isReadOnly && (
+        <Card className="border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-semibold flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
@@ -262,9 +233,9 @@ export default function Step3Stakeholders({
                 {t({ en: 'Suggest Stakeholders', ar: 'اقتراح أصحاب المصلحة' })}
               </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -714,63 +685,43 @@ export default function Step3Stakeholders({
           </Card>
         </TabsContent>
 
-        {/* Summary Tab */}
+        {/* Summary Tab - Using Shared Components */}
         <TabsContent value="summary" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                {t({ en: 'Stakeholder Summary', ar: 'ملخص أصحاب المصلحة' })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Quadrant Distribution */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 text-center">
-                  <p className="text-2xl font-bold text-red-700 dark:text-red-400">{completenessMetrics.byQuadrant.manageClosely}</p>
-                  <p className="text-xs font-medium">{t({ en: 'Manage Closely', ar: 'إدارة عن كثب' })}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 text-center">
-                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{completenessMetrics.byQuadrant.keepSatisfied}</p>
-                  <p className="text-xs font-medium">{t({ en: 'Keep Satisfied', ar: 'إبقاء الرضا' })}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-blue-100 dark:bg-blue-900/30 border border-blue-300 text-center">
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{completenessMetrics.byQuadrant.keepInformed}</p>
-                  <p className="text-xs font-medium">{t({ en: 'Keep Informed', ar: 'إبقاء على اطلاع' })}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-300 text-center">
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-400">{completenessMetrics.byQuadrant.monitor}</p>
-                  <p className="text-xs font-medium">{t({ en: 'Monitor', ar: 'مراقبة' })}</p>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Quadrant Distribution */}
+            <QualityMetrics
+              title={t({ en: 'Stakeholder Quadrants', ar: 'مربعات أصحاب المصلحة' })}
+              language={language}
+              metrics={[
+                { icon: AlertCircle, value: completenessMetrics.byQuadrant.manageClosely, label: { en: 'Manage Closely', ar: 'إدارة عن كثب' }, iconColor: 'text-red-600' },
+                { icon: UserCheck, value: completenessMetrics.byQuadrant.keepSatisfied, label: { en: 'Keep Satisfied', ar: 'إبقاء الرضا' }, iconColor: 'text-amber-600' },
+                { icon: MessageSquare, value: completenessMetrics.byQuadrant.keepInformed, label: { en: 'Keep Informed', ar: 'إبقاء على اطلاع' }, iconColor: 'text-blue-600' },
+                { icon: Users, value: completenessMetrics.byQuadrant.monitor, label: { en: 'Monitor', ar: 'مراقبة' }, iconColor: 'text-green-600' }
+              ]}
+            />
 
-              {/* Completion Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-muted/50 border">
-                  <p className="text-sm text-muted-foreground">{t({ en: 'Total Stakeholders', ar: 'إجمالي أصحاب المصلحة' })}</p>
-                  <p className="text-3xl font-bold">{completenessMetrics.total}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50 border">
-                  <p className="text-sm text-muted-foreground">{t({ en: 'Fully Defined', ar: 'محددين بالكامل' })}</p>
-                  <p className="text-3xl font-bold text-green-600">{completenessMetrics.complete}</p>
-                </div>
-              </div>
+            {/* Recommendations */}
+            <RecommendationsCard
+              title={t({ en: 'Recommendations', ar: 'التوصيات' })}
+              language={language}
+              recommendations={[
+                ...(completenessMetrics.total === 0 ? [{ type: 'warning', message: { en: 'Identify key stakeholders who will be impacted by or influence your strategy', ar: 'حدد أصحاب المصلحة الرئيسيين الذين سيتأثرون أو يؤثرون في استراتيجيتك' } }] : []),
+                ...(completenessMetrics.byQuadrant.manageClosely === 0 && completenessMetrics.total > 0 ? [{ type: 'info', message: { en: 'Consider identifying high-power, high-interest stakeholders who need close management', ar: 'فكر في تحديد أصحاب المصلحة ذوي القوة والاهتمام العاليين الذين يحتاجون إلى إدارة وثيقة' } }] : []),
+                ...(!completenessMetrics.hasEngagementPlan ? [{ type: 'info', message: { en: 'Create an engagement plan for your stakeholders', ar: 'أنشئ خطة إشراك لأصحاب المصلحة' } }] : []),
+                ...(completenessMetrics.score >= 80 ? [{ type: 'success', message: { en: 'Stakeholder analysis is comprehensive and well-defined', ar: 'تحليل أصحاب المصلحة شامل ومحدد جيداً' } }] : [])
+              ]}
+            />
+          </div>
 
-              {/* Recommendations */}
-              {completenessMetrics.total === 0 && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                  <Users className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-sm">{t({ en: 'Identify key stakeholders who will be impacted by or influence your strategy', ar: 'حدد أصحاب المصلحة الرئيسيين الذين سيتأثرون أو يؤثرون في استراتيجيتك' })}</p>
-                </div>
-              )}
-              {completenessMetrics.byQuadrant.manageClosely === 0 && completenessMetrics.total > 0 && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                  <AlertCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-                  <p className="text-sm">{t({ en: 'Consider identifying high-power, high-interest stakeholders who need close management', ar: 'فكر في تحديد أصحاب المصلحة ذوي القوة والاهتمام العاليين الذين يحتاجون إلى إدارة وثيقة' })}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Completion Stats */}
+          <DistributionChart
+            title={t({ en: 'Completion Status', ar: 'حالة الاكتمال' })}
+            language={language}
+            data={[
+              { label: { en: 'Fully Defined', ar: 'محددين بالكامل' }, value: completenessMetrics.complete, icon: CheckCircle2, iconColor: 'text-green-600' },
+              { label: { en: 'Incomplete', ar: 'غير مكتمل' }, value: completenessMetrics.total - completenessMetrics.complete, icon: AlertCircle, iconColor: 'text-amber-600' }
+            ]}
+          />
         </TabsContent>
       </Tabs>
     </div>

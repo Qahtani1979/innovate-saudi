@@ -15,6 +15,13 @@ import {
   CheckCircle2, AlertCircle, Info
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import { 
+  StepDashboardHeader, 
+  DistributionChart, 
+  QualityMetrics, 
+  RecommendationsCard 
+} from '../shared';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 
 export default function Step1Context({ 
@@ -163,75 +170,43 @@ export default function Step1Context({
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Dashboard Header */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Overall Score */}
-            <div className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-xl">
-              <div className="relative">
-                <svg className="w-24 h-24 transform -rotate-90">
-                  <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="none" className="text-muted/20" />
-                  <circle 
-                    cx="48" cy="48" r="40" 
-                    stroke="currentColor" 
-                    strokeWidth="8" 
-                    fill="none" 
-                    strokeDasharray={`${completenessMetrics.overallScore * 2.51} 251`}
-                    className={getScoreColor(completenessMetrics.overallScore)}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-2xl font-bold ${getScoreColor(completenessMetrics.overallScore)}`}>
-                    {completenessMetrics.overallScore}%
-                  </span>
-                </div>
-              </div>
-              <span className="text-sm text-muted-foreground mt-2">
-                {t({ en: 'Context Readiness', ar: 'جاهزية السياق' })}
-              </span>
-            </div>
+      {/* Dashboard Header - Using Shared Component */}
+      <StepDashboardHeader
+        score={completenessMetrics.overallScore}
+        title={t({ en: 'Strategic Context', ar: 'السياق الاستراتيجي' })}
+        subtitle={t({ en: 'Define plan identity, scope, and discovery inputs', ar: 'تحديد هوية الخطة والنطاق ومدخلات الاستكشاف' })}
+        language={language}
+        stats={[
+          {
+            icon: Calendar,
+            value: data.start_year && data.end_year 
+              ? `${data.end_year - data.start_year} ${t({ en: 'Yrs', ar: 'سنوات' })}`
+              : '-',
+            label: t({ en: 'Duration', ar: 'المدة' })
+          },
+          {
+            icon: Building,
+            value: data.target_sectors?.length || 0,
+            label: t({ en: 'Sectors', ar: 'القطاعات' })
+          },
+          {
+            icon: Users,
+            value: data.quick_stakeholders?.length || 0,
+            label: t({ en: 'Stakeholders', ar: 'أصحاب المصلحة' })
+          },
+          {
+            icon: Cpu,
+            value: data.focus_technologies?.length || 0,
+            label: t({ en: 'Technologies', ar: 'التقنيات' })
+          }
+        ]}
+      />
 
-            {/* Quick Stats */}
-            <div className="col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 bg-background/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Calendar className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Duration', ar: 'المدة' })}</span>
-                </div>
-                <p className="text-lg font-semibold">
-                  {data.start_year && data.end_year 
-                    ? `${data.end_year - data.start_year} ${t({ en: 'Years', ar: 'سنوات' })}`
-                    : t({ en: 'Not Set', ar: 'غير محدد' })}
-                </p>
-              </div>
-              <div className="p-3 bg-background/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Building className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Sectors', ar: 'القطاعات' })}</span>
-                </div>
-                <p className="text-lg font-semibold">{data.target_sectors?.length || 0}</p>
-              </div>
-              <div className="p-3 bg-background/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Users className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Stakeholders', ar: 'أصحاب المصلحة' })}</span>
-                </div>
-                <p className="text-lg font-semibold">{data.quick_stakeholders?.length || 0}</p>
-              </div>
-              <div className="p-3 bg-background/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Cpu className="h-4 w-4" />
-                  <span className="text-xs">{t({ en: 'Technologies', ar: 'التقنيات' })}</span>
-                </div>
-                <p className="text-lg font-semibold">{data.focus_technologies?.length || 0}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Generation */}
-          {!isReadOnly && (
-            <div className="mt-6 pt-4 border-t flex items-center justify-between">
+      {/* AI Generation Card */}
+      {!isReadOnly && (
+        <Card className="border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-semibold flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
@@ -246,9 +221,9 @@ export default function Step1Context({
                 {t({ en: 'Generate', ar: 'إنشاء' })}
               </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs for Organization */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -849,68 +824,61 @@ export default function Step1Context({
           </Card>
         </TabsContent>
 
-        {/* Summary Tab */}
+        {/* Summary Tab - Using Shared Components */}
         <TabsContent value="summary" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-                {t({ en: 'Context Summary', ar: 'ملخص السياق' })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Section Completion Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium text-sm">{t({ en: 'Identity', ar: 'الهوية' })}</span>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-600">{completenessMetrics.sectionScores.identity}%</p>
-                </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-purple-600" />
-                    <span className="font-medium text-sm">{t({ en: 'Duration', ar: 'المدة' })}</span>
-                  </div>
-                  <p className="text-2xl font-bold text-purple-600">{completenessMetrics.sectionScores.duration}%</p>
-                </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="h-4 w-4 text-green-600" />
-                    <span className="font-medium text-sm">{t({ en: 'Scope', ar: 'النطاق' })}</span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-600">{completenessMetrics.sectionScores.scope}%</p>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Section Scores */}
+            <QualityMetrics
+              title={t({ en: 'Section Completion', ar: 'اكتمال الأقسام' })}
+              language={language}
+              metrics={[
+                { icon: Target, value: `${Math.round(completenessMetrics.sectionScores.identity)}%`, label: { en: 'Identity', ar: 'الهوية' }, iconColor: 'text-blue-600' },
+                { icon: Calendar, value: `${Math.round(completenessMetrics.sectionScores.duration)}%`, label: { en: 'Duration', ar: 'المدة' }, iconColor: 'text-purple-600' },
+                { icon: MapPin, value: `${Math.round(completenessMetrics.sectionScores.scope)}%`, label: { en: 'Scope', ar: 'النطاق' }, iconColor: 'text-green-600' },
+                { icon: Lightbulb, value: `${Math.round(completenessMetrics.sectionScores.discovery)}%`, label: { en: 'Discovery', ar: 'الاستكشاف' }, iconColor: 'text-amber-600' }
+              ]}
+            />
 
-              {/* Recommendations */}
-              <div className="space-y-3">
-                <h4 className="font-medium flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-amber-500" />
-                  {t({ en: 'Recommendations', ar: 'التوصيات' })}
-                </h4>
-                {!data.name_en && !data.name_ar && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                    <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-sm">{t({ en: 'Add a plan name to establish identity', ar: 'أضف اسم الخطة لتأسيس الهوية' })}</p>
-                  </div>
-                )}
-                {!data.vision_en && !data.vision_ar && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                    <Eye className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-sm">{t({ en: 'Define a vision statement', ar: 'حدد بيان الرؤية' })}</p>
-                  </div>
-                )}
-                {completenessMetrics.overall >= 80 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                    <p className="text-sm">{t({ en: 'Context is well-defined. Ready for next steps.', ar: 'السياق محدد جيداً. جاهز للخطوات التالية.' })}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+            {/* Recommendations */}
+            <RecommendationsCard
+              title={t({ en: 'Recommendations', ar: 'التوصيات' })}
+              language={language}
+              recommendations={[
+                ...(!data.name_en && !data.name_ar ? [{ type: 'warning', message: { en: 'Add a plan name to establish identity', ar: 'أضف اسم الخطة لتأسيس الهوية' } }] : []),
+                ...(!data.vision_en && !data.vision_ar ? [{ type: 'warning', message: { en: 'Define a vision statement', ar: 'حدد بيان الرؤية' } }] : []),
+                ...(!data.mission_en && !data.mission_ar ? [{ type: 'info', message: { en: 'Add a mission statement', ar: 'أضف بيان المهمة' } }] : []),
+                ...(data.target_sectors?.length === 0 ? [{ type: 'info', message: { en: 'Select target sectors', ar: 'اختر القطاعات المستهدفة' } }] : []),
+                ...(completenessMetrics.overallScore >= 80 ? [{ type: 'success', message: { en: 'Context is well-defined. Ready for next steps.', ar: 'السياق محدد جيداً. جاهز للخطوات التالية.' } }] : [])
+              ]}
+            />
+          </div>
+
+          {/* Scope Distribution */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DistributionChart
+              title={t({ en: 'Scope Coverage', ar: 'تغطية النطاق' })}
+              language={language}
+              data={[
+                { label: { en: 'Sectors', ar: 'القطاعات' }, value: data.target_sectors?.length || 0, icon: Building, iconColor: 'text-blue-600' },
+                { label: { en: 'Themes', ar: 'المحاور' }, value: data.strategic_themes?.length || 0, icon: Target, iconColor: 'text-purple-600' },
+                { label: { en: 'Technologies', ar: 'التقنيات' }, value: data.focus_technologies?.length || 0, icon: Cpu, iconColor: 'text-green-600' },
+                { label: { en: 'Vision 2030', ar: 'رؤية 2030' }, value: data.vision_2030_programs?.length || 0, icon: Flag, iconColor: 'text-amber-600' }
+              ]}
+              showPercentage={false}
+            />
+
+            <DistributionChart
+              title={t({ en: 'Discovery Progress', ar: 'تقدم الاستكشاف' })}
+              language={language}
+              data={[
+                { label: { en: 'Stakeholders', ar: 'أصحاب المصلحة' }, value: data.quick_stakeholders?.length || 0, icon: Users, iconColor: 'text-blue-600' },
+                { label: { en: 'Challenges', ar: 'التحديات' }, value: (data.key_challenges_en || data.key_challenges) ? 1 : 0, icon: AlertCircle, iconColor: 'text-red-600' },
+                { label: { en: 'Resources', ar: 'الموارد' }, value: (data.available_resources_en || data.available_resources) ? 1 : 0, icon: CheckCircle2, iconColor: 'text-green-600' },
+                { label: { en: 'Constraints', ar: 'القيود' }, value: (data.initial_constraints_en || data.initial_constraints) ? 1 : 0, icon: Info, iconColor: 'text-amber-600' }
+              ]}
+              showPercentage={false}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
