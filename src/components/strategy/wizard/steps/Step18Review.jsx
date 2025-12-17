@@ -24,6 +24,7 @@ import { useStrategyVersions } from '@/hooks/strategy/useStrategyVersions';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 import AIStrategicPlanAnalyzer from '../AIStrategicPlanAnalyzer';
 
 // Readiness Level Configuration

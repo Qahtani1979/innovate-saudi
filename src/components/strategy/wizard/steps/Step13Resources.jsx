@@ -20,6 +20,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 import { cn } from '@/lib/utils';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 // HR skill categories
 const HR_CATEGORIES = [

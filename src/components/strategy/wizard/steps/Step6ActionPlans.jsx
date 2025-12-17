@@ -22,6 +22,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
 import EntityGenerationPanel from '../EntityGenerationPanel';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 // Enhanced entity type configuration
 const ENTITY_TYPES = [

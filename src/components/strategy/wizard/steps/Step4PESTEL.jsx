@@ -16,6 +16,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';
 import { cn } from '@/lib/utils';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 const PESTEL_CATEGORIES = [
   { 
@@ -251,50 +252,36 @@ export default function Step4PESTEL({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="bg-gradient-to-br from-background to-muted/30 border-2">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
-            {/* Circular Progress */}
-            <CircularProgress value={completenessScore} />
-            
-            {/* Quick Stats */}
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-primary">{stats.total}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Total Factors', ar: 'إجمالي العوامل' })}</div>
-              </div>
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-red-500">{stats.highImpact}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'High Impact', ar: 'تأثير عالي' })}</div>
-              </div>
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-green-500">{stats.growing}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Growing Trends', ar: 'اتجاهات متنامية' })}</div>
-              </div>
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-orange-500">{stats.shortTerm}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Short-term', ar: 'قصير المدى' })}</div>
-              </div>
-            </div>
-
-            {/* AI Generate Button */}
-            {!isReadOnly && (
-              <Button 
-                variant="outline" 
-                onClick={onGenerateAI} 
-                disabled={isGenerating}
-                className="gap-2 shrink-0"
-              >
-                <Sparkles className="w-4 h-4" />
-                {isGenerating 
-                  ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' })
-                  : t({ en: 'Generate PESTEL', ar: 'إنشاء تحليل PESTEL' })
-                }
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={completenessScore}
+        title={t({ en: 'PESTEL Analysis', ar: 'تحليل PESTEL' })}
+        subtitle={t({ en: 'Political, Economic, Social, Technological, Environmental, Legal', ar: 'سياسي، اقتصادي، اجتماعي، تقني، بيئي، قانوني' })}
+        language={language}
+        stats={[
+          { icon: Globe, value: stats.total, label: t({ en: 'Total Factors', ar: 'إجمالي العوامل' }), iconColor: 'text-primary' },
+          { icon: AlertTriangle, value: stats.highImpact, label: t({ en: 'High Impact', ar: 'تأثير عالي' }), iconColor: 'text-red-500' },
+          { icon: TrendingUp, value: stats.growing, label: t({ en: 'Growing Trends', ar: 'اتجاهات متنامية' }), iconColor: 'text-green-500' },
+          { icon: Clock, value: stats.shortTerm, label: t({ en: 'Short-term', ar: 'قصير المدى' }), iconColor: 'text-orange-500' },
+        ]}
+      />
+      
+      {/* AI Generate Button */}
+      {!isReadOnly && (
+        <div className="flex justify-end">
+          <Button 
+            variant="outline" 
+            onClick={onGenerateAI} 
+            disabled={isGenerating}
+            className="gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            {isGenerating 
+              ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' })
+              : t({ en: 'Generate PESTEL', ar: 'إنشاء تحليل PESTEL' })
+            }
+          </Button>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from '@/lib/utils';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 // Enhanced Committee Types
 const COMMITTEE_TYPES = [

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from "@/lib/utils";
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 export default function Step8Dependencies({ data, onChange, onGenerateAI, isGenerating, isReadOnly = false }) {
   const { language, t, isRTL } = useLanguage();

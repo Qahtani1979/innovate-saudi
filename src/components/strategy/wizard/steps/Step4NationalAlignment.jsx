@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from "@/lib/utils";
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 // Vision 2030 Programs
 const VISION_2030_PROGRAMS = [

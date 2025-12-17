@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 // Enhanced Audience Types
 const AUDIENCE_TYPES = [
