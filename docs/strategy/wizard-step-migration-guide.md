@@ -1,7 +1,7 @@
 # Wizard Step Standardization - Complete Migration Guide
 
 > **Last Updated**: December 17, 2024  
-> **Status**: Phase 1.2 Complete - AI Prompts Extracted  
+> **Status**: Phase 2 Complete - AI Prompts Fully Migrated  
 > **Analysis Based On**: Full code inspection of all 19 step components
 
 ---
@@ -161,13 +161,19 @@ const singlePrompt = generateSingleObjectivePrompt({
 | Extract Step 9 Single prompt | ✅ Complete | "AI Add One" functionality |
 | Create Step 18 documentation | ✅ Complete | No prompts (review step) |
 | Update index.js exports | ✅ Complete | All exports + STEP_PROMPT_MAP |
-| Update StrategyWizardWrapper.jsx | 🔴 Pending | Import prompts from files |
+| Update StrategyWizardWrapper.jsx | ✅ Complete | Imports prompts from files, ~2400 lines removed |
 
-#### Next Steps
+#### Code Reduction Summary
 
-1. **Update StrategyWizardWrapper.jsx** to import prompts from `./prompts` instead of inline definitions
-2. **Remove inline prompts** (lines 461-2900+) after import is working
-3. **Test all AI generation** to ensure prompts work correctly
+**Before Migration:**
+- `StrategyWizardWrapper.jsx`: ~4055 lines
+- Inline prompts: Lines 461-2841 (~2380 lines)
+- Inline single objective prompt: Lines 3554-3669 (~115 lines)
+
+**After Migration:**
+- `StrategyWizardWrapper.jsx`: ~1639 lines (60% reduction!)
+- Prompts in 19 separate files under `prompts/`
+- Clean separation of concerns
 
 ---
 
