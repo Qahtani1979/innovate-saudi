@@ -298,18 +298,22 @@ export default function Step4PESTEL({
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="factors" className="gap-2">
             <ListChecks className="w-4 h-4" />
-            {t({ en: 'Factors', ar: 'العوامل' })}
+            <span className="hidden sm:inline">{t({ en: 'Factors', ar: 'العوامل' })}</span>
           </TabsTrigger>
           <TabsTrigger value="overview" className="gap-2">
             <PieChart className="w-4 h-4" />
-            {t({ en: 'Overview', ar: 'نظرة عامة' })}
+            <span className="hidden sm:inline">{t({ en: 'Overview', ar: 'نظرة عامة' })}</span>
           </TabsTrigger>
           <TabsTrigger value="impact" className="gap-2">
             <BarChart3 className="w-4 h-4" />
-            {t({ en: 'Impact Matrix', ar: 'مصفوفة التأثير' })}
+            <span className="hidden sm:inline">{t({ en: 'Impact', ar: 'التأثير' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="gap-2">
+            <Target className="w-4 h-4" />
+            <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -792,6 +796,68 @@ export default function Step4PESTEL({
                   <span>{t({ en: 'Low Impact - Keep informed', ar: 'تأثير منخفض - ابق على اطلاع' })}</span>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                {t({ en: 'PESTEL Summary', ar: 'ملخص PESTEL' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Factor Distribution */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {PESTEL_CATEGORIES.map((category) => {
+                  const CategoryIcon = category.icon;
+                  const count = (data.pestel?.[category.key] || []).length;
+                  return (
+                    <div key={category.key} className={`p-3 rounded-lg border text-center ${category.color}`}>
+                      <CategoryIcon className="h-5 w-5 mx-auto mb-1" />
+                      <p className="text-xl font-bold">{count}</p>
+                      <p className="text-xs">{category.name[language]}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Quality Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20">
+                  <p className="text-sm text-muted-foreground">{t({ en: 'Total Factors', ar: 'إجمالي العوامل' })}</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20">
+                  <p className="text-sm text-muted-foreground">{t({ en: 'High Impact', ar: 'تأثير عالي' })}</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.highImpact}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20">
+                  <p className="text-sm text-muted-foreground">{t({ en: 'Growing', ar: 'متنامي' })}</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.growing}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20">
+                  <p className="text-sm text-muted-foreground">{t({ en: 'Short-term', ar: 'قصير المدى' })}</p>
+                  <p className="text-2xl font-bold text-amber-600">{stats.shortTerm}</p>
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              {stats.total === 0 && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <ListChecks className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-sm">{t({ en: 'Add environmental factors across all PESTEL categories for comprehensive analysis', ar: 'أضف العوامل البيئية عبر جميع فئات PESTEL للتحليل الشامل' })}</p>
+                </div>
+              )}
+              {stats.total > 0 && stats.highImpact === 0 && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                  <BarChart3 className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                  <p className="text-sm">{t({ en: 'Consider rating factor impacts to identify priority areas', ar: 'فكر في تقييم تأثيرات العوامل لتحديد مجالات الأولوية' })}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

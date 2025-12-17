@@ -401,18 +401,22 @@ export default function Step2SWOT({
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="matrix" className="gap-2">
             <LayoutGrid className="w-4 h-4" />
-            {t({ en: 'Matrix View', ar: 'عرض المصفوفة' })}
+            <span className="hidden sm:inline">{t({ en: 'Matrix', ar: 'المصفوفة' })}</span>
           </TabsTrigger>
           <TabsTrigger value="list" className="gap-2">
             <ListChecks className="w-4 h-4" />
-            {t({ en: 'List View', ar: 'عرض القائمة' })}
+            <span className="hidden sm:inline">{t({ en: 'List', ar: 'القائمة' })}</span>
           </TabsTrigger>
           <TabsTrigger value="strategies" className="gap-2">
             <Lightbulb className="w-4 h-4" />
-            {t({ en: 'Strategies', ar: 'الاستراتيجيات' })}
+            <span className="hidden sm:inline">{t({ en: 'Strategies', ar: 'الاستراتيجيات' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="gap-2">
+            <BarChart3 className="w-4 h-4" />
+            <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -629,6 +633,70 @@ export default function Step2SWOT({
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                {t({ en: 'SWOT Summary', ar: 'ملخص SWOT' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* SWOT Distribution */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-300 text-center">
+                  <p className="text-3xl font-bold text-green-700 dark:text-green-400">{stats.byType.S || 0}</p>
+                  <p className="text-sm font-medium">{t({ en: 'Strengths', ar: 'نقاط القوة' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 text-center">
+                  <p className="text-3xl font-bold text-red-700 dark:text-red-400">{stats.byType.W || 0}</p>
+                  <p className="text-sm font-medium">{t({ en: 'Weaknesses', ar: 'نقاط الضعف' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-blue-100 dark:bg-blue-900/30 border border-blue-300 text-center">
+                  <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">{stats.byType.O || 0}</p>
+                  <p className="text-sm font-medium">{t({ en: 'Opportunities', ar: 'الفرص' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 text-center">
+                  <p className="text-3xl font-bold text-amber-700 dark:text-amber-400">{stats.byType.T || 0}</p>
+                  <p className="text-sm font-medium">{t({ en: 'Threats', ar: 'التهديدات' })}</p>
+                </div>
+              </div>
+
+              {/* Balance Indicators */}
+              <div className="space-y-3">
+                <h4 className="font-medium">{t({ en: 'Balance Analysis', ar: 'تحليل التوازن' })}</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>{t({ en: 'Internal (S+W)', ar: 'داخلي' })}</span>
+                    <span className="font-medium">{stats.internal}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>{t({ en: 'External (O+T)', ar: 'خارجي' })}</span>
+                    <span className="font-medium">{stats.external}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>{t({ en: 'Positive (S+O)', ar: 'إيجابي' })}</span>
+                    <span className="font-medium text-green-600">{stats.positive}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>{t({ en: 'Negative (W+T)', ar: 'سلبي' })}</span>
+                    <span className="font-medium text-red-600">{stats.negative}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              {stats.total < 8 && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <LayoutGrid className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-sm">{t({ en: 'Add more SWOT items for comprehensive analysis (recommended: 2+ per category)', ar: 'أضف المزيد من عناصر SWOT للتحليل الشامل (موصى به: 2+ لكل فئة)' })}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

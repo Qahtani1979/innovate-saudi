@@ -489,18 +489,22 @@ export default function Step6Scenarios({
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="scenarios" className="gap-2">
             <GitBranch className="w-4 h-4" />
-            {t({ en: 'Scenarios', ar: 'السيناريوهات' })}
+            <span className="hidden sm:inline">{t({ en: 'Scenarios', ar: 'السيناريوهات' })}</span>
           </TabsTrigger>
           <TabsTrigger value="comparison" className="gap-2">
             <Scale className="w-4 h-4" />
-            {t({ en: 'Comparison', ar: 'المقارنة' })}
+            <span className="hidden sm:inline">{t({ en: 'Compare', ar: 'المقارنة' })}</span>
           </TabsTrigger>
           <TabsTrigger value="probability" className="gap-2">
-            <BarChart3 className="w-4 h-4" />
-            {t({ en: 'Probability', ar: 'الاحتمالية' })}
+            <Percent className="w-4 h-4" />
+            <span className="hidden sm:inline">{t({ en: 'Probability', ar: 'الاحتمالية' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="gap-2">
+            <Target className="w-4 h-4" />
+            <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -708,6 +712,78 @@ export default function Step6Scenarios({
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                {t({ en: 'Scenario Summary', ar: 'ملخص السيناريوهات' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Scenario Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {SCENARIO_TYPES.map(s => {
+                  const scenarioData = data.scenarios?.[s.key] || {};
+                  const hasDescription = scenarioData.description_en || scenarioData.description_ar || scenarioData.description;
+                  const Icon = s.icon;
+                  return (
+                    <div key={s.key} className={`p-4 rounded-lg border ${s.color}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Icon className={`h-5 w-5 ${s.textColor}`} />
+                        <span className="font-medium">{s.title[language]}</span>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t({ en: 'Probability', ar: 'الاحتمالية' })}</span>
+                          <span className="font-medium">{scenarioData.probability || 0}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t({ en: 'Assumptions', ar: 'الافتراضات' })}</span>
+                          <span className="font-medium">{(scenarioData.assumptions || []).length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t({ en: 'Outcomes', ar: 'النتائج' })}</span>
+                          <span className="font-medium">{(scenarioData.outcomes || []).length}</span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-2">
+                          {hasDescription ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 text-amber-500" />
+                          )}
+                          <span className="text-xs">{hasDescription ? t({ en: 'Described', ar: 'موصوف' }) : t({ en: 'Needs description', ar: 'يحتاج وصف' })}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Quality Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-muted/50 border text-center">
+                  <p className="text-2xl font-bold">{stats.totalAssumptions}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Total Assumptions', ar: 'إجمالي الافتراضات' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50 border text-center">
+                  <p className="text-2xl font-bold">{stats.totalOutcomes}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Total Outcomes', ar: 'إجمالي النتائج' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50 border text-center">
+                  <p className="text-2xl font-bold">{stats.scenariosWithDescription}/3</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Described', ar: 'موصوفة' })}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50 border text-center">
+                  <p className="text-2xl font-bold">{stats.scenariosWithProbability}/3</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'With Probability', ar: 'بالاحتمالية' })}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -252,18 +252,22 @@ export default function Step1Context({
 
       {/* Tabs for Organization */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="identity" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
-            {t({ en: 'Identity', ar: 'الهوية' })}
+            <span className="hidden sm:inline">{t({ en: 'Identity', ar: 'الهوية' })}</span>
           </TabsTrigger>
           <TabsTrigger value="scope" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
-            {t({ en: 'Scope', ar: 'النطاق' })}
+            <span className="hidden sm:inline">{t({ en: 'Scope', ar: 'النطاق' })}</span>
           </TabsTrigger>
           <TabsTrigger value="discovery" className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4" />
-            {t({ en: 'Discovery', ar: 'الاستكشاف' })}
+            <span className="hidden sm:inline">{t({ en: 'Discovery', ar: 'الاستكشاف' })}</span>
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -842,6 +846,70 @@ export default function Step1Context({
                 </CardContent>
               </CollapsibleContent>
             </Collapsible>
+          </Card>
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                {t({ en: 'Context Summary', ar: 'ملخص السياق' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Section Completion Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-sm">{t({ en: 'Identity', ar: 'الهوية' })}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">{completenessMetrics.sectionScores.identity}%</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-purple-600" />
+                    <span className="font-medium text-sm">{t({ en: 'Duration', ar: 'المدة' })}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-600">{completenessMetrics.sectionScores.duration}%</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="h-4 w-4 text-green-600" />
+                    <span className="font-medium text-sm">{t({ en: 'Scope', ar: 'النطاق' })}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">{completenessMetrics.sectionScores.scope}%</p>
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              <div className="space-y-3">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-amber-500" />
+                  {t({ en: 'Recommendations', ar: 'التوصيات' })}
+                </h4>
+                {!data.name_en && !data.name_ar && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm">{t({ en: 'Add a plan name to establish identity', ar: 'أضف اسم الخطة لتأسيس الهوية' })}</p>
+                  </div>
+                )}
+                {!data.vision_en && !data.vision_ar && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    <Eye className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm">{t({ en: 'Define a vision statement', ar: 'حدد بيان الرؤية' })}</p>
+                  </div>
+                )}
+                {completenessMetrics.overall >= 80 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                    <p className="text-sm">{t({ en: 'Context is well-defined. Ready for next steps.', ar: 'السياق محدد جيداً. جاهز للخطوات التالية.' })}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
