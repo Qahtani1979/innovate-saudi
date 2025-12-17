@@ -1,6 +1,6 @@
 /**
  * Challenges Module AI Prompts Index
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 // Challenge Intake
@@ -43,6 +43,13 @@ export {
   crossCityLearningSchema, 
   CROSS_CITY_LEARNING_SYSTEM_PROMPT 
 } from './crossCityLearning';
+
+// Challenge to R&D & Root Cause Analysis
+export {
+  CHALLENGE_TO_RD_SYSTEM_PROMPT, buildChallengeToRDPrompt, CHALLENGE_TO_RD_SCHEMA,
+  ROOT_CAUSE_SYSTEM_PROMPT, buildRootCausePrompt, ROOT_CAUSE_SCHEMA,
+  CHALLENGE_CLUSTER_SYSTEM_PROMPT, buildChallengeClusterPrompt, CHALLENGE_CLUSTER_SCHEMA
+} from './challengeRD';
 
 /**
  * Challenges module prompt configuration
@@ -87,6 +94,21 @@ export const CHALLENGES_PROMPTS = {
     promptFn: 'buildCrossCityLearningPrompt',
     schema: 'crossCityLearningSchema',
     description: 'Finds similar resolved challenges from other cities'
+  },
+  challengeToRD: {
+    promptFn: 'buildChallengeToRDPrompt',
+    schema: 'CHALLENGE_TO_RD_SCHEMA',
+    description: 'Generates R&D calls from challenges'
+  },
+  rootCause: {
+    promptFn: 'buildRootCausePrompt',
+    schema: 'ROOT_CAUSE_SCHEMA',
+    description: 'Deep root cause analysis with 5 Whys'
+  },
+  challengeCluster: {
+    promptFn: 'buildChallengeClusterPrompt',
+    schema: 'CHALLENGE_CLUSTER_SCHEMA',
+    description: 'Identifies challenge clusters and patterns'
   }
 };
 
