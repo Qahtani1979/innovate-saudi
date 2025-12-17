@@ -60,6 +60,12 @@ export * from './core';
 // Strategy module prompts
 export * from './strategy';
 
+// Taxonomy prompts
+export * from './taxonomy';
+
+// MII prompts
+export * from './mii';
+
 // Smart prompts
 // export * from './smart';
 
@@ -84,6 +90,8 @@ export const PROMPT_MODULE_STATUS = {
   profiles: { status: 'complete', promptCount: 3 },
   programs: { status: 'complete', promptCount: 4 },
   core: { status: 'complete', promptCount: 5 },
+  taxonomy: { status: 'complete', promptCount: 2 },
+  mii: { status: 'complete', promptCount: 2 },
   smart: { status: 'pending', promptCount: 0 }
 };
 

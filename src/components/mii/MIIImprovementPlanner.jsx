@@ -6,6 +6,12 @@ import { Target, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildMIIImprovementPrompt, 
+  miiImprovementSchema, 
+  MII_IMPROVEMENT_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/mii';
 
 export default function MIIImprovementPlanner({ municipalityId, currentScore }) {
   const { language, t } = useLanguage();
@@ -14,23 +20,9 @@ export default function MIIImprovementPlanner({ municipalityId, currentScore }) 
 
   const generatePlan = async () => {
     const result = await invokeAI({
-      prompt: `Create MII improvement plan:
-
-Current Score: ${currentScore}
-Target: +10 points in 12 months
-
-Recommend:
-1. Quick wins (low effort, high impact)
-2. Strategic initiatives (high effort, high impact)
-3. Timeline and priorities`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          quick_wins: { type: "array", items: { type: "string" } },
-          strategic: { type: "array", items: { type: "string" } },
-          timeline: { type: "string" }
-        }
-      }
+      systemPrompt: getSystemPrompt(MII_IMPROVEMENT_SYSTEM_PROMPT),
+      prompt: buildMIIImprovementPrompt(currentScore, 10, 12),
+      response_json_schema: miiImprovementSchema
     });
 
     if (result.success) {
