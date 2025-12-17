@@ -682,7 +682,7 @@ export default function Step4PESTEL({
                                 className="text-xs block truncate"
                                 title={f.factor_en || f.factor_ar}
                               >
-                                {cat?.title[language]}: {(f.factor_en || f.factor_ar || '').substring(0, 20)}...
+                                {cat?.title?.[language] || cat?.key}: {(f.factor_en || f.factor_ar || '').substring(0, 20)}...
                               </Badge>
                             );
                           })}
@@ -754,7 +754,7 @@ export default function Step4PESTEL({
                                 className="text-xs block truncate"
                                 title={f.factor_en || f.factor_ar}
                               >
-                                {cat?.title[language]}: {(f.factor_en || f.factor_ar || '').substring(0, 20)}...
+                                {cat?.title?.[language] || cat?.key}: {(f.factor_en || f.factor_ar || '').substring(0, 20)}...
                               </Badge>
                             );
                           })}
@@ -794,7 +794,7 @@ export default function Step4PESTEL({
             <DistributionChart
               title={t({ en: 'PESTEL Factor Distribution', ar: 'توزيع عوامل PESTEL' })}
               data={PESTEL_CATEGORIES.map(category => ({
-                label: category.name[language],
+                label: category.title?.[language] || category.title?.en || category.key,
                 value: (data.pestel?.[category.key] || []).length,
                 icon: category.icon,
                 iconColor: category.color.includes('blue') ? 'text-blue-600' : 
