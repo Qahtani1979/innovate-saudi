@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { MapPin, Sparkles, BookOpen, Loader2, Award } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildCrossCityLearningPrompt, 
+  crossCityLearningSchema, 
+  CROSS_CITY_LEARNING_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/challenges';
 
 export default function CrossCityLearning({ challenge }) {
   const { language, isRTL, t } = useLanguage();
@@ -35,37 +39,9 @@ export default function CrossCityLearning({ challenge }) {
     }
 
     const result = await invokeAI({
-        prompt: `Current Challenge: "${challenge.title_en}" - ${challenge.description_en}
-
-Find the 3 most similar resolved challenges from this list and explain how they were solved:
-
-${resolvedChallenges.map(c => `- ${c.title_en} (${c.municipality_id}): ${c.resolution_summary || 'Resolved'}`).join('\n')}
-
-For each similar challenge, provide:
-1. Why it's similar
-2. How it was resolved (approach)
-3. What results were achieved
-4. Key lessons that apply to current challenge`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            similar_cases: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  challenge_title: { type: "string" },
-                  municipality: { type: "string" },
-                  similarity_reason: { type: "string" },
-                  resolution_approach: { type: "string" },
-                  results_achieved: { type: "string" },
-                  lessons_learned: { type: "array", items: { type: "string" } }
-                }
-              }
-            }
-          }
-        }
-      }
+      systemPrompt: getSystemPrompt(CROSS_CITY_LEARNING_SYSTEM_PROMPT),
+      prompt: buildCrossCityLearningPrompt(challenge, resolvedChallenges),
+      response_json_schema: crossCityLearningSchema
     });
 
     if (result.success) {
