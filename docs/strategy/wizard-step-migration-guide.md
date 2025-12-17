@@ -1,8 +1,8 @@
 # Wizard Step Standardization - Complete Migration Guide
 
-> **Last Updated**: December 2024  
+> **Last Updated**: December 17, 2024  
 > **Status**: Phase 1 Complete - Ready for Migration  
-> **Analysis Based On**: Verified file inspection of all 19 step components
+> **Analysis Based On**: Verified code search of all 19 step components
 
 ---
 
@@ -21,61 +21,73 @@
 
 ### Verified File Structure (19 Files Total)
 
-| File | Lines | Dashboard | AI Component | Tab System | Tab Count | Alert |
-|------|-------|-----------|--------------|------------|-----------|-------|
-| Step1Context.jsx | 885 | ✅ L19 | ❌ Custom Card L206 | ✅ Raw Tabs L229 | 4 cols | ❌ |
-| Step2Vision.jsx | 643 | ✅ L19 | ❌ Custom Card L207 | ✅ Raw Tabs L231 | 3 cols | ❌ |
-| Step2SWOT.jsx | 667 | ✅ L17 | ✅ AIActionButton L17 | ✅ Raw Tabs L389 | 4 cols | ❌ |
-| Step3Objectives.jsx | 841 | ✅ L21 | ❌ Custom Modal L35 | ✅ Raw Tabs | 3 cols | ❌ |
-| Step3Stakeholders.jsx | 720 | ✅ L22 | ✅ AIActionButton L26 | ✅ Raw Tabs L233 | 4 cols | ❌ |
-| Step4PESTEL.jsx | 831 | ✅ L19 | ✅ AIActionButton L19 | ✅ Raw Tabs L283 | 4 cols | ❌ |
-| Step4NationalAlignment.jsx | 585 | ✅ L14 | ❌ None | ✅ Raw Tabs | 3 cols | ❌ |
-| Step5KPIs.jsx | 1094 | ✅ L19 | ✅ AIActionButton L19 | ✅ ViewMode Tabs L671 | 3 modes | ✅ L11 |
-| Step6ActionPlans.jsx | 1200 | ✅ L25 | ✅ AIActionButton L25 | ✅ Raw Tabs L809 | 4 cols | ✅ L14 |
-| Step6Scenarios.jsx | 784 | ✅ L19 | ❌ None | ✅ Raw Tabs L479 | 4 cols | ❌ |
-| Step7Risks.jsx | 869 | ✅ L24 | ✅ AIActionButton L24 | ✅ Raw Tabs | 4 cols | ✅ L13 |
-| Step7Timeline.jsx | 1145 | ✅ L21 | ✅ AIActionButton L21 | ✅ ViewMode Tabs L502 | 4 cols | ❌ |
-| Step8Dependencies.jsx | 1054 | ✅ L19 | ✅ AIActionButton L19 | ✅ Raw Tabs L284 | **5 cols** | ❌ |
+| File | Lines | Dashboard | AI Component | Tab System | Tab Count | Alert Import |
+|------|-------|-----------|--------------|------------|-----------|--------------|
+| Step1Context.jsx | 885 | ✅ L19 | ❌ Custom Card | ✅ Raw Tabs | 4 tabs | ❌ None |
+| Step2Vision.jsx | 643 | ✅ L19 | ❌ Custom Card | ✅ Raw Tabs | 3 tabs | ❌ None |
+| Step2SWOT.jsx | 667 | ✅ L17 | ✅ AIActionButton | ✅ Raw Tabs L389 | 4 tabs | ❌ None |
+| Step3Objectives.jsx | 841 | ✅ L21 | ❌ Custom Modal | ✅ Raw Tabs L435 | 4 tabs | ❌ None |
+| Step3Stakeholders.jsx | 720 | ✅ L22 | ✅ AIActionButton | ✅ Raw Tabs L233 | 4 tabs | ❌ None |
+| Step4PESTEL.jsx | 831 | ✅ L19 | ✅ AIActionButton | ✅ Raw Tabs L283 | 4 tabs | ❌ None |
+| Step4NationalAlignment.jsx | 585 | ✅ L14 | ❌ None | ✅ Raw Tabs | 3 tabs | ❌ None |
+| Step5KPIs.jsx | 1094 | ✅ L19 | ✅ AIActionButton | ✅ ViewMode L670 | 4 tabs | ✅ L11 |
+| Step6ActionPlans.jsx | 1200 | ✅ L25 | ✅ AIActionButton | ✅ Raw Tabs L809 | 4 tabs | ✅ L14 |
+| Step6Scenarios.jsx | 784 | ✅ L19 | ❌ None | ✅ Raw Tabs L479 | 4 tabs | ❌ None |
+| Step7Risks.jsx | 869 | ✅ L24 | ✅ AIActionButton | ✅ Raw Tabs | 4 tabs | ✅ L13 |
+| Step7Timeline.jsx | 1145 | ✅ L21 | ✅ AIActionButton | ✅ ViewMode L502 | 4 tabs | ❌ None |
+| Step8Dependencies.jsx | 1054 | ✅ L19 | ✅ AIActionButton | ✅ Raw Tabs L284 | **5 tabs** | ❌ None |
 | Step8Review.jsx | 624 | ✅ L19 | ❌ None | ❌ No Tabs | - | ✅ L5 |
-| Step13Resources.jsx | 932 | ✅ L23 | ✅ AIActionButton L23 | ✅ Raw Tabs L616 | 4 cols | ✅ L11 |
-| Step15Governance.jsx | 1235 | ✅ L22 | ❌ Custom Button L423 | ✅ Nested Tabs L578 | **5 cols** | ✅ L12 |
-| Step16Communication.jsx | 1142 | ✅ L24 | ❌ None | ✅ Raw Tabs L951 | **5 cols** | ✅ L12 |
-| Step17Change.jsx | 1482 | ✅ L23 | ❌ None | ✅ Raw Tabs L1178 | **6 cols** | ✅ L13 |
-| Step18Review.jsx | 1076 | ✅ L27 | ❌ AIAnalyzer L28 | ✅ Has Tabs | varies | ✅ L5 |
+| Step13Resources.jsx | 932 | ✅ L23 | ✅ AIActionButton | ✅ Raw Tabs L616 | 4 tabs | ✅ L11 |
+| Step15Governance.jsx | 1235 | ✅ L22 | ❌ Custom Button | ✅ Nested Tabs L578 | **5 tabs** | ✅ L12 |
+| Step16Communication.jsx | 1142 | ✅ L24 | ❌ None | ✅ Raw Tabs L951 | **5 tabs** | ✅ L12 |
+| Step17Change.jsx | 1482 | ✅ L23 | ❌ None | ✅ Raw Tabs L1178 | **6 tabs** | ✅ L13 |
+| Step18Review.jsx | 1076 | ✅ L27 | ❌ AIAnalyzer | ✅ Has Tabs | varies | ✅ L5 |
 
 ### Summary Statistics
 
 | Pattern | Already Using Shared | Needs Migration | Notes |
 |---------|---------------------|-----------------|-------|
-| StepDashboardHeader | 19 (100%) | 0 | ✅ Complete |
-| AIActionButton | 10 (53%) | 2 custom cards, 1 modal, 6 none | 🟡 Partial |
-| StepTabs | 0 (0%) | 17 files | 🔴 All need migration |
-| StepAlerts | 0 (0%) | 8 files with Alert imports | 🟡 8 have custom alerts |
+| StepDashboardHeader | 19 (100%) | 0 | ✅ All steps complete |
+| AIActionButton | 10 (53%) | 2 custom cards + 7 none | 🟡 Partial coverage |
+| StepTabs | 0 (0%) | 17 files with tabs | 🔴 All need migration |
+| StepAlerts | 0 (0%) | **9 files** with Alert imports | 🟡 Need conversion |
 | MainAIGeneratorCard | 0 (0%) | 2 have custom cards | 🔴 Step1, Step2 |
+| ViewModeToggle | 0 (0%) | 2 use viewMode pattern | 🟡 Step5KPIs, Step7Timeline |
 
 ### Quick Reference: What Each Step Needs
 
-| Step | File | StepTabs | MainAI | StepAlerts | Priority |
-|------|------|----------|--------|------------|----------|
+| # | File | StepTabs | MainAI | StepAlerts | Priority |
+|---|------|----------|--------|------------|----------|
 | 1 | Step1Context | ✅ 4 tabs | ✅ Custom→MainAI | ❌ | Medium |
 | 2 | Step2Vision | ✅ 3 tabs | ✅ Custom→MainAI | ❌ | Medium |
 | 3 | Step2SWOT | ✅ 4 tabs | ❌ Has AIActionBtn | ❌ | 🟢 Quick Win |
-| 4 | Step3Objectives | ✅ 3 tabs | ❌ Keep modal | ❌ | Complex |
+| 4 | Step3Objectives | ✅ 4 tabs | ❌ Keep modal | ❌ | Standard |
 | 5 | Step3Stakeholders | ✅ 4 tabs | ❌ Has AIActionBtn | ❌ | 🟢 Quick Win |
 | 6 | Step4PESTEL | ✅ 4 tabs | ❌ Has AIActionBtn | ❌ | 🟢 Quick Win |
 | 7 | Step4NationalAlignment | ✅ 3 tabs | ❌ Optional | ❌ | Easy |
-| 8 | Step5KPIs | ⚠️ ViewMode | ❌ Has AIActionBtn | ✅ Migrate | Special |
-| 9 | Step6ActionPlans | ✅ 4 tabs | ❌ Has AIActionBtn | ✅ Migrate | Standard |
+| 8 | Step5KPIs | ⚠️ ViewMode 4 | ❌ Has AIActionBtn | ✅ L11 | Special |
+| 9 | Step6ActionPlans | ✅ 4 tabs | ❌ Has AIActionBtn | ✅ L14 | Standard |
 | 10 | Step6Scenarios | ✅ 4 tabs | ❌ Optional | ❌ | Easy |
-| 11 | Step7Risks | ✅ 4 tabs | ❌ Has AIActionBtn | ✅ Migrate | Standard |
-| 12 | Step7Timeline | ⚠️ ViewMode | ❌ Has AIActionBtn | ❌ | Standard |
+| 11 | Step7Risks | ✅ 4 tabs | ❌ Has AIActionBtn | ✅ L13 | Standard |
+| 12 | Step7Timeline | ⚠️ ViewMode 4 | ❌ Has AIActionBtn | ❌ | Standard |
 | 13 | Step8Dependencies | ✅ **5 tabs** | ❌ Has AIActionBtn | ❌ | Standard |
-| 14 | Step8Review | ❌ No tabs | ❌ None needed | ✅ Migrate | Skip |
-| 15 | Step13Resources | ✅ 4 tabs | ❌ Has AIActionBtn | ✅ Migrate | Standard |
-| 16 | Step15Governance | ✅ **5 tabs** | ❌ Has custom btn | ✅ Migrate | Complex |
-| 17 | Step16Communication | ✅ **5 tabs** | ❌ None | ✅ Migrate | Complex |
-| 18 | Step17Change | ✅ **6 tabs** | ❌ None | ✅ Migrate | Complex |
-| 19 | Step18Review | ⚠️ Has tabs | ❌ AIAnalyzer | ✅ Migrate | Special |
+| 14 | Step8Review | ❌ No tabs | ❌ None needed | ✅ L5 | Skip tabs |
+| 15 | Step13Resources | ✅ 4 tabs | ❌ Has AIActionBtn | ✅ L11 | Standard |
+| 16 | Step15Governance | ✅ **5 tabs** | ❌ Has custom btn | ✅ L12 | Complex |
+| 17 | Step16Communication | ✅ **5 tabs** | ❌ None | ✅ L12 | Complex |
+| 18 | Step17Change | ✅ **6 tabs** | ❌ None | ✅ L13 | Complex |
+| 19 | Step18Review | ⚠️ Has tabs | ❌ AIAnalyzer | ✅ L5 | Special |
+
+### Files with Alert Imports (9 total - needs StepAlerts migration)
+1. **Step5KPIs.jsx** - Line 11: `import { Alert, AlertDescription } from "@/components/ui/alert"`
+2. **Step6ActionPlans.jsx** - Line 14: `import { Alert, AlertDescription } from "@/components/ui/alert"`
+3. **Step7Risks.jsx** - Line 13: `import { Alert, AlertDescription } from "@/components/ui/alert"`
+4. **Step8Review.jsx** - Line 5: `import { Alert, AlertDescription } from "@/components/ui/alert"`
+5. **Step13Resources.jsx** - Line 11: `import { Alert, AlertDescription } from "@/components/ui/alert"`
+6. **Step15Governance.jsx** - Line 12: `import { Alert, AlertDescription } from "@/components/ui/alert"`
+7. **Step16Communication.jsx** - Line 12: `import { Alert, AlertDescription } from "@/components/ui/alert"`
+8. **Step17Change.jsx** - Line 13: `import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"`
+9. **Step18Review.jsx** - Line 5: `import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"`
 
 ---
 
@@ -185,8 +197,18 @@
 #### Verified Locations
 - **Dashboard**: `StepDashboardHeader` - Line 21 import
 - **AI**: Custom proposal modal - Lines 35-40 (keep - specialized)
-- **Tabs**: Raw Tabs - `grid-cols-3`
+- **Tabs**: Raw Tabs - **Line 435** (4 tabs: list, sectors, priority, summary)
 - **Alerts**: None
+
+#### Tab Structure (4 tabs at Line 435)
+```jsx
+<TabsList>
+  <TabsTrigger value="list">List</TabsTrigger>
+  <TabsTrigger value="sectors">By Sector</TabsTrigger>
+  <TabsTrigger value="priority">By Priority</TabsTrigger>
+  <TabsTrigger value="summary">Summary</TabsTrigger>
+</TabsList>
+```
 
 #### Special Considerations
 - Has unique `onGenerateSingleObjective` callback
@@ -262,16 +284,17 @@
 #### Verified Locations
 - **Dashboard**: `StepDashboardHeader` - Line 19 import
 - **AI**: `AIActionButton` - Line 19
-- **Tabs**: **ViewMode Tabs** - **Line 671** (byObjective, byCategory, list)
+- **Tabs**: **ViewMode Tabs** - **Line 670** (4 tabs: byObjective, byCategory, matrix, summary)
 - **Alerts**: Alert import - **Line 11** (needs StepAlerts)
 
-#### ViewMode Structure (Line 671)
+#### ViewMode Structure (Line 670)
 ```jsx
 <Tabs value={viewMode} onValueChange={setViewMode} className="w-full">
   <TabsList className="w-full justify-start flex-wrap h-auto gap-1 p-1">
     <TabsTrigger value="byObjective">By Objective</TabsTrigger>
     <TabsTrigger value="byCategory">By Category</TabsTrigger>
-    <TabsTrigger value="list">List View</TabsTrigger>
+    <TabsTrigger value="matrix">Matrix</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
   </TabsList>
 ```
 
