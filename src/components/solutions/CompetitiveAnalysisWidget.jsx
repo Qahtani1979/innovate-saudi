@@ -8,6 +8,12 @@ import { Loader2, Target, TrendingUp, Award, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildCompetitiveAnalysisWidgetPrompt, 
+  competitiveAnalysisWidgetSchema,
+  COMPETITIVE_ANALYSIS_WIDGET_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/solution';
 
 export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete }) {
   const { language, isRTL, t } = useLanguage();
@@ -21,7 +27,6 @@ export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete
 
   const handleAnalyze = async () => {
     try {
-      // Find similar solutions by semantic search
       const embeddingResult = await base44.functions.invoke('generateEmbeddings', {
         text: `${solution?.name_en || ''} ${solution?.description_en || ''}`,
         return_embedding: true
@@ -39,37 +44,10 @@ export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete
         setCompetitors(matches.data?.results || []);
       }
 
-      // AI competitive analysis
       const { success, data } = await invokeAI({
-        prompt: `Analyze competitive landscape for this solution in Saudi municipal innovation market:
-
-Solution: ${solution?.name_en}
-Provider: ${solution?.provider_name}
-TRL: ${solution?.trl}
-Maturity: ${solution?.maturity_level}
-Sectors: ${solution?.sectors?.join(', ')}
-
-Competitors found:
-${(matches.data?.results || []).map((c, i) => 
-  `${i+1}. ${c.name_en} (${c.provider_name}) - ${c.maturity_level}, TRL ${c.trl}`
-).join('\n')}
-
-Provide BILINGUAL analysis (AR+EN):
-1. Key differentiators (3-5 unique advantages)
-2. Competitive positioning strategy
-3. Market gaps this solution fills
-4. Pricing strategy recommendations
-5. Target municipality recommendations`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            differentiators: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            positioning: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-            market_gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            pricing_strategy: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-            target_municipalities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
-        }
+        system_prompt: getSystemPrompt(COMPETITIVE_ANALYSIS_WIDGET_SYSTEM_PROMPT),
+        prompt: buildCompetitiveAnalysisWidgetPrompt(solution, matches.data?.results),
+        response_json_schema: competitiveAnalysisWidgetSchema
       });
 
       if (success && data) {
