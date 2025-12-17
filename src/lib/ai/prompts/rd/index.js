@@ -1,7 +1,7 @@
 /**
  * R&D Module Prompts Index
  * Central export for all R&D-related AI prompts
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 export { PROPOSAL_SCORER_PROMPTS } from './proposalScorer';
@@ -16,6 +16,11 @@ export {
   RD_SOLUTION_CONVERTER_SYSTEM_PROMPT, buildRDSolutionConverterPrompt, RD_SOLUTION_CONVERTER_SCHEMA,
   IP_COMMERCIALIZATION_SYSTEM_PROMPT, buildIPCommercializationPrompt, IP_COMMERCIALIZATION_SCHEMA
 } from './commercialization';
+export {
+  RD_SPINOFF_SYSTEM_PROMPT, buildRDSpinoffPrompt, RD_SPINOFF_SCHEMA,
+  PATENT_LANDSCAPE_SYSTEM_PROMPT, buildPatentLandscapePrompt, PATENT_LANDSCAPE_SCHEMA,
+  TECH_TRANSFER_SYSTEM_PROMPT, buildTechTransferPrompt, TECH_TRANSFER_SCHEMA
+} from './rdSpinoff';
 
 export const RD_PROMPT_MANIFEST = {
   proposalScorer: {
@@ -57,5 +62,20 @@ export const RD_PROMPT_MANIFEST = {
     file: 'eligibilityCheck.js',
     purpose: 'Check proposal eligibility',
     component: 'ProposalEligibilityChecker'
+  },
+  rdSpinoff: {
+    file: 'rdSpinoff.js',
+    purpose: 'Assess R&D commercialization potential',
+    component: 'RDToStartupSpinoff'
+  },
+  patentLandscape: {
+    file: 'rdSpinoff.js',
+    purpose: 'Analyze patent landscapes',
+    component: 'PatentLandscapeAnalyzer'
+  },
+  techTransfer: {
+    file: 'rdSpinoff.js',
+    purpose: 'Guide technology transfer',
+    component: 'TechTransferAdvisor'
   }
 };
