@@ -2,293 +2,367 @@
 
 > **Last Updated**: December 17, 2024  
 > **Status**: Phase 1 Complete - Ready for Migration  
-> **Analysis Based On**: Verified code search of all 19 step components
+> **Analysis Based On**: Full code inspection of all 19 step components
 
 ---
 
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
-2. [Phase 1: Core Components (✅ Completed)](#phase-1-core-components)
-3. [Phase 2: Step-by-Step Gap Analysis](#phase-2-step-by-step-gap-analysis)
-4. [Phase 3: Migration Priority Matrix](#phase-3-migration-priority-matrix)
-5. [Phase 4: Implementation Patterns](#phase-4-implementation-patterns)
-6. [Phase 5: Testing Checklist](#phase-5-testing-checklist)
-7. [Appendix: Component API Reference](#appendix-component-api-reference)
+2. [Full Step Assessment](#full-step-assessment)
+3. [Migration Priority Matrix](#migration-priority-matrix)
+4. [Implementation Patterns](#implementation-patterns)
+5. [Testing Checklist](#testing-checklist)
 
 ---
 
 ## Executive Summary
 
-### Verified File Structure (19 Files Total)
+### Complete File Analysis (19 Files)
 
-| File | Lines | Dashboard | AI Component | Tab System | Tab Count | Alert Import |
-|------|-------|-----------|--------------|------------|-----------|--------------|
-| Step1Context.jsx | 885 | ✅ L19 | ❌ Custom Card | ✅ Raw Tabs | 4 tabs | ❌ None |
-| Step2Vision.jsx | 643 | ✅ L19 | ❌ Custom Card | ✅ Raw Tabs | 3 tabs | ❌ None |
-| Step2SWOT.jsx | 667 | ✅ L17 | ✅ AIActionButton | ✅ Raw Tabs L389 | 4 tabs | ❌ None |
-| Step3Objectives.jsx | 841 | ✅ L21 | ❌ Custom Modal | ✅ Raw Tabs L435 | 4 tabs | ❌ None |
-| Step3Stakeholders.jsx | 720 | ✅ L22 | ✅ AIActionButton | ✅ Raw Tabs L233 | 4 tabs | ❌ None |
-| Step4PESTEL.jsx | 831 | ✅ L19 | ✅ AIActionButton | ✅ Raw Tabs L283 | 4 tabs | ❌ None |
-| Step4NationalAlignment.jsx | 585 | ✅ L14 | ❌ None | ✅ Raw Tabs | 3 tabs | ❌ None |
-| Step5KPIs.jsx | 1094 | ✅ L19 | ✅ AIActionButton | ✅ ViewMode L670 | 4 tabs | ✅ L11 |
-| Step6ActionPlans.jsx | 1200 | ✅ L25 | ✅ AIActionButton | ✅ Raw Tabs L809 | 4 tabs | ✅ L14 |
-| Step6Scenarios.jsx | 784 | ✅ L19 | ❌ None | ✅ Raw Tabs L479 | 4 tabs | ❌ None |
-| Step7Risks.jsx | 869 | ✅ L24 | ✅ AIActionButton | ✅ Raw Tabs | 4 tabs | ✅ L13 |
-| Step7Timeline.jsx | 1145 | ✅ L21 | ✅ AIActionButton | ✅ ViewMode L502 | 4 tabs | ❌ None |
-| Step8Dependencies.jsx | 1054 | ✅ L19 | ✅ AIActionButton | ✅ Raw Tabs L284 | **5 tabs** | ❌ None |
-| Step8Review.jsx | 624 | ✅ L19 | ❌ None | ❌ No Tabs | - | ✅ L5 |
-| Step13Resources.jsx | 932 | ✅ L23 | ✅ AIActionButton | ✅ Raw Tabs L616 | 4 tabs | ✅ L11 |
-| Step15Governance.jsx | 1235 | ✅ L22 | ❌ Custom Button | ✅ Nested Tabs L578 | **5 tabs** | ✅ L12 |
-| Step16Communication.jsx | 1142 | ✅ L24 | ❌ None | ✅ Raw Tabs L951 | **5 tabs** | ✅ L12 |
-| Step17Change.jsx | 1482 | ✅ L23 | ❌ None | ✅ Raw Tabs L1178 | **6 tabs** | ✅ L13 |
-| Step18Review.jsx | 1076 | ✅ L27 | ❌ AIAnalyzer | ✅ Has Tabs | varies | ✅ L5 |
+| # | File | Lines | Dashboard | AI Pattern | Tabs Line | Tab Count | Alert Import |
+|---|------|-------|-----------|------------|-----------|-----------|--------------|
+| 1 | Step1Context.jsx | 885 | ✅ L19 | Custom Card L206-224 | L228 | 4 | ❌ |
+| 2 | Step2Vision.jsx | 643 | ✅ L18 | Custom Card L207-226 | L230 | 3 | ❌ |
+| 3 | Step2SWOT.jsx | 667 | ✅ L17 | AIActionButton L17 | L388 | 4 | ❌ |
+| 4 | Step3Objectives.jsx | 841 | ✅ L21 | Custom Modal | L433 | 4 | ❌ |
+| 5 | Step3Stakeholders.jsx | 720 | ✅ L21-27 | AIActionButton L26 | L232 | 4 | ❌ |
+| 6 | Step4PESTEL.jsx | 831 | ✅ L19 | AIActionButton L19 | L282 | 4 | ❌ |
+| 7 | Step4NationalAlignment.jsx | 585 | ✅ L14 | Custom Button L203-219 | L232 | 4 | ❌ |
+| 8 | Step5KPIs.jsx | 1094 | ✅ L19 | AIActionButton L19 | L670 | 4 | ✅ L11 |
+| 9 | Step6ActionPlans.jsx | 1200 | ✅ L25 | AIActionButton L25 | L810 | 4 | ✅ L14 |
+| 10 | Step6Scenarios.jsx | 784 | ✅ L19 | Custom Button L462-474 | L478 | 4 | ❌ |
+| 11 | Step7Risks.jsx | 869 | ✅ L24 | AIActionButton L24 | L616 | 4 | ✅ L13 |
+| 12 | Step7Timeline.jsx | 1145 | ✅ L21 | AIActionButton L21 | L501 | 4 | ❌ |
+| 13 | Step8Dependencies.jsx | 1054 | ✅ L19 | AIActionButton L19 | L283 | **5** | ❌ |
+| 14 | Step8Review.jsx | 624 | ✅ L19 | None (review step) | ❌ None | 0 | ✅ L5 |
+| 15 | Step13Resources.jsx | 932 | ✅ L23 | AIActionButton L23 | L615 | 4 | ✅ L11 |
+| 16 | Step15Governance.jsx | 1235 | ✅ L22 | Custom Button L423 | L577 | **5** | ✅ L12 |
+| 17 | Step16Communication.jsx | 1142 | ✅ L24 | None | L950 | **5** | ✅ L12 |
+| 18 | Step17Change.jsx | 1482 | ✅ L23 | None | L1177 | **6** | ✅ L13 |
+| 19 | Step18Review.jsx | 1076 | ✅ L27 | AIAnalyzer L28 | Has tabs | varies | ✅ L5 |
 
 ### Summary Statistics
 
-| Pattern | Already Using Shared | Needs Migration | Notes |
-|---------|---------------------|-----------------|-------|
-| StepDashboardHeader | 19 (100%) | 0 | ✅ All steps complete |
-| AIActionButton | 10 (53%) | 2 custom cards + 7 none | 🟡 Partial coverage |
-| StepTabs | 0 (0%) | 17 files with tabs | 🔴 All need migration |
-| StepAlerts | 0 (0%) | **9 files** with Alert imports | 🟡 Need conversion |
-| MainAIGeneratorCard | 0 (0%) | 2 have custom cards | 🔴 Step1, Step2 |
-| ViewModeToggle | 0 (0%) | 2 use viewMode pattern | 🟡 Step5KPIs, Step7Timeline |
+| Component | Using Shared | Needs Migration | Notes |
+|-----------|-------------|-----------------|-------|
+| **StepDashboardHeader** | 19 (100%) | 0 | ✅ Complete |
+| **AIActionButton** | 10 (53%) | 0 | ✅ Already using shared component |
+| **StepTabs** | 0 (0%) | 17 | 🔴 All tabs need migration |
+| **StepAlerts** | 0 (0%) | 9 | 🟡 9 files have Alert imports |
+| **MainAIGeneratorCard** | 0 (0%) | 2 | 🔴 Step1Context, Step2Vision |
+| **ViewModeToggle** | 0 (0%) | 2 | 🟡 Step5KPIs, Step7Timeline use viewMode |
 
-### Quick Reference: What Each Step Needs
+### Files with Alert Imports (9 files need StepAlerts migration)
 
-| # | File | StepTabs | MainAI | StepAlerts | Priority |
-|---|------|----------|--------|------------|----------|
-| 1 | Step1Context | ✅ 4 tabs | ✅ Custom→MainAI | ❌ | Medium |
-| 2 | Step2Vision | ✅ 3 tabs | ✅ Custom→MainAI | ❌ | Medium |
-| 3 | Step2SWOT | ✅ 4 tabs | ❌ Has AIActionBtn | ❌ | 🟢 Quick Win |
-| 4 | Step3Objectives | ✅ 4 tabs | ❌ Keep modal | ❌ | Standard |
-| 5 | Step3Stakeholders | ✅ 4 tabs | ❌ Has AIActionBtn | ❌ | 🟢 Quick Win |
-| 6 | Step4PESTEL | ✅ 4 tabs | ❌ Has AIActionBtn | ❌ | 🟢 Quick Win |
-| 7 | Step4NationalAlignment | ✅ 3 tabs | ❌ Optional | ❌ | Easy |
-| 8 | Step5KPIs | ⚠️ ViewMode 4 | ❌ Has AIActionBtn | ✅ L11 | Special |
-| 9 | Step6ActionPlans | ✅ 4 tabs | ❌ Has AIActionBtn | ✅ L14 | Standard |
-| 10 | Step6Scenarios | ✅ 4 tabs | ❌ Optional | ❌ | Easy |
-| 11 | Step7Risks | ✅ 4 tabs | ❌ Has AIActionBtn | ✅ L13 | Standard |
-| 12 | Step7Timeline | ⚠️ ViewMode 4 | ❌ Has AIActionBtn | ❌ | Standard |
-| 13 | Step8Dependencies | ✅ **5 tabs** | ❌ Has AIActionBtn | ❌ | Standard |
-| 14 | Step8Review | ❌ No tabs | ❌ None needed | ✅ L5 | Skip tabs |
-| 15 | Step13Resources | ✅ 4 tabs | ❌ Has AIActionBtn | ✅ L11 | Standard |
-| 16 | Step15Governance | ✅ **5 tabs** | ❌ Has custom btn | ✅ L12 | Complex |
-| 17 | Step16Communication | ✅ **5 tabs** | ❌ None | ✅ L12 | Complex |
-| 18 | Step17Change | ✅ **6 tabs** | ❌ None | ✅ L13 | Complex |
-| 19 | Step18Review | ⚠️ Has tabs | ❌ AIAnalyzer | ✅ L5 | Special |
-
-### Files with Alert Imports (9 total - needs StepAlerts migration)
-1. **Step5KPIs.jsx** - Line 11: `import { Alert, AlertDescription } from "@/components/ui/alert"`
-2. **Step6ActionPlans.jsx** - Line 14: `import { Alert, AlertDescription } from "@/components/ui/alert"`
-3. **Step7Risks.jsx** - Line 13: `import { Alert, AlertDescription } from "@/components/ui/alert"`
-4. **Step8Review.jsx** - Line 5: `import { Alert, AlertDescription } from "@/components/ui/alert"`
-5. **Step13Resources.jsx** - Line 11: `import { Alert, AlertDescription } from "@/components/ui/alert"`
-6. **Step15Governance.jsx** - Line 12: `import { Alert, AlertDescription } from "@/components/ui/alert"`
-7. **Step16Communication.jsx** - Line 12: `import { Alert, AlertDescription } from "@/components/ui/alert"`
-8. **Step17Change.jsx** - Line 13: `import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"`
-9. **Step18Review.jsx** - Line 5: `import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"`
+| File | Alert Import Line | Current Usage |
+|------|-------------------|---------------|
+| Step5KPIs.jsx | L11 | `Alert, AlertDescription` |
+| Step6ActionPlans.jsx | L14 | `Alert, AlertDescription` |
+| Step7Risks.jsx | L13 | `Alert, AlertDescription` |
+| Step8Review.jsx | L5 | `Alert, AlertDescription` |
+| Step13Resources.jsx | L11 | `Alert, AlertDescription` |
+| Step15Governance.jsx | L12 | `Alert, AlertDescription` |
+| Step16Communication.jsx | L12 | `Alert, AlertDescription` |
+| Step17Change.jsx | L13 | `Alert, AlertDescription, AlertTitle` |
+| Step18Review.jsx | L5 | `Alert, AlertDescription, AlertTitle` |
 
 ---
 
-## Phase 1: Core Components
-
-### ✅ Completed Components
-
-| Component | File | Purpose | Status |
-|-----------|------|---------|--------|
-| `MainAIGeneratorCard` | `shared/MainAIGeneratorCard.jsx` | Bulk AI generation | ✅ Ready |
-| `StepAlerts` | `shared/StepAlerts.jsx` | Validation alerts | ✅ Ready |
-| `StepTabs` | `shared/StepTabs.jsx` | Tab navigation | ✅ Ready |
-| `StepLayout` | `shared/StepLayout.jsx` | Master layout wrapper | ✅ Ready |
-| `ViewModeToggle` | `shared/ViewModeToggle.jsx` | View mode switching | ✅ Ready |
-
-### Pre-existing Components (In Use)
-
-| Component | Import Location | Used By |
-|-----------|-----------------|---------|
-| `StepDashboardHeader` | `shared/StepDashboardHeader.jsx` | All 19 steps ✅ |
-| `AIActionButton` | `shared/AIActionButton.jsx` | 10 steps |
-| `QualityMetrics` | `shared/QualityMetrics.jsx` | Most steps |
-| `DistributionChart` | `shared/DistributionChart.jsx` | Most steps |
-| `RecommendationsCard` | `shared/RecommendationsCard.jsx` | Some steps |
-
----
-
-## Phase 2: Step-by-Step Gap Analysis
-
----
+## Full Step Assessment
 
 ### Step 1: Context (`Step1Context.jsx` - 885 lines)
 
-**Complexity**: High | **Effort**: 2 hours
+**Status**: Needs MainAIGeneratorCard + StepTabs migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 19 import, Lines 173-202 render
-- **AI Card**: Custom Card - **Lines 206-225** (needs MainAIGeneratorCard)
-- **Tabs**: Raw Tabs - **Line 229** (`grid-cols-4`)
-- **Alerts**: None
-
-#### Tab Structure (4 tabs at Line 229)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-4">
-  <TabsTrigger value="identity">Identity</TabsTrigger>
-  <TabsTrigger value="scope">Scope</TabsTrigger>
-  <TabsTrigger value="discovery">Discovery</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Line 10: Tabs import
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Lines 18-23: Dashboard import
+import { StepDashboardHeader, DistributionChart, QualityMetrics, RecommendationsCard } from '../shared';
+
+// Lines 206-224: Custom AI Card (REPLACE with MainAIGeneratorCard)
+{!isReadOnly && (
+  <Card className="border-primary/20">
+    <CardContent className="py-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-semibold flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            {t({ en: 'AI-Powered Context Generation', ar: '...' })}
+          </h4>
+          <p className="text-sm text-muted-foreground">...</p>
+        </div>
+        <Button onClick={onGenerateAI} disabled={isGenerating || !data.name_en}>
+          {isGenerating ? <Loader2 className="..." /> : <Sparkles className="..." />}
+          {t({ en: 'Generate', ar: 'إنشاء' })}
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+)}
+
+// Lines 228-246: Raw Tabs (REPLACE with StepTabs)
+<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+  <TabsList className="grid w-full grid-cols-4">
+    <TabsTrigger value="identity">Identity</TabsTrigger>
+    <TabsTrigger value="scope">Scope</TabsTrigger>
+    <TabsTrigger value="discovery">Discovery</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
 
 #### Migration Tasks
-1. Replace Lines 206-225 with `MainAIGeneratorCard`
-2. Replace Lines 228-246 with `StepTabs`
+1. ✅ Replace Lines 206-224 with `MainAIGeneratorCard`
+2. ✅ Replace Lines 228-246 with `StepTabs`
+3. ❌ No StepAlerts needed (no Alert import)
+
+**Effort**: 1.5 hours
 
 ---
 
 ### Step 2: Vision & Values (`Step2Vision.jsx` - 643 lines)
 
-**Complexity**: Medium | **Effort**: 1.5 hours
+**Status**: Needs MainAIGeneratorCard + StepTabs migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 19 import, Lines 173-204 render
-- **AI Card**: Custom Card - **Lines 207-227** (needs MainAIGeneratorCard)
-- **Tabs**: Raw Tabs - **Line 231** (`grid-cols-3`)
-- **Alerts**: None
-
-#### Tab Structure (3 tabs at Line 231)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-3">
-  <TabsTrigger value="values">Core Values</TabsTrigger>
-  <TabsTrigger value="pillars">Pillars</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Lines 18-22: Dashboard import
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard } from '../shared';
+
+// Lines 207-226: Custom AI Card (REPLACE)
+{!isReadOnly && (
+  <Card className="border-primary/20">
+    <CardContent className="py-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-semibold flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            {t({ en: 'AI-Powered Generation', ar: '...' })}
+          </h4>
+          ...
+        </div>
+        <Button onClick={onGenerateAI} disabled={isGenerating || !data.name_en}>...</Button>
+      </div>
+    </CardContent>
+  </Card>
+)}
+
+// Lines 230-246: Raw Tabs (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+  <TabsList className="grid w-full grid-cols-3">
+    <TabsTrigger value="values">Core Values</TabsTrigger>
+    <TabsTrigger value="pillars">Strategic Pillars</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
+
+#### Migration Tasks
+1. ✅ Replace Lines 207-226 with `MainAIGeneratorCard`
+2. ✅ Replace Lines 230-246 with `StepTabs`
+3. ❌ No StepAlerts needed
+
+**Effort**: 1 hour
 
 ---
 
 ### Step 3: SWOT Analysis (`Step2SWOT.jsx` - 667 lines) 🟢 QUICK WIN
 
-**Complexity**: Low | **Effort**: 30 minutes
+**Status**: Only needs StepTabs migration - already using AIActionButton!
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 17 import
-- **AI**: `AIActionButton` - **Line 17** ✅ Already using shared!
-- **Tabs**: Raw Tabs - **Line 389** (`grid-cols-4`)
-- **Alerts**: None
-
-#### Tab Structure (4 tabs at Line 389)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-4 mb-4">
-  <TabsTrigger value="matrix">Matrix</TabsTrigger>
-  <TabsTrigger value="list">List</TabsTrigger>
-  <TabsTrigger value="strategies">Strategies</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Line 17: Already imports AIActionButton ✅
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid, AIActionButton } from '../shared';
+
+// Lines 378-385: AIActionButton already in use ✅
+<AIActionButton
+  label={t({ en: 'Generate SWOT', ar: 'إنشاء SWOT' })}
+  onAction={onGenerateAI}
+  isLoading={isGenerating}
+/>
+
+// Lines 388-406: Raw Tabs (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+  <TabsList className="grid w-full grid-cols-4 mb-4">
+    <TabsTrigger value="matrix">Matrix</TabsTrigger>
+    <TabsTrigger value="list">List</TabsTrigger>
+    <TabsTrigger value="strategies">Strategies</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
 
-#### 🟢 Only Tabs Migration Needed
+#### Migration Tasks
+1. ❌ AIActionButton already using shared component
+2. ✅ Replace Lines 388-406 with `StepTabs`
+3. ❌ No StepAlerts needed
+
+**Effort**: 30 minutes
 
 ---
 
 ### Step 4: Strategic Objectives (`Step3Objectives.jsx` - 841 lines)
 
-**Complexity**: High | **Effort**: 2 hours
+**Status**: Only needs StepTabs migration - has special modal (keep as-is)
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 21 import
-- **AI**: Custom proposal modal - Lines 35-40 (keep - specialized)
-- **Tabs**: Raw Tabs - **Line 435** (4 tabs: list, sectors, priority, summary)
-- **Alerts**: None
-
-#### Tab Structure (4 tabs at Line 435)
+#### Current Implementation
 ```jsx
-<TabsList>
-  <TabsTrigger value="list">List</TabsTrigger>
-  <TabsTrigger value="sectors">By Sector</TabsTrigger>
-  <TabsTrigger value="priority">By Priority</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Line 21: Dashboard import
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+
+// AI: Uses custom proposal modal for AI-generated objective review
+// Lines 35-40: showProposalModal, proposedObjective state
+// This is SPECIALIZED - cannot replace with MainAIGeneratorCard
+
+// Lines 433-452: Raw Tabs (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab}>
+  <TabsList>
+    <TabsTrigger value="list">List</TabsTrigger>
+    <TabsTrigger value="sectors">By Sector</TabsTrigger>
+    <TabsTrigger value="priority">By Priority</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
 
-#### Special Considerations
-- Has unique `onGenerateSingleObjective` callback
-- Uses proposal modal for AI-generated objective review
-- **Cannot replace with MainAIGeneratorCard** - keep modal
+#### Migration Tasks
+1. ❌ Keep custom modal - specialized for objective proposal review
+2. ✅ Replace Lines 433-452 with `StepTabs`
+3. ❌ No StepAlerts needed
+
+**Effort**: 45 minutes
 
 ---
 
 ### Step 5: Stakeholders (`Step3Stakeholders.jsx` - 720 lines) 🟢 QUICK WIN
 
-**Complexity**: Low | **Effort**: 30 minutes
+**Status**: Only needs StepTabs migration - already using AIActionButton!
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 22 import
-- **AI**: `AIActionButton` - **Line 26** ✅ Already using shared!
-- **Tabs**: Raw Tabs - **Line 233** (`grid-cols-4`)
-- **Alerts**: None
-
-#### Tab Structure (4 tabs at Line 233)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-4">
-  <TabsTrigger value="list">List</TabsTrigger>
-  <TabsTrigger value="matrix">Matrix</TabsTrigger>
-  <TabsTrigger value="engagement">Engagement</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Lines 21-27: Already imports AIActionButton ✅
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+
+// Lines 220-228: AIActionButton already in use ✅
+<AIActionButton
+  label={t({ en: 'Suggest Stakeholders', ar: 'اقتراح أصحاب المصلحة' })}
+  onAction={onGenerateAI}
+  isLoading={isGenerating}
+  description={t({ en: 'Auto-identify stakeholders based on your plan context', ar: '...' })}
+/>
+
+// Lines 232-251: Raw Tabs (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+  <TabsList className="grid w-full grid-cols-4">
+    <TabsTrigger value="list">List</TabsTrigger>
+    <TabsTrigger value="matrix">Matrix</TabsTrigger>
+    <TabsTrigger value="engagement">Plan</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
 
-#### 🟢 Only Tabs Migration Needed
+#### Migration Tasks
+1. ❌ AIActionButton already using shared component
+2. ✅ Replace Lines 232-251 with `StepTabs`
+3. ❌ No StepAlerts needed
+
+**Effort**: 30 minutes
 
 ---
 
 ### Step 6: PESTEL Analysis (`Step4PESTEL.jsx` - 831 lines) 🟢 QUICK WIN
 
-**Complexity**: Low | **Effort**: 30 minutes
+**Status**: Only needs StepTabs migration - already using AIActionButton!
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 19 import
-- **AI**: `AIActionButton` - **Line 19** ✅ Already using shared!
-- **Tabs**: Raw Tabs - **Line 283** (`grid-cols-4`)
-- **Alerts**: None
-
-#### Tab Structure (4 tabs at Line 283)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-4 mb-4">
-  <TabsTrigger value="factors">Factors</TabsTrigger>
-  <TabsTrigger value="timeline">Timeline</TabsTrigger>
-  <TabsTrigger value="impact">Impact</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Line 19: Already imports AIActionButton ✅
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+
+// Lines 270-278: AIActionButton in use ✅
+<AIActionButton
+  label={t({ en: 'Analyze Factors', ar: 'تحليل العوامل' })}
+  onAction={onGenerateAI}
+  isLoading={isGenerating}
+  variant="outline"
+/>
+
+// Lines 282-300: Raw Tabs (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+  <TabsList className="grid w-full grid-cols-4 mb-4">
+    <TabsTrigger value="factors">Factors</TabsTrigger>
+    <TabsTrigger value="overview">Overview</TabsTrigger>
+    <TabsTrigger value="impact">Impact</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
 
-#### 🟢 Only Tabs Migration Needed
+#### Migration Tasks
+1. ❌ AIActionButton already using shared component
+2. ✅ Replace Lines 282-300 with `StepTabs`
+3. ❌ No StepAlerts needed
+
+**Effort**: 30 minutes
 
 ---
 
 ### Step 7: National Alignment (`Step4NationalAlignment.jsx` - 585 lines)
 
-**Complexity**: Low | **Effort**: 45 minutes
+**Status**: Needs StepTabs migration + optional AI migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 14 import
-- **AI**: None
-- **Tabs**: Raw Tabs - `grid-cols-3`
-- **Alerts**: None
+#### Current Implementation
+```jsx
+// Line 14: Dashboard import (no AIActionButton)
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+
+// Lines 203-219: Custom AI Button (optional migration)
+<Card className="border-primary/30 bg-primary/5">
+  <CardContent className="pt-4">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div>
+        <h4 className="font-semibold">{t({ en: 'AI-Powered Alignment', ar: '...' })}</h4>
+        <p className="text-sm text-muted-foreground">...</p>
+      </div>
+      <Button onClick={onGenerateAI} disabled={isGenerating || objectives.length === 0}>
+        {isGenerating ? <Loader2 /> : <Sparkles />}
+        {t({ en: 'Suggest Alignments', ar: '...' })}
+      </Button>
+    </div>
+  </CardContent>
+</Card>
+
+// Lines 232-250: Raw Tabs (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab}>
+  <TabsList className="grid w-full grid-cols-4">
+    <TabsTrigger value="matrix">Matrix</TabsTrigger>
+    <TabsTrigger value="objectives">By Objective</TabsTrigger>
+    <TabsTrigger value="programs">By Program</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
+```
+
+#### Migration Tasks
+1. 🟡 Optional: Replace custom AI card with `MainAIGeneratorCard` variant="compact"
+2. ✅ Replace Lines 232-250 with `StepTabs`
+3. ❌ No StepAlerts needed
+
+**Effort**: 45 minutes
 
 ---
 
 ### Step 8: KPIs (`Step5KPIs.jsx` - 1094 lines) ⚠️ SPECIAL
 
-**Complexity**: Very High | **Effort**: 2 hours
+**Status**: Needs StepTabs + StepAlerts migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 19 import
-- **AI**: `AIActionButton` - Line 19
-- **Tabs**: **ViewMode Tabs** - **Line 670** (4 tabs: byObjective, byCategory, matrix, summary)
-- **Alerts**: Alert import - **Line 11** (needs StepAlerts)
-
-#### ViewMode Structure (Line 670)
+#### Current Implementation
 ```jsx
+// Line 11: Alert import ⚠️
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Line 19: Dashboard + AIActionButton imports ✅
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+
+// Lines 670-688: ViewMode Tabs (REPLACE)
 <Tabs value={viewMode} onValueChange={setViewMode} className="w-full">
   <TabsList className="w-full justify-start flex-wrap h-auto gap-1 p-1">
     <TabsTrigger value="byObjective">By Objective</TabsTrigger>
@@ -298,467 +372,536 @@
   </TabsList>
 ```
 
-#### Migration Notes
-- Consider using `ViewModeToggle` component instead of StepTabs
-- Has complex SMART scoring - keep custom logic
+#### Migration Tasks
+1. ❌ AIActionButton already using shared component
+2. ✅ Replace Lines 670-688 with `StepTabs`
+3. ✅ Replace Alert usage with `StepAlerts` (L11)
+4. 🟡 Consider using `ViewModeToggle` instead if viewMode pattern preferred
+
+**Effort**: 1.5 hours
 
 ---
 
 ### Step 9: Action Plans (`Step6ActionPlans.jsx` - 1200 lines)
 
-**Complexity**: Very High | **Effort**: 2 hours
+**Status**: Needs StepTabs + StepAlerts migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 25 import
-- **AI**: `AIActionButton` - Line 25
-- **Tabs**: Raw Tabs - **Line 809** (`grid-cols-4`)
-- **Alerts**: Alert import - **Line 14** (needs StepAlerts)
+#### Current Implementation
+```jsx
+// Line 14: Alert import ⚠️
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Line 25: Dashboard + AIActionButton imports ✅
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+
+// Lines 810-828: ViewMode Tabs (REPLACE)
+<Tabs value={viewMode} onValueChange={setViewMode}>
+  <TabsList className="w-full justify-start flex-wrap h-auto gap-1 p-1">
+    <TabsTrigger value="objectives">By Objective</TabsTrigger>
+    <TabsTrigger value="types">By Type</TabsTrigger>
+    <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
+```
+
+#### Migration Tasks
+1. ❌ AIActionButton already using shared component
+2. ✅ Replace Lines 810-828 with `StepTabs`
+3. ✅ Replace Alert usage with `StepAlerts` (L14)
+
+**Effort**: 1.5 hours
 
 ---
 
 ### Step 10: Scenarios (`Step6Scenarios.jsx` - 784 lines)
 
-**Complexity**: Medium | **Effort**: 1 hour
+**Status**: Needs StepTabs migration + optional AI migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 19 import
-- **AI**: None
-- **Tabs**: Raw Tabs - **Line 479** (`grid-cols-4`)
-- **Alerts**: None
-
-#### Tab Structure (4 tabs at Line 479)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-4 mb-4">
-  <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
-  <TabsTrigger value="assumptions">Assumptions</TabsTrigger>
-  <TabsTrigger value="analysis">Analysis</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Line 19: Dashboard import (no AIActionButton)
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+
+// Lines 462-474: Custom AI Button (optional migration)
+<Button variant="outline" onClick={onGenerateAI} disabled={isGenerating}>
+  {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+  {isGenerating ? t({ en: 'Generating...', ar: '...' }) : t({ en: 'Generate Scenarios', ar: '...' })}
+</Button>
+
+// Lines 478-496: Raw Tabs (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+  <TabsList className="grid w-full grid-cols-4 mb-4">
+    <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
+    <TabsTrigger value="comparison">Compare</TabsTrigger>
+    <TabsTrigger value="probability">Probability</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
+
+#### Migration Tasks
+1. 🟡 Optional: Add AIActionButton import and use it
+2. ✅ Replace Lines 478-496 with `StepTabs`
+3. ❌ No StepAlerts needed
+
+**Effort**: 45 minutes
 
 ---
 
 ### Step 11: Risk Assessment (`Step7Risks.jsx` - 869 lines)
 
-**Complexity**: High | **Effort**: 1.5 hours
+**Status**: Needs StepTabs + StepAlerts migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 24 import
-- **AI**: `AIActionButton` - Line 24
-- **Tabs**: Raw Tabs - `grid-cols-4`
-- **Alerts**: Alert import - **Line 13** (needs StepAlerts)
+#### Current Implementation
+```jsx
+// Line 13: Alert import ⚠️
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Line 24: Dashboard + AIActionButton imports ✅
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+
+// Lines 616-634: Raw Tabs (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+  <TabsList className="grid w-full grid-cols-4 mb-4">
+    <TabsTrigger value="register">Register</TabsTrigger>
+    <TabsTrigger value="matrix">Matrix</TabsTrigger>
+    <TabsTrigger value="mitigation">Mitigation</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
+```
+
+#### Migration Tasks
+1. ❌ AIActionButton already using shared component
+2. ✅ Replace Lines 616-634 with `StepTabs`
+3. ✅ Replace Alert usage with `StepAlerts` (L13)
+
+**Effort**: 1.5 hours
 
 ---
 
 ### Step 12: Timeline (`Step7Timeline.jsx` - 1145 lines)
 
-**Complexity**: Very High | **Effort**: 1.5 hours
+**Status**: Needs StepTabs migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 21 import
-- **AI**: `AIActionButton` - Line 21
-- **Tabs**: **ViewMode Tabs** - **Line 502** (`grid-cols-4`)
-- **Alerts**: None
-
-#### ViewMode Structure (Line 502)
+#### Current Implementation
 ```jsx
+// Line 21: Dashboard + AIActionButton imports ✅
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+
+// Lines 501-519: ViewMode Tabs (REPLACE)
 <Tabs value={viewMode} onValueChange={setViewMode}>
   <TabsList className="grid w-full grid-cols-4">
     <TabsTrigger value="phases">Phases</TabsTrigger>
     <TabsTrigger value="milestones">Milestones</TabsTrigger>
-    <TabsTrigger value="gantt">Gantt</TabsTrigger>
+    <TabsTrigger value="gantt">Gantt View</TabsTrigger>
     <TabsTrigger value="summary">Summary</TabsTrigger>
   </TabsList>
 ```
+
+#### Migration Tasks
+1. ❌ AIActionButton already using shared component
+2. ✅ Replace Lines 501-519 with `StepTabs`
+3. ❌ No StepAlerts needed
+
+**Effort**: 1 hour
 
 ---
 
 ### Step 13: Dependencies (`Step8Dependencies.jsx` - 1054 lines)
 
-**Complexity**: High | **Effort**: 1.5 hours
+**Status**: Needs StepTabs migration (5 tabs!)
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 19 import
-- **AI**: `AIActionButton` - Line 19
-- **Tabs**: Raw Tabs - **Line 284** (`grid-cols-5`) ⚠️ 5 tabs!
-- **Alerts**: None
-
-#### Tab Structure (5 tabs at Line 284)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-5">
-  <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
-  <TabsTrigger value="constraints">Constraints</TabsTrigger>
-  <TabsTrigger value="assumptions">Assumptions</TabsTrigger>
-  <TabsTrigger value="analysis">Analysis</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Line 19: Dashboard + AIActionButton imports ✅
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+
+// Lines 283-308: Raw Tabs with 5 columns (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab}>
+  <TabsList className="grid w-full grid-cols-5">
+    <TabsTrigger value="dependencies">Deps</TabsTrigger>
+    <TabsTrigger value="constraints">Const.</TabsTrigger>
+    <TabsTrigger value="assumptions">Assump.</TabsTrigger>
+    <TabsTrigger value="overview">Overview</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
+
+#### Migration Tasks
+1. ❌ AIActionButton already using shared component
+2. ✅ Replace Lines 283-308 with `StepTabs` (note: 5 tabs)
+3. ❌ No StepAlerts needed
+
+**Effort**: 1 hour
 
 ---
 
-### Step 14: Mid-Review (`Step8Review.jsx` - 624 lines) ⏭️ SKIP
+### Step 14: Mid-Review (`Step8Review.jsx` - 624 lines) ⏭️ SKIP TABS
 
-**Complexity**: Medium | **Effort**: Skip for now
+**Status**: Needs StepAlerts migration only - NO TABS
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 19 import
-- **AI**: None needed (review step)
-- **Tabs**: **None** - No tabs in this step
-- **Alerts**: Alert import - **Line 5**
+#### Current Implementation
+```jsx
+// Line 5: Alert import ⚠️
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Line 19: Dashboard import (no AIActionButton - not needed for review)
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+
+// Lines 361-371: Alert usage (REPLACE with StepAlerts)
+{errors.length > 0 && (
+  <Alert variant="destructive">
+    <AlertTriangle className="h-4 w-4" />
+    <AlertDescription>
+      <ul className="list-disc ml-4">
+        {errors.map((err, i) => (<li key={i}>{err}</li>))}
+      </ul>
+    </AlertDescription>
+  </Alert>
+)}
+
+// NO TABS in this file - review step uses card grid layout
+```
+
+#### Migration Tasks
+1. ❌ No tabs - this is a review step with card grid
+2. ✅ Replace Alert usage with `StepAlerts` (L5)
+3. ❌ No AI needed for review step
+
+**Effort**: 30 minutes
 
 ---
 
 ### Step 15: Resources (`Step13Resources.jsx` - 932 lines)
 
-**Complexity**: High | **Effort**: 1.5 hours
+**Status**: Needs StepTabs + StepAlerts migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 23 import
-- **AI**: `AIActionButton` - Line 23
-- **Tabs**: Raw Tabs - **Line 616** (`grid-cols-4`)
-- **Alerts**: Alert import - **Line 11** (needs StepAlerts)
-
-#### Tab Structure (4 tabs at Line 616)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-4 mb-4">
-  <TabsTrigger value="categories">Categories</TabsTrigger>
-  <TabsTrigger value="allocation">Allocation</TabsTrigger>
-  <TabsTrigger value="gaps">Gaps</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Line 11: Alert import ⚠️
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Line 23: Dashboard + AIActionButton imports ✅
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+
+// Lines 603-611: Alert usage (REPLACE)
+{alerts.length > 0 && (
+  <div className="space-y-2">
+    {alerts.map((alert, idx) => (
+      <Alert key={idx} variant={alert.type === 'error' ? 'destructive' : 'default'}>
+        {alert.type === 'error' ? <AlertCircle /> : <AlertTriangle />}
+        <AlertDescription>{alert.message}</AlertDescription>
+      </Alert>
+    ))}
+  </div>
+)}
+
+// Lines 615-633: Raw Tabs (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+  <TabsList className="grid w-full grid-cols-4 mb-4">
+    <TabsTrigger value="categories">By Category</TabsTrigger>
+    <TabsTrigger value="timeline">Timeline</TabsTrigger>
+    <TabsTrigger value="matrix">Matrix</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
+
+#### Migration Tasks
+1. ❌ AIActionButton already using shared component
+2. ✅ Replace Lines 615-633 with `StepTabs`
+3. ✅ Replace Alert usage (L603-611) with `StepAlerts`
+
+**Effort**: 1.5 hours
 
 ---
 
-### Step 16: Governance (`Step15Governance.jsx` - 1235 lines)
+### Step 16: Governance (`Step15Governance.jsx` - 1235 lines) ⚠️ COMPLEX
 
-**Complexity**: Very High | **Effort**: 2 hours
+**Status**: Needs StepTabs + StepAlerts + optional AI migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 22 import
-- **AI**: Custom Button - **Line 423** (simple generate button)
-- **Tabs**: **Nested Tabs** - **Line 578** inside viewMode='cards' (`grid-cols-5`)
-- **Alerts**: Alert import - **Line 12** + custom alerts useMemo **Line 201**
-
-#### Special Structure
-This step has dual navigation:
-1. **ViewMode buttons** (Lines 443-456): cards | structure | summary
-2. **Tabs inside 'cards' viewMode** (Line 578): 5 tabs
-
-#### Tab Structure (5 tabs at Line 578)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-5 mb-4">
-  <TabsTrigger value="committees">Committees</TabsTrigger>
-  <TabsTrigger value="roles">Roles</TabsTrigger>
-  <TabsTrigger value="dashboards">Dashboards</TabsTrigger>
-  <TabsTrigger value="raci">RACI</TabsTrigger>
-  <TabsTrigger value="escalation">Escalation</TabsTrigger>
-</TabsList>
+// Line 12: Alert import ⚠️
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Line 22: Dashboard import (no AIActionButton)
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+
+// Lines 423-427: Custom AI Button (optional migration)
+<Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
+  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+  {isGenerating ? t({ en: 'Generating...', ar: '...' }) : t({ en: 'Generate', ar: 'إنشاء' })}
+</Button>
+
+// Lines 431-439: Alert usage (REPLACE)
+{alerts.length > 0 && (
+  <div className="space-y-2">
+    {alerts.map((alert, idx) => (
+      <Alert key={idx} variant={alert.type === 'error' ? 'destructive' : 'default'}>...</Alert>
+    ))}
+  </div>
+)}
+
+// Lines 442-456: ViewMode buttons (cards | structure | summary)
+// This is a CUSTOM viewMode using Button toggles, not tabs
+
+// Lines 577-604: Nested Tabs inside 'cards' viewMode (5 tabs!) (REPLACE)
+{viewMode === 'cards' && (
+  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+    <TabsList className="grid w-full grid-cols-5 mb-4">
+      <TabsTrigger value="committees">Committees</TabsTrigger>
+      <TabsTrigger value="roles">Roles</TabsTrigger>
+      <TabsTrigger value="escalation">Escalation</TabsTrigger>
+      <TabsTrigger value="dashboards">Dashboards</TabsTrigger>
+      <TabsTrigger value="raci">RACI</TabsTrigger>
+    </TabsList>
 ```
+
+#### Special Notes
+- Has dual navigation: ViewMode buttons (L442-456) + Tabs inside 'cards' (L577-604)
+- ViewMode buttons could be replaced with `ViewModeToggle`
+- Tabs are nested inside viewMode='cards' condition
+
+#### Migration Tasks
+1. 🟡 Optional: Add AIActionButton import and replace custom button
+2. 🟡 Consider using `ViewModeToggle` for viewMode buttons
+3. ✅ Replace Lines 577-604 with `StepTabs` (note: 5 tabs, nested)
+4. ✅ Replace Alert usage (L431-439) with `StepAlerts`
+
+**Effort**: 2 hours
 
 ---
 
 ### Step 17: Communication (`Step16Communication.jsx` - 1142 lines)
 
-**Complexity**: Very High | **Effort**: 2 hours
+**Status**: Needs StepTabs + StepAlerts migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 24 import
-- **AI**: None
-- **Tabs**: Raw Tabs - **Line 951** (`grid-cols-5`)
-- **Alerts**: Alert import - **Line 12**
-
-#### Tab Structure (5 tabs at Line 951)
+#### Current Implementation
 ```jsx
-<TabsList className="grid w-full grid-cols-5">
-  <TabsTrigger value="audiences">Audiences</TabsTrigger>
-  <TabsTrigger value="channels">Channels</TabsTrigger>
-  <TabsTrigger value="messages">Messages</TabsTrigger>
-  <TabsTrigger value="calendar">Calendar</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Line 12: Alert import ⚠️
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Line 24: Dashboard import (no AIActionButton - none needed)
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+
+// Lines 950-976: Raw Tabs with 5 columns (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+  <TabsList className="grid w-full grid-cols-5">
+    <TabsTrigger value="audiences">Audiences</TabsTrigger>
+    <TabsTrigger value="messages">Messages</TabsTrigger>
+    <TabsTrigger value="internal">Internal</TabsTrigger>
+    <TabsTrigger value="external">External</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
+</Tabs>
 ```
+
+#### Migration Tasks
+1. ❌ No AI button needed for this step
+2. ✅ Replace Lines 950-976 with `StepTabs` (note: 5 tabs)
+3. ✅ Replace Alert usage with `StepAlerts` (L12)
+
+**Effort**: 1.5 hours
 
 ---
 
-### Step 18: Change Management (`Step17Change.jsx` - 1482 lines)
+### Step 18: Change Management (`Step17Change.jsx` - 1482 lines) ⚠️ LARGEST FILE
 
-**Complexity**: Very High (Largest file!) | **Effort**: 2.5 hours
+**Status**: Needs StepTabs + StepAlerts migration
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 23 import
-- **AI**: None
-- **Tabs**: Raw Tabs - **Line 1178** (`grid-cols-6`) ⚠️ 6 tabs!
-- **Alerts**: Alert import - **Line 13**
-
-#### Tab Structure (6 tabs at Line 1178)
+#### Current Implementation
 ```jsx
-<TabsList className="grid grid-cols-6 w-full">
-  <TabsTrigger value="overview">Overview</TabsTrigger>
-  <TabsTrigger value="impacts">Impacts</TabsTrigger>
-  <TabsTrigger value="adkar">ADKAR</TabsTrigger>
-  <TabsTrigger value="training">Training</TabsTrigger>
-  <TabsTrigger value="resistance">Resistance</TabsTrigger>
-  <TabsTrigger value="summary">Summary</TabsTrigger>
-</TabsList>
+// Line 13: Alert import with AlertTitle ⚠️
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// Line 23: Dashboard import (no AIActionButton - none needed)
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid } from '../shared';
+
+// Lines 1177-1207: Raw Tabs with 6 columns (REPLACE)
+<Tabs value={activeTab} onValueChange={setActiveTab}>
+  <TabsList className="grid grid-cols-6 w-full">
+    <TabsTrigger value="overview">Overview</TabsTrigger>
+    <TabsTrigger value="impacts">Impacts</TabsTrigger>
+    <TabsTrigger value="resistance">Resist.</TabsTrigger>
+    <TabsTrigger value="training">Training</TabsTrigger>
+    <TabsTrigger value="activities">Activities</TabsTrigger>
+    <TabsTrigger value="summary">Summary</TabsTrigger>
+  </TabsList>
 ```
+
+#### Migration Tasks
+1. ❌ No AI button needed for this step
+2. ✅ Replace Lines 1177-1207 with `StepTabs` (note: 6 tabs!)
+3. ✅ Replace Alert usage with `StepAlerts` (L13, includes AlertTitle)
+
+**Effort**: 2 hours
 
 ---
 
 ### Step 19: Final Review (`Step18Review.jsx` - 1076 lines) ⚠️ SPECIAL
 
-**Complexity**: High | **Effort**: 2 hours
+**Status**: Needs StepAlerts migration - has specialized AIAnalyzer
 
-#### Verified Locations
-- **Dashboard**: `StepDashboardHeader` - Line 27 import
-- **AI**: `AIStrategicPlanAnalyzer` - **Line 28** (custom component - keep!)
-- **Tabs**: Has tabs (structure varies)
-- **Alerts**: Alert import - **Line 5**
-
----
-
-## Phase 3: Migration Priority Matrix
-
-### 🟢 Quick Wins (3 steps - ~1.5 hours total)
-Steps that only need tabs migration (already have AIActionButton):
-
-| Step | File | Tab Line | Tab Count |
-|------|------|----------|-----------|
-| Step2SWOT | Step2SWOT.jsx | L389 | 4 |
-| Step3Stakeholders | Step3Stakeholders.jsx | L233 | 4 |
-| Step4PESTEL | Step4PESTEL.jsx | L283 | 4 |
-
-### 🟡 Standard (9 steps - ~13 hours total)
-Steps needing tabs + optional alerts:
-
-| Step | File | Tab Line | Tab Count | Has Alert |
-|------|------|----------|-----------|-----------|
-| Step4NationalAlignment | L? | 3 | ❌ |
-| Step6ActionPlans | L809 | 4 | ✅ |
-| Step6Scenarios | L479 | 4 | ❌ |
-| Step7Risks | L? | 4 | ✅ |
-| Step7Timeline | L502 | 4 (viewMode) | ❌ |
-| Step8Dependencies | L284 | **5** | ❌ |
-| Step13Resources | L616 | 4 | ✅ |
-
-### 🔴 Complex (6 steps - ~11 hours total)
-Steps needing MainAIGeneratorCard and/or many tabs:
-
-| Step | File | AI Change | Tab Count | Has Alert |
-|------|------|-----------|-----------|-----------|
-| Step1Context | Custom → MainAI | 4 | ❌ |
-| Step2Vision | Custom → MainAI | 3 | ❌ |
-| Step3Objectives | Keep modal | 3 | ❌ |
-| Step15Governance | Custom btn | **5** (nested) | ✅ |
-| Step16Communication | None | **5** | ✅ |
-| Step17Change | None | **6** | ✅ |
-
-### ⏭️ Skip/Special (2 steps)
-
-| Step | File | Reason |
-|------|------|--------|
-| Step8Review | No tabs, review-only step |
-| Step18Review | Custom AIAnalyzer, specialized |
-| Step5KPIs | Uses ViewMode, not StepTabs |
-
----
-
-## Phase 4: Implementation Patterns
-
-### Pattern A: Tabs-Only Migration (Quick Wins)
-
+#### Current Implementation
 ```jsx
-// BEFORE (Raw Tabs)
+// Line 5: Alert import with AlertTitle ⚠️
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// Line 27: Dashboard import
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+
+// Line 28: Uses specialized AIStrategicPlanAnalyzer (KEEP)
+import AIStrategicPlanAnalyzer from '../AIStrategicPlanAnalyzer';
+
+// Has tabs but they're part of AIAnalyzer component rendering
+```
+
+#### Migration Tasks
+1. ❌ Keep AIStrategicPlanAnalyzer - specialized component
+2. 🟡 Review tab structure inside AIAnalyzer if needed
+3. ✅ Replace Alert usage with `StepAlerts` (L5, includes AlertTitle)
+
+**Effort**: 1.5 hours
+
+---
+
+## Migration Priority Matrix
+
+### 🟢 Quick Wins (Tabs Only - 30 min each)
+1. **Step2SWOT** - Already has AIActionButton
+2. **Step3Stakeholders** - Already has AIActionButton  
+3. **Step4PESTEL** - Already has AIActionButton
+
+### 🟡 Standard Migrations (1-1.5 hours each)
+4. **Step3Objectives** - Tabs only (keep modal)
+5. **Step4NationalAlignment** - Tabs + optional AI
+6. **Step6Scenarios** - Tabs + optional AI
+7. **Step7Timeline** - Tabs only
+8. **Step8Dependencies** - Tabs only (5 tabs)
+9. **Step8Review** - Alerts only (no tabs)
+
+### 🔴 Full Migrations (1.5-2 hours each)
+10. **Step1Context** - MainAI + Tabs
+11. **Step2Vision** - MainAI + Tabs
+12. **Step5KPIs** - Tabs + Alerts
+13. **Step6ActionPlans** - Tabs + Alerts
+14. **Step7Risks** - Tabs + Alerts
+15. **Step13Resources** - Tabs + Alerts
+16. **Step16Communication** - Tabs + Alerts (5 tabs)
+
+### ⚠️ Complex Migrations (2+ hours each)
+17. **Step15Governance** - ViewMode + Tabs + Alerts (nested)
+18. **Step17Change** - Tabs + Alerts (6 tabs, largest file)
+19. **Step18Review** - Alerts + special AIAnalyzer
+
+---
+
+## Estimated Total Effort
+
+| Category | Steps | Est. Hours |
+|----------|-------|------------|
+| Quick Wins | 3 | 1.5 |
+| Standard | 6 | 7.5 |
+| Full Migration | 6 | 9 |
+| Complex | 4 | 8 |
+| **Total** | **19** | **~26 hours** |
+
+---
+
+## Implementation Patterns
+
+### Pattern 1: StepTabs Migration
+```jsx
+// BEFORE
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 <Tabs value={activeTab} onValueChange={setActiveTab}>
   <TabsList className="grid w-full grid-cols-4">
-    <TabsTrigger value="matrix">Matrix</TabsTrigger>
-    // ...
+    <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+    ...
   </TabsList>
-  <TabsContent value="matrix">...</TabsContent>
+  <TabsContent value="tab1">...</TabsContent>
 </Tabs>
 
-// AFTER (StepTabs)
-import { StepTabs, StepTabContent, createTabConfig } from '../shared';
-
-const TAB_DEFINITIONS = [
-  { id: 'matrix', labelEn: 'Matrix', labelAr: 'المصفوفة', icon: LayoutGrid },
-  // ...
-];
-
-const tabs = createTabConfig(TAB_DEFINITIONS, language);
+// AFTER
+import { StepTabs, StepTabContent } from '../shared';
 
 <StepTabs
-  tabs={tabs}
+  tabs={[
+    { id: 'tab1', label: { en: 'Tab 1', ar: 'تبويب 1' }, icon: Icon1 },
+    ...
+  ]}
   activeTab={activeTab}
   onTabChange={setActiveTab}
-  variant="underline"
 >
-  <StepTabContent tabId="matrix">...</StepTabContent>
+  <StepTabContent value="tab1">...</StepTabContent>
 </StepTabs>
 ```
 
-### Pattern B: MainAIGeneratorCard Migration
-
+### Pattern 2: StepAlerts Migration
 ```jsx
-// BEFORE (Custom Card - Step1, Step2)
+// BEFORE
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+{alerts.length > 0 && (
+  <div className="space-y-2">
+    {alerts.map((alert, idx) => (
+      <Alert key={idx} variant={alert.type === 'error' ? 'destructive' : 'default'}>
+        <AlertDescription>{alert.message}</AlertDescription>
+      </Alert>
+    ))}
+  </div>
+)}
+
+// AFTER
+import { StepAlerts } from '../shared';
+
+<StepAlerts alerts={alerts} maxVisible={3} collapsible={true} />
+```
+
+### Pattern 3: MainAIGeneratorCard Migration
+```jsx
+// BEFORE
 {!isReadOnly && (
   <Card className="border-primary/20">
     <CardContent className="py-4">
       <div className="flex items-center justify-between">
         <div>
-          <h4>AI-Powered Generation</h4>
-          <p>Description...</p>
+          <h4><Sparkles /> AI-Powered Generation</h4>
+          <p>Generate based on context...</p>
         </div>
         <Button onClick={onGenerateAI} disabled={isGenerating}>
-          Generate
+          {isGenerating ? <Loader2 /> : <Sparkles />} Generate
         </Button>
       </div>
     </CardContent>
   </Card>
 )}
 
-// AFTER (MainAIGeneratorCard)
+// AFTER
 import { MainAIGeneratorCard } from '../shared';
 
 <MainAIGeneratorCard
   variant="card"
-  title={{ en: 'AI-Powered Context Generation', ar: 'إنشاء السياق بالذكاء الاصطناعي' }}
-  description={{ en: 'Fill in basic details and let AI suggest...', ar: '...' }}
+  title={{ en: 'AI-Powered Generation', ar: '...' }}
+  description={{ en: 'Generate based on context...', ar: '...' }}
   onGenerate={onGenerateAI}
   isGenerating={isGenerating}
-  disabled={!data.name_en}
   isReadOnly={isReadOnly}
 />
 ```
 
-### Pattern C: StepAlerts Migration
-
-```jsx
-// BEFORE (useMemo alerts + Raw Alert)
-import { Alert, AlertDescription } from "@/components/ui/alert";
-
-const alerts = useMemo(() => {
-  const warnings = [];
-  if (stats.totalCommittees === 0) {
-    warnings.push({ type: 'error', message: t({ en: 'No governance committees', ar: '...' }) });
-  }
-  return warnings;
-}, [stats, t]);
-
-{alerts.map((alert, idx) => (
-  <Alert key={idx} variant={alert.type === 'error' ? 'destructive' : 'default'}>
-    <AlertDescription>{alert.message}</AlertDescription>
-  </Alert>
-))}
-
-// AFTER (StepAlerts)
-import { StepAlerts, generateStepAlerts } from '../shared';
-
-const alerts = generateStepAlerts({
-  errors: stats.totalCommittees === 0 ? [{ 
-    title: { en: 'Missing Committees', ar: '...' },
-    message: { en: 'No governance committees defined', ar: '...' }
-  }] : [],
-  warnings: [],
-}, language);
-
-<StepAlerts alerts={alerts} language={language} />
-```
-
 ---
 
-## Phase 5: Testing Checklist
+## Testing Checklist
 
-### Per-Step Verification
+For each migrated step, verify:
 
-- [ ] **Visual parity**: UI looks the same or better
-- [ ] **Functionality**: All interactions work identically
-- [ ] **Responsiveness**: Mobile/tablet views intact
-- [ ] **RTL support**: Arabic layout correct
-- [ ] **Accessibility**: Tab order and focus management
-- [ ] **Performance**: No added re-renders
-
-### Regression Tests
-
-- [ ] Tab switching works
-- [ ] AI generation triggers correctly
-- [ ] Form state preserved on tab change
-- [ ] Alerts display with correct severity
-- [ ] Read-only mode hides edit controls
-
----
-
-## Appendix: Component API Reference
-
-### StepTabs
-
-```typescript
-interface StepTabsProps {
-  tabs: TabConfig[];
-  activeTab: string;
-  onTabChange: (tabId: string) => void;
-  variant?: 'default' | 'underline' | 'pills';
-  size?: 'sm' | 'default' | 'lg';
-  fullWidth?: boolean;
-  children: React.ReactNode;
-}
-
-interface TabConfig {
-  id: string;
-  label: string;
-  icon?: LucideIcon;
-  badge?: number | string;
-  status?: 'complete' | 'warning' | 'error';
-}
-```
-
-### MainAIGeneratorCard
-
-```typescript
-interface MainAIGeneratorCardProps {
-  variant?: 'card' | 'button' | 'inline' | 'compact';
-  title: BilingualText;
-  description?: BilingualText;
-  onGenerate: () => void;
-  isGenerating: boolean;
-  disabled?: boolean;
-  isReadOnly?: boolean;
-  className?: string;
-}
-```
-
-### StepAlerts
-
-```typescript
-interface StepAlertsProps {
-  alerts: StepAlert[];
-  language?: 'en' | 'ar';
-  maxVisible?: number;
-  className?: string;
-}
-
-interface StepAlert {
-  id: string;
-  type: 'info' | 'warning' | 'error' | 'success' | 'tip';
-  title: BilingualText;
-  message: BilingualText;
-}
-```
-
----
-
-## Estimated Total Effort
-
-| Category | Steps | Hours |
-|----------|-------|-------|
-| Quick Wins | 3 | 1.5 |
-| Standard | 9 | 13 |
-| Complex | 6 | 11 |
-| Special/Skip | 2 | 1 |
-| **Total** | **19** | **~27 hours** |
-
----
-
-*Document generated from verified file inspection on December 2024*
+- [ ] Dashboard header displays correctly
+- [ ] AI generation works (if applicable)
+- [ ] Tab navigation works
+- [ ] Tab content renders correctly
+- [ ] Alerts display and dismiss properly
+- [ ] RTL layout works
+- [ ] Responsive design works
+- [ ] No console errors
+- [ ] All existing functionality preserved
