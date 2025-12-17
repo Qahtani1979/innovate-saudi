@@ -7,8 +7,10 @@ import { Sparkles, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PROPOSAL_WRITER_PROMPTS } from '@/lib/ai/prompts/rd';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
-export default function AIProposalWriter({ rdCallId, onGenerated }) {
+export default function AIProposalWriter({ rdCallId, rdCallContext, onGenerated }) {
   const { language, isRTL, t } = useLanguage();
   const [userThoughts, setUserThoughts] = useState('');
   const [generatedProposal, setGeneratedProposal] = useState(null);
@@ -22,93 +24,9 @@ export default function AIProposalWriter({ rdCallId, onGenerated }) {
 
     try {
       const result = await invokeAI({
-        prompt: `You are an academic research proposal writer. Generate a comprehensive R&D proposal:
-
-Researcher's Initial Thoughts:
-${userThoughts}
-
-Generate a structured research proposal with:
-1. Research title (EN + AR) - compelling and academic
-2. Abstract (EN + AR) - 250 words, problem + approach + expected impact
-3. Research objectives (EN + AR) - specific, measurable objectives
-4. Methodology (EN + AR) - detailed research approach
-5. Expected outputs (publications, datasets, prototypes)
-6. Timeline breakdown (12-18 months)
-7. Budget justification
-8. Team composition needs
-9. Literature review summary
-10. Risk assessment
-
-Make it publication-quality and fundable.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            abstract_en: { type: 'string' },
-            abstract_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' },
-            methodology_en: { type: 'string' },
-            methodology_ar: { type: 'string' },
-            expected_outputs: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  output_en: { type: 'string' },
-                  output_ar: { type: 'string' },
-                  type: { type: 'string' },
-                  target_date: { type: 'string' }
-                }
-              }
-            },
-            timeline: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  phase: { type: 'string' },
-                  duration_months: { type: 'number' },
-                  deliverables: { type: 'array', items: { type: 'string' } }
-                }
-              }
-            },
-            budget_breakdown: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  category_en: { type: 'string' },
-                  category_ar: { type: 'string' },
-                  amount: { type: 'number' },
-                  justification: { type: 'string' }
-                }
-              }
-            },
-            team_requirements: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  role_en: { type: 'string' },
-                  role_ar: { type: 'string' },
-                  expertise: { type: 'array', items: { type: 'string' } }
-                }
-              }
-            },
-            risks: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  risk: { type: 'string' },
-                  mitigation: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
+        systemPrompt: getSystemPrompt('rd_proposal_writer'),
+        prompt: PROPOSAL_WRITER_PROMPTS.buildPrompt(userThoughts, rdCallContext),
+        response_json_schema: PROPOSAL_WRITER_PROMPTS.schema
       });
 
       if (result.success) {
@@ -132,6 +50,8 @@ Make it publication-quality and fundable.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
+        <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} className="mb-2" />
+        
         <div>
           <label className="text-sm font-medium mb-2 block">
             {t({ en: 'Describe your research idea in your own words:', ar: 'صف فكرتك البحثية بكلماتك:' })}
@@ -176,7 +96,7 @@ Make it publication-quality and fundable.`,
               </p>
             </div>
             <p className="text-sm text-slate-700">
-              {t({ en: 'Title:', ar: 'العنوان:' })} <strong>{generatedProposal.title_en}</strong>
+              {t({ en: 'Title:', ar: 'العنوان:' })} <strong>{language === 'ar' && generatedProposal.title_ar ? generatedProposal.title_ar : generatedProposal.title_en}</strong>
             </p>
             <p className="text-xs text-slate-600 mt-2">
               {t({ en: 'All fields have been auto-filled. Review and edit as needed.', ar: 'تم ملء جميع الحقول تلقائياً. راجع وعدل حسب الحاجة.' })}
