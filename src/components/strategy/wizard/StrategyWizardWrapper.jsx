@@ -22,6 +22,7 @@ import { useWizardAI, getEdgeFunctionForStep, usesSpecializedEdgeFunction, SAUDI
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';
+import { CompactStepIndicator } from './shared';
 import PlanSelectionDialog from './PlanSelectionDialog';
 import SaveAsTemplateDialog from '../templates/SaveAsTemplateDialog';
 import Step1Context from './steps/Step1Context';
@@ -3963,6 +3964,16 @@ Use formal Arabic (فصحى). Generate a TRUE STRATEGIC OBJECTIVE, not a tactica
           setCurrentStep(step);
         }} 
         completedSteps={completedSteps} 
+      />
+
+      {/* Compact Top Navigation */}
+      <CompactStepIndicator
+        currentStep={currentStep}
+        totalSteps={18}
+        stepTitle={WIZARD_STEPS.find(s => s.num === currentStep)?.title}
+        onBack={handleBack}
+        onNext={handleNext}
+        language={language}
       />
 
       <Card>
