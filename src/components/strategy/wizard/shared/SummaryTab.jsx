@@ -97,12 +97,14 @@ export function QualityMetrics({
 
 /**
  * Recommendations Card - shows actionable recommendations
+ * Supports both simple messages and detailed recommendations with descriptions
  */
 export function RecommendationsCard({ 
   title, 
   recommendations = [], 
   language = 'en',
-  className 
+  className,
+  showDescriptions = false
 }) {
   const getIcon = (type) => {
     switch (type) {
@@ -115,11 +117,25 @@ export function RecommendationsCard({
 
   const getColor = (type) => {
     switch (type) {
-      case 'error': return 'text-destructive';
+      case 'error': return 'text-red-600';
       case 'warning': return 'text-amber-600';
       case 'success': return 'text-green-600';
       default: return 'text-blue-600';
     }
+  };
+
+  const getBgColor = (type) => {
+    switch (type) {
+      case 'error': return 'bg-red-500/10 border border-red-500/30';
+      case 'warning': return 'bg-amber-500/10 border border-amber-500/30';
+      case 'success': return 'bg-green-500/10 border border-green-500/30';
+      default: return 'bg-blue-500/10 border border-blue-500/30';
+    }
+  };
+
+  const getText = (value) => {
+    if (!value) return '';
+    return typeof value === 'object' ? value[language] : value;
   };
 
   return (
@@ -127,14 +143,31 @@ export function RecommendationsCard({
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-3">
         {recommendations.map((rec, idx) => {
-          const Icon = getIcon(rec.type);
-          const message = typeof rec.message === 'object' ? rec.message[language] : rec.message;
+          const Icon = rec.icon || getIcon(rec.type);
+          const message = getText(rec.message) || getText(rec.text);
+          const description = getText(rec.description);
+          const hasDescription = showDescriptions && description;
+          
           return (
-            <div key={idx} className="flex items-start gap-2 p-2 bg-muted/30 rounded-lg">
-              <Icon className={cn("h-4 w-4 shrink-0 mt-0.5", getColor(rec.type))} />
-              <p className="text-sm">{message}</p>
+            <div key={idx} className={cn(
+              "flex items-start gap-3 p-3 rounded-lg",
+              hasDescription ? getBgColor(rec.type) : "bg-muted/30"
+            )}>
+              <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", getColor(rec.type))} />
+              <div className="flex-1 min-w-0">
+                {hasDescription ? (
+                  <>
+                    <p className={cn("font-medium", getColor(rec.type).replace('text-', 'text-').replace('-600', '-700'))}>
+                      {message}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                  </>
+                ) : (
+                  <p className="text-sm">{message}</p>
+                )}
+              </div>
             </div>
           );
         })}
