@@ -197,6 +197,11 @@ export default function Step4NationalAlignment({
           { icon: Layers, value: `${stats.programCoverage}%`, label: t({ en: 'Programs', ar: 'البرامج' }), subValue: `${stats.alignedPrograms}/${stats.totalPrograms}` },
           { icon: Flag, value: `${stats.targetCoverage}%`, label: t({ en: 'Targets', ar: 'الأهداف' }), subValue: `${stats.alignedTargets}/${stats.totalTargets}` },
         ]}
+        metrics={[
+          { label: t({ en: 'Obj Coverage', ar: 'تغطية الأهداف' }), value: stats.objectiveCoverage },
+          { label: t({ en: 'Program Coverage', ar: 'تغطية البرامج' }), value: stats.programCoverage },
+          { label: t({ en: 'Target Coverage', ar: 'تغطية الأهداف' }), value: stats.targetCoverage },
+        ]}
       />
 
       {/* AI Generation Card */}

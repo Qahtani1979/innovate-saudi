@@ -263,6 +263,11 @@ export default function Step4PESTEL({
           { icon: TrendingUp, value: stats.growing, label: t({ en: 'Growing Trends', ar: 'اتجاهات متنامية' }), iconColor: 'text-green-500' },
           { icon: Clock, value: stats.shortTerm, label: t({ en: 'Short-term', ar: 'قصير المدى' }), iconColor: 'text-orange-500' },
         ]}
+        metrics={[
+          { label: t({ en: 'High Impact', ar: 'تأثير عالي' }), value: stats.total > 0 ? Math.round((stats.highImpact / stats.total) * 100) : 0 },
+          { label: t({ en: 'Growing', ar: 'متنامي' }), value: stats.total > 0 ? Math.round((stats.growing / stats.total) * 100) : 0 },
+          { label: t({ en: 'Short-term', ar: 'قصير المدى' }), value: stats.total > 0 ? Math.round((stats.shortTerm / stats.total) * 100) : 0 },
+        ]}
       />
       
       {/* AI Generation Card */}

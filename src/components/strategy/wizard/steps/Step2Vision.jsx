@@ -202,6 +202,10 @@ export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating
             valueColor: getScoreColor(completenessMetrics.pillars.score)
           }
         ]}
+        metrics={[
+          { label: t({ en: 'Values', ar: 'القيم' }), value: completenessMetrics.values.score },
+          { label: t({ en: 'Pillars', ar: 'الركائز' }), value: completenessMetrics.pillars.score },
+        ]}
       />
 
       {/* AI Generation Card */}

@@ -415,6 +415,11 @@ export default function Step15Governance({
           { icon: LayoutDashboard, value: stats.totalDashboards, label: t({ en: 'Dashboards', ar: 'لوحات' }) },
           { icon: Grid3X3, value: stats.totalRaciEntries, label: t({ en: 'RACI Entries', ar: 'إدخالات' }) },
         ]}
+        metrics={[
+          { label: t({ en: 'Committees', ar: 'اللجان' }), value: Math.min(stats.totalCommittees * 25, 100) },
+          { label: t({ en: 'Roles', ar: 'الأدوار' }), value: Math.min(stats.totalRoles * 20, 100) },
+          { label: t({ en: 'RACI', ar: 'RACI' }), value: Math.min(stats.totalRaciEntries * 10, 100) },
+        ]}
       />
       
       {/* AI Generation Card */}
