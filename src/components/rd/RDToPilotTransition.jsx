@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { PILOT_TRANSITION_PROMPTS } from '@/lib/ai/prompts/rd';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
@@ -45,6 +47,8 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
     queryFn: () => base44.entities.Municipality.list()
   });
 
+  const selectedMunicipalityData = municipalities.find(m => m.id === selectedMunicipality);
+
   const generatePilotDesign = async () => {
     if (!selectedMunicipality) {
       toast.error(t({ en: 'Select municipality first', ar: 'اختر البلدية أولاً' }));
@@ -53,47 +57,9 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
 
     try {
       const result = await invokeAI({
-        prompt: `You are a pilot design expert. Generate a pilot test plan from this R&D project:
-
-Research Title: ${rdProject.title_en}
-Abstract: ${rdProject.abstract_en}
-Current TRL: ${rdProject.trl_current}
-Expected Outputs: ${JSON.stringify(rdProject.expected_outputs || [])}
-Methodology: ${rdProject.methodology_en}
-
-Generate a pilot to test this research in a real municipal environment:
-1. Pilot title (EN + AR)
-2. Description (EN + AR) - what will be tested
-3. Objective (EN + AR) - what we aim to validate
-4. Hypothesis - what we expect to prove
-5. Test methodology
-6. Success criteria (KPIs)
-
-Focus on validating research findings in practice and advancing TRL to 8.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objective_en: { type: 'string' },
-            objective_ar: { type: 'string' },
-            hypothesis: { type: 'string' },
-            methodology: { type: 'string' },
-            kpis: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name_en: { type: 'string' },
-                  name_ar: { type: 'string' },
-                  target: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
+        systemPrompt: getSystemPrompt('rd_pilot_transition'),
+        prompt: PILOT_TRANSITION_PROMPTS.buildPrompt(rdProject, selectedMunicipalityData),
+        response_json_schema: PILOT_TRANSITION_PROMPTS.schema
       });
 
       if (result.success && result.data) {
@@ -113,7 +79,6 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
     mutationFn: async (data) => {
       const pilot = await base44.entities.Pilot.create(data);
       
-      // Update R&D project
       await base44.entities.RDProject.update(rdProject.id, {
         pilot_opportunities: [
           ...(rdProject.pilot_opportunities || []),
@@ -132,7 +97,6 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
       queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
       queryClient.invalidateQueries({ queryKey: ['pilots'] });
       
-      // Trigger email notification for pilot creation from R&D
       await triggerEmail('pilot.created', {
         entityType: 'pilot',
         entityId: pilot.id,
@@ -159,7 +123,8 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        {/* TRL Check */}
+        <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} className="mb-2" />
+
         {rdProject.trl_current < 6 && (
           <div className="p-4 bg-red-50 border border-red-300 rounded-lg flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
@@ -174,14 +139,13 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
           </div>
         )}
 
-        {/* R&D Context */}
         <div className="p-4 bg-purple-50 rounded-lg flex items-start gap-3">
           <Microscope className="h-5 w-5 text-purple-600 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-xs font-medium text-purple-900 mb-1">
               {t({ en: 'Source R&D:', ar: 'المصدر البحثي:' })}
             </p>
-            <p className="text-sm font-semibold">{rdProject.title_en}</p>
+            <p className="text-sm font-semibold">{language === 'ar' && rdProject.title_ar ? rdProject.title_ar : rdProject.title_en}</p>
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="outline">{t({ en: 'TRL', ar: 'النضج' })}: {rdProject.trl_current}</Badge>
               <Badge>{rdProject.status}</Badge>
@@ -189,7 +153,6 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
           </div>
         </div>
 
-        {/* Municipality Selection */}
         <div>
           <label className="text-sm font-medium mb-2 block">
             {t({ en: 'Test Municipality', ar: 'بلدية الاختبار' })}
@@ -208,7 +171,6 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
           </Select>
         </div>
 
-        {/* AI Generation */}
         <Button
           onClick={generatePilotDesign}
           disabled={aiGenerating || !selectedMunicipality}
@@ -227,7 +189,6 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
           )}
         </Button>
 
-        {/* Form */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium">{t({ en: 'Title (EN)', ar: 'العنوان (EN)' })}</label>
@@ -275,7 +236,6 @@ Focus on validating research findings in practice and advancing TRL to 8.`,
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
             {t({ en: 'Cancel', ar: 'إلغاء' })}

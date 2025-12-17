@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Users, Sparkles, Loader2, Mail } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { RESEARCHER_MATCHER_PROMPTS } from '@/lib/ai/prompts/rd';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function ResearcherMunicipalityMatcher({ researcherProfile }) {
   const { language, isRTL, t } = useLanguage();
@@ -22,45 +22,11 @@ export default function ResearcherMunicipalityMatcher({ researcherProfile }) {
     queryFn: () => base44.entities.Challenge.list()
   });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
-
   const findMatches = async () => {
     const response = await invokeAI({
-      prompt: `Match researcher with municipalities that have challenges in their expertise:
-
-RESEARCHER: ${researcherProfile.full_name_en}
-EXPERTISE: ${researcherProfile.research_areas?.join(', ')}
-KEYWORDS: ${researcherProfile.expertise_keywords?.join(', ')}
-
-CHALLENGES (sample):
-${challenges.slice(0, 20).map(c => `- ${c.municipality_id}: ${c.title_en} (${c.sector})`).join('\n')}
-
-Find top 5 municipalities with matching challenges. For each:
-1. Municipality name
-2. Number of relevant challenges
-3. Match reason
-4. Collaboration opportunity`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          matches: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                municipality: { type: "string" },
-                challenge_count: { type: "number" },
-                match_score: { type: "number" },
-                reason: { type: "string" },
-                opportunity: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      systemPrompt: getSystemPrompt('rd_researcher_matcher'),
+      prompt: RESEARCHER_MATCHER_PROMPTS.buildPrompt(researcherProfile, challenges),
+      response_json_schema: RESEARCHER_MATCHER_PROMPTS.schema
     });
 
     if (response.success) {
@@ -105,10 +71,12 @@ Find top 5 municipalities with matching challenges. For each:
               <div key={idx} className="p-4 border-2 border-blue-200 rounded-lg bg-white hover:border-blue-400 transition-all">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-900">{match.municipality}</h4>
+                    <h4 className="font-semibold text-slate-900">
+                      {language === 'ar' && match.municipality_ar ? match.municipality_ar : match.municipality}
+                    </h4>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge className="bg-blue-100 text-blue-700">
-                        {match.challenge_count} challenges
+                        {match.challenge_count} {t({ en: 'challenges', ar: 'تحديات' })}
                       </Badge>
                       <span className="text-2xl font-bold text-green-600">{match.match_score}%</span>
                     </div>
@@ -118,12 +86,12 @@ Find top 5 municipalities with matching challenges. For each:
                 <div className="space-y-2 text-sm">
                   <div className="p-3 bg-blue-50 rounded border border-blue-200">
                     <p className="font-medium text-blue-900 mb-1">{t({ en: 'Why Match:', ar: 'لماذا المطابقة:' })}</p>
-                    <p className="text-slate-700">{match.reason}</p>
+                    <p className="text-slate-700">{language === 'ar' && match.reason_ar ? match.reason_ar : match.reason}</p>
                   </div>
                   
                   <div className="p-3 bg-green-50 rounded border border-green-200">
                     <p className="font-medium text-green-900 mb-1">{t({ en: 'Opportunity:', ar: 'الفرصة:' })}</p>
-                    <p className="text-slate-700">{match.opportunity}</p>
+                    <p className="text-slate-700">{language === 'ar' && match.opportunity_ar ? match.opportunity_ar : match.opportunity}</p>
                   </div>
                 </div>
 

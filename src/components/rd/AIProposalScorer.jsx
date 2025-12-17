@@ -7,6 +7,8 @@ import { Award, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PROPOSAL_SCORER_PROMPTS } from '@/lib/ai/prompts/rd';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIProposalScorer({ proposal }) {
   const { language, isRTL, t } = useLanguage();
@@ -19,51 +21,9 @@ export default function AIProposalScorer({ proposal }) {
 
   const scoreProposal = async () => {
     const response = await invokeAI({
-      prompt: `Score this R&D proposal:
-
-TITLE: ${proposal.title_en}
-ABSTRACT: ${proposal.abstract_en}
-METHODOLOGY: ${proposal.methodology_en || 'Not provided'}
-TEAM SIZE: ${proposal.team_members?.length || 0}
-BUDGET: ${proposal.budget_requested}
-
-Score (0-100) on:
-1. Technical Merit: novelty, rigor, feasibility
-2. Innovation Level: how groundbreaking
-3. Team Capability: experience, track record
-4. Feasibility: realistic timeline, resources
-5. Budget Justification: appropriate allocation
-
-Identify weak sections and suggest improvements.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          overall_score: { type: "number" },
-          scores: {
-            type: "object",
-            properties: {
-              technical_merit: { type: "number" },
-              innovation: { type: "number" },
-              team_capability: { type: "number" },
-              feasibility: { type: "number" },
-              budget_justification: { type: "number" }
-            }
-          },
-          weak_sections: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                section: { type: "string" },
-                score: { type: "number" },
-                issue: { type: "string" },
-                suggestion: { type: "string" }
-              }
-            }
-          },
-          recommendation: { type: "string" }
-        }
-      }
+      systemPrompt: getSystemPrompt('rd_proposal_scorer'),
+      prompt: PROPOSAL_SCORER_PROMPTS.buildPrompt(proposal),
+      response_json_schema: PROPOSAL_SCORER_PROMPTS.schema
     });
 
     if (response.success) {
@@ -72,11 +32,11 @@ Identify weak sections and suggest improvements.`,
   };
 
   const radarData = score ? [
-    { dimension: 'Technical', score: score.scores.technical_merit },
-    { dimension: 'Innovation', score: score.scores.innovation },
-    { dimension: 'Team', score: score.scores.team_capability },
-    { dimension: 'Feasibility', score: score.scores.feasibility },
-    { dimension: 'Budget', score: score.scores.budget_justification }
+    { dimension: t({ en: 'Technical', ar: 'التقني' }), score: score.scores.technical_merit },
+    { dimension: t({ en: 'Innovation', ar: 'الابتكار' }), score: score.scores.innovation },
+    { dimension: t({ en: 'Team', ar: 'الفريق' }), score: score.scores.team_capability },
+    { dimension: t({ en: 'Feasibility', ar: 'الجدوى' }), score: score.scores.feasibility },
+    { dimension: t({ en: 'Budget', ar: 'الميزانية' }), score: score.scores.budget_justification }
   ] : [];
 
   return (
@@ -131,10 +91,10 @@ Identify weak sections and suggest improvements.`,
                   <p className="text-sm text-slate-600 mb-2">{t({ en: 'Overall Score', ar: 'النتيجة الإجمالية' })}</p>
                   <p className="text-5xl font-bold text-slate-900">{score.overall_score}</p>
                   <Badge className="mt-2">
-                    {score.overall_score >= 85 ? 'Fast-Track' :
-                     score.overall_score >= 70 ? 'Strong' :
-                     score.overall_score >= 40 ? 'Needs Improvement' :
-                     'Weak'}
+                    {score.overall_score >= 85 ? t({ en: 'Fast-Track', ar: 'مسار سريع' }) :
+                     score.overall_score >= 70 ? t({ en: 'Strong', ar: 'قوي' }) :
+                     score.overall_score >= 40 ? t({ en: 'Needs Improvement', ar: 'يحتاج تحسين' }) :
+                     t({ en: 'Weak', ar: 'ضعيف' })}
                   </Badge>
                 </div>
               </div>
