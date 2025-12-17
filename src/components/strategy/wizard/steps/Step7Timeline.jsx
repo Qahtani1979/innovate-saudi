@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 // Phase categories with metadata
 const PHASE_CATEGORIES = {
@@ -370,17 +370,15 @@ export default function Step7Timeline({
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* AI Generation */}
-      <div className="flex justify-end">
-        <AIActionButton
-          type="generate"
-          label={t({ en: 'Generate Timeline', ar: 'إنشاء الجدول' })}
-          onAction={onGenerateAI}
-          isLoading={isGenerating}
-          size="lg"
-          description={t({ en: 'Generate implementation phases, milestones, and critical path', ar: 'إنشاء مراحل التنفيذ والمعالم والمسار الحرج' })}
-        />
-      </div>
+      {/* AI Generation Card */}
+      <MainAIGeneratorCard
+        title={{ en: 'AI-Powered Timeline Generation', ar: 'إنشاء الجدول الزمني بالذكاء الاصطناعي' }}
+        description={{ en: 'Generate implementation phases, milestones, and critical path', ar: 'إنشاء مراحل التنفيذ والمعالم والمسار الحرج' }}
+        onGenerate={onGenerateAI}
+        isGenerating={isGenerating}
+        isReadOnly={isReadOnly}
+        buttonLabel={{ en: 'Generate Timeline', ar: 'إنشاء الجدول' }}
+      />
 
       {/* Timeline Dashboard */}
       <Card>
