@@ -401,6 +401,11 @@ export default function Step3Objectives({
           { icon: Flag, value: stats.lowPriority, label: t({ en: 'Low Priority', ar: 'أولوية منخفضة' }), iconColor: 'text-green-500' },
           { icon: Building2, value: `${stats.sectorCoverage}%`, label: t({ en: 'Sector Coverage', ar: 'تغطية القطاعات' }), subValue: `${stats.sectorsWithObjectives}/${stats.totalSectors}` },
         ]}
+        metrics={[
+          { label: t({ en: 'Data Quality', ar: 'جودة البيانات' }), value: stats.completeness },
+          { label: t({ en: 'Sector Coverage', ar: 'تغطية القطاعات' }), value: stats.sectorCoverage },
+          { label: t({ en: 'Priority Balance', ar: 'توازن الأولويات' }), value: stats.total > 0 ? Math.min(100, Math.round((stats.highPriority / Math.max(1, stats.total)) * 100 + 50)) : 0 }
+        ]}
       />
 
       {/* AI Generation & Actions */}

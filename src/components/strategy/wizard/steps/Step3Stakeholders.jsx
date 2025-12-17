@@ -86,6 +86,18 @@ export default function Step3Stakeholders({
       return acc;
     }, {});
 
+    // Calculate type distribution score (how many different types are represented)
+    const typesRepresented = Object.values(byType).filter(count => count > 0).length;
+    const typeDistribution = stakeholderTypes.length > 0 
+      ? Math.round((typesRepresented / stakeholderTypes.length) * 100)
+      : 0;
+
+    // Calculate bilingual coverage
+    const bilingualCount = stakeholders.filter(s => s.name_en && s.name_ar).length;
+    const bilingualPercent = stakeholders.length > 0 
+      ? Math.round((bilingualCount / stakeholders.length) * 100)
+      : 0;
+
     const hasEngagementPlan = !!(data.stakeholder_engagement_plan_en || data.stakeholder_engagement_plan_ar);
     
     const score = stakeholders.length > 0 
@@ -97,6 +109,8 @@ export default function Step3Stakeholders({
       complete,
       byQuadrant,
       byType,
+      typeDistribution,
+      bilingualPercent,
       hasEngagementPlan,
       score
     };
@@ -261,6 +275,12 @@ export default function Step3Stakeholders({
             label: t({ en: 'Keep Informed', ar: 'إبقاء على اطلاع' }),
             iconColor: 'text-blue-600'
           }
+        ]}
+        metrics={[
+          { label: t({ en: 'Data Quality', ar: 'جودة البيانات' }), value: completenessMetrics.score },
+          { label: t({ en: 'Type Diversity', ar: 'تنوع الأنواع' }), value: completenessMetrics.typeDistribution },
+          { label: t({ en: 'Bilingual', ar: 'ثنائي اللغة' }), value: completenessMetrics.bilingualPercent },
+          { label: t({ en: 'Engagement Plan', ar: 'خطة المشاركة' }), value: data.stakeholder_engagement_plan_en ? 100 : 0 }
         ]}
       />
 

@@ -685,6 +685,12 @@ export default function Step5KPIs({
           { value: `${stats.avgSMARTScore}%`, label: t({ en: 'Avg SMART', ar: 'متوسط SMART' }), icon: Gauge, iconColor: 'text-blue-600', valueColor: 'text-blue-600' },
           { value: `${stats.balanceRatio}%`, label: t({ en: 'Leading', ar: 'قائدة' }), icon: TrendingUp, iconColor: 'text-purple-600', valueColor: 'text-purple-600', subValue: `${stats.leadingCount}/${stats.laggingCount}` }
         ]}
+        metrics={[
+          { label: t({ en: 'Objective Coverage', ar: 'تغطية الأهداف' }), value: stats.coveragePercent || 0 },
+          { label: t({ en: 'SMART Compliance', ar: 'التوافق SMART' }), value: stats.avgSMARTScore },
+          { label: t({ en: 'Leading/Lagging Balance', ar: 'توازن المؤشرات' }), value: stats.balanceRatio },
+          { label: t({ en: 'Data Quality', ar: 'جودة البيانات' }), value: overallCompleteness }
+        ]}
       />
 
       {/* Alerts */}
