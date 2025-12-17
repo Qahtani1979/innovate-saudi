@@ -12,6 +12,7 @@ import { AlertTriangle, Send, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildIncidentReportPrompt } from '@/lib/ai/prompts/sandbox';
 
 export default function IncidentReportForm({ sandbox, applicationId }) {
   const { language, isRTL, t } = useLanguage();
@@ -27,20 +28,13 @@ export default function IncidentReportForm({ sandbox, applicationId }) {
   });
 
   const generateAIDraft = async () => {
-    const prompt = `Generate a detailed incident report for a sandbox project:
-
-Incident Type: ${formData.incident_type}
-Severity: ${formData.severity}
-Initial Description: ${formData.description || 'Incident occurred during project testing'}
-Location: ${formData.location_details || sandbox.name_en}
-Sandbox: ${sandbox.name_en} (${sandbox.domain})
-
-Create professional incident report with:
-1. Clear incident title
-2. Detailed description with timeline
-3. Immediate actions recommended
-4. Impact assessment
-5. Follow-up requirements`;
+    const prompt = buildIncidentReportPrompt({
+      incidentType: formData.incident_type,
+      severity: formData.severity,
+      description: formData.description,
+      location: formData.location_details,
+      sandbox
+    });
 
     const result = await invokeAI({ prompt });
 

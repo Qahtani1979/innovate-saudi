@@ -1,6 +1,6 @@
 /**
  * Sandbox Module AI Prompts Index
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 // Regulatory Gap Analyzer
@@ -17,6 +17,15 @@ export { getAutoRiskRouterPrompt, autoRiskRouterSchema } from './autoRiskRouter'
 
 // Policy Feedback
 export { getPolicyFeedbackPrompt, policyFeedbackSchema } from './policyFeedback';
+
+// Incident Report
+export { buildIncidentReportPrompt, INCIDENT_REPORT_SYSTEM_PROMPT } from './incidentReport';
+
+// Risk Assessment
+export { buildRiskAssessmentPrompt, RISK_ASSESSMENT_SCHEMA, RISK_ASSESSMENT_SYSTEM_PROMPT } from './riskAssessment';
+
+// Safety Protocol
+export { buildSafetyProtocolPrompt, SAFETY_PROTOCOL_SCHEMA, SAFETY_PROTOCOL_SYSTEM_PROMPT } from './safetyProtocol';
 
 /**
  * Sandbox module prompt configuration
@@ -46,6 +55,21 @@ export const SANDBOX_PROMPTS = {
     promptFn: 'getPolicyFeedbackPrompt',
     schema: 'policyFeedbackSchema',
     description: 'Generates policy recommendations'
+  },
+  incidentReport: {
+    promptFn: 'buildIncidentReportPrompt',
+    systemPrompt: 'INCIDENT_REPORT_SYSTEM_PROMPT',
+    description: 'Generates incident reports'
+  },
+  riskAssessment: {
+    promptFn: 'buildRiskAssessmentPrompt',
+    schema: 'RISK_ASSESSMENT_SCHEMA',
+    description: 'Comprehensive risk assessment'
+  },
+  safetyProtocol: {
+    promptFn: 'buildSafetyProtocolPrompt',
+    schema: 'SAFETY_PROTOCOL_SCHEMA',
+    description: 'Safety protocol generation'
   }
 };
 
