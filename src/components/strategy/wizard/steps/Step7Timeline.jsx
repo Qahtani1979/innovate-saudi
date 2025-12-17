@@ -1067,101 +1067,50 @@ export default function Step7Timeline({
           </Card>
 
           {/* Recommendations */}
-          <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Rocket className="h-5 w-5 text-primary" />
-                {t({ en: 'Recommendations', ar: 'التوصيات' })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {stats.totalPhases === 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-700">
-                        {t({ en: 'No phases defined', ar: 'لم يتم تحديد مراحل' })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {t({ en: 'Add implementation phases or use AI generation to create a structured timeline.', ar: 'أضف مراحل التنفيذ أو استخدم الإنشاء بالذكاء الاصطناعي لإنشاء جدول زمني منظم.' })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {stats.totalMilestones === 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                    <Flag className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-700">
-                        {t({ en: 'No milestones defined', ar: 'لم يتم تحديد معالم' })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {t({ en: 'Define key milestones to track progress and decision points.', ar: 'حدد المعالم الرئيسية لتتبع التقدم ونقاط القرار.' })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {stats.criticalMilestones === 0 && stats.totalMilestones > 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                    <Target className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-blue-700">
-                        {t({ en: 'No critical milestones', ar: 'لا توجد معالم حرجة' })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {t({ en: 'Consider marking key milestones as critical to highlight the critical path.', ar: 'فكر في تحديد المعالم الرئيسية كحرجة لتسليط الضوء على المسار الحرج.' })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {stats.hasGaps && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
-                    <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-red-700">
-                        {t({ en: 'Timeline gaps detected', ar: 'تم اكتشاف فجوات في الجدول' })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {t({ en: 'Review phase dates to ensure continuous coverage throughout the plan period.', ar: 'راجع تواريخ المراحل لضمان التغطية المستمرة طوال فترة الخطة.' })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {stats.coveragePercent < 80 && stats.totalPhases > 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                    <Calendar className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-700">
-                        {t({ en: 'Low date coverage', ar: 'تغطية تواريخ منخفضة' })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {t({ en: 'Add start and end dates to all phases for better timeline visualization.', ar: 'أضف تواريخ البداية والنهاية لجميع المراحل لتحسين عرض الجدول الزمني.' })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {stats.totalPhases > 0 && stats.totalMilestones > 0 && stats.coveragePercent >= 80 && !stats.hasGaps && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-green-700">
-                        {t({ en: 'Timeline is well-structured', ar: 'الجدول الزمني منظم جيداً' })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {t({ en: 'Your implementation timeline has good coverage and structure.', ar: 'جدول التنفيذ الخاص بك يتمتع بتغطية وهيكل جيد.' })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <RecommendationsCard
+            title={t({ en: 'Recommendations', ar: 'التوصيات' })}
+            language={language}
+            showDescriptions={true}
+            className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent"
+            recommendations={[
+              ...(stats.totalPhases === 0 ? [{
+                type: 'warning',
+                icon: AlertTriangle,
+                message: { en: 'No phases defined', ar: 'لم يتم تحديد مراحل' },
+                description: { en: 'Add implementation phases or use AI generation to create a structured timeline.', ar: 'أضف مراحل التنفيذ أو استخدم الإنشاء بالذكاء الاصطناعي لإنشاء جدول زمني منظم.' }
+              }] : []),
+              ...(stats.totalMilestones === 0 ? [{
+                type: 'warning',
+                icon: Flag,
+                message: { en: 'No milestones defined', ar: 'لم يتم تحديد معالم' },
+                description: { en: 'Define key milestones to track progress and decision points.', ar: 'حدد المعالم الرئيسية لتتبع التقدم ونقاط القرار.' }
+              }] : []),
+              ...(stats.criticalMilestones === 0 && stats.totalMilestones > 0 ? [{
+                type: 'info',
+                icon: Target,
+                message: { en: 'No critical milestones', ar: 'لا توجد معالم حرجة' },
+                description: { en: 'Consider marking key milestones as critical to highlight the critical path.', ar: 'فكر في تحديد المعالم الرئيسية كحرجة لتسليط الضوء على المسار الحرج.' }
+              }] : []),
+              ...(stats.hasGaps ? [{
+                type: 'error',
+                icon: AlertTriangle,
+                message: { en: 'Timeline gaps detected', ar: 'تم اكتشاف فجوات في الجدول' },
+                description: { en: 'Review phase dates to ensure continuous coverage throughout the plan period.', ar: 'راجع تواريخ المراحل لضمان التغطية المستمرة طوال فترة الخطة.' }
+              }] : []),
+              ...(stats.coveragePercent < 80 && stats.totalPhases > 0 ? [{
+                type: 'warning',
+                icon: Calendar,
+                message: { en: 'Low date coverage', ar: 'تغطية تواريخ منخفضة' },
+                description: { en: 'Add start and end dates to all phases for better timeline visualization.', ar: 'أضف تواريخ البداية والنهاية لجميع المراحل لتحسين عرض الجدول الزمني.' }
+              }] : []),
+              ...(stats.totalPhases > 0 && stats.totalMilestones > 0 && stats.coveragePercent >= 80 && !stats.hasGaps ? [{
+                type: 'success',
+                icon: CheckCircle2,
+                message: { en: 'Timeline is well-structured', ar: 'الجدول الزمني منظم جيداً' },
+                description: { en: 'Your implementation timeline has good coverage and structure.', ar: 'جدول التنفيذ الخاص بك يتمتع بتغطية وهيكل جيد.' }
+              }] : []),
+            ]}
+          />
         </TabsContent>
       </Tabs>
 
