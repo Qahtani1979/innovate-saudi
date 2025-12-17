@@ -4,7 +4,7 @@
  * 
  * Structure:
  * - Steps 1-17: Full AI generation prompts with schemas
- * - Step 9 Single: "AI Add One" functionality for single objective generation
+ * - Single item prompts: "AI Add One" functionality for steps 3, 7, 9, 11, 12
  * - Step 18: Review step (no AI prompts, uses AIStrategicPlanAnalyzer)
  */
 
@@ -27,12 +27,40 @@ export { getStep15Prompt, step15Schema } from './step15Governance';
 export { getStep16Prompt, step16Schema } from './step16Communication';
 export { getStep17Prompt, step17Schema } from './step17Change';
 
+// Step 3 Single Stakeholder ("AI Add One" functionality)
+export { 
+  generateSingleStakeholderPrompt,
+  SINGLE_STAKEHOLDER_SCHEMA,
+  SINGLE_STAKEHOLDER_SYSTEM_PROMPT 
+} from './step3StakeholdersSingle';
+
+// Step 7 Single Risk ("AI Add One" functionality)
+export { 
+  generateSingleRiskPrompt,
+  SINGLE_RISK_SCHEMA,
+  SINGLE_RISK_SYSTEM_PROMPT 
+} from './step7RisksSingle';
+
 // Step 9 Single Objective ("AI Add One" functionality)
 export { 
   generateSingleObjectivePrompt,
   SINGLE_OBJECTIVE_SCHEMA,
   SINGLE_OBJECTIVE_SYSTEM_PROMPT 
 } from './step9ObjectivesSingle';
+
+// Step 11 Single KPI ("AI Add One" functionality)
+export { 
+  generateSingleKpiPrompt,
+  SINGLE_KPI_SCHEMA,
+  SINGLE_KPI_SYSTEM_PROMPT 
+} from './step11KpisSingle';
+
+// Step 12 Single Action ("AI Add One" functionality)
+export { 
+  generateSingleActionPrompt,
+  SINGLE_ACTION_SCHEMA,
+  SINGLE_ACTION_SYSTEM_PROMPT 
+} from './step12ActionsSingle';
 
 // Step 18 Review (documentation only, no prompts)
 export { STEP18_REVIEW } from './step18Review';
@@ -43,16 +71,16 @@ export { STEP18_REVIEW } from './step18Review';
 export const STEP_PROMPT_MAP = {
   1: { key: 'context', getPrompt: 'getStep1Prompt', schema: 'step1Schema' },
   2: { key: 'vision', getPrompt: 'getStep2Prompt', schema: 'step2Schema' },
-  3: { key: 'stakeholders', getPrompt: 'getStep3Prompt', schema: 'step3Schema' },
+  3: { key: 'stakeholders', getPrompt: 'getStep3Prompt', schema: 'step3Schema', hasSingle: true },
   4: { key: 'pestel', getPrompt: 'getStep4Prompt', schema: 'step4Schema' },
   5: { key: 'swot', getPrompt: 'getStep5Prompt', schema: 'step5Schema' },
   6: { key: 'scenarios', getPrompt: 'getStep6Prompt', schema: 'step6Schema' },
-  7: { key: 'risks', getPrompt: 'getStep7Prompt', schema: 'step7Schema' },
+  7: { key: 'risks', getPrompt: 'getStep7Prompt', schema: 'step7Schema', hasSingle: true },
   8: { key: 'dependencies', getPrompt: 'getStep8Prompt', schema: 'step8Schema' },
   9: { key: 'objectives', getPrompt: 'getStep9Prompt', schema: 'step9Schema', hasSingle: true },
   10: { key: 'national', getPrompt: 'getStep10Prompt', schema: 'step10Schema' },
-  11: { key: 'kpis', getPrompt: 'getStep11Prompt', schema: 'step11Schema' },
-  12: { key: 'actions', getPrompt: 'getStep12Prompt', schema: 'step12Schema' },
+  11: { key: 'kpis', getPrompt: 'getStep11Prompt', schema: 'step11Schema', hasSingle: true },
+  12: { key: 'actions', getPrompt: 'getStep12Prompt', schema: 'step12Schema', hasSingle: true },
   13: { key: 'resources', getPrompt: 'getStep13Prompt', schema: 'step13Schema' },
   14: { key: 'timeline', getPrompt: 'getStep14Prompt', schema: 'step14Schema' },
   15: { key: 'governance', getPrompt: 'getStep15Prompt', schema: 'step15Schema' },
@@ -74,4 +102,12 @@ export const getStepPromptConfig = (stepNumber) => {
 export const stepHasAI = (stepNumber) => {
   const config = STEP_PROMPT_MAP[stepNumber];
   return config && config.hasPrompt !== false;
+};
+
+/**
+ * Check if a step has "AI Add One" single item generation
+ */
+export const stepHasSingleAI = (stepNumber) => {
+  const config = STEP_PROMPT_MAP[stepNumber];
+  return config && config.hasSingle === true;
 };
