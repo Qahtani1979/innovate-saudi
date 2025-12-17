@@ -1,8 +1,8 @@
 # AI Bilingual Implementation Plan - Complete Technical Specification
 
-**Generated:** 2025-12-17 (Updated with Full Schema Analysis & Separated Prompts Architecture)  
+**Generated:** 2025-12-17 (Updated with Full Entity Dependencies & Multi-Entity Context)  
 **Status:** Ready for Implementation  
-**Total Files to Update:** 45 component files + 15 new prompt files  
+**Total Files to Update:** 45 component files + 42 new prompt files  
 **Estimated Effort:** 4 phases, ~10 days
 
 ---
@@ -11,13 +11,14 @@
 
 1. [Executive Summary](#executive-summary)
 2. [Architecture Pattern: Strategy Wizard Reference](#architecture-pattern-strategy-wizard-reference)
-3. [Database Schema Analysis](#database-schema-analysis)
-4. [Taxonomy & Context Data](#taxonomy--context-data)
-5. [Prompt File Structure](#prompt-file-structure)
-6. [Files Requiring Updates](#files-requiring-updates)
-7. [Detailed Prompt File Specifications](#detailed-prompt-file-specifications)
-8. [Infrastructure Files](#infrastructure-files)
-9. [Testing & Verification](#testing--verification)
+3. [Entity Dependencies & Multi-Entity Context](#entity-dependencies--multi-entity-context)
+4. [Database Schema Analysis](#database-schema-analysis)
+5. [Taxonomy & Context Data](#taxonomy--context-data)
+6. [Prompt File Structure](#prompt-file-structure)
+7. [Files Requiring Updates](#files-requiring-updates)
+8. [Detailed Prompt File Specifications](#detailed-prompt-file-specifications)
+9. [Infrastructure Files](#infrastructure-files)
+10. [Testing & Verification](#testing--verification)
 
 ---
 
@@ -27,6 +28,7 @@ This document provides a comprehensive plan to standardize AI prompts across the
 
 **Key Principles:**
 - **Separated Prompts:** All AI prompts extracted to dedicated `prompts/` directories (NOT inline in components)
+- **Multi-Entity Context:** Each prompt function accepts ALL required entity data as parameters
 - **Consistent Exports:** Each prompt file exports `getXPrompt(context, data)` function and `xSchema` object
 - **Bilingual Fields:** All text fields must have `_en` and `_ar` suffixes
 - **Saudi Context:** All prompts include MoMAH/Vision 2030 context
@@ -56,14 +58,21 @@ src/components/strategy/wizard/prompts/
 
 ### Key Pattern Elements:
 
-1. **Prompt Function Signature:**
+1. **Prompt Function Signature (with entity data):**
 ```javascript
-export const getStepXPrompt = (context, wizardData) => {
+export const getStepXPrompt = (context, wizardData, relatedEntities = {}) => {
+  const { challenge, solution, pilot, municipality, sector } = relatedEntities;
+  
   return `You are a strategic planning expert...
   
   ## CONTEXT
   - Plan Name: ${context.planName}
   - Vision: ${context.vision}
+  
+  ## RELATED ENTITIES
+  - Challenge: ${challenge?.title_en || 'N/A'} | ${challenge?.title_ar || ''}
+  - Solution: ${solution?.name_en || 'N/A'}
+  - Municipality: ${municipality?.name_en || 'N/A'} | ${municipality?.name_ar || ''}
   ...
   
   ## REQUIREMENTS
@@ -93,6 +102,206 @@ export { getStep2Prompt, step2Schema } from './step2Vision';
 export const STEP_PROMPT_MAP = {
   1: { promptKey: 'getStep1Prompt', schemaKey: 'step1Schema' },
   // ...
+};
+```
+
+---
+
+## Entity Dependencies & Multi-Entity Context
+
+### CRITICAL: Prompts Require Multi-Entity Data
+
+Many AI prompts require data from MULTIPLE entities as input. The prompt files must accept all necessary entity data as parameters.
+
+### Complete Entity Dependency Map
+
+| Prompt File | Primary Entity | Required Related Entities | Fields Used from Each Entity |
+|-------------|---------------|---------------------------|------------------------------|
+| **sandbox/sandboxEnhancement.js** | `sandbox` | `sector`, `city`, `municipality`, `organization` | sector: name_en/ar, code; city: name_en/ar; municipality: name_en/ar; org: name_en/ar, type |
+| **sandbox/sandboxEvaluation.js** | `sandbox` | `sandbox_applications[]`, `sandbox_incidents[]`, `regulatory_exemptions[]` | applications: count, status; incidents: severity; exemptions: regulation, status |
+| **pilot/pilotDetails.js** | `pilot` | `challenge`, `solution`, `sector`, `municipality`, `strategic_plan` | challenge: title_en/ar, description, sector; solution: name_en/ar; sector: name_en/ar |
+| **pilot/pilotKpis.js** | `pilot` | `challenge`, `sector`, `kpi_references[]` | challenge: kpis (JSON); sector: typical KPIs; kpi_refs: unit, measurement |
+| **pilot/pilotMilestones.js** | `pilot` | `challenge`, `solution` | challenge: timeline_estimate; solution: implementation_time |
+| **pilot/pilotRisks.js** | `pilot` | `challenge`, `sector`, `municipality` | challenge: constraints; sector: typical risks; municipality: capacity |
+| **pilot/pilotTechnology.js** | `pilot` | `solution`, `challenge` | solution: technology_stack, features; challenge: required_technologies |
+| **pilot/pilotEvaluation.js** | `pilot` | `pilot_kpis[]`, `pilot_kpi_datapoints[]`, `stakeholder_feedback[]`, `pilot_expenses[]` | kpis: current/target; datapoints: values; feedback: ratings; expenses: amounts |
+| **pilot/pilotScalingReadiness.js** | `pilot` | `pilot_kpis[]`, `municipality`, `strategic_plan`, `solution` | kpis: achievement %; municipality: capacity; plan: objectives |
+| **pilot/pilotBenchmarking.js** | `pilot` | `pilots[]` (similar), `sector`, `municipality` | other pilots: same sector, KPI achievements |
+| **matchmaker/proposalGeneration.js** | `matchmaker_application` | `challenge`, `organization`, `solutions[]`, `provider` | challenge: full details; org: capabilities; solutions: features |
+| **matchmaker/partnershipAgreement.js** | `matchmaker_application` | `challenge`, `organization`, `municipality`, `pilot` (new) | all entity titles/names for legal document |
+| **matchmaker/multiPartyConsortium.js** | `challenge` | `organizations[]`, `providers[]`, `solutions[]` | challenge: requirements; orgs: capabilities; providers: expertise |
+| **matchmaker/strategicChallengeMapping.js** | `challenge` | `strategic_plans[]`, `objectives[]`, `sectors[]` | plans: vision, objectives; sectors: priorities |
+| **matchmaker/failedMatchLearning.js** | `challenge_solution_matches[]` | `challenges[]`, `solutions[]`, `organizations[]` | matches: rejection reasons, scores |
+| **matchmaker/engagementQuality.js** | `matchmaker_application` | `engagement_history[]`, `challenge`, `organization` | history: meetings, documents, dates |
+| **scaling/costBenefitAnalysis.js** | `pilot` | `municipalities[]` (targets), `pilot_kpis[]`, `pilot_expenses[]` | pilot: budget, results; municipalities: population, capacity |
+| **scaling/programConversion.js** | `pilot` | `challenge`, `solution`, `pilot_kpis[]`, `stakeholder_feedback[]`, `lessons_learned` | pilot: full evaluation; challenge: sector; kpis: achievements |
+| **scaling/adaptiveRollout.js** | `scaling_plan` | `pilot`, `municipalities[]`, `regions[]` | pilot: results; municipalities: readiness scores |
+| **challenge/challengeEnhancement.js** | `challenge` | `sector`, `municipality`, `region`, `service` | sector: name_en/ar, description; municipality: name_en/ar; region: name_en/ar |
+| **challenge/challengeImpact.js** | `challenge` | `municipality`, `sector`, `related_pilots[]` | challenge: scores, population; municipality: population; pilots: results |
+| **challenge/challengeToRD.js** | `challenge` | `strategic_plan`, `sector`, `rd_calls[]` (existing) | challenge: problem, requirements; plan: objectives; sector: priorities |
+| **solution/solutionEnhancement.js** | `solution` | `sectors[]`, `organization`, `solution_cases[]` | sectors: names; org: type; cases: results |
+| **solution/contractGeneration.js** | `solution` | `challenge`, `organization`, `pilot`, `municipality` | all parties for contract terms |
+| **rd/proposalScoring.js** | `rd_proposal` | `rd_call`, `organization`, `researcher_profiles[]` | call: criteria; org: track record; researchers: publications |
+| **rd/portfolioPlanning.js** | `rd_projects[]` | `strategic_plans[]`, `sectors[]`, `budgets[]` | projects: status, budget; plans: objectives; budgets: allocation |
+| **citizen/ideaClassification.js** | `citizen_idea` | `sectors[]`, `challenges[]` (similar), `citizen_feedback[]` (user history) | idea: content; sectors: codes/names; challenges: patterns |
+| **analysis/roiCalculation.js** | varies | `pilot` OR `program` OR `scaling_plan`, `pilot_kpis[]`, `pilot_expenses[]`, `municipality` | costs, benefits, population |
+| **analysis/duplicateDetection.js** | entity[] | same entity type records | titles, descriptions, embeddings |
+| **communication/partnershipProposal.js** | `partnership` | `organization`, `strategic_plan`, `municipality` | partnership: type, objectives; org: capabilities |
+| **livinglab/collaboration.js** | `living_lab` | `living_labs[]`, `equipment[]`, `research_themes[]` | labs: focus areas, equipment; themes: overlap |
+| **pilots/policyWorkflow.js** | `pilot` | `pilot_kpis[]`, `lessons_learned[]`, `sector`, `municipality` | pilot: evaluation; kpis: results; lessons: insights |
+| **sandbox/regulatoryGap.js** | `sandbox_application` | `sandbox`, `sector`, `regulations[]` | app: description; sandbox: framework; regulations: requirements |
+
+### Entity Field Extraction Requirements
+
+#### Primary Entity: `challenge`
+```javascript
+// Fields commonly needed by AI prompts
+const challengeContext = {
+  // Core bilingual fields
+  title_en: challenge.title_en,
+  title_ar: challenge.title_ar,
+  description_en: challenge.description_en,
+  description_ar: challenge.description_ar,
+  problem_statement_en: challenge.problem_statement_en,
+  problem_statement_ar: challenge.problem_statement_ar,
+  
+  // Metadata for AI context
+  sector: challenge.sector,
+  sector_id: challenge.sector_id,
+  category: challenge.category,
+  priority: challenge.priority,
+  status: challenge.status,
+  budget_estimate: challenge.budget_estimate,
+  impact_score: challenge.impact_score,
+  severity_score: challenge.severity_score,
+  affected_population_size: challenge.affected_population_size,
+  
+  // JSON fields (need parsing)
+  kpis: challenge.kpis,
+  stakeholders: challenge.stakeholders,
+  constraints: challenge.constraints,
+  root_causes: challenge.root_causes,
+  
+  // Foreign keys (need lookups)
+  municipality_id: challenge.municipality_id,
+  region_id: challenge.region_id,
+  strategic_plan_ids: challenge.strategic_plan_ids
+};
+```
+
+#### Primary Entity: `pilot`
+```javascript
+const pilotContext = {
+  // Core bilingual fields
+  title_en: pilot.title_en,
+  title_ar: pilot.title_ar,
+  tagline_en: pilot.tagline_en,
+  tagline_ar: pilot.tagline_ar,
+  description_en: pilot.description_en,
+  description_ar: pilot.description_ar,
+  objective_en: pilot.objective_en,
+  objective_ar: pilot.objective_ar,
+  
+  // Pilot-specific fields
+  hypothesis: pilot.hypothesis,
+  methodology: pilot.methodology,
+  scope: pilot.scope,
+  duration_weeks: pilot.duration_weeks,
+  budget: pilot.budget,
+  stage: pilot.stage,
+  success_probability: pilot.success_probability,
+  risk_level: pilot.risk_level,
+  
+  // JSON fields
+  kpis: pilot.kpis,
+  milestones: pilot.milestones,
+  risks: pilot.risks,
+  team: pilot.team,
+  technology_stack: pilot.technology_stack,
+  lessons_learned: pilot.lessons_learned,
+  
+  // Evaluation fields
+  evaluation_summary_en: pilot.evaluation_summary_en,
+  evaluation_summary_ar: pilot.evaluation_summary_ar,
+  
+  // Foreign keys
+  challenge_id: pilot.challenge_id,
+  solution_id: pilot.solution_id,
+  municipality_id: pilot.municipality_id,
+  strategic_plan_ids: pilot.strategic_plan_ids
+};
+```
+
+#### Primary Entity: `matchmaker_application`
+```javascript
+const applicationContext = {
+  // Organization info (embedded or lookup)
+  organization_name_en: application.organization_name_en,
+  organization_name_ar: application.organization_name_ar,
+  organization_id: application.organization_id,
+  
+  // Match context
+  match_type: application.match_type,
+  match_score: application.match_score,
+  stage: application.stage,
+  
+  // Proposal details
+  proposal_summary: application.proposal_summary,
+  value_proposition: application.value_proposition,
+  
+  // Foreign keys
+  challenge_id: application.challenge_id,
+  solution_id: application.solution_id
+};
+```
+
+### Prompt Function Signature Pattern
+
+All prompt functions MUST follow this pattern to accept multi-entity data:
+
+```javascript
+/**
+ * @param {Object} context - Saudi context and bilingual instructions
+ * @param {Object} primaryData - The main entity data (pilot, challenge, etc.)
+ * @param {Object} relatedEntities - All related entity data needed
+ */
+export const getPromptName = (context, primaryData, relatedEntities = {}) => {
+  const {
+    challenge,      // Related challenge
+    solution,       // Related solution
+    sector,         // Sector lookup
+    municipality,   // Municipality lookup
+    organization,   // Organization lookup
+    kpis,           // Array of KPI records
+    feedbacks,      // Array of feedback records
+    strategicPlan,  // Related strategic plan
+    // ... other entities as needed
+  } = relatedEntities;
+  
+  return `You are a ${role} for Saudi Arabia's MoMAH...
+  
+  ## PRIMARY ENTITY: ${entityType}
+  ${formatPrimaryEntityDetails(primaryData)}
+  
+  ## RELATED CONTEXT
+  ### Challenge
+  - Title: ${challenge?.title_en || 'N/A'} | ${challenge?.title_ar || ''}
+  - Sector: ${challenge?.sector || sector?.name_en || 'N/A'}
+  
+  ### Solution
+  - Name: ${solution?.name_en || 'N/A'} | ${solution?.name_ar || ''}
+  
+  ### Municipality
+  - Name: ${municipality?.name_en || 'N/A'} | ${municipality?.name_ar || ''}
+  - Population: ${municipality?.population || 'N/A'}
+  
+  ## KPIs (${kpis?.length || 0} defined)
+  ${kpis?.map(k => `- ${k.name}: ${k.current}/${k.target} ${k.unit}`).join('\n') || 'None defined'}
+  
+  ${context.BILINGUAL_INSTRUCTIONS}
+  
+  ## GENERATE BILINGUAL OUTPUT
+  ...`;
 };
 ```
 
@@ -318,6 +527,365 @@ All outputs must support Saudi Vision 2030 objectives:
 Partners: MCIT, SDAIA, KAUST. Use formal Arabic (فصحى) for government documents.
 Align with Quality of Life Program and Municipal Excellence initiatives.`
 };
+
+// Regulatory context for sandbox prompts
+export const REGULATORY_CONTEXT = `
+### Saudi Regulatory Framework
+- Municipal and Rural Affairs regulations
+- PDPL (Personal Data Protection Law) compliance
+- CITC telecommunications regulations
+- Environmental regulations (PME)
+- Building and construction codes
+- Commercial licensing requirements`;
+
+// Sector-specific contexts
+export const SECTOR_CONTEXTS = {
+  SMART_CITIES: `Smart Cities: IoT infrastructure, 5G networks, data platforms, AI services`,
+  ENVIRONMENT: `Environment: Waste management, air quality, green spaces, sustainability`,
+  INFRASTRUCTURE: `Infrastructure: Roads, utilities, public facilities, maintenance`,
+  CITIZEN_SERVICES: `Citizen Services: Digital services, permits, complaints, engagement`
+};
+```
+
+---
+
+## Component Implementation Patterns
+
+### How Components Should Fetch & Pass Multi-Entity Data
+
+Components must fetch ALL related entities before invoking AI. This ensures prompts have complete context.
+
+### Pattern 1: PilotConversionWizard (Application → Pilot Conversion)
+
+**Current Code (BEFORE):**
+```javascript
+// ❌ INCOMPLETE - Missing entity context
+export default function PilotConversionWizard({ application, challenge, onClose }) {
+  const generatePartnershipAgreement = async () => {
+    const { success, data } = await invokeAI({
+      prompt: `Generate a partnership agreement...
+        PROVIDER: ${application.organization_name_en}
+        CHALLENGE: ${challenge?.title_en}
+        ...`,
+      response_json_schema: { /* inline schema */ }
+    });
+  };
+}
+```
+
+**Updated Code (AFTER):**
+```javascript
+// ✅ COMPLETE - Fetches all required entities, uses separated prompt
+import { getPartnershipAgreementPrompt, partnershipAgreementSchema } from '@/lib/ai/prompts/matchmaker';
+import { SAUDI_CONTEXT, BILINGUAL_INSTRUCTIONS } from '@/lib/ai/prompts/saudiContext';
+
+export default function PilotConversionWizard({ application, challenge, onClose }) {
+  // Fetch related entities
+  const { data: organization } = useQuery({
+    queryKey: ['organization', application?.organization_id],
+    queryFn: () => base44.entities.Organization.get(application.organization_id),
+    enabled: !!application?.organization_id
+  });
+  
+  const { data: municipality } = useQuery({
+    queryKey: ['municipality', challenge?.municipality_id],
+    queryFn: () => base44.entities.Municipality.get(challenge.municipality_id),
+    enabled: !!challenge?.municipality_id
+  });
+  
+  const { data: sector } = useQuery({
+    queryKey: ['sector', challenge?.sector_id],
+    queryFn: () => base44.entities.Sector.get(challenge.sector_id),
+    enabled: !!challenge?.sector_id
+  });
+
+  const generatePartnershipAgreement = async () => {
+    const context = { SAUDI_CONTEXT: SAUDI_CONTEXT.COMPACT, BILINGUAL_INSTRUCTIONS };
+    
+    const relatedEntities = {
+      challenge: {
+        title_en: challenge?.title_en,
+        title_ar: challenge?.title_ar,
+        description_en: challenge?.description_en,
+        sector: challenge?.sector
+      },
+      organization: {
+        name_en: organization?.name_en,
+        name_ar: organization?.name_ar,
+        organization_type: organization?.organization_type,
+        capabilities: organization?.capabilities
+      },
+      municipality: {
+        name_en: municipality?.name_en,
+        name_ar: municipality?.name_ar
+      },
+      sector: {
+        name_en: sector?.name_en,
+        name_ar: sector?.name_ar
+      }
+    };
+    
+    const { success, data } = await invokeAI({
+      prompt: getPartnershipAgreementPrompt(context, pilotData, relatedEntities),
+      response_json_schema: partnershipAgreementSchema
+    });
+    // Handle result...
+  };
+}
+```
+
+### Pattern 2: ScalingCostBenefitAnalyzer (Multi-Municipality Context)
+
+**Updated Code:**
+```javascript
+import { getCostBenefitAnalysisPrompt, costBenefitAnalysisSchema } from '@/lib/ai/prompts/scaling';
+
+export default function ScalingCostBenefitAnalyzer({ pilot, targetMunicipalities }) {
+  // Fetch pilot KPIs
+  const { data: pilotKpis = [] } = useQuery({
+    queryKey: ['pilot-kpis', pilot?.id],
+    queryFn: () => base44.entities.PilotKPI.filter({ pilot_id: pilot.id }),
+    enabled: !!pilot?.id
+  });
+  
+  // Fetch pilot expenses
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['pilot-expenses', pilot?.id],
+    queryFn: () => base44.entities.PilotExpense.filter({ pilot_id: pilot.id }),
+    enabled: !!pilot?.id
+  });
+  
+  // Fetch challenge details
+  const { data: challenge } = useQuery({
+    queryKey: ['challenge', pilot?.challenge_id],
+    queryFn: () => base44.entities.Challenge.get(pilot.challenge_id),
+    enabled: !!pilot?.challenge_id
+  });
+
+  const analyzeCostBenefit = async () => {
+    const relatedEntities = {
+      challenge,
+      kpis: pilotKpis.map(k => ({
+        name_en: k.name,
+        name_ar: k.name_ar,
+        baseline: k.baseline,
+        current: k.current_value,
+        target: k.target,
+        unit: k.unit
+      })),
+      expenses: expenses.map(e => ({
+        category: e.category,
+        amount: e.amount,
+        description: e.description
+      })),
+      targetMunicipalities: targetMunicipalities.map(m => ({
+        name_en: m.name_en,
+        name_ar: m.name_ar,
+        population: m.population,
+        region: m.region_id
+      }))
+    };
+    
+    const result = await invokeAI({
+      prompt: getCostBenefitAnalysisPrompt(context, pilot, relatedEntities),
+      response_json_schema: costBenefitAnalysisSchema
+    });
+  };
+}
+```
+
+### Pattern 3: MultiLabCollaborationEngine (Cross-Entity Comparison)
+
+**Updated Code:**
+```javascript
+import { getMultiLabCollaborationPrompt, multiLabCollaborationSchema } from '@/lib/ai/prompts/livinglab';
+
+export default function MultiLabCollaborationEngine({ currentLabId }) {
+  // Fetch all labs
+  const { data: labs = [] } = useQuery({
+    queryKey: ['living-labs'],
+    queryFn: () => base44.entities.LivingLab.list()
+  });
+  
+  // Fetch equipment for current lab
+  const { data: equipment = [] } = useQuery({
+    queryKey: ['lab-equipment', currentLabId],
+    queryFn: () => base44.entities.LivingLabResource.filter({ living_lab_id: currentLabId }),
+    enabled: !!currentLabId
+  });
+
+  const currentLab = labs.find(l => l.id === currentLabId);
+  const otherLabs = labs.filter(l => l.id !== currentLabId);
+
+  const findCollaborations = async () => {
+    const relatedEntities = {
+      currentLab: {
+        name_en: currentLab?.name_en,
+        name_ar: currentLab?.name_ar,
+        research_themes: currentLab?.research_themes,
+        equipment: equipment.map(e => ({
+          name: e.name,
+          type: e.resource_type
+        })),
+        focus_areas: currentLab?.focus_areas
+      },
+      otherLabs: otherLabs.slice(0, 10).map(l => ({
+        id: l.id,
+        name_en: l.name_en,
+        name_ar: l.name_ar,
+        research_themes: l.research_themes,
+        focus_areas: l.focus_areas,
+        location: l.location
+      }))
+    };
+    
+    const result = await invokeAI({
+      prompt: getMultiLabCollaborationPrompt(context, currentLab, relatedEntities),
+      response_json_schema: multiLabCollaborationSchema
+    });
+  };
+}
+```
+
+### Pattern 4: PilotToPolicyWorkflow (Pilot + Evaluation Data)
+
+**Updated Code:**
+```javascript
+import { getPilotToPolicyPrompt, pilotToPolicySchema } from '@/lib/ai/prompts/pilot';
+
+export default function PilotToPolicyWorkflow({ pilot, onClose }) {
+  // Fetch pilot KPIs with datapoints
+  const { data: kpis = [] } = useQuery({
+    queryKey: ['pilot-kpis', pilot?.id],
+    queryFn: async () => {
+      const kpiList = await base44.entities.PilotKPI.filter({ pilot_id: pilot.id });
+      // Fetch datapoints for each KPI
+      const withDatapoints = await Promise.all(kpiList.map(async (kpi) => {
+        const datapoints = await base44.entities.PilotKPIDatapoint.filter({ pilot_kpi_id: kpi.id });
+        return { ...kpi, datapoints };
+      }));
+      return withDatapoints;
+    },
+    enabled: !!pilot?.id
+  });
+  
+  // Fetch stakeholder feedback
+  const { data: feedback = [] } = useQuery({
+    queryKey: ['stakeholder-feedback', pilot?.id],
+    queryFn: () => base44.entities.StakeholderFeedback.filter({ entity_id: pilot.id, entity_type: 'pilot' }),
+    enabled: !!pilot?.id
+  });
+  
+  // Fetch municipality
+  const { data: municipality } = useQuery({
+    queryKey: ['municipality', pilot?.municipality_id],
+    queryFn: () => base44.entities.Municipality.get(pilot.municipality_id),
+    enabled: !!pilot?.municipality_id
+  });
+  
+  // Fetch sector
+  const { data: sector } = useQuery({
+    queryKey: ['sector-by-name', pilot?.sector],
+    queryFn: () => base44.entities.Sector.filter({ name_en: pilot.sector }).then(r => r[0]),
+    enabled: !!pilot?.sector
+  });
+
+  const generateAI = async () => {
+    const relatedEntities = {
+      kpis: kpis.map(k => ({
+        name_en: k.name,
+        name_ar: k.name_ar,
+        baseline: k.baseline,
+        current: k.current_value,
+        target: k.target,
+        achievement_percentage: k.target ? ((k.current_value || 0) / k.target * 100) : 0,
+        trend: k.datapoints?.slice(-5).map(d => d.value)
+      })),
+      feedback: feedback.map(f => ({
+        rating: f.rating,
+        feedback_text: f.feedback_text,
+        stakeholder_type: f.stakeholder_type
+      })),
+      municipality: {
+        name_en: municipality?.name_en,
+        name_ar: municipality?.name_ar
+      },
+      sector: {
+        name_en: sector?.name_en,
+        name_ar: sector?.name_ar
+      },
+      lessonsLearned: pilot?.lessons_learned
+    };
+    
+    const result = await invokeAI({
+      prompt: getPilotToPolicyPrompt(context, pilot, relatedEntities),
+      response_json_schema: pilotToPolicySchema
+    });
+  };
+}
+```
+
+### Utility Hook: useEntityRelations
+
+Create a reusable hook for fetching common entity relations:
+
+```javascript
+// src/hooks/useEntityRelations.js
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+
+export function useEntityRelations(entityType, entityId, entityData) {
+  // Fetch sector
+  const { data: sector } = useQuery({
+    queryKey: ['sector', entityData?.sector_id],
+    queryFn: () => base44.entities.Sector.get(entityData.sector_id),
+    enabled: !!entityData?.sector_id
+  });
+  
+  // Fetch municipality
+  const { data: municipality } = useQuery({
+    queryKey: ['municipality', entityData?.municipality_id],
+    queryFn: () => base44.entities.Municipality.get(entityData.municipality_id),
+    enabled: !!entityData?.municipality_id
+  });
+  
+  // Fetch challenge (for pilots)
+  const { data: challenge } = useQuery({
+    queryKey: ['challenge', entityData?.challenge_id],
+    queryFn: () => base44.entities.Challenge.get(entityData.challenge_id),
+    enabled: !!entityData?.challenge_id && entityType === 'pilot'
+  });
+  
+  // Fetch solution (for pilots)
+  const { data: solution } = useQuery({
+    queryKey: ['solution', entityData?.solution_id],
+    queryFn: () => base44.entities.Solution.get(entityData.solution_id),
+    enabled: !!entityData?.solution_id && entityType === 'pilot'
+  });
+  
+  // Fetch strategic plans
+  const { data: strategicPlans = [] } = useQuery({
+    queryKey: ['strategic-plans', entityData?.strategic_plan_ids],
+    queryFn: async () => {
+      if (!entityData?.strategic_plan_ids?.length) return [];
+      return Promise.all(
+        entityData.strategic_plan_ids.map(id => 
+          base44.entities.StrategicPlan.get(id)
+        )
+      );
+    },
+    enabled: !!entityData?.strategic_plan_ids?.length
+  });
+  
+  return {
+    sector,
+    municipality,
+    challenge,
+    solution,
+    strategicPlans,
+    isLoading: false // Combine loading states as needed
+  };
+}
 ```
 
 ---
