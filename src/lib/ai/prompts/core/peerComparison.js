@@ -2,7 +2,7 @@
  * AI Peer Comparison Prompt
  * Used by: AIPeerComparison.jsx
  */
-import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '../../saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 export const buildPeerComparisonPrompt = (pilot, similarPilots) => {
   return `${SAUDI_CONTEXT.COMPACT}

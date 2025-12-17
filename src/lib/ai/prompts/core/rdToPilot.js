@@ -2,7 +2,7 @@
  * R&D to Pilot Transition Prompt
  * Used by: RDToPilotTransition.jsx
  */
-import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '../../saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 export const buildRDToPilotPrompt = (project) => {
   return `${SAUDI_CONTEXT.COMPACT}

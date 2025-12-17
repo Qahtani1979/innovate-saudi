@@ -2,7 +2,7 @@
  * AI Exemption Suggester Prompt
  * Used by: AIExemptionSuggester.jsx
  */
-import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '../../saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 export const buildExemptionSuggesterPrompt = (projectData, sandbox, availableExemptions) => {
   return `${SAUDI_CONTEXT.COMPACT}

@@ -2,7 +2,7 @@
  * AI Form Assistant Prompt
  * Used by: AIFormAssistant.jsx
  */
-import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '../../saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 export const buildFormAssistantPrompt = (conversationHistory, entityType, userLanguage, municipalityMapping, challengeContext) => {
   return `${SAUDI_CONTEXT.COMPACT}

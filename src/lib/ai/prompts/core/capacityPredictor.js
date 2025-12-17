@@ -2,7 +2,7 @@
  * AI Capacity Predictor Prompt
  * Used by: AICapacityPredictor.jsx
  */
-import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '../../saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 export const buildCapacityPredictorPrompt = (sandbox, historicalData) => {
   return `${SAUDI_CONTEXT.COMPACT}
