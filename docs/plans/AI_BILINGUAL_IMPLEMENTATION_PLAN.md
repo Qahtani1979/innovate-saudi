@@ -1,9 +1,9 @@
 # AI Bilingual Implementation Plan - Complete Technical Specification
 
-**Generated:** 2025-12-17 (Updated with Full Entity Dependencies & Multi-Entity Context)  
+**Generated:** 2025-12-17 (EXPANDED - Full Coverage of All AI Components)  
 **Status:** Ready for Implementation  
-**Total Files to Update:** 50 component files + 48 new prompt files  
-**Estimated Effort:** 4 phases, ~10 days
+**Total Files to Update:** 85 component files + 83 new prompt files  
+**Estimated Effort:** 6 phases, ~15 days
 
 ---
 
@@ -155,7 +155,47 @@ Many AI prompts require data from MULTIPLE entities as input. The prompt files m
 | **scaling/rolloutRiskPrediction.js** | `pilot` | `municipality` (source), `targetMunicipalities[]`, `sector` | pilot: title, kpis; municipalities: names, populations; sector: typical risks |
 | **executive/briefingGeneration.js** | `ecosystem` (aggregated) | `challenges[]`, `pilots[]`, `municipalities[]` | counts, stage filtering, mii_scores |
 
-#### scaling/costBenefitAnalysis.js
+### NEW: Priority 4-9 Entity Dependencies (35 additional prompts)
+
+| Prompt File | Primary Entity | Required Related Entities | Fields Used from Each Entity |
+|-------------|---------------|---------------------------|------------------------------|
+| **ai/collaborationSuggestion.js** | `entity` | `entities[]`, `users[]`, `partnerships[]` | entity: type, sector; users: expertise; partnerships: history |
+| **ai/conflictDetection.js** | `schedule` | `schedules[]`, `resources[]`, `events[]` | schedule: time, resource; resources: availability; events: timing |
+| **ai/eventOptimization.js** | `event` | `attendees[]`, `venue`, `agenda[]` | event: type, capacity; attendees: preferences; venue: facilities |
+| **ai/promptLocalization.js** | `prompt` | `targetLanguage`, `context` | prompt: content; context: domain, formality |
+| **ai/voiceNLU.js** | `transcript` | `userIntent`, `entities` | transcript: text; intent: action; entities: parameters |
+| **citizen/prioritySorting.js** | `ideas[]` | `votes[]`, `categories[]`, `municipality` | ideas: title, votes; categories: priority; municipality: focus areas |
+| **citizen/proposalScreening.js** | `proposal` | `criteria[]`, `similarProposals[]` | proposal: content; criteria: requirements; similar: scores |
+| **citizen/ideasAnalytics.js** | `ideas[]` | `sectors[]`, `trends[]`, `municipality` | ideas: category, votes; sectors: name; trends: growth |
+| **citizen/contentModeration.js** | `content` | `rules[]`, `flagHistory[]` | content: text; rules: patterns; history: decisions |
+| **citizen/ideaToProposal.js** | `idea` | `sector`, `municipality`, `templates[]` | idea: title, description; sector: name; templates: structure |
+| **citizen/ideaToChallenge.js** | `idea` | `sector`, `challenges[]`, `strategicPlans[]` | idea: details; challenges: similar; plans: objectives |
+| **citizen/ideaToPilot.js** | `idea` | `challenge`, `solution`, `municipality` | idea: scope; challenge: linked; solution: features |
+| **citizen/ideaToRD.js** | `idea` | `sector`, `rdCalls[]`, `researchThemes[]` | idea: innovation; calls: criteria; themes: areas |
+| **citizen/ideaToSolution.js** | `idea` | `sector`, `existingSolutions[]` | idea: features; sector: needs; solutions: gaps |
+| **rd/proposalAutoScoring.js** | `proposal` | `rdCall`, `criteria[]`, `historicalScores[]` | proposal: all fields; call: weights; history: benchmarks |
+| **rd/proposalWriting.js** | `rdCall` | `organization`, `researchers[]`, `templates[]` | call: requirements; org: capabilities; researchers: expertise |
+| **rd/researcherMatching.js** | `challenge` | `researchers[]`, `municipalities[]`, `expertiseAreas[]` | challenge: needs; researchers: skills; municipalities: priorities |
+| **rd/reputationScoring.js** | `researcher` | `publications[]`, `projects[]`, `citations` | researcher: profile; publications: impact; projects: outcomes |
+| **rd/rdToPilot.js** | `rdProject` | `findings[]`, `municipality`, `sector` | project: outputs; findings: validations; municipality: needs |
+| **rd/rdToPolicy.js** | `rdProject` | `findings[]`, `sector`, `regulations[]` | project: recommendations; sector: context; regulations: gaps |
+| **rd/rdToSolution.js** | `rdProject` | `outputs[]`, `trlAssessment`, `sector` | project: deliverables; trl: level; sector: market |
+| **rd/startupSpinoff.js** | `rdProject` | `ipAssets[]`, `market`, `fundingOptions[]` | project: commercializable; ip: patents; market: opportunity |
+| **matchmaker/successPrediction.js** | `match` | `historicalMatches[]`, `organization`, `challenge` | match: score; history: outcomes; org: track record |
+| **matchmaker/engagementQuality.js** | `engagements[]` | `milestones[]`, `communications[]` | engagements: status; milestones: completion; comms: frequency |
+| **matchmaker/marketIntelligence.js** | `sector` | `solutions[]`, `providers[]`, `trends[]` | sector: landscape; solutions: features; providers: capabilities |
+| **matchmaker/portfolioIntelligence.js** | `provider` | `solutions[]`, `matches[]`, `performance[]` | provider: portfolio; matches: success rate; performance: metrics |
+| **expert/expertMatching.js** | `challenge` | `experts[]`, `expertise[]`, `availability[]` | challenge: needs; experts: skills; availability: schedule |
+| **livinglab/ecosystemAnalysis.js** | `livingLabs[]` | `equipment[]`, `researchThemes[]`, `collaborations[]` | labs: capabilities; equipment: types; themes: focus |
+| **taxonomy/taxonomyGeneration.js** | `domain` | `sectors[]`, `services[]`, `existingTaxonomy` | domain: scope; sectors: hierarchy; existing: structure |
+| **policy/similarityDetection.js** | `policy` | `policies[]`, `embeddings` | policy: content; policies: existing; embeddings: vectors |
+| **policy/policyToProgram.js** | `policy` | `sector`, `municipality`, `existingPrograms[]` | policy: mandates; sector: context; programs: gaps |
+| **knowledge/learningPath.js** | `userRole` | `goal`, `documents[]`, `completedModules[]` | role: level; goal: target; docs: topics; completed: progress |
+| **recommendations/contextualRecommendation.js** | `context` | `userHistory[]`, `availableActions[]` | context: current state; history: patterns; actions: options |
+| **profiles/credentialVerification.js** | `credential` | `issuerDatabase[]`, `verificationRules[]` | credential: claims; issuers: trusted; rules: validation |
+| **profiles/expertSearch.js** | `query` | `experts[]`, `expertise[]`, `availability[]` | query: terms; experts: profiles; expertise: areas |
+| **workflows/workflowOptimization.js** | `workflow` | `historicalData[]`, `bottlenecks[]` | workflow: steps; history: durations; bottlenecks: identified |
+| **solutions/collaborationNetwork.js** | `provider` | `solutions[]`, `partners[]`, `synergies[]` | provider: offerings; solutions: complementary; partners: potential |
 ```javascript
 // PRIMARY: pilot
 const pilotData = {
@@ -1233,13 +1273,30 @@ src/lib/ai/prompts/
 ├── rd/
 │   ├── index.js                      # Export all R&D prompts
 │   ├── proposalScoring.js            # getProposalScoringPrompt + proposalScoringSchema
+│   ├── proposalAutoScoring.js        # getProposalAutoScoringPrompt + proposalAutoScoringSchema (NEW)
+│   ├── proposalWriting.js            # getProposalWritingPrompt + proposalWritingSchema (NEW)
+│   ├── researcherMatching.js         # getResearcherMatchingPrompt + researcherMatchingSchema (NEW)
+│   ├── reputationScoring.js          # getReputationScoringPrompt + reputationScoringSchema (NEW)
+│   ├── rdToPilot.js                  # getRDToPilotPrompt + rdToPilotSchema (NEW)
+│   ├── rdToPolicy.js                 # getRDToPolicyPrompt + rdToPolicySchema (NEW)
+│   ├── rdToSolution.js               # getRDToSolutionPrompt + rdToSolutionSchema (NEW)
+│   ├── startupSpinoff.js             # getStartupSpinoffPrompt + startupSpinoffSchema (NEW)
 │   ├── ipCommercialization.js        # getIPCommercializationPrompt + ipCommercializationSchema
 │   ├── portfolioPlanning.js          # getPortfolioPlanningPrompt + portfolioPlanningSchema
 │   └── multiInstitutionCollaboration.js  # getMultiInstitutionCollaborationPrompt + multiInstitutionCollaborationSchema
 │
 ├── citizen/
 │   ├── index.js                      # Export all citizen prompts
-│   └── ideaClassification.js         # getIdeaClassificationPrompt + ideaClassificationSchema
+│   ├── ideaClassification.js         # getIdeaClassificationPrompt + ideaClassificationSchema
+│   ├── prioritySorting.js            # getPrioritySortingPrompt + prioritySortingSchema (NEW)
+│   ├── proposalScreening.js          # getProposalScreeningPrompt + proposalScreeningSchema (NEW)
+│   ├── ideasAnalytics.js             # getIdeasAnalyticsPrompt + ideasAnalyticsSchema (NEW)
+│   ├── contentModeration.js          # getContentModerationPrompt + contentModerationSchema (NEW)
+│   ├── ideaToProposal.js             # getIdeaToProposalPrompt + ideaToProposalSchema (NEW)
+│   ├── ideaToChallenge.js            # getIdeaToChallengePrompt + ideaToChallengeSchema (NEW)
+│   ├── ideaToPilot.js                # getIdeaToPilotPrompt + ideaToPilotSchema (NEW)
+│   ├── ideaToRD.js                   # getIdeaToRDPrompt + ideaToRDSchema (NEW)
+│   └── ideaToSolution.js             # getIdeaToSolutionPrompt + ideaToSolutionSchema (NEW)
 │
 ├── analysis/
 │   ├── index.js                      # Export all analysis prompts
@@ -1250,13 +1307,74 @@ src/lib/ai/prompts/
 │   ├── attendancePrediction.js       # getAttendancePredictionPrompt + attendancePredictionSchema
 │   └── eventROI.js                   # getEventROIPrompt + eventROISchema
 │
+├── ai/                               # NEW DIRECTORY
+│   ├── index.js                      # Export all AI core prompts
+│   ├── collaborationSuggestion.js    # getCollaborationSuggestionPrompt + collaborationSuggestionSchema
+│   ├── conflictDetection.js          # getConflictDetectionPrompt + conflictDetectionSchema
+│   ├── eventOptimization.js          # getEventOptimizationPrompt + eventOptimizationSchema
+│   ├── promptLocalization.js         # getPromptLocalizationPrompt + promptLocalizationSchema
+│   └── voiceNLU.js                   # getVoiceNLUPrompt + voiceNLUSchema
+│
+├── matchmaker/
+│   ├── index.js                      # Export all matchmaker prompts (EXPANDED)
+│   ├── proposalGeneration.js         # getProposalGenerationPrompt + proposalGenerationSchema
+│   ├── partnershipAgreement.js       # getPartnershipAgreementPrompt + partnershipAgreementSchema
+│   ├── multiPartyConsortium.js       # getMultiPartyConsortiumPrompt + multiPartyConsortiumSchema
+│   ├── strategicChallengeMapping.js  # getStrategicChallengeMappingPrompt + strategicChallengeMappingSchema
+│   ├── failedMatchLearning.js        # getFailedMatchLearningPrompt + failedMatchLearningSchema
+│   ├── partnershipOrchestration.js   # getPartnershipOrchestrationPrompt + partnershipOrchestrationSchema
+│   ├── enhancedMatching.js           # getEnhancedMatchingPrompt + enhancedMatchingSchema
+│   ├── successPrediction.js          # getSuccessPredictionPrompt + successPredictionSchema (NEW)
+│   ├── engagementQuality.js          # getEngagementQualityPrompt + engagementQualitySchema (NEW)
+│   ├── marketIntelligence.js         # getMarketIntelligencePrompt + marketIntelligenceSchema (NEW)
+│   └── portfolioIntelligence.js      # getPortfolioIntelligencePrompt + portfolioIntelligenceSchema (NEW)
+│
+├── expert/                           # NEW DIRECTORY
+│   ├── index.js                      # Export all expert prompts
+│   └── expertMatching.js             # getExpertMatchingPrompt + expertMatchingSchema
+│
+├── livinglab/                        # NEW DIRECTORY
+│   ├── index.js                      # Export all living lab prompts
+│   ├── ecosystemAnalysis.js          # getEcosystemAnalysisPrompt + ecosystemAnalysisSchema
+│   └── collaboration.js              # getLivingLabCollaborationPrompt + livingLabCollaborationSchema
+│
+├── taxonomy/                         # NEW DIRECTORY
+│   ├── index.js                      # Export all taxonomy prompts
+│   └── taxonomyGeneration.js         # getTaxonomyGenerationPrompt + taxonomyGenerationSchema
+│
+├── policy/                           # NEW DIRECTORY
+│   ├── index.js                      # Export all policy prompts
+│   ├── similarityDetection.js        # getSimilarityDetectionPrompt + similarityDetectionSchema
+│   └── policyToProgram.js            # getPolicyToProgramPrompt + policyToProgramSchema
+│
+├── knowledge/                        # NEW DIRECTORY
+│   ├── index.js                      # Export all knowledge prompts
+│   └── learningPath.js               # getLearningPathPrompt + learningPathSchema
+│
+├── recommendations/                  # NEW DIRECTORY
+│   ├── index.js                      # Export all recommendation prompts
+│   └── contextualRecommendation.js   # getContextualRecommendationPrompt + contextualRecommendationSchema
+│
+├── profiles/                         # NEW DIRECTORY
+│   ├── index.js                      # Export all profile prompts
+│   ├── credentialVerification.js     # getCredentialVerificationPrompt + credentialVerificationSchema
+│   └── expertSearch.js               # getExpertSearchPrompt + expertSearchSchema
+│
+├── workflows/                        # NEW DIRECTORY
+│   ├── index.js                      # Export all workflow prompts
+│   └── workflowOptimization.js       # getWorkflowOptimizationPrompt + workflowOptimizationSchema
+│
+├── solutions/                        # NEW DIRECTORY (separate from solution/)
+│   ├── index.js                      # Export all solutions prompts
+│   └── collaborationNetwork.js       # getCollaborationNetworkPrompt + collaborationNetworkSchema
+│
 └── communication/
     ├── index.js                      # Export all communication prompts
     ├── emailTemplate.js              # getEmailTemplatePrompt + emailTemplateSchema
     └── partnershipProposal.js        # getPartnershipProposalPrompt + partnershipProposalSchema
 ```
 
-### Total New Files: 48 prompt files
+### Total New Files: 83 prompt files (35 new additions)
 
 ---
 
@@ -1317,6 +1435,73 @@ After extracting prompts, components need minimal changes - just import and use 
 | 8 | `src/components/strategy/cascade/StrategyChallengeGenerator.jsx` | Verify uses extracted prompts | Verify import pattern |
 | 9 | `src/components/strategy/cascade/StrategyToEventGenerator.jsx` | Verify uses extracted prompts | Verify import pattern |
 | 10 | `src/components/strategy/cascade/StrategyToRDCallGenerator.jsx` | Verify uses extracted prompts | Verify import pattern |
+
+### Priority 4: AI Core Components (5 files) - NEW
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies |
+|---|------|------------|------------------|
+| 1 | `src/components/ai/AICollaborationSuggester.jsx` | `ai/collaborationSuggestion.js` | `entities[]`, `users[]`, `partnerships[]` |
+| 2 | `src/components/ai/AIConflictDetector.jsx` | `ai/conflictDetection.js` | `schedules[]`, `resources[]`, `events[]` |
+| 3 | `src/components/ai/AIEventOptimizer.jsx` | `ai/eventOptimization.js` | `event`, `attendees[]`, `venue`, `agenda[]` |
+| 4 | `src/components/ai/AIPromptLocalizer.jsx` | `ai/promptLocalization.js` | `prompt`, `targetLanguage`, `context` |
+| 5 | `src/components/ai/VoiceNLUPanel.jsx` | `ai/voiceNLU.js` | `transcript`, `userIntent`, `entities` |
+
+### Priority 5: Citizen AI Converters (9 files) - NEW
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies |
+|---|------|------------|------------------|
+| 1 | `src/components/citizen/AIPrioritySorter.jsx` | `citizen/prioritySorting.js` | `ideas[]`, `votes[]`, `categories[]` |
+| 2 | `src/components/citizen/AIProposalScreening.jsx` | `citizen/proposalScreening.js` | `proposal`, `criteria[]`, `similarProposals[]` |
+| 3 | `src/components/citizen/AdvancedIdeasAnalytics.jsx` | `citizen/ideasAnalytics.js` | `ideas[]`, `sectors[]`, `trends[]` |
+| 4 | `src/components/citizen/ContentModerationAI.jsx` | `citizen/contentModeration.js` | `content`, `rules[]`, `flagHistory[]` |
+| 5 | `src/components/citizen/IdeaToProposalConverter.jsx` | `citizen/ideaToProposal.js` | `idea`, `sector`, `municipality`, `templates[]` |
+| 6 | `src/components/citizen/IdeaToChallengeConverter.jsx` | `citizen/ideaToChallenge.js` | `idea`, `sector`, `challenges[]` (similar), `strategicPlans[]` |
+| 7 | `src/components/citizen/IdeaToPilotConverter.jsx` | `citizen/ideaToPilot.js` | `idea`, `challenge`, `solution`, `municipality` |
+| 8 | `src/components/citizen/IdeaToRDConverter.jsx` | `citizen/ideaToRD.js` | `idea`, `sector`, `rdCalls[]`, `researchThemes[]` |
+| 9 | `src/components/citizen/IdeaToSolutionConverter.jsx` | `citizen/ideaToSolution.js` | `idea`, `sector`, `existingSolutions[]` |
+
+### Priority 6: R&D AI Components (8 files) - NEW
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies |
+|---|------|------------|------------------|
+| 1 | `src/components/rd/AIProposalScorer.jsx` | `rd/proposalAutoScoring.js` | `proposal`, `rdCall`, `evaluationCriteria[]`, `historicalScores[]` |
+| 2 | `src/components/rd/AIProposalWriter.jsx` | `rd/proposalWriting.js` | `rdCall`, `organization`, `researcherProfiles[]`, `templates[]` |
+| 3 | `src/components/rd/ResearcherMunicipalityMatcher.jsx` | `rd/researcherMatching.js` | `researchers[]`, `municipalities[]`, `challenges[]`, `expertiseAreas[]` |
+| 4 | `src/components/rd/ResearcherReputationScoring.jsx` | `rd/reputationScoring.js` | `researcher`, `publications[]`, `projects[]`, `citations` |
+| 5 | `src/components/rd/RDToPilotTransition.jsx` | `rd/rdToPilot.js` | `rdProject`, `findings[]`, `municipality`, `sector` |
+| 6 | `src/components/rd/RDToPolicyConverter.jsx` | `rd/rdToPolicy.js` | `rdProject`, `findings[]`, `sector`, `regulations[]` |
+| 7 | `src/components/rd/RDToSolutionConverter.jsx` | `rd/rdToSolution.js` | `rdProject`, `outputs[]`, `trlAssessment`, `sector` |
+| 8 | `src/components/rd/RDToStartupSpinoff.jsx` | `rd/startupSpinoff.js` | `rdProject`, `ipAssets[]`, `market`, `fundingOptions[]` |
+
+### Priority 7: Matchmaker Intelligence (4 files) - NEW
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies |
+|---|------|------------|------------------|
+| 1 | `src/components/matchmaker/AIMatchSuccessPredictor.jsx` | `matchmaker/successPrediction.js` | `match`, `historicalMatches[]`, `organization`, `challenge` |
+| 2 | `src/components/matchmaker/EngagementQualityAnalytics.jsx` | `matchmaker/engagementQuality.js` | `engagements[]`, `milestones[]`, `communications[]` |
+| 3 | `src/components/matchmaker/MatchmakerMarketIntelligence.jsx` | `matchmaker/marketIntelligence.js` | `sector`, `solutions[]`, `providers[]`, `trends[]` |
+| 4 | `src/components/matchmaker/ProviderPortfolioIntelligence.jsx` | `matchmaker/portfolioIntelligence.js` | `provider`, `solutions[]`, `matches[]`, `performance[]` |
+
+### Priority 8: Pages with AI (5 files) - NEW
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies |
+|---|------|------------|------------------|
+| 1 | `src/pages/ExpertMatchingEngine.jsx` | `expert/expertMatching.js` | `challenge`, `experts[]`, `expertise[]`, `availability[]` |
+| 2 | `src/pages/LivingLabs.jsx` | `livinglab/ecosystemAnalysis.js` | `livingLabs[]`, `equipment[]`, `researchThemes[]`, `collaborations[]` |
+| 3 | `src/components/taxonomy/TaxonomyWizard.jsx` | `taxonomy/taxonomyGeneration.js` | `sectors[]`, `services[]`, `existingTaxonomy` |
+| 4 | `src/components/policy/SimilarPolicyDetector.jsx` | `policy/similarityDetection.js` | `policy`, `policies[]`, `embeddings` |
+| 5 | `src/components/policy/PolicyToProgramConverter.jsx` | `policy/policyToProgram.js` | `policy`, `sector`, `municipality`, `existingPrograms[]` |
+
+### Priority 9: Knowledge & Utility AI (6 files) - NEW
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies |
+|---|------|------------|------------------|
+| 1 | `src/components/knowledge/AILearningPathGenerator.jsx` | `knowledge/learningPath.js` | `userRole`, `goal`, `documents[]`, `completedModules[]` |
+| 2 | `src/components/SmartRecommendation.jsx` | `recommendations/contextualRecommendation.js` | `context`, `userHistory[]`, `availableActions[]` |
+| 3 | `src/components/profiles/CredentialVerificationAI.jsx` | `profiles/credentialVerification.js` | `credential`, `issuerDatabase[]`, `verificationRules[]` |
+| 4 | `src/components/profiles/ExpertFinder.jsx` | `profiles/expertSearch.js` | `query`, `experts[]`, `expertise[]`, `availability[]` |
+| 5 | `src/components/workflows/AIWorkflowOptimizer.jsx` | `workflows/workflowOptimization.js` | `workflow`, `historicalData[]`, `bottlenecks[]` |
+| 6 | `src/components/solutions/ProviderCollaborationNetwork.jsx` | `solutions/collaborationNetwork.js` | `provider`, `solutions[]`, `partners[]`, `synergies[]` |
 
 ---
 
@@ -2099,11 +2284,11 @@ describe('Bilingual AI Output', () => {
 
 ---
 
-## Implementation Priority & Timeline
+## Implementation Priority & Timeline (EXPANDED)
 
 ### Phase 1: Infrastructure (Day 1)
-- [ ] Create `src/lib/ai/saudiContext.js`
-- [ ] Create `src/lib/ai/bilingualSchemaBuilder.js`
+- [ ] Create `src/lib/ai/prompts/saudiContext.js`
+- [ ] Create `src/lib/ai/prompts/bilingualSchemaBuilder.js`
 - [ ] Update existing prompt files to use shared context
 
 ### Phase 2: High-Priority Pages (Days 2-3)
@@ -2115,23 +2300,290 @@ describe('Bilingual AI Output', () => {
 - [ ] `RiskPortfolio.jsx`
 
 ### Phase 3: Workflow Components (Days 4-6)
-- [ ] All 18 workflow components listed in Priority 2
+- [ ] All 23 workflow components listed in Priority 2
 - [ ] Focus on matcher, scaling, and collaboration components
 
 ### Phase 4: Analysis Components (Days 7-8)
 - [ ] All 10 analysis components listed in Priority 3
+- [ ] Strategy cascade verification
+
+### Phase 5: AI Core & Citizen Components (Days 9-11) - NEW
+- [ ] 5 AI core components (Priority 4)
+- [ ] 9 Citizen AI converters (Priority 5)
+- [ ] Create all citizen/ prompt files
+
+### Phase 6: R&D, Matchmaker & Utility Components (Days 12-15) - NEW
+- [ ] 8 R&D AI components (Priority 6)
+- [ ] 4 Matchmaker intelligence components (Priority 7)
+- [ ] 5 Pages with AI (Priority 8)
+- [ ] 6 Knowledge & utility AI (Priority 9)
 - [ ] Final verification and testing
 
 ---
 
-## Summary
+## Detailed Prompt Specifications for NEW Components
+
+### citizen/ideaToChallenge.js
+```javascript
+/**
+ * Citizen Idea to Challenge Conversion Prompt
+ * Used by: IdeaToChallengeConverter.jsx
+ */
+import { SAUDI_CONTEXT, BILINGUAL_INSTRUCTIONS } from '../saudiContext';
+
+export const getIdeaToChallengePrompt = (context, idea, relatedEntities = {}) => {
+  const { sector, similarChallenges = [], strategicPlans = [] } = relatedEntities;
+  
+  return `You are a municipal innovation expert for Saudi Arabia's MoMAH.
+
+${SAUDI_CONTEXT.COMPACT}
+
+## CITIZEN IDEA TO CONVERT
+Title: ${idea.title || 'Untitled'}
+Description: ${idea.description || 'No description'}
+Category: ${idea.category || 'Uncategorized'}
+Location: ${idea.municipality_id ? 'Specified' : 'General'}
+Tags: ${idea.tags?.join(', ') || 'None'}
+Votes: ${idea.votes_count || 0}
+
+## SECTOR CONTEXT
+Sector: ${sector?.name_en || 'General'} | ${sector?.name_ar || ''}
+Description: ${sector?.description_en || ''}
+
+## SIMILAR EXISTING CHALLENGES (${similarChallenges.length} found)
+${similarChallenges.slice(0, 5).map(c => 
+  `- ${c.title_en} (${c.status}) - ${c.sector}`
+).join('\n') || 'No similar challenges found'}
+
+## STRATEGIC ALIGNMENT
+${strategicPlans.map(p => `- ${p.name_en}: ${p.vision?.substring(0, 100)}...`).join('\n') || 'No linked plans'}
+
+${BILINGUAL_INSTRUCTIONS}
+
+## GENERATE CHALLENGE STRUCTURE
+Convert this citizen idea into a formal municipal challenge with:
+1. Professional bilingual titles (formal tone)
+2. Problem statement in both languages
+3. Current situation analysis
+4. Desired outcomes
+5. Estimated impact and priority
+6. Suggested sector and category`;
+};
+
+export const ideaToChallengeSchema = {
+  type: 'object',
+  required: ['title_en', 'title_ar', 'description_en', 'description_ar', 'problem_statement_en', 'problem_statement_ar'],
+  properties: {
+    title_en: { type: 'string', maxLength: 100, description: 'Professional challenge title' },
+    title_ar: { type: 'string', maxLength: 100, description: 'عنوان التحدي الرسمي' },
+    tagline_en: { type: 'string', description: 'Brief impactful tagline' },
+    tagline_ar: { type: 'string', description: 'شعار موجز ومؤثر' },
+    description_en: { type: 'string', minLength: 150, description: 'Comprehensive challenge description' },
+    description_ar: { type: 'string', minLength: 150, description: 'وصف شامل للتحدي' },
+    problem_statement_en: { type: 'string', description: 'Clear problem statement' },
+    problem_statement_ar: { type: 'string', description: 'بيان المشكلة الواضح' },
+    current_situation_en: { type: 'string', description: 'Current state analysis' },
+    current_situation_ar: { type: 'string', description: 'تحليل الوضع الحالي' },
+    desired_outcome_en: { type: 'string', description: 'Expected outcomes' },
+    desired_outcome_ar: { type: 'string', description: 'النتائج المتوقعة' },
+    suggested_sector: { type: 'string', description: 'Recommended sector' },
+    suggested_category: { type: 'string', description: 'Recommended category' },
+    priority: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+    estimated_impact_score: { type: 'number', minimum: 0, maximum: 100 }
+  }
+};
+```
+
+### rd/rdToPilot.js
+```javascript
+/**
+ * R&D Project to Pilot Transition Prompt
+ * Used by: RDToPilotTransition.jsx
+ */
+import { SAUDI_CONTEXT, BILINGUAL_INSTRUCTIONS } from '../saudiContext';
+
+export const getRDToPilotPrompt = (context, rdProject, relatedEntities = {}) => {
+  const { findings = [], municipality, sector } = relatedEntities;
+  
+  return `You are an innovation transfer specialist for Saudi Arabia's MoMAH.
+
+${SAUDI_CONTEXT.COMPACT}
+
+## R&D PROJECT DETAILS
+Title: ${rdProject.title_en || ''} | ${rdProject.title_ar || ''}
+Focus Area: ${rdProject.focus_area || 'General'}
+Research Areas: ${rdProject.research_areas?.join(', ') || 'Not specified'}
+Stage: ${rdProject.stage || 'Unknown'}
+TRL Level: ${rdProject.trl || 'Not assessed'}
+
+## KEY FINDINGS (${findings.length} total)
+${findings.slice(0, 5).map(f => 
+  `- ${f.title}: ${f.summary?.substring(0, 100)}...`
+).join('\n') || 'No findings documented'}
+
+## TARGET MUNICIPALITY
+${municipality?.name_en || 'Not selected'} | ${municipality?.name_ar || ''}
+Population: ${municipality?.population || 'N/A'}
+
+## SECTOR CONTEXT
+${sector?.name_en || 'General'} | ${sector?.name_ar || ''}
+
+${BILINGUAL_INSTRUCTIONS}
+
+## GENERATE PILOT PROPOSAL
+Design a pilot project to test the R&D findings in a real municipal environment:
+1. Clear hypothesis based on research findings
+2. Measurable KPIs aligned with research outcomes
+3. Realistic timeline and milestones
+4. Risk assessment based on TRL level
+5. Success criteria for scaling decision`;
+};
+
+export const rdToPilotSchema = {
+  type: 'object',
+  required: ['title_en', 'title_ar', 'hypothesis', 'objective_en', 'objective_ar'],
+  properties: {
+    title_en: { type: 'string', maxLength: 80, description: 'Pilot title' },
+    title_ar: { type: 'string', maxLength: 80, description: 'عنوان التجربة' },
+    tagline_en: { type: 'string', description: 'Brief tagline' },
+    tagline_ar: { type: 'string', description: 'شعار موجز' },
+    hypothesis: { type: 'string', description: 'Research-based hypothesis to test' },
+    objective_en: { type: 'string', description: 'Pilot objectives' },
+    objective_ar: { type: 'string', description: 'أهداف التجربة' },
+    methodology: { type: 'string', description: 'Testing methodology' },
+    duration_weeks: { type: 'number', minimum: 4, maximum: 52 },
+    kpis: { 
+      type: 'array', 
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          name_ar: { type: 'string' },
+          baseline: { type: 'number' },
+          target: { type: 'number' },
+          unit: { type: 'string' }
+        }
+      }
+    },
+    risks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          risk_en: { type: 'string' },
+          risk_ar: { type: 'string' },
+          likelihood: { type: 'string', enum: ['low', 'medium', 'high'] },
+          mitigation_en: { type: 'string' },
+          mitigation_ar: { type: 'string' }
+        }
+      }
+    },
+    success_criteria_en: { type: 'string' },
+    success_criteria_ar: { type: 'string' }
+  }
+};
+```
+
+### matchmaker/successPrediction.js
+```javascript
+/**
+ * Match Success Prediction Prompt
+ * Used by: AIMatchSuccessPredictor.jsx
+ */
+import { SAUDI_CONTEXT, BILINGUAL_INSTRUCTIONS } from '../saudiContext';
+
+export const getSuccessPredictionPrompt = (context, match, relatedEntities = {}) => {
+  const { historicalMatches = [], organization, challenge } = relatedEntities;
+  
+  return `You are a matchmaking analytics expert for Saudi Arabia's MoMAH innovation platform.
+
+${SAUDI_CONTEXT.COMPACT}
+
+## CURRENT MATCH
+Match Score: ${match.match_score || 'Not scored'}
+Stage: ${match.stage || 'Initial'}
+
+## ORGANIZATION PROFILE
+Name: ${organization?.name_en || ''} | ${organization?.name_ar || ''}
+Type: ${organization?.org_type || 'Unknown'}
+Sectors: ${organization?.sectors?.join(', ') || 'Not specified'}
+Previous Matches: ${organization?.previous_matches_count || 0}
+
+## CHALLENGE DETAILS
+Title: ${challenge?.title_en || ''} | ${challenge?.title_ar || ''}
+Sector: ${challenge?.sector || 'General'}
+Priority: ${challenge?.priority || 'medium'}
+Budget: ${challenge?.budget_estimate || 'Not specified'}
+
+## HISTORICAL MATCH OUTCOMES (${historicalMatches.length} total)
+Success Rate: ${historicalMatches.filter(m => m.outcome === 'success').length / historicalMatches.length * 100 || 0}%
+${historicalMatches.slice(0, 10).map(m => 
+  `- ${m.organization_type} + ${m.challenge_sector}: ${m.outcome} (Score: ${m.final_score})`
+).join('\n')}
+
+${BILINGUAL_INSTRUCTIONS}
+
+## PREDICT SUCCESS FACTORS
+Analyze this match and predict:
+1. Success probability (0-100%)
+2. Key success factors
+3. Risk factors that could derail the match
+4. Recommendations to improve success likelihood
+5. Expected time to successful outcome`;
+};
+
+export const successPredictionSchema = {
+  type: 'object',
+  required: ['success_probability', 'success_factors', 'risk_factors'],
+  properties: {
+    success_probability: { type: 'number', minimum: 0, maximum: 100 },
+    confidence_level: { type: 'string', enum: ['low', 'medium', 'high'] },
+    success_factors: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          factor_en: { type: 'string' },
+          factor_ar: { type: 'string' },
+          weight: { type: 'number' }
+        }
+      }
+    },
+    risk_factors: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          risk_en: { type: 'string' },
+          risk_ar: { type: 'string' },
+          severity: { type: 'string', enum: ['low', 'medium', 'high'] }
+        }
+      }
+    },
+    recommendations_en: { type: 'array', items: { type: 'string' } },
+    recommendations_ar: { type: 'array', items: { type: 'string' } },
+    expected_duration_weeks: { type: 'number' },
+    similar_successful_matches: { type: 'number' }
+  }
+};
+```
+
+---
+
+## Summary (EXPANDED)
 
 **Total Changes Required:**
-- 6 high-priority pages
-- 18 workflow components  
-- 10 analysis components
+- 6 high-priority pages (Priority 1)
+- 23 workflow components (Priority 2)
+- 10 analysis components (Priority 3)
+- 5 AI core components (Priority 4) - NEW
+- 9 citizen AI converters (Priority 5) - NEW
+- 8 R&D AI components (Priority 6) - NEW
+- 4 matchmaker intelligence (Priority 7) - NEW
+- 5 pages with AI (Priority 8) - NEW
+- 6 knowledge & utility AI (Priority 9) - NEW
 - 2 new infrastructure files
-- **34 files total**
+- **85 component files total + 83 new prompt files**
 
 **Key Patterns to Follow:**
 1. Always include `SAUDI_CONTEXT` or equivalent
@@ -2139,8 +2591,11 @@ describe('Bilingual AI Output', () => {
 3. Map output directly to database column names
 4. Use formal Arabic (فصحى) specification
 5. Include minLength for description fields (150+ words)
+6. Fetch ALL related entities before invoking AI
+7. Pass complete relatedEntities object to prompt functions
 
 ---
 
-*Document Version: 2.0*  
-*Last Updated: 2025-12-17*
+*Document Version: 3.0 (EXPANDED COVERAGE)*  
+*Last Updated: 2025-12-17*  
+*Coverage: 100% of AI components*
