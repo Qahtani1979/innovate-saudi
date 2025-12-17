@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from '@/lib/utils';
-import { Button } from "@/components/ui/button";
 import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 const SCENARIO_TYPES = [
