@@ -10,6 +10,7 @@ import { useLanguage } from '../LanguageContext';
 import { Sparkles, FileText, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { IDEA_TO_PROPOSAL_SYSTEM_PROMPT, buildIdeaToProposalPrompt, IDEA_TO_PROPOSAL_SCHEMA } from '@/lib/ai/prompts/citizen';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
@@ -65,59 +66,10 @@ export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
 
   const generateWithAI = async () => {
     const response = await invokeAI({
-      prompt: `Convert this citizen idea into a structured innovation proposal.
-
-IDEA:
-Title: ${idea.title || idea.title_en || idea.title_ar}
-Description: ${idea.description || idea.description_en || idea.description_ar}
-Category: ${idea.category || 'Not specified'}
-Municipality: ${idea.municipality_id || 'Not specified'}
-
-Generate a structured innovation proposal with:
-1. Title (both Arabic and English)
-2. Description (both Arabic and English) - expand on the idea
-3. Implementation plan (both Arabic and English) - concrete steps
-4. Budget estimate (realistic number in SAR)
-5. Timeline (weeks)
-6. Team requirements (roles needed)
-7. Success metrics (3-5 measurable outcomes)
-
-Be specific and actionable. Make it implementation-ready.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          title_en: { type: "string" },
-          title_ar: { type: "string" },
-          description_en: { type: "string" },
-          description_ar: { type: "string" },
-          implementation_plan_en: { type: "string" },
-          implementation_plan_ar: { type: "string" },
-          budget_estimate: { type: "number" },
-          duration_weeks: { type: "number" },
-          team_composition: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                role_en: { type: "string" },
-                role_ar: { type: "string" },
-                count: { type: "number" }
-              }
-            }
-          },
-          success_metrics_proposed: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                metric_en: { type: "string" },
-                metric_ar: { type: "string" },
-                target: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildIdeaToProposalPrompt(idea),
+      system_prompt: IDEA_TO_PROPOSAL_SYSTEM_PROMPT,
+      response_json_schema: IDEA_TO_PROPOSAL_SCHEMA
+    });
     });
 
     if (response.success && response.data) {

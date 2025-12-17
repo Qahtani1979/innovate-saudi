@@ -6,6 +6,7 @@ import { useLanguage } from '../LanguageContext';
 import { Award, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { IP_COMMERCIALIZATION_SYSTEM_PROMPT, buildIPCommercializationPrompt, IP_COMMERCIALIZATION_SCHEMA } from '@/lib/ai/prompts/rd';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function IPCommercializationTracker({ project }) {
@@ -15,32 +16,9 @@ export default function IPCommercializationTracker({ project }) {
 
   const analyzeCommercial = async () => {
     const result = await invokeAI({
-      prompt: `Analyze commercialization potential for this R&D project:
-
-Title: ${project.title_en}
-Research Area: ${project.research_area_en}
-TRL: ${project.trl_current}
-Patents: ${project.patents?.length || 0}
-Publications: ${project.publications?.length || 0}
-Outputs: ${project.expected_outputs?.map(o => o.output_en).join(', ')}
-
-Assess:
-1. Commercial potential (0-100)
-2. Recommended pathway (startup formation, licensing, tech transfer)
-3. Market size estimate
-4. Potential licensees (startup types)
-5. Timeline to market`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          commercial_score: { type: "number" },
-          pathway: { type: "string" },
-          market_size: { type: "string" },
-          potential_licensees: { type: "array", items: { type: "string" } },
-          timeline: { type: "string" },
-          next_steps: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildIPCommercializationPrompt(project),
+      system_prompt: IP_COMMERCIALIZATION_SYSTEM_PROMPT,
+      response_json_schema: IP_COMMERCIALIZATION_SCHEMA
     });
 
     if (result.success) {

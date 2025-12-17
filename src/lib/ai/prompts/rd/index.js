@@ -12,6 +12,10 @@ export { TRL_ASSESSMENT_PROMPTS } from './trlAssessment';
 export { buildProposalFeedbackPrompt, PROPOSAL_FEEDBACK_SYSTEM_PROMPT } from './proposalFeedback';
 export { buildReviewerAssignmentPrompt, REVIEWER_ASSIGNMENT_SCHEMA } from './reviewerAssignment';
 export { buildEligibilityCheckPrompt, ELIGIBILITY_CHECK_SCHEMA } from './eligibilityCheck';
+export { 
+  RD_SOLUTION_CONVERTER_SYSTEM_PROMPT, buildRDSolutionConverterPrompt, RD_SOLUTION_CONVERTER_SCHEMA,
+  IP_COMMERCIALIZATION_SYSTEM_PROMPT, buildIPCommercializationPrompt, IP_COMMERCIALIZATION_SCHEMA
+} from './commercialization';
 
 export const RD_PROMPT_MANIFEST = {
   proposalScorer: {

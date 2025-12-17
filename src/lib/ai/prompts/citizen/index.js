@@ -9,6 +9,7 @@ export * from './contentModeration';
 export * from './proposalScreening';
 export * from './feedbackAggregator';
 export * from './prioritySorter';
+export * from './ideaToProposal';
 
 export const CITIZEN_PROMPTS_CONFIG = {
   module: 'citizen',
