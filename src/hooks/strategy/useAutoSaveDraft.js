@@ -43,7 +43,18 @@ export function useAutoSaveDraft({
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
-          if (parsed && (parsed.name_en || parsed.name_ar)) {
+          // Check for any meaningful data, not just name
+          const hasMeaningfulData = parsed && (
+            parsed.name_en || 
+            parsed.name_ar || 
+            parsed._planId ||
+            parsed._savedStep ||
+            parsed.vision_en ||
+            parsed.mission_en ||
+            (parsed.objectives && parsed.objectives.length > 0) ||
+            (parsed.stakeholders && parsed.stakeholders.length > 0)
+          );
+          if (hasMeaningfulData) {
             setHasDraft(true);
           }
         } catch (e) {
