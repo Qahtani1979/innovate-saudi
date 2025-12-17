@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +7,7 @@ import { Sparkles, AlertTriangle, CheckCircle2, TrendingUp, Loader2 } from 'luci
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildRiskAssessmentPrompt, RISK_ASSESSMENT_SCHEMA } from '@/lib/ai/prompts/sandbox';
 
 export default function SandboxAIRiskAssessment({ application, sandbox }) {
   const { language, isRTL, t } = useLanguage();
@@ -17,66 +17,11 @@ export default function SandboxAIRiskAssessment({ application, sandbox }) {
   const runAssessment = async () => {
     if (!isAvailable) return;
     
-    const prompt = `Perform comprehensive risk assessment for this sandbox application:
-
-Sandbox: ${sandbox.name_en} (${sandbox.domain})
-Project: ${application.project_title}
-Organization: ${application.applicant_organization}
-Duration: ${application.duration_months} months
-Requested Exemptions: ${JSON.stringify(application.requested_exemptions)}
-Risk Assessment: ${application.risk_assessment}
-Safety Plan: ${application.public_safety_plan}
-
-Analyze:
-1. Safety risks (public, operational, environmental)
-2. Regulatory compliance risks
-3. Technical failure risks
-4. Reputational risks
-5. Financial risks
-
-Provide JSON with risk scores, mitigation strategies, and approval recommendation.`;
+    const prompt = buildRiskAssessmentPrompt({ application, sandbox });
 
     const response = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          overall_risk_score: { type: "number", description: "0-100" },
-          risk_level: { type: "string", enum: ["low", "medium", "high", "critical"] },
-          confidence: { type: "string", enum: ["low", "medium", "high"] },
-          risk_breakdown: {
-            type: "object",
-            properties: {
-              safety_risk: { type: "number" },
-              compliance_risk: { type: "number" },
-              technical_risk: { type: "number" },
-              reputational_risk: { type: "number" },
-              financial_risk: { type: "number" }
-            }
-          },
-          key_risks: {
-            type: "array",
-            items: { type: "string" }
-          },
-          mitigation_strategies: {
-            type: "array",
-            items: { type: "string" }
-          },
-          recommendation: {
-            type: "string",
-            enum: ["approve", "conditional_approve", "reject", "request_more_info"]
-          },
-          recommendation_rationale: { type: "string" },
-          required_conditions: {
-            type: "array",
-            items: { type: "string" }
-          },
-          monitoring_requirements: {
-            type: "array",
-            items: { type: "string" }
-          }
-        }
-      }
+      response_json_schema: RISK_ASSESSMENT_SCHEMA
     });
 
     if (response.success && response.data) {

@@ -108,7 +108,7 @@ export const PROMPT_MODULE_STATUS = {
   challenges: { status: 'complete', promptCount: 8 },
   pilots: { status: 'complete', promptCount: 4 },
   matchmaker: { status: 'complete', promptCount: 5 },
-  sandbox: { status: 'complete', promptCount: 5 },
+  sandbox: { status: 'complete', promptCount: 8 },
   rd: { status: 'complete', promptCount: 5 },
   scaling: { status: 'complete', promptCount: 4 },
   solution: { status: 'complete', promptCount: 9 },
