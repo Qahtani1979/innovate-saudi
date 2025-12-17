@@ -3801,9 +3801,18 @@ Use formal Arabic (فصحى). Generate a TRUE STRATEGIC OBJECTIVE, not a tactica
   const handleRecoverDraft = () => {
     const draft = loadLocalDraft();
     if (draft) {
-      setWizardData({ ...initialWizardData, ...draft });
-      if (draft._savedStep) {
-        const step = Number(draft._savedStep);
+      // Explicitly set planId if draft has one saved
+      if (draft._planId && !planId) {
+        setPlanId(draft._planId);
+        setMode('edit'); // Switch to edit mode since plan exists in DB
+      }
+      
+      // Remove internal fields before merging
+      const { _savedAt, _savedStep, _planId: draftPlanId, ...draftData } = draft;
+      setWizardData({ ...initialWizardData, ...draftData });
+      
+      if (_savedStep) {
+        const step = Number(_savedStep);
         if (Number.isFinite(step) && step >= 1 && step <= 18) {
           setCurrentStep(step);
         }
