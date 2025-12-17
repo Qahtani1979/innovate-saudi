@@ -598,6 +598,12 @@ export default function Step7Risks({
           { icon: User, value: stats.withOwner, label: t({ en: 'With Owner', ar: 'مع مالك' }) },
           { icon: Percent, value: `${stats.mitigationRate}%`, label: t({ en: 'Mitigation Rate', ar: 'معدل التخفيف' }) },
         ]}
+        metrics={[
+          { label: t({ en: 'Data Quality', ar: 'جودة البيانات' }), value: completenessScore },
+          { label: t({ en: 'Mitigation Coverage', ar: 'تغطية التخفيف' }), value: stats.mitigationRate },
+          { label: t({ en: 'Owner Assignment', ar: 'تعيين المالك' }), value: stats.total > 0 ? Math.round((stats.withOwner / stats.total) * 100) : 0 },
+          { label: t({ en: 'Contingency Plans', ar: 'خطط الطوارئ' }), value: stats.total > 0 ? Math.round((stats.withContingency / stats.total) * 100) : 0 }
+        ]}
       />
       
       {/* AI Generation Card */}
