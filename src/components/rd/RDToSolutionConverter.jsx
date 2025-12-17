@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Lightbulb, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { RD_SOLUTION_CONVERTER_SYSTEM_PROMPT, buildRDSolutionConverterPrompt, RD_SOLUTION_CONVERTER_SCHEMA } from '@/lib/ai/prompts/rd';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDToSolutionConverter({ rdProject, onClose, onSuccess }) {
@@ -38,46 +39,10 @@ export default function RDToSolutionConverter({ rdProject, onClose, onSuccess })
 
   const generateCommercialProfile = async () => {
     const result = await invokeAI({
-      prompt: `You are an R&D commercialization expert. Generate a commercial solution profile from this research project:
-
-Research Title: ${rdProject.title_en}
-Abstract: ${rdProject.abstract_en}
-Research Area: ${rdProject.research_area_en}
-Current TRL: ${rdProject.trl_current}
-Outputs: ${JSON.stringify(rdProject.expected_outputs || [])}
-Publications: ${JSON.stringify(rdProject.publications || [])}
-
-Generate:
-1. Commercial tagline (EN + AR)
-2. Market-ready description (EN + AR)
-3. Value proposition (why municipalities/companies should adopt)
-4. 3-5 practical use cases with sectors
-5. Pricing model recommendation
-6. Technical specifications summary
-
-Be compelling and highlight practical municipal applications.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          tagline_en: { type: 'string' },
-          tagline_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          value_proposition: { type: 'string' },
-          use_cases: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                title: { type: 'string' },
-                sector: { type: 'string' },
-                description: { type: 'string' }
-              }
-            }
-          },
-          pricing_model: { type: 'string' },
-          technical_specifications: { type: 'object' }
-        }
+      prompt: buildRDSolutionConverterPrompt(rdProject),
+      system_prompt: RD_SOLUTION_CONVERTER_SYSTEM_PROMPT,
+      response_json_schema: RD_SOLUTION_CONVERTER_SCHEMA
+    });
       }
     });
 

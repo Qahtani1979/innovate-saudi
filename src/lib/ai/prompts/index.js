@@ -66,6 +66,9 @@ export * from './media';
 // Workflows prompts
 export * from './workflows';
 
+// Onboarding prompts
+export * from './onboarding';
+
 // Taxonomy prompts
 export * from './taxonomy';
 
@@ -115,10 +118,10 @@ export const PROMPT_MODULE_STATUS = {
   pilots: { status: 'complete', promptCount: 6 },
   matchmaker: { status: 'complete', promptCount: 6 },
   sandbox: { status: 'complete', promptCount: 8 },
-  rd: { status: 'complete', promptCount: 8 },
+  rd: { status: 'complete', promptCount: 10 },
   scaling: { status: 'complete', promptCount: 4 },
   solution: { status: 'complete', promptCount: 9 },
-  citizen: { status: 'complete', promptCount: 5 },
+  citizen: { status: 'complete', promptCount: 6 },
   livinglab: { status: 'complete', promptCount: 4 },
   profiles: { status: 'complete', promptCount: 3 },
   programs: { status: 'complete', promptCount: 4 },
@@ -136,7 +139,8 @@ export const PROMPT_MODULE_STATUS = {
   uploader: { status: 'complete', promptCount: 1 },
   communications: { status: 'complete', promptCount: 4 },
   media: { status: 'complete', promptCount: 1 },
-  workflows: { status: 'complete', promptCount: 1 }
+  workflows: { status: 'complete', promptCount: 1 },
+  onboarding: { status: 'complete', promptCount: 1 }
 };
 
 /**

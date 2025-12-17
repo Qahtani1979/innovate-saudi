@@ -7,6 +7,7 @@ import { useLanguage } from '../LanguageContext';
 import { Target, Sparkles, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { PROFILE_COMPLETENESS_SYSTEM_PROMPT, buildProfileCompletenessPrompt, PROFILE_COMPLETENESS_SCHEMA } from '@/lib/ai/prompts/onboarding';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProfileCompletenessCoach({ profile, role }) {
@@ -31,34 +32,9 @@ export default function ProfileCompletenessCoach({ profile, role }) {
 
   const getSuggestions = async () => {
     const result = await invokeAI({
-      prompt: `Provide profile completion suggestions:
-
-ROLE: ${role}
-CURRENT PROFILE: ${JSON.stringify(profile || {})}
-COMPLETENESS: ${completeness}%
-
-Suggest:
-1. Top 3 most impactful fields to complete
-2. Why each field matters
-3. Example content for each field
-4. Priority ranking`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          suggestions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                field: { type: "string" },
-                importance: { type: "string" },
-                impact_description: { type: "string" },
-                example: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildProfileCompletenessPrompt(profile, role, completeness),
+      system_prompt: PROFILE_COMPLETENESS_SYSTEM_PROMPT,
+      response_json_schema: PROFILE_COMPLETENESS_SCHEMA
     });
 
     if (result.success) {
