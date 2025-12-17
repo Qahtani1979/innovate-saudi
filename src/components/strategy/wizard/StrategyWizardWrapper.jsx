@@ -40,9 +40,22 @@ import {
   getStep15Prompt, step15Schema,
   getStep16Prompt, step16Schema,
   getStep17Prompt, step17Schema,
+  // Single item prompts for "AI Add One" functionality
+  generateSingleStakeholderPrompt,
+  SINGLE_STAKEHOLDER_SCHEMA,
+  SINGLE_STAKEHOLDER_SYSTEM_PROMPT,
+  generateSingleRiskPrompt,
+  SINGLE_RISK_SCHEMA,
+  SINGLE_RISK_SYSTEM_PROMPT,
   generateSingleObjectivePrompt,
   SINGLE_OBJECTIVE_SCHEMA,
-  SINGLE_OBJECTIVE_SYSTEM_PROMPT
+  SINGLE_OBJECTIVE_SYSTEM_PROMPT,
+  generateSingleKpiPrompt,
+  SINGLE_KPI_SCHEMA,
+  SINGLE_KPI_SYSTEM_PROMPT,
+  generateSingleActionPrompt,
+  SINGLE_ACTION_SCHEMA,
+  SINGLE_ACTION_SYSTEM_PROMPT
 } from './prompts';
 import WizardStepIndicator from './WizardStepIndicator';
 import { CompactStepIndicator } from './shared';
@@ -1310,6 +1323,267 @@ Based on current coverage: ${sectorCoverageSummary}
     }
   };
 
+  // Generate a single new stakeholder that's different from existing ones
+  const generateSingleStakeholder = async (existingStakeholders, targetType = null) => {
+    if (!aiAvailable) {
+      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
+      return null;
+    }
+
+    const context = {
+      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
+      vision: wizardData.vision_en || wizardData.vision_ar || '',
+      mission: wizardData.mission_en || wizardData.mission_ar || '',
+      sectors: wizardData.sectors || [],
+      themes: wizardData.strategic_themes || [],
+      technologies: wizardData.focus_technologies || [],
+      startYear: wizardData.start_year || new Date().getFullYear(),
+      endYear: wizardData.end_year || new Date().getFullYear() + 5
+    };
+
+    // Build existing stakeholders summary
+    const existingStakeholdersSummary = existingStakeholders.map((s, i) => 
+      `${i + 1}. [${s.type || 'Unknown'}] "${s.name_en || s.name_ar}" - Power: ${s.power}, Interest: ${s.interest}`
+    ).join('\n');
+    
+    // Calculate type coverage
+    const typeCounts = {};
+    existingStakeholders.forEach(s => {
+      typeCounts[s.type] = (typeCounts[s.type] || 0) + 1;
+    });
+    const typeCoverageSummary = Object.entries(typeCounts)
+      .map(([type, count]) => `${type}: ${count}`)
+      .join(', ') || 'No stakeholders yet';
+
+    const typeTargetInstruction = targetType 
+      ? `MANDATORY: Generate a stakeholder of type "${targetType}"`
+      : 'Target underrepresented types for better coverage';
+
+    const prompt = generateSingleStakeholderPrompt({
+      context,
+      wizardData,
+      existingStakeholders,
+      existingStakeholdersSummary,
+      typeCoverageSummary,
+      typeTargetInstruction,
+      targetType
+    });
+
+    try {
+      const { success, data } = await invokeAI({
+        prompt,
+        response_json_schema: SINGLE_STAKEHOLDER_SCHEMA,
+        system_prompt: SINGLE_STAKEHOLDER_SYSTEM_PROMPT
+      });
+
+      if (success && data?.stakeholder) {
+        return {
+          stakeholder: data.stakeholder,
+          differentiation_score: data.differentiation_score || 75
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Single stakeholder generation error:', error);
+      toast.error(t({ en: 'Failed to generate stakeholder', ar: 'فشل في إنشاء الجهة' }));
+      return null;
+    }
+  };
+
+  // Generate a single new risk that's different from existing ones
+  const generateSingleRisk = async (existingRisks, targetCategory = null) => {
+    if (!aiAvailable) {
+      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
+      return null;
+    }
+
+    const context = {
+      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
+      vision: wizardData.vision_en || wizardData.vision_ar || '',
+      sectors: wizardData.sectors || [],
+      startYear: wizardData.start_year || new Date().getFullYear(),
+      endYear: wizardData.end_year || new Date().getFullYear() + 5
+    };
+
+    // Build existing risks summary
+    const existingRisksSummary = existingRisks.map((r, i) => 
+      `${i + 1}. [${r.category || 'Unknown'}] "${r.title_en || r.title_ar}" - Likelihood: ${r.likelihood}, Impact: ${r.impact}`
+    ).join('\n');
+    
+    // Calculate category coverage
+    const categoryCounts = {};
+    existingRisks.forEach(r => {
+      categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
+    });
+    const categoryCoverageSummary = Object.entries(categoryCounts)
+      .map(([cat, count]) => `${cat}: ${count}`)
+      .join(', ') || 'No risks yet';
+
+    const categoryTargetInstruction = targetCategory 
+      ? `MANDATORY: Generate a risk of category "${targetCategory}"`
+      : 'Target underrepresented categories for better coverage';
+
+    const prompt = generateSingleRiskPrompt({
+      context,
+      wizardData,
+      existingRisks,
+      existingRisksSummary,
+      categoryCoverageSummary,
+      categoryTargetInstruction,
+      targetCategory
+    });
+
+    try {
+      const { success, data } = await invokeAI({
+        prompt,
+        response_json_schema: SINGLE_RISK_SCHEMA,
+        system_prompt: SINGLE_RISK_SYSTEM_PROMPT
+      });
+
+      if (success && data?.risk) {
+        return {
+          risk: data.risk,
+          differentiation_score: data.differentiation_score || 75
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Single risk generation error:', error);
+      toast.error(t({ en: 'Failed to generate risk', ar: 'فشل في إنشاء المخاطرة' }));
+      return null;
+    }
+  };
+
+  // Generate a single new KPI that's different from existing ones
+  const generateSingleKpi = async (existingKpis, targetCategory = null, targetObjectiveIndex = null) => {
+    if (!aiAvailable) {
+      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
+      return null;
+    }
+
+    const context = {
+      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
+      vision: wizardData.vision_en || wizardData.vision_ar || '',
+      objectives: wizardData.objectives || [],
+      startYear: wizardData.start_year || new Date().getFullYear(),
+      endYear: wizardData.end_year || new Date().getFullYear() + 5
+    };
+
+    // Build existing KPIs summary
+    const existingKpisSummary = existingKpis.map((k, i) => 
+      `${i + 1}. [${k.category || 'Unknown'}] "${k.name_en || k.name_ar}" - Objective ${k.objective_index}, Unit: ${k.unit}`
+    ).join('\n');
+    
+    // Calculate category coverage
+    const categoryCounts = {};
+    existingKpis.forEach(k => {
+      categoryCounts[k.category] = (categoryCounts[k.category] || 0) + 1;
+    });
+    const categoryCoverageSummary = Object.entries(categoryCounts)
+      .map(([cat, count]) => `${cat}: ${count}`)
+      .join(', ') || 'No KPIs yet';
+
+    const categoryTargetInstruction = targetCategory 
+      ? `MANDATORY: Generate a KPI of category "${targetCategory}"`
+      : 'Balance categories for comprehensive coverage';
+
+    const prompt = generateSingleKpiPrompt({
+      context,
+      wizardData,
+      existingKpis,
+      existingKpisSummary,
+      categoryCoverageSummary,
+      categoryTargetInstruction,
+      targetCategory,
+      targetObjectiveIndex
+    });
+
+    try {
+      const { success, data } = await invokeAI({
+        prompt,
+        response_json_schema: SINGLE_KPI_SCHEMA,
+        system_prompt: SINGLE_KPI_SYSTEM_PROMPT
+      });
+
+      if (success && data?.kpi) {
+        return {
+          kpi: data.kpi,
+          differentiation_score: data.differentiation_score || 75
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Single KPI generation error:', error);
+      toast.error(t({ en: 'Failed to generate KPI', ar: 'فشل في إنشاء المؤشر' }));
+      return null;
+    }
+  };
+
+  // Generate a single new action that's different from existing ones
+  const generateSingleAction = async (existingActions, targetType = null, targetObjectiveIndex = null) => {
+    if (!aiAvailable) {
+      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
+      return null;
+    }
+
+    const context = {
+      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
+      vision: wizardData.vision_en || wizardData.vision_ar || '',
+      objectives: wizardData.objectives || [],
+      startYear: wizardData.start_year || new Date().getFullYear(),
+      endYear: wizardData.end_year || new Date().getFullYear() + 5
+    };
+
+    // Build existing actions summary
+    const existingActionsSummary = existingActions.map((a, i) => 
+      `${i + 1}. [${a.type || 'Unknown'}] "${a.name_en || a.name_ar}" - Objective ${a.objective_index}, Priority: ${a.priority}`
+    ).join('\n');
+    
+    // Calculate type coverage
+    const typeCounts = {};
+    existingActions.forEach(a => {
+      typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
+    });
+    const typeCoverageSummary = Object.entries(typeCounts)
+      .map(([type, count]) => `${type}: ${count}`)
+      .join(', ') || 'No actions yet';
+
+    const typeTargetInstruction = targetType 
+      ? `MANDATORY: Generate an action of type "${targetType}"`
+      : 'Balance action types for comprehensive coverage';
+
+    const prompt = generateSingleActionPrompt({
+      context,
+      wizardData,
+      existingActions,
+      existingActionsSummary,
+      typeCoverageSummary,
+      typeTargetInstruction,
+      targetType,
+      targetObjectiveIndex
+    });
+
+    try {
+      const { success, data } = await invokeAI({
+        prompt,
+        response_json_schema: SINGLE_ACTION_SCHEMA,
+        system_prompt: SINGLE_ACTION_SYSTEM_PROMPT
+      });
+
+      if (success && data?.action) {
+        return {
+          action: data.action,
+          differentiation_score: data.differentiation_score || 75
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Single action generation error:', error);
+      toast.error(t({ en: 'Failed to generate action', ar: 'فشل في إنشاء الإجراء' }));
+      return null;
+    }
+  };
+
   const handleNext = async () => {
     if (currentStep < 18) {
       // Validate current step before proceeding
@@ -1426,16 +1700,16 @@ Based on current coverage: ${sectorCoverageSummary}
     switch (currentStep) {
       case 1: return <Step1Context {...props} />;
       case 2: return <Step2Vision {...props} />;
-      case 3: return <Step3Stakeholders {...props} />;
+      case 3: return <Step3Stakeholders {...props} onGenerateSingleStakeholder={generateSingleStakeholder} />;
       case 4: return <Step4PESTEL {...props} />;
       case 5: return <Step5SWOT {...props} />;
       case 6: return <Step6Scenarios {...props} />;
-      case 7: return <Step7Risks {...props} />;
+      case 7: return <Step7Risks {...props} onGenerateSingleRisk={generateSingleRisk} />;
       case 8: return <Step8Dependencies {...props} />;
       case 9: return <Step9Objectives {...props} onGenerateSingleObjective={generateSingleObjective} />;
       case 10: return <Step10National {...props} />;
-      case 11: return <Step11KPIs {...props} />;
-      case 12: return <Step12Actions {...props} strategicPlanId={planId} wizardData={wizardData} />;
+      case 11: return <Step11KPIs {...props} onGenerateSingleKpi={generateSingleKpi} />;
+      case 12: return <Step12Actions {...props} strategicPlanId={planId} wizardData={wizardData} onGenerateSingleAction={generateSingleAction} />;
       case 13: return <Step13Resources {...props} strategicPlanId={planId} />;
       case 14: return <Step14Timeline {...props} strategicPlanId={planId} />;
       case 15: return <Step15Governance {...props} strategicPlanId={planId} />;
