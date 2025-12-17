@@ -1,6 +1,7 @@
 /**
  * R&D Module Prompts Index
  * Central export for all R&D-related AI prompts
+ * @version 1.1.0
  */
 
 export { PROPOSAL_SCORER_PROMPTS } from './proposalScorer';
@@ -8,6 +9,9 @@ export { PROPOSAL_WRITER_PROMPTS } from './proposalWriter';
 export { RESEARCHER_MATCHER_PROMPTS } from './researcherMatcher';
 export { PILOT_TRANSITION_PROMPTS } from './pilotTransition';
 export { TRL_ASSESSMENT_PROMPTS } from './trlAssessment';
+export { buildProposalFeedbackPrompt, PROPOSAL_FEEDBACK_SYSTEM_PROMPT } from './proposalFeedback';
+export { buildReviewerAssignmentPrompt, REVIEWER_ASSIGNMENT_SCHEMA } from './reviewerAssignment';
+export { buildEligibilityCheckPrompt, ELIGIBILITY_CHECK_SCHEMA } from './eligibilityCheck';
 
 export const RD_PROMPT_MANIFEST = {
   proposalScorer: {
@@ -34,5 +38,20 @@ export const RD_PROMPT_MANIFEST = {
     file: 'trlAssessment.js',
     purpose: 'Assess Technology Readiness Level',
     component: 'TRLAssessmentWorkflow'
+  },
+  proposalFeedback: {
+    file: 'proposalFeedback.js',
+    purpose: 'Generate constructive feedback for proposals',
+    component: 'ProposalFeedbackWorkflow'
+  },
+  reviewerAssignment: {
+    file: 'reviewerAssignment.js',
+    purpose: 'Auto-assign reviewers to proposals',
+    component: 'ReviewerAutoAssignment'
+  },
+  eligibilityCheck: {
+    file: 'eligibilityCheck.js',
+    purpose: 'Check proposal eligibility',
+    component: 'ProposalEligibilityChecker'
   }
 };

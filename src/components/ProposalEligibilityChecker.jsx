@@ -10,6 +10,7 @@ import { CheckCircle2, X, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildEligibilityCheckPrompt, ELIGIBILITY_CHECK_SCHEMA } from '@/lib/ai/prompts/rd';
 
 export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -29,49 +30,11 @@ export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }
   });
 
   const runEligibilityCheck = async () => {
-    const prompt = `Evaluate R&D proposal eligibility:
-
-Proposal:
-- Institution: ${proposal.lead_institution}
-- PI: ${proposal.principal_investigator?.name}
-- Budget: ${proposal.budget_requested} SAR
-- Duration: ${proposal.duration_months} months
-- TRL Target: ${proposal.trl_target}
-
-R&D Call Criteria:
-- Eligible Institutions: ${rdCall.eligible_institutions?.join(', ') || 'Any'}
-- Funding Range: ${rdCall.funding_per_project?.min} - ${rdCall.funding_per_project?.max} SAR
-- Max Duration: ${rdCall.max_duration_months || 36} months
-
-Evaluate these criteria:
-1. Institution eligibility (pass/fail)
-2. Budget within range (pass/fail)
-3. Duration acceptable (pass/fail)
-4. PI qualifications (pass/fail based on title)
-5. Alignment with call themes (pass/fail)
-
-Return structured check results.`;
+    const prompt = buildEligibilityCheckPrompt({ proposal, rdCall });
 
     const response = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          overall_eligible: { type: 'boolean' },
-          checks: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                criterion: { type: 'string' },
-                passed: { type: 'boolean' },
-                reason: { type: 'string' }
-              }
-            }
-          },
-          recommendation: { type: 'string' }
-        }
-      }
+      response_json_schema: ELIGIBILITY_CHECK_SCHEMA
     });
 
     if (response.success) {
