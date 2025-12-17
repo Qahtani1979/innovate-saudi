@@ -46,7 +46,7 @@ export * from './solution';
 export * from './citizen';
 
 // Living Lab prompts
-// export * from './livinglab';
+export * from './livinglab';
 
 // Profiles prompts
 // export * from './profiles';
@@ -73,7 +73,7 @@ export const PROMPT_MODULE_STATUS = {
   scaling: { status: 'complete', promptCount: 4 },
   solution: { status: 'complete', promptCount: 5 },
   citizen: { status: 'complete', promptCount: 5 },
-  livinglab: { status: 'pending', promptCount: 0 },
+  livinglab: { status: 'complete', promptCount: 4 },
   profiles: { status: 'pending', promptCount: 0 },
   programs: { status: 'pending', promptCount: 0 },
   smart: { status: 'pending', promptCount: 0 }

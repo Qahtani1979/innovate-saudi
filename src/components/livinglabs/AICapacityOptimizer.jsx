@@ -6,13 +6,18 @@ import { Progress } from "@/components/ui/progress";
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, TrendingUp, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildCapacityOptimizerPrompt, 
+  getCapacityOptimizerSchema,
+  CAPACITY_OPTIMIZER_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/livinglab';
 
 export default function AICapacityOptimizer({ livingLab }) {
-  const { t, isRTL } = useLanguage();
+  const { language, t } = useLanguage();
   const [analysis, setAnalysis] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
@@ -23,39 +28,21 @@ export default function AICapacityOptimizer({ livingLab }) {
     ]);
 
     const result = await invokeAI({
-      prompt: `Analyze this Living Lab's capacity and provide optimization recommendations:
-
-Lab: ${livingLab.name_en}
-Type: ${livingLab.type}
-Status: ${livingLab.status}
-Available Equipment: ${livingLab.equipment_catalog?.length || 0} items
-Total Bookings: ${bookings.length}
-Active Projects: ${projects.length}
-Max Capacity: ${livingLab.max_capacity || 'Not specified'}
-
-Provide:
-1. Current utilization rate estimate (0-100%)
-2. Peak usage periods (days/times)
-3. Underutilized resources
-4. Capacity expansion recommendations
-5. Scheduling optimization suggestions
-6. Resource allocation improvements`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          utilization_rate: { type: 'number' },
-          peak_periods: { type: 'array', items: { type: 'string' } },
-          underutilized: { type: 'array', items: { type: 'string' } },
-          expansion_recommendations: { type: 'array', items: { type: 'string' } },
-          scheduling_tips: { type: 'array', items: { type: 'string' } },
-          allocation_improvements: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildCapacityOptimizerPrompt(livingLab, bookings.length, projects.length),
+      response_json_schema: getCapacityOptimizerSchema(),
+      system_prompt: getSystemPrompt(CAPACITY_OPTIMIZER_SYSTEM_PROMPT)
     });
 
-    if (result.success) {
+    if (result.success && result.data) {
       setAnalysis(result.data);
     }
+  };
+
+  const getLocalizedArray = (data, field) => {
+    if (language === 'ar' && data[`${field}_ar`]) {
+      return data[`${field}_ar`];
+    }
+    return data[field] || [];
   };
 
   return (
@@ -119,7 +106,7 @@ Provide:
                   {t({ en: 'Peak Usage Periods', ar: 'فترات الذروة' })}
                 </h4>
                 <ul className="space-y-1">
-                  {analysis.peak_periods.map((period, i) => (
+                  {getLocalizedArray(analysis, 'peak_periods').map((period, i) => (
                     <li key={i} className="text-sm text-slate-700">• {period}</li>
                   ))}
                 </ul>
@@ -134,7 +121,7 @@ Provide:
                   {t({ en: 'Underutilized Resources', ar: 'موارد غير مستغلة' })}
                 </h4>
                 <ul className="space-y-1">
-                  {analysis.underutilized.map((item, i) => (
+                  {getLocalizedArray(analysis, 'underutilized').map((item, i) => (
                     <li key={i} className="text-sm text-slate-700">• {item}</li>
                   ))}
                 </ul>
@@ -149,7 +136,7 @@ Provide:
                   {t({ en: 'Expansion Recommendations', ar: 'توصيات التوسع' })}
                 </h4>
                 <ul className="space-y-1">
-                  {analysis.expansion_recommendations.map((rec, i) => (
+                  {getLocalizedArray(analysis, 'expansion_recommendations').map((rec, i) => (
                     <li key={i} className="text-sm text-slate-700">• {rec}</li>
                   ))}
                 </ul>
@@ -161,7 +148,7 @@ Provide:
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h4 className="font-semibold text-sm mb-2">{t({ en: 'Scheduling Optimization', ar: 'تحسين الجدولة' })}</h4>
                 <ul className="space-y-1">
-                  {analysis.scheduling_tips.map((tip, i) => (
+                  {getLocalizedArray(analysis, 'scheduling_tips').map((tip, i) => (
                     <li key={i} className="text-sm text-slate-700">• {tip}</li>
                   ))}
                 </ul>
@@ -173,7 +160,7 @@ Provide:
               <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                 <h4 className="font-semibold text-sm mb-2">{t({ en: 'Resource Allocation', ar: 'تخصيص الموارد' })}</h4>
                 <ul className="space-y-1">
-                  {analysis.allocation_improvements.map((imp, i) => (
+                  {getLocalizedArray(analysis, 'allocation_improvements').map((imp, i) => (
                     <li key={i} className="text-sm text-slate-700">• {imp}</li>
                   ))}
                 </ul>
