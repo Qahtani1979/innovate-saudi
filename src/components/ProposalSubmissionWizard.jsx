@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { CheckCircle2, X, Sparkles, Send, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildProposalBriefPrompt, proposalBriefSchema, PROPOSAL_BRIEF_SYSTEM_PROMPT } from '@/lib/ai/prompts/core';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -53,31 +55,10 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
   });
 
   const generateAIBrief = async () => {
-    const prompt = `Generate a concise submission brief for this R&D proposal:
-
-Title: ${proposal.title_en}
-Research Area: ${proposal.research_area}
-Institution: ${proposal.institution}
-Budget: ${proposal.budget}
-Duration: ${proposal.duration_months} months
-
-Provide:
-1. Executive summary (2-3 sentences)
-2. Key strengths (3 points)
-3. Potential concerns (2 points)
-4. Recommendation for reviewers (approve/conditional/reject with brief reason)`;
-
     const { success, data } = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          executive_summary: { type: 'string' },
-          strengths: { type: 'array', items: { type: 'string' } },
-          concerns: { type: 'array', items: { type: 'string' } },
-          recommendation: { type: 'string' }
-        }
-      }
+      prompt: buildProposalBriefPrompt(proposal),
+      systemPrompt: getSystemPrompt(PROPOSAL_BRIEF_SYSTEM_PROMPT),
+      response_json_schema: proposalBriefSchema
     });
 
     if (success && data) {

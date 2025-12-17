@@ -8,6 +8,8 @@ import { Sparkles, TrendingUp, AlertTriangle, CheckCircle2, Loader2 } from 'luci
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildSuccessPredictorPrompt, successPredictorSchema, SUCCESS_PREDICTOR_SYSTEM_PROMPT } from '@/lib/ai/prompts/core';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AISuccessPredictor({ pilot, onPredictionComplete }) {
   const { language, isRTL, t } = useLanguage();
@@ -15,48 +17,10 @@ export default function AISuccessPredictor({ pilot, onPredictionComplete }) {
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generatePrediction = async () => {
-    const prompt = `Analyze this pilot project and predict its success probability based on historical patterns:
-
-Pilot Details:
-- Title: ${pilot.title_en}
-- Sector: ${pilot.sector}
-- Duration: ${pilot.duration_weeks} weeks
-- Budget: ${pilot.budget} ${pilot.budget_currency}
-- TRL Level: ${pilot.trl_current || pilot.trl_start}
-- Stage: ${pilot.stage}
-- KPIs: ${JSON.stringify(pilot.kpis || [])}
-- Municipality: ${pilot.municipality_id}
-
-Consider factors:
-1. Historical success rates in this sector
-2. Budget adequacy for scope
-3. KPI ambition vs. baseline
-4. Organizational capacity
-5. Technology readiness
-
-Provide analysis in JSON format.`;
-
     const result = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          success_probability: { type: "number", description: "0-100" },
-          confidence_level: { type: "string", enum: ["low", "medium", "high"] },
-          key_strengths: { type: "array", items: { type: "string" } },
-          risk_factors: { type: "array", items: { type: "string" } },
-          recommendations: { type: "array", items: { type: "string" } },
-          comparison_to_similar_pilots: { type: "string" },
-          predicted_outcomes: {
-            type: "object",
-            properties: {
-              kpi_achievement: { type: "string" },
-              timeline_adherence: { type: "string" },
-              budget_efficiency: { type: "string" }
-            }
-          }
-        }
-      }
+      prompt: buildSuccessPredictorPrompt(pilot),
+      systemPrompt: getSystemPrompt(SUCCESS_PREDICTOR_SYSTEM_PROMPT),
+      response_json_schema: successPredictorSchema
     });
 
     if (result.success) {

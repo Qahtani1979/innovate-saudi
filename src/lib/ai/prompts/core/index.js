@@ -32,3 +32,15 @@ export {
   rdToPilotSchema,
   RD_TO_PILOT_SYSTEM_PROMPT
 } from './rdToPilot';
+
+export {
+  buildSuccessPredictorPrompt,
+  successPredictorSchema,
+  SUCCESS_PREDICTOR_SYSTEM_PROMPT
+} from './successPredictor';
+
+export {
+  buildProposalBriefPrompt,
+  proposalBriefSchema,
+  PROPOSAL_BRIEF_SYSTEM_PROMPT
+} from './proposalBrief';

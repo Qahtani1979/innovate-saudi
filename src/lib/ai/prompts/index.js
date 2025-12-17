@@ -98,7 +98,7 @@ export const PROMPT_MODULE_STATUS = {
   livinglab: { status: 'complete', promptCount: 4 },
   profiles: { status: 'complete', promptCount: 3 },
   programs: { status: 'complete', promptCount: 4 },
-  core: { status: 'complete', promptCount: 5 },
+  core: { status: 'complete', promptCount: 7 },
   taxonomy: { status: 'complete', promptCount: 2 },
   mii: { status: 'complete', promptCount: 2 },
   executive: { status: 'complete', promptCount: 3 },
