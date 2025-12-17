@@ -8,6 +8,10 @@ import { Languages, CheckCircle, AlertCircle, Sparkles, Send } from 'lucide-reac
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildTranslationPrompt, 
+  TRANSLATION_SCHEMA 
+} from '@/lib/ai/prompts/content';
 
 export default function TranslationWorkflow({ entity, entityType, onUpdate }) {
   const { t } = useLanguage();
@@ -27,24 +31,11 @@ export default function TranslationWorkflow({ entity, entityType, onUpdate }) {
   });
 
   const generateTranslations = async () => {
-    const prompt = `Translate the following ${entityType} content to Arabic (formal, professional):
-
-Title (EN): ${entity.title_en || entity.name_en}
-Description (EN): ${entity.description_en}
-${entity.tagline_en ? `Tagline (EN): ${entity.tagline_en}` : ''}
-
-Provide translations in JSON format with keys: title_ar, description_ar, tagline_ar`;
+    const prompt = buildTranslationPrompt({ entity, entityType });
 
     const response = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_ar: { type: 'string' },
-          description_ar: { type: 'string' },
-          tagline_ar: { type: 'string' }
-        }
-      }
+      response_json_schema: TRANSLATION_SCHEMA
     });
 
     if (response.success) {

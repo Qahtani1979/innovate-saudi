@@ -1,7 +1,7 @@
 /**
  * AI Prompts Index
  * Central export point for all AI prompt modules
- * @version 1.0.1
+ * @version 1.0.2
  */
 
 // Foundation exports
@@ -84,6 +84,18 @@ export * from './smart';
 // Data analytics prompts
 export * from './data';
 
+// Approval prompts
+export * from './approval';
+
+// Content prompts
+export * from './content';
+
+// Uploader prompts
+export * from './uploader';
+
+// Communications prompts
+export * from './communications';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -112,7 +124,11 @@ export const PROMPT_MODULE_STATUS = {
   geography: { status: 'complete', promptCount: 1 },
   bonus: { status: 'complete', promptCount: 1 },
   smart: { status: 'complete', promptCount: 1 },
-  data: { status: 'complete', promptCount: 1 }
+  data: { status: 'complete', promptCount: 1 },
+  approval: { status: 'complete', promptCount: 2 },
+  content: { status: 'complete', promptCount: 1 },
+  uploader: { status: 'complete', promptCount: 1 },
+  communications: { status: 'complete', promptCount: 4 }
 };
 
 /**
@@ -124,7 +140,7 @@ export function getImplementationProgress() {
   const completed = modules.filter(([, v]) => v.status === 'complete').length;
   const total = modules.length;
   const promptsComplete = modules.reduce((sum, [, v]) => sum + (v.status === 'complete' ? v.promptCount : 0), 0);
-  const promptsTotal = 98; // Target from plan
+  const promptsTotal = 110; // Updated target
 
   return {
     modulesComplete: completed,
