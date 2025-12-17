@@ -2,7 +2,11 @@ import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-
+import {
+  generateContentModerationPrompt,
+  getContentModerationSchema,
+  getContentModerationSystemPrompt
+} from '@/lib/ai/prompts/citizen';
 // Hook-based version for components
 export function useContentModeration() {
   const [result, setResult] = React.useState(null);
@@ -10,26 +14,9 @@ export function useContentModeration() {
 
   const checkContent = React.useCallback(async (text) => {
     const response = await invokeAI({
-      prompt: `Analyze this citizen-submitted text for content moderation:
-
-Text: "${text}"
-
-Detect:
-1. Toxicity (profanity, hate speech, threats) - score 0-100
-2. Spam likelihood - score 0-100
-3. Is appropriate for public platform - boolean
-4. Issues found (array of strings)
-
-Return scores and findings.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          toxicity_score: { type: "number" },
-          spam_score: { type: "number" },
-          is_appropriate: { type: "boolean" },
-          issues: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: generateContentModerationPrompt(text),
+      response_json_schema: getContentModerationSchema(),
+      system_prompt: getContentModerationSystemPrompt()
     });
 
     if (response.success) {
@@ -45,26 +32,9 @@ Return scores and findings.`,
 // Utility function for standalone use
 export async function checkContentModeration(text, invokeAI) {
   const response = await invokeAI({
-    prompt: `Analyze this citizen-submitted text for content moderation:
-
-Text: "${text}"
-
-Detect:
-1. Toxicity (profanity, hate speech, threats) - score 0-100
-2. Spam likelihood - score 0-100
-3. Is appropriate for public platform - boolean
-4. Issues found (array of strings)
-
-Return scores and findings.`,
-    response_json_schema: {
-      type: "object",
-      properties: {
-        toxicity_score: { type: "number" },
-        spam_score: { type: "number" },
-        is_appropriate: { type: "boolean" },
-        issues: { type: "array", items: { type: "string" } }
-      }
-    }
+    prompt: generateContentModerationPrompt(text),
+    response_json_schema: getContentModerationSchema(),
+    system_prompt: getContentModerationSystemPrompt()
   });
 
   if (response.success) {

@@ -9,6 +9,11 @@ import { MessageSquare, Sparkles, Loader2, TrendingUp, MapPin } from 'lucide-rea
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  generateFeedbackAggregationPrompt,
+  getFeedbackAggregationSchema,
+  getFeedbackAggregationSystemPrompt
+} from '@/lib/ai/prompts/citizen';
 
 export default function PublicFeedbackAggregator({ municipalityId }) {
   const { language, t } = useLanguage();
@@ -25,46 +30,9 @@ export default function PublicFeedbackAggregator({ municipalityId }) {
 
   const aggregateAndAnalyze = async () => {
     const result = await invokeAI({
-      prompt: `Aggregate and analyze public feedback:
-
-TOTAL FEEDBACK: ${feedback.length}
-Sample: ${feedback.slice(0, 30).map(f => 
-  `[${f.feedback_type}] ${f.content?.substring(0, 100) || ''} - Sentiment: ${f.sentiment || 'N/A'}`
-).join('\n')}
-
-Provide:
-1. Top 5 recurring themes/issues
-2. Sentiment breakdown (% positive/neutral/negative)
-3. Geographic clusters (if location data available)
-4. Priority recommendations (what to address first)
-5. Trend analysis (increasing/decreasing concerns)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          themes: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                theme: { type: "string" },
-                count: { type: "number" },
-                priority: { type: "string" }
-              }
-            }
-          },
-          sentiment_breakdown: {
-            type: "object",
-            properties: {
-              positive: { type: "number" },
-              neutral: { type: "number" },
-              negative: { type: "number" }
-            }
-          },
-          geographic_clusters: { type: "array", items: { type: "string" } },
-          recommendations: { type: "array", items: { type: "string" } },
-          trend: { type: "string" }
-        }
-      }
+      prompt: generateFeedbackAggregationPrompt(feedback, { municipalityId }),
+      response_json_schema: getFeedbackAggregationSchema(),
+      system_prompt: getFeedbackAggregationSystemPrompt()
     });
 
     if (result.success) {
