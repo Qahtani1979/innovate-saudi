@@ -2,7 +2,7 @@
 
 **Generated:** 2025-12-17 (Updated with Full Entity Dependencies & Multi-Entity Context)  
 **Status:** Ready for Implementation  
-**Total Files to Update:** 45 component files + 42 new prompt files  
+**Total Files to Update:** 47 component files + 44 new prompt files  
 **Estimated Effort:** 4 phases, ~10 days
 
 ---
@@ -143,13 +143,178 @@ Many AI prompts require data from MULTIPLE entities as input. The prompt files m
 | **solution/contractGeneration.js** | `solution` | `challenge`, `organization`, `pilot`, `municipality` | all parties for contract terms |
 | **rd/proposalScoring.js** | `rd_proposal` | `rd_call`, `organization`, `researcher_profiles[]` | call: criteria; org: track record; researchers: publications |
 | **rd/portfolioPlanning.js** | `rd_projects[]` | `strategic_plans[]`, `sectors[]`, `budgets[]` | projects: status, budget; plans: objectives; budgets: allocation |
-| **citizen/ideaClassification.js** | `citizen_idea` | `sectors[]`, `challenges[]` (similar), `citizen_feedback[]` (user history) | idea: content; sectors: codes/names; challenges: patterns |
-| **analysis/roiCalculation.js** | varies | `pilot` OR `program` OR `scaling_plan`, `pilot_kpis[]`, `pilot_expenses[]`, `municipality` | costs, benefits, population |
+| **rd/multiInstitutionCollaboration.js** | `rd_project` | `organizations[]` (research), `researcher_profiles[]`, `living_labs[]` | project: title_en/ar, focus_area, research_areas; orgs: name_en/ar, capabilities; researchers: expertise |
+| **citizen/ideaClassification.js** | `citizen_idea` | `sectors[]`, `challenges[]` (similar), `citizen_ideas[]` (history) | idea: content, title, location; sectors: name_en/ar, code; challenges: title_en/ar, category |
+| **analysis/roiCalculation.js** | varies | `pilot` OR `program` OR `scaling_plan`, `pilot_kpis[]`, `pilot_expenses[]`, `municipality`, `sector` | costs, benefits, population, sector benchmarks |
 | **analysis/duplicateDetection.js** | entity[] | same entity type records | titles, descriptions, embeddings |
 | **communication/partnershipProposal.js** | `partnership` | `organization`, `strategic_plan`, `municipality` | partnership: type, objectives; org: capabilities |
 | **livinglab/collaboration.js** | `living_lab` | `living_labs[]`, `equipment[]`, `research_themes[]` | labs: focus areas, equipment; themes: overlap |
 | **pilots/policyWorkflow.js** | `pilot` | `pilot_kpis[]`, `lessons_learned[]`, `sector`, `municipality` | pilot: evaluation; kpis: results; lessons: insights |
 | **sandbox/regulatoryGap.js** | `sandbox_application` | `sandbox`, `sector`, `regulations[]` | app: description; sandbox: framework; regulations: requirements |
+
+### DETAILED Field Requirements Per Prompt (NEW)
+
+#### scaling/costBenefitAnalysis.js
+```javascript
+// PRIMARY: pilot
+const pilotData = {
+  title_en, title_ar, tagline_en, tagline_ar,
+  budget, duration_weeks, stage,
+  sector, // string - for benchmark lookup
+  kpis: [{ name, name_ar, current_value, target, unit, baseline }],
+  success_probability, risk_level
+};
+
+// RELATED: targetMunicipalities[]
+const municipalityData = {
+  id, name_en, name_ar,
+  population, budget_capacity, // for scaling calculations
+  innovation_readiness_score, // if available
+  region_id // for regional grouping
+};
+
+// RELATED: pilot_expenses[]
+const expenseData = {
+  expense_type, amount, currency, category,
+  description // for cost breakdown
+};
+
+// RELATED: sector (for benchmarks)
+const sectorData = {
+  name_en, name_ar, code,
+  typical_roi_range, average_payback_months // benchmark data
+};
+```
+
+#### matchmaker/partnershipAgreement.js
+```javascript
+// PRIMARY: matchmaker_application
+const applicationData = {
+  organization_name_en, organization_name_ar,
+  organization_id, match_score, stage,
+  proposal_summary, value_proposition,
+  proposed_approach, implementation_timeline
+};
+
+// RELATED: challenge
+const challengeData = {
+  title_en, title_ar, description_en, description_ar,
+  sector, municipality_id, budget_estimate,
+  kpis // for success criteria
+};
+
+// RELATED: organization
+const organizationData = {
+  name_en, name_ar, org_type,
+  capabilities, sectors,
+  contact_email, website
+};
+
+// RELATED: municipality
+const municipalityData = {
+  name_en, name_ar,
+  region_id // for legal jurisdiction
+};
+
+// RELATED: solution (if available)
+const solutionData = {
+  name_en, name_ar, features,
+  pricing_model, implementation_time
+};
+```
+
+#### citizen/ideaClassification.js
+```javascript
+// PRIMARY: citizen_idea
+const ideaData = {
+  id, title, description, // note: not bilingual in current schema
+  category, location, tags,
+  municipality_id, user_id,
+  image_url, votes_count
+};
+
+// RELATED: sectors[] (for classification taxonomy)
+const sectorsData = [
+  { id, name_en, name_ar, code, description_en, description_ar }
+];
+
+// RELATED: challenges[] (for similarity detection)
+const similarChallengesData = [
+  { id, title_en, title_ar, category, sector, municipality_id, keywords }
+];
+
+// RELATED: citizen_ideas[] (for spam pattern detection)
+const historicalIdeasData = [
+  { id, title, status, votes_count, user_id } // last 100 ideas
+];
+```
+
+#### rd/multiInstitutionCollaboration.js
+```javascript
+// PRIMARY: rd_project
+const projectData = {
+  id, title_en, title_ar,
+  focus_area, research_areas, // arrays
+  budget, stage, timeline,
+  lead_institution_id, research_methodology
+};
+
+// RELATED: organizations[] (type=research_institution)
+const researchInstitutionsData = [
+  { id, name_en, name_ar, org_type, capabilities, sectors, is_active }
+];
+
+// RELATED: researcher_profiles[]
+const researchersData = [
+  { id, name, expertise_areas, publications, institution_id }
+];
+
+// RELATED: living_labs[] (for equipment/facilities)
+const livingLabsData = [
+  { id, name_en, name_ar, research_themes, focus_areas, equipment_types }
+];
+```
+
+#### analysis/roiCalculation.js
+```javascript
+// PRIMARY: pilot | program | scaling_plan (based on initiativeType)
+const initiativeData = {
+  // Common fields
+  id, budget, duration_weeks_or_months, sector, status,
+  
+  // Pilot-specific
+  title_en, title_ar, hypothesis, success_probability,
+  kpis: [{ name, current_value, target }],
+  
+  // Program-specific  
+  name_en, name_ar, program_type, participants_count,
+  
+  // Scaling-specific
+  source_pilot_id, target_municipalities, rollout_phases
+};
+
+// RELATED: pilot_expenses[] or program_expenses
+const expensesData = [
+  { expense_type, amount, category }
+];
+
+// RELATED: municipality (for population impact)
+const municipalityData = {
+  name_en, name_ar, population,
+  budget_capacity
+};
+
+// RELATED: sector (for benchmarks)
+const sectorData = {
+  name_en, name_ar, code,
+  typical_roi_range, industry_benchmarks
+};
+
+// RELATED: pilot_kpis[] (for outcome measurement)
+const kpisData = [
+  { name, name_ar, baseline, current_value, target, unit }
+];
+```
 
 ### Entity Field Extraction Requirements
 
@@ -925,7 +1090,8 @@ src/lib/ai/prompts/
 │   ├── partnershipAgreement.js       # getPartnershipAgreementPrompt + partnershipAgreementSchema
 │   ├── multiPartyConsortium.js       # getMultiPartyConsortiumPrompt + multiPartyConsortiumSchema
 │   ├── strategicChallengeMapping.js  # getStrategicChallengeMappingPrompt + strategicChallengeMappingSchema
-│   └── failedMatchLearning.js        # getFailedMatchLearningPrompt + failedMatchLearningSchema
+│   ├── failedMatchLearning.js        # getFailedMatchLearningPrompt + failedMatchLearningSchema
+│   └── partnershipOrchestration.js   # getPartnershipOrchestrationPrompt + partnershipOrchestrationSchema
 │
 ├── scaling/
 │   ├── index.js                      # Export all scaling prompts
@@ -947,7 +1113,8 @@ src/lib/ai/prompts/
 │   ├── index.js                      # Export all R&D prompts
 │   ├── proposalScoring.js            # getProposalScoringPrompt + proposalScoringSchema
 │   ├── ipCommercialization.js        # getIPCommercializationPrompt + ipCommercializationSchema
-│   └── portfolioPlanning.js          # getPortfolioPlanningPrompt + portfolioPlanningSchema
+│   ├── portfolioPlanning.js          # getPortfolioPlanningPrompt + portfolioPlanningSchema
+│   └── multiInstitutionCollaboration.js  # getMultiInstitutionCollaborationPrompt + multiInstitutionCollaborationSchema
 │
 ├── citizen/
 │   ├── index.js                      # Export all citizen prompts
@@ -968,7 +1135,7 @@ src/lib/ai/prompts/
     └── partnershipProposal.js        # getPartnershipProposalPrompt + partnershipProposalSchema
 ```
 
-### Total New Files: 42 prompt files
+### Total New Files: 44 prompt files
 
 ---
 
@@ -987,7 +1154,7 @@ After extracting prompts, components need minimal changes - just import and use 
 | 5 | `src/pages/RDPortfolioPlanner.jsx` | `rd/portfolioPlanning.js` | Import from `@/lib/ai/prompts/rd` |
 | 6 | `src/pages/RiskPortfolio.jsx` | `analysis/riskAnalysis.js` | Import from `@/lib/ai/prompts/analysis` |
 
-### Priority 2: Workflow Components (18 files)
+### Priority 2: Workflow Components (21 files)
 
 | # | Component File | Prompt File(s) to Create | Changes in Component |
 |---|------|----------------|------------------|
@@ -1007,8 +1174,10 @@ After extracting prompts, components need minimal changes - just import and use 
 | 14 | `src/components/collaboration/PartnershipProposalWizard.jsx` | `communication/partnershipProposal.js` | Import prompt, remove inline code |
 | 15 | `src/components/rd/RDProposalAIScorerWidget.jsx` | `rd/proposalScoring.js` | Import prompt, remove inline code |
 | 16 | `src/components/rd/IPCommercializationTracker.jsx` | `rd/ipCommercialization.js` | Import prompt, remove inline code |
-| 17 | `src/components/citizen/AIIdeaClassifier.jsx` | `citizen/ideaClassification.js` | Import prompt, remove inline code |
-| 18 | `src/components/onboarding/FirstActionRecommender.jsx` | `onboarding/actionRecommendation.js` | Import prompt, remove inline code |
+| 17 | `src/components/rd/MultiInstitutionCollaboration.jsx` | `rd/multiInstitutionCollaboration.js` | Import prompt, fetch rd_project + orgs + researchers |
+| 18 | `src/components/citizen/AIIdeaClassifier.jsx` | `citizen/ideaClassification.js` | Import prompt, fetch sectors taxonomy + similar challenges |
+| 19 | `src/components/onboarding/FirstActionRecommender.jsx` | `onboarding/actionRecommendation.js` | Import prompt, remove inline code |
+| 20 | `src/components/partnerships/PartnershipOrchestrator.jsx` | `matchmaker/partnershipOrchestration.js` | Add AI prompt for partnership scoring |
 
 ### Priority 3: Analysis Components (10 files)
 
