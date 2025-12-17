@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import EntityAllocationSelector from '../EntityAllocationSelector';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid } from '../shared';
 
 // Change Phase Types (ADKAR Model)
 const CHANGE_PHASES = [
@@ -1460,34 +1460,18 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                   {t({ en: 'Change Management Summary', ar: 'ملخص إدارة التغيير' })}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
-                    <GraduationCap className="h-5 w-5 text-blue-500 mx-auto mb-1" />
-                    <p className="text-xl font-bold">{trainingPlan.length}</p>
-                    <p className="text-xs">{t({ en: 'Training', ar: 'التدريب' })}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 text-center">
-                    <Users className="h-5 w-5 text-purple-500 mx-auto mb-1" />
-                    <p className="text-xl font-bold">{stakeholderImpacts.length}</p>
-                    <p className="text-xs">{t({ en: 'Impacts', ar: 'التأثيرات' })}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-center">
-                    <Shield className="h-5 w-5 text-amber-500 mx-auto mb-1" />
-                    <p className="text-xl font-bold">{resistanceStrategies.length}</p>
-                    <p className="text-xs">{t({ en: 'Resistance', ar: 'المقاومة' })}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-center">
-                    <RefreshCw className="h-5 w-5 text-green-500 mx-auto mb-1" />
-                    <p className="text-xl font-bold">{changeActivities.length}</p>
-                    <p className="text-xs">{t({ en: 'Activities', ar: 'الأنشطة' })}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-teal-50 dark:bg-teal-950/30 text-center">
-                    <Layers className="h-5 w-5 text-teal-500 mx-auto mb-1" />
-                    <p className="text-xl font-bold">{Object.values(CHANGE_PHASES.reduce((acc, p) => { acc[p.value] = changeActivities.filter(a => a.phase === p.value).length; return acc; }, {})).filter(c => c > 0).length}/5</p>
-                    <p className="text-xs">{t({ en: 'ADKAR Phases', ar: 'مراحل ADKAR' })}</p>
-                  </div>
-                </div>
+              <CardContent>
+                <StatsGrid
+                  columns={5}
+                  language={language}
+                  stats={[
+                    { icon: GraduationCap, iconColor: 'text-blue-500', value: trainingPlan.length, label: { en: 'Training', ar: 'التدريب' } },
+                    { icon: Users, iconColor: 'text-purple-500', value: stakeholderImpacts.length, label: { en: 'Impacts', ar: 'التأثيرات' } },
+                    { icon: Shield, iconColor: 'text-amber-500', value: resistanceStrategies.length, label: { en: 'Resistance', ar: 'المقاومة' } },
+                    { icon: RefreshCw, iconColor: 'text-green-500', value: changeActivities.length, label: { en: 'Activities', ar: 'الأنشطة' } },
+                    { icon: Layers, iconColor: 'text-teal-500', value: `${Object.values(CHANGE_PHASES.reduce((acc, p) => { acc[p.value] = changeActivities.filter(a => a.phase === p.value).length; return acc; }, {})).filter(c => c > 0).length}/5`, label: { en: 'ADKAR Phases', ar: 'مراحل ADKAR' } },
+                  ]}
+                />
               </CardContent>
             </Card>
           </TabsContent>
