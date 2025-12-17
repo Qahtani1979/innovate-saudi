@@ -4,7 +4,6 @@
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { buildBilingualSchema } from '../../bilingualSchemaBuilder';
 
 export const RESEARCHER_MATCHER_PROMPTS = {
   systemPrompt: getSystemPrompt('rd_researcher_matcher'),
@@ -41,7 +40,7 @@ Consider:
 - Potential impact on municipal services
 - Feasibility of collaboration`,
 
-  schema: buildBilingualSchema({
+  schema: {
     type: "object",
     properties: {
       matches: {
@@ -63,7 +62,7 @@ Consider:
       }
     },
     required: ["matches"]
-  })
+  }
 };
 
 export default RESEARCHER_MATCHER_PROMPTS;

@@ -8,6 +8,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { COST_BENEFIT_PROMPTS } from '@/lib/ai/prompts/scaling';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function ScalingCostBenefitAnalyzer({ pilot, targetMunicipalities }) {
   const { language, t } = useLanguage();
@@ -16,48 +18,9 @@ export default function ScalingCostBenefitAnalyzer({ pilot, targetMunicipalities
 
   const analyzeCostBenefit = async () => {
     const result = await invokeAI({
-      prompt: `Calculate cost-benefit analysis for scaling pilot:
-
-PILOT: ${pilot.title_en}
-- Current budget: ${pilot.budget}
-- Current results: ${pilot.kpis?.map(k => `${k.name}: ${k.current}`).join(', ')}
-- Target municipalities: ${targetMunicipalities.length}
-
-For scaling to ${targetMunicipalities.length} cities, estimate:
-1. Total deployment cost
-2. Expected annual benefits (cost savings, efficiency gains)
-3. Break-even point (months)
-4. 3-year ROI
-5. Cost per municipality
-6. Benefit variance (best/worst case)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          total_cost: { type: "number" },
-          annual_benefit: { type: "number" },
-          break_even_months: { type: "number" },
-          three_year_roi: { type: "number" },
-          cost_per_municipality: { type: "number" },
-          benefit_variance: {
-            type: "object",
-            properties: {
-              best_case: { type: "number" },
-              worst_case: { type: "number" }
-            }
-          },
-          cashflow_projection: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                month: { type: "number" },
-                cost: { type: "number" },
-                benefit: { type: "number" }
-              }
-            }
-          }
-        }
-      }
+      systemPrompt: getSystemPrompt('scaling_cost_benefit'),
+      prompt: COST_BENEFIT_PROMPTS.buildPrompt(pilot, targetMunicipalities),
+      response_json_schema: COST_BENEFIT_PROMPTS.schema
     });
 
     if (result.success) {
@@ -85,7 +48,8 @@ For scaling to ${targetMunicipalities.length} cities, estimate:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
         {!forecast && !analyzing && (
           <div className="text-center py-8">
             <DollarSign className="h-12 w-12 text-green-300 mx-auto mb-3" />
@@ -110,7 +74,7 @@ For scaling to ${targetMunicipalities.length} cities, estimate:
 
               <div className="p-3 bg-blue-50 rounded-lg border-2 border-blue-300 text-center">
                 <p className="text-xs text-slate-600 mb-1">{t({ en: 'Break-Even', ar: 'التعادل' })}</p>
-                <p className="text-xl font-bold text-blue-600">{forecast.break_even_months}mo</p>
+                <p className="text-xl font-bold text-blue-600">{forecast.break_even_months}{t({ en: 'mo', ar: 'ش' })}</p>
               </div>
 
               <div className="p-3 bg-purple-50 rounded-lg border-2 border-purple-300 text-center">
@@ -128,8 +92,8 @@ For scaling to ${targetMunicipalities.length} cities, estimate:
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
-                    <Line type="monotone" dataKey="cost" stroke="#ef4444" name="Cost" />
-                    <Line type="monotone" dataKey="benefit" stroke="#10b981" name="Benefit" />
+                    <Line type="monotone" dataKey="cost" stroke="#ef4444" name={t({ en: 'Cost', ar: 'التكلفة' })} />
+                    <Line type="monotone" dataKey="benefit" stroke="#10b981" name={t({ en: 'Benefit', ar: 'الفائدة' })} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -139,7 +103,7 @@ For scaling to ${targetMunicipalities.length} cities, estimate:
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold text-green-900">{t({ en: 'Investment Summary', ar: 'ملخص الاستثمار' })}</h4>
                 <Badge className={forecast.three_year_roi >= 100 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
-                  {forecast.three_year_roi >= 100 ? 'Strong ROI' : 'Moderate ROI'}
+                  {forecast.three_year_roi >= 100 ? t({ en: 'Strong ROI', ar: 'عائد قوي' }) : t({ en: 'Moderate ROI', ar: 'عائد متوسط' })}
                 </Badge>
               </div>
               <p className="text-sm text-slate-700">

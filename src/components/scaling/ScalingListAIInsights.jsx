@@ -5,6 +5,8 @@ import { useLanguage } from '../LanguageContext';
 import { Sparkles, Loader2, X } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { SCALING_INSIGHTS_PROMPTS } from '@/lib/ai/prompts/scaling';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function ScalingListAIInsights({ completedPilots, scaledPilots }) {
   const { t, isRTL } = useLanguage();
@@ -20,30 +22,9 @@ export default function ScalingListAIInsights({ completedPilots, scaledPilots })
     setVisible(true);
     
     const response = await invokeAI({
-      prompt: `Analyze the national scaling pipeline:
-
-Pilots Ready to Scale: ${completedPilots.length}
-Already Scaled: ${scaledPilots.length}
-
-Completed Pilots Summary:
-${completedPilots.slice(0, 10).map(p => `- ${p.title_en} (${p.sector}, Success: ${p.success_probability}%)`).join('\n')}
-
-Provide strategic insights:
-1. Which pilots should be prioritized for national scaling and why
-2. Geographic scaling recommendations (which cities/regions)
-3. Sector-based scaling opportunities
-4. Budget optimization strategies
-5. Risk mitigation for national rollout`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          priority_pilots: { type: 'array', items: { type: 'string' } },
-          geographic_strategy: { type: 'array', items: { type: 'string' } },
-          sector_opportunities: { type: 'array', items: { type: 'string' } },
-          budget_optimization: { type: 'array', items: { type: 'string' } },
-          risk_mitigation: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      systemPrompt: getSystemPrompt('scaling_insights'),
+      prompt: SCALING_INSIGHTS_PROMPTS.buildPrompt(completedPilots, scaledPilots),
+      response_json_schema: SCALING_INSIGHTS_PROMPTS.schema
     });
 
     if (response.success) {

@@ -8,6 +8,8 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { ROLLOUT_RISK_PROMPTS } from '@/lib/ai/prompts/scaling';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function RolloutRiskPredictor({ pilot, targetMunicipalities }) {
   const { language, t } = useLanguage();
@@ -16,55 +18,9 @@ export default function RolloutRiskPredictor({ pilot, targetMunicipalities }) {
 
   const analyzeRolloutRisks = async () => {
     const result = await invokeAI({
-      prompt: `Predict scaling rollout risks:
-
-PILOT: ${pilot.title_en}
-- Original city: ${pilot.municipality_id}
-- Success metrics: ${pilot.kpis?.map(k => `${k.name}: ${k.current}`).join(', ')}
-- Duration: ${pilot.duration_weeks} weeks
-- Target cities: ${targetMunicipalities.map(m => m.name_en).join(', ')}
-
-Analyze rollout risks across:
-1. Technical complexity (0-100)
-2. Change management resistance (0-100)
-3. Resource availability (0-100)
-4. Political/stakeholder (0-100)
-5. Budget overruns (0-100)
-
-Provide:
-- Overall risk score
-- Risk level (low/medium/high/critical)
-- Top 5 specific risks
-- Mitigation strategies`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          overall_risk_score: { type: "number" },
-          risk_level: { type: "string" },
-          dimension_scores: {
-            type: "object",
-            properties: {
-              technical: { type: "number" },
-              change_management: { type: "number" },
-              resources: { type: "number" },
-              political: { type: "number" },
-              budget: { type: "number" }
-            }
-          },
-          top_risks: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                risk: { type: "string" },
-                probability: { type: "string" },
-                impact: { type: "string" }
-              }
-            }
-          },
-          mitigation_strategies: { type: "array", items: { type: "string" } }
-        }
-      }
+      systemPrompt: getSystemPrompt('scaling_rollout_risk'),
+      prompt: ROLLOUT_RISK_PROMPTS.buildPrompt(pilot, targetMunicipalities),
+      response_json_schema: ROLLOUT_RISK_PROMPTS.schema
     });
 
     if (result.success) {
@@ -76,11 +32,11 @@ Provide:
   };
 
   const radarData = riskAnalysis ? [
-    { dimension: 'Technical', score: 100 - riskAnalysis.dimension_scores.technical },
-    { dimension: 'Change Mgmt', score: 100 - riskAnalysis.dimension_scores.change_management },
-    { dimension: 'Resources', score: 100 - riskAnalysis.dimension_scores.resources },
-    { dimension: 'Political', score: 100 - riskAnalysis.dimension_scores.political },
-    { dimension: 'Budget', score: 100 - riskAnalysis.dimension_scores.budget }
+    { dimension: t({ en: 'Technical', ar: 'التقني' }), score: 100 - riskAnalysis.dimension_scores.technical },
+    { dimension: t({ en: 'Change Mgmt', ar: 'إدارة التغيير' }), score: 100 - riskAnalysis.dimension_scores.change_management },
+    { dimension: t({ en: 'Resources', ar: 'الموارد' }), score: 100 - riskAnalysis.dimension_scores.resources },
+    { dimension: t({ en: 'Political', ar: 'السياسي' }), score: 100 - riskAnalysis.dimension_scores.political },
+    { dimension: t({ en: 'Budget', ar: 'الميزانية' }), score: 100 - riskAnalysis.dimension_scores.budget }
   ] : [];
 
   return (
@@ -91,7 +47,7 @@ Provide:
             <AlertTriangle className="h-5 w-5 text-red-600" />
             {t({ en: 'AI Rollout Risk Predictor', ar: 'متنبئ مخاطر النشر الذكي' })}
           </CardTitle>
-          <Button onClick={analyzeRolloutRisks} disabled={analyzing} size="sm" className="bg-red-600">
+          <Button onClick={analyzeRolloutRisks} disabled={analyzing || !isAvailable} size="sm" className="bg-red-600">
             {analyzing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -102,6 +58,8 @@ Provide:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} className="mb-4" />
+
         {!riskAnalysis && !analyzing && (
           <div className="text-center py-8">
             <AlertTriangle className="h-12 w-12 text-red-300 mx-auto mb-3" />
