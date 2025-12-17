@@ -1,14 +1,18 @@
 /**
  * Centralized AI Router for Strategy Wizard
  * Routes AI generation requests to appropriate edge functions based on step
- * Uses comprehensive Saudi/MoMAH context from saudiContext.ts
- * @version 2.0.2
+ * Uses comprehensive Saudi/MoMAH context from saudiContext.js
+ * @version 2.1.0
  */
 
 import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { toast } from 'sonner';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+
+// Re-export SAUDI_CONTEXT for backward compatibility
+export { SAUDI_CONTEXT };
 
 // Edge function mapping per step - specialized functions for most steps
 const EDGE_FUNCTION_MAP = {
@@ -30,43 +34,6 @@ const EDGE_FUNCTION_MAP = {
   16: 'strategy-campaign-generator',  // Communication
   17: 'invoke-llm',                   // Change Management
   18: 'strategy-validation-ai'        // Review & Submit
-};
-
-// Comprehensive Saudi context for prompts - aligned with saudiContext.ts exports
-export const SAUDI_CONTEXT = {
-  FULL: `MoMAH (Ministry of Municipalities and Housing) oversees:
-- 13 administrative regions, 285+ municipalities, 17 Amanats
-- Municipal services: waste, lighting, parks, markets, permits, inspections
-- Housing programs: Sakani, Wafi, Ejar, Mulkiya, REDF, NHC
-- Vision 2030: Quality of Life, Housing (70% ownership), NTP, Thriving Cities
-- Innovation: AI/ML, IoT, Digital Twins, Smart Cities, GovTech, PropTech, ConTech
-- Partners: KACST, SDAIA, MCIT, KAUST, KFUPM, Monsha'at
-- Systems: Balady Platform, Sakani, ANSA, Baladiya, Mostadam`,
-
-  COMPACT: `MoMAH - Saudi Ministry of Municipalities & Housing. Vision 2030 aligned.
-13 regions, 285+ municipalities. Programs: Sakani, Wafi, Ejar.
-Innovation: KACST, SDAIA, MCIT. Platforms: Balady, Sakani, Mostadam.`,
-
-  INNOVATION: `CRITICAL: Include innovation/R&D focus in all outputs.
-- Technologies: AI/ML, IoT, Digital Twins, Smart Cities, GovTech, PropTech, ConTech
-- Innovation Partners: KACST, SDAIA, KAUST, KFUPM, Monsha'at, Badir Program
-- PropTech: BIM, modular construction, 3D printing, smart homes
-- Metrics: Pilot success rates, technology adoption %, R&D investment %
-- Green Building: Mostadam certification, energy efficiency, sustainability`,
-
-  HOUSING: `Housing Mandate (Critical Priority):
-- Goal: 70% homeownership by 2030 (from 47% baseline)
-- Programs: Sakani (subsidies), Wafi (off-plan), Ejar (rental), Mulkiya (ownership)
-- Finance: REDF mortgages, SRC refinancing
-- Stakeholders: NHC, REDF, SRC, developers, PropTech startups
-- Innovation: BIM, modular, 3D printing, smart homes, Mostadam green buildings`,
-
-  MUNICIPAL: `Municipal Operations:
-- Services: Waste, lighting, parks, markets, drainage, permits, inspections
-- Platforms: Balady (citizen services), unified CRM
-- Governance: Amanat (17 major cities), municipalities (285+), districts
-- Compliance: Saudi Building Code, fire safety, accessibility standards
-- Investment: PPP, concessions, asset commercialization`
 };
 
 // Step to prompt key mapping
