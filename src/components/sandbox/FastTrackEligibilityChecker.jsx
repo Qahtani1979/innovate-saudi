@@ -7,6 +7,8 @@ import { Zap, Sparkles, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getFastTrackEligibilityPrompt, fastTrackEligibilitySchema } from '@/lib/ai/prompts/sandbox';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function FastTrackEligibilityChecker({ application }) {
   const { language, t } = useLanguage();
@@ -15,45 +17,9 @@ export default function FastTrackEligibilityChecker({ application }) {
 
   const checkEligibility = async () => {
     const { success, data } = await invokeAI({
-      prompt: `Determine fast-track eligibility for sandbox project:
-
-PROJECT: ${application.project_name}
-TECHNOLOGY: ${application.technology_description}
-RISK PROFILE: ${application.risk_assessment || 'Not specified'}
-SCOPE: ${application.project_scope}
-REGULATORY NEEDS: ${application.regulatory_exemptions?.length || 0} exemptions
-
-Fast-track criteria:
-1. Proven technology (TRL 7+)
-2. Limited geographic scope
-3. Low-risk profile
-4. <3 regulatory exemptions needed
-5. Standard safety protocols apply
-
-Assess:
-- Eligible for fast-track (yes/no)
-- Criteria met (which ones)
-- Estimated approval time (hours)
-- Recommendations if not eligible`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          eligible: { type: "boolean" },
-          criteria_met: {
-            type: "object",
-            properties: {
-              proven_technology: { type: "boolean" },
-              limited_scope: { type: "boolean" },
-              low_risk: { type: "boolean" },
-              minimal_exemptions: { type: "boolean" },
-              standard_safety: { type: "boolean" }
-            }
-          },
-          approval_hours: { type: "number" },
-          confidence: { type: "number" },
-          recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: getFastTrackEligibilityPrompt({ application }),
+      system_prompt: getSystemPrompt('COMPACT', true),
+      response_json_schema: fastTrackEligibilitySchema
     });
 
     if (success) {

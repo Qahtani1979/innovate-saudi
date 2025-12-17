@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { getAutoRiskRouterPrompt, autoRiskRouterSchema } from '@/lib/ai/prompts/sandbox';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AutoRiskRouter({ entity, entityType }) {
   const { t } = useLanguage();
@@ -18,39 +20,9 @@ export default function AutoRiskRouter({ entity, entityType }) {
 
   const assessRisk = async () => {
     const result = await invokeAI({
-      prompt: `Assess if this ${entityType} requires sandbox testing before full deployment:
-
-Title: ${entity.title_en || entity.name_en}
-Description: ${entity.description_en || entity.abstract_en}
-Sector: ${entity.sector || entity.sectors?.join(', ')}
-${entityType === 'challenge' ? `Severity: ${entity.severity_score}` : ''}
-${entityType === 'pilot' ? `Budget: ${entity.budget}, TRL: ${entity.trl_start}` : ''}
-${entityType === 'solution' ? `Maturity: ${entity.maturity_level}, TRL: ${entity.trl}` : ''}
-
-Evaluate:
-1. Regulatory risk level (0-100)
-2. Safety concerns
-3. Public impact risk
-4. Technical complexity risk
-5. Recommendation: sandbox_required, sandbox_recommended, or direct_pilot
-
-Provide sandbox recommendation if needed.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          regulatory_risk: { type: 'number' },
-          safety_risk: { type: 'number' },
-          public_impact_risk: { type: 'number' },
-          technical_risk: { type: 'number' },
-          overall_risk: { type: 'number' },
-          recommendation: { type: 'string' },
-          reasoning: { type: 'string' },
-          recommended_sandboxes: { 
-            type: 'array', 
-            items: { type: 'string' } 
-          }
-        }
-      }
+      prompt: getAutoRiskRouterPrompt({ entity, entityType }),
+      system_prompt: getSystemPrompt('COMPACT', true),
+      response_json_schema: autoRiskRouterSchema
     });
 
     if (result.success) {
@@ -60,7 +32,6 @@ Provide sandbox recommendation if needed.`,
 
   const routeToSandbox = async () => {
     try {
-      // Create sandbox application automatically
       const { error } = await supabase.from('sandbox_applications').insert({
         applicant_email: user?.email,
         source_entity_type: entityType,
