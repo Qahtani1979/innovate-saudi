@@ -101,113 +101,12 @@ const getProgressColor = (pct) => {
   return 'bg-red-500';
 };
 
-// Dashboard Header Component
-function DashboardHeader({ changeManagement, language, t }) {
-  const trainingCount = changeManagement?.training_plan?.length || 0;
-  const stakeholderImpacts = changeManagement?.stakeholder_impacts || [];
-  const changeActivities = changeManagement?.change_activities || [];
-  const resistanceStrategies = changeManagement?.resistance_strategies || [];
-
-  // Calculate overall completeness
-  const completenessScore = useMemo(() => {
-    let score = 0;
-    let total = 0;
-    
-    // Core assessments (40%)
-    if (changeManagement?.readiness_assessment_en?.trim()) score += 15;
-    if (changeManagement?.readiness_assessment_ar?.trim()) score += 5;
-    if (changeManagement?.change_approach_en?.trim()) score += 15;
-    if (changeManagement?.change_approach_ar?.trim()) score += 5;
-    total += 40;
-    
-    // Training (20%)
-    if (trainingCount >= 3) score += 20;
-    else if (trainingCount >= 1) score += 10;
-    total += 20;
-    
-    // Stakeholder impacts (15%)
-    if (stakeholderImpacts.length >= 3) score += 15;
-    else if (stakeholderImpacts.length >= 1) score += 8;
-    total += 15;
-    
-    // Activities (15%)
-    if (changeActivities.length >= 5) score += 15;
-    else if (changeActivities.length >= 2) score += 8;
-    total += 15;
-    
-    // Resistance strategies (10%)
-    if (resistanceStrategies.length >= 2) score += 10;
-    else if (resistanceStrategies.length >= 1) score += 5;
-    total += 10;
-    
-    return Math.round((score / total) * 100);
-  }, [changeManagement, trainingCount, stakeholderImpacts.length, changeActivities.length, resistanceStrategies.length]);
-
-  // Calculate ADKAR coverage
-  const adkarCoverage = useMemo(() => {
-    const coverage = {};
-    CHANGE_PHASES.forEach(phase => {
-      coverage[phase.value] = changeActivities.filter(a => a.phase === phase.value).length;
-    });
-    return coverage;
-  }, [changeActivities]);
-
-  const adkarCoveredCount = Object.values(adkarCoverage).filter(c => c > 0).length;
-
-  return (
-    <Card className="bg-gradient-to-br from-background to-muted/30 border-primary/20">
-      <CardContent className="pt-4">
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
-          {/* Overall Score */}
-          <div className="col-span-2 flex flex-col items-center justify-center p-4 rounded-lg bg-background border">
-            <div className={`text-3xl font-bold ${getCompletenessColor(completenessScore)}`}>
-              {completenessScore}%
-            </div>
-            <Progress value={completenessScore} className="w-full h-2 mt-2" />
-            <span className="text-xs text-muted-foreground mt-1">
-              {t({ en: 'Change Readiness', ar: 'جاهزية التغيير' })}
-            </span>
-          </div>
-          
-          {/* Training Programs */}
-          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-            <GraduationCap className="w-5 h-5 text-blue-500 mb-1" />
-            <span className="text-xl font-bold">{trainingCount}</span>
-            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Training', ar: 'التدريب' })}</span>
-          </div>
-          
-          {/* Stakeholder Impacts */}
-          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30">
-            <Users className="w-5 h-5 text-purple-500 mb-1" />
-            <span className="text-xl font-bold">{stakeholderImpacts.length}</span>
-            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Impacts', ar: 'التأثيرات' })}</span>
-          </div>
-          
-          {/* Change Activities */}
-          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
-            <RefreshCw className="w-5 h-5 text-green-500 mb-1" />
-            <span className="text-xl font-bold">{changeActivities.length}</span>
-            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Activities', ar: 'الأنشطة' })}</span>
-          </div>
-          
-          {/* Resistance Strategies */}
-          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30">
-            <Shield className="w-5 h-5 text-orange-500 mb-1" />
-            <span className="text-xl font-bold">{resistanceStrategies.length}</span>
-            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Strategies', ar: 'استراتيجيات' })}</span>
-          </div>
-          
-          {/* ADKAR Coverage */}
-          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-teal-50 dark:bg-teal-950/30">
-            <Layers className="w-5 h-5 text-teal-500 mb-1" />
-            <span className="text-xl font-bold">{adkarCoveredCount}/5</span>
-            <span className="text-xs text-muted-foreground text-center">{t({ en: 'ADKAR', ar: 'ADKAR' })}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+// Helper functions for completeness tracking
+const getFieldCompleteness = (obj, fields) => {
+  if (!obj) return 0;
+  const filled = fields.filter(f => obj[f]?.toString().trim()).length;
+  return Math.round((filled / fields.length) * 100);
+};
 
 // ADKAR Phase Card Component
 function PhaseCard({ phase, activities, onAddActivity, onRemoveActivity, onUpdateActivity, language, t, isReadOnly }) {
@@ -1185,60 +1084,60 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
     return issues;
   }, [changeManagement, changeActivities]);
 
+  // Calculate stats for dashboard
+  const adkarCoveredCount = CHANGE_PHASES.filter(p => changeActivities.some(a => a.phase === p.value)).length;
+  const completenessScore = useMemo(() => {
+    let score = 0;
+    if (changeManagement?.readiness_assessment_en?.trim()) score += 20;
+    if (changeManagement?.change_approach_en?.trim()) score += 20;
+    if (trainingPlan.length >= 3) score += 20;
+    else if (trainingPlan.length >= 1) score += 10;
+    if (stakeholderImpacts.length >= 3) score += 15;
+    else if (stakeholderImpacts.length >= 1) score += 8;
+    if (changeActivities.length >= 5) score += 15;
+    else if (changeActivities.length >= 2) score += 8;
+    if (resistanceStrategies.length >= 2) score += 10;
+    else if (resistanceStrategies.length >= 1) score += 5;
+    return score;
+  }, [changeManagement, trainingPlan.length, stakeholderImpacts.length, changeActivities.length, resistanceStrategies.length]);
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <RefreshCw className="w-6 h-6 text-primary" />
-            {t({ en: 'Change Management', ar: 'إدارة التغيير' })}
-            {isReadOnly && <Badge variant="secondary">{t({ en: 'View Only', ar: 'عرض فقط' })}</Badge>}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t({ en: 'Plan your change strategy using the ADKAR model for sustainable transformation', ar: 'خطط لاستراتيجية التغيير باستخدام نموذج ADKAR للتحول المستدام' })}
-          </p>
+      {/* Dashboard Header */}
+      <StepDashboardHeader
+        score={completenessScore}
+        title={t({ en: 'Change Management', ar: 'إدارة التغيير' })}
+        subtitle={t({ en: 'Plan your change strategy using the ADKAR model', ar: 'خطط لاستراتيجية التغيير باستخدام نموذج ADKAR' })}
+        language={language}
+        stats={[
+          { icon: GraduationCap, value: trainingPlan.length, label: t({ en: 'Training', ar: 'التدريب' }) },
+          { icon: Users, value: stakeholderImpacts.length, label: t({ en: 'Impacts', ar: 'التأثيرات' }) },
+          { icon: RefreshCw, value: changeActivities.length, label: t({ en: 'Activities', ar: 'الأنشطة' }) },
+          { icon: Shield, value: resistanceStrategies.length, label: t({ en: 'Strategies', ar: 'استراتيجيات' }) },
+          { icon: Layers, value: `${adkarCoveredCount}/5`, label: t({ en: 'ADKAR', ar: 'ADKAR' }) },
+        ]}
+      />
+
+      {/* View Mode & AI Button */}
+      <div className="flex justify-between items-center">
+        <div className="flex border rounded-lg overflow-hidden">
+          <Button variant={viewMode === 'cards' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('cards')} className="rounded-none">
+            <List className="w-4 h-4" />
+          </Button>
+          <Button variant={viewMode === 'phases' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('phases')} className="rounded-none">
+            <GitBranch className="w-4 h-4" />
+          </Button>
+          <Button variant={viewMode === 'summary' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('summary')} className="rounded-none">
+            <PieChart className="w-4 h-4" />
+          </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex border rounded-lg overflow-hidden">
-            <Button 
-              variant={viewMode === 'cards' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              onClick={() => setViewMode('cards')}
-              className="rounded-none"
-            >
-              <List className="w-4 h-4" />
-            </Button>
-            <Button 
-              variant={viewMode === 'phases' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              onClick={() => setViewMode('phases')}
-              className="rounded-none"
-            >
-              <GitBranch className="w-4 h-4" />
-            </Button>
-            <Button 
-              variant={viewMode === 'summary' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              onClick={() => setViewMode('summary')}
-              className="rounded-none"
-            >
-              <PieChart className="w-4 h-4" />
-            </Button>
-          </div>
-          {!isReadOnly && (
-            <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
-            </Button>
-          )}
-        </div>
+        {!isReadOnly && (
+          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
+            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
+          </Button>
+        )}
       </div>
-
-      {/* Dashboard */}
-      <DashboardHeader changeManagement={changeManagement} language={language} t={t} />
-
-      {/* Alerts */}
       {hasIssues.length > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />

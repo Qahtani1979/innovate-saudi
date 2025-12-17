@@ -113,94 +113,7 @@ function calculateChannelCompleteness(channel) {
   ];
   return Math.round((fields.filter(f => f.filled).length / fields.length) * 100);
 }
-
-// Dashboard Header Component
-function DashboardHeader({ communicationPlan, t, language }) {
-  const { score, checks } = calculateCompleteness(communicationPlan);
-  const targetAudiences = communicationPlan.target_audiences || [];
-  const keyMessages = communicationPlan.key_messages || [];
-  const internalChannels = communicationPlan.internal_channels || [];
-  const externalChannels = communicationPlan.external_channels || [];
-  const totalChannels = internalChannels.length + externalChannels.length;
-  
-  const internalAudiences = targetAudiences.filter(a => AUDIENCE_TYPES.find(at => at.id === a)?.category === 'internal').length;
-  const externalAudiences = targetAudiences.filter(a => AUDIENCE_TYPES.find(at => at.id === a)?.category === 'external').length;
-  
-  const getScoreColor = (s) => {
-    if (s >= 80) return 'text-emerald-600';
-    if (s >= 50) return 'text-amber-600';
-    return 'text-red-600';
-  };
-
-  const stats = [
-    { label: { en: 'Audiences', ar: 'الجمهور' }, value: targetAudiences.length, sub: `${internalAudiences}/${externalAudiences}`, icon: Users, color: 'text-blue-500 bg-blue-500/10' },
-    { label: { en: 'Messages', ar: 'الرسائل' }, value: keyMessages.length, icon: MessageSquare, color: 'text-purple-500 bg-purple-500/10' },
-    { label: { en: 'Internal', ar: 'داخلي' }, value: internalChannels.length, icon: Mail, color: 'text-green-500 bg-green-500/10' },
-    { label: { en: 'External', ar: 'خارجي' }, value: externalChannels.length, icon: Globe, color: 'text-orange-500 bg-orange-500/10' },
-    { label: { en: 'Total Channels', ar: 'إجمالي القنوات' }, value: totalChannels, icon: Radio, color: 'text-cyan-500 bg-cyan-500/10' }
-  ];
-
-  return (
-    <Card className="bg-gradient-to-br from-background via-background to-primary/5 border-2">
-      <CardContent className="pt-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Completeness Score */}
-          <div className="flex items-center gap-4 min-w-[200px]">
-            <div className="relative">
-              <svg className="w-20 h-20 transform -rotate-90">
-                <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" className="text-muted/20" />
-                <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" 
-                  className={getScoreColor(score)}
-                  strokeDasharray={`${(score / 100) * 220} 220`}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-lg font-bold ${getScoreColor(score)}`}>{score}%</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-medium">{t({ en: 'Plan Completeness', ar: 'اكتمال الخطة' })}</p>
-              <p className="text-xs text-muted-foreground">
-                {checks.filter(c => c.complete).length}/{checks.length} {t({ en: 'sections complete', ar: 'أقسام مكتملة' })}
-              </p>
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {stats.map((stat, idx) => {
-              const IconComponent = stat.icon;
-              return (
-                <div key={idx} className="text-center p-3 rounded-lg bg-background border">
-                  <div className={`w-8 h-8 rounded-full ${stat.color} flex items-center justify-center mx-auto mb-2`}>
-                    <IconComponent className="w-4 h-4" />
-                  </div>
-                  <p className="text-xl font-bold">{stat.value}</p>
-                  {stat.sub && <p className="text-[10px] text-muted-foreground">Int/Ext: {stat.sub}</p>}
-                  <p className="text-xs text-muted-foreground">{stat.label[language]}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Completeness Badges */}
-        <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
-          {checks.map((check, idx) => (
-            <Badge key={idx} variant={check.complete ? 'default' : 'outline'} className={check.complete ? 'bg-emerald-500' : ''}>
-              {check.complete ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <AlertCircle className="w-3 h-3 mr-1" />}
-              {t({ 
-                en: check.name.charAt(0).toUpperCase() + check.name.slice(1), 
-                ar: { narrative: 'السرد', audiences: 'الجمهور', messages: 'الرسائل', internal: 'داخلي', external: 'خارجي' }[check.name] 
-              })}
-            </Badge>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+// Helper function for calculating completeness (used in SummaryView)
 
 // Audience Card Component
 function AudienceCard({ audience, isSelected, onToggle, language, t, isReadOnly }) {
@@ -947,30 +860,38 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
 
   const getFieldClass = (value) => value ? 'border-emerald-500/50 bg-emerald-500/5' : '';
 
+  // Calculate stats for dashboard
+  const { score: completenessScore } = calculateCompleteness(communicationPlan);
+  const totalChannels = internalChannels.length + externalChannels.length;
+  const internalAudiencesCount = targetAudiences.filter(a => AUDIENCE_TYPES.find(at => at.id === a)?.category === 'internal').length;
+  const externalAudiencesCount = targetAudiences.filter(a => AUDIENCE_TYPES.find(at => at.id === a)?.category === 'external').length;
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Megaphone className="w-6 h-6 text-primary" />
-            {t({ en: 'Communication Plan', ar: 'خطة التواصل' })}
-            {isReadOnly && <Badge variant="secondary">{t({ en: 'View Only', ar: 'عرض فقط' })}</Badge>}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t({ en: 'Define your communication strategy, target audiences, and channels', ar: 'حدد استراتيجية التواصل والجمهور المستهدف والقنوات' })}
-          </p>
-        </div>
-        {!isReadOnly && (
+      {/* Dashboard Header */}
+      <StepDashboardHeader
+        score={completenessScore}
+        title={t({ en: 'Communication Plan', ar: 'خطة التواصل' })}
+        subtitle={t({ en: 'Define your communication strategy, audiences, and channels', ar: 'حدد استراتيجية التواصل والجمهور والقنوات' })}
+        language={language}
+        stats={[
+          { icon: Users, value: targetAudiences.length, label: t({ en: 'Audiences', ar: 'الجمهور' }), subValue: `${internalAudiencesCount}/${externalAudiencesCount}` },
+          { icon: MessageSquare, value: keyMessages.length, label: t({ en: 'Messages', ar: 'الرسائل' }) },
+          { icon: Mail, value: internalChannels.length, label: t({ en: 'Internal', ar: 'داخلي' }) },
+          { icon: Globe, value: externalChannels.length, label: t({ en: 'External', ar: 'خارجي' }) },
+          { icon: Radio, value: totalChannels, label: t({ en: 'Channels', ar: 'القنوات' }) },
+        ]}
+      />
+
+      {/* AI Button */}
+      {!isReadOnly && (
+        <div className="flex justify-end">
           <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
             {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
           </Button>
-        )}
-      </div>
-
-      {/* Dashboard */}
-      <DashboardHeader communicationPlan={communicationPlan} t={t} language={language} />
+        </div>
+      )}
 
       {/* Alerts */}
       {alerts.length > 0 && !isReadOnly && (
