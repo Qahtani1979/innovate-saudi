@@ -18,7 +18,8 @@ import { useLanguage } from '../../../LanguageContext';
 import { 
   StepDashboardHeader, 
   QualityMetrics, 
-  RecommendationsCard 
+  RecommendationsCard,
+  MainAIGeneratorCard 
 } from '../shared';
 
 // Icon options for pillars
@@ -205,25 +206,13 @@ export default function Step2Vision({ data, onChange, onGenerateAI, isGenerating
 
       {/* AI Generation Card */}
       {!isReadOnly && (
-        <Card className="border-primary/20">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-semibold flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  {t({ en: 'AI-Powered Generation', ar: 'الإنشاء بالذكاء الاصطناعي' })}
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  {t({ en: 'Generate core values and strategic pillars based on your plan context', ar: 'إنشاء القيم الجوهرية والركائز الاستراتيجية بناءً على سياق خطتك' })}
-                </p>
-              </div>
-              <Button onClick={onGenerateAI} disabled={isGenerating || !data.name_en}>
-                {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                {t({ en: 'Generate', ar: 'إنشاء' })}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Values & Pillars', ar: 'القيم والركائز بالذكاء الاصطناعي' }}
+          description={{ en: 'Generate core values and strategic pillars based on your plan context', ar: 'إنشاء القيم الجوهرية والركائز الاستراتيجية بناءً على سياق خطتك' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          disabled={!data.name_en}
+        />
       )}
 
       {/* Tabs */}

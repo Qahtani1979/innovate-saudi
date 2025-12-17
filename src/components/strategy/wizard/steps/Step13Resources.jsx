@@ -20,7 +20,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 // HR skill categories
 const HR_CATEGORIES = [
@@ -586,17 +586,15 @@ export default function Step13Resources({
         ]}
       />
       
-      {/* AI Generate Button */}
+      {/* AI Generation Card */}
       {!isReadOnly && (
-        <div className="flex justify-end">
-          <AIActionButton
-            type="suggest"
-            label={t({ en: 'Generate Resources', ar: 'إنشاء الموارد' })}
-            onAction={onGenerateAI}
-            isLoading={isGenerating}
-            variant="outline"
-          />
-        </div>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Resource Planning', ar: 'تخطيط الموارد بالذكاء الاصطناعي' }}
+          description={{ en: 'Generate HR, technology, and infrastructure resource requirements', ar: 'إنشاء متطلبات الموارد البشرية والتقنية والبنية التحتية' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          generateLabel={{ en: 'Generate Resources', ar: 'إنشاء الموارد' }}
+        />
       )}
 
       {/* Alerts */}

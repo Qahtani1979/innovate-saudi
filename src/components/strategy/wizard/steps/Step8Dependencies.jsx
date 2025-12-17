@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from "@/lib/utils";
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 export default function Step8Dependencies({ data, onChange, onGenerateAI, isGenerating, isReadOnly = false }) {
   const { language, t, isRTL } = useLanguage();
@@ -263,21 +263,16 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
         ]}
       />
 
-      {/* Header with AI Button */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {t({ en: 'Map dependencies, identify constraints, and document key assumptions.', ar: 'تحديد التبعيات والقيود وتوثيق الافتراضات الرئيسية.' })}
-        </p>
-        {!isReadOnly && (
-          <AIActionButton
-            type="analyze"
-            label={t({ en: 'AI Analyze', ar: 'تحليل ذكي' })}
-            onAction={onGenerateAI}
-            isLoading={isGenerating}
-            variant="outline"
-          />
-        )}
-      </div>
+      {/* AI Generation Card */}
+      {!isReadOnly && (
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Dependency Analysis', ar: 'تحليل التبعيات بالذكاء الاصطناعي' }}
+          description={{ en: 'Map dependencies, identify constraints, and document key assumptions', ar: 'تحديد التبعيات والقيود وتوثيق الافتراضات الرئيسية' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          generateLabel={{ en: 'AI Analyze', ar: 'تحليل ذكي' }}
+        />
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
