@@ -557,48 +557,18 @@ export default function Step15Governance({
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-yellow-500" />
-                {t({ en: 'Recommendations', ar: 'التوصيات' })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                {!stats.hasSteeringCommittee && (
-                  <li className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Add a Steering Committee for strategic oversight and major decisions', ar: 'أضف لجنة توجيهية للرقابة الاستراتيجية والقرارات الرئيسية' })}
-                  </li>
-                )}
-                {!stats.hasRiskCommittee && (
-                  <li className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Consider a Risk & Compliance committee for risk management', ar: 'فكر في لجنة للمخاطر والامتثال لإدارة المخاطر' })}
-                  </li>
-                )}
-                {stats.escalationLevels < 3 && (
-                  <li className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Define at least 3 escalation levels for issue resolution', ar: 'حدد 3 مستويات تصعيد على الأقل لحل المشاكل' })}
-                  </li>
-                )}
-                {stats.totalDashboards === 0 && (
-                  <li className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Add monitoring dashboards for performance tracking', ar: 'أضف لوحات مراقبة لتتبع الأداء' })}
-                  </li>
-                )}
-                {completenessScore >= 80 && (
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Governance structure is well-defined. Review periodically.', ar: 'هيكل الحوكمة محدد جيداً. راجعه دورياً.' })}
-                  </li>
-                )}
-              </ul>
-            </CardContent>
-          </Card>
+          <RecommendationsCard
+            className="md:col-span-2"
+            title={t({ en: 'Recommendations', ar: 'التوصيات' })}
+            recommendations={[
+              ...(!stats.hasSteeringCommittee ? [{ type: 'warning', text: { en: 'Add a Steering Committee for strategic oversight and major decisions', ar: 'أضف لجنة توجيهية للرقابة الاستراتيجية والقرارات الرئيسية' } }] : []),
+              ...(!stats.hasRiskCommittee ? [{ type: 'warning', text: { en: 'Consider a Risk & Compliance committee for risk management', ar: 'فكر في لجنة للمخاطر والامتثال لإدارة المخاطر' } }] : []),
+              ...(stats.escalationLevels < 3 ? [{ type: 'warning', text: { en: 'Define at least 3 escalation levels for issue resolution', ar: 'حدد 3 مستويات تصعيد على الأقل لحل المشاكل' } }] : []),
+              ...(stats.totalDashboards === 0 ? [{ type: 'warning', text: { en: 'Add monitoring dashboards for performance tracking', ar: 'أضف لوحات مراقبة لتتبع الأداء' } }] : []),
+              ...(completenessScore >= 80 ? [{ type: 'success', text: { en: 'Governance structure is well-defined. Review periodically.', ar: 'هيكل الحوكمة محدد جيداً. راجعه دورياً.' } }] : []),
+            ]}
+            language={language}
+          />
         </div>
       )}
 
