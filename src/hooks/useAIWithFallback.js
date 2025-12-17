@@ -2,12 +2,16 @@
 /**
  * Hook for AI calls with graceful degradation
  * Handles rate limits, failures, and provides fallback behavior
- * @version 2.1.3
+ * @version 2.1.4
  */
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+// Ensure we're using the correct React instance
+const useStateHook = React.useState || useState;
+const useCallbackHook = React.useCallback || useCallback;
 
 export const AI_STATUS = {
   IDLE: 'idle',
@@ -41,11 +45,12 @@ export function useAIWithFallback(options = {}) {
     onError = null
   } = options;
 
-  const [status, setStatus] = useState(AI_STATUS.IDLE);
-  const [error, setError] = useState(null);
-  const [rateLimitInfo, setRateLimitInfo] = useState(null);
+  // Use React's hooks directly from the React object to avoid bundler issues
+  const [status, setStatus] = useStateHook(AI_STATUS.IDLE);
+  const [error, setError] = useStateHook(null);
+  const [rateLimitInfo, setRateLimitInfo] = useStateHook(null);
 
-  const invokeAI = useCallback(async ({ prompt, response_json_schema, system_prompt }) => {
+  const invokeAI = useCallbackHook(async ({ prompt, response_json_schema, system_prompt }) => {
     setStatus(AI_STATUS.LOADING);
     setError(null);
 
@@ -119,7 +124,7 @@ export function useAIWithFallback(options = {}) {
     }
   }, [showToasts, fallbackData, onRateLimited, onError]);
 
-  const reset = useCallback(() => {
+  const reset = useCallbackHook(() => {
     setStatus(AI_STATUS.IDLE);
     setError(null);
     setRateLimitInfo(null);

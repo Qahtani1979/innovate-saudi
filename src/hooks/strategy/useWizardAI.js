@@ -1,14 +1,19 @@
+/* @refresh reset */
 /**
  * Centralized AI Router for Strategy Wizard
  * Routes AI generation requests to appropriate edge functions based on step
  * Uses comprehensive Saudi/MoMAH context from saudiContext.ts
- * @version 2.0.0
+ * @version 2.0.1
  */
 
-import { useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { toast } from 'sonner';
+
+// Ensure we're using the correct React instance
+const useStateHook = React.useState || useState;
+const useCallbackHook = React.useCallback || useCallback;
 
 // Edge function mapping per step - specialized functions for most steps
 const EDGE_FUNCTION_MAP = {
@@ -117,13 +122,13 @@ export function getPromptKeyForStep(step) {
  * Hook for centralized wizard AI generation
  */
 export function useWizardAI(planId = null) {
-  const [stepStatus, setStepStatus] = useState({});
+  const [stepStatus, setStepStatus] = useStateHook({});
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
   /**
    * Generate AI content for a specific step using the appropriate edge function
    */
-  const generateForStep = useCallback(async (step, context, options = {}) => {
+  const generateForStep = useCallbackHook(async (step, context, options = {}) => {
     const edgeFunction = EDGE_FUNCTION_MAP[step];
     const useSpecialized = edgeFunction && edgeFunction !== 'invoke-llm';
 
@@ -172,21 +177,21 @@ export function useWizardAI(planId = null) {
   /**
    * Get status for a specific step
    */
-  const getStepStatus = useCallback((step) => {
+  const getStepStatus = useCallbackHook((step) => {
     return stepStatus[step] || 'idle';
   }, [stepStatus]);
 
   /**
    * Check if step is currently generating
    */
-  const isStepGenerating = useCallback((step) => {
+  const isStepGenerating = useCallbackHook((step) => {
     return stepStatus[step] === 'loading';
   }, [stepStatus]);
 
   /**
    * Reset status for a step
    */
-  const resetStepStatus = useCallback((step) => {
+  const resetStepStatus = useCallbackHook((step) => {
     setStepStatus(prev => {
       const updated = { ...prev };
       delete updated[step];
