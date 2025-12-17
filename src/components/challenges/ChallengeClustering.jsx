@@ -11,6 +11,12 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildClusteringPrompt, 
+  clusteringSchema, 
+  CLUSTERING_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/challenges';
 
 export default function ChallengeClustering() {
   const { language, isRTL, t } = useLanguage();
@@ -30,35 +36,9 @@ export default function ChallengeClustering() {
     const activeChallenges = challenges.filter(c => c.status !== 'archived' && c.status !== 'resolved');
 
     const response = await invokeAI({
-      prompt: `Analyze these ${activeChallenges.length} challenges and group them into meaningful clusters:
-
-${activeChallenges.map((c, i) => `${i+1}. ${c.title_en || c.title_ar} - ${c.sector} - ${c.municipality_id}`).join('\n')}
-
-Identify:
-1. 5-10 clusters based on semantic similarity (e.g., "Traffic Congestion", "Waste Management", etc.)
-2. For each cluster with 5+ challenges, suggest creating a "mega-challenge"
-3. Auto-generate tags for each cluster
-
-Return clusters with challenge IDs.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          clusters: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                theme: { type: "string" },
-                challenge_ids: { type: "array", items: { type: "string" } },
-                suggested_tags: { type: "array", items: { type: "string" } },
-                mega_challenge_recommended: { type: "boolean" },
-                mega_challenge_description: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      systemPrompt: getSystemPrompt(CLUSTERING_SYSTEM_PROMPT),
+      prompt: buildClusteringPrompt(activeChallenges),
+      response_json_schema: clusteringSchema
     });
 
     if (response.success && response.data?.clusters) {

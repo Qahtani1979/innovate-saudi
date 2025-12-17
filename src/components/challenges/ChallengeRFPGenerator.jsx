@@ -3,12 +3,17 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Sparkles, Loader2, Download } from 'lucide-react';
+import { FileText, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildRFPGeneratorPrompt, 
+  rfpGeneratorSchema, 
+  RFP_GENERATOR_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/challenges';
 
 export default function ChallengeRFPGenerator({ challenge, onComplete }) {
   const { invokeAI, status, isLoading: isGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
@@ -19,54 +24,9 @@ export default function ChallengeRFPGenerator({ challenge, onComplete }) {
     if (!isAvailable) return;
     
     const aiResponse = await invokeAI({
-      prompt: `Generate a professional RFP (Request for Proposal) for this municipal challenge:
-
-Challenge: ${challenge.title_en}
-Description: ${challenge.description_en}
-Sector: ${challenge.sector}
-Municipality: ${challenge.municipality_id}
-Impact: ${challenge.impact_score}/100
-Budget Estimate: ${challenge.budget_estimate || 'TBD'}
-
-Additional Requirements: ${customRequirements || 'None'}
-
-Generate a structured RFP including:
-1. Executive Summary
-2. Challenge Background & Context
-3. Scope of Work
-4. Technical Requirements
-5. Evaluation Criteria (with weights)
-6. Submission Requirements
-7. Timeline & Milestones
-8. Budget Guidelines
-9. Terms & Conditions
-
-Provide bilingual content (English and Arabic) where appropriate.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          rfp_code: { type: "string" },
-          executive_summary_en: { type: "string" },
-          executive_summary_ar: { type: "string" },
-          scope_of_work: { type: "string" },
-          technical_requirements: { type: "array", items: { type: "string" } },
-          evaluation_criteria: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                criterion: { type: "string" },
-                weight: { type: "number" },
-                description: { type: "string" }
-              }
-            }
-          },
-          submission_requirements: { type: "array", items: { type: "string" } },
-          timeline_weeks: { type: "number" },
-          budget_range_min: { type: "number" },
-          budget_range_max: { type: "number" }
-        }
-      }
+      systemPrompt: getSystemPrompt(RFP_GENERATOR_SYSTEM_PROMPT),
+      prompt: buildRFPGeneratorPrompt(challenge, customRequirements),
+      response_json_schema: rfpGeneratorSchema
     });
 
     if (aiResponse.success && aiResponse.data) {

@@ -1,6 +1,6 @@
 /**
  * Challenges Module AI Prompts Index
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 // Challenge Intake
@@ -22,6 +22,27 @@ export {
 
 // Treatment Plan
 export { getTreatmentPlanPrompt, treatmentPlanSchema } from './treatmentPlan';
+
+// RFP Generator
+export { 
+  buildRFPGeneratorPrompt, 
+  rfpGeneratorSchema, 
+  RFP_GENERATOR_SYSTEM_PROMPT 
+} from './rfpGenerator';
+
+// Challenge Clustering
+export { 
+  buildClusteringPrompt, 
+  clusteringSchema, 
+  CLUSTERING_SYSTEM_PROMPT 
+} from './clustering';
+
+// Cross-City Learning
+export { 
+  buildCrossCityLearningPrompt, 
+  crossCityLearningSchema, 
+  CROSS_CITY_LEARNING_SYSTEM_PROMPT 
+} from './crossCityLearning';
 
 /**
  * Challenges module prompt configuration
@@ -51,6 +72,21 @@ export const CHALLENGES_PROMPTS = {
     promptFn: 'getTreatmentPlanPrompt',
     schema: 'treatmentPlanSchema',
     description: 'Generates comprehensive treatment plans'
+  },
+  rfpGenerator: {
+    promptFn: 'buildRFPGeneratorPrompt',
+    schema: 'rfpGeneratorSchema',
+    description: 'Generates professional RFPs for challenges'
+  },
+  clustering: {
+    promptFn: 'buildClusteringPrompt',
+    schema: 'clusteringSchema',
+    description: 'Groups similar challenges into clusters'
+  },
+  crossCityLearning: {
+    promptFn: 'buildCrossCityLearningPrompt',
+    schema: 'crossCityLearningSchema',
+    description: 'Finds similar resolved challenges from other cities'
   }
 };
 
