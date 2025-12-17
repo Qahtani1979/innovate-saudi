@@ -2,123 +2,180 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
+// Helper function to get color classes based on score
+const getScoreConfig = (score) => {
+  if (score >= 90) return { 
+    color: 'bg-green-500', 
+    textColor: 'text-green-700', 
+    bgLight: 'bg-green-50 dark:bg-green-950/30',
+    borderColor: 'border-green-500/30',
+    label: { en: 'Excellent', ar: 'ممتاز' }
+  };
+  if (score >= 75) return { 
+    color: 'bg-blue-500', 
+    textColor: 'text-blue-700', 
+    bgLight: 'bg-blue-50 dark:bg-blue-950/30',
+    borderColor: 'border-blue-500/30',
+    label: { en: 'Good', ar: 'جيد' }
+  };
+  if (score >= 60) return { 
+    color: 'bg-yellow-500', 
+    textColor: 'text-yellow-700', 
+    bgLight: 'bg-yellow-50 dark:bg-yellow-950/30',
+    borderColor: 'border-yellow-500/30',
+    label: { en: 'Adequate', ar: 'كافي' }
+  };
+  if (score >= 40) return { 
+    color: 'bg-orange-500', 
+    textColor: 'text-orange-700', 
+    bgLight: 'bg-orange-50 dark:bg-orange-950/30',
+    borderColor: 'border-orange-500/30',
+    label: { en: 'Needs Work', ar: 'يحتاج عمل' }
+  };
+  return { 
+    color: 'bg-red-500', 
+    textColor: 'text-red-700', 
+    bgLight: 'bg-red-50 dark:bg-red-950/30',
+    borderColor: 'border-red-500/30',
+    label: { en: 'Critical', ar: 'حرج' }
+  };
+};
+
+const getProgressColor = (value) => {
+  if (value >= 80) return 'text-green-500';
+  if (value >= 60) return 'text-blue-500';
+  if (value >= 40) return 'text-yellow-500';
+  return 'text-red-500';
+};
+
 /**
- * Standard Dashboard Header for all wizard steps
- * Provides consistent completeness score display and stats grid
+ * StepDashboardHeader - Dashboard header with score and stats grid (Step18 style)
+ * 
+ * @param {Object} props
+ * @param {number} props.score - Completion/readiness score (0-100)
+ * @param {Array} props.stats - Array of stat objects { icon, value, label, iconColor }
+ * @param {Array} props.metrics - Array of metric objects { label, value } for progress bars
+ * @param {Object|string} props.title - Title for the score section (string or { en, ar })
+ * @param {Object|string} props.subtitle - Subtitle (string or { completed, total } for sections)
+ * @param {string} props.language - Current language ('en' or 'ar')
+ * @param {string} props.className - Additional classes
  */
 export function StepDashboardHeader({ 
-  score, 
+  score = 0, 
   stats = [], 
+  metrics = [],
   title,
   subtitle,
   language = 'en',
   className 
 }) {
-  const getScoreColor = (s) => {
-    if (s >= 80) return 'text-green-600';
-    if (s >= 50) return 'text-amber-600';
-    return 'text-red-600';
+  const scoreConfig = getScoreConfig(score);
+  const t = (obj) => {
+    if (typeof obj === 'string') return obj;
+    return language === 'ar' ? (obj?.ar || obj?.en || '') : (obj?.en || obj?.ar || '');
   };
 
-  const getScoreBg = (s) => {
-    if (s >= 80) return 'bg-green-500';
-    if (s >= 50) return 'bg-amber-500';
-    return 'bg-red-500';
-  };
-
-  const getScoreIcon = (s) => {
-    if (s >= 80) return <CheckCircle2 className="h-5 w-5 text-green-600" />;
-    if (s >= 50) return <AlertTriangle className="h-5 w-5 text-amber-600" />;
-    return <AlertCircle className="h-5 w-5 text-red-600" />;
+  // Handle subtitle - can be string or { completed, total }
+  const renderSubtitle = () => {
+    if (!subtitle) return null;
+    if (typeof subtitle === 'string') {
+      return <p className="text-xs text-muted-foreground">{subtitle}</p>;
+    }
+    if (subtitle.completed !== undefined && subtitle.total !== undefined) {
+      return (
+        <p className="text-xs text-muted-foreground">
+          {subtitle.completed}/{subtitle.total} {t({ en: 'sections', ar: 'أقسام' })}
+        </p>
+      );
+    }
+    return null;
   };
 
   return (
-    <Card className={cn("bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20", className)}>
-      <CardContent className="pt-4">
-        <div className="flex items-center justify-between gap-6">
-          {/* Score Circle */}
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <svg className="w-20 h-20 transform -rotate-90">
-                <circle
-                  cx="40"
-                  cy="40"
-                  r="36"
-                  stroke="currentColor"
-                  strokeWidth="6"
-                  fill="none"
-                  className="text-muted/20"
-                />
-                <circle
-                  cx="40"
-                  cy="40"
-                  r="36"
-                  stroke="currentColor"
-                  strokeWidth="6"
-                  fill="none"
-                  strokeDasharray={`${score * 2.26} 226`}
-                  strokeLinecap="round"
-                  className={getScoreColor(score)}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className={cn("text-xl font-bold", getScoreColor(score))}>{Math.round(score)}%</span>
-              </div>
+    <Card className={cn(
+      'bg-gradient-to-br from-background to-muted/30 border-2',
+      scoreConfig.borderColor,
+      className
+    )}>
+      <CardContent className="pt-6">
+        {/* Main Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {/* Readiness Score */}
+          <div className={cn(
+            'col-span-2 flex items-center gap-4 p-4 rounded-xl border',
+            scoreConfig.bgLight
+          )}>
+            <div className={cn(
+              'w-16 h-16 rounded-full flex items-center justify-center shrink-0',
+              scoreConfig.color
+            )}>
+              <span className="text-2xl font-bold text-white">{Math.round(score)}%</span>
             </div>
             <div>
-              {title && <h3 className="font-semibold text-lg">{title}</h3>}
-              {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
-              <div className="flex items-center gap-2 mt-1">
-                {getScoreIcon(score)}
-                <span className="text-sm text-muted-foreground">
-                  {score >= 80 
-                    ? (language === 'ar' ? 'مكتمل' : 'Complete') 
-                    : score >= 50 
-                      ? (language === 'ar' ? 'قيد التقدم' : 'In Progress')
-                      : (language === 'ar' ? 'يحتاج اهتمام' : 'Needs Attention')}
-                </span>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                {title ? t(title) : t({ en: 'Readiness Score', ar: 'درجة الجاهزية' })}
+              </p>
+              <p className={cn('text-lg font-semibold', scoreConfig.textColor)}>
+                {t(scoreConfig.label)}
+              </p>
+              {renderSubtitle()}
             </div>
           </div>
 
-          {/* Stats Grid */}
-          {stats.length > 0 && (
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
-              {stats.map((stat, idx) => (
-                <div 
-                  key={idx} 
-                  className="bg-background/60 rounded-lg p-3 text-center border border-border/50"
-                >
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    {stat.icon && <stat.icon className={cn("h-4 w-4", stat.iconColor || 'text-primary')} />}
-                    <span className={cn("text-xl font-bold", stat.valueColor || 'text-foreground')}>
-                      {stat.value}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
-                  {stat.subValue && (
-                    <p className="text-xs text-muted-foreground">{stat.subValue}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Statistics Cards */}
+          {stats.map((stat, index) => {
+            const IconComponent = stat.icon;
+            return (
+              <div 
+                key={index} 
+                className="p-4 bg-background/80 rounded-xl border text-center"
+              >
+                {IconComponent && (
+                  <IconComponent className={cn('h-5 w-5 mx-auto mb-1', stat.iconColor || 'text-primary')} />
+                )}
+                <p className={cn('text-2xl font-bold', stat.valueColor || 'text-foreground')}>
+                  {stat.value}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
+                {stat.subValue && (
+                  <p className="text-xs text-muted-foreground">{stat.subValue}</p>
+                )}
+              </div>
+            );
+          })}
         </div>
+
+        {/* Quality Metrics Progress Bars */}
+        {metrics.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+            {metrics.map((metric, index) => (
+              <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">{metric.label}</span>
+                  <span className={cn('text-xs font-medium', getProgressColor(metric.value))}>
+                    {metric.value}%
+                  </span>
+                </div>
+                <Progress value={metric.value} className="h-1.5" />
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
 /**
- * Compact version for smaller spaces
+ * CompactScoreBadge - Simple score badge for inline use
  */
 export function CompactScoreBadge({ score, label }) {
   const getVariant = (s) => {
     if (s >= 80) return 'default';
-    if (s >= 50) return 'secondary';
+    if (s >= 60) return 'secondary';
+    if (s >= 40) return 'outline';
     return 'destructive';
   };
 
