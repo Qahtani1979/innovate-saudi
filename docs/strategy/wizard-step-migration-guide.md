@@ -1,8 +1,90 @@
 # Wizard Step Standardization - Complete Migration Guide
 
 > **Last Updated**: December 17, 2024  
-> **Status**: Phase 1 Complete - Ready for Migration  
+> **Status**: Phase 1.1 Complete - Core Components Redesigned  
 > **Analysis Based On**: Full code inspection of all 19 step components
+
+---
+
+## Recent Updates
+
+### ✅ Component Redesigns Completed (Dec 17, 2024)
+
+#### MainAIGeneratorCard - Now Matches Step 9 Design
+The `MainAIGeneratorCard` component has been updated to match the clean Step 3 Objectives (Step 9) design:
+
+**Visual Changes:**
+- Clean gradient styling: `border-primary/30 bg-primary/5`
+- Title and description positioned on left
+- Action buttons aligned on right
+- Removed complex icon decorations
+
+**New Props Added:**
+- `onGenerateSingle` - Callback for "AI Add One" button
+- `isGeneratingSingle` - Loading state for single generation
+- `showSingleButton` - Toggle visibility of "AI Add One" button
+- `singleButtonLabel` - Custom label for single button `{ en, ar }`
+
+**Usage Example:**
+```jsx
+<MainAIGeneratorCard
+  title={{ en: 'AI-Powered Objectives', ar: 'الأهداف بالذكاء الاصطناعي' }}
+  description={{ en: 'Generate sector-specific objectives based on your context', ar: '...' }}
+  onGenerate={handleGenerateAll}
+  onGenerateSingle={handleGenerateOne}
+  isGenerating={isGenerating}
+  isGeneratingSingle={isGeneratingSingle}
+  showSingleButton={true}
+  isReadOnly={isReadOnly}
+/>
+```
+
+#### StepDashboardHeader - Now Matches Step 18 Design
+The `StepDashboardHeader` component has been updated to match the comprehensive Step 18 Review dashboard design:
+
+**Visual Changes:**
+- Large circular score indicator with percentage inside colored circle
+- Status label (Excellent, Good, Adequate, Needs Work, Critical)
+- 7-column responsive grid layout
+- Stat cards with centered icons
+- Optional progress bar metrics section
+
+**New Props Added:**
+- `metrics` - Array of metric objects for progress bars `[{ label, value }]`
+- Enhanced `subtitle` - Now supports `{ completed, total }` object format
+
+**Score Thresholds:**
+| Score Range | Status | Color |
+|-------------|--------|-------|
+| 90-100% | Excellent | Green |
+| 75-89% | Good | Blue |
+| 60-74% | Adequate | Yellow |
+| 40-59% | Needs Work | Orange |
+| 0-39% | Critical | Red |
+
+**Usage Example:**
+```jsx
+<StepDashboardHeader
+  score={88}
+  title={{ en: 'Readiness Score', ar: 'درجة الجاهزية' }}
+  subtitle={{ completed: 15, total: 17 }}
+  stats={[
+    { icon: Target, value: 31, label: t({ en: 'Objectives', ar: 'الأهداف' }), iconColor: 'text-primary' },
+    { icon: Activity, value: 20, label: t({ en: 'KPIs', ar: 'المؤشرات' }), iconColor: 'text-blue-500' },
+    { icon: Briefcase, value: 16, label: t({ en: 'Actions', ar: 'الإجراءات' }), iconColor: 'text-purple-500' },
+    { icon: AlertTriangle, value: 6, label: t({ en: 'Risks', ar: 'المخاطر' }), iconColor: 'text-amber-500' },
+    { icon: Users, value: 13, label: t({ en: 'Stakeholders', ar: 'الأطراف' }), iconColor: 'text-teal-500' },
+  ]}
+  metrics={[
+    { label: t({ en: 'KPI Coverage', ar: 'تغطية المؤشرات' }), value: 65 },
+    { label: t({ en: 'Action Coverage', ar: 'تغطية الإجراءات' }), value: 52 },
+    { label: t({ en: 'Risk Mitigation', ar: 'تخفيف المخاطر' }), value: 0 },
+    { label: t({ en: 'Engagement', ar: 'المشاركة' }), value: 0 },
+    { label: t({ en: 'Bilingual', ar: 'ثنائي اللغة' }), value: 100 },
+  ]}
+  language={language}
+/>
+```
 
 ---
 
@@ -43,14 +125,14 @@
 
 ### Summary Statistics
 
-| Component | Using Shared | Needs Migration | Notes |
-|-----------|-------------|-----------------|-------|
-| **StepDashboardHeader** | 19 (100%) | 0 | ✅ Complete |
-| **AIActionButton** | 10 (53%) | 0 | ✅ Already using shared component |
-| **StepTabs** | 0 (0%) | 17 | 🔴 All tabs need migration |
-| **StepAlerts** | 0 (0%) | 9 | 🟡 9 files have Alert imports |
-| **MainAIGeneratorCard** | 0 (0%) | 2 | 🔴 Step1Context, Step2Vision |
-| **ViewModeToggle** | 0 (0%) | 2 | 🟡 Step5KPIs, Step7Timeline use viewMode |
+| Component | Status | Using Shared | Needs Migration | Notes |
+|-----------|--------|-------------|-----------------|-------|
+| **StepDashboardHeader** | ✅ Redesigned | 19 (100%) | 0 | Now matches Step 18 design with metrics |
+| **MainAIGeneratorCard** | ✅ Redesigned | 0 (0%) | 2 | Now matches Step 9 design, ready for use |
+| **AIActionButton** | ✅ Complete | 10 (53%) | 0 | Already using shared component |
+| **StepTabs** | 🔴 Pending | 0 (0%) | 17 | All tabs need migration |
+| **StepAlerts** | 🟡 Pending | 0 (0%) | 9 | 9 files have Alert imports |
+| **ViewModeToggle** | 🟡 Pending | 0 (0%) | 2 | Step5KPIs, Step7Timeline use viewMode |
 
 ### Files with Alert Imports (9 files need StepAlerts migration)
 
@@ -858,9 +940,9 @@ import { StepAlerts } from '../shared';
 <StepAlerts alerts={alerts} maxVisible={3} collapsible={true} />
 ```
 
-### Pattern 3: MainAIGeneratorCard Migration
+### Pattern 3: MainAIGeneratorCard Migration (Step 9 Style)
 ```jsx
-// BEFORE
+// BEFORE (Custom Card Implementation)
 {!isReadOnly && (
   <Card className="border-primary/20">
     <CardContent className="py-4">
@@ -877,17 +959,80 @@ import { StepAlerts } from '../shared';
   </Card>
 )}
 
-// AFTER
+// AFTER (Using MainAIGeneratorCard - Step 9 Design)
 import { MainAIGeneratorCard } from '../shared';
 
+// Basic usage (Generate All only)
 <MainAIGeneratorCard
-  variant="card"
-  title={{ en: 'AI-Powered Generation', ar: '...' }}
-  description={{ en: 'Generate based on context...', ar: '...' }}
+  title={{ en: 'AI-Powered Generation', ar: 'التوليد بالذكاء الاصطناعي' }}
+  description={{ en: 'Generate content based on your strategic context', ar: '...' }}
   onGenerate={onGenerateAI}
   isGenerating={isGenerating}
   isReadOnly={isReadOnly}
 />
+
+// With "AI Add One" button (like Step3Objectives)
+<MainAIGeneratorCard
+  title={{ en: 'AI-Powered Objectives', ar: 'الأهداف بالذكاء الاصطناعي' }}
+  description={{ en: 'Generate sector-specific objectives based on your context', ar: '...' }}
+  onGenerate={handleGenerateAll}
+  onGenerateSingle={handleGenerateSingle}
+  isGenerating={isGenerating}
+  isGeneratingSingle={isGeneratingSingle}
+  showSingleButton={true}
+  isReadOnly={isReadOnly}
+/>
+```
+
+**MainAIGeneratorCard Variants:**
+- `card` (default) - Full card with title/description left, buttons right
+- `button` - Compact button only
+- `inline` - Inline with other controls  
+- `compact` - Smaller card variant
+
+### Pattern 4: StepDashboardHeader Migration (Step 18 Style)
+```jsx
+// BEFORE (Basic Dashboard)
+<StepDashboardHeader
+  score={completenessScore}
+  stats={[...]}
+  title="Section Progress"
+  subtitle="Track your progress"
+  language={language}
+/>
+
+// AFTER (Full Step 18 Style with Metrics)
+<StepDashboardHeader
+  score={completenessScore}
+  title={{ en: 'Readiness Score', ar: 'درجة الجاهزية' }}
+  subtitle={{ completed: completedSections, total: totalSections }}
+  stats={[
+    { icon: Target, value: objectives.length, label: t({ en: 'Objectives', ar: 'الأهداف' }), iconColor: 'text-primary' },
+    { icon: Activity, value: kpis.length, label: t({ en: 'KPIs', ar: 'المؤشرات' }), iconColor: 'text-blue-500' },
+    { icon: Briefcase, value: actions.length, label: t({ en: 'Actions', ar: 'الإجراءات' }), iconColor: 'text-purple-500' },
+    { icon: AlertTriangle, value: risks.length, label: t({ en: 'Risks', ar: 'المخاطر' }), iconColor: 'text-amber-500' },
+    { icon: Users, value: stakeholders.length, label: t({ en: 'Stakeholders', ar: 'الأطراف' }), iconColor: 'text-teal-500' },
+  ]}
+  metrics={[
+    { label: t({ en: 'KPI Coverage', ar: 'تغطية المؤشرات' }), value: kpiCoverage },
+    { label: t({ en: 'Action Coverage', ar: 'تغطية الإجراءات' }), value: actionCoverage },
+    { label: t({ en: 'Risk Mitigation', ar: 'تخفيف المخاطر' }), value: riskMitigation },
+    { label: t({ en: 'Engagement', ar: 'المشاركة' }), value: stakeholderEngagement },
+    { label: t({ en: 'Bilingual', ar: 'ثنائي اللغة' }), value: bilingualCoverage },
+  ]}
+  language={language}
+/>
+```
+
+**StepDashboardHeader Props:**
+| Prop | Type | Description |
+|------|------|-------------|
+| `score` | number | Completion score (0-100) |
+| `stats` | array | Stat cards `[{ icon, value, label, iconColor, subValue }]` |
+| `metrics` | array | Progress bars `[{ label, value }]` (optional) |
+| `title` | string \| object | Score section title |
+| `subtitle` | string \| object | `{ completed, total }` for sections count |
+| `language` | string | Current language ('en' \| 'ar') |
 ```
 
 ---
