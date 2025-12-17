@@ -1,9 +1,9 @@
 # AI Bilingual Implementation Plan - Complete Technical Specification
 
-**Generated:** 2025-12-17 (EXPANDED - Full Coverage of All AI Components)  
+**Generated:** 2025-12-17 (FULLY EXPANDED - 100% AI Coverage Including New AI Features)  
 **Status:** Ready for Implementation  
-**Total Files to Update:** 85 component files + 83 new prompt files  
-**Estimated Effort:** 6 phases, ~15 days
+**Total Files to Update:** 100 component files + 98 new prompt files  
+**Estimated Effort:** 7 phases, ~18 days
 
 ---
 
@@ -196,6 +196,27 @@ Many AI prompts require data from MULTIPLE entities as input. The prompt files m
 | **profiles/expertSearch.js** | `query` | `experts[]`, `expertise[]`, `availability[]` | query: terms; experts: profiles; expertise: areas |
 | **workflows/workflowOptimization.js** | `workflow` | `historicalData[]`, `bottlenecks[]` | workflow: steps; history: durations; bottlenecks: identified |
 | **solutions/collaborationNetwork.js** | `provider` | `solutions[]`, `partners[]`, `synergies[]` | provider: offerings; solutions: complementary; partners: potential |
+
+### NEW: Priority 10 Entity Dependencies (15 additional prompts - Components Getting AI)
+
+| Prompt File | Primary Entity | Required Related Entities | Fields Used from Each Entity |
+|-------------|---------------|---------------------------|------------------------------|
+| **citizen/feedbackSentiment.js** | `feedback[]` | `entity`, `historicalSentiment[]`, `categories[]` | feedback: text, rating, date; entity: type, title; history: trends |
+| **citizen/consensusScoring.js** | `evaluations[]` | `criteria[]`, `evaluators[]`, `weights[]` | evaluations: scores, comments; criteria: thresholds; evaluators: expertise |
+| **citizen/feedbackAggregation.js** | `feedbacks[]` | `topics[]`, `sentiments[]`, `timeRange` | feedbacks: all; topics: taxonomy; sentiments: scores |
+| **citizen/alignmentScoring.js** | `stakeholders[]` | `positions[]`, `requirements[]`, `gaps[]` | stakeholders: influence, stance; positions: priorities; requirements: criteria |
+| **citizen/votePatternAnalysis.js** | `votes[]` | `ideas[]`, `voterProfiles[]`, `timePatterns[]` | votes: timestamps, weights; ideas: category; profiles: history |
+| **matchmaker/autoClassification.js** | `applications[]` | `criteria[]`, `historicalClassifications[]` | applications: content; criteria: rules; history: accuracy |
+| **matchmaker/rubricScoring.js** | `application` | `rubric`, `evaluatorHistory[]`, `benchmarks[]` | application: sections; rubric: criteria, weights; history: patterns |
+| **matchmaker/preScreening.js** | `application` | `checklist[]`, `redFlags[]`, `autoRejectRules[]` | application: all fields; checklist: requirements; flags: patterns |
+| **rd/trlAssessment.js** | `rdProject` | `evidence[]`, `trlCriteria[]`, `assessmentHistory[]` | project: outputs, demos; evidence: documents; criteria: per-level |
+| **rd/proposalAssistance.js** | `proposal` | `rdCall`, `sectionTemplates[]`, `bestPractices[]` | proposal: draft sections; call: requirements; templates: structure |
+| **rd/policyImpactPrediction.js** | `rdProject` | `policies[]`, `impactMetrics[]`, `implementationData[]` | project: findings; policies: gaps; metrics: measurement |
+| **rd/citationAnalysis.js** | `publications[]` | `citations[]`, `researcher`, `fieldBenchmarks[]` | publications: venue, year; citations: count, sources; benchmarks: norms |
+| **utility/duplicateMerging.js** | `entities[]` | `similarities[]`, `mergeHistory[]`, `conflictRules[]` | entities: all fields; similarities: scores; history: decisions |
+| **utility/templateGeneration.js** | `context` | `templates[]`, `responseHistory[]`, `personalization[]` | context: entity, action; templates: content; history: effectiveness |
+| **utility/slaRiskPrediction.js** | `slaItems[]` | `history[]`, `workload[]`, `capacity[]` | items: deadline, priority; history: completion rates; workload: current |
+
 ```javascript
 // PRIMARY: pilot
 const pilotData = {
@@ -1368,13 +1389,25 @@ src/lib/ai/prompts/
 │   ├── index.js                      # Export all solutions prompts
 │   └── collaborationNetwork.js       # getCollaborationNetworkPrompt + collaborationNetworkSchema
 │
+├── utility/                          # NEW DIRECTORY (Priority 10)
+│   ├── index.js                      # Export all utility prompts
+│   ├── duplicateMerging.js           # getDuplicateMergingPrompt + duplicateMergingSchema
+│   ├── templateGeneration.js         # getTemplateGenerationPrompt + templateGenerationSchema
+│   └── slaRiskPrediction.js          # getSlaRiskPredictionPrompt + slaRiskPredictionSchema
+│
 └── communication/
     ├── index.js                      # Export all communication prompts
     ├── emailTemplate.js              # getEmailTemplatePrompt + emailTemplateSchema
     └── partnershipProposal.js        # getPartnershipProposalPrompt + partnershipProposalSchema
 ```
 
-### Total New Files: 83 prompt files (35 new additions)
+**Note:** Priority 10 prompts are distributed across existing directories:
+- `citizen/` gains: `feedbackSentiment.js`, `consensusScoring.js`, `feedbackAggregation.js`, `alignmentScoring.js`, `votePatternAnalysis.js`
+- `matchmaker/` gains: `autoClassification.js`, `rubricScoring.js`, `preScreening.js`
+- `rd/` gains: `trlAssessment.js`, `proposalAssistance.js`, `policyImpactPrediction.js`, `citationAnalysis.js`
+- `utility/` (new): `duplicateMerging.js`, `templateGeneration.js`, `slaRiskPrediction.js`
+
+### Total New Files: 98 prompt files (15 additional from Priority 10)
 
 ---
 
@@ -1502,6 +1535,45 @@ After extracting prompts, components need minimal changes - just import and use 
 | 4 | `src/components/profiles/ExpertFinder.jsx` | `profiles/expertSearch.js` | `query`, `experts[]`, `expertise[]`, `availability[]` |
 | 5 | `src/components/workflows/AIWorkflowOptimizer.jsx` | `workflows/workflowOptimization.js` | `workflow`, `historicalData[]`, `bottlenecks[]` |
 | 6 | `src/components/solutions/ProviderCollaborationNetwork.jsx` | `solutions/collaborationNetwork.js` | `provider`, `solutions[]`, `partners[]`, `synergies[]` |
+
+### Priority 10: New AI Features - Components Without AI (15 files) - NEW
+
+These components currently lack AI but would significantly benefit from it. Adding AI will enhance user experience and automation.
+
+#### Citizen Engagement AI (5 files)
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies | AI Feature |
+|---|------|------------|------------------|------------|
+| 1 | `src/components/citizen/CitizenFeedbackLoop.jsx` | `citizen/feedbackSentiment.js` | `feedback[]`, `entity`, `historicalSentiment[]` | Sentiment analysis, theme extraction |
+| 2 | `src/components/citizen/MultiEvaluatorConsensus.jsx` | `citizen/consensusScoring.js` | `evaluations[]`, `criteria[]`, `evaluators[]` | AI consensus building, outlier detection |
+| 3 | `src/components/citizen/PublicFeedbackAggregator.jsx` | `citizen/feedbackAggregation.js` | `feedbacks[]`, `topics[]`, `sentiments[]` | Theme clustering, insight extraction |
+| 4 | `src/components/citizen/StakeholderAlignmentGate.jsx` | `citizen/alignmentScoring.js` | `stakeholders[]`, `positions[]`, `requirements[]` | Alignment gap analysis, recommendation |
+| 5 | `src/components/citizen/VotingSystemBackend.jsx` | `citizen/votePatternAnalysis.js` | `votes[]`, `ideas[]`, `voterProfiles[]` | Pattern detection, manipulation detection |
+
+#### Matchmaker Enhancement AI (3 files)
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies | AI Feature |
+|---|------|------------|------------------|------------|
+| 1 | `src/components/matchmaker/ClassificationDashboard.jsx` | `matchmaker/autoClassification.js` | `applications[]`, `criteria[]`, `historicalClassifications[]` | Auto-categorization, priority scoring |
+| 2 | `src/components/matchmaker/EvaluationRubrics.jsx` | `matchmaker/rubricScoring.js` | `application`, `rubric`, `evaluatorHistory[]` | AI scoring assistance, consistency check |
+| 3 | `src/components/matchmaker/ScreeningChecklist.jsx` | `matchmaker/preScreening.js` | `application`, `checklist[]`, `redFlags[]` | Auto pre-screening, risk flagging |
+
+#### R&D Enhancement AI (4 files)
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies | AI Feature |
+|---|------|------------|------------------|------------|
+| 1 | `src/components/rd/TRLAssessmentWorkflow.jsx` | `rd/trlAssessment.js` | `rdProject`, `evidence[]`, `trlCriteria[]` | AI TRL level recommendation |
+| 2 | `src/components/rd/CollaborativeProposalEditor.jsx` | `rd/proposalAssistance.js` | `proposal`, `rdCall`, `sectionTemplates[]` | AI writing assistance, gap analysis |
+| 3 | `src/components/rd/PolicyImpactTracker.jsx` | `rd/policyImpactPrediction.js` | `rdProject`, `policies[]`, `impactMetrics[]` | Impact prediction, policy gap analysis |
+| 4 | `src/components/rd/PublicationTracker.jsx` | `rd/citationAnalysis.js` | `publications[]`, `citations[]`, `researcher` | Citation prediction, impact scoring |
+
+#### Utility Enhancement AI (3 files)
+
+| # | Component File | Prompt File(s) to Create | Entity Dependencies | AI Feature |
+|---|------|------------|------------------|------------|
+| 1 | `src/components/citizen/MergeDuplicatesDialog.jsx` | `utility/duplicateMerging.js` | `entities[]`, `similarities[]`, `mergeHistory[]` | AI merge suggestions, conflict resolution |
+| 2 | `src/components/citizen/ResponseTemplates.jsx` | `utility/templateGeneration.js` | `context`, `templates[]`, `responseHistory[]` | AI template suggestions, personalization |
+| 3 | `src/components/citizen/SLATracker.jsx` | `utility/slaRiskPrediction.js` | `slaItems[]`, `history[]`, `workload[]` | SLA breach prediction, prioritization |
 
 ---
 
@@ -2570,20 +2642,272 @@ export const successPredictionSchema = {
 
 ---
 
-## Summary (EXPANDED)
+## Detailed Prompt Specifications for Priority 10 (NEW AI Features)
+
+### citizen/feedbackSentiment.js
+```javascript
+/**
+ * Citizen Feedback Sentiment Analysis Prompt
+ * Used by: CitizenFeedbackLoop.jsx
+ */
+import { SAUDI_CONTEXT, BILINGUAL_INSTRUCTIONS } from '../saudiContext';
+
+export const getFeedbackSentimentPrompt = (context, feedbacks, relatedEntities = {}) => {
+  const { entity, historicalSentiment = [] } = relatedEntities;
+  
+  return `You are a citizen engagement analyst for Saudi Arabia's MoMAH.
+
+${SAUDI_CONTEXT.COMPACT}
+
+## ENTITY CONTEXT
+Type: ${entity?.type || 'Unknown'}
+Title: ${entity?.title_en || ''} | ${entity?.title_ar || ''}
+
+## FEEDBACK TO ANALYZE (${feedbacks.length} items)
+${feedbacks.slice(0, 20).map((f, i) => 
+  `${i+1}. [Rating: ${f.rating}/5] "${f.feedback_text?.substring(0, 200)}..."`
+).join('\n')}
+
+## HISTORICAL SENTIMENT TRENDS
+${historicalSentiment.slice(0, 5).map(h => 
+  `- ${h.period}: ${h.average_sentiment} (${h.feedback_count} responses)`
+).join('\n') || 'No historical data'}
+
+${BILINGUAL_INSTRUCTIONS}
+
+## ANALYZE AND PROVIDE:
+1. Overall sentiment score (0-100)
+2. Key themes extracted (bilingual)
+3. Positive highlights
+4. Areas of concern
+5. Recommended actions (bilingual)
+6. Trend comparison with historical data`;
+};
+
+export const feedbackSentimentSchema = {
+  type: 'object',
+  required: ['sentiment_score', 'themes', 'summary_en', 'summary_ar'],
+  properties: {
+    sentiment_score: { type: 'number', minimum: 0, maximum: 100 },
+    sentiment_label: { type: 'string', enum: ['very_negative', 'negative', 'neutral', 'positive', 'very_positive'] },
+    themes: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          theme_en: { type: 'string' },
+          theme_ar: { type: 'string' },
+          frequency: { type: 'number' },
+          sentiment: { type: 'string' }
+        }
+      }
+    },
+    positive_highlights_en: { type: 'array', items: { type: 'string' } },
+    positive_highlights_ar: { type: 'array', items: { type: 'string' } },
+    concerns_en: { type: 'array', items: { type: 'string' } },
+    concerns_ar: { type: 'array', items: { type: 'string' } },
+    recommendations_en: { type: 'array', items: { type: 'string' } },
+    recommendations_ar: { type: 'array', items: { type: 'string' } },
+    summary_en: { type: 'string' },
+    summary_ar: { type: 'string' },
+    trend_direction: { type: 'string', enum: ['improving', 'stable', 'declining'] }
+  }
+};
+```
+
+### rd/trlAssessment.js
+```javascript
+/**
+ * TRL Assessment AI Prompt
+ * Used by: TRLAssessmentWorkflow.jsx
+ */
+import { SAUDI_CONTEXT, BILINGUAL_INSTRUCTIONS } from '../saudiContext';
+
+export const getTRLAssessmentPrompt = (context, rdProject, relatedEntities = {}) => {
+  const { evidence = [], trlCriteria = [], assessmentHistory = [] } = relatedEntities;
+  
+  return `You are a Technology Readiness Level (TRL) assessment expert for Saudi R&D projects.
+
+${SAUDI_CONTEXT.COMPACT}
+
+## R&D PROJECT DETAILS
+Title: ${rdProject.title_en || ''} | ${rdProject.title_ar || ''}
+Focus Area: ${rdProject.focus_area || 'General'}
+Current Stage: ${rdProject.stage || 'Unknown'}
+Claimed TRL: ${rdProject.trl || 'Not specified'}
+
+## EVIDENCE PROVIDED (${evidence.length} items)
+${evidence.map(e => 
+  `- ${e.type}: ${e.title} (${e.date})`
+).join('\n') || 'No evidence submitted'}
+
+## TRL CRITERIA (Saudi Standards)
+${trlCriteria.map(c => 
+  `TRL ${c.level}: ${c.description_en}`
+).join('\n')}
+
+## PREVIOUS ASSESSMENTS
+${assessmentHistory.slice(0, 3).map(a => 
+  `- ${a.date}: TRL ${a.level} by ${a.assessor}`
+).join('\n') || 'First assessment'}
+
+${BILINGUAL_INSTRUCTIONS}
+
+## ASSESS AND PROVIDE:
+1. Recommended TRL level (1-9)
+2. Evidence gaps for each criterion
+3. Justification for the assessment (bilingual)
+4. Steps to reach next TRL level
+5. Risk factors that could affect progression`;
+};
+
+export const trlAssessmentSchema = {
+  type: 'object',
+  required: ['recommended_trl', 'justification_en', 'justification_ar'],
+  properties: {
+    recommended_trl: { type: 'number', minimum: 1, maximum: 9 },
+    confidence_level: { type: 'string', enum: ['low', 'medium', 'high'] },
+    justification_en: { type: 'string', minLength: 100 },
+    justification_ar: { type: 'string', minLength: 100 },
+    evidence_assessment: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          criterion: { type: 'string' },
+          status: { type: 'string', enum: ['met', 'partial', 'not_met'] },
+          gap_description_en: { type: 'string' },
+          gap_description_ar: { type: 'string' }
+        }
+      }
+    },
+    next_level_steps_en: { type: 'array', items: { type: 'string' } },
+    next_level_steps_ar: { type: 'array', items: { type: 'string' } },
+    risk_factors: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          risk_en: { type: 'string' },
+          risk_ar: { type: 'string' },
+          impact: { type: 'string', enum: ['low', 'medium', 'high'] }
+        }
+      }
+    },
+    estimated_time_to_next_trl: { type: 'string' }
+  }
+};
+```
+
+### utility/slaRiskPrediction.js
+```javascript
+/**
+ * SLA Risk Prediction AI Prompt
+ * Used by: SLATracker.jsx
+ */
+import { SAUDI_CONTEXT, BILINGUAL_INSTRUCTIONS } from '../saudiContext';
+
+export const getSlaRiskPredictionPrompt = (context, slaItems, relatedEntities = {}) => {
+  const { history = [], workload = [], capacity = [] } = relatedEntities;
+  
+  return `You are an SLA compliance analyst for Saudi Arabia's MoMAH.
+
+${SAUDI_CONTEXT.COMPACT}
+
+## ACTIVE SLA ITEMS (${slaItems.length} total)
+${slaItems.map(s => 
+  `- ${s.title}: Due ${s.deadline} | Priority: ${s.priority} | Progress: ${s.progress}%`
+).join('\n')}
+
+## HISTORICAL PERFORMANCE
+On-time rate: ${history.filter(h => h.completed_on_time).length / history.length * 100 || 0}%
+Average delay: ${history.reduce((acc, h) => acc + (h.delay_days || 0), 0) / history.length || 0} days
+
+## CURRENT WORKLOAD
+${workload.map(w => 
+  `- ${w.team}: ${w.active_items} active, ${w.capacity}% capacity`
+).join('\n') || 'No workload data'}
+
+${BILINGUAL_INSTRUCTIONS}
+
+## PREDICT AND PROVIDE:
+1. Risk score for each SLA item (0-100)
+2. Items likely to breach SLA
+3. Root causes for potential breaches
+4. Recommended prioritization (bilingual)
+5. Mitigation actions (bilingual)`;
+};
+
+export const slaRiskPredictionSchema = {
+  type: 'object',
+  required: ['overall_risk_score', 'at_risk_items', 'recommendations_en', 'recommendations_ar'],
+  properties: {
+    overall_risk_score: { type: 'number', minimum: 0, maximum: 100 },
+    at_risk_items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          item_id: { type: 'string' },
+          risk_score: { type: 'number' },
+          predicted_delay_days: { type: 'number' },
+          root_cause_en: { type: 'string' },
+          root_cause_ar: { type: 'string' }
+        }
+      }
+    },
+    priority_reorder: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          item_id: { type: 'string' },
+          new_priority: { type: 'number' },
+          reason_en: { type: 'string' },
+          reason_ar: { type: 'string' }
+        }
+      }
+    },
+    recommendations_en: { type: 'array', items: { type: 'string' } },
+    recommendations_ar: { type: 'array', items: { type: 'string' } },
+    capacity_alerts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          team: { type: 'string' },
+          alert_en: { type: 'string' },
+          alert_ar: { type: 'string' }
+        }
+      }
+    }
+  }
+};
+```
+
+---
+
+## Summary (FULLY EXPANDED)
 
 **Total Changes Required:**
 - 6 high-priority pages (Priority 1)
 - 23 workflow components (Priority 2)
 - 10 analysis components (Priority 3)
-- 5 AI core components (Priority 4) - NEW
-- 9 citizen AI converters (Priority 5) - NEW
-- 8 R&D AI components (Priority 6) - NEW
-- 4 matchmaker intelligence (Priority 7) - NEW
-- 5 pages with AI (Priority 8) - NEW
-- 6 knowledge & utility AI (Priority 9) - NEW
+- 5 AI core components (Priority 4)
+- 9 citizen AI converters (Priority 5)
+- 8 R&D AI components (Priority 6)
+- 4 matchmaker intelligence (Priority 7)
+- 5 pages with AI (Priority 8)
+- 6 knowledge & utility AI (Priority 9)
+- **15 NEW AI features (Priority 10)** - Components without AI getting AI
 - 2 new infrastructure files
-- **85 component files total + 83 new prompt files**
+- **100 component files total + 98 new prompt files**
+
+**Priority 10 Breakdown:**
+- 5 Citizen engagement AI (sentiment, consensus, aggregation, alignment, voting)
+- 3 Matchmaker enhancement AI (classification, rubrics, screening)
+- 4 R&D enhancement AI (TRL, proposal editing, policy impact, citations)
+- 3 Utility AI (duplicate merge, templates, SLA prediction)
 
 **Key Patterns to Follow:**
 1. Always include `SAUDI_CONTEXT` or equivalent
@@ -2593,9 +2917,48 @@ export const successPredictionSchema = {
 5. Include minLength for description fields (150+ words)
 6. Fetch ALL related entities before invoking AI
 7. Pass complete relatedEntities object to prompt functions
+8. Add `useAIWithFallback` hook to new AI components
+9. Include `AIStatusIndicator` for user feedback
 
 ---
 
-*Document Version: 3.0 (EXPANDED COVERAGE)*  
+## Implementation Priority & Timeline (FULLY EXPANDED)
+
+### Phase 1: Infrastructure (Day 1)
+- [ ] Create `src/lib/ai/prompts/saudiContext.js`
+- [ ] Create `src/lib/ai/prompts/bilingualSchemaBuilder.js`
+- [ ] Update existing prompt files to use shared context
+
+### Phase 2: High-Priority Pages (Days 2-3)
+- [ ] 6 pages from Priority 1
+
+### Phase 3: Workflow Components (Days 4-6)
+- [ ] 23 workflow components from Priority 2
+
+### Phase 4: Analysis Components (Days 7-8)
+- [ ] 10 analysis components from Priority 3
+
+### Phase 5: AI Core & Citizen Components (Days 9-11)
+- [ ] 5 AI core components (Priority 4)
+- [ ] 9 Citizen AI converters (Priority 5)
+
+### Phase 6: R&D, Matchmaker & Utility Components (Days 12-15)
+- [ ] 8 R&D AI components (Priority 6)
+- [ ] 4 Matchmaker intelligence (Priority 7)
+- [ ] 5 Pages with AI (Priority 8)
+- [ ] 6 Knowledge & utility AI (Priority 9)
+
+### Phase 7: New AI Features - Priority 10 (Days 16-18) - NEW
+- [ ] 5 Citizen engagement AI components
+- [ ] 3 Matchmaker enhancement AI components
+- [ ] 4 R&D enhancement AI components
+- [ ] 3 Utility AI components
+- [ ] Create `utility/` prompt directory
+- [ ] Final integration testing
+
+---
+
+*Document Version: 4.0 (FULLY EXPANDED - 100% COVERAGE INCLUDING NEW AI)*  
 *Last Updated: 2025-12-17*  
-*Coverage: 100% of AI components*
+*Coverage: 100% of existing AI + 15 new AI features*  
+*Total: 100 components + 98 prompts*
