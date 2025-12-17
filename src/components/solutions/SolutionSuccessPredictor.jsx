@@ -8,6 +8,11 @@ import { Sparkles, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  generateSuccessPredictionPrompt,
+  getSuccessPredictionSchema,
+  getSuccessPredictionSystemPrompt
+} from '@/lib/ai/prompts/solution';
 
 export default function SolutionSuccessPredictor({ solution, challenge }) {
   const { t } = useLanguage();
@@ -16,56 +21,9 @@ export default function SolutionSuccessPredictor({ solution, challenge }) {
 
   const predictSuccess = async () => {
     const result = await invokeAI({
-      prompt: `Predict the success probability of this solution in a municipal pilot based on historical patterns.
-
-SOLUTION:
-Name: ${solution.name_en}
-Provider: ${solution.provider_name} (${solution.provider_type})
-Maturity: ${solution.maturity_level}
-TRL: ${solution.trl || 'N/A'}
-Deployment Count: ${solution.deployment_count || 0}
-Success Rate: ${solution.success_rate || 0}%
-Average Rating: ${solution.average_rating || 'N/A'}
-Total Reviews: ${solution.total_reviews || 0}
-
-${challenge ? `CHALLENGE:
-Title: ${challenge.title_en}
-Sector: ${challenge.sector}
-Priority: ${challenge.priority}
-Impact Score: ${challenge.impact_score || 'N/A'}
-Affected Population: ${challenge.affected_population_size || 'N/A'}` : ''}
-
-Analyze:
-1. Success probability (0-100%) with confidence interval
-2. Key success factors (what increases odds)
-3. Risk factors (what decreases odds)
-4. Similar successful patterns from historical data
-5. Recommended preparation steps
-6. Timeline prediction (best/likely/worst case)
-7. Budget risk assessment
-
-Provide data-driven prediction with specific reasoning.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          success_probability: { type: 'number' },
-          confidence_level: { type: 'string', enum: ['low', 'medium', 'high'] },
-          success_factors: { type: 'array', items: { type: 'string' } },
-          risk_factors: { type: 'array', items: { type: 'string' } },
-          similar_patterns: { type: 'array', items: { type: 'string' } },
-          preparation_steps: { type: 'array', items: { type: 'string' } },
-          timeline_prediction: {
-            type: 'object',
-            properties: {
-              best_case_months: { type: 'number' },
-              likely_months: { type: 'number' },
-              worst_case_months: { type: 'number' }
-            }
-          },
-          budget_risk: { type: 'string', enum: ['low', 'medium', 'high'] },
-          overall_recommendation: { type: 'string' }
-        }
-      }
+      prompt: generateSuccessPredictionPrompt(solution, challenge),
+      response_json_schema: getSuccessPredictionSchema(),
+      system_prompt: getSuccessPredictionSystemPrompt()
     });
 
     if (result.success) {

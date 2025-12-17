@@ -9,6 +9,12 @@ import { Shield, Loader2, CheckCircle2, XCircle, AlertTriangle, Upload } from 'l
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  generateComplianceValidationPrompt,
+  getComplianceValidationSchema,
+  getDocumentExtractionSchema,
+  getComplianceValidationSystemPrompt
+} from '@/lib/ai/prompts/solution';
 
 export default function ComplianceValidationAI({ solution, onValidationComplete }) {
   const { t } = useLanguage();
@@ -36,17 +42,7 @@ export default function ComplianceValidationAI({ solution, onValidationComplete 
       try {
         const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
           file_url: doc.url,
-          json_schema: {
-            type: 'object',
-            properties: {
-              certification_name: { type: 'string' },
-              issuer: { type: 'string' },
-              issue_date: { type: 'string' },
-              expiry_date: { type: 'string' },
-              certification_number: { type: 'string' },
-              compliance_standards: { type: 'array', items: { type: 'string' } }
-            }
-          }
+          json_schema: getDocumentExtractionSchema()
         });
         if (result.status === 'success') {
           extractedData.push(result.output);
@@ -58,61 +54,9 @@ export default function ComplianceValidationAI({ solution, onValidationComplete 
 
     // AI validation of compliance
     const result = await invokeAI({
-      prompt: `Validate compliance and certifications for this solution.
-
-SOLUTION:
-Name: ${solution.name_en}
-Provider: ${solution.provider_name}
-Sectors: ${solution.sectors?.join(', ') || 'N/A'}
-Deployment Options: ${solution.deployment_options?.join(', ') || 'N/A'}
-
-CLAIMED CERTIFICATIONS:
-${JSON.stringify(solution.certifications || [], null, 2)}
-
-EXTRACTED FROM DOCUMENTS:
-${JSON.stringify(extractedData, null, 2)}
-
-COMPLIANCE REQUIREMENTS FOR SAUDI MUNICIPAL TECH:
-- ISO 27001 (Information Security)
-- PDPL (Personal Data Protection)
-- CITC Regulations (if telecom/digital)
-- ISO 9001 (Quality Management)
-- Municipal Safety Standards
-
-Analyze and provide:
-1. Compliance score (0-100%)
-2. Verified certifications (cross-check claims vs documents)
-3. Missing certifications (critical for municipal deployment)
-4. Expired/expiring certifications
-5. Compliance risk level
-6. Recommended actions
-7. Certification validation status (real/fake check)
-
-Be thorough and flag any discrepancies.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          compliance_score: { type: 'number' },
-          verified_certifications: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                status: { type: 'string', enum: ['verified', 'expired', 'invalid', 'pending'] },
-                issuer: { type: 'string' },
-                expiry_date: { type: 'string' }
-              }
-            }
-          },
-          missing_certifications: { type: 'array', items: { type: 'string' } },
-          expiring_soon: { type: 'array', items: { type: 'string' } },
-          compliance_risk: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
-          recommended_actions: { type: 'array', items: { type: 'string' } },
-          validation_notes: { type: 'string' },
-          discrepancies_found: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: generateComplianceValidationPrompt(solution, extractedData),
+      response_json_schema: getComplianceValidationSchema(),
+      system_prompt: getComplianceValidationSystemPrompt()
     });
 
     if (result.success) {
