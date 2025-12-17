@@ -200,6 +200,11 @@ export default function Step1Context({
             label: t({ en: 'Technologies', ar: 'التقنيات' })
           }
         ]}
+        metrics={[
+          { label: t({ en: 'Identity', ar: 'الهوية' }), value: Math.round(completenessMetrics.sectionScores.identity) },
+          { label: t({ en: 'Scope', ar: 'النطاق' }), value: Math.round(completenessMetrics.sectionScores.scope) },
+          { label: t({ en: 'Discovery', ar: 'الاستكشاف' }), value: Math.round(completenessMetrics.sectionScores.discovery) },
+        ]}
       />
 
       {/* AI Generation Card */}

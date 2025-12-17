@@ -584,6 +584,10 @@ export default function Step13Resources({
           { icon: DollarSign, value: formatCurrency(stats.grandTotal), label: t({ en: 'Est. Cost', ar: 'التكلفة المقدرة' }) },
           { icon: Percent, value: `${stats.justificationRate}%`, label: t({ en: 'With Justification', ar: 'مع مبرر' }) },
         ]}
+        metrics={[
+          { label: t({ en: 'Justification', ar: 'المبررات' }), value: stats.justificationRate },
+          { label: t({ en: 'Allocation', ar: 'التخصيص' }), value: stats.allocationRate },
+        ]}
       />
       
       {/* AI Generation Card */}

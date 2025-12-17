@@ -370,6 +370,11 @@ export default function Step2SWOT({
           { icon: Zap, value: stats.external, label: t({ en: 'External', ar: 'خارجي' }), iconColor: 'text-purple-500' },
           { icon: AlertTriangle, value: stats.highPriority, label: t({ en: 'High Priority', ar: 'أولوية عالية' }), iconColor: 'text-red-500' },
         ]}
+        metrics={[
+          { label: t({ en: 'Internal', ar: 'داخلي' }), value: stats.total > 0 ? Math.round((stats.internal / stats.total) * 100) : 0 },
+          { label: t({ en: 'External', ar: 'خارجي' }), value: stats.total > 0 ? Math.round((stats.external / stats.total) * 100) : 0 },
+          { label: t({ en: 'High Priority', ar: 'أولوية عالية' }), value: stats.total > 0 ? Math.round((stats.highPriority / stats.total) * 100) : 0 },
+        ]}
       />
       
       {/* AI Generation Card */}

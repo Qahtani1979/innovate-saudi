@@ -1110,6 +1110,11 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
           { icon: Shield, value: resistanceStrategies.length, label: t({ en: 'Strategies', ar: 'استراتيجيات' }) },
           { icon: Layers, value: `${adkarCoveredCount}/5`, label: t({ en: 'ADKAR', ar: 'ADKAR' }) },
         ]}
+        metrics={[
+          { label: t({ en: 'ADKAR', ar: 'ADKAR' }), value: Math.round((adkarCoveredCount / 5) * 100) },
+          { label: t({ en: 'Training', ar: 'التدريب' }), value: Math.min(trainingPlan.length * 25, 100) },
+          { label: t({ en: 'Activities', ar: 'الأنشطة' }), value: Math.min(changeActivities.length * 20, 100) },
+        ]}
       />
 
       {/* AI Generation Card */}

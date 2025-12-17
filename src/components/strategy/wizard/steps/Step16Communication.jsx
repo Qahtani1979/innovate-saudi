@@ -881,6 +881,11 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
           { icon: Globe, value: externalChannels.length, label: t({ en: 'External', ar: 'خارجي' }) },
           { icon: Radio, value: totalChannels, label: t({ en: 'Channels', ar: 'القنوات' }) },
         ]}
+        metrics={[
+          { label: t({ en: 'Audiences', ar: 'الجمهور' }), value: Math.min(targetAudiences.length * 20, 100) },
+          { label: t({ en: 'Messages', ar: 'الرسائل' }), value: Math.min(keyMessages.length * 25, 100) },
+          { label: t({ en: 'Channels', ar: 'القنوات' }), value: Math.min(totalChannels * 15, 100) },
+        ]}
       />
 
       {/* AI Generation Card */}

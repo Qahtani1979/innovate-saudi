@@ -454,6 +454,10 @@ export default function Step6Scenarios({
           { icon: Target, value: stats.totalOutcomes, label: t({ en: 'Total Outcomes', ar: 'إجمالي النتائج' }), iconColor: 'text-purple-500' },
           { icon: Percent, value: `${stats.scenariosWithProbability}/3`, label: t({ en: 'Probabilities Set', ar: 'احتماليات محددة' }), iconColor: 'text-green-500' },
         ]}
+        metrics={[
+          { label: t({ en: 'Scenarios', ar: 'سيناريوهات' }), value: Math.round((stats.scenariosWithDescription / 3) * 100) },
+          { label: t({ en: 'Probabilities', ar: 'احتماليات' }), value: Math.round((stats.scenariosWithProbability / 3) * 100) },
+        ]}
       />
       
       {/* AI Generation Card */}

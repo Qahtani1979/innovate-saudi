@@ -261,6 +261,10 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
           { icon: AlertCircle, value: stats.totalConstraints, label: t({ en: 'Constraints', ar: 'القيود' }), subValue: `${stats.highImpactConstraints} ${t({ en: 'high impact', ar: 'تأثير عالي' })}` },
           { icon: Lightbulb, value: stats.totalAssumptions, label: t({ en: 'Assumptions', ar: 'الافتراضات' }), subValue: `${stats.lowConfidenceAssumptions} ${t({ en: 'low confidence', ar: 'ثقة منخفضة' })}` },
         ]}
+        metrics={[
+          { label: t({ en: 'Resolved', ar: 'محلولة' }), value: stats.totalDeps > 0 ? Math.round((stats.resolvedDeps / stats.totalDeps) * 100) : 0 },
+          { label: t({ en: 'High Confidence', ar: 'ثقة عالية' }), value: stats.totalAssumptions > 0 ? Math.round(((stats.totalAssumptions - stats.lowConfidenceAssumptions) / stats.totalAssumptions) * 100) : 0 },
+        ]}
       />
 
       {/* AI Generation Card */}
