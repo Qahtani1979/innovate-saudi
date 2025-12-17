@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StepAlerts } from '../shared/StepAlerts';
 import { 
   Sparkles, Building2, Plus, X, AlertTriangle, Users, LayoutDashboard, Grid3X3, 
   ChevronUp, ChevronDown, ArrowDown, UserCheck, Brain, Shield, Scale,
@@ -434,16 +434,7 @@ export default function Step15Governance({
       )}
 
       {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="space-y-2">
-          {alerts.map((alert, idx) => (
-            <Alert key={idx} variant={alert.type === 'error' ? 'destructive' : 'default'}>
-              {alert.type === 'error' ? <AlertCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-              <AlertDescription>{alert.message}</AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
+      <StepAlerts alerts={alerts} />
 
       {/* View Mode Buttons */}
       <div className="flex gap-2">

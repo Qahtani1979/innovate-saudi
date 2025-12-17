@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StepAlerts } from '../shared/StepAlerts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Sparkles, AlertTriangle, Plus, X, Shield, ChevronDown, ChevronUp, 
@@ -623,16 +623,7 @@ export default function Step7Risks({
       )}
 
       {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="space-y-2">
-          {alerts.map((alert, idx) => (
-            <Alert key={idx} variant={alert.type === 'error' ? 'destructive' : 'default'}>
-              {alert.type === 'error' ? <AlertCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-              <AlertDescription>{alert.message}</AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
+      <StepAlerts alerts={alerts} />
 
       {/* Risk Appetite */}
       <Card>

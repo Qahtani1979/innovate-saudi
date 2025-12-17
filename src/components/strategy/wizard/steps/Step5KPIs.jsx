@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StepAlerts } from '../shared/StepAlerts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Sparkles, Loader2, Plus, X, Activity, ChevronDown, ChevronUp, Target, TrendingUp, 
@@ -694,16 +694,7 @@ export default function Step5KPIs({
       />
 
       {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="space-y-2">
-          {alerts.map((alert, i) => (
-            <Alert key={i} variant={alert.type === 'warning' ? 'destructive' : 'default'} className={alert.type === 'info' ? 'border-blue-200 bg-blue-50' : ''}>
-              <alert.icon className="h-4 w-4" />
-              <AlertDescription>{alert.message}</AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
+      <StepAlerts alerts={alerts} />
 
       {/* AI Generation Card */}
       {!isReadOnly && objectives.length > 0 && (
