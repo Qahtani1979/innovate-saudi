@@ -7,122 +7,39 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Slider } from "@/components/ui/slider";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Sparkles, Building2, Plus, X, AlertTriangle, Users, LayoutDashboard, Grid3X3, 
-  ChevronUp, ChevronDown, ArrowDown, UserCheck, Brain, Shield, Scale, Eye,
+  ChevronUp, ChevronDown, ArrowDown, UserCheck, Brain, Shield, Scale,
   GitBranch, Network, Target, CheckCircle2, AlertCircle, Clock, Briefcase,
   Crown, UserCog, Lightbulb, Database, Gavel, TrendingUp, ChevronRight,
-  BarChart3, PieChart, Activity, Layers
+  BarChart3, PieChart, Activity, Layers, Loader2
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
+import { cn } from '@/lib/utils';
 
-// Enhanced Committee Types with icons and descriptions
+// Enhanced Committee Types
 const COMMITTEE_TYPES = [
-  { 
-    value: 'steering', 
-    label: { en: 'Steering Committee', ar: 'لجنة توجيهية' },
-    icon: Crown,
-    description: { en: 'Strategic direction and major decisions', ar: 'التوجيه الاستراتيجي والقرارات الرئيسية' },
-    color: 'bg-purple-500'
-  },
-  { 
-    value: 'executive', 
-    label: { en: 'Executive Committee', ar: 'لجنة تنفيذية' },
-    icon: Briefcase,
-    description: { en: 'Day-to-day strategic execution', ar: 'التنفيذ الاستراتيجي اليومي' },
-    color: 'bg-blue-500'
-  },
-  { 
-    value: 'technical', 
-    label: { en: 'Technical Committee', ar: 'لجنة فنية' },
-    icon: Database,
-    description: { en: 'Technical decisions and standards', ar: 'القرارات الفنية والمعايير' },
-    color: 'bg-green-500'
-  },
-  { 
-    value: 'advisory', 
-    label: { en: 'Advisory Committee', ar: 'لجنة استشارية' },
-    icon: Users,
-    description: { en: 'Expert guidance and recommendations', ar: 'التوجيه الخبير والتوصيات' },
-    color: 'bg-amber-500'
-  },
-  { 
-    value: 'innovation', 
-    label: { en: 'Innovation Committee', ar: 'لجنة الابتكار' },
-    icon: Lightbulb,
-    description: { en: 'R&D, pilots, and technology adoption', ar: 'البحث والتطوير والتجريب واعتماد التقنية' },
-    color: 'bg-cyan-500'
-  },
-  { 
-    value: 'risk', 
-    label: { en: 'Risk & Compliance', ar: 'لجنة المخاطر والامتثال' },
-    icon: Shield,
-    description: { en: 'Risk management and regulatory compliance', ar: 'إدارة المخاطر والامتثال التنظيمي' },
-    color: 'bg-red-500'
-  },
-  { 
-    value: 'data_governance', 
-    label: { en: 'Data Governance', ar: 'لجنة حوكمة البيانات' },
-    icon: Database,
-    description: { en: 'Data quality, privacy, and AI ethics', ar: 'جودة البيانات والخصوصية وأخلاقيات الذكاء الاصطناعي' },
-    color: 'bg-indigo-500'
-  },
-  { 
-    value: 'ethics', 
-    label: { en: 'Ethics Committee', ar: 'لجنة الأخلاقيات' },
-    icon: Scale,
-    description: { en: 'Ethical oversight and policy compliance', ar: 'الرقابة الأخلاقية والامتثال للسياسات' },
-    color: 'bg-pink-500'
-  }
+  { value: 'steering', label: { en: 'Steering Committee', ar: 'لجنة توجيهية' }, icon: Crown, color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+  { value: 'executive', label: { en: 'Executive Committee', ar: 'لجنة تنفيذية' }, icon: Briefcase, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  { value: 'technical', label: { en: 'Technical Committee', ar: 'لجنة فنية' }, icon: Database, color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  { value: 'advisory', label: { en: 'Advisory Committee', ar: 'لجنة استشارية' }, icon: Users, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+  { value: 'innovation', label: { en: 'Innovation Committee', ar: 'لجنة الابتكار' }, icon: Lightbulb, color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300' },
+  { value: 'risk', label: { en: 'Risk & Compliance', ar: 'لجنة المخاطر والامتثال' }, icon: Shield, color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+  { value: 'data_governance', label: { en: 'Data Governance', ar: 'لجنة حوكمة البيانات' }, icon: Database, color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' },
+  { value: 'ethics', label: { en: 'Ethics Committee', ar: 'لجنة الأخلاقيات' }, icon: Scale, color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300' }
 ];
 
-// Enhanced Role Types with seniority levels
+// Role Types
 const ROLE_TYPES = [
-  { 
-    value: 'executive', 
-    label: { en: 'Executive', ar: 'تنفيذي' },
-    icon: Crown,
-    level: 1,
-    description: { en: 'C-level and deputy minister positions', ar: 'مناصب المستوى التنفيذي ووكلاء الوزارة' }
-  },
-  { 
-    value: 'senior_management', 
-    label: { en: 'Senior Management', ar: 'إدارة عليا' },
-    icon: Briefcase,
-    level: 2,
-    description: { en: 'Directors and general managers', ar: 'المديرون والمديرون العامون' }
-  },
-  { 
-    value: 'management', 
-    label: { en: 'Management', ar: 'إدارة' },
-    icon: UserCog,
-    level: 3,
-    description: { en: 'Department and section heads', ar: 'رؤساء الإدارات والأقسام' }
-  },
-  { 
-    value: 'specialist', 
-    label: { en: 'Specialist', ar: 'متخصص' },
-    icon: Target,
-    level: 4,
-    description: { en: 'Subject matter experts', ar: 'خبراء الموضوع' }
-  },
-  { 
-    value: 'coordinator', 
-    label: { en: 'Coordinator', ar: 'منسق' },
-    icon: Network,
-    level: 5,
-    description: { en: 'Cross-functional coordinators', ar: 'منسقون عابرون للوظائف' }
-  },
-  { 
-    value: 'analyst', 
-    label: { en: 'Analyst', ar: 'محلل' },
-    icon: BarChart3,
-    level: 6,
-    description: { en: 'Data and process analysts', ar: 'محللو البيانات والعمليات' }
-  }
+  { value: 'executive', label: { en: 'Executive', ar: 'تنفيذي' }, icon: Crown, level: 1 },
+  { value: 'senior_management', label: { en: 'Senior Management', ar: 'إدارة عليا' }, icon: Briefcase, level: 2 },
+  { value: 'management', label: { en: 'Management', ar: 'إدارة' }, icon: UserCog, level: 3 },
+  { value: 'specialist', label: { en: 'Specialist', ar: 'متخصص' }, icon: Target, level: 4 },
+  { value: 'coordinator', label: { en: 'Coordinator', ar: 'منسق' }, icon: Network, level: 5 },
+  { value: 'analyst', label: { en: 'Analyst', ar: 'محلل' }, icon: BarChart3, level: 6 }
 ];
 
 // Dashboard Types
@@ -150,10 +67,10 @@ const RACI_AREAS = [
 ];
 
 const RACI_VALUES = [
-  { value: 'R', label: { en: 'R - Responsible', ar: 'م - مسؤول' }, color: 'bg-blue-500', description: { en: 'Does the work', ar: 'ينفذ العمل' } },
-  { value: 'A', label: { en: 'A - Accountable', ar: 'ح - محاسب' }, color: 'bg-green-500', description: { en: 'Final approver', ar: 'الموافق النهائي' } },
-  { value: 'C', label: { en: 'C - Consulted', ar: 'ش - مستشار' }, color: 'bg-yellow-500', description: { en: 'Input required', ar: 'مدخلات مطلوبة' } },
-  { value: 'I', label: { en: 'I - Informed', ar: 'ع - مطلع' }, color: 'bg-gray-400', description: { en: 'Kept updated', ar: 'يتم إبلاغه' } }
+  { value: 'R', label: { en: 'Responsible', ar: 'مسؤول' }, color: 'bg-blue-500' },
+  { value: 'A', label: { en: 'Accountable', ar: 'محاسب' }, color: 'bg-green-500' },
+  { value: 'C', label: { en: 'Consulted', ar: 'مستشار' }, color: 'bg-yellow-500' },
+  { value: 'I', label: { en: 'Informed', ar: 'مطلع' }, color: 'bg-gray-400' }
 ];
 
 const FREQUENCY_OPTIONS = [
@@ -163,519 +80,54 @@ const FREQUENCY_OPTIONS = [
   { value: 'quarterly', label: { en: 'Quarterly', ar: 'ربع سنوي' } }
 ];
 
-// Governance Dashboard Component
-function GovernanceDashboard({ committees, roles, dashboards, raciMatrix, escalationPath, language, t }) {
-  const stats = useMemo(() => {
-    const hasInnovationCommittee = committees.some(c => c.type === 'innovation');
-    const hasRiskCommittee = committees.some(c => c.type === 'risk');
-    const hasDataGovernance = committees.some(c => c.type === 'data_governance');
-    
-    const executiveRoles = roles.filter(r => r.type === 'executive' || r.type === 'senior_management').length;
-    const specialistRoles = roles.filter(r => r.type === 'specialist' || r.type === 'analyst').length;
-    
-    const innovationDecisions = raciMatrix.filter(r => 
-      ['pilot_approval', 'technology_adoption', 'rd_partnerships'].includes(r.area)
-    ).length;
-    
-    const coverageScore = Math.round(
-      ((committees.length > 0 ? 20 : 0) +
-      (roles.length > 0 ? 20 : 0) +
-      (dashboards.length > 0 ? 15 : 0) +
-      (raciMatrix.length > 0 ? 20 : 0) +
-      (escalationPath.length > 0 ? 15 : 0) +
-      (hasInnovationCommittee ? 10 : 0))
-    );
-
-    return {
-      totalCommittees: committees.length,
-      totalRoles: roles.length,
-      totalDashboards: dashboards.length,
-      totalRaciEntries: raciMatrix.length,
-      escalationLevels: escalationPath.length,
-      hasInnovationCommittee,
-      hasRiskCommittee,
-      hasDataGovernance,
-      executiveRoles,
-      specialistRoles,
-      innovationDecisions,
-      coverageScore
-    };
-  }, [committees, roles, dashboards, raciMatrix, escalationPath]);
-
-  const getCoverageColor = (score) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 50) return 'text-amber-600';
-    return 'text-red-600';
-  };
-
-  return (
-    <Card className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border-primary/20">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Building2 className="w-5 h-5 text-primary" />
-          {t({ en: 'Governance Dashboard', ar: 'لوحة الحوكمة' })}
-        </CardTitle>
-        <CardDescription>
-          {t({ en: 'Overview of governance structure and coverage', ar: 'نظرة عامة على هيكل الحوكمة والتغطية' })}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          <div className="text-center p-3 bg-background/50 rounded-lg border">
-            <Building2 className="w-6 h-6 mx-auto mb-1 text-purple-500" />
-            <div className="text-2xl font-bold">{stats.totalCommittees}</div>
-            <div className="text-xs text-muted-foreground">{t({ en: 'Committees', ar: 'اللجان' })}</div>
-          </div>
-          <div className="text-center p-3 bg-background/50 rounded-lg border">
-            <Users className="w-6 h-6 mx-auto mb-1 text-blue-500" />
-            <div className="text-2xl font-bold">{stats.totalRoles}</div>
-            <div className="text-xs text-muted-foreground">{t({ en: 'Roles', ar: 'الأدوار' })}</div>
-          </div>
-          <div className="text-center p-3 bg-background/50 rounded-lg border">
-            <LayoutDashboard className="w-6 h-6 mx-auto mb-1 text-green-500" />
-            <div className="text-2xl font-bold">{stats.totalDashboards}</div>
-            <div className="text-xs text-muted-foreground">{t({ en: 'Dashboards', ar: 'لوحات التحكم' })}</div>
-          </div>
-          <div className="text-center p-3 bg-background/50 rounded-lg border">
-            <Grid3X3 className="w-6 h-6 mx-auto mb-1 text-amber-500" />
-            <div className="text-2xl font-bold">{stats.totalRaciEntries}</div>
-            <div className="text-xs text-muted-foreground">{t({ en: 'RACI Entries', ar: 'إدخالات RACI' })}</div>
-          </div>
-          <div className="text-center p-3 bg-background/50 rounded-lg border">
-            <GitBranch className="w-6 h-6 mx-auto mb-1 text-red-500" />
-            <div className="text-2xl font-bold">{stats.escalationLevels}</div>
-            <div className="text-xs text-muted-foreground">{t({ en: 'Escalation Levels', ar: 'مستويات التصعيد' })}</div>
-          </div>
-          <div className="text-center p-3 bg-background/50 rounded-lg border">
-            <Target className="w-6 h-6 mx-auto mb-1 text-primary" />
-            <div className={`text-2xl font-bold ${getCoverageColor(stats.coverageScore)}`}>{stats.coverageScore}%</div>
-            <div className="text-xs text-muted-foreground">{t({ en: 'Coverage', ar: 'التغطية' })}</div>
-          </div>
-        </div>
-
-        {/* Coverage Progress */}
-        <div className="mb-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span>{t({ en: 'Governance Coverage', ar: 'تغطية الحوكمة' })}</span>
-            <span className={getCoverageColor(stats.coverageScore)}>{stats.coverageScore}%</span>
-          </div>
-          <Progress value={stats.coverageScore} className="h-2" />
-        </div>
-
-        {/* Health Indicators */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${stats.hasInnovationCommittee ? 'bg-green-500/10 text-green-700' : 'bg-amber-500/10 text-amber-700'}`}>
-            {stats.hasInnovationCommittee ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-            <span>{t({ en: 'Innovation Committee', ar: 'لجنة الابتكار' })}</span>
-          </div>
-          <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${stats.hasRiskCommittee ? 'bg-green-500/10 text-green-700' : 'bg-amber-500/10 text-amber-700'}`}>
-            {stats.hasRiskCommittee ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-            <span>{t({ en: 'Risk Committee', ar: 'لجنة المخاطر' })}</span>
-          </div>
-          <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${stats.hasDataGovernance ? 'bg-green-500/10 text-green-700' : 'bg-amber-500/10 text-amber-700'}`}>
-            {stats.hasDataGovernance ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-            <span>{t({ en: 'Data Governance', ar: 'حوكمة البيانات' })}</span>
-          </div>
-          <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${stats.escalationLevels >= 4 ? 'bg-green-500/10 text-green-700' : 'bg-amber-500/10 text-amber-700'}`}>
-            {stats.escalationLevels >= 4 ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-            <span>{t({ en: 'Escalation Path', ar: 'مسار التصعيد' })}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Committee Card Component
-function CommitteeCard({ committee, index, onUpdate, onRemove, language, t }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const typeConfig = COMMITTEE_TYPES.find(ct => ct.value === committee.type) || COMMITTEE_TYPES[0];
-  const TypeIcon = typeConfig.icon;
+// Circular Progress Component
+const CircularProgress = ({ value, size = 120, label }) => {
+  const strokeWidth = 8;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (value / 100) * circumference;
   
-  const members = Array.isArray(committee.members)
-    ? committee.members
-    : (typeof committee.members === 'string'
-      ? committee.members.split('\n').map(s => s.trim()).filter(Boolean)
-      : []);
-
   return (
-    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <div className="border rounded-lg overflow-hidden hover:border-primary/50 transition-colors">
-        <CollapsibleTrigger className="w-full">
-          <div className="flex items-center justify-between p-4 bg-card hover:bg-accent/5 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${typeConfig.color}/10`}>
-                <TypeIcon className={`w-5 h-5 ${typeConfig.color.replace('bg-', 'text-')}`} />
-              </div>
-              <div className="text-left">
-                <div className="font-medium">
-                  {committee.name_en || committee.name || t({ en: 'Unnamed Committee', ar: 'لجنة بدون اسم' })}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {typeConfig.label[language]} • {FREQUENCY_OPTIONS.find(f => f.value === committee.meeting_frequency)?.label[language] || 'Monthly'}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                {members.length} {t({ en: 'members', ar: 'أعضاء' })}
-              </Badge>
-              <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-            </div>
-          </div>
-        </CollapsibleTrigger>
-        
-        <CollapsibleContent>
-          <div className="p-4 border-t bg-muted/20 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">{t({ en: 'Committee Name (EN)', ar: 'اسم اللجنة (إنجليزي)' })}</Label>
-                <Input
-                  placeholder="Committee Name"
-                  value={committee.name_en || committee.name || ''}
-                  onChange={(e) => onUpdate(index, 'name_en', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">{t({ en: 'Committee Name (AR)', ar: 'اسم اللجنة (عربي)' })}</Label>
-                <Input
-                  dir="rtl"
-                  placeholder="اسم اللجنة"
-                  value={committee.name_ar || ''}
-                  onChange={(e) => onUpdate(index, 'name_ar', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs">{t({ en: 'Type', ar: 'النوع' })}</Label>
-                <Select value={committee.type || 'steering'} onValueChange={(v) => onUpdate(index, 'type', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {COMMITTEE_TYPES.map((ct) => (
-                      <SelectItem key={ct.value} value={ct.value}>
-                        <div className="flex items-center gap-2">
-                          <ct.icon className="w-4 h-4" />
-                          {ct.label[language]}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">{t({ en: 'Chair Role (EN)', ar: 'رئيس اللجنة (إنجليزي)' })}</Label>
-                <Input
-                  placeholder="e.g., Deputy Minister"
-                  value={committee.chair_role_en || ''}
-                  onChange={(e) => onUpdate(index, 'chair_role_en', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">{t({ en: 'Meeting Frequency', ar: 'تكرار الاجتماعات' })}</Label>
-                <Select value={committee.meeting_frequency || 'monthly'} onValueChange={(v) => onUpdate(index, 'meeting_frequency', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {FREQUENCY_OPTIONS.map((f) => (
-                      <SelectItem key={f.value} value={f.value}>{f.label[language]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-sm">{t({ en: 'Members (one per line)', ar: 'الأعضاء (كل عضو في سطر)' })}</Label>
-              <Textarea
-                value={members.join('\n')}
-                onChange={(e) => onUpdate(index, 'members', e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">{t({ en: 'Responsibilities (EN)', ar: 'المسؤوليات (إنجليزي)' })}</Label>
-                <Textarea
-                  placeholder="Key responsibilities..."
-                  value={committee.responsibilities_en || committee.responsibilities || ''}
-                  onChange={(e) => onUpdate(index, 'responsibilities_en', e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">{t({ en: 'Responsibilities (AR)', ar: 'المسؤوليات (عربي)' })}</Label>
-                <Textarea
-                  dir="rtl"
-                  placeholder="المسؤوليات الرئيسية..."
-                  value={committee.responsibilities_ar || ''}
-                  onChange={(e) => onUpdate(index, 'responsibilities_ar', e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button variant="destructive" size="sm" onClick={() => onRemove(index)}>
-                <X className="w-4 h-4 mr-1" />{t({ en: 'Remove', ar: 'حذف' })}
-              </Button>
-            </div>
-          </div>
-        </CollapsibleContent>
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90" width={size} height={size}>
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke="currentColor" strokeWidth={strokeWidth} fill="none" className="text-muted/20" />
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke="currentColor" strokeWidth={strokeWidth} fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-primary transition-all duration-500" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold">{value}%</span>
+        <span className="text-xs text-muted-foreground">{label}</span>
       </div>
-    </Collapsible>
-  );
-}
-
-// Role Card Component
-function RoleCard({ role, index, onUpdate, onRemove, language, t }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const typeConfig = ROLE_TYPES.find(rt => rt.value === role.type) || ROLE_TYPES[2];
-  const TypeIcon = typeConfig.icon;
-
-  return (
-    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <div className="border rounded-lg overflow-hidden hover:border-primary/50 transition-colors">
-        <CollapsibleTrigger className="w-full">
-          <div className="flex items-center justify-between p-4 bg-card hover:bg-accent/5 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <TypeIcon className="w-5 h-5 text-primary" />
-              </div>
-              <div className="text-left">
-                <div className="font-medium">
-                  {role.title_en || t({ en: 'Unnamed Role', ar: 'دور بدون اسم' })}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {typeConfig.label[language]} • {role.department_en || t({ en: 'No department', ar: 'بدون قسم' })}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                L{typeConfig.level}
-              </Badge>
-              <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-            </div>
-          </div>
-        </CollapsibleTrigger>
-        
-        <CollapsibleContent>
-          <div className="p-4 border-t bg-muted/20 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">{t({ en: 'Role Title (EN)', ar: 'عنوان الدور (إنجليزي)' })}</Label>
-                <Input
-                  placeholder="e.g., Chief Innovation Officer"
-                  value={role.title_en || ''}
-                  onChange={(e) => onUpdate(index, 'title_en', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">{t({ en: 'Role Title (AR)', ar: 'عنوان الدور (عربي)' })}</Label>
-                <Input
-                  dir="rtl"
-                  placeholder="مثال: رئيس قسم الابتكار"
-                  value={role.title_ar || ''}
-                  onChange={(e) => onUpdate(index, 'title_ar', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs">{t({ en: 'Type', ar: 'النوع' })}</Label>
-                <Select value={role.type || 'management'} onValueChange={(v) => onUpdate(index, 'type', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {ROLE_TYPES.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
-                        <div className="flex items-center gap-2">
-                          <r.icon className="w-4 h-4" />
-                          {r.label[language]}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">{t({ en: 'Department (EN)', ar: 'القسم (إنجليزي)' })}</Label>
-                <Input
-                  placeholder="Department/Unit"
-                  value={role.department_en || ''}
-                  onChange={(e) => onUpdate(index, 'department_en', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">{t({ en: 'Reports To (EN)', ar: 'يقدم تقاريره إلى (إنجليزي)' })}</Label>
-                <Input
-                  placeholder="e.g., Deputy Minister"
-                  value={role.reports_to_en || ''}
-                  onChange={(e) => onUpdate(index, 'reports_to_en', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">{t({ en: 'Key Responsibilities (EN)', ar: 'المسؤوليات الرئيسية (إنجليزي)' })}</Label>
-                <Textarea
-                  placeholder="Key responsibilities..."
-                  value={role.key_responsibilities_en || ''}
-                  onChange={(e) => onUpdate(index, 'key_responsibilities_en', e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">{t({ en: 'Key Responsibilities (AR)', ar: 'المسؤوليات الرئيسية (عربي)' })}</Label>
-                <Textarea
-                  dir="rtl"
-                  placeholder="المسؤوليات الرئيسية..."
-                  value={role.key_responsibilities_ar || ''}
-                  onChange={(e) => onUpdate(index, 'key_responsibilities_ar', e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button variant="destructive" size="sm" onClick={() => onRemove(index)}>
-                <X className="w-4 h-4 mr-1" />{t({ en: 'Remove', ar: 'حذف' })}
-              </Button>
-            </div>
-          </div>
-        </CollapsibleContent>
-      </div>
-    </Collapsible>
-  );
-}
-
-// Organization Chart View Component
-function OrgChartView({ roles, language, t }) {
-  const rolesByLevel = useMemo(() => {
-    const levels = {};
-    roles.forEach(role => {
-      const typeConfig = ROLE_TYPES.find(rt => rt.value === role.type);
-      const level = typeConfig?.level || 3;
-      if (!levels[level]) levels[level] = [];
-      levels[level].push(role);
-    });
-    return levels;
-  }, [roles]);
-
-  const sortedLevels = Object.keys(rolesByLevel).sort((a, b) => Number(a) - Number(b));
-
-  return (
-    <div className="space-y-4">
-      {sortedLevels.map((level, idx) => (
-        <div key={level}>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="outline">{ROLE_TYPES.find(rt => rt.level === Number(level))?.label[language] || `Level ${level}`}</Badge>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {rolesByLevel[level].map((role, roleIdx) => {
-              const typeConfig = ROLE_TYPES.find(rt => rt.value === role.type);
-              const TypeIcon = typeConfig?.icon || Users;
-              return (
-                <div key={roleIdx} className="p-3 border rounded-lg bg-card flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <TypeIcon className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">{role.title_en || role.title_ar}</div>
-                    <div className="text-xs text-muted-foreground truncate">{role.department_en || role.department_ar}</div>
-                    {role.reports_to_en && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        → {role.reports_to_en}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {idx < sortedLevels.length - 1 && (
-            <div className="flex justify-center my-2">
-              <ArrowDown className="w-4 h-4 text-muted-foreground" />
-            </div>
-          )}
-        </div>
-      ))}
-      {roles.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-          {t({ en: 'No roles defined yet', ar: 'لم يتم تحديد أدوار بعد' })}
-        </div>
-      )}
     </div>
   );
-}
+};
 
-// RACI Matrix Grid View
-function RaciGridView({ raciMatrix, language, t }) {
-  if (raciMatrix.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-        {t({ en: 'No RACI entries defined yet', ar: 'لم يتم تحديد إدخالات RACI بعد' })}
-      </div>
-    );
-  }
+// Stat Card Component
+const StatCard = ({ icon: Icon, label, value, color = "text-primary" }) => (
+  <div className="text-center p-3 bg-background rounded-lg border hover:shadow-sm transition-shadow">
+    <Icon className={cn("w-5 h-5 mx-auto mb-1", color)} />
+    <div className={cn("text-2xl font-bold", color)}>{value}</div>
+    <div className="text-xs text-muted-foreground">{label}</div>
+  </div>
+);
 
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-muted/50">
-            <th className="border p-2 text-left text-sm font-medium">{t({ en: 'Decision Area', ar: 'مجال القرار' })}</th>
-            {RACI_VALUES.map(v => (
-              <th key={v.value} className="border p-2 text-center text-sm font-medium">
-                <div className="flex items-center justify-center gap-1">
-                  <span className={`w-3 h-3 rounded-full ${v.color}`} />
-                  {v.value}
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {raciMatrix.map((entry, idx) => {
-            const areaConfig = RACI_AREAS.find(a => a.value === entry.area);
-            const AreaIcon = areaConfig?.icon || Target;
-            return (
-              <tr key={idx} className="hover:bg-muted/20">
-                <td className="border p-2">
-                  <div className="flex items-center gap-2">
-                    <AreaIcon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{areaConfig?.label[language] || entry.area}</span>
-                  </div>
-                </td>
-                <td className="border p-2 text-center text-xs">{entry.responsible_en || entry.responsible_ar || '-'}</td>
-                <td className="border p-2 text-center text-xs">{entry.accountable_en || entry.accountable_ar || '-'}</td>
-                <td className="border p-2 text-center text-xs">{entry.consulted_en || entry.consulted_ar || '-'}</td>
-                <td className="border p-2 text-center text-xs">{entry.informed_en || entry.informed_ar || '-'}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// Main Component
-export default function Step15Governance({ data, onChange, onGenerateAI, isGenerating }) {
+export default function Step15Governance({ 
+  data, 
+  onChange, 
+  onGenerateAI, 
+  isGenerating,
+  isReadOnly = false 
+}) {
   const { language, t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('committees');
-  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'structure' | 'matrix'
+  const [viewMode, setViewMode] = useState('cards');
+  const [expandedItems, setExpandedItems] = useState({});
 
   const committees = data.governance?.committees || [];
   const roles = data.governance?.roles || [];
   const dashboards = data.governance?.dashboards || [];
   const raciMatrix = data.governance?.raci_matrix || [];
   
-  // Handle escalation path - support both new structured format and legacy string array
+  // Handle escalation path
   const getEscalationPath = () => {
     const path = data.governance?.escalation_path;
     if (!path || !Array.isArray(path) || path.length === 0) return [];
@@ -686,16 +138,98 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
       role_en: typeof item === 'string' ? item : '',
       role_ar: '',
       timeframe_en: '',
-      timeframe_ar: '',
-      description_en: '',
-      description_ar: ''
+      description_en: ''
     }));
   };
   
   const escalationPath = getEscalationPath();
 
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const hasInnovationCommittee = committees.some(c => c.type === 'innovation');
+    const hasRiskCommittee = committees.some(c => c.type === 'risk');
+    const hasDataGovernance = committees.some(c => c.type === 'data_governance');
+    const hasSteeringCommittee = committees.some(c => c.type === 'steering');
+    
+    const executiveRoles = roles.filter(r => r.type === 'executive' || r.type === 'senior_management').length;
+    const committeesWithMembers = committees.filter(c => {
+      const members = Array.isArray(c.members) ? c.members : 
+                      (typeof c.members === 'string' ? c.members.split('\n').filter(Boolean) : []);
+      return members.length > 0;
+    }).length;
+
+    return {
+      totalCommittees: committees.length,
+      totalRoles: roles.length,
+      totalDashboards: dashboards.length,
+      totalRaciEntries: raciMatrix.length,
+      escalationLevels: escalationPath.length,
+      hasInnovationCommittee,
+      hasRiskCommittee,
+      hasDataGovernance,
+      hasSteeringCommittee,
+      executiveRoles,
+      committeesWithMembers,
+      membersRate: committees.length > 0 ? Math.round((committeesWithMembers / committees.length) * 100) : 0
+    };
+  }, [committees, roles, dashboards, raciMatrix, escalationPath]);
+
+  // Calculate completeness score
+  const completenessScore = useMemo(() => {
+    let score = 0;
+    
+    // 25% for committees (minimum 2)
+    score += Math.min((stats.totalCommittees / 2) * 25, 25);
+    
+    // 20% for roles (minimum 3)
+    score += Math.min((stats.totalRoles / 3) * 20, 20);
+    
+    // 20% for escalation path (minimum 3 levels)
+    score += Math.min((stats.escalationLevels / 3) * 20, 20);
+    
+    // 15% for dashboards (minimum 2)
+    score += Math.min((stats.totalDashboards / 2) * 15, 15);
+    
+    // 20% for RACI entries (minimum 4)
+    score += Math.min((stats.totalRaciEntries / 4) * 20, 20);
+    
+    return Math.round(Math.min(score, 100));
+  }, [stats]);
+
+  // Generate alerts
+  const alerts = useMemo(() => {
+    const warnings = [];
+    
+    if (stats.totalCommittees === 0) {
+      warnings.push({ type: 'error', message: t({ en: 'No governance committees defined', ar: 'لم يتم تحديد لجان حوكمة' }) });
+    }
+    
+    if (!stats.hasSteeringCommittee && stats.totalCommittees > 0) {
+      warnings.push({ type: 'warning', message: t({ en: 'Consider adding a Steering Committee for strategic oversight', ar: 'فكر في إضافة لجنة توجيهية للرقابة الاستراتيجية' }) });
+    }
+    
+    if (stats.totalRoles === 0) {
+      warnings.push({ type: 'warning', message: t({ en: 'No governance roles defined', ar: 'لم يتم تحديد أدوار حوكمة' }) });
+    }
+    
+    if (stats.escalationLevels < 3 && stats.escalationLevels > 0) {
+      warnings.push({ type: 'warning', message: t({ en: 'Escalation path should have at least 3 levels', ar: 'يجب أن يحتوي مسار التصعيد على 3 مستويات على الأقل' }) });
+    }
+    
+    if (stats.totalRaciEntries === 0) {
+      warnings.push({ type: 'warning', message: t({ en: 'Define RACI matrix for clear decision rights', ar: 'حدد مصفوفة RACI لوضوح حقوق القرار' }) });
+    }
+    
+    return warnings;
+  }, [stats, t]);
+
+  const toggleExpanded = (id) => {
+    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   // Committee handlers
   const addCommittee = () => {
+    if (isReadOnly) return;
     const newCommittee = {
       id: Date.now().toString(),
       name_en: '',
@@ -709,19 +243,23 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
       responsibilities_ar: ''
     };
     onChange({ governance: { ...data.governance, committees: [...committees, newCommittee] } });
+    setExpandedItems(prev => ({ ...prev, [newCommittee.id]: true }));
   };
 
-  const updateCommittee = (index, field, value) => {
-    const updated = committees.map((c, i) => (i === index ? { ...c, [field]: value } : c));
+  const updateCommittee = (id, field, value) => {
+    if (isReadOnly) return;
+    const updated = committees.map(c => c.id === id ? { ...c, [field]: value } : c);
     onChange({ governance: { ...data.governance, committees: updated } });
   };
 
-  const removeCommittee = (index) => {
-    onChange({ governance: { ...data.governance, committees: committees.filter((_, i) => i !== index) } });
+  const removeCommittee = (id) => {
+    if (isReadOnly) return;
+    onChange({ governance: { ...data.governance, committees: committees.filter(c => c.id !== id) } });
   };
 
   // Role handlers
   const addRole = () => {
+    if (isReadOnly) return;
     const newRole = {
       id: Date.now().toString(),
       title_en: '',
@@ -735,96 +273,101 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
       reports_to_ar: ''
     };
     onChange({ governance: { ...data.governance, roles: [...roles, newRole] } });
+    setExpandedItems(prev => ({ ...prev, [newRole.id]: true }));
   };
 
-  const updateRole = (index, field, value) => {
-    const updated = roles.map((r, i) => (i === index ? { ...r, [field]: value } : r));
+  const updateRole = (id, field, value) => {
+    if (isReadOnly) return;
+    const updated = roles.map(r => r.id === id ? { ...r, [field]: value } : r);
     onChange({ governance: { ...data.governance, roles: updated } });
   };
 
-  const removeRole = (index) => {
-    onChange({ governance: { ...data.governance, roles: roles.filter((_, i) => i !== index) } });
+  const removeRole = (id) => {
+    if (isReadOnly) return;
+    onChange({ governance: { ...data.governance, roles: roles.filter(r => r.id !== id) } });
   };
 
   // Dashboard handlers
   const addDashboard = () => {
+    if (isReadOnly) return;
     const newDashboard = {
       id: Date.now().toString(),
       name_en: '',
       name_ar: '',
       type: 'executive',
       description_en: '',
-      description_ar: '',
       key_metrics_en: '',
-      key_metrics_ar: '',
       update_frequency: 'weekly',
-      audience_en: '',
-      audience_ar: ''
+      audience_en: ''
     };
     onChange({ governance: { ...data.governance, dashboards: [...dashboards, newDashboard] } });
   };
 
-  const updateDashboard = (index, field, value) => {
-    const updated = dashboards.map((d, i) => (i === index ? { ...d, [field]: value } : d));
+  const updateDashboard = (id, field, value) => {
+    if (isReadOnly) return;
+    const updated = dashboards.map(d => d.id === id ? { ...d, [field]: value } : d);
     onChange({ governance: { ...data.governance, dashboards: updated } });
   };
 
-  const removeDashboard = (index) => {
-    onChange({ governance: { ...data.governance, dashboards: dashboards.filter((_, i) => i !== index) } });
+  const removeDashboard = (id) => {
+    if (isReadOnly) return;
+    onChange({ governance: { ...data.governance, dashboards: dashboards.filter(d => d.id !== id) } });
   };
 
   // RACI handlers
   const addRaciEntry = () => {
+    if (isReadOnly) return;
     const newEntry = {
       id: Date.now().toString(),
       area: 'strategic_decisions',
       responsible_en: '',
-      responsible_ar: '',
       accountable_en: '',
-      accountable_ar: '',
       consulted_en: '',
-      consulted_ar: '',
-      informed_en: '',
-      informed_ar: ''
+      informed_en: ''
     };
     onChange({ governance: { ...data.governance, raci_matrix: [...raciMatrix, newEntry] } });
   };
 
-  const updateRaciEntry = (index, field, value) => {
-    const updated = raciMatrix.map((r, i) => (i === index ? { ...r, [field]: value } : r));
+  const updateRaciEntry = (id, field, value) => {
+    if (isReadOnly) return;
+    const updated = raciMatrix.map(r => r.id === id ? { ...r, [field]: value } : r);
     onChange({ governance: { ...data.governance, raci_matrix: updated } });
   };
 
-  const removeRaciEntry = (index) => {
-    onChange({ governance: { ...data.governance, raci_matrix: raciMatrix.filter((_, i) => i !== index) } });
+  const removeRaciEntry = (id) => {
+    if (isReadOnly) return;
+    onChange({ governance: { ...data.governance, raci_matrix: raciMatrix.filter(r => r.id !== id) } });
   };
 
   // Escalation Path handlers
   const addEscalationStep = () => {
+    if (isReadOnly) return;
     const newStep = {
       id: Date.now().toString(),
       level: escalationPath.length + 1,
       role_en: '',
       role_ar: '',
       timeframe_en: '',
-      timeframe_ar: '',
-      description_en: '',
-      description_ar: ''
+      description_en: ''
     };
     onChange({ governance: { ...data.governance, escalation_path: [...escalationPath, newStep] } });
   };
 
-  const updateEscalationStep = (index, field, value) => {
-    const updated = escalationPath.map((step, i) => (i === index ? { ...step, [field]: value } : step));
+  const updateEscalationStep = (id, field, value) => {
+    if (isReadOnly) return;
+    const updated = escalationPath.map(step => step.id === id ? { ...step, [field]: value } : step);
     onChange({ governance: { ...data.governance, escalation_path: updated } });
   };
 
-  const removeEscalationStep = (index) => {
-    const updated = escalationPath.filter((_, i) => i !== index).map((step, i) => ({ ...step, level: i + 1 }));
+  const removeEscalationStep = (id) => {
+    if (isReadOnly) return;
+    const updated = escalationPath.filter(step => step.id !== id).map((step, i) => ({ ...step, level: i + 1 }));
     onChange({ governance: { ...data.governance, escalation_path: updated } });
   };
 
-  const moveEscalationStep = (index, direction) => {
+  const moveEscalationStep = (id, direction) => {
+    if (isReadOnly) return;
+    const index = escalationPath.findIndex(s => s.id === id);
     if ((direction === -1 && index === 0) || (direction === 1 && index === escalationPath.length - 1)) return;
     const newPath = [...escalationPath];
     const temp = newPath[index];
@@ -834,52 +377,81 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
     onChange({ governance: { ...data.governance, escalation_path: updated } });
   };
 
+  const getCommitteeProgress = (committee) => {
+    let filled = 0;
+    if (committee.name_en || committee.name_ar) filled++;
+    if (committee.type) filled++;
+    if (committee.chair_role_en) filled++;
+    const members = Array.isArray(committee.members) ? committee.members : 
+                    (typeof committee.members === 'string' ? committee.members.split('\n').filter(Boolean) : []);
+    if (members.length > 0) filled++;
+    if (committee.responsibilities_en || committee.responsibilities_ar) filled++;
+    return Math.round((filled / 5) * 100);
+  };
+
+  const getRoleProgress = (role) => {
+    let filled = 0;
+    if (role.title_en || role.title_ar) filled++;
+    if (role.type) filled++;
+    if (role.department_en) filled++;
+    if (role.key_responsibilities_en || role.key_responsibilities_ar) filled++;
+    if (role.reports_to_en) filled++;
+    return Math.round((filled / 5) * 100);
+  };
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* AI Generate Button */}
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2">
-          <Button 
-            variant={viewMode === 'cards' ? 'default' : 'outline'} 
-            size="sm" 
-            onClick={() => setViewMode('cards')}
-          >
-            <Layers className="w-4 h-4 mr-1" />
-            {t({ en: 'Cards', ar: 'بطاقات' })}
-          </Button>
-          <Button 
-            variant={viewMode === 'structure' ? 'default' : 'outline'} 
-            size="sm" 
-            onClick={() => setViewMode('structure')}
-          >
-            <GitBranch className="w-4 h-4 mr-1" />
-            {t({ en: 'Structure', ar: 'الهيكل' })}
-          </Button>
-          <Button 
-            variant={viewMode === 'matrix' ? 'default' : 'outline'} 
-            size="sm" 
-            onClick={() => setViewMode('matrix')}
-          >
-            <Grid3X3 className="w-4 h-4 mr-1" />
-            {t({ en: 'Matrix', ar: 'مصفوفة' })}
-          </Button>
+      {/* Dashboard Header */}
+      <Card className="bg-gradient-to-br from-background to-muted/30 border-2">
+        <CardContent className="pt-6">
+          <div className="flex flex-col lg:flex-row items-center gap-6">
+            <CircularProgress value={completenessScore} label={t({ en: 'Complete', ar: 'مكتمل' })} />
+            
+            <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3">
+              <StatCard icon={Building2} label={t({ en: 'Committees', ar: 'اللجان' })} value={stats.totalCommittees} color="text-purple-500" />
+              <StatCard icon={Users} label={t({ en: 'Roles', ar: 'الأدوار' })} value={stats.totalRoles} color="text-blue-500" />
+              <StatCard icon={GitBranch} label={t({ en: 'Escalation', ar: 'التصعيد' })} value={stats.escalationLevels} color="text-red-500" />
+              <StatCard icon={LayoutDashboard} label={t({ en: 'Dashboards', ar: 'لوحات' })} value={stats.totalDashboards} color="text-green-500" />
+              <StatCard icon={Grid3X3} label={t({ en: 'RACI Entries', ar: 'إدخالات' })} value={stats.totalRaciEntries} color="text-amber-500" />
+            </div>
+
+            {!isReadOnly && (
+              <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2 shrink-0">
+                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate', ar: 'إنشاء' })}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Alerts */}
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((alert, idx) => (
+            <Alert key={idx} variant={alert.type === 'error' ? 'destructive' : 'default'}>
+              {alert.type === 'error' ? <AlertCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+              <AlertDescription>{alert.message}</AlertDescription>
+            </Alert>
+          ))}
         </div>
-        <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-          <Sparkles className="w-4 h-4" />
-          {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
+      )}
+
+      {/* View Mode Buttons */}
+      <div className="flex gap-2">
+        <Button variant={viewMode === 'cards' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('cards')}>
+          <Layers className="w-4 h-4 mr-1" />
+          {t({ en: 'Cards', ar: 'بطاقات' })}
+        </Button>
+        <Button variant={viewMode === 'structure' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('structure')}>
+          <GitBranch className="w-4 h-4 mr-1" />
+          {t({ en: 'Structure', ar: 'الهيكل' })}
+        </Button>
+        <Button variant={viewMode === 'summary' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('summary')}>
+          <BarChart3 className="w-4 h-4 mr-1" />
+          {t({ en: 'Summary', ar: 'الملخص' })}
         </Button>
       </div>
-
-      {/* Dashboard */}
-      <GovernanceDashboard 
-        committees={committees}
-        roles={roles}
-        dashboards={dashboards}
-        raciMatrix={raciMatrix}
-        escalationPath={escalationPath}
-        language={language}
-        t={t}
-      />
 
       {/* Structure View */}
       {viewMode === 'structure' && (
@@ -891,221 +463,576 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <OrgChartView roles={roles} language={language} t={t} />
+            {roles.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                {t({ en: 'No roles defined yet', ar: 'لم يتم تحديد أدوار بعد' })}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5, 6].map(level => {
+                  const levelRoles = roles.filter(r => {
+                    const typeConfig = ROLE_TYPES.find(rt => rt.value === r.type);
+                    return (typeConfig?.level || 3) === level;
+                  });
+                  if (levelRoles.length === 0) return null;
+                  const levelConfig = ROLE_TYPES.find(rt => rt.level === level);
+                  return (
+                    <div key={level}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline">{levelConfig?.label[language] || `Level ${level}`}</Badge>
+                        <div className="flex-1 h-px bg-border" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {levelRoles.map(role => {
+                          const typeConfig = ROLE_TYPES.find(rt => rt.value === role.type);
+                          const TypeIcon = typeConfig?.icon || Users;
+                          return (
+                            <div key={role.id} className="p-3 border rounded-lg bg-card flex items-start gap-3">
+                              <div className="p-2 rounded-lg bg-primary/10">
+                                <TypeIcon className="w-4 h-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm truncate">{role.title_en || role.title_ar || t({ en: 'Untitled', ar: 'بدون عنوان' })}</div>
+                                <div className="text-xs text-muted-foreground truncate">{role.department_en || role.department_ar}</div>
+                                {role.reports_to_en && <div className="text-xs text-muted-foreground mt-1">→ {role.reports_to_en}</div>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {level < 6 && levelRoles.length > 0 && (
+                        <div className="flex justify-center my-2"><ArrowDown className="w-4 h-4 text-muted-foreground" /></div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Matrix View */}
-      {viewMode === 'matrix' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Grid3X3 className="w-5 h-5 text-primary" />
-              {t({ en: 'RACI Decision Matrix', ar: 'مصفوفة قرارات RACI' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RaciGridView raciMatrix={raciMatrix} language={language} t={t} />
-          </CardContent>
-        </Card>
+      {/* Summary View */}
+      {viewMode === 'summary' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                {t({ en: 'Committee Coverage', ar: 'تغطية اللجان' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {COMMITTEE_TYPES.slice(0, 5).map(ct => {
+                const has = committees.some(c => c.type === ct.value);
+                return (
+                  <div key={ct.value} className={cn("flex items-center gap-2 p-2 rounded-lg text-sm", has ? 'bg-green-500/10 text-green-700 dark:text-green-300' : 'bg-muted/50 text-muted-foreground')}>
+                    {has ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                    {ct.label[language]}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Grid3X3 className="w-4 h-4" />
+                {t({ en: 'RACI Coverage', ar: 'تغطية RACI' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {RACI_AREAS.slice(0, 5).map(area => {
+                const has = raciMatrix.some(r => r.area === area.value);
+                return (
+                  <div key={area.value} className={cn("flex items-center gap-2 p-2 rounded-lg text-sm", has ? 'bg-green-500/10 text-green-700 dark:text-green-300' : 'bg-muted/50 text-muted-foreground')}>
+                    {has ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                    {area.label[language]}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-yellow-500" />
+                {t({ en: 'Recommendations', ar: 'التوصيات' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm">
+                {!stats.hasSteeringCommittee && (
+                  <li className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                    {t({ en: 'Add a Steering Committee for strategic oversight and major decisions', ar: 'أضف لجنة توجيهية للرقابة الاستراتيجية والقرارات الرئيسية' })}
+                  </li>
+                )}
+                {!stats.hasRiskCommittee && (
+                  <li className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                    {t({ en: 'Consider a Risk & Compliance committee for risk management', ar: 'فكر في لجنة للمخاطر والامتثال لإدارة المخاطر' })}
+                  </li>
+                )}
+                {stats.escalationLevels < 3 && (
+                  <li className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                    {t({ en: 'Define at least 3 escalation levels for issue resolution', ar: 'حدد 3 مستويات تصعيد على الأقل لحل المشاكل' })}
+                  </li>
+                )}
+                {stats.totalDashboards === 0 && (
+                  <li className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                    {t({ en: 'Add monitoring dashboards for performance tracking', ar: 'أضف لوحات مراقبة لتتبع الأداء' })}
+                  </li>
+                )}
+                {completenessScore >= 80 && (
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                    {t({ en: 'Governance structure is well-defined. Review periodically.', ar: 'هيكل الحوكمة محدد جيداً. راجعه دورياً.' })}
+                  </li>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Cards View - Tabs */}
       {viewMode === 'cards' && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="committees" className="gap-1 text-xs md:text-sm">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsTrigger value="committees" className="gap-1">
               <Building2 className="w-4 h-4" />
-              <span className="hidden md:inline">{t({ en: 'Committees', ar: 'اللجان' })}</span>
+              <span className="hidden sm:inline">{t({ en: 'Committees', ar: 'اللجان' })}</span>
               <Badge variant="secondary" className="ml-1 text-xs">{committees.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="roles" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="roles" className="gap-1">
               <Users className="w-4 h-4" />
-              <span className="hidden md:inline">{t({ en: 'Roles', ar: 'الأدوار' })}</span>
+              <span className="hidden sm:inline">{t({ en: 'Roles', ar: 'الأدوار' })}</span>
               <Badge variant="secondary" className="ml-1 text-xs">{roles.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="escalation" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="escalation" className="gap-1">
               <GitBranch className="w-4 h-4" />
-              <span className="hidden md:inline">{t({ en: 'Escalation', ar: 'التصعيد' })}</span>
+              <span className="hidden sm:inline">{t({ en: 'Escalation', ar: 'التصعيد' })}</span>
               <Badge variant="secondary" className="ml-1 text-xs">{escalationPath.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="dashboards" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="dashboards" className="gap-1">
               <LayoutDashboard className="w-4 h-4" />
-              <span className="hidden md:inline">{t({ en: 'Dashboards', ar: 'لوحات' })}</span>
+              <span className="hidden sm:inline">{t({ en: 'Dashboards', ar: 'لوحات' })}</span>
               <Badge variant="secondary" className="ml-1 text-xs">{dashboards.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="raci" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="raci" className="gap-1">
               <Grid3X3 className="w-4 h-4" />
-              <span className="hidden md:inline">{t({ en: 'RACI', ar: 'RACI' })}</span>
+              <span className="hidden sm:inline">{t({ en: 'RACI', ar: 'RACI' })}</span>
               <Badge variant="secondary" className="ml-1 text-xs">{raciMatrix.length}</Badge>
             </TabsTrigger>
           </TabsList>
 
           {/* Committees Tab */}
-          <TabsContent value="committees" className="space-y-4 mt-4">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">
-                {t({ en: 'Define governance committees with roles and responsibilities', ar: 'تحديد لجان الحوكمة مع الأدوار والمسؤوليات' })}
+          <TabsContent value="committees" className="space-y-4">
+            {!isReadOnly && (
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={addCommittee}>
+                  <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Committee', ar: 'إضافة لجنة' })}
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={addCommittee}>
-                <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Committee', ar: 'إضافة لجنة' })}
-              </Button>
-            </div>
+            )}
 
             {committees.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>{t({ en: 'No committees defined', ar: 'لم يتم تحديد لجان' })}</p>
-                <p className="text-xs mt-1">{t({ en: 'Click "Add Committee" or use AI to generate', ar: 'انقر على "إضافة لجنة" أو استخدم الذكاء الاصطناعي للإنشاء' })}</p>
-              </div>
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <Building2 className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">{t({ en: 'No committees defined', ar: 'لم يتم تحديد لجان' })}</p>
+                  {!isReadOnly && (
+                    <Button variant="link" onClick={addCommittee} className="mt-2">
+                      <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add first committee', ar: 'أضف أول لجنة' })}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
             ) : (
               <div className="space-y-3">
-                {committees.map((committee, idx) => (
-                  <CommitteeCard
-                    key={committee.id || idx}
-                    committee={committee}
-                    index={idx}
-                    onUpdate={updateCommittee}
-                    onRemove={removeCommittee}
-                    language={language}
-                    t={t}
-                  />
-                ))}
+                {committees.map(committee => {
+                  const isExpanded = expandedItems[committee.id];
+                  const typeConfig = COMMITTEE_TYPES.find(ct => ct.value === committee.type) || COMMITTEE_TYPES[0];
+                  const TypeIcon = typeConfig.icon;
+                  const progress = getCommitteeProgress(committee);
+                  const members = Array.isArray(committee.members) ? committee.members : 
+                                  (typeof committee.members === 'string' ? committee.members.split('\n').filter(Boolean) : []);
+
+                  return (
+                    <Collapsible key={committee.id} open={isExpanded} onOpenChange={() => toggleExpanded(committee.id)}>
+                      <Card className={cn("border-2 transition-all", progress >= 80 && "border-green-300")}>
+                        <CollapsibleTrigger asChild>
+                          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={cn("p-2 rounded-lg", typeConfig.color)}>
+                                  <TypeIcon className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{committee.name_en || committee.name || t({ en: 'Unnamed Committee', ar: 'لجنة بدون اسم' })}</span>
+                                    {progress >= 80 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {typeConfig.label[language]} • {FREQUENCY_OPTIONS.find(f => f.value === committee.meeting_frequency)?.label[language] || 'Monthly'}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="hidden sm:flex items-center gap-2">
+                                  <Progress value={progress} className="w-16 h-1.5" />
+                                  <span className="text-xs text-muted-foreground">{progress}%</span>
+                                </div>
+                                <Badge variant="outline" className="text-xs">{members.length} {t({ en: 'members', ar: 'أعضاء' })}</Badge>
+                                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </CollapsibleTrigger>
+                        
+                        <CollapsibleContent>
+                          <CardContent className="space-y-4 pt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Committee Name (EN)', ar: 'اسم اللجنة (إنجليزي)' })}</Label>
+                                <Input
+                                  value={committee.name_en || committee.name || ''}
+                                  onChange={(e) => updateCommittee(committee.id, 'name_en', e.target.value)}
+                                  className={cn((committee.name_en || committee.name) && "border-green-300")}
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Committee Name (AR)', ar: 'اسم اللجنة (عربي)' })}</Label>
+                                <Input
+                                  dir="rtl"
+                                  value={committee.name_ar || ''}
+                                  onChange={(e) => updateCommittee(committee.id, 'name_ar', e.target.value)}
+                                  className={cn(committee.name_ar && "border-green-300")}
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Type', ar: 'النوع' })}</Label>
+                                <Select value={committee.type || 'steering'} onValueChange={(v) => updateCommittee(committee.id, 'type', v)} disabled={isReadOnly}>
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {COMMITTEE_TYPES.map((ct) => (
+                                      <SelectItem key={ct.value} value={ct.value}>
+                                        <div className="flex items-center gap-2">
+                                          <ct.icon className="w-4 h-4" />
+                                          {ct.label[language]}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Chair Role', ar: 'رئيس اللجنة' })}</Label>
+                                <Input
+                                  value={committee.chair_role_en || ''}
+                                  onChange={(e) => updateCommittee(committee.id, 'chair_role_en', e.target.value)}
+                                  className={cn(committee.chair_role_en && "border-green-300")}
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Meeting Frequency', ar: 'تكرار الاجتماعات' })}</Label>
+                                <Select value={committee.meeting_frequency || 'monthly'} onValueChange={(v) => updateCommittee(committee.id, 'meeting_frequency', v)} disabled={isReadOnly}>
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {FREQUENCY_OPTIONS.map((f) => (
+                                      <SelectItem key={f.value} value={f.value}>{f.label[language]}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            <div>
+                              <Label className="text-xs">{t({ en: 'Members (one per line)', ar: 'الأعضاء (كل عضو في سطر)' })}</Label>
+                              <Textarea
+                                value={members.join('\n')}
+                                onChange={(e) => updateCommittee(committee.id, 'members', e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}
+                                rows={3}
+                                className={cn(members.length > 0 && "border-green-300")}
+                                disabled={isReadOnly}
+                              />
+                            </div>
+
+                            <div>
+                              <Label className="text-xs">{t({ en: 'Responsibilities', ar: 'المسؤوليات' })}</Label>
+                              <Textarea
+                                value={committee.responsibilities_en || committee.responsibilities || ''}
+                                onChange={(e) => updateCommittee(committee.id, 'responsibilities_en', e.target.value)}
+                                rows={2}
+                                className={cn((committee.responsibilities_en || committee.responsibilities) && "border-green-300")}
+                                disabled={isReadOnly}
+                              />
+                            </div>
+
+                            {!isReadOnly && (
+                              <div className="flex justify-end pt-2 border-t">
+                                <Button variant="ghost" size="sm" onClick={() => removeCommittee(committee.id)} className="text-destructive hover:text-destructive">
+                                  <X className="w-4 h-4 mr-1" />{t({ en: 'Remove', ar: 'حذف' })}
+                                </Button>
+                              </div>
+                            )}
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
 
           {/* Roles Tab */}
-          <TabsContent value="roles" className="space-y-4 mt-4">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">
-                {t({ en: 'Define key governance roles and reporting lines', ar: 'تحديد أدوار الحوكمة الرئيسية وخطوط التقارير' })}
+          <TabsContent value="roles" className="space-y-4">
+            {!isReadOnly && (
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={addRole}>
+                  <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Role', ar: 'إضافة دور' })}
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={addRole}>
-                <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Role', ar: 'إضافة دور' })}
-              </Button>
-            </div>
+            )}
 
             {roles.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>{t({ en: 'No roles defined', ar: 'لم يتم تحديد أدوار' })}</p>
-                <p className="text-xs mt-1">{t({ en: 'Click "Add Role" or use AI to generate', ar: 'انقر على "إضافة دور" أو استخدم الذكاء الاصطناعي للإنشاء' })}</p>
-              </div>
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">{t({ en: 'No roles defined', ar: 'لم يتم تحديد أدوار' })}</p>
+                  {!isReadOnly && (
+                    <Button variant="link" onClick={addRole} className="mt-2">
+                      <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add first role', ar: 'أضف أول دور' })}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
             ) : (
               <div className="space-y-3">
-                {roles.map((role, idx) => (
-                  <RoleCard
-                    key={role.id || idx}
-                    role={role}
-                    index={idx}
-                    onUpdate={updateRole}
-                    onRemove={removeRole}
-                    language={language}
-                    t={t}
-                  />
-                ))}
+                {roles.map(role => {
+                  const isExpanded = expandedItems[role.id];
+                  const typeConfig = ROLE_TYPES.find(rt => rt.value === role.type) || ROLE_TYPES[2];
+                  const TypeIcon = typeConfig.icon;
+                  const progress = getRoleProgress(role);
+
+                  return (
+                    <Collapsible key={role.id} open={isExpanded} onOpenChange={() => toggleExpanded(role.id)}>
+                      <Card className={cn("border-2 transition-all", progress >= 80 && "border-green-300")}>
+                        <CollapsibleTrigger asChild>
+                          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-primary/10">
+                                  <TypeIcon className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{role.title_en || t({ en: 'Unnamed Role', ar: 'دور بدون اسم' })}</span>
+                                    {progress >= 80 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {typeConfig.label[language]} • {role.department_en || t({ en: 'No department', ar: 'بدون قسم' })}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="hidden sm:flex items-center gap-2">
+                                  <Progress value={progress} className="w-16 h-1.5" />
+                                  <span className="text-xs text-muted-foreground">{progress}%</span>
+                                </div>
+                                <Badge variant="outline" className="text-xs">L{typeConfig.level}</Badge>
+                                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </CollapsibleTrigger>
+                        
+                        <CollapsibleContent>
+                          <CardContent className="space-y-4 pt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Role Title (EN)', ar: 'عنوان الدور (إنجليزي)' })}</Label>
+                                <Input
+                                  value={role.title_en || ''}
+                                  onChange={(e) => updateRole(role.id, 'title_en', e.target.value)}
+                                  className={cn(role.title_en && "border-green-300")}
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Role Title (AR)', ar: 'عنوان الدور (عربي)' })}</Label>
+                                <Input
+                                  dir="rtl"
+                                  value={role.title_ar || ''}
+                                  onChange={(e) => updateRole(role.id, 'title_ar', e.target.value)}
+                                  className={cn(role.title_ar && "border-green-300")}
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Type', ar: 'النوع' })}</Label>
+                                <Select value={role.type || 'management'} onValueChange={(v) => updateRole(role.id, 'type', v)} disabled={isReadOnly}>
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {ROLE_TYPES.map((r) => (
+                                      <SelectItem key={r.value} value={r.value}>
+                                        <div className="flex items-center gap-2">
+                                          <r.icon className="w-4 h-4" />
+                                          {r.label[language]}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Department', ar: 'القسم' })}</Label>
+                                <Input
+                                  value={role.department_en || ''}
+                                  onChange={(e) => updateRole(role.id, 'department_en', e.target.value)}
+                                  className={cn(role.department_en && "border-green-300")}
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">{t({ en: 'Reports To', ar: 'يقدم تقاريره إلى' })}</Label>
+                                <Input
+                                  value={role.reports_to_en || ''}
+                                  onChange={(e) => updateRole(role.id, 'reports_to_en', e.target.value)}
+                                  className={cn(role.reports_to_en && "border-green-300")}
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <Label className="text-xs">{t({ en: 'Key Responsibilities', ar: 'المسؤوليات الرئيسية' })}</Label>
+                              <Textarea
+                                value={role.key_responsibilities_en || ''}
+                                onChange={(e) => updateRole(role.id, 'key_responsibilities_en', e.target.value)}
+                                rows={2}
+                                className={cn(role.key_responsibilities_en && "border-green-300")}
+                                disabled={isReadOnly}
+                              />
+                            </div>
+
+                            {!isReadOnly && (
+                              <div className="flex justify-end pt-2 border-t">
+                                <Button variant="ghost" size="sm" onClick={() => removeRole(role.id)} className="text-destructive hover:text-destructive">
+                                  <X className="w-4 h-4 mr-1" />{t({ en: 'Remove', ar: 'حذف' })}
+                                </Button>
+                              </div>
+                            )}
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
 
           {/* Escalation Tab */}
-          <TabsContent value="escalation" className="space-y-4 mt-4">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">
-                {t({ en: 'Define escalation path for issues and decisions', ar: 'تحديد مسار التصعيد للمشاكل والقرارات' })}
+          <TabsContent value="escalation" className="space-y-4">
+            {!isReadOnly && (
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={addEscalationStep}>
+                  <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Step', ar: 'إضافة خطوة' })}
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={addEscalationStep}>
-                <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Step', ar: 'إضافة خطوة' })}
-              </Button>
-            </div>
+            )}
 
             {escalationPath.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                <GitBranch className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>{t({ en: 'No escalation steps defined', ar: 'لم يتم تحديد خطوات التصعيد' })}</p>
-                <p className="text-xs mt-1">{t({ en: 'Click "Add Step" or use AI to generate', ar: 'انقر على "إضافة خطوة" أو استخدم الذكاء الاصطناعي للإنشاء' })}</p>
-              </div>
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <GitBranch className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">{t({ en: 'No escalation steps defined', ar: 'لم يتم تحديد خطوات التصعيد' })}</p>
+                  {!isReadOnly && (
+                    <Button variant="link" onClick={addEscalationStep} className="mt-2">
+                      <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add first step', ar: 'أضف أول خطوة' })}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
             ) : (
               <div className="space-y-2">
                 {escalationPath.map((step, idx) => (
-                  <div key={step.id || idx} className="relative">
+                  <div key={step.id} className="relative">
                     {idx < escalationPath.length - 1 && (
                       <div className="absolute left-6 top-full w-0.5 h-4 bg-primary/30 z-0" />
                     )}
                     
-                    <div className="p-4 border rounded-lg bg-card hover:bg-accent/5 transition-colors">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary">
-                          <span className="text-lg font-bold text-primary">{step.level || idx + 1}</span>
-                        </div>
-                        
-                        <div className="flex-1 space-y-3">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary">
+                            <span className="text-lg font-bold text-primary">{step.level || idx + 1}</span>
+                          </div>
+                          
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
-                              <Label className="text-xs">{t({ en: 'Role/Position (EN)', ar: 'الدور/المنصب (إنجليزي)' })}</Label>
+                              <Label className="text-xs">{t({ en: 'Role/Position', ar: 'الدور/المنصب' })}</Label>
                               <Input
-                                placeholder="e.g., Project Manager"
                                 value={step.role_en || ''}
-                                onChange={(e) => updateEscalationStep(idx, 'role_en', e.target.value)}
+                                onChange={(e) => updateEscalationStep(step.id, 'role_en', e.target.value)}
+                                className={cn(step.role_en && "border-green-300")}
+                                disabled={isReadOnly}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs">{t({ en: 'Timeframe (EN)', ar: 'الإطار الزمني (إنجليزي)' })}</Label>
+                              <Label className="text-xs">{t({ en: 'Timeframe', ar: 'الإطار الزمني' })}</Label>
                               <Input
-                                placeholder="e.g., Within 24 hours"
+                                placeholder={t({ en: 'e.g., Within 24 hours', ar: 'مثال: خلال 24 ساعة' })}
                                 value={step.timeframe_en || ''}
-                                onChange={(e) => updateEscalationStep(idx, 'timeframe_en', e.target.value)}
+                                onChange={(e) => updateEscalationStep(step.id, 'timeframe_en', e.target.value)}
+                                disabled={isReadOnly}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">{t({ en: 'Description', ar: 'الوصف' })}</Label>
+                              <Input
+                                value={step.description_en || ''}
+                                onChange={(e) => updateEscalationStep(step.id, 'description_en', e.target.value)}
+                                disabled={isReadOnly}
                               />
                             </div>
                           </div>
                           
-                          <div>
-                            <Label className="text-xs">{t({ en: 'Description (EN)', ar: 'الوصف (إنجليزي)' })}</Label>
-                            <Input
-                              placeholder="When to escalate to this level"
-                              value={step.description_en || ''}
-                              onChange={(e) => updateEscalationStep(idx, 'description_en', e.target.value)}
-                            />
-                          </div>
+                          {!isReadOnly && (
+                            <div className="flex flex-col gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => moveEscalationStep(step.id, -1)} disabled={idx === 0} className="h-8 w-8">
+                                <ChevronUp className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => moveEscalationStep(step.id, 1)} disabled={idx === escalationPath.length - 1} className="h-8 w-8">
+                                <ChevronDown className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => removeEscalationStep(step.id)} className="h-8 w-8 text-destructive hover:text-destructive">
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        
-                        <div className="flex flex-col gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => moveEscalationStep(idx, -1)}
-                            disabled={idx === 0}
-                            className="h-8 w-8"
-                          >
-                            <ChevronUp className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => moveEscalationStep(idx, 1)}
-                            disabled={idx === escalationPath.length - 1}
-                            className="h-8 w-8"
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeEscalationStep(idx)}
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                     
                     {idx < escalationPath.length - 1 && (
-                      <div className="flex justify-center py-1">
-                        <ArrowDown className="w-5 h-5 text-primary/50" />
-                      </div>
+                      <div className="flex justify-center py-1"><ArrowDown className="w-5 h-5 text-primary/50" /></div>
                     )}
                   </div>
                 ))}
@@ -1114,55 +1041,58 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
           </TabsContent>
 
           {/* Dashboards Tab */}
-          <TabsContent value="dashboards" className="space-y-4 mt-4">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">
-                {t({ en: 'Configure monitoring dashboards for different audiences', ar: 'تكوين لوحات المراقبة لمختلف الجماهير' })}
+          <TabsContent value="dashboards" className="space-y-4">
+            {!isReadOnly && (
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={addDashboard}>
+                  <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Dashboard', ar: 'إضافة لوحة' })}
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={addDashboard}>
-                <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Dashboard', ar: 'إضافة لوحة' })}
-              </Button>
-            </div>
+            )}
 
             {dashboards.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                <LayoutDashboard className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>{t({ en: 'No dashboards defined', ar: 'لم يتم تحديد لوحات تحكم' })}</p>
-                <p className="text-xs mt-1">{t({ en: 'Click "Add Dashboard" or use AI to generate', ar: 'انقر على "إضافة لوحة" أو استخدم الذكاء الاصطناعي للإنشاء' })}</p>
-              </div>
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <LayoutDashboard className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">{t({ en: 'No dashboards defined', ar: 'لم يتم تحديد لوحات تحكم' })}</p>
+                  {!isReadOnly && (
+                    <Button variant="link" onClick={addDashboard} className="mt-2">
+                      <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add first dashboard', ar: 'أضف أول لوحة' })}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dashboards.map((dashboard, idx) => {
+                {dashboards.map(dashboard => {
                   const typeConfig = DASHBOARD_TYPES.find(d => d.value === dashboard.type) || DASHBOARD_TYPES[0];
                   const TypeIcon = typeConfig.icon;
                   return (
-                    <Card key={dashboard.id || idx} className="relative">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => removeDashboard(idx)}
-                        className="absolute top-2 right-2 h-6 w-6"
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
+                    <Card key={dashboard.id} className="relative">
+                      {!isReadOnly && (
+                        <Button variant="ghost" size="icon" onClick={() => removeDashboard(dashboard.id)} className="absolute top-2 right-2 h-6 w-6">
+                          <X className="w-3 h-3" />
+                        </Button>
+                      )}
                       <CardHeader className="pb-2">
                         <div className="flex items-center gap-2">
-                          <div className={`p-2 rounded-lg ${typeConfig.color}/10`}>
-                            <TypeIcon className={`w-4 h-4 ${typeConfig.color.replace('bg-', 'text-')}`} />
+                          <div className={cn("p-2 rounded-lg", `${typeConfig.color}/10`)}>
+                            <TypeIcon className={cn("w-4 h-4", typeConfig.color.replace('bg-', 'text-'))} />
                           </div>
                           <div className="flex-1">
                             <Input
                               placeholder={t({ en: 'Dashboard Name', ar: 'اسم اللوحة' })}
                               value={dashboard.name_en || ''}
-                              onChange={(e) => updateDashboard(idx, 'name_en', e.target.value)}
+                              onChange={(e) => updateDashboard(dashboard.id, 'name_en', e.target.value)}
                               className="h-8 font-medium"
+                              disabled={isReadOnly}
                             />
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div className="grid grid-cols-2 gap-2">
-                          <Select value={dashboard.type || 'executive'} onValueChange={(v) => updateDashboard(idx, 'type', v)}>
+                          <Select value={dashboard.type || 'executive'} onValueChange={(v) => updateDashboard(dashboard.id, 'type', v)} disabled={isReadOnly}>
                             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {DASHBOARD_TYPES.map((d) => (
@@ -1170,7 +1100,7 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
                               ))}
                             </SelectContent>
                           </Select>
-                          <Select value={dashboard.update_frequency || 'weekly'} onValueChange={(v) => updateDashboard(idx, 'update_frequency', v)}>
+                          <Select value={dashboard.update_frequency || 'weekly'} onValueChange={(v) => updateDashboard(dashboard.id, 'update_frequency', v)} disabled={isReadOnly}>
                             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="realtime">{t({ en: 'Real-time', ar: 'فوري' })}</SelectItem>
@@ -1183,15 +1113,17 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
                         <Textarea
                           placeholder={t({ en: 'Key metrics (one per line)', ar: 'المقاييس الرئيسية' })}
                           value={dashboard.key_metrics_en || ''}
-                          onChange={(e) => updateDashboard(idx, 'key_metrics_en', e.target.value)}
+                          onChange={(e) => updateDashboard(dashboard.id, 'key_metrics_en', e.target.value)}
                           rows={2}
                           className="text-xs"
+                          disabled={isReadOnly}
                         />
                         <Input
                           placeholder={t({ en: 'Target Audience', ar: 'الجمهور المستهدف' })}
                           value={dashboard.audience_en || ''}
-                          onChange={(e) => updateDashboard(idx, 'audience_en', e.target.value)}
+                          onChange={(e) => updateDashboard(dashboard.id, 'audience_en', e.target.value)}
                           className="h-8 text-xs"
+                          disabled={isReadOnly}
                         />
                       </CardContent>
                     </Card>
@@ -1202,112 +1134,123 @@ export default function Step15Governance({ data, onChange, onGenerateAI, isGener
           </TabsContent>
 
           {/* RACI Tab */}
-          <TabsContent value="raci" className="space-y-4 mt-4">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">
-                {t({ en: 'Define decision rights using RACI matrix', ar: 'تحديد حقوق القرار باستخدام مصفوفة RACI' })}
+          <TabsContent value="raci" className="space-y-4">
+            {!isReadOnly && (
+              <div className="flex justify-between items-center">
+                <div className="flex flex-wrap gap-2">
+                  {RACI_VALUES.map((v) => (
+                    <Badge key={v.value} variant="outline" className="gap-1">
+                      <span className={cn("w-2 h-2 rounded-full", v.color)} />
+                      {v.value} - {v.label[language]}
+                    </Badge>
+                  ))}
+                </div>
+                <Button variant="outline" size="sm" onClick={addRaciEntry}>
+                  <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Entry', ar: 'إضافة إدخال' })}
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={addRaciEntry}>
-                <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Entry', ar: 'إضافة إدخال' })}
-              </Button>
-            </div>
-
-            {/* RACI Legend */}
-            <div className="flex flex-wrap gap-2">
-              {RACI_VALUES.map((v) => (
-                <Badge key={v.value} variant="outline" className="gap-1">
-                  <span className={`w-3 h-3 rounded-full ${v.color}`} />
-                  {v.label[language]}
-                </Badge>
-              ))}
-            </div>
+            )}
 
             {raciMatrix.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                <Grid3X3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>{t({ en: 'No RACI entries defined', ar: 'لم يتم تحديد إدخالات RACI' })}</p>
-                <p className="text-xs mt-1">{t({ en: 'Click "Add Entry" or use AI to generate', ar: 'انقر على "إضافة إدخال" أو استخدم الذكاء الاصطناعي للإنشاء' })}</p>
-              </div>
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <Grid3X3 className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">{t({ en: 'No RACI entries defined', ar: 'لم يتم تحديد إدخالات RACI' })}</p>
+                  {!isReadOnly && (
+                    <Button variant="link" onClick={addRaciEntry} className="mt-2">
+                      <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add first entry', ar: 'أضف أول إدخال' })}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
             ) : (
               <div className="space-y-3">
-                {raciMatrix.map((entry, idx) => {
+                {raciMatrix.map(entry => {
                   const areaConfig = RACI_AREAS.find(a => a.value === entry.area);
                   const AreaIcon = areaConfig?.icon || Target;
                   return (
-                    <div key={entry.id || idx} className="p-4 border rounded-lg space-y-3">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <AreaIcon className="w-4 h-4 text-primary" />
-                          <Select value={entry.area || 'strategic_decisions'} onValueChange={(v) => updateRaciEntry(idx, 'area', v)}>
-                            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {RACI_AREAS.map((a) => (
-                                <SelectItem key={a.value} value={a.value}>
-                                  <div className="flex items-center gap-2">
-                                    <a.icon className="w-4 h-4" />
-                                    {a.label[language]}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                    <Card key={entry.id}>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <AreaIcon className="w-4 h-4 text-primary" />
+                            <Select value={entry.area || 'strategic_decisions'} onValueChange={(v) => updateRaciEntry(entry.id, 'area', v)} disabled={isReadOnly}>
+                              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {RACI_AREAS.map((a) => (
+                                  <SelectItem key={a.value} value={a.value}>
+                                    <div className="flex items-center gap-2">
+                                      <a.icon className="w-4 h-4" />
+                                      {a.label[language]}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {!isReadOnly && (
+                            <Button variant="ghost" size="icon" onClick={() => removeRaciEntry(entry.id)}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeRaciEntry(idx)}>
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div>
-                          <Label className="text-xs flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-blue-500" />
-                            {t({ en: 'Responsible', ar: 'مسؤول' })}
-                          </Label>
-                          <Input
-                            placeholder={t({ en: 'Who does the work', ar: 'من ينفذ العمل' })}
-                            value={entry.responsible_en || ''}
-                            onChange={(e) => updateRaciEntry(idx, 'responsible_en', e.target.value)}
-                            className="h-8 text-xs"
-                          />
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <Label className="text-xs flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-blue-500" />
+                              {t({ en: 'Responsible', ar: 'مسؤول' })}
+                            </Label>
+                            <Input
+                              placeholder={t({ en: 'Who does the work', ar: 'من ينفذ العمل' })}
+                              value={entry.responsible_en || ''}
+                              onChange={(e) => updateRaciEntry(entry.id, 'responsible_en', e.target.value)}
+                              className="h-8 text-xs"
+                              disabled={isReadOnly}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-green-500" />
+                              {t({ en: 'Accountable', ar: 'محاسب' })}
+                            </Label>
+                            <Input
+                              placeholder={t({ en: 'Final approver', ar: 'الموافق النهائي' })}
+                              value={entry.accountable_en || ''}
+                              onChange={(e) => updateRaciEntry(entry.id, 'accountable_en', e.target.value)}
+                              className="h-8 text-xs"
+                              disabled={isReadOnly}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                              {t({ en: 'Consulted', ar: 'مستشار' })}
+                            </Label>
+                            <Input
+                              placeholder={t({ en: 'Input required', ar: 'مدخلات مطلوبة' })}
+                              value={entry.consulted_en || ''}
+                              onChange={(e) => updateRaciEntry(entry.id, 'consulted_en', e.target.value)}
+                              className="h-8 text-xs"
+                              disabled={isReadOnly}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-gray-400" />
+                              {t({ en: 'Informed', ar: 'مطلع' })}
+                            </Label>
+                            <Input
+                              placeholder={t({ en: 'Kept updated', ar: 'يتم إبلاغه' })}
+                              value={entry.informed_en || ''}
+                              onChange={(e) => updateRaciEntry(entry.id, 'informed_en', e.target.value)}
+                              className="h-8 text-xs"
+                              disabled={isReadOnly}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <Label className="text-xs flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-green-500" />
-                            {t({ en: 'Accountable', ar: 'محاسب' })}
-                          </Label>
-                          <Input
-                            placeholder={t({ en: 'Final approver', ar: 'الموافق النهائي' })}
-                            value={entry.accountable_en || ''}
-                            onChange={(e) => updateRaciEntry(idx, 'accountable_en', e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                            {t({ en: 'Consulted', ar: 'مستشار' })}
-                          </Label>
-                          <Input
-                            placeholder={t({ en: 'Input required', ar: 'مدخلات مطلوبة' })}
-                            value={entry.consulted_en || ''}
-                            onChange={(e) => updateRaciEntry(idx, 'consulted_en', e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-gray-400" />
-                            {t({ en: 'Informed', ar: 'مطلع' })}
-                          </Label>
-                          <Input
-                            placeholder={t({ en: 'Kept updated', ar: 'يتم إبلاغه' })}
-                            value={entry.informed_en || ''}
-                            onChange={(e) => updateRaciEntry(idx, 'informed_en', e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
