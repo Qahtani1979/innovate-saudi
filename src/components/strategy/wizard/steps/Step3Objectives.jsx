@@ -33,6 +33,7 @@ export default function Step3Objectives({
   const [activeTab, setActiveTab] = useState('list');
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [showProposalModal, setShowProposalModal] = useState(false);
+  const [showSectorModal, setShowSectorModal] = useState(false);
   const [proposedObjective, setProposedObjective] = useState(null);
   const [differentiationScore, setDifferentiationScore] = useState(null);
   const [scoreDetails, setScoreDetails] = useState(null);
@@ -415,7 +416,10 @@ export default function Step3Objectives({
           description={{ en: 'Generate sector-specific strategic objectives based on your plan context', ar: 'إنشاء أهداف قطاعية محددة بناءً على سياق خطتك' }}
           onGenerate={onGenerateAI}
           isGenerating={isGenerating}
-          onGenerateSingle={() => handleGenerateSingleObjective()}
+          onGenerateSingle={() => {
+            setTargetSector('_any');
+            setShowSectorModal(true);
+          }}
           isGeneratingSingle={isGeneratingSingle}
           showSingleButton={!!onGenerateSingleObjective}
           singleButtonLabel={{ en: 'AI Add One', ar: 'إضافة واحد بالذكاء' }}
@@ -825,6 +829,61 @@ export default function Step3Objectives({
             <Button onClick={handleApproveObjective} disabled={!proposedObjective}>
               <Check className="w-4 h-4 mr-2" />
               {t({ en: 'Add Objective', ar: 'إضافة الهدف' })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sector Selection Modal */}
+      <Dialog open={showSectorModal} onOpenChange={setShowSectorModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              {t({ en: 'Select Target Sector', ar: 'اختر القطاع المستهدف' })}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              {t({ en: 'Choose a sector for the AI to generate a unique objective, or let AI decide.', ar: 'اختر قطاعاً للذكاء الاصطناعي لإنشاء هدف فريد، أو دع الذكاء الاصطناعي يقرر.' })}
+            </p>
+            
+            <div className="space-y-2">
+              <Label>{t({ en: 'Sector', ar: 'القطاع' })}</Label>
+              <Select value={targetSector} onValueChange={setTargetSector}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t({ en: 'Select sector...', ar: 'اختر القطاع...' })} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_any">
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      {t({ en: 'Let AI Decide', ar: 'دع الذكاء الاصطناعي يقرر' })}
+                    </span>
+                  </SelectItem>
+                  {sectors.map(s => (
+                    <SelectItem key={s.code} value={s.code}>
+                      {language === 'ar' ? s.name_ar : s.name_en}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowSectorModal(false)}>
+              {t({ en: 'Cancel', ar: 'إلغاء' })}
+            </Button>
+            <Button 
+              onClick={() => {
+                setShowSectorModal(false);
+                handleGenerateSingleObjective(targetSector === '_any' ? null : targetSector);
+              }}
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              {t({ en: 'Generate Objective', ar: 'إنشاء الهدف' })}
             </Button>
           </DialogFooter>
         </DialogContent>
