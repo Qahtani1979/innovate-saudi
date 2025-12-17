@@ -27,18 +27,58 @@ ${context.objectives.map((o, i) => (i + 1) + '. ' + (o.name_en || o.name_ar) + '
 ## REQUIREMENTS:
 Generate 2-4 SMART KPIs per objective with BALANCED leading and lagging indicators.
 
-For EACH KPI, provide ALL fields (bilingual):
+For EACH KPI, provide ALL fields (BILINGUAL where applicable):
 - name_en / name_ar: Specific, measurable KPI name (avoid vague terms like "improve" or "enhance")
 - category: EXACTLY ONE of "outcome" (lagging) | "output" (lagging) | "process" (leading) | "input" (leading)
-- unit: Measurement unit (%, count, SAR, days, score, rating, etc.)
+- unit_en / unit_ar: Measurement unit in both languages (e.g., "%" / "٪", "days" / "أيام", "SAR" / "ريال سعودي")
 - baseline_value: Current/starting value (be specific, not "TBD")
 - target_value: Target to achieve by end of plan
 - objective_index: Which objective this KPI measures (0-based index)
 - frequency: "monthly" | "quarterly" | "biannual" | "annual"
-- data_source: Specific system/platform where data comes from
-- data_collection_method: How data will be collected (e.g., "Automated API", "Quarterly Survey", "Manual Report")
-- owner: Role/department responsible for tracking
+- data_source_en / data_source_ar: Specific system/platform where data comes from (bilingual)
+- data_collection_method_en / data_collection_method_ar: How data will be collected (bilingual)
+- owner_en / owner_ar: Role/department responsible for tracking (bilingual)
 - milestones: Array of year-by-year targets from ${context.startYear} to ${context.endYear}
+
+---
+
+## UNIT EXAMPLES (BILINGUAL):
+- "%" / "٪" or "%" / "نسبة مئوية"
+- "count" / "عدد"
+- "SAR" / "ريال سعودي"
+- "days" / "أيام"
+- "hours" / "ساعات"
+- "score" / "درجة"
+- "rating" / "تقييم"
+- "projects" / "مشاريع"
+- "services" / "خدمات"
+- "sensors" / "أجهزة استشعار"
+
+## DATA SOURCE EXAMPLES (BILINGUAL):
+- "Balady Platform Analytics" / "تحليلات منصة بلدي"
+- "Citizen Pulse Survey System" / "نظام استطلاع نبض المواطن"
+- "SDAIA AI Governance Dashboard" / "لوحة حوكمة الذكاء الاصطناعي - سدايا"
+- "Municipal ERP/Finance System" / "نظام تخطيط موارد البلدية/المالية"
+- "IoT Command Center Platform" / "منصة مركز قيادة إنترنت الأشياء"
+- "HR LMS (Learning Management System)" / "نظام إدارة التعلم للموارد البشرية"
+- "Innovation Portfolio Tracker" / "متتبع محفظة الابتكار"
+- "Smart City Operations Center" / "مركز عمليات المدينة الذكية"
+
+## OWNER EXAMPLES (BILINGUAL):
+- "Digital Transformation Office" / "مكتب التحول الرقمي"
+- "Innovation & R&D Department" / "إدارة الابتكار والبحث والتطوير"
+- "Citizen Services Director" / "مدير خدمات المواطنين"
+- "IT Infrastructure Manager" / "مدير البنية التحتية لتقنية المعلومات"
+- "Smart City Program Manager" / "مدير برنامج المدينة الذكية"
+- "Quality Assurance Unit" / "وحدة ضمان الجودة"
+
+## DATA COLLECTION METHOD EXAMPLES (BILINGUAL):
+- "Automated API integration" / "تكامل واجهة برمجة التطبيقات الآلي"
+- "Quarterly citizen survey" / "استطلاع ربع سنوي للمواطنين"
+- "Monthly dashboard report" / "تقرير لوحة المعلومات الشهري"
+- "Real-time sensor data" / "بيانات الاستشعار في الوقت الفعلي"
+- "Annual audit assessment" / "تقييم التدقيق السنوي"
+- "Weekly progress tracking" / "تتبع التقدم الأسبوعي"
 
 ---
 
@@ -120,16 +160,6 @@ For each KPI, provide realistic year-by-year targets:
 - Leading indicators (process + input): 30-40% of total
 - Realistic Saudi municipal benchmarks
 
-## DATA SOURCES (be specific):
-- Balady Platform Analytics
-- Citizen Pulse Survey System
-- SDAIA AI Governance Dashboard
-- Municipal ERP/Finance System
-- IoT Command Center Platform
-- HR LMS (Learning Management System)
-- Innovation Portfolio Tracker
-- Smart City Operations Center
-
 Be specific. Use realistic Saudi municipal benchmarks. Ensure SMART criteria compliance.`;
 };
 
@@ -144,14 +174,18 @@ export const step11Schema = {
           name_en: { type: 'string' },
           name_ar: { type: 'string' },
           category: { type: 'string', enum: ['outcome', 'output', 'process', 'input'] },
-          unit: { type: 'string' },
+          unit_en: { type: 'string' },
+          unit_ar: { type: 'string' },
           baseline_value: { type: 'string' },
           target_value: { type: 'string' },
           objective_index: { type: 'number' },
           frequency: { type: 'string', enum: ['monthly', 'quarterly', 'biannual', 'annual'] },
-          data_source: { type: 'string' },
-          data_collection_method: { type: 'string' },
-          owner: { type: 'string' },
+          data_source_en: { type: 'string' },
+          data_source_ar: { type: 'string' },
+          data_collection_method_en: { type: 'string' },
+          data_collection_method_ar: { type: 'string' },
+          owner_en: { type: 'string' },
+          owner_ar: { type: 'string' },
           milestones: { 
             type: 'array', 
             items: { 
@@ -162,7 +196,8 @@ export const step11Schema = {
               } 
             } 
           }
-        }
+        },
+        required: ['name_en', 'name_ar', 'category', 'unit_en', 'unit_ar', 'baseline_value', 'target_value', 'objective_index', 'frequency', 'data_source_en', 'data_source_ar', 'data_collection_method_en', 'data_collection_method_ar', 'owner_en', 'owner_ar', 'milestones']
       }
     }
   }

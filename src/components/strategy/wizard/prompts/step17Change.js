@@ -100,19 +100,19 @@ For EACH stakeholder group, provide:
 - support_needs_en / support_needs_ar: What support they need
 
 ### PART 6: CHANGE ACTIVITIES (Generate 10-15 activities)
-For EACH activity, provide:
+For EACH activity, provide (BILINGUAL):
 - phase: "awareness" | "desire" | "knowledge" | "ability" | "reinforcement" (ADKAR model)
 - name_en / name_ar: Activity name
-- owner: Role responsible
-- timeline: When it occurs
+- owner_en / owner_ar: Role responsible (e.g., "Change Manager" / "مدير التغيير")
+- timeline_en / timeline_ar: When it occurs (e.g., "Q1 2025" / "الربع الأول 2025")
 - status: "planned" | "in_progress" | "completed"
 
 ### PART 7: RESISTANCE STRATEGIES (Generate 5-8 strategies)
-For EACH resistance type, provide:
+For EACH resistance type, provide (BILINGUAL):
 - type: "fear_unknown" | "loss_control" | "skill_gaps" | "past_failures" | "poor_communication" | "lack_trust"
 - mitigation_en / mitigation_ar: How to address this resistance
-- owner: Role responsible
-- timeline: When to implement
+- owner_en / owner_ar: Role responsible
+- timeline_en / timeline_ar: When to implement
 
 Partner with MCIT, SDAIA, and university partners for specialized training.
 
@@ -170,13 +170,15 @@ export const step17Schema = {
       type: 'array',
       items: {
         type: 'object',
-        required: ['phase', 'name_en', 'name_ar', 'owner', 'timeline', 'status'],
+        required: ['phase', 'name_en', 'name_ar', 'owner_en', 'owner_ar', 'timeline_en', 'timeline_ar', 'status'],
         properties: {
           phase: { type: 'string', enum: ['awareness', 'desire', 'knowledge', 'ability', 'reinforcement'] },
           name_en: { type: 'string' },
           name_ar: { type: 'string' },
-          owner: { type: 'string' },
-          timeline: { type: 'string' },
+          owner_en: { type: 'string' },
+          owner_ar: { type: 'string' },
+          timeline_en: { type: 'string' },
+          timeline_ar: { type: 'string' },
           status: { type: 'string', enum: ['planned', 'in_progress', 'completed'] }
         }
       }
@@ -185,13 +187,15 @@ export const step17Schema = {
       type: 'array',
       items: {
         type: 'object',
-        required: ['type', 'mitigation_en', 'mitigation_ar', 'owner', 'timeline'],
+        required: ['type', 'mitigation_en', 'mitigation_ar', 'owner_en', 'owner_ar', 'timeline_en', 'timeline_ar'],
         properties: {
           type: { type: 'string', enum: ['fear_unknown', 'loss_control', 'skill_gaps', 'past_failures', 'poor_communication', 'lack_trust'] },
           mitigation_en: { type: 'string' },
           mitigation_ar: { type: 'string' },
-          owner: { type: 'string' },
-          timeline: { type: 'string' }
+          owner_en: { type: 'string' },
+          owner_ar: { type: 'string' },
+          timeline_en: { type: 'string' },
+          timeline_ar: { type: 'string' }
         }
       }
     }

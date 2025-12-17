@@ -87,7 +87,7 @@ ${targetObjectiveIndex !== null ? `- MANDATORY: Link to objective_index = ${targ
 - 50-69: Moderately unique, some similarity
 - Below 50: Too similar to existing actions
 
-## REQUIRED OUTPUT:
+## REQUIRED OUTPUT (BILINGUAL):
 - name_en / name_ar: Clear action name
 - description_en / description_ar: Detailed description (2-3 sentences)
 - objective_index: ${targetObjectiveIndex !== null ? `MUST BE ${targetObjectiveIndex}` : 'Which objective this supports (0-based index)'}
@@ -96,9 +96,9 @@ ${targetObjectiveIndex !== null ? `- MANDATORY: Link to objective_index = ${targ
 - budget_estimate: Estimated cost in SAR (e.g., "500000" for 500K SAR)
 - start_date: Planned start (YYYY-MM format)
 - end_date: Planned end (YYYY-MM format)
-- owner: Role/department responsible
-- deliverables: Array of 3-5 specific outputs
-- dependencies: Array of 1-3 prerequisites
+- owner_en / owner_ar: Role/department (e.g., "Innovation Department" / "إدارة الابتكار")
+- deliverables: Array of 3-5 objects with text_en and text_ar
+- dependencies: Array of 1-3 objects with text_en and text_ar
 - innovation_impact: 1-4 scale (1=minimal, 4=transformational)
 - success_criteria_en / success_criteria_ar: How success will be measured
 - should_create_entity: Boolean - whether to create as formal entity in system
@@ -121,7 +121,7 @@ export const SINGLE_ACTION_SCHEMA = {
   properties: {
     action: {
       type: 'object',
-      required: ['name_en', 'name_ar', 'description_en', 'description_ar', 'objective_index', 'type', 'priority', 'budget_estimate', 'start_date', 'end_date', 'owner', 'deliverables', 'dependencies', 'innovation_impact', 'success_criteria_en', 'success_criteria_ar', 'should_create_entity'],
+      required: ['name_en', 'name_ar', 'description_en', 'description_ar', 'objective_index', 'type', 'priority', 'budget_estimate', 'start_date', 'end_date', 'owner_en', 'owner_ar', 'deliverables', 'dependencies', 'innovation_impact', 'success_criteria_en', 'success_criteria_ar', 'should_create_entity'],
       properties: {
         name_en: { type: 'string' },
         name_ar: { type: 'string' },
@@ -136,9 +136,30 @@ export const SINGLE_ACTION_SCHEMA = {
         budget_estimate: { type: 'string' },
         start_date: { type: 'string' },
         end_date: { type: 'string' },
-        owner: { type: 'string' },
-        deliverables: { type: 'array', items: { type: 'string' } },
-        dependencies: { type: 'array', items: { type: 'string' } },
+        owner_en: { type: 'string' },
+        owner_ar: { type: 'string' },
+        deliverables: { 
+          type: 'array', 
+          items: { 
+            type: 'object',
+            properties: {
+              text_en: { type: 'string' },
+              text_ar: { type: 'string' }
+            },
+            required: ['text_en', 'text_ar']
+          } 
+        },
+        dependencies: { 
+          type: 'array', 
+          items: { 
+            type: 'object',
+            properties: {
+              text_en: { type: 'string' },
+              text_ar: { type: 'string' }
+            },
+            required: ['text_en', 'text_ar']
+          } 
+        },
         innovation_impact: { type: 'number', minimum: 1, maximum: 4 },
         success_criteria_en: { type: 'string' },
         success_criteria_ar: { type: 'string' },
