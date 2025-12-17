@@ -8,6 +8,12 @@ import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildProfileCompletionPrompt, 
+  getProfileCompletionSchema,
+  PROFILE_COMPLETION_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/profiles';
 
 export default function ProfileCompletionAI({ profile, onSuggestion }) {
   const { language, isRTL, t } = useLanguage();
@@ -28,28 +34,12 @@ export default function ProfileCompletionAI({ profile, onSuggestion }) {
   const handleAISuggestions = async () => {
     try {
       const result = await invokeAI({
-        prompt: `Analyze this user profile and suggest improvements:
-Bio (EN): ${profile?.bio_en || 'Missing'}
-Bio (AR): ${profile?.bio_ar || 'Missing'}
-Expertise: ${profile?.expertise_areas?.join(', ') || 'Missing'}
-Title: ${profile?.title_en || 'Missing'}
-
-Provide bilingual suggestions for:
-1. Missing profile sections
-2. How to improve existing sections
-3. Recommended expertise tags
-4. Networking opportunities`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            missing_sections: { type: 'array', items: { type: 'string' } },
-            improvements: { type: 'array', items: { type: 'object', properties: { field: { type: 'string' }, suggestion_en: { type: 'string' }, suggestion_ar: { type: 'string' } } } },
-            recommended_tags: { type: 'array', items: { type: 'string' } },
-            networking_opportunities: { type: 'array', items: { type: 'string' } }
-          }
-        }
+        prompt: buildProfileCompletionPrompt(profile),
+        response_json_schema: getProfileCompletionSchema(),
+        system_prompt: getSystemPrompt(PROFILE_COMPLETION_SYSTEM_PROMPT)
       });
-      if (result.success) {
+      
+      if (result.success && result.data) {
         setSuggestions(result.data);
         toast.success(t({ en: 'AI analysis complete', ar: 'اكتمل التحليل' }));
       } else {
@@ -58,6 +48,14 @@ Provide bilingual suggestions for:
     } catch (error) {
       toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل' }));
     }
+  };
+
+  const getLocalizedArray = (data, field) => {
+    if (!data) return [];
+    if (language === 'ar' && data[`${field}_ar`]) {
+      return data[`${field}_ar`];
+    }
+    return data[field] || [];
   };
 
   const score = completionScore();
@@ -71,6 +69,8 @@ Provide bilingual suggestions for:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+        
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">{t({ en: 'Profile Strength', ar: 'قوة الملف' })}</span>
@@ -81,7 +81,7 @@ Provide bilingual suggestions for:
           <Progress value={score} className="h-2" />
         </div>
 
-        <Button onClick={handleAISuggestions} disabled={loading} className="w-full bg-blue-600">
+        <Button onClick={handleAISuggestions} disabled={loading || !isAvailable} className="w-full bg-blue-600">
           {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {t({ en: 'Get AI Suggestions', ar: 'احصل على اقتراحات ذكية' })}
         </Button>
@@ -91,20 +91,49 @@ Provide bilingual suggestions for:
             <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
               <p className="text-sm font-medium text-amber-900 mb-2">{t({ en: 'Missing Sections', ar: 'أقسام مفقودة' })}</p>
               <div className="space-y-1">
-                {suggestions.missing_sections?.map((section, i) => (
+                {getLocalizedArray(suggestions, 'missing_sections').map((section, i) => (
                   <p key={i} className="text-xs text-amber-700">• {section}</p>
                 ))}
               </div>
             </div>
 
+            {suggestions.improvements?.length > 0 && (
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm font-medium text-blue-900 mb-2">{t({ en: 'Improvement Suggestions', ar: 'اقتراحات التحسين' })}</p>
+                <div className="space-y-2">
+                  {suggestions.improvements.map((imp, i) => (
+                    <div key={i} className="text-xs">
+                      <span className="font-medium text-blue-800">
+                        {language === 'ar' && imp.field_ar ? imp.field_ar : imp.field}:
+                      </span>
+                      <p className="text-slate-700 mt-1">
+                        {language === 'ar' ? imp.suggestion_ar : imp.suggestion_en}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {suggestions.recommended_tags?.length > 0 && (
               <div>
                 <p className="text-sm font-medium mb-2">{t({ en: 'Recommended Tags', ar: 'علامات موصى بها' })}</p>
                 <div className="flex flex-wrap gap-1">
-                  {suggestions.recommended_tags.map((tag, i) => (
+                  {getLocalizedArray(suggestions, 'recommended_tags').map((tag, i) => (
                     <Badge key={i} variant="outline" className="cursor-pointer hover:bg-blue-100">
                       {tag}
                     </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {suggestions.networking_opportunities?.length > 0 && (
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm font-medium text-green-900 mb-2">{t({ en: 'Networking Opportunities', ar: 'فرص التواصل' })}</p>
+                <div className="space-y-1">
+                  {getLocalizedArray(suggestions, 'networking_opportunities').map((opp, i) => (
+                    <p key={i} className="text-xs text-green-700">• {opp}</p>
                   ))}
                 </div>
               </div>

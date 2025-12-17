@@ -7,60 +7,44 @@ import { FileText, Sparkles, Loader2, Copy, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildImpactStoryPrompt, 
+  getImpactStorySchema,
+  IMPACT_STORY_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/programs';
 
-export default function ImpactStoryGenerator({ programId, graduates }) {
+export default function ImpactStoryGenerator({ programId, graduates, programName }) {
   const { language, t } = useLanguage();
   const [stories, setStories] = useState([]);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateStories = async () => {
     const result = await invokeAI({
-      prompt: `Generate compelling impact stories for program graduates:
-
-PROGRAM: Innovation Accelerator
-GRADUATES: ${graduates.length}
-
-Sample data:
-${graduates.slice(0, 5).map(g => `- ${g.startup_name}: ${g.sector}, ${g.impact_metrics?.jobs_created || 0} jobs created, ${g.impact_metrics?.revenue_growth || 0}% revenue growth`).join('\n')}
-
-For top 3 performers, create:
-1. Compelling headline (AR/EN)
-2. Success story (200 words, before/after narrative)
-3. Key metrics
-4. Quote from founder
-5. Social media caption`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          stories: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                startup: { type: "string" },
-                headline_en: { type: "string" },
-                headline_ar: { type: "string" },
-                story_en: { type: "string" },
-                story_ar: { type: "string" },
-                metrics: { type: "array", items: { type: "string" } },
-                quote: { type: "string" },
-                social_caption: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildImpactStoryPrompt(programName, graduates || []),
+      response_json_schema: getImpactStorySchema(),
+      system_prompt: getSystemPrompt(IMPACT_STORY_SYSTEM_PROMPT)
     });
 
-    if (result.success) {
-      setStories(result.data.stories || []);
-      toast.success(t({ en: `${result.data.stories?.length || 0} stories generated`, ar: `تم إنشاء ${result.data.stories?.length || 0} قصة` }));
+    if (result.success && result.data?.stories) {
+      setStories(result.data.stories);
+      toast.success(t({ 
+        en: `${result.data.stories.length} stories generated`, 
+        ar: `تم إنشاء ${result.data.stories.length} قصة` 
+      }));
     }
   };
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     toast.success(t({ en: 'Copied', ar: 'تم النسخ' }));
+  };
+
+  const getLocalizedField = (story, field) => {
+    if (language === 'ar' && story[`${field}_ar`]) {
+      return story[`${field}_ar`];
+    }
+    return story[field];
   };
 
   return (
@@ -99,21 +83,23 @@ For top 3 performers, create:
               <div key={idx} className="p-4 border-2 border-indigo-200 rounded-lg bg-gradient-to-br from-white to-indigo-50">
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-lg font-bold text-indigo-900">{story.startup}</h3>
-                  <Badge className="bg-indigo-100 text-indigo-700">Success Story</Badge>
+                  <Badge className="bg-indigo-100 text-indigo-700">
+                    {t({ en: 'Success Story', ar: 'قصة نجاح' })}
+                  </Badge>
                 </div>
 
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-medium text-slate-600 mb-1">{t({ en: 'Headline:', ar: 'العنوان:' })}</p>
                     <p className="font-bold text-lg text-slate-900">
-                      {language === 'ar' && story.headline_ar ? story.headline_ar : story.headline_en}
+                      {language === 'ar' ? story.headline_ar : story.headline_en}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-sm font-medium text-slate-600 mb-2">{t({ en: 'Story:', ar: 'القصة:' })}</p>
                     <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                      {language === 'ar' && story.story_ar ? story.story_ar : story.story_en}
+                      {language === 'ar' ? story.story_ar : story.story_en}
                     </p>
                   </div>
 
@@ -129,19 +115,23 @@ For top 3 performers, create:
 
                   {story.quote && (
                     <div className="p-3 bg-amber-50 rounded-lg border-l-4 border-amber-400">
-                      <p className="text-sm italic text-slate-700">"{story.quote}"</p>
+                      <p className="text-sm italic text-slate-700">
+                        "{getLocalizedField(story, 'quote')}"
+                      </p>
                     </div>
                   )}
 
                   {story.social_caption && (
                     <div className="p-3 bg-blue-50 rounded-lg">
                       <p className="text-xs font-medium text-blue-900 mb-1">{t({ en: 'Social Media:', ar: 'وسائل التواصل:' })}</p>
-                      <p className="text-sm text-slate-700">{story.social_caption}</p>
+                      <p className="text-sm text-slate-700">
+                        {getLocalizedField(story, 'social_caption')}
+                      </p>
                     </div>
                   )}
 
                   <div className="flex gap-2 pt-2 border-t">
-                    <Button size="sm" variant="outline" onClick={() => copyToClipboard(story.story_en)}>
+                    <Button size="sm" variant="outline" onClick={() => copyToClipboard(language === 'ar' ? story.story_ar : story.story_en)}>
                       <Copy className="h-3 w-3 mr-1" />
                       {t({ en: 'Copy', ar: 'نسخ' })}
                     </Button>
