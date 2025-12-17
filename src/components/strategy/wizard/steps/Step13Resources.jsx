@@ -909,48 +909,18 @@ export default function Step13Resources({
             </Card>
 
             {/* Recommendations */}
-            <Card className="md:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-yellow-500" />
-                  {t({ en: 'Recommendations', ar: 'التوصيات' })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  {stats.totals.hr.items.length === 0 && (
-                    <li className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                      {t({ en: 'Define human resource requirements for strategy execution', ar: 'حدد متطلبات الموارد البشرية لتنفيذ الاستراتيجية' })}
-                    </li>
-                  )}
-                  {stats.totals.tech.items.length === 0 && (
-                    <li className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                      {t({ en: 'Identify technology requirements and digital tools needed', ar: 'حدد المتطلبات التقنية والأدوات الرقمية المطلوبة' })}
-                    </li>
-                  )}
-                  {stats.justificationRate < 50 && stats.totalResourceItems > 0 && (
-                    <li className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                      {t({ en: 'Add business justifications for all resources', ar: 'أضف مبررات تجارية لجميع الموارد' })}
-                    </li>
-                  )}
-                  {stats.grandTotal > 0 && stats.budgetAllocated === 0 && (
-                    <li className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                      {t({ en: 'Define budget allocation for resource planning', ar: 'حدد توزيع الميزانية لتخطيط الموارد' })}
-                    </li>
-                  )}
-                  {completenessScore >= 80 && (
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                      {t({ en: 'Resource planning is well-documented. Review acquisition timelines.', ar: 'تخطيط الموارد موثق جيداً. راجع جداول التوفير.' })}
-                    </li>
-                  )}
-                </ul>
-              </CardContent>
-            </Card>
+            <RecommendationsCard
+              title={t({ en: 'Recommendations', ar: 'التوصيات' })}
+              className="md:col-span-2"
+              recommendations={[
+                ...(stats.totals.hr.items.length === 0 ? [{ type: 'warning', message: { en: 'Define human resource requirements for strategy execution', ar: 'حدد متطلبات الموارد البشرية لتنفيذ الاستراتيجية' } }] : []),
+                ...(stats.totals.tech.items.length === 0 ? [{ type: 'warning', message: { en: 'Identify technology requirements and digital tools needed', ar: 'حدد المتطلبات التقنية والأدوات الرقمية المطلوبة' } }] : []),
+                ...(stats.justificationRate < 50 && stats.totalResourceItems > 0 ? [{ type: 'info', message: { en: 'Add business justifications for all resources', ar: 'أضف مبررات تجارية لجميع الموارد' } }] : []),
+                ...(stats.grandTotal > 0 && stats.budgetAllocated === 0 ? [{ type: 'warning', message: { en: 'Define budget allocation for resource planning', ar: 'حدد توزيع الميزانية لتخطيط الموارد' } }] : []),
+                ...(completenessScore >= 80 ? [{ type: 'success', message: { en: 'Resource planning is well-documented. Review acquisition timelines.', ar: 'تخطيط الموارد موثق جيداً. راجع جداول التوفير.' } }] : [])
+              ]}
+              language={language}
+            />
           </div>
         </TabsContent>
       </Tabs>

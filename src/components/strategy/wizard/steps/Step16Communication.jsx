@@ -836,26 +836,14 @@ function SummaryView({ communicationPlan, language, t }) {
       </Card>
 
       {/* Recommendations */}
-      {recommendations.length > 0 && (
-        <Card className="border-amber-500/30 bg-amber-500/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
-              <AlertTriangle className="w-4 h-4" />
-              {t({ en: 'Recommendations', ar: 'التوصيات' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {recommendations.map((rec, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-sm">
-                  <Info className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                  <span>{rec[language]}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+      <RecommendationsCard
+        title={t({ en: 'Recommendations', ar: 'التوصيات' })}
+        recommendations={[
+          ...recommendations.map(rec => ({ type: 'info', message: rec })),
+          ...(score >= 80 ? [{ type: 'success', message: { en: 'Communication plan is well-documented.', ar: 'خطة التواصل موثقة جيداً.' } }] : [])
+        ]}
+        language={language}
+      />
     </div>
   );
 }
