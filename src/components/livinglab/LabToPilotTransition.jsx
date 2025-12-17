@@ -7,6 +7,12 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildPilotTransitionPrompt, 
+  getPilotTransitionSchema,
+  PILOT_TRANSITION_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/livinglab';
 
 export default function LabToPilotTransition({ labProject }) {
   const { language, t } = useLanguage();
@@ -15,34 +21,29 @@ export default function LabToPilotTransition({ labProject }) {
 
   const assessReadiness = async () => {
     const result = await invokeAI({
-      prompt: `Assess readiness for lab-to-pilot transition:
-
-Lab Project: ${labProject?.title_en}
-Results: ${labProject?.results_summary || 'N/A'}
-TRL: ${labProject?.trl || 4}
-
-Evaluate:
-1. Technical readiness (0-100)
-2. Regulatory clearance status
-3. Budget requirements for pilot
-4. Recommended pilot municipalities
-5. Risk factors`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          readiness_score: { type: "number" },
-          regulatory_status: { type: "string" },
-          budget_estimate: { type: "string" },
-          municipalities: { type: "array", items: { type: "string" } },
-          risks: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildPilotTransitionPrompt(labProject),
+      response_json_schema: getPilotTransitionSchema(),
+      system_prompt: getSystemPrompt(PILOT_TRANSITION_SYSTEM_PROMPT)
     });
 
-    if (result.success) {
+    if (result.success && result.data) {
       setReadiness(result.data);
       toast.success(t({ en: 'Assessment complete', ar: 'التقييم مكتمل' }));
     }
+  };
+
+  const getLocalizedArray = (data, field) => {
+    if (language === 'ar' && data[`${field}_ar`]) {
+      return data[`${field}_ar`];
+    }
+    return data[field] || [];
+  };
+
+  const getLocalizedField = (data, field) => {
+    if (language === 'ar' && data[`${field}_ar`]) {
+      return data[`${field}_ar`];
+    }
+    return data[field];
   };
 
   return (
@@ -67,18 +68,47 @@ Evaluate:
               <p className="text-4xl font-bold text-teal-900">{readiness.readiness_score}%</p>
               <p className="text-sm text-teal-700">{t({ en: 'Pilot Readiness', ar: 'جاهزية التجربة' })}</p>
             </div>
+            
+            <div className="p-3 bg-white rounded border">
+              <p className="text-xs text-slate-500 font-semibold">{t({ en: 'Regulatory Status:', ar: 'الحالة التنظيمية:' })}</p>
+              <p className="text-sm font-bold text-slate-900">{getLocalizedField(readiness, 'regulatory_status')}</p>
+            </div>
+            
             <div className="p-3 bg-white rounded border">
               <p className="text-xs text-slate-500 font-semibold">{t({ en: 'Budget Estimate:', ar: 'تقدير الميزانية:' })}</p>
-              <p className="text-sm font-bold text-slate-900">{readiness.budget_estimate}</p>
+              <p className="text-sm font-bold text-slate-900">{getLocalizedField(readiness, 'budget_estimate')}</p>
             </div>
+            
             <div className="p-3 bg-blue-50 rounded border">
               <p className="text-xs text-blue-700 font-semibold mb-2">{t({ en: 'Recommended Municipalities:', ar: 'البلديات الموصى بها:' })}</p>
               <div className="flex flex-wrap gap-1">
-                {readiness.municipalities?.map((m, i) => (
+                {getLocalizedArray(readiness, 'municipalities').map((m, i) => (
                   <Badge key={i} className="bg-blue-600">{m}</Badge>
                 ))}
               </div>
             </div>
+            
+            {readiness.risks?.length > 0 && (
+              <div className="p-3 bg-amber-50 rounded border border-amber-200">
+                <p className="text-xs text-amber-700 font-semibold mb-2">{t({ en: 'Risk Factors:', ar: 'عوامل الخطر:' })}</p>
+                <ul className="space-y-1">
+                  {getLocalizedArray(readiness, 'risks').map((risk, i) => (
+                    <li key={i} className="text-xs text-slate-700">• {risk}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {readiness.next_steps?.length > 0 && (
+              <div className="p-3 bg-green-50 rounded border border-green-200">
+                <p className="text-xs text-green-700 font-semibold mb-2">{t({ en: 'Next Steps:', ar: 'الخطوات التالية:' })}</p>
+                <ul className="space-y-1">
+                  {getLocalizedArray(readiness, 'next_steps').map((step, i) => (
+                    <li key={i} className="text-xs text-slate-700">• {step}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

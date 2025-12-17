@@ -9,6 +9,12 @@ import { Network, Sparkles, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildCollaborationFinderPrompt, 
+  getCollaborationFinderSchema,
+  COLLABORATION_FINDER_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/livinglab';
 
 export default function MultiLabCollaborationEngine({ currentLabId }) {
   const { language, t } = useLanguage();
@@ -21,49 +27,29 @@ export default function MultiLabCollaborationEngine({ currentLabId }) {
   });
 
   const currentLab = labs.find(l => l.id === currentLabId);
+  const otherLabs = labs.filter(l => l.id !== currentLabId);
 
   const findCollaborations = async () => {
     const result = await invokeAI({
-      prompt: `Find collaboration opportunities between living labs:
-
-CURRENT LAB: ${currentLab?.name_en}
-- Focus: ${currentLab?.research_themes?.join(', ')}
-- Equipment: ${currentLab?.equipment?.map(e => e.name).join(', ')}
-
-OTHER LABS:
-${labs.filter(l => l.id !== currentLabId).slice(0, 10).map(l => 
-  `- ${l.name_en}: ${l.research_themes?.join(', ')}`
-).join('\n')}
-
-Suggest top 5 collaboration opportunities:
-1. Equipment sharing (Lab A has X, Lab B needs it)
-2. Expertise exchange (complementary research areas)
-3. Joint research projects
-4. Resource optimization`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          opportunities: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                partner_lab: { type: "string" },
-                opportunity_type: { type: "string" },
-                description: { type: "string" },
-                benefit: { type: "string" },
-                synergy_score: { type: "number" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildCollaborationFinderPrompt(currentLab, otherLabs),
+      response_json_schema: getCollaborationFinderSchema(),
+      system_prompt: getSystemPrompt(COLLABORATION_FINDER_SYSTEM_PROMPT)
     });
 
-    if (result.success) {
-      setOpportunities(result.data.opportunities || []);
-      toast.success(t({ en: `${result.data.opportunities?.length || 0} opportunities found`, ar: `${result.data.opportunities?.length || 0} فرصة وُجدت` }));
+    if (result.success && result.data?.opportunities) {
+      setOpportunities(result.data.opportunities);
+      toast.success(t({ 
+        en: `${result.data.opportunities.length} opportunities found`, 
+        ar: `${result.data.opportunities.length} فرصة وُجدت` 
+      }));
     }
+  };
+
+  const getLocalizedField = (item, field) => {
+    if (language === 'ar' && item[`${field}_ar`]) {
+      return item[`${field}_ar`];
+    }
+    return item[field];
   };
 
   return (
@@ -102,8 +88,12 @@ Suggest top 5 collaboration opportunities:
               <div key={idx} className="p-4 border-2 border-indigo-200 rounded-lg bg-white hover:border-indigo-400 transition-all">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-900">{opp.partner_lab}</h4>
-                    <Badge className="mt-1 text-xs bg-indigo-100 text-indigo-700">{opp.opportunity_type}</Badge>
+                    <h4 className="font-semibold text-slate-900">
+                      {getLocalizedField(opp, 'partner_lab')}
+                    </h4>
+                    <Badge className="mt-1 text-xs bg-indigo-100 text-indigo-700">
+                      {getLocalizedField(opp, 'opportunity_type')}
+                    </Badge>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-green-600">{opp.synergy_score}%</p>
@@ -111,11 +101,13 @@ Suggest top 5 collaboration opportunities:
                   </div>
                 </div>
 
-                <p className="text-sm text-slate-700 mb-2">{opp.description}</p>
+                <p className="text-sm text-slate-700 mb-2">
+                  {getLocalizedField(opp, 'description')}
+                </p>
                 
                 <div className="p-3 bg-green-50 rounded border border-green-200">
                   <p className="text-sm font-medium text-green-900 mb-1">{t({ en: 'Benefit:', ar: 'الفائدة:' })}</p>
-                  <p className="text-xs text-slate-700">{opp.benefit}</p>
+                  <p className="text-xs text-slate-700">{getLocalizedField(opp, 'benefit')}</p>
                 </div>
 
                 <Button size="sm" className="w-full mt-3 bg-gradient-to-r from-indigo-600 to-purple-600">

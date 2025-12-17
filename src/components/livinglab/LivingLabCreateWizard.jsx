@@ -15,6 +15,12 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildLabDesignPrompt, 
+  getLabDesignSchema,
+  LAB_DESIGNER_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/livinglab';
 
 export default function LivingLabCreateWizard({ onClose }) {
   const { language, t } = useLanguage();
@@ -40,35 +46,20 @@ export default function LivingLabCreateWizard({ onClose }) {
     if (!isAvailable) return;
     
     const result = await invokeAI({
-      prompt: `Design a municipal innovation living lab:
-        
-Type: ${formData.lab_type}
-Basic Description: ${formData.description_en || 'Urban innovation testing facility'}
-
-Generate comprehensive bilingual lab design:
-1. Professional name (EN + AR)
-2. Detailed description (EN + AR) - 150+ words
-3. 5-8 research focus areas
-4. 8-12 equipment items recommended for this lab type
-5. 4-6 facility components
-6. 5-7 booking/usage rules`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          name_en: { type: 'string' },
-          name_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          research_areas: { type: 'array', items: { type: 'string' } },
-          equipment: { type: 'array', items: { type: 'string' } },
-          facilities: { type: 'array', items: { type: 'string' } },
-          booking_rules: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildLabDesignPrompt(formData.lab_type, formData.description_en),
+      response_json_schema: getLabDesignSchema(),
+      system_prompt: getSystemPrompt(LAB_DESIGNER_SYSTEM_PROMPT)
     });
 
     if (result.success && result.data) {
-      setFormData(prev => ({ ...prev, ...result.data }));
+      setFormData(prev => ({ 
+        ...prev, 
+        ...result.data,
+        research_areas: result.data.research_areas || prev.research_areas,
+        equipment: result.data.equipment || prev.equipment,
+        facilities: result.data.facilities || prev.facilities,
+        booking_rules: result.data.booking_rules || prev.booking_rules
+      }));
       toast.success(t({ en: '✨ AI design complete!', ar: '✨ تم التصميم!' }));
     }
   };
