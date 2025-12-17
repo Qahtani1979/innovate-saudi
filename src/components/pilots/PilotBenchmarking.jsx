@@ -9,6 +9,8 @@ import { BarChart3, TrendingUp, TrendingDown, Sparkles, Loader2 } from 'lucide-r
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getPilotBenchmarkingPrompt, pilotBenchmarkingSchema } from '@/lib/ai/prompts/pilots';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function PilotBenchmarking({ pilot }) {
   const { language, t } = useLanguage();
@@ -29,38 +31,10 @@ export default function PilotBenchmarking({ pilot }) {
   });
 
   const runBenchmark = async () => {
-    const context = similarPilots.map(p => ({
-      title: p.title_en,
-      duration: p.duration_months,
-      budget: p.budget_allocated,
-      kpi_achievement: p.overall_score
-    }));
-
     const response = await invokeAI({
-      prompt: `Compare this pilot against similar completed pilots:
-
-Current Pilot: ${pilot.title_en}
-- Duration: ${pilot.duration_months} months
-- Budget: ${pilot.budget_allocated}
-- Current Score: ${pilot.overall_score}
-
-Similar Pilots:
-${JSON.stringify(context, null, 2)}
-
-Provide:
-1. Performance percentile (e.g., "Top 25% in efficiency")
-2. Areas where this pilot outperforms peers
-3. Areas where this pilot underperforms
-4. Specific recommendations based on what top performers did`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          percentile: { type: "string" },
-          strengths: { type: "array", items: { type: "string" } },
-          weaknesses: { type: "array", items: { type: "string" } },
-          recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: getPilotBenchmarkingPrompt(pilot, similarPilots),
+      response_json_schema: pilotBenchmarkingSchema,
+      system_prompt: getSystemPrompt('municipal')
     });
 
     if (response.success) {

@@ -9,6 +9,8 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getScalingReadinessPrompt, scalingReadinessSchema } from '@/lib/ai/prompts/pilots';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function ScalingReadiness({ pilot }) {
   const { language, isRTL, t } = useLanguage();
@@ -21,62 +23,9 @@ export default function ScalingReadiness({ pilot }) {
 
   const assessReadiness = async () => {
     const { success, data } = await invokeAI({
-      prompt: `Assess scaling readiness for this pilot:
-
-PILOT: ${pilot.title_en}
-SUCCESS CRITERIA MET: ${pilot.success_criteria?.filter(c => c.met).length || 0}/${pilot.success_criteria?.length || 0}
-BUDGET: ${pilot.budget} SAR
-TEAM SIZE: ${pilot.team?.length || 0}
-KPI ACHIEVEMENT: ${pilot.kpis?.filter(k => k.status === 'achieved').length || 0}/${pilot.kpis?.length || 0}
-
-Assess readiness across 5 dimensions (score 0-100 each):
-1. Operational: processes documented, team trained, systems ready
-2. Financial: cost model validated, funding secured, ROI proven
-3. Stakeholder: buy-in from leadership, user acceptance, partner commitment
-4. Regulatory: approvals obtained, compliance verified, exemptions secured
-5. Technical: solution stable, scalable architecture, integration ready
-
-Identify gaps and generate action plan to close them.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          dimension_scores: {
-            type: "object",
-            properties: {
-              operational: { type: "number" },
-              financial: { type: "number" },
-              stakeholder: { type: "number" },
-              regulatory: { type: "number" },
-              technical: { type: "number" }
-            }
-          },
-          overall_score: { type: "number" },
-          readiness_level: { type: "string" },
-          gaps: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                dimension: { type: "string" },
-                gap: { type: "string" },
-                severity: { type: "string" }
-              }
-            }
-          },
-          action_plan: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                action: { type: "string" },
-                priority: { type: "string" },
-                timeline: { type: "string" },
-                estimated_impact: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: getScalingReadinessPrompt(pilot),
+      response_json_schema: scalingReadinessSchema,
+      system_prompt: getSystemPrompt('municipal')
     });
 
     if (success && data) {
