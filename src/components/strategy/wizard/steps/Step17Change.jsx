@@ -101,12 +101,6 @@ const getProgressColor = (pct) => {
   return 'bg-red-500';
 };
 
-// Helper functions for completeness tracking
-const getFieldCompleteness = (obj, fields) => {
-  if (!obj) return 0;
-  const filled = fields.filter(f => obj[f]?.toString().trim()).length;
-  return Math.round((filled / fields.length) * 100);
-};
 
 // ADKAR Phase Card Component
 function PhaseCard({ phase, activities, onAddActivity, onRemoveActivity, onUpdateActivity, language, t, isReadOnly }) {
