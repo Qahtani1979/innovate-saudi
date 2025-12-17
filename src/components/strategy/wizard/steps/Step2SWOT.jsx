@@ -14,7 +14,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import { useSwotAnalysis } from '@/hooks/strategy/useSwotAnalysis';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid } from '../shared';
 
 const CATEGORIES = [
   { 
