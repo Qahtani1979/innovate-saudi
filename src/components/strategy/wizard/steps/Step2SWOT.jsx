@@ -630,10 +630,10 @@ export default function Step2SWOT({
             {/* SWOT Distribution */}
             <StatsGrid
               stats={[
-                { value: stats.byType.S || 0, label: t({ en: 'Strengths', ar: 'نقاط القوة' }), icon: CheckCircle2, iconColor: 'text-green-600', valueColor: 'text-green-600' },
-                { value: stats.byType.W || 0, label: t({ en: 'Weaknesses', ar: 'نقاط الضعف' }), icon: AlertCircle, iconColor: 'text-red-600', valueColor: 'text-red-600' },
-                { value: stats.byType.O || 0, label: t({ en: 'Opportunities', ar: 'الفرص' }), icon: TrendingUp, iconColor: 'text-blue-600', valueColor: 'text-blue-600' },
-                { value: stats.byType.T || 0, label: t({ en: 'Threats', ar: 'التهديدات' }), icon: AlertTriangle, iconColor: 'text-amber-600', valueColor: 'text-amber-600' }
+                { value: stats.counts.strengths || 0, label: t({ en: 'Strengths', ar: 'نقاط القوة' }), icon: CheckCircle2, iconColor: 'text-green-600', valueColor: 'text-green-600' },
+                { value: stats.counts.weaknesses || 0, label: t({ en: 'Weaknesses', ar: 'نقاط الضعف' }), icon: AlertCircle, iconColor: 'text-red-600', valueColor: 'text-red-600' },
+                { value: stats.counts.opportunities || 0, label: t({ en: 'Opportunities', ar: 'الفرص' }), icon: TrendingUp, iconColor: 'text-blue-600', valueColor: 'text-blue-600' },
+                { value: stats.counts.threats || 0, label: t({ en: 'Threats', ar: 'التهديدات' }), icon: AlertTriangle, iconColor: 'text-amber-600', valueColor: 'text-amber-600' }
               ]}
               columns={4}
               language={language}
