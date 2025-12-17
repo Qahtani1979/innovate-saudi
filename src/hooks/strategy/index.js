@@ -46,3 +46,6 @@ export {
   getPromptKeyForStep,
   SAUDI_CONTEXT 
 } from './useWizardAI';
+
+// Utility Hooks
+export { useFieldValidation, createValidationRules } from './useFieldValidation';
