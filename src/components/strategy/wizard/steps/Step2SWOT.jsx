@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Sparkles, Loader2, Plus, X, TrendingUp, TrendingDown, Target, AlertTriangle, 
-  CheckCircle2, LayoutGrid, ListChecks, Lightbulb, ArrowRight, Shield, Zap, BarChart3
+  CheckCircle2, LayoutGrid, ListChecks, Lightbulb, ArrowRight, Shield, Zap, BarChart3, AlertCircle
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useSwotAnalysis } from '@/hooks/strategy/useSwotAnalysis';
@@ -624,68 +624,44 @@ export default function Step2SWOT({
           </Card>
         </TabsContent>
 
-        {/* Summary Tab */}
-        <TabsContent value="summary" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                {t({ en: 'SWOT Summary', ar: 'ملخص SWOT' })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* SWOT Distribution */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-300 text-center">
-                  <p className="text-3xl font-bold text-green-700 dark:text-green-400">{stats.byType.S || 0}</p>
-                  <p className="text-sm font-medium">{t({ en: 'Strengths', ar: 'نقاط القوة' })}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 text-center">
-                  <p className="text-3xl font-bold text-red-700 dark:text-red-400">{stats.byType.W || 0}</p>
-                  <p className="text-sm font-medium">{t({ en: 'Weaknesses', ar: 'نقاط الضعف' })}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-blue-100 dark:bg-blue-900/30 border border-blue-300 text-center">
-                  <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">{stats.byType.O || 0}</p>
-                  <p className="text-sm font-medium">{t({ en: 'Opportunities', ar: 'الفرص' })}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 text-center">
-                  <p className="text-3xl font-bold text-amber-700 dark:text-amber-400">{stats.byType.T || 0}</p>
-                  <p className="text-sm font-medium">{t({ en: 'Threats', ar: 'التهديدات' })}</p>
-                </div>
-              </div>
+        {/* Summary Tab - Using Shared Components */}
+        <TabsContent value="summary" className="space-y-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* SWOT Distribution */}
+            <StatsGrid
+              stats={[
+                { value: stats.byType.S || 0, label: t({ en: 'Strengths', ar: 'نقاط القوة' }), icon: CheckCircle2, iconColor: 'text-green-600', valueColor: 'text-green-600' },
+                { value: stats.byType.W || 0, label: t({ en: 'Weaknesses', ar: 'نقاط الضعف' }), icon: AlertCircle, iconColor: 'text-red-600', valueColor: 'text-red-600' },
+                { value: stats.byType.O || 0, label: t({ en: 'Opportunities', ar: 'الفرص' }), icon: TrendingUp, iconColor: 'text-blue-600', valueColor: 'text-blue-600' },
+                { value: stats.byType.T || 0, label: t({ en: 'Threats', ar: 'التهديدات' }), icon: AlertTriangle, iconColor: 'text-amber-600', valueColor: 'text-amber-600' }
+              ]}
+              columns={4}
+              language={language}
+              className="md:col-span-2"
+            />
 
-              {/* Balance Indicators */}
-              <div className="space-y-3">
-                <h4 className="font-medium">{t({ en: 'Balance Analysis', ar: 'تحليل التوازن' })}</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>{t({ en: 'Internal (S+W)', ar: 'داخلي' })}</span>
-                    <span className="font-medium">{stats.internal}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>{t({ en: 'External (O+T)', ar: 'خارجي' })}</span>
-                    <span className="font-medium">{stats.external}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>{t({ en: 'Positive (S+O)', ar: 'إيجابي' })}</span>
-                    <span className="font-medium text-green-600">{stats.positive}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>{t({ en: 'Negative (W+T)', ar: 'سلبي' })}</span>
-                    <span className="font-medium text-red-600">{stats.negative}</span>
-                  </div>
-                </div>
-              </div>
+            {/* Balance Analysis */}
+            <DistributionChart
+              title={t({ en: 'Balance Analysis', ar: 'تحليل التوازن' })}
+              data={[
+                { label: { en: 'Internal (S+W)', ar: 'داخلي' }, value: stats.internal, iconColor: 'text-primary' },
+                { label: { en: 'External (O+T)', ar: 'خارجي' }, value: stats.external, iconColor: 'text-purple-600' },
+                { label: { en: 'Positive (S+O)', ar: 'إيجابي' }, value: stats.positive, iconColor: 'text-green-600' },
+                { label: { en: 'Negative (W+T)', ar: 'سلبي' }, value: stats.negative, iconColor: 'text-red-600' }
+              ]}
+              language={language}
+              showPercentage={false}
+            />
 
-              {/* Recommendations */}
-              {stats.total < 8 && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                  <LayoutGrid className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-sm">{t({ en: 'Add more SWOT items for comprehensive analysis (recommended: 2+ per category)', ar: 'أضف المزيد من عناصر SWOT للتحليل الشامل (موصى به: 2+ لكل فئة)' })}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            {/* Recommendations */}
+            <RecommendationsCard
+              title={t({ en: 'Recommendations', ar: 'توصيات' })}
+              recommendations={stats.total < 8 ? [
+                { type: 'warning', message: { en: 'Add more SWOT items for comprehensive analysis (recommended: 2+ per category)', ar: 'أضف المزيد من عناصر SWOT للتحليل الشامل (موصى به: 2+ لكل فئة)' } }
+              ] : []}
+              language={language}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
