@@ -35,3 +35,12 @@ export {
 
 // Navigation Components
 export { WizardNavigation, CompactStepIndicator } from './WizardNavigation';
+
+// AI Action Components
+export { AIActionButton, AIActionGroup, AIGenerateCard } from './AIActionButton';
+
+// Analysis Components (SWOT/PESTEL)
+export { AnalysisCard, AnalysisMatrix } from './AnalysisCard';
+
+// Metric Components (KPIs/Risks/Milestones)
+export { MetricCard, MetricList } from './MetricCard';
