@@ -69,6 +69,12 @@ export * from './mii';
 // Executive prompts
 export * from './executive';
 
+// Partnerships prompts
+export * from './partnerships';
+
+// Geography prompts
+export * from './geography';
+
 // Smart prompts
 // export * from './smart';
 
@@ -96,6 +102,8 @@ export const PROMPT_MODULE_STATUS = {
   taxonomy: { status: 'complete', promptCount: 2 },
   mii: { status: 'complete', promptCount: 2 },
   executive: { status: 'complete', promptCount: 3 },
+  partnerships: { status: 'complete', promptCount: 3 },
+  geography: { status: 'complete', promptCount: 1 },
   smart: { status: 'pending', promptCount: 0 }
 };
 

@@ -7,6 +7,8 @@ import { FileText, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildAgreementGeneratorPrompt, agreementGeneratorSchema, AGREEMENT_GENERATOR_SYSTEM_PROMPT } from '@/lib/ai/prompts/partnerships';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIAgreementGenerator({ partnership }) {
   const { language, t } = useLanguage();
@@ -15,31 +17,9 @@ export default function AIAgreementGenerator({ partnership }) {
 
   const generateAgreement = async () => {
     const result = await invokeAI({
-      prompt: `Generate bilingual MOU (Memorandum of Understanding) for partnership:
-
-Partnership Type: ${partnership.partnership_type}
-Parties: ${partnership.parties?.map(p => p.organization_name).join(', ')}
-Scope: ${partnership.scope_en}
-Duration: ${partnership.start_date} to ${partnership.end_date}
-Budget: ${partnership.budget_shared || 'TBD'} SAR
-
-Generate professional MOU including:
-1. Introduction and purpose (AR/EN)
-2. Scope of collaboration
-3. Roles and responsibilities per party
-4. Deliverables and milestones
-5. Budget and resource allocation
-6. IP rights and confidentiality
-7. Term and termination clauses
-8. Signatures section`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          mou_en: { type: "string" },
-          mou_ar: { type: "string" },
-          key_terms: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildAgreementGeneratorPrompt(partnership),
+      systemPrompt: getSystemPrompt(AGREEMENT_GENERATOR_SYSTEM_PROMPT),
+      response_json_schema: agreementGeneratorSchema
     });
 
     if (result.success) {

@@ -9,6 +9,8 @@ import { Zap, Sparkles, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildSynergyDetectorPrompt, synergyDetectorSchema, SYNERGY_DETECTOR_SYSTEM_PROMPT } from '@/lib/ai/prompts/partnerships';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function PartnershipSynergyDetector({ challengeId }) {
   const { language, t } = useLanguage();
@@ -23,40 +25,9 @@ export default function PartnershipSynergyDetector({ challengeId }) {
 
   const detectSynergies = async () => {
     const result = await invokeAI({
-      prompt: `Identify multi-party collaboration opportunities:
-
-Available Organizations (${organizations.length}):
-${organizations.slice(0, 20).map(o => `
-${o.name_en}
-Type: ${o.organization_type}
-Expertise: ${o.expertise_areas?.join(', ')}
-Sectors: ${o.sectors?.join(', ')}
-`).join('\n')}
-
-Find synergies where 2-3 organizations could collaborate:
-- Complementary capabilities
-- End-to-end solution coverage
-- Strategic alignment
-
-Recommend top 3 multi-party collaboration opportunities.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          opportunities: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                partners: { type: "array", items: { type: "string" } },
-                synergy_score: { type: "number" },
-                use_case: { type: "string" },
-                value_proposition: { type: "string" },
-                complementarity: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildSynergyDetectorPrompt(organizations),
+      systemPrompt: getSystemPrompt(SYNERGY_DETECTOR_SYSTEM_PROMPT),
+      response_json_schema: synergyDetectorSchema
     });
 
     if (result.success) {
