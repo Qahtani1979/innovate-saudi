@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -9,14 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Sparkles, Loader2, Plus, X, Activity, ChevronDown, ChevronUp, Target, TrendingUp, 
   AlertCircle, CheckCircle2, BarChart3, Gauge, Info, LineChart, Grid3X3, PieChart,
-  AlertTriangle, Zap, Clock, Database, User, CalendarDays
+  AlertTriangle, Zap, Clock, Database, User, CalendarDays, Wand2, Check, RefreshCw
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 // KPI Categories with descriptions
 const KPI_CATEGORIES = [
@@ -95,11 +97,20 @@ export default function Step5KPIs({
   onChange, 
   onGenerateAI, 
   isGenerating,
+  onGenerateSingleKpi,
   isReadOnly = false
 }) {
   const { language, t, isRTL } = useLanguage();
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [viewMode, setViewMode] = useState('byObjective');
+  
+  // AI Add One states
+  const [showProposalModal, setShowProposalModal] = useState(false);
+  const [proposedKpi, setProposedKpi] = useState(null);
+  const [differentiationScore, setDifferentiationScore] = useState(null);
+  const [isGeneratingSingle, setIsGeneratingSingle] = useState(false);
+  const [targetCategory, setTargetCategory] = useState('_any');
+  const [targetObjectiveIndex, setTargetObjectiveIndex] = useState(null);
   
   const objectives = data.objectives || [];
   const kpis = data.kpis || [];
@@ -233,6 +244,53 @@ export default function Step5KPIs({
     if (isReadOnly) return;
     onChange({ kpis: kpis.filter((_, i) => i !== index) });
     if (expandedIndex === index) setExpandedIndex(null);
+  };
+
+  // AI Single KPI Generation
+  const handleGenerateSingleKpi = async (categoryOverride = null, objIndexOverride = null) => {
+    if (isReadOnly) return;
+    setIsGeneratingSingle(true);
+    setShowProposalModal(true);
+    setProposedKpi(null);
+    setDifferentiationScore(null);
+
+    try {
+      if (onGenerateSingleKpi) {
+        const selectedCategory = categoryOverride || (targetCategory !== '_any' ? targetCategory : null);
+        const selectedObjIndex = objIndexOverride !== null ? objIndexOverride : targetObjectiveIndex;
+        const result = await onGenerateSingleKpi(kpis, selectedCategory, selectedObjIndex);
+        if (result?.kpi) {
+          setProposedKpi(result.kpi);
+          setDifferentiationScore(result.differentiation_score || 75);
+          if (result.kpi.category) setTargetCategory(result.kpi.category);
+          if (result.kpi.objective_index !== undefined) setTargetObjectiveIndex(result.kpi.objective_index);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating single KPI:', error);
+    } finally {
+      setIsGeneratingSingle(false);
+    }
+  };
+
+  const handleApproveKpi = () => {
+    if (proposedKpi && !isReadOnly) {
+      const newKpi = {
+        ...proposedKpi,
+        milestones: milestoneYears.map(year => ({
+          year,
+          target: proposedKpi.milestones?.find(m => m.year === year)?.target || ''
+        }))
+      };
+      onChange({ kpis: [...kpis, newKpi] });
+      setShowProposalModal(false);
+      setProposedKpi(null);
+      setExpandedIndex(kpis.length);
+    }
+  };
+
+  const updateProposedKpiField = (field, value) => {
+    setProposedKpi(prev => ({ ...prev, [field]: value }));
   };
 
   const getKPIsForObjective = (objectiveIndex) => {

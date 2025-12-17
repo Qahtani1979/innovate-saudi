@@ -9,10 +9,12 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Sparkles, Users, Plus, X, Grid3X3, ChevronDown, ChevronRight,
   Loader2, Building, User, Briefcase, Globe, CheckCircle2, AlertCircle,
-  UserCheck, UserX, MessageSquare, FileText, TrendingUp, BarChart3
+  UserCheck, UserX, MessageSquare, FileText, TrendingUp, BarChart3,
+  Wand2, Check, RefreshCw
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
@@ -23,7 +25,7 @@ import {
   QualityMetrics, 
   RecommendationsCard,
   DistributionChart,
-  AIActionButton
+  MainAIGeneratorCard
 } from '../shared';
 
 export default function Step3Stakeholders({ 
@@ -31,6 +33,7 @@ export default function Step3Stakeholders({
   onChange, 
   onGenerateAI, 
   isGenerating,
+  onGenerateSingleStakeholder,
   isReadOnly,
   strategicPlanId = null
 }) {
@@ -40,6 +43,13 @@ export default function Step3Stakeholders({
   const [expandedSections, setExpandedSections] = useState({
     engagement: true
   });
+  
+  // AI Add One states
+  const [showProposalModal, setShowProposalModal] = useState(false);
+  const [proposedStakeholder, setProposedStakeholder] = useState(null);
+  const [differentiationScore, setDifferentiationScore] = useState(null);
+  const [isGeneratingSingle, setIsGeneratingSingle] = useState(false);
+  const [targetType, setTargetType] = useState('_any');
   
   // DB persistence hook
   const {
@@ -126,6 +136,45 @@ export default function Step3Stakeholders({
   const removeStakeholder = (index) => {
     if (isReadOnly) return;
     onChange({ stakeholders: data.stakeholders.filter((_, i) => i !== index) });
+  };
+
+  // AI Single Stakeholder Generation
+  const handleGenerateSingleStakeholder = async (typeOverride = null) => {
+    if (isReadOnly) return;
+    setIsGeneratingSingle(true);
+    setShowProposalModal(true);
+    setProposedStakeholder(null);
+    setDifferentiationScore(null);
+
+    try {
+      if (onGenerateSingleStakeholder) {
+        const selectedType = typeOverride || (targetType !== '_any' ? targetType : null);
+        const result = await onGenerateSingleStakeholder(data.stakeholders || [], selectedType);
+        if (result?.stakeholder) {
+          setProposedStakeholder(result.stakeholder);
+          setDifferentiationScore(result.differentiation_score || 75);
+          if (result.stakeholder.type) setTargetType(result.stakeholder.type);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating single stakeholder:', error);
+    } finally {
+      setIsGeneratingSingle(false);
+    }
+  };
+
+  const handleApproveStakeholder = () => {
+    if (proposedStakeholder && !isReadOnly) {
+      onChange({
+        stakeholders: [...(data.stakeholders || []), { ...proposedStakeholder, id: Date.now().toString() }]
+      });
+      setShowProposalModal(false);
+      setProposedStakeholder(null);
+    }
+  };
+
+  const updateProposedField = (field, value) => {
+    setProposedStakeholder(prev => ({ ...prev, [field]: value }));
   };
 
   const getQuadrant = (power, interest) => {
@@ -217,15 +266,18 @@ export default function Step3Stakeholders({
 
       {/* AI Generation Card */}
       {!isReadOnly && (
-        <div className="flex justify-end">
-          <AIActionButton
-            type="suggest"
-            label={t({ en: 'Suggest Stakeholders', ar: 'اقتراح أصحاب المصلحة' })}
-            onAction={onGenerateAI}
-            isLoading={isGenerating}
-            description={t({ en: 'Auto-identify stakeholders based on your plan context', ar: 'تحديد أصحاب المصلحة تلقائيًا بناءً على سياق خطتك' })}
-          />
-        </div>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Stakeholder Analysis', ar: 'تحليل أصحاب المصلحة بالذكاء الاصطناعي' }}
+          description={{ en: 'Auto-identify stakeholders based on your plan context', ar: 'تحديد أصحاب المصلحة تلقائيًا بناءً على سياق خطتك' }}
+          onGenerate={onGenerateAI}
+          onGenerateSingle={() => handleGenerateSingleStakeholder()}
+          isGenerating={isGenerating}
+          isGeneratingSingle={isGeneratingSingle}
+          showSingleButton={!!onGenerateSingleStakeholder}
+          isReadOnly={isReadOnly}
+          buttonLabel={{ en: 'Generate All', ar: 'إنشاء الكل' }}
+          singleButtonLabel={{ en: 'AI Add One', ar: 'إضافة واحد' }}
+        />
       )}
 
       {/* Tabs */}
@@ -715,6 +767,157 @@ export default function Step3Stakeholders({
           />
         </TabsContent>
       </Tabs>
+
+      {/* AI Proposal Modal */}
+      <Dialog open={showProposalModal} onOpenChange={setShowProposalModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-primary" />
+              {t({ en: 'AI Generated Stakeholder', ar: 'صاحب مصلحة مولد بالذكاء الاصطناعي' })}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {isGeneratingSingle ? (
+            <div className="py-12 text-center">
+              <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">{t({ en: 'Generating unique stakeholder...', ar: 'جاري إنشاء صاحب مصلحة فريد...' })}</p>
+            </div>
+          ) : proposedStakeholder ? (
+            <div className="space-y-4">
+              {differentiationScore && (
+                <div className="p-3 rounded-lg bg-muted/50 flex items-center justify-between">
+                  <span className="text-sm">{t({ en: 'Uniqueness Score', ar: 'درجة التفرد' })}</span>
+                  <Badge className={cn(
+                    differentiationScore >= 80 ? 'bg-green-100 text-green-700' :
+                    differentiationScore >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                  )}>
+                    {differentiationScore}%
+                  </Badge>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Name (English)', ar: 'الاسم (إنجليزي)' })}</Label>
+                  <Input
+                    value={proposedStakeholder.name_en || ''}
+                    onChange={(e) => updateProposedField('name_en', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Name (Arabic)', ar: 'الاسم (عربي)' })}</Label>
+                  <Input
+                    dir="rtl"
+                    value={proposedStakeholder.name_ar || ''}
+                    onChange={(e) => updateProposedField('name_ar', e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Type', ar: 'النوع' })}</Label>
+                  <Select 
+                    value={proposedStakeholder.type || 'GOVERNMENT'} 
+                    onValueChange={(v) => updateProposedField('type', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {stakeholderTypes.map(type => (
+                        <SelectItem key={type.code} value={type.code}>
+                          {language === 'ar' ? type.name_ar : type.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Power Level', ar: 'مستوى القوة' })}</Label>
+                  <Select 
+                    value={proposedStakeholder.power || 'medium'} 
+                    onValueChange={(v) => updateProposedField('power', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">{t({ en: 'Low', ar: 'منخفض' })}</SelectItem>
+                      <SelectItem value="medium">{t({ en: 'Medium', ar: 'متوسط' })}</SelectItem>
+                      <SelectItem value="high">{t({ en: 'High', ar: 'مرتفع' })}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Interest Level', ar: 'مستوى الاهتمام' })}</Label>
+                  <Select 
+                    value={proposedStakeholder.interest || 'medium'} 
+                    onValueChange={(v) => updateProposedField('interest', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">{t({ en: 'Low', ar: 'منخفض' })}</SelectItem>
+                      <SelectItem value="medium">{t({ en: 'Medium', ar: 'متوسط' })}</SelectItem>
+                      <SelectItem value="high">{t({ en: 'High', ar: 'مرتفع' })}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Engagement Level', ar: 'مستوى المشاركة' })}</Label>
+                  <Select 
+                    value={proposedStakeholder.engagement_level || 'inform'} 
+                    onValueChange={(v) => updateProposedField('engagement_level', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {engagementLevels.map(level => (
+                        <SelectItem key={level.value} value={level.value}>
+                          {t(level.label)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Influence Strategy (English)', ar: 'استراتيجية التأثير (إنجليزي)' })}</Label>
+                  <Textarea
+                    value={proposedStakeholder.influence_strategy_en || ''}
+                    onChange={(e) => updateProposedField('influence_strategy_en', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Influence Strategy (Arabic)', ar: 'استراتيجية التأثير (عربي)' })}</Label>
+                  <Textarea
+                    dir="rtl"
+                    value={proposedStakeholder.influence_strategy_ar || ''}
+                    onChange={(e) => updateProposedField('influence_strategy_ar', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => handleGenerateSingleStakeholder()} disabled={isGeneratingSingle}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {t({ en: 'Regenerate', ar: 'إعادة الإنشاء' })}
+            </Button>
+            <Button variant="outline" onClick={() => setShowProposalModal(false)}>
+              {t({ en: 'Cancel', ar: 'إلغاء' })}
+            </Button>
+            <Button onClick={handleApproveStakeholder} disabled={!proposedStakeholder}>
+              <Check className="w-4 h-4 mr-2" />
+              {t({ en: 'Add Stakeholder', ar: 'إضافة صاحب المصلحة' })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
