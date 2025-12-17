@@ -60,6 +60,9 @@ export * from './core';
 // Strategy module prompts
 export * from './strategy';
 
+// Media prompts
+export * from './media';
+
 // Taxonomy prompts
 export * from './taxonomy';
 
@@ -102,7 +105,7 @@ export * from './communications';
  */
 export const PROMPT_MODULE_STATUS = {
   strategyWizard: { status: 'complete', promptCount: 24 },
-  strategyModule: { status: 'complete', promptCount: 4 },
+  strategyModule: { status: 'complete', promptCount: 9 },
   portfolio: { status: 'complete', promptCount: 3 },
   events: { status: 'complete', promptCount: 3 },
   challenges: { status: 'complete', promptCount: 8 },
@@ -128,7 +131,8 @@ export const PROMPT_MODULE_STATUS = {
   approval: { status: 'complete', promptCount: 2 },
   content: { status: 'complete', promptCount: 1 },
   uploader: { status: 'complete', promptCount: 1 },
-  communications: { status: 'complete', promptCount: 4 }
+  communications: { status: 'complete', promptCount: 4 },
+  media: { status: 'complete', promptCount: 1 }
 };
 
 /**

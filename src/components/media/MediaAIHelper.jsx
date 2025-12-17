@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { MEDIA_AI_HELPER_SYSTEM_PROMPT, buildMediaAnalysisPrompt, MEDIA_ANALYSIS_SCHEMA } from '@/lib/ai/prompts/media';
 import { 
   Sparkles, Loader2, TrendingUp, AlertTriangle, Archive, 
   Image, Video, FileText, Trash2, Download, Eye, ChevronDown, ChevronUp,
@@ -134,48 +135,9 @@ Provide insights in ${language === 'ar' ? 'Arabic' : 'English'}.
 Focus on actionable recommendations with specific file counts and potential impact.`;
 
     const result = await invokeAI({
-      prompt,
-      system_prompt: `You are a media library optimization assistant. Analyze media files and provide actionable recommendations for organization, cleanup, and optimization. Focus on practical, specific actions the user can take.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          summary: {
-            type: 'string',
-            description: 'Brief overview of library health (1-2 sentences)'
-          },
-          healthScore: {
-            type: 'number',
-            description: 'Library health score from 0-100'
-          },
-          recommendations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                type: { type: 'string', enum: ['cleanup', 'optimize', 'organize', 'engagement', 'storage'] },
-                priority: { type: 'string', enum: ['high', 'medium', 'low'] },
-                title: { type: 'string' },
-                description: { type: 'string' },
-                action: { type: 'string', enum: ['delete_unused', 'archive_old', 'compress_large', 'rename_duplicates', 'review_engagement', 'organize_folders'] },
-                affectedCount: { type: 'number' }
-              },
-              required: ['type', 'priority', 'title', 'description']
-            }
-          },
-          quickStats: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                label: { type: 'string' },
-                value: { type: 'string' },
-                trend: { type: 'string', enum: ['up', 'down', 'neutral'] }
-              }
-            }
-          }
-        },
-        required: ['summary', 'healthScore', 'recommendations']
-      }
+      prompt: buildMediaAnalysisPrompt(mediaSummary, language),
+      system_prompt: MEDIA_AI_HELPER_SYSTEM_PROMPT,
+      response_json_schema: MEDIA_ANALYSIS_SCHEMA
     });
 
     if (result.success && result.data) {

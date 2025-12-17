@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { STAKEHOLDER_ANALYSIS_SYSTEM_PROMPT, buildStakeholderAnalysisPrompt, STAKEHOLDER_ANALYSIS_SCHEMA } from '@/lib/ai/prompts/strategy/preplanning';
 import { useStakeholderAnalysis } from '@/hooks/strategy/useStakeholderAnalysis';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -474,39 +475,9 @@ export default function StakeholderAnalysisWidget({
     }
 
     const result = await invokeAI({
-      system_prompt: `You are a stakeholder analysis expert. Identify key stakeholders for the given context and provide power/interest scores.`,
-      prompt: `Context: ${contextInput}
-
-Identify 5-8 key stakeholders for this initiative. For each, provide:
-- name_en: Stakeholder name in English
-- name_ar: Stakeholder name in Arabic
-- type: One of government, private, academic, ngo, citizen, international
-- power: Power level 0-100
-- interest: Interest level 0-100
-- influence: Brief description of their influence
-- expectations: What they expect from this initiative`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          stakeholders: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name_en: { type: 'string' },
-                name_ar: { type: 'string' },
-                type: { type: 'string', enum: ['government', 'private', 'academic', 'ngo', 'citizen', 'international'] },
-                power: { type: 'number', minimum: 0, maximum: 100 },
-                interest: { type: 'number', minimum: 0, maximum: 100 },
-                influence: { type: 'string' },
-                expectations: { type: 'string' }
-              },
-              required: ['name_en', 'type', 'power', 'interest']
-            }
-          }
-        },
-        required: ['stakeholders']
-      }
+      system_prompt: STAKEHOLDER_ANALYSIS_SYSTEM_PROMPT,
+      prompt: buildStakeholderAnalysisPrompt(contextInput),
+      response_json_schema: STAKEHOLDER_ANALYSIS_SCHEMA
     });
 
     if (result.success && result.data?.stakeholders) {

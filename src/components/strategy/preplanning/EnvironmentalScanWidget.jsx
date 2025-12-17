@@ -13,6 +13,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { ENVIRONMENTAL_SCAN_SYSTEM_PROMPT, buildEnvironmentalScanPrompt, ENVIRONMENTAL_SCAN_SCHEMA } from '@/lib/ai/prompts/strategy/preplanning';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -175,41 +176,9 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
     
     try {
       const result = await invokeAI({
-        system_prompt: `You are a strategic planning expert. Generate a comprehensive PESTLE analysis with environmental factors covering all 6 categories: Political, Economic, Social, Technological, Legal, and Environmental.`,
-        prompt: `Generate environmental factors for a PESTLE analysis for a municipal strategic plan. Provide 1-2 factors for EACH of the 6 categories (political, economic, social, technological, legal, environmental). Total should be 6-12 factors covering all categories.
-
-For each factor provide:
-- category: one of "political", "economic", "social", "technological", "legal", "environmental"
-- title_en: English title
-- title_ar: Arabic title  
-- description_en: English description
-- description_ar: Arabic description
-- impact_type: "opportunity" or "threat"
-- impact_level: "high", "medium", or "low"
-- trend: "increasing", "stable", or "decreasing"`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            factors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  category: { type: 'string', enum: ['political', 'economic', 'social', 'technological', 'legal', 'environmental'] },
-                  title_en: { type: 'string' },
-                  title_ar: { type: 'string' },
-                  description_en: { type: 'string' },
-                  description_ar: { type: 'string' },
-                  impact_type: { type: 'string', enum: ['opportunity', 'threat'] },
-                  impact_level: { type: 'string', enum: ['high', 'medium', 'low'] },
-                  trend: { type: 'string', enum: ['increasing', 'stable', 'decreasing'] }
-                },
-                required: ['category', 'title_en', 'impact_type', 'impact_level']
-              }
-            }
-          },
-          required: ['factors']
-        }
+        system_prompt: ENVIRONMENTAL_SCAN_SYSTEM_PROMPT,
+        prompt: buildEnvironmentalScanPrompt(),
+        response_json_schema: ENVIRONMENTAL_SCAN_SCHEMA
       });
 
       if (result.success && result.data?.factors) {

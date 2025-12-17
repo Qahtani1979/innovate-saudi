@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { SWOT_ANALYSIS_SYSTEM_PROMPT, buildSWOTAnalysisPrompt, SWOT_ANALYSIS_SCHEMA } from '@/lib/ai/prompts/strategy/preplanning';
 import { useSwotAnalysis } from '@/hooks/strategy/useSwotAnalysis';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -444,72 +445,9 @@ export default function SWOTAnalysisBuilder({
     }
 
     const result = await invokeAI({
-      system_prompt: `You are a strategic planning expert. Generate a comprehensive SWOT analysis based on the provided context. Return suggestions for all four categories.`,
-      prompt: `Context: ${contextInput}
-
-Analyze this context and provide a SWOT analysis with 3-5 items per category. For each item, provide:
-- text_en: English description
-- text_ar: Arabic description
-- priority: high, medium, or low
-- description: brief explanation`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          strengths: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                text_en: { type: 'string' },
-                text_ar: { type: 'string' },
-                priority: { type: 'string', enum: ['high', 'medium', 'low'] },
-                description: { type: 'string' }
-              },
-              required: ['text_en', 'priority']
-            }
-          },
-          weaknesses: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                text_en: { type: 'string' },
-                text_ar: { type: 'string' },
-                priority: { type: 'string', enum: ['high', 'medium', 'low'] },
-                description: { type: 'string' }
-              },
-              required: ['text_en', 'priority']
-            }
-          },
-          opportunities: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                text_en: { type: 'string' },
-                text_ar: { type: 'string' },
-                priority: { type: 'string', enum: ['high', 'medium', 'low'] },
-                description: { type: 'string' }
-              },
-              required: ['text_en', 'priority']
-            }
-          },
-          threats: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                text_en: { type: 'string' },
-                text_ar: { type: 'string' },
-                priority: { type: 'string', enum: ['high', 'medium', 'low'] },
-                description: { type: 'string' }
-              },
-              required: ['text_en', 'priority']
-            }
-          }
-        },
-        required: ['strengths', 'weaknesses', 'opportunities', 'threats']
-      }
+      system_prompt: SWOT_ANALYSIS_SYSTEM_PROMPT,
+      prompt: buildSWOTAnalysisPrompt(contextInput),
+      response_json_schema: SWOT_ANALYSIS_SCHEMA
     });
 
     if (result.success && result.data) {

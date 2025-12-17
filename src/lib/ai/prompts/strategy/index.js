@@ -7,3 +7,4 @@ export * from './bottleneckDetector';
 export * from './whatIfSimulator';
 export * from './narrativeGenerator';
 export * from './gapProgramRecommender';
+export * from './preplanning';
