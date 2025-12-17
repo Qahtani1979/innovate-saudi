@@ -30,32 +30,32 @@ const ALERT_CONFIG = {
   error: {
     icon: AlertCircle,
     variant: 'destructive',
-    className: 'border-destructive/50 bg-destructive/10 text-destructive',
+    className: 'border-destructive/50 bg-destructive/10 text-destructive dark:bg-destructive/20',
     iconColor: 'text-destructive'
   },
   warning: {
     icon: AlertTriangle,
     variant: 'default',
-    className: 'border-amber-500/50 bg-amber-500/10',
-    iconColor: 'text-amber-500'
+    className: 'border-warning/50 bg-warning/10 text-warning-foreground dark:bg-warning/20',
+    iconColor: 'text-warning'
   },
   info: {
     icon: Info,
     variant: 'default',
-    className: 'border-blue-500/50 bg-blue-500/10',
-    iconColor: 'text-blue-500'
+    className: 'border-primary/50 bg-primary/10 text-primary-foreground dark:bg-primary/20',
+    iconColor: 'text-primary'
   },
   success: {
     icon: CheckCircle2,
     variant: 'default',
-    className: 'border-green-500/50 bg-green-500/10',
-    iconColor: 'text-green-500'
+    className: 'border-success/50 bg-success/10 text-success-foreground dark:bg-success/20',
+    iconColor: 'text-success'
   },
   tip: {
     icon: Lightbulb,
     variant: 'default',
-    className: 'border-purple-500/50 bg-purple-500/10',
-    iconColor: 'text-purple-500'
+    className: 'border-accent/50 bg-accent/10 text-accent-foreground dark:bg-accent/20',
+    iconColor: 'text-accent'
   }
 };
 
@@ -80,9 +80,9 @@ export function StepAlert({
       className={cn(config.className, 'relative', className)}
     >
       <Icon className={cn('h-4 w-4', config.iconColor)} />
-      {title && <AlertTitle>{t(title)}</AlertTitle>}
+      {title && <AlertTitle>{typeof title === 'object' ? t(title) : title}</AlertTitle>}
       <AlertDescription className="flex items-center justify-between gap-4">
-        <span className="flex-1">{t(message)}</span>
+        <span className="flex-1">{typeof message === 'object' ? t(message) : message}</span>
         <div className="flex items-center gap-2 shrink-0">
           {action && (
             <Button 
@@ -163,13 +163,13 @@ export function StepAlerts({
             </span>
           )}
           {counts.warning > 0 && (
-            <span className="flex items-center gap-1 text-amber-500">
+            <span className="flex items-center gap-1 text-warning">
               <AlertTriangle className="h-3 w-3" />
               {counts.warning} {language === 'ar' ? 'تحذيرات' : 'warnings'}
             </span>
           )}
           {counts.info > 0 && (
-            <span className="flex items-center gap-1 text-blue-500">
+            <span className="flex items-center gap-1 text-primary">
               <Info className="h-3 w-3" />
               {counts.info} {language === 'ar' ? 'معلومات' : 'info'}
             </span>
