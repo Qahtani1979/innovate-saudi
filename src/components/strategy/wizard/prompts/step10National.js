@@ -29,65 +29,70 @@ export const getStep10Prompt = (context, wizardData) => {
 - Timeline: ${context.startYear}-${context.endYear}
 
 ## OBJECTIVES TO ALIGN (from Step 9):
-${objectivesList.map(o => `- Index ${o.index}: "${o.name_en}" (Sector: ${o.sector_code}, Priority: ${o.priority})`).join('\n') || 'No objectives defined yet'}
+${objectivesList.map(o => `- Index ${o.index}: "${o.name_en}" / "${o.name_ar}" (Sector: ${o.sector_code}, Priority: ${o.priority})`).join('\n') || 'No objectives defined yet'}
 
 ---
 
 ## REQUIREMENTS:
 Generate national alignment mappings for each objective to Vision 2030 and Innovation frameworks.
 
-For EACH alignment, you MUST provide ALL of these fields:
+For EACH alignment, you MUST provide ALL of these fields (BILINGUAL):
 - objective_index: The index of the objective (0-based integer matching the list above)
-- objective_name: The exact name of the objective in English (copy from objectives list above)
+- objective_name_en: The exact name of the objective in English (copy from objectives list above)
+- objective_name_ar: The exact name of the objective in Arabic (copy from objectives list above)
 - goal_code: Vision 2030 program code (e.g., "QOL", "HSG", "NTP", "TRC", "INN")
 - target_code: Specific target code within the program (e.g., "QOL_1", "HSG_2", "TRC_3")
-- innovation_alignment: How this supports national innovation goals (1 sentence)
+- innovation_alignment_en: How this supports national innovation goals in English (1-2 sentences)
+- innovation_alignment_ar: How this supports national innovation goals in Arabic (1-2 sentences, formal فصحى)
 
 ### VISION 2030 GOAL CODES AND TARGETS:
 
-**Quality of Life Program (QOL):**
-- QOL_1: Improve livability of Saudi cities
-- QOL_2: Enhance environmental sustainability
-- QOL_3: Develop cultural and entertainment options
-- QOL_4: Promote sports and healthy lifestyles
+**Quality of Life Program (QOL) - برنامج جودة الحياة:**
+- QOL_1: Improve livability of Saudi cities / تحسين جودة الحياة في المدن السعودية
+- QOL_2: Enhance environmental sustainability / تعزيز الاستدامة البيئية
+- QOL_3: Develop cultural and entertainment options / تطوير الخيارات الثقافية والترفيهية
+- QOL_4: Promote sports and healthy lifestyles / تعزيز الرياضة وأنماط الحياة الصحية
 
-**Housing Program (HSG):**
-- HSG_1: Increase home ownership to 70%
-- HSG_2: Improve housing quality and affordability
-- HSG_3: Develop real estate sector
+**Housing Program (HSG) - برنامج الإسكان:**
+- HSG_1: Increase home ownership to 70% / زيادة نسبة تملك المساكن إلى 70%
+- HSG_2: Improve housing quality and affordability / تحسين جودة الإسكان والقدرة على تحمل التكاليف
+- HSG_3: Develop real estate sector / تطوير القطاع العقاري
 
-**National Transformation Program (NTP):**
-- NTP_1: Government effectiveness and efficiency
-- NTP_2: Digital transformation of government services
-- NTP_3: Private sector enablement
-- NTP_4: Labor market development
+**National Transformation Program (NTP) - برنامج التحول الوطني:**
+- NTP_1: Government effectiveness and efficiency / فعالية وكفاءة الحكومة
+- NTP_2: Digital transformation of government services / التحول الرقمي للخدمات الحكومية
+- NTP_3: Private sector enablement / تمكين القطاع الخاص
+- NTP_4: Labor market development / تطوير سوق العمل
 
-**Thriving Cities Program (TRC):**
-- TRC_1: Urban development and planning
-- TRC_2: Municipal infrastructure improvement
-- TRC_3: Smart city implementation
-- TRC_4: Sustainable urban development
+**Thriving Cities Program (TRC) - برنامج المدن المزدهرة:**
+- TRC_1: Urban development and planning / التطوير والتخطيط العمراني
+- TRC_2: Municipal infrastructure improvement / تحسين البنية التحتية البلدية
+- TRC_3: Smart city implementation / تطبيق المدن الذكية
+- TRC_4: Sustainable urban development / التنمية الحضرية المستدامة
 
-**National Innovation & Technology (INN):**
-- INN_1: R&D investment and capability building
-- INN_2: Technology adoption and digital transformation
-- INN_3: AI and emerging technology deployment (SDAIA)
-- INN_4: Innovation ecosystem and partnerships
-- INN_5: Tech talent development and Saudization
+**National Innovation & Technology (INN) - الابتكار والتقنية الوطنية:**
+- INN_1: R&D investment and capability building / الاستثمار في البحث والتطوير وبناء القدرات
+- INN_2: Technology adoption and digital transformation / تبني التقنية والتحول الرقمي
+- INN_3: AI and emerging technology deployment (SDAIA) / نشر الذكاء الاصطناعي والتقنيات الناشئة
+- INN_4: Innovation ecosystem and partnerships / منظومة الابتكار والشراكات
+- INN_5: Tech talent development and Saudization / تطوير الكفاءات التقنية والتوطين
 
 ### ALIGNMENT REQUIREMENTS:
 1. Each objective MUST have at least 1-3 alignments to relevant targets
 2. Innovation/technology objectives MUST align to INN codes
-3. Each alignment needs a clear innovation_alignment statement
+3. Each alignment needs BILINGUAL innovation_alignment statements
 4. The goal_code must be extracted from target_code (e.g., "QOL" from "QOL_1")
 5. Prioritize alignments that strengthen R&D and technology adoption
 
-### INNOVATION ALIGNMENT EXAMPLES:
-- "Supports national AI strategy through SDAIA-compliant municipal AI deployment"
-- "Advances R&D ecosystem through partnership with KACST research programs"
-- "Enables technology transfer from pilot programs to scaled municipal solutions"
-- "Builds digital capabilities aligned with MCIT national digital transformation"
-- "Supports smart city framework implementation in line with Thriving Cities program"
+### INNOVATION ALIGNMENT EXAMPLES (BILINGUAL):
+- EN: "Supports national AI strategy through SDAIA-compliant municipal AI deployment"
+  AR: "يدعم الاستراتيجية الوطنية للذكاء الاصطناعي من خلال نشر حلول الذكاء الاصطناعي البلدية المتوافقة مع سدايا"
+
+- EN: "Advances R&D ecosystem through partnership with KACST research programs"
+  AR: "يعزز منظومة البحث والتطوير من خلال الشراكة مع برامج مدينة الملك عبدالعزيز للعلوم والتقنية"
+
+- EN: "Enables technology transfer from pilot programs to scaled municipal solutions"
+  AR: "يمكّن نقل التقنية من البرامج التجريبية إلى الحلول البلدية الموسعة"
 
 Return alignments as an array under the "alignments" key with ALL required fields for each alignment.`;
 };
@@ -101,12 +106,14 @@ export const step10Schema = {
         type: 'object', 
         properties: { 
           objective_index: { type: 'number', description: 'Zero-based index of the objective' }, 
-          objective_name: { type: 'string', description: 'Name of the objective in English' },
+          objective_name_en: { type: 'string', description: 'Name of the objective in English' },
+          objective_name_ar: { type: 'string', description: 'Name of the objective in Arabic' },
           goal_code: { type: 'string', description: 'Vision 2030 program code (QOL, HSG, NTP, TRC, INN)' }, 
           target_code: { type: 'string', description: 'Specific target code (e.g., QOL_1, TRC_3)' }, 
-          innovation_alignment: { type: 'string', description: 'How this supports national innovation goals' } 
+          innovation_alignment_en: { type: 'string', description: 'How this supports national innovation goals (English)' },
+          innovation_alignment_ar: { type: 'string', description: 'How this supports national innovation goals (Arabic)' }
         },
-        required: ['objective_index', 'objective_name', 'goal_code', 'target_code', 'innovation_alignment']
+        required: ['objective_index', 'objective_name_en', 'objective_name_ar', 'goal_code', 'target_code', 'innovation_alignment_en', 'innovation_alignment_ar']
       } 
     }
   },
