@@ -11,17 +11,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Sparkles, Loader2, Plus, X, Lightbulb, ChevronDown, ChevronUp, Zap,
   Target, Calendar, DollarSign, Users, ArrowRight, Layers, Beaker,
   Rocket, Globe, Building2, Scale, FlaskConical, Handshake, TestTube,
-  BarChart3, GanttChartSquare, ListTree, AlertTriangle, Link2, TrendingUp
+  BarChart3, GanttChartSquare, ListTree, AlertTriangle, Link2, TrendingUp,
+  PieChart, CheckCircle2, Clock, FileText, Info, User
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
 import EntityGenerationPanel from '../EntityGenerationPanel';
 
-// Enhanced entity type configuration with icons and detailed descriptions
+// Enhanced entity type configuration
 const ENTITY_TYPES = [
   { 
     value: 'challenge', 
@@ -130,7 +132,6 @@ const PRIORITY_CONFIG = {
   low: { label_en: 'Low', label_ar: 'منخفض', color: 'bg-green-100 text-green-700 border-green-200', weight: 1 }
 };
 
-// Innovation impact levels
 const IMPACT_LEVELS = [
   { value: 1, label_en: 'Incremental', label_ar: 'تدريجي', description_en: 'Small improvements' },
   { value: 2, label_en: 'Moderate', label_ar: 'معتدل', description_en: 'Notable enhancements' },
@@ -138,17 +139,45 @@ const IMPACT_LEVELS = [
   { value: 4, label_en: 'Breakthrough', label_ar: 'اختراق', description_en: 'Game-changing innovation' },
 ];
 
+// Calculate individual action plan completeness
+const calculateActionCompleteness = (ap) => {
+  const fields = [
+    { key: 'name_en', weight: 15 },
+    { key: 'name_ar', weight: 10 },
+    { key: 'description_en', weight: 10 },
+    { key: 'type', weight: 10 },
+    { key: 'priority', weight: 5 },
+    { key: 'objective_index', weight: 15, check: (v) => v !== null && v !== undefined },
+    { key: 'budget_estimate', weight: 10 },
+    { key: 'start_date', weight: 5 },
+    { key: 'end_date', weight: 5 },
+    { key: 'owner', weight: 5 },
+    { key: 'success_criteria_en', weight: 5 },
+    { key: 'deliverables', weight: 5, check: (v) => Array.isArray(v) && v.length > 0 }
+  ];
+  
+  let score = 0;
+  fields.forEach(({ key, weight, check }) => {
+    const value = ap[key];
+    const passed = check ? check(value) : (value && value !== '');
+    if (passed) score += weight;
+  });
+  
+  return Math.round(score);
+};
+
 export default function Step6ActionPlans({ 
   data, 
   onChange, 
   onGenerateAI, 
   isGenerating,
   strategicPlanId,
-  wizardData 
+  wizardData,
+  isReadOnly = false
 }) {
   const { language, t, isRTL } = useLanguage();
   const [expandedIndex, setExpandedIndex] = useState(null);
-  const [viewMode, setViewMode] = useState('objectives'); // 'objectives' | 'types' | 'roadmap'
+  const [viewMode, setViewMode] = useState('objectives');
   
   const objectives = data.objectives || [];
   const actionPlans = data.action_plans || [];
@@ -172,7 +201,6 @@ export default function Step6ActionPlans({
       low: actionPlans.filter(ap => ap.priority === 'low').length
     };
 
-    // Innovation score calculation
     const innovationScore = actionPlans.length > 0 
       ? actionPlans.reduce((sum, ap) => {
           const typeConfig = ENTITY_TYPES.find(et => et.value === ap.type);
@@ -186,6 +214,14 @@ export default function Step6ActionPlans({
       : 0;
 
     const queuedForGeneration = actionPlans.filter(ap => ap.should_create_entity).length;
+    
+    const avgCompleteness = actionPlans.length > 0
+      ? actionPlans.reduce((sum, ap) => sum + calculateActionCompleteness(ap), 0) / actionPlans.length
+      : 0;
+
+    const withOwner = actionPlans.filter(ap => ap.owner && ap.owner !== '').length;
+    const withTimeline = actionPlans.filter(ap => ap.start_date && ap.end_date).length;
+    const withDeliverables = actionPlans.filter(ap => ap.deliverables?.length > 0).length;
 
     return {
       total: actionPlans.length,
@@ -194,14 +230,37 @@ export default function Step6ActionPlans({
       byPriority,
       innovationScore: Math.round(innovationScore),
       objectiveCoverage: Math.round(objectiveCoverage),
-      queuedForGeneration
+      queuedForGeneration,
+      avgCompleteness: Math.round(avgCompleteness),
+      withOwner,
+      withTimeline,
+      withDeliverables
     };
   }, [actionPlans, objectives]);
 
-  // Timeline data for roadmap view
+  // Calculate overall completeness
+  const overallCompleteness = useMemo(() => {
+    if (objectives.length === 0) return 0;
+    
+    let score = 0;
+    // Has action plans (30%)
+    if (actionPlans.length > 0) score += 30;
+    // Average action completeness (30%)
+    score += (portfolioStats.avgCompleteness / 100) * 30;
+    // Objective coverage (20%)
+    score += (portfolioStats.objectiveCoverage / 100) * 20;
+    // Has timeline data (10%)
+    if (portfolioStats.withTimeline > 0) score += 10;
+    // Has budgets (10%)
+    if (portfolioStats.totalBudget > 0) score += 10;
+    
+    return Math.round(score);
+  }, [actionPlans, objectives, portfolioStats]);
+
+  // Timeline data
   const timelineData = useMemo(() => {
-    const planStart = parseInt(wizardData.start_year) || new Date().getFullYear();
-    const planEnd = parseInt(wizardData.end_year) || planStart + 5;
+    const planStart = parseInt(wizardData?.start_year) || new Date().getFullYear();
+    const planEnd = parseInt(wizardData?.end_year) || planStart + 5;
     
     return actionPlans.map(ap => {
       const startDate = ap.start_date ? new Date(ap.start_date) : null;
@@ -217,8 +276,53 @@ export default function Step6ActionPlans({
     });
   }, [actionPlans, wizardData]);
 
+  // Alerts
+  const alerts = useMemo(() => {
+    const items = [];
+    
+    const uncoveredObjectives = objectives.length - objectives.filter((_, i) => 
+      actionPlans.some(ap => ap.objective_index === i)
+    ).length;
+    
+    if (uncoveredObjectives > 0) {
+      items.push({
+        type: 'warning',
+        icon: AlertTriangle,
+        message: t({ 
+          en: `${uncoveredObjectives} objective(s) without action plans`, 
+          ar: `${uncoveredObjectives} هدف(أهداف) بدون خطط عمل` 
+        })
+      });
+    }
+    
+    if (portfolioStats.withOwner < actionPlans.length && actionPlans.length > 0) {
+      items.push({
+        type: 'info',
+        icon: User,
+        message: t({ 
+          en: `${actionPlans.length - portfolioStats.withOwner} action(s) missing owners`, 
+          ar: `${actionPlans.length - portfolioStats.withOwner} إجراء(ات) بدون مسؤول` 
+        })
+      });
+    }
+    
+    if (portfolioStats.withTimeline < actionPlans.length && actionPlans.length > 0) {
+      items.push({
+        type: 'info',
+        icon: Calendar,
+        message: t({ 
+          en: `${actionPlans.length - portfolioStats.withTimeline} action(s) missing timeline`, 
+          ar: `${actionPlans.length - portfolioStats.withTimeline} إجراء(ات) بدون جدول زمني` 
+        })
+      });
+    }
+    
+    return items;
+  }, [actionPlans, objectives, portfolioStats, t]);
+
   const addActionPlan = (objectiveIndex = null) => {
-    const planStart = wizardData.start_year || new Date().getFullYear();
+    if (isReadOnly) return;
+    const planStart = wizardData?.start_year || new Date().getFullYear();
     onChange({
       action_plans: [...actionPlans, {
         name_en: '',
@@ -245,6 +349,7 @@ export default function Step6ActionPlans({
   };
 
   const updateActionPlan = (index, updates) => {
+    if (isReadOnly) return;
     const updated = actionPlans.map((ap, i) => 
       i === index ? { ...ap, ...updates } : ap
     );
@@ -252,6 +357,7 @@ export default function Step6ActionPlans({
   };
 
   const removeActionPlan = (index) => {
+    if (isReadOnly) return;
     onChange({ action_plans: actionPlans.filter((_, i) => i !== index) });
     if (expandedIndex === index) setExpandedIndex(null);
   };
@@ -272,10 +378,16 @@ export default function Step6ActionPlans({
     return `${num.toLocaleString()} SAR`;
   };
 
+  const isFieldComplete = (value, checkFn = null) => {
+    if (checkFn) return checkFn(value);
+    return value && value !== '';
+  };
+
   const renderActionCard = (ap, apIndex, showObjective = false) => {
     const typeConfig = getTypeConfig(ap.type);
     const IconComponent = typeConfig.icon;
     const objective = objectives[ap.objective_index];
+    const completeness = calculateActionCompleteness(ap);
     
     return (
       <Collapsible key={apIndex} open={expandedIndex === apIndex}>
@@ -313,7 +425,7 @@ export default function Step6ActionPlans({
                     : PRIORITY_CONFIG[ap.priority]?.label_en}
                 </Badge>
                 {ap.budget_estimate && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs hidden sm:flex">
                     <DollarSign className="h-3 w-3 mr-1" />
                     {formatBudget(ap.budget_estimate)}
                   </Badge>
@@ -323,6 +435,9 @@ export default function Step6ActionPlans({
                     <Zap className="h-3 w-3" />
                   </Badge>
                 )}
+                <div className="w-12 hidden md:block">
+                  <Progress value={completeness} className="h-1.5" />
+                </div>
                 {expandedIndex === apIndex ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </div>
             </div>
@@ -330,6 +445,12 @@ export default function Step6ActionPlans({
           
           <CollapsibleContent>
             <div className="p-4 pt-0 space-y-4 border-t">
+              {/* Completeness indicator */}
+              <div className="flex items-center gap-3 pt-2">
+                <Progress value={completeness} className="flex-1 h-2" />
+                <span className="text-xs text-muted-foreground w-12">{completeness}%</span>
+              </div>
+
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -339,6 +460,8 @@ export default function Step6ActionPlans({
                     onChange={(e) => updateActionPlan(apIndex, { name_en: e.target.value })}
                     dir="ltr"
                     placeholder="Smart Parking Pilot Program"
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.name_en) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
                 <div className="space-y-1">
@@ -348,6 +471,8 @@ export default function Step6ActionPlans({
                     onChange={(e) => updateActionPlan(apIndex, { name_ar: e.target.value })}
                     dir="rtl"
                     placeholder="برنامج مواقف السيارات الذكية التجريبي"
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.name_ar) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
               </div>
@@ -360,6 +485,8 @@ export default function Step6ActionPlans({
                     onChange={(e) => updateActionPlan(apIndex, { description_en: e.target.value })}
                     rows={2}
                     dir="ltr"
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.description_en) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
                 <div className="space-y-1">
@@ -369,6 +496,8 @@ export default function Step6ActionPlans({
                     onChange={(e) => updateActionPlan(apIndex, { description_ar: e.target.value })}
                     rows={2}
                     dir="rtl"
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.description_ar) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
               </div>
@@ -377,8 +506,12 @@ export default function Step6ActionPlans({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">{t({ en: 'Action Type', ar: 'نوع الإجراء' })}</Label>
-                  <Select value={ap.type} onValueChange={(v) => updateActionPlan(apIndex, { type: v })}>
-                    <SelectTrigger className="h-9">
+                  <Select 
+                    value={ap.type} 
+                    onValueChange={(v) => updateActionPlan(apIndex, { type: v })}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={`h-9 ${isFieldComplete(ap.type) ? 'border-green-300 bg-green-50/50' : ''}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -398,8 +531,14 @@ export default function Step6ActionPlans({
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">{t({ en: 'Priority', ar: 'الأولوية' })}</Label>
-                  <Select value={ap.priority} onValueChange={(v) => updateActionPlan(apIndex, { priority: v })}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <Select 
+                    value={ap.priority} 
+                    onValueChange={(v) => updateActionPlan(apIndex, { priority: v })}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={`h-9 ${isFieldComplete(ap.priority) ? 'border-green-300 bg-green-50/50' : ''}`}>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
                         <SelectItem key={key} value={key}>
@@ -414,8 +553,11 @@ export default function Step6ActionPlans({
                   <Select 
                     value={String(ap.objective_index ?? '')} 
                     onValueChange={(v) => updateActionPlan(apIndex, { objective_index: v === '' ? null : parseInt(v) })}
+                    disabled={isReadOnly}
                   >
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectTrigger className={`h-9 ${isFieldComplete(ap.objective_index, (v) => v !== null && v !== undefined) ? 'border-green-300 bg-green-50/50' : ''}`}>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">
                         {t({ en: 'No objective', ar: 'بدون هدف' })}
@@ -434,6 +576,8 @@ export default function Step6ActionPlans({
                     value={ap.owner}
                     onChange={(e) => updateActionPlan(apIndex, { owner: e.target.value })}
                     placeholder="IT Directorate"
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.owner) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
               </div>
@@ -456,6 +600,7 @@ export default function Step6ActionPlans({
                   max={4}
                   step={1}
                   className="w-full"
+                  disabled={isReadOnly}
                 />
                 <div className="flex justify-between mt-1 text-xs text-muted-foreground">
                   <span>{t({ en: 'Incremental', ar: 'تدريجي' })}</span>
@@ -471,6 +616,8 @@ export default function Step6ActionPlans({
                     value={ap.budget_estimate}
                     onChange={(e) => updateActionPlan(apIndex, { budget_estimate: e.target.value })}
                     placeholder="1,000,000"
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.budget_estimate) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
                 <div className="space-y-1">
@@ -479,6 +626,8 @@ export default function Step6ActionPlans({
                     type="month"
                     value={ap.start_date}
                     onChange={(e) => updateActionPlan(apIndex, { start_date: e.target.value })}
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.start_date) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
                 <div className="space-y-1">
@@ -487,6 +636,8 @@ export default function Step6ActionPlans({
                     type="month"
                     value={ap.end_date}
                     onChange={(e) => updateActionPlan(apIndex, { end_date: e.target.value })}
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.end_date) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
                 <div className="space-y-1">
@@ -494,6 +645,7 @@ export default function Step6ActionPlans({
                   <Select 
                     value={(ap.linked_risks || [])[0] || ''} 
                     onValueChange={(v) => updateActionPlan(apIndex, { linked_risks: v ? [v] : [] })}
+                    disabled={isReadOnly}
                   >
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder={t({ en: 'Select risk...', ar: 'اختر المخاطر...' })} />
@@ -526,6 +678,8 @@ export default function Step6ActionPlans({
                     rows={2}
                     dir="ltr"
                     placeholder="Measurable outcomes that define success..."
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.success_criteria_en) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
                 <div className="space-y-1">
@@ -536,6 +690,8 @@ export default function Step6ActionPlans({
                     rows={2}
                     dir="rtl"
                     placeholder="النتائج القابلة للقياس..."
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.success_criteria_ar) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
               </div>
@@ -549,6 +705,8 @@ export default function Step6ActionPlans({
                     onChange={(e) => updateActionPlan(apIndex, { deliverables: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
                     rows={3}
                     placeholder="Platform deployment&#10;User training&#10;Documentation"
+                    disabled={isReadOnly}
+                    className={isFieldComplete(ap.deliverables, (v) => Array.isArray(v) && v.length > 0) ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
                 <div className="space-y-1">
@@ -558,33 +716,38 @@ export default function Step6ActionPlans({
                     onChange={(e) => updateActionPlan(apIndex, { dependencies: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
                     rows={3}
                     placeholder="IT infrastructure ready&#10;Budget approval&#10;Vendor selection"
+                    disabled={isReadOnly}
                   />
                 </div>
               </div>
 
               {/* Entity Generation Toggle */}
-              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-primary" />
-                  <div>
-                    <Label className="text-sm font-medium">{t({ en: 'Auto-Create Entity', ar: 'إنشاء كيان تلقائياً' })}</Label>
-                    <p className="text-xs text-muted-foreground">
-                      {t({ en: 'Queue for automatic entity generation after plan approval', ar: 'إضافة للقائمة للإنشاء التلقائي بعد اعتماد الخطة' })}
-                    </p>
+              {!isReadOnly && (
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-primary" />
+                    <div>
+                      <Label className="text-sm font-medium">{t({ en: 'Auto-Create Entity', ar: 'إنشاء كيان تلقائياً' })}</Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t({ en: 'Queue for automatic entity generation after plan approval', ar: 'إضافة للقائمة للإنشاء التلقائي بعد اعتماد الخطة' })}
+                      </p>
+                    </div>
                   </div>
+                  <Switch
+                    checked={ap.should_create_entity || false}
+                    onCheckedChange={(checked) => updateActionPlan(apIndex, { should_create_entity: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={ap.should_create_entity || false}
-                  onCheckedChange={(checked) => updateActionPlan(apIndex, { should_create_entity: checked })}
-                />
-              </div>
+              )}
 
-              <div className="flex justify-end">
-                <Button size="sm" variant="destructive" onClick={() => removeActionPlan(apIndex)}>
-                  <X className="h-4 w-4 mr-1" />
-                  {t({ en: 'Remove Action', ar: 'حذف الإجراء' })}
-                </Button>
-              </div>
+              {!isReadOnly && (
+                <div className="flex justify-end">
+                  <Button size="sm" variant="destructive" onClick={() => removeActionPlan(apIndex)}>
+                    <X className="h-4 w-4 mr-1" />
+                    {t({ en: 'Remove Action', ar: 'حذف الإجراء' })}
+                  </Button>
+                </div>
+              )}
             </div>
           </CollapsibleContent>
         </div>
@@ -605,56 +768,65 @@ export default function Step6ActionPlans({
         />
       )}
 
-      {/* Portfolio Dashboard */}
-      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                {t({ en: 'Action Portfolio Dashboard', ar: 'لوحة محفظة الإجراءات' })}
-              </CardTitle>
-              <CardDescription>
-                {t({ en: 'Overview of all planned actions and initiatives', ar: 'نظرة عامة على جميع الإجراءات والمبادرات المخططة' })}
-              </CardDescription>
+      {/* Dashboard Header */}
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardContent className="pt-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            {/* Overall Progress */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-background border-4 border-primary/20 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary">{overallCompleteness}%</span>
+                </div>
+                <Layers className="absolute -bottom-1 -right-1 h-6 w-6 text-primary bg-background rounded-full p-1" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">{t({ en: 'Action Plans', ar: 'خطط العمل' })}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t({ en: 'Define initiatives and projects to achieve objectives', ar: 'حدد المبادرات والمشاريع لتحقيق الأهداف' })}
+                </p>
+              </div>
             </div>
-            <Button onClick={onGenerateAI} disabled={isGenerating || objectives.length === 0}>
-              {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              {t({ en: 'Generate Actions', ar: 'إنشاء الإجراءات' })}
-            </Button>
+            
+            {/* AI Generate Button */}
+            {!isReadOnly && (
+              <Button onClick={onGenerateAI} disabled={isGenerating || objectives.length === 0}>
+                {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                {t({ en: 'Generate Actions', ar: 'إنشاء الإجراءات' })}
+              </Button>
+            )}
           </div>
-        </CardHeader>
-        <CardContent>
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
-            <div className="p-3 rounded-lg bg-background border text-center">
+          
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6">
+            <div className="text-center p-3 rounded-lg bg-background border">
               <p className="text-2xl font-bold text-primary">{portfolioStats.total}</p>
               <p className="text-xs text-muted-foreground">{t({ en: 'Total Actions', ar: 'إجمالي الإجراءات' })}</p>
             </div>
-            <div className="p-3 rounded-lg bg-background border text-center">
+            <div className="text-center p-3 rounded-lg bg-emerald-50 border border-emerald-200">
               <p className="text-2xl font-bold text-emerald-600">{formatBudget(portfolioStats.totalBudget)}</p>
               <p className="text-xs text-muted-foreground">{t({ en: 'Total Budget', ar: 'إجمالي الميزانية' })}</p>
             </div>
-            <div className="p-3 rounded-lg bg-background border text-center">
+            <div className="text-center p-3 rounded-lg bg-blue-50 border border-blue-200">
               <p className="text-2xl font-bold text-blue-600">{portfolioStats.innovationScore}%</p>
               <p className="text-xs text-muted-foreground">{t({ en: 'Innovation Score', ar: 'درجة الابتكار' })}</p>
             </div>
-            <div className="p-3 rounded-lg bg-background border text-center">
+            <div className="text-center p-3 rounded-lg bg-amber-50 border border-amber-200">
               <p className="text-2xl font-bold text-amber-600">{portfolioStats.objectiveCoverage}%</p>
-              <p className="text-xs text-muted-foreground">{t({ en: 'Objective Coverage', ar: 'تغطية الأهداف' })}</p>
+              <p className="text-xs text-muted-foreground">{t({ en: 'Coverage', ar: 'التغطية' })}</p>
             </div>
-            <div className="p-3 rounded-lg bg-background border text-center">
+            <div className="text-center p-3 rounded-lg bg-red-50 border border-red-200">
               <p className="text-2xl font-bold text-red-600">{portfolioStats.byPriority.high}</p>
               <p className="text-xs text-muted-foreground">{t({ en: 'High Priority', ar: 'أولوية عالية' })}</p>
             </div>
-            <div className="p-3 rounded-lg bg-background border text-center">
+            <div className="text-center p-3 rounded-lg bg-purple-50 border border-purple-200">
               <p className="text-2xl font-bold text-purple-600">{portfolioStats.queuedForGeneration}</p>
               <p className="text-xs text-muted-foreground">{t({ en: 'Queued', ar: 'في قائمة الإنشاء' })}</p>
             </div>
           </div>
 
           {/* Type Distribution */}
-          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
+          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 mt-4">
             {ENTITY_TYPES.map(et => {
               const count = portfolioStats.byType[et.value] || 0;
               const Icon = et.icon;
@@ -684,6 +856,18 @@ export default function Step6ActionPlans({
         </CardContent>
       </Card>
 
+      {/* Alerts */}
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((alert, i) => (
+            <Alert key={i} variant={alert.type === 'warning' ? 'destructive' : 'default'} className={alert.type === 'info' ? 'border-blue-200 bg-blue-50' : ''}>
+              <alert.icon className="h-4 w-4" />
+              <AlertDescription>{alert.message}</AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      )}
+
       {objectives.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
@@ -697,7 +881,7 @@ export default function Step6ActionPlans({
         <>
           {/* View Mode Tabs */}
           <Tabs value={viewMode} onValueChange={setViewMode}>
-            <TabsList className="grid grid-cols-3 w-full max-w-md">
+            <TabsList className="w-full justify-start flex-wrap h-auto gap-1 p-1">
               <TabsTrigger value="objectives" className="flex items-center gap-1">
                 <ListTree className="h-4 w-4" />
                 {t({ en: 'By Objective', ar: 'حسب الهدف' })}
@@ -709,6 +893,10 @@ export default function Step6ActionPlans({
               <TabsTrigger value="roadmap" className="flex items-center gap-1">
                 <GanttChartSquare className="h-4 w-4" />
                 {t({ en: 'Roadmap', ar: 'خارطة الطريق' })}
+              </TabsTrigger>
+              <TabsTrigger value="summary" className="flex items-center gap-1">
+                <PieChart className="h-4 w-4" />
+                {t({ en: 'Summary', ar: 'الملخص' })}
               </TabsTrigger>
             </TabsList>
 
@@ -725,10 +913,12 @@ export default function Step6ActionPlans({
                           <span className="line-clamp-1">{language === 'ar' ? (obj.name_ar || obj.name_en) : obj.name_en}</span>
                           <Badge variant="secondary" className="ml-2">{objActions.length}</Badge>
                         </CardTitle>
-                        <Button size="sm" variant="outline" onClick={() => addActionPlan(objIndex)}>
-                          <Plus className="h-4 w-4 mr-1" />
-                          {t({ en: 'Add', ar: 'إضافة' })}
-                        </Button>
+                        {!isReadOnly && (
+                          <Button size="sm" variant="outline" onClick={() => addActionPlan(objIndex)}>
+                            <Plus className="h-4 w-4 mr-1" />
+                            {t({ en: 'Add', ar: 'إضافة' })}
+                          </Button>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -786,23 +976,35 @@ export default function Step6ActionPlans({
                           <span>{language === 'ar' ? et.label_ar : et.label_en}</span>
                           <Badge variant="secondary">{typeActions.length}</Badge>
                         </CardTitle>
-                        <Button size="sm" variant="outline" onClick={() => {
-                          const newAp = {
-                            ...actionPlans[0] || {},
-                            id: undefined,
-                            name_en: '',
-                            name_ar: '',
-                            description_en: '',
-                            description_ar: '',
-                            type: et.value,
-                            objective_index: null
-                          };
-                          onChange({ action_plans: [...actionPlans, newAp] });
-                          setExpandedIndex(actionPlans.length);
-                        }}>
-                          <Plus className="h-4 w-4 mr-1" />
-                          {t({ en: 'Add', ar: 'إضافة' })}
-                        </Button>
+                        {!isReadOnly && (
+                          <Button size="sm" variant="outline" onClick={() => {
+                            const newAp = {
+                              name_en: '',
+                              name_ar: '',
+                              description_en: '',
+                              description_ar: '',
+                              type: et.value,
+                              priority: 'medium',
+                              objective_index: null,
+                              budget_estimate: '',
+                              start_date: '',
+                              end_date: '',
+                              owner: '',
+                              deliverables: [],
+                              dependencies: [],
+                              innovation_impact: 2,
+                              linked_risks: [],
+                              success_criteria_en: '',
+                              success_criteria_ar: '',
+                              should_create_entity: false
+                            };
+                            onChange({ action_plans: [...actionPlans, newAp] });
+                            setExpandedIndex(actionPlans.length);
+                          }}>
+                            <Plus className="h-4 w-4 mr-1" />
+                            {t({ en: 'Add', ar: 'إضافة' })}
+                          </Button>
+                        )}
                       </div>
                       <CardDescription className="mt-1">
                         {language === 'ar' ? et.description_ar : et.description_en}
@@ -820,8 +1022,8 @@ export default function Step6ActionPlans({
                 );
               })}
 
-              {/* Add new type if all existing types have actions */}
-              {ENTITY_TYPES.filter(et => portfolioStats.byType[et.value] === 0).length > 0 && (
+              {/* Add new type */}
+              {!isReadOnly && ENTITY_TYPES.filter(et => portfolioStats.byType[et.value] === 0).length > 0 && (
                 <Card className="border-dashed">
                   <CardContent className="py-6">
                     <p className="text-sm text-muted-foreground text-center mb-3">
@@ -843,7 +1045,18 @@ export default function Step6ActionPlans({
                                 description_ar: '',
                                 type: et.value,
                                 priority: 'medium',
-                                objective_index: null
+                                objective_index: null,
+                                budget_estimate: '',
+                                start_date: '',
+                                end_date: '',
+                                owner: '',
+                                deliverables: [],
+                                dependencies: [],
+                                innovation_impact: 2,
+                                linked_risks: [],
+                                success_criteria_en: '',
+                                success_criteria_ar: '',
+                                should_create_entity: false
                               }] });
                               setExpandedIndex(actionPlans.length);
                             }}
@@ -869,8 +1082,8 @@ export default function Step6ActionPlans({
                   </CardTitle>
                   <CardDescription>
                     {t({ 
-                      en: `${wizardData.start_year || 2025} - ${wizardData.end_year || 2030} Strategic Plan Timeline`, 
-                      ar: `${wizardData.start_year || 2025} - ${wizardData.end_year || 2030} الجدول الزمني للخطة الاستراتيجية` 
+                      en: `${wizardData?.start_year || 2025} - ${wizardData?.end_year || 2030} Strategic Plan Timeline`, 
+                      ar: `${wizardData?.start_year || 2025} - ${wizardData?.end_year || 2030} الجدول الزمني للخطة الاستراتيجية` 
                     })}
                   </CardDescription>
                 </CardHeader>
@@ -884,9 +1097,9 @@ export default function Step6ActionPlans({
                       {/* Year headers */}
                       <div className="flex items-center gap-2 mb-4">
                         <div className="w-48 shrink-0" />
-                        {Array.from({ length: (wizardData.end_year || 2030) - (wizardData.start_year || 2025) + 1 }, (_, i) => (
+                        {Array.from({ length: (wizardData?.end_year || 2030) - (wizardData?.start_year || 2025) + 1 }, (_, i) => (
                           <div key={i} className="flex-1 text-center text-xs font-medium text-muted-foreground border-l first:border-l-0">
-                            {(wizardData.start_year || 2025) + i}
+                            {(wizardData?.start_year || 2025) + i}
                           </div>
                         ))}
                       </div>
@@ -895,8 +1108,8 @@ export default function Step6ActionPlans({
                       {timelineData.map((ap, i) => {
                         const typeConfig = getTypeConfig(ap.type);
                         const Icon = typeConfig.icon;
-                        const totalYears = (wizardData.end_year || 2030) - (wizardData.start_year || 2025) + 1;
-                        const startOffset = ((ap.startYear - (wizardData.start_year || 2025)) / totalYears) * 100;
+                        const totalYears = (wizardData?.end_year || 2030) - (wizardData?.start_year || 2025) + 1;
+                        const startOffset = ((ap.startYear - (wizardData?.start_year || 2025)) / totalYears) * 100;
                         const duration = ((ap.endYear - ap.startYear + 1) / totalYears) * 100;
                         
                         return (
@@ -928,15 +1141,174 @@ export default function Step6ActionPlans({
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Summary View */}
+            <TabsContent value="summary" className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Priority Distribution */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5" />
+                      {t({ en: 'Priority Distribution', ar: 'توزيع الأولوية' })}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => {
+                        const count = portfolioStats.byPriority[key] || 0;
+                        const pct = portfolioStats.total > 0 ? (count / portfolioStats.total) * 100 : 0;
+                        return (
+                          <div key={key} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span>{language === 'ar' ? cfg.label_ar : cfg.label_en}</span>
+                              <span className="font-medium">{count}</span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div className={`h-full ${cfg.color.replace('text-', 'bg-').split(' ')[0]} transition-all`} style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Objective Coverage */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Target className="h-5 w-5" />
+                      {t({ en: 'Objective Coverage', ar: 'تغطية الأهداف' })}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {objectives.map((obj, i) => {
+                        const count = getActionPlansForObjective(i).length;
+                        return (
+                          <div key={i} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Badge variant="outline" className="font-mono text-xs shrink-0">#{i + 1}</Badge>
+                              <span className="text-sm truncate">
+                                {language === 'ar' ? (obj.name_ar || obj.name_en) : obj.name_en}
+                              </span>
+                            </div>
+                            <Badge variant={count > 0 ? 'default' : 'secondary'} className="shrink-0">
+                              {count} {t({ en: 'actions', ar: 'إجراءات' })}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Data Completeness */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      {t({ en: 'Data Completeness', ar: 'اكتمال البيانات' })}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">{t({ en: 'With Owner', ar: 'مع مسؤول' })}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={portfolioStats.total > 0 ? (portfolioStats.withOwner / portfolioStats.total) * 100 : 0} className="w-24 h-2" />
+                          <span className="text-sm font-medium">{portfolioStats.withOwner}/{portfolioStats.total}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">{t({ en: 'With Timeline', ar: 'مع جدول زمني' })}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={portfolioStats.total > 0 ? (portfolioStats.withTimeline / portfolioStats.total) * 100 : 0} className="w-24 h-2" />
+                          <span className="text-sm font-medium">{portfolioStats.withTimeline}/{portfolioStats.total}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">{t({ en: 'With Deliverables', ar: 'مع مخرجات' })}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={portfolioStats.total > 0 ? (portfolioStats.withDeliverables / portfolioStats.total) * 100 : 0} className="w-24 h-2" />
+                          <span className="text-sm font-medium">{portfolioStats.withDeliverables}/{portfolioStats.total}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Recommendations */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Zap className="h-5 w-5" />
+                      {t({ en: 'Recommendations', ar: 'التوصيات' })}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {portfolioStats.objectiveCoverage < 100 && (
+                        <div className="flex items-start gap-2 text-sm">
+                          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                          <span>
+                            {t({ 
+                              en: 'Add action plans for all objectives to ensure complete coverage.',
+                              ar: 'أضف خطط عمل لجميع الأهداف لضمان التغطية الكاملة.'
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      {portfolioStats.innovationScore < 50 && portfolioStats.total > 0 && (
+                        <div className="flex items-start gap-2 text-sm">
+                          <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                          <span>
+                            {t({ 
+                              en: 'Consider adding more innovation-focused actions (R&D, pilots, living labs).',
+                              ar: 'فكر في إضافة المزيد من الإجراءات المركزة على الابتكار (البحث والتطوير، التجارب، المختبرات الحية).'
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      {portfolioStats.withOwner < portfolioStats.total && portfolioStats.total > 0 && (
+                        <div className="flex items-start gap-2 text-sm">
+                          <User className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                          <span>
+                            {t({ 
+                              en: `Assign owners to ${portfolioStats.total - portfolioStats.withOwner} action(s) to ensure accountability.`,
+                              ar: `عيّن مسؤولين لـ ${portfolioStats.total - portfolioStats.withOwner} إجراء(ات) لضمان المساءلة.`
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      {portfolioStats.total === 0 && (
+                        <div className="flex items-start gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <span>
+                            {t({ 
+                              en: 'Start by using AI generation or manually adding action plans for each objective.',
+                              ar: 'ابدأ باستخدام الذكاء الاصطناعي أو إضافة خطط العمل يدوياً لكل هدف.'
+                            })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
           </Tabs>
 
           {/* Quick Add Button */}
-          <div className="flex justify-center">
-            <Button variant="outline" onClick={() => addActionPlan(null)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              {t({ en: 'Add New Action', ar: 'إضافة إجراء جديد' })}
-            </Button>
-          </div>
+          {!isReadOnly && (
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={() => addActionPlan(null)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                {t({ en: 'Add New Action', ar: 'إضافة إجراء جديد' })}
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>
