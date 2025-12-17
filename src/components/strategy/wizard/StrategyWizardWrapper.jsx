@@ -1599,37 +1599,40 @@ Generate implementation timeline with PHASES and MILESTONES that include Innovat
 ### PART 1: PHASES (Generate 4-5 phases)
 For EACH phase, provide ALL fields in BOTH English and Arabic:
 - name_en / name_ar: Phase name (must reflect innovation stage)
+- category: One of "foundation" | "pilot" | "evaluation" | "scale" | "optimization"
 - start_date / end_date: ISO format dates within ${wizardData.start_year}-${wizardData.end_year}
 - description_en / description_ar: What happens in this phase (2-3 sentences, include innovation activities)
 - objectives_covered: Array of objective indices (0-based) covered in this phase
+- key_deliverables_en / key_deliverables_ar: Main outputs of this phase (2-3 bullet points)
+- success_metrics_en / success_metrics_ar: How success will be measured (1-2 sentences)
 
 **MANDATORY PHASE STRUCTURE for Innovation Plans:**
 
-1. **Foundation & R&D Setup (6-9 months)**
+1. **Foundation & R&D Setup** (category: "foundation", 6-9 months)
    - Establish innovation governance, hire key tech talent
    - Sign R&D partnerships with KACST/universities
    - Deploy innovation lab/sandbox infrastructure
    - Complete technology assessments and PoC planning
 
-2. **Pilot Development (9-12 months)**
+2. **Pilot Development** (category: "pilot", 9-12 months)
    - Launch 3-5 pilot programs for focus technologies
    - Execute initial R&D projects with partners
    - Build data infrastructure and analytics platforms
    - Train core team on emerging technologies
 
-3. **Pilot Evaluation & Iteration (6-9 months)**
+3. **Pilot Evaluation & Iteration** (category: "evaluation", 6-9 months)
    - Assess pilot outcomes and gather lessons learned
    - Iterate on successful pilots, sunset failures
    - Expand R&D partnerships based on results
    - Document knowledge and best practices
 
-4. **Scale & Integration (12-18 months)**
+4. **Scale & Integration** (category: "scale", 12-18 months)
    - Scale successful pilots to production
    - Integrate new systems with Balady/national platforms
    - Establish ongoing R&D program structure
    - Build sustainable innovation capabilities
 
-5. **Optimization & Institutionalization (remaining time)**
+5. **Optimization & Institutionalization** (category: "optimization", remaining time)
    - Continuous improvement and optimization
    - Knowledge transfer and capability institutionalization
    - Advanced R&D and next-generation pilots
@@ -1639,26 +1642,29 @@ For EACH phase, provide ALL fields in BOTH English and Arabic:
 For EACH milestone, provide ALL fields in BOTH English and Arabic:
 - name_en / name_ar: Milestone name
 - date: ISO format date
-- type: "deliverable" | "decision" | "launch" | "review" | "certification"
+- type: One of "milestone" | "launch" | "review" | "gate" | "deliverable" | "certification" | "decision"
+- criticality: One of "critical" | "high" | "medium" | "low" (at least 4-5 should be "critical" or "high")
+- linked_phase: Index of the phase this milestone belongs to (0-based, e.g., 0 for first phase)
 - description_en / description_ar: What this milestone represents
+- success_criteria_en / success_criteria_ar: How completion will be verified
 
 **MANDATORY Innovation Milestones (include at least 6):**
-- "Innovation Lab Operational" - R&D infrastructure ready
-- "First R&D Partnership MoU Signed" - KACST/university agreement
-- "Pilot Portfolio Approved" - 3-5 pilots defined and funded
-- "First Pilot Launch" - Initial technology pilot goes live
-- "Pilot Results Review" - Comprehensive pilot assessment
-- "Scale Decision Point" - Go/no-go for pilot scaling
-- "AI/ML Model Deployment" - First production AI system
-- "Innovation Dashboard Live" - R&D KPI tracking operational
-- "Technology Transfer Complete" - Knowledge transferred from R&D partner
-- "SDAIA Compliance Certification" - AI governance approval
+- "Innovation Lab Operational" (type: "launch", criticality: "critical") - R&D infrastructure ready
+- "First R&D Partnership MoU Signed" (type: "deliverable", criticality: "high") - KACST/university agreement
+- "Pilot Portfolio Approved" (type: "gate", criticality: "critical") - 3-5 pilots defined and funded
+- "First Pilot Launch" (type: "launch", criticality: "high") - Initial technology pilot goes live
+- "Pilot Results Review" (type: "review", criticality: "critical") - Comprehensive pilot assessment
+- "Scale Decision Point" (type: "gate", criticality: "critical") - Go/no-go for pilot scaling
+- "AI/ML Model Deployment" (type: "launch", criticality: "high") - First production AI system
+- "Innovation Dashboard Live" (type: "deliverable", criticality: "medium") - R&D KPI tracking operational
+- "Technology Transfer Complete" (type: "milestone", criticality: "high") - Knowledge transferred from R&D partner
+- "SDAIA Compliance Certification" (type: "certification", criticality: "critical") - AI governance approval
 
 **Vision 2030 Alignment Milestones:**
 - Align key milestones with 2025 interim and 2030 final Vision targets
 - Include NTP and Quality of Life program milestones
 
-Be specific with realistic dates. Space milestones appropriately across the timeline.`,
+Be specific with realistic dates. Space milestones appropriately across the timeline. Ensure each milestone has a linked_phase that corresponds to when it occurs.`,
       governance: `You are a strategic planning expert for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH) with expertise in Innovation Governance.
 
 ## MoMAH GOVERNANCE CONTEXT:
@@ -2563,8 +2569,44 @@ Return alignments as an array under the "alignments" key with proper objective_i
       timeline: {
         type: 'object',
         properties: {
-          phases: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, start_date: { type: 'string' }, end_date: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' }, objectives_covered: { type: 'array', items: { type: 'number' } } } } },
-          milestones: { type: 'array', items: { type: 'object', properties: { name_en: { type: 'string' }, name_ar: { type: 'string' }, date: { type: 'string' }, type: { type: 'string' }, description_en: { type: 'string' }, description_ar: { type: 'string' } } } }
+          phases: { 
+            type: 'array', 
+            items: { 
+              type: 'object', 
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' }, 
+                category: { type: 'string', enum: ['foundation', 'pilot', 'evaluation', 'scale', 'optimization'] },
+                start_date: { type: 'string' }, 
+                end_date: { type: 'string' }, 
+                description_en: { type: 'string' }, 
+                description_ar: { type: 'string' }, 
+                objectives_covered: { type: 'array', items: { type: 'number' } },
+                key_deliverables_en: { type: 'string' },
+                key_deliverables_ar: { type: 'string' },
+                success_metrics_en: { type: 'string' },
+                success_metrics_ar: { type: 'string' }
+              } 
+            } 
+          },
+          milestones: { 
+            type: 'array', 
+            items: { 
+              type: 'object', 
+              properties: { 
+                name_en: { type: 'string' }, 
+                name_ar: { type: 'string' }, 
+                date: { type: 'string' }, 
+                type: { type: 'string', enum: ['milestone', 'launch', 'review', 'gate', 'deliverable', 'certification', 'decision'] },
+                criticality: { type: 'string', enum: ['critical', 'high', 'medium', 'low'] },
+                description_en: { type: 'string' }, 
+                description_ar: { type: 'string' },
+                linked_phase: { type: 'number' },
+                success_criteria_en: { type: 'string' },
+                success_criteria_ar: { type: 'string' }
+              } 
+            } 
+          }
         }
       },
       governance: {
@@ -3161,9 +3203,15 @@ Return alignments as an array under the "alignments" key with proper objective_i
             updates.phases = data.phases.map((p, i) => ({ 
               ...p, 
               id: Date.now().toString() + 'phase' + i,
+              category: p.category || 'foundation',
               description_en: p.description_en || p.description || '',
               description_ar: p.description_ar || '',
-              objectives_covered: Array.isArray(p.objectives_covered) ? p.objectives_covered : []
+              objectives_covered: Array.isArray(p.objectives_covered) ? p.objectives_covered : [],
+              key_deliverables_en: p.key_deliverables_en || '',
+              key_deliverables_ar: p.key_deliverables_ar || '',
+              success_metrics_en: p.success_metrics_en || '',
+              success_metrics_ar: p.success_metrics_ar || '',
+              budget_allocation: p.budget_allocation || ''
             }));
           }
           if (data.milestones) {
@@ -3171,8 +3219,12 @@ Return alignments as an array under the "alignments" key with proper objective_i
               ...m, 
               id: Date.now().toString() + 'ms' + i,
               status: 'planned',
+              criticality: m.criticality || 'medium',
               description_en: m.description_en || m.description || '',
-              description_ar: m.description_ar || ''
+              description_ar: m.description_ar || '',
+              linked_phase: m.linked_phase ?? null,
+              success_criteria_en: m.success_criteria_en || '',
+              success_criteria_ar: m.success_criteria_ar || ''
             }));
           }
         } else if (stepKey === 'governance') {
