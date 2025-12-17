@@ -43,8 +43,6 @@ export default function RDToSolutionConverter({ rdProject, onClose, onSuccess })
       system_prompt: RD_SOLUTION_CONVERTER_SYSTEM_PROMPT,
       response_json_schema: RD_SOLUTION_CONVERTER_SCHEMA
     });
-      }
-    });
 
     if (result.success) {
       setSolutionData(prev => ({
