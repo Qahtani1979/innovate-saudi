@@ -15,7 +15,7 @@ import {
   Sparkles, AlertTriangle, Plus, X, Shield, ChevronDown, ChevronUp, 
   CheckCircle2, ListChecks, Grid3X3, BarChart3, User, FileText,
   TrendingUp, TrendingDown, Minus, Target, AlertCircle, Lightbulb,
-  FolderOpen, Clock, Percent
+  FolderOpen, Clock, Percent, Users
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
@@ -794,185 +794,71 @@ export default function Step7Risks({
           </Card>
         </TabsContent>
 
-        {/* Summary Tab */}
-        <TabsContent value="summary" className="space-y-4">
+        {/* Summary Tab - Using Shared Components */}
+        <TabsContent value="summary" className="space-y-4 mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Risk Distribution */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" />
-                  {t({ en: 'Risk Distribution', ar: 'توزيع المخاطر' })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-red-500"></div>
-                    {t({ en: 'High Risk', ar: 'مخاطر عالية' })}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Progress value={stats.total > 0 ? (stats.highRisk / stats.total) * 100 : 0} className="w-24 h-2" />
-                    <span className="text-sm font-bold w-8">{stats.highRisk}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-yellow-500"></div>
-                    {t({ en: 'Medium Risk', ar: 'مخاطر متوسطة' })}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Progress value={stats.total > 0 ? (stats.mediumRisk / stats.total) * 100 : 0} className="w-24 h-2" />
-                    <span className="text-sm font-bold w-8">{stats.mediumRisk}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-green-500"></div>
-                    {t({ en: 'Low Risk', ar: 'مخاطر منخفضة' })}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Progress value={stats.total > 0 ? (stats.lowRisk / stats.total) * 100 : 0} className="w-24 h-2" />
-                    <span className="text-sm font-bold w-8">{stats.lowRisk}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <DistributionChart
+              title={t({ en: 'Risk Distribution', ar: 'توزيع المخاطر' })}
+              data={[
+                { label: { en: 'High Risk', ar: 'مخاطر عالية' }, value: stats.highRisk, iconColor: 'text-red-600' },
+                { label: { en: 'Medium Risk', ar: 'مخاطر متوسطة' }, value: stats.mediumRisk, iconColor: 'text-amber-600' },
+                { label: { en: 'Low Risk', ar: 'مخاطر منخفضة' }, value: stats.lowRisk, iconColor: 'text-green-600' }
+              ]}
+              language={language}
+            />
 
             {/* Risk Status */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  {t({ en: 'Risk Status', ar: 'حالة المخاطر' })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3">
-                  {STATUS_OPTIONS.map(status => {
-                    const count = (data.risks || []).filter(r => r.status === status.value).length;
-                    return (
-                      <div key={status.value} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                        <status.icon className={cn("w-5 h-5", status.color)} />
-                        <div>
-                          <div className="text-lg font-bold">{count}</div>
-                          <div className="text-xs text-muted-foreground">{status.label[language]}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+            <QualityMetrics
+              title={t({ en: 'Risk Status', ar: 'حالة المخاطر' })}
+              metrics={STATUS_OPTIONS.map(status => ({
+                value: (data.risks || []).filter(r => r.status === status.value).length,
+                label: status.label,
+                icon: status.icon,
+                iconColor: status.color
+              }))}
+              language={language}
+            />
 
             {/* Category Distribution */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4" />
-                  {t({ en: 'By Category', ar: 'حسب الفئة' })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {Object.entries(stats.categoryCount).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">{t({ en: 'No data', ar: 'لا توجد بيانات' })}</p>
-                ) : (
-                  Object.entries(stats.categoryCount).map(([code, count]) => {
-                    const cat = riskCategories.find(c => c.code === code);
-                    return (
-                      <div key={code} className="flex items-center justify-between">
-                        <span className="text-sm">{cat?.[`name_${language}`] || code}</span>
-                        <Badge variant="outline">{count}</Badge>
-                      </div>
-                    );
-                  })
-                )}
-              </CardContent>
-            </Card>
+            <DistributionChart
+              title={t({ en: 'By Category', ar: 'حسب الفئة' })}
+              data={Object.entries(stats.categoryCount).map(([code, count]) => {
+                const cat = riskCategories.find(c => c.code === code);
+                return {
+                  label: cat?.[`name_${language}`] || code,
+                  value: count,
+                  iconColor: 'text-primary'
+                };
+              })}
+              language={language}
+            />
 
             {/* Data Quality */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  {t({ en: 'Data Quality', ar: 'جودة البيانات' })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">{t({ en: 'Mitigation Coverage', ar: 'تغطية التخفيف' })}</span>
-                  <div className="flex items-center gap-2">
-                    <Progress value={stats.mitigationRate} className="w-20 h-2" />
-                    <span className="text-sm font-medium">{stats.mitigationRate}%</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">{t({ en: 'Owner Assignment', ar: 'تعيين المالك' })}</span>
-                  <div className="flex items-center gap-2">
-                    <Progress value={stats.ownershipRate} className="w-20 h-2" />
-                    <span className="text-sm font-medium">{stats.ownershipRate}%</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">{t({ en: 'Contingency Plans', ar: 'خطط الطوارئ' })}</span>
-                  <div className="flex items-center gap-2">
-                    <Progress value={stats.total > 0 ? (stats.withContingency / stats.total) * 100 : 0} className="w-20 h-2" />
-                    <span className="text-sm font-medium">{stats.total > 0 ? Math.round((stats.withContingency / stats.total) * 100) : 0}%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <QualityMetrics
+              title={t({ en: 'Data Quality', ar: 'جودة البيانات' })}
+              metrics={[
+                { value: `${stats.mitigationRate}%`, label: { en: 'Mitigation Coverage', ar: 'تغطية التخفيف' }, icon: Shield, iconColor: stats.mitigationRate >= 80 ? 'text-green-600' : 'text-amber-600' },
+                { value: `${stats.ownershipRate}%`, label: { en: 'Owner Assignment', ar: 'تعيين المالك' }, icon: Users, iconColor: stats.ownershipRate >= 80 ? 'text-green-600' : 'text-amber-600' },
+                { value: `${stats.total > 0 ? Math.round((stats.withContingency / stats.total) * 100) : 0}%`, label: { en: 'Contingency Plans', ar: 'خطط الطوارئ' }, icon: Shield, iconColor: 'text-blue-600' }
+              ]}
+              language={language}
+            />
           </div>
 
           {/* Recommendations */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-yellow-500" />
-                {t({ en: 'Recommendations', ar: 'التوصيات' })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                {stats.total < 3 && (
-                  <li className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Identify at least 3-5 strategic risks for comprehensive coverage', ar: 'حدد 3-5 مخاطر استراتيجية على الأقل لتغطية شاملة' })}
-                  </li>
-                )}
-                {stats.mitigationRate < 100 && (
-                  <li className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Define mitigation strategies for all identified risks', ar: 'حدد استراتيجيات التخفيف لجميع المخاطر المحددة' })}
-                  </li>
-                )}
-                {stats.ownershipRate < 100 && (
-                  <li className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Assign owners to all risks for clear accountability', ar: 'عيّن مالكين لجميع المخاطر لمساءلة واضحة' })}
-                  </li>
-                )}
-                {stats.highRisk > 0 && stats.withContingency < stats.highRisk && (
-                  <li className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                    {t({ en: 'High-risk items should have contingency plans', ar: 'يجب أن يكون للمخاطر العالية خطط طوارئ' })}
-                  </li>
-                )}
-                {!data.risk_appetite && (
-                  <li className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Define organizational risk appetite to guide risk management decisions', ar: 'حدد تحمل المنظمة للمخاطر لتوجيه قرارات إدارة المخاطر' })}
-                  </li>
-                )}
-                {completenessScore >= 80 && (
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                    {t({ en: 'Risk assessment is well-documented. Review periodically.', ar: 'تقييم المخاطر موثق جيداً. راجعه دورياً.' })}
-                  </li>
-                )}
-              </ul>
-            </CardContent>
-          </Card>
+          <RecommendationsCard
+            title={t({ en: 'Recommendations', ar: 'التوصيات' })}
+            recommendations={[
+              ...(stats.total < 3 ? [{ type: 'warning', message: { en: 'Identify at least 3-5 strategic risks for comprehensive coverage', ar: 'حدد 3-5 مخاطر استراتيجية على الأقل لتغطية شاملة' } }] : []),
+              ...(stats.mitigationRate < 100 ? [{ type: 'info', message: { en: 'Define mitigation strategies for all identified risks', ar: 'حدد استراتيجيات التخفيف لجميع المخاطر المحددة' } }] : []),
+              ...(stats.ownershipRate < 100 ? [{ type: 'info', message: { en: 'Assign owners to all risks for clear accountability', ar: 'عيّن مالكين لجميع المخاطر لمساءلة واضحة' } }] : []),
+              ...(stats.highRisk > 0 && stats.withContingency < stats.highRisk ? [{ type: 'error', message: { en: 'High-risk items should have contingency plans', ar: 'يجب أن يكون للمخاطر العالية خطط طوارئ' } }] : []),
+              ...(!data.risk_appetite ? [{ type: 'warning', message: { en: 'Define organizational risk appetite to guide risk management decisions', ar: 'حدد تحمل المنظمة للمخاطر لتوجيه قرارات إدارة المخاطر' } }] : []),
+              ...(completenessScore >= 80 ? [{ type: 'success', message: { en: 'Risk assessment is well-documented. Review periodically.', ar: 'تقييم المخاطر موثق جيداً. راجعه دورياً.' } }] : [])
+            ]}
+            language={language}
+          />
         </TabsContent>
       </Tabs>
     </div>
