@@ -8,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Loader2, DollarSign, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { 
+  generatePricingAnalysisPrompt, 
+  getPricingAnalysisSchema,
+  getPricingSystemPrompt 
+} from '@/lib/ai/prompts/solution';
 
 export default function AIPricingSuggester({ solution, onPricingComplete }) {
   const { language, isRTL, t } = useLanguage();
@@ -27,42 +32,9 @@ export default function AIPricingSuggester({ solution, onPricingComplete }) {
         .slice(0, 10);
 
       const response = await invokeAI({
-        prompt: `Analyze pricing for this solution in Saudi municipal market:
-
-Solution: ${solution?.name_en}
-Maturity: ${solution?.maturity_level}
-TRL: ${solution?.trl}
-Features: ${solution?.features?.join(', ')}
-Sectors: ${solution?.sectors?.join(', ')}
-
-Similar solutions pricing:
-${similarSolutions.map(s => 
-  `- ${s.name_en}: ${s.pricing_model} ${s.pricing_details?.monthly_cost ? '('+s.pricing_details.monthly_cost+' SAR/mo)' : ''}`
-).join('\n')}
-
-Provide BILINGUAL pricing intelligence (AR+EN):
-1. Recommended pricing model (subscription/one-time/usage-based/custom)
-2. Price range (min-max in SAR)
-3. Justification for pricing strategy
-4. ROI value proposition for municipalities
-5. Competitive positioning (premium/mid-market/value)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            pricing_model: { type: 'string' },
-            price_range: {
-              type: 'object',
-              properties: {
-                min: { type: 'number' },
-                max: { type: 'number' },
-                currency: { type: 'string' }
-              }
-            },
-            justification: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-            roi_value: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-            positioning: { type: 'string' }
-          }
-        }
+        prompt: generatePricingAnalysisPrompt(solution, similarSolutions),
+        response_json_schema: getPricingAnalysisSchema(),
+        system_prompt: getPricingSystemPrompt()
       });
 
       if (response.success) {

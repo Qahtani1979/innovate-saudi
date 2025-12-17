@@ -6,6 +6,11 @@ import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  generateCompetitiveAnalysisPrompt,
+  getCompetitiveAnalysisSchema,
+  getCompetitiveAnalysisSystemPrompt
+} from '@/lib/ai/prompts/solution';
 
 export default function CompetitiveAnalysisAI({ solution, allSolutions }) {
   const { language, isRTL, t } = useLanguage();
@@ -19,34 +24,9 @@ export default function CompetitiveAnalysisAI({ solution, allSolutions }) {
     ).slice(0, 5);
 
     const { success, data } = await invokeAI({
-      prompt: `Perform competitive analysis for this solution in BOTH English and Arabic:
-
-Solution: ${solution.name_en}
-Provider: ${solution.provider_name}
-Maturity: ${solution.maturity_level}
-Pricing: ${solution.pricing_model}
-Features: ${solution.features?.join(', ')}
-
-Competitors:
-${competitors.map(c => `- ${c.name_en} (${c.provider_name}): ${c.maturity_level}, ${c.pricing_model}`).join('\n')}
-
-Provide bilingual analysis:
-1. Market positioning (strengths/weaknesses vs competitors)
-2. Unique differentiators
-3. Pricing competitiveness
-4. Target market fit
-5. Recommendations for improvement`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          positioning: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-          differentiators: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          pricing_analysis: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-          market_fit: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-          recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          competitive_score: { type: 'number' }
-        }
-      }
+      prompt: generateCompetitiveAnalysisPrompt(solution, competitors),
+      response_json_schema: getCompetitiveAnalysisSchema(),
+      system_prompt: getCompetitiveAnalysisSystemPrompt()
     });
 
     if (success) {
