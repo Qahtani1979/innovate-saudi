@@ -7,6 +7,11 @@ import { Tags, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  generateIdeaClassificationPrompt,
+  getIdeaClassificationSchema,
+  getIdeaClassificationSystemPrompt
+} from '@/lib/ai/prompts/citizen';
 
 export default function AIIdeaClassifier({ idea, onClassified }) {
   const { language, t } = useLanguage();
@@ -15,30 +20,9 @@ export default function AIIdeaClassifier({ idea, onClassified }) {
 
   const classifyIdea = async () => {
     const response = await invokeAI({
-      prompt: `Classify citizen idea and detect issues:
-
-IDEA: ${idea.content || idea.title}
-LOCATION: ${idea.location || 'Not specified'}
-
-Provide:
-1. Primary sector (urban_design, transport, environment, digital_services, etc.)
-2. Keywords (5-10 relevant terms)
-3. Is it spam/low-quality? (true/false)
-4. Sentiment (positive_suggestion, neutral, complaint)
-5. Similar existing challenges (if any patterns detected)
-6. Recommended priority (high/medium/low)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          sector: { type: "string" },
-          keywords: { type: "array", items: { type: "string" } },
-          is_spam: { type: "boolean" },
-          sentiment: { type: "string" },
-          similar_patterns: { type: "array", items: { type: "string" } },
-          priority: { type: "string" },
-          quality_score: { type: "number" }
-        }
-      }
+      prompt: generateIdeaClassificationPrompt(idea),
+      response_json_schema: getIdeaClassificationSchema(),
+      system_prompt: getIdeaClassificationSystemPrompt()
     });
 
     if (response.success && response.data) {
