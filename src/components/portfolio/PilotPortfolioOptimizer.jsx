@@ -9,6 +9,8 @@ import { Target, Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getPortfolioOptimizerPrompt, portfolioOptimizerSchema } from '@/lib/ai/prompts/portfolio';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function PilotPortfolioOptimizer() {
   const { language, t } = useLanguage();
@@ -22,73 +24,12 @@ export default function PilotPortfolioOptimizer() {
   });
 
   const optimize = async () => {
-    const activePilots = pilots.filter(p => ['active', 'preparation', 'approved'].includes(p.stage));
+    const prompt = getPortfolioOptimizerPrompt(pilots);
     
     const result = await invokeAI({
-        prompt: `Portfolio optimization analysis for ${activePilots.length} active pilots:
-
-${activePilots.slice(0, 10).map(p => `
-PILOT: ${p.title_en}
-Sector: ${p.sector}
-Budget: ${p.budget || 0} SAR
-Success Probability: ${p.success_probability || 'N/A'}
-Stage: ${p.stage}
-KPIs: ${p.kpis?.length || 0}
-Risk Level: ${p.risk_level || 'N/A'}
-`).join('\n')}
-
-PORTFOLIO HEALTH ANALYSIS:
-- Sector balance
-- Budget efficiency
-- Risk distribution
-- Expected ROI
-
-Recommend:
-1. Which pilots to ACCELERATE (high impact, low risk)
-2. Which pilots to PAUSE (low success probability, reallocate)
-3. Which pilots to TERMINATE (critical issues, no path to success)
-4. Resource rebalancing for maximum national impact
-5. Portfolio optimization score (0-100)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            accelerate: { 
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  pilot_title: { type: "string" },
-                  rationale: { type: "string" },
-                  action: { type: "string" }
-                }
-              }
-            },
-            pause: { 
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  pilot_title: { type: "string" },
-                  rationale: { type: "string" },
-                  alternative: { type: "string" }
-                }
-              }
-            },
-            terminate: { 
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  pilot_title: { type: "string" },
-                  rationale: { type: "string" }
-                }
-              }
-            },
-            rebalancing_suggestions: { type: "array", items: { type: "string" } },
-            portfolio_health_score: { type: "number" }
-          }
-        }
-      }
+      prompt,
+      response_json_schema: portfolioOptimizerSchema,
+      system_prompt: getSystemPrompt('INNOVATION', true)
     });
 
     if (result.success) {

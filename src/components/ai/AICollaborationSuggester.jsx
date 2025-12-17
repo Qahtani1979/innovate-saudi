@@ -7,37 +7,27 @@ import { Users, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getCollaborationSuggesterPrompt, collaborationSuggesterSchema } from '@/lib/ai/prompts/portfolio';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 /**
- * AI-powered collaboration suggestions
+ * AI-powered collaboration suggestions with bilingual output
  */
-export default function AICollaborationSuggester({ entityType, entityId }) {
+export default function AICollaborationSuggester({ entityType, entityId, entityData }) {
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: suggestions, refetch, isLoading: queryLoading } = useQuery({
     queryKey: ['collaboration-suggestions', entityType, entityId],
     queryFn: async () => {
+      const prompt = getCollaborationSuggesterPrompt(entityType, entityData);
+      
       const result = await invokeAI({
-        prompt: `Given a ${entityType} with ID ${entityId}, suggest 3 potential collaboration opportunities with other organizations or users. Consider complementary skills, shared interests, and strategic alignment.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            suggestions: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  partner_type: { type: 'string' },
-                  partner_name: { type: 'string' },
-                  rationale: { type: 'string' },
-                  confidence: { type: 'number' }
-                }
-              }
-            }
-          }
-        }
+        prompt,
+        response_json_schema: collaborationSuggesterSchema,
+        system_prompt: getSystemPrompt('FULL', true)
       });
-      return result.success ? result.data.suggestions || [] : [];
+      
+      return result.success ? result.data?.suggestions || [] : [];
     },
     enabled: false
   });

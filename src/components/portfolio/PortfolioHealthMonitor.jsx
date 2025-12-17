@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getPortfolioHealthPrompt, portfolioHealthSchema } from '@/lib/ai/prompts/portfolio';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function PortfolioHealthMonitor() {
   const { language, t } = useLanguage();
@@ -37,34 +39,13 @@ export default function PortfolioHealthMonitor() {
   });
 
   const analyzeHealth = async () => {
+    const portfolioData = { challenges, pilots, programs, rdProjects };
+    const prompt = getPortfolioHealthPrompt(portfolioData);
+    
     const result = await invokeAI({
-      prompt: `Analyze innovation portfolio health:
-
-CHALLENGES: ${challenges.length} (${challenges.filter(c => c.status === 'approved').length} approved, ${challenges.filter(c => c.status === 'in_treatment').length} in treatment)
-PILOTS: ${pilots.length} (${pilots.filter(p => p.stage === 'active').length} active, ${pilots.filter(p => p.stage === 'scaled').length} scaled)
-PROGRAMS: ${programs.length} active
-R&D: ${rdProjects.length} projects
-
-Sector distribution: ${[...new Set(challenges.map(c => c.sector))].join(', ')}
-
-Assess:
-1. Portfolio balance (diverse sectors vs over-concentration)
-2. Pipeline health (challenges → pilots → scaling flow)
-3. Risk areas (stagnant challenges, at-risk pilots)
-4. Resource utilization (capacity vs demand)
-5. Strategic recommendations (3-5 actions)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          overall_health: { type: "string", enum: ["excellent", "good", "fair", "poor"] },
-          health_score: { type: "number" },
-          balance_score: { type: "number" },
-          pipeline_flow: { type: "string" },
-          risk_areas: { type: "array", items: { type: "string" } },
-          strengths: { type: "array", items: { type: "string" } },
-          recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt,
+      response_json_schema: portfolioHealthSchema,
+      system_prompt: getSystemPrompt('FULL', true)
     });
 
     if (result.success) {

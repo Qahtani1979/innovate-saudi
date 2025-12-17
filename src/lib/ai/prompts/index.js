@@ -1,7 +1,7 @@
 /**
  * AI Prompts Index
  * Central export point for all AI prompt modules
- * @version 1.0.0
+ * @version 1.0.1
  */
 
 // Foundation exports
@@ -12,11 +12,11 @@ export * from '../bilingualSchemaBuilder';
 export * from '@/components/strategy/wizard/prompts';
 
 // ============================================
-// Module-specific prompts will be added here
+// Module-specific prompts
 // ============================================
 
 // Portfolio prompts
-// export * from './portfolio';
+export * from './portfolio';
 
 // Pilot prompts  
 // export * from './pilot';
@@ -63,7 +63,7 @@ export * from '@/components/strategy/wizard/prompts';
  */
 export const PROMPT_MODULE_STATUS = {
   strategy: { status: 'complete', promptCount: 24 },
-  portfolio: { status: 'pending', promptCount: 0 },
+  portfolio: { status: 'complete', promptCount: 3 },
   pilot: { status: 'pending', promptCount: 0 },
   matchmaker: { status: 'pending', promptCount: 0 },
   sandbox: { status: 'pending', promptCount: 0 },
