@@ -12,17 +12,18 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Sparkles, Loader2, Plus, X, Lightbulb, ChevronDown, ChevronUp, Zap,
   Target, Calendar, DollarSign, Users, ArrowRight, Layers, Beaker,
   Rocket, Globe, Building2, Scale, FlaskConical, Handshake, TestTube,
   BarChart3, GanttChartSquare, ListTree, AlertTriangle, Link2, TrendingUp,
-  PieChart, CheckCircle2, Clock, FileText, Info, User
+  PieChart, CheckCircle2, Clock, FileText, Info, User, Wand2, Check, RefreshCw
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
 import EntityGenerationPanel from '../EntityGenerationPanel';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 // Enhanced entity type configuration
 const ENTITY_TYPES = [
@@ -172,6 +173,7 @@ export default function Step6ActionPlans({
   onChange, 
   onGenerateAI, 
   isGenerating,
+  onGenerateSingleAction,
   strategicPlanId,
   wizardData,
   isReadOnly = false
@@ -179,6 +181,14 @@ export default function Step6ActionPlans({
   const { language, t, isRTL } = useLanguage();
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [viewMode, setViewMode] = useState('objectives');
+  
+  // AI Add One states
+  const [showProposalModal, setShowProposalModal] = useState(false);
+  const [proposedAction, setProposedAction] = useState(null);
+  const [differentiationScore, setDifferentiationScore] = useState(null);
+  const [isGeneratingSingle, setIsGeneratingSingle] = useState(false);
+  const [targetType, setTargetType] = useState('_any');
+  const [targetObjectiveIndex, setTargetObjectiveIndex] = useState(null);
   
   const objectives = data.objectives || [];
   const actionPlans = data.action_plans || [];
@@ -361,6 +371,56 @@ export default function Step6ActionPlans({
     if (isReadOnly) return;
     onChange({ action_plans: actionPlans.filter((_, i) => i !== index) });
     if (expandedIndex === index) setExpandedIndex(null);
+  };
+
+  // AI Single Action Generation
+  const handleGenerateSingleAction = async (typeOverride = null, objIndexOverride = null) => {
+    if (isReadOnly) return;
+    setIsGeneratingSingle(true);
+    setShowProposalModal(true);
+    setProposedAction(null);
+    setDifferentiationScore(null);
+
+    try {
+      if (onGenerateSingleAction) {
+        const selectedType = typeOverride || (targetType !== '_any' ? targetType : null);
+        const selectedObjIndex = objIndexOverride !== null ? objIndexOverride : targetObjectiveIndex;
+        const result = await onGenerateSingleAction(actionPlans, selectedType, selectedObjIndex);
+        if (result?.action) {
+          setProposedAction(result.action);
+          setDifferentiationScore(result.differentiation_score || 75);
+          if (result.action.type) setTargetType(result.action.type);
+          if (result.action.objective_index !== undefined) setTargetObjectiveIndex(result.action.objective_index);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating single action:', error);
+    } finally {
+      setIsGeneratingSingle(false);
+    }
+  };
+
+  const handleApproveAction = () => {
+    if (proposedAction && !isReadOnly) {
+      const planStart = wizardData?.start_year || new Date().getFullYear();
+      onChange({
+        action_plans: [...actionPlans, { 
+          ...proposedAction, 
+          start_date: proposedAction.start_date || `${planStart}-01`,
+          deliverables: proposedAction.deliverables || [],
+          dependencies: proposedAction.dependencies || [],
+          linked_risks: proposedAction.linked_risks || [],
+          should_create_entity: false
+        }]
+      });
+      setShowProposalModal(false);
+      setProposedAction(null);
+      setExpandedIndex(actionPlans.length);
+    }
+  };
+
+  const updateProposedActionField = (field, value) => {
+    setProposedAction(prev => ({ ...prev, [field]: value }));
   };
 
   const getActionPlansForObjective = (objectiveIndex) => {

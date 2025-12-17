@@ -11,17 +11,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Sparkles, AlertTriangle, Plus, X, Shield, ChevronDown, ChevronUp, 
   CheckCircle2, ListChecks, Grid3X3, BarChart3, User, FileText,
   TrendingUp, TrendingDown, Minus, Target, AlertCircle, Lightbulb,
-  FolderOpen, Clock, Percent, Users
+  FolderOpen, Clock, Percent, Users, Wand2, Check, RefreshCw, Loader2
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { useRiskAssessment } from '@/hooks/strategy/useRiskAssessment';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 const LEVEL_OPTIONS = [
   { value: 'low', label: { en: 'Low', ar: 'منخفض' }, color: 'bg-green-100 text-green-800 border-green-300', score: 1 },
@@ -78,6 +79,7 @@ export default function Step7Risks({
   onChange, 
   onGenerateAI, 
   isGenerating,
+  onGenerateSingleRisk,
   isReadOnly = false,
   strategicPlanId = null
 }) {
@@ -85,6 +87,13 @@ export default function Step7Risks({
   const { riskCategories } = useTaxonomy();
   const [activeTab, setActiveTab] = useState('register');
   const [expandedRisks, setExpandedRisks] = useState({});
+  
+  // AI Add One states
+  const [showProposalModal, setShowProposalModal] = useState(false);
+  const [proposedRisk, setProposedRisk] = useState(null);
+  const [differentiationScore, setDifferentiationScore] = useState(null);
+  const [isGeneratingSingle, setIsGeneratingSingle] = useState(false);
+  const [targetCategory, setTargetCategory] = useState('_any');
   
   const {
     risks: dbRisks,
@@ -273,6 +282,48 @@ export default function Step7Risks({
   const removeRisk = (riskId) => {
     if (isReadOnly) return;
     onChange({ risks: (data.risks || []).filter(r => r.id !== riskId) });
+  };
+
+  // AI Single Risk Generation
+  const handleGenerateSingleRisk = async (categoryOverride = null) => {
+    if (isReadOnly) return;
+    setIsGeneratingSingle(true);
+    setShowProposalModal(true);
+    setProposedRisk(null);
+    setDifferentiationScore(null);
+
+    try {
+      if (onGenerateSingleRisk) {
+        const selectedCategory = categoryOverride || (targetCategory !== '_any' ? targetCategory : null);
+        const result = await onGenerateSingleRisk(data.risks || [], selectedCategory);
+        if (result?.risk) {
+          setProposedRisk(result.risk);
+          setDifferentiationScore(result.differentiation_score || 75);
+          if (result.risk.category) setTargetCategory(result.risk.category);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating single risk:', error);
+    } finally {
+      setIsGeneratingSingle(false);
+    }
+  };
+
+  const handleApproveRisk = () => {
+    if (proposedRisk && !isReadOnly) {
+      const scores = { low: 1, medium: 2, high: 3 };
+      const risk_score = scores[proposedRisk.likelihood] * scores[proposedRisk.impact];
+      onChange({
+        risks: [...(data.risks || []), { ...proposedRisk, id: Date.now().toString(), risk_score }]
+      });
+      setShowProposalModal(false);
+      setProposedRisk(null);
+      setExpandedRisks(prev => ({ ...prev, [proposedRisk.id]: true }));
+    }
+  };
+
+  const updateProposedRiskField = (field, value) => {
+    setProposedRisk(prev => ({ ...prev, [field]: value }));
   };
 
   const getRiskColor = (score) => {
