@@ -32,3 +32,6 @@ export {
   CompletionGrid,
   TrendIndicator,
 } from './SummaryTab';
+
+// Navigation Components
+export { WizardNavigation, CompactStepIndicator } from './WizardNavigation';
