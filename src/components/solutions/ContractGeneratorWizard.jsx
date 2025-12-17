@@ -14,6 +14,12 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildContractGeneratorPrompt, 
+  contractGeneratorSchema,
+  CONTRACT_GENERATOR_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/solution';
 
 export default function ContractGeneratorWizard({ solution, pilot, onComplete, onCancel }) {
   const { language, isRTL, t } = useLanguage();
@@ -50,55 +56,10 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
   ];
 
   const generateContract = async () => {
-    const prompt = `Generate a comprehensive solution deployment contract in bilingual format (Arabic + English).
-    
-    Context:
-    - Solution: ${solution?.name_en}
-    - Description: ${solution?.description_en}
-    - Provider: ${solution?.provider_name}
-    - Pilot: ${pilot?.title_en}
-    - Budget: ${pilot?.budget} SAR
-    - Duration: ${pilot?.duration_weeks} weeks
-    
-    Generate:
-    1. Detailed terms and conditions (AR + EN)
-    2. 5-7 deliverables with timelines
-    3. 4-5 payment milestones linked to deliverables
-    4. KPIs and success criteria
-    5. Termination clauses
-    6. Support and maintenance terms`;
-
     const result = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          terms_en: { type: 'string' },
-          terms_ar: { type: 'string' },
-          deliverables: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                deliverable_name: { type: 'string' },
-                due_date: { type: 'string' },
-                status: { type: 'string' }
-              }
-            }
-          },
-          payment_milestones: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                milestone_name: { type: 'string' },
-                amount: { type: 'number' },
-                due_date: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: getSystemPrompt(CONTRACT_GENERATOR_SYSTEM_PROMPT),
+      prompt: buildContractGeneratorPrompt(solution, pilot),
+      response_json_schema: contractGeneratorSchema
     });
 
     if (result.success) {
@@ -125,7 +86,6 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
       queryClient.invalidateQueries(['contracts']);
       toast.success(t({ en: 'Contract created', ar: 'تم إنشاء العقد' }));
       
-      // Trigger contract.created email
       try {
         await triggerEmail('contract.created', {
           entity_type: 'contract',

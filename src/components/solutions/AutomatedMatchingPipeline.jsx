@@ -7,6 +7,12 @@ import { Zap, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildAutomatedMatchingPrompt, 
+  automatedMatchingSchema,
+  AUTOMATED_MATCHING_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/solution';
 
 export default function AutomatedMatchingPipeline() {
   const { language, isRTL, t } = useLanguage();
@@ -25,31 +31,12 @@ export default function AutomatedMatchingPipeline() {
       ]);
 
       const response = await invokeAI({
-        prompt: `Match ${challenges.length} approved challenges with ${solutions.length} solutions:
-
-CHALLENGES (sample):
-${challenges.slice(0, 10).map(c => `- ${c.code}: ${c.title_en} (${c.sector})`).join('\n')}
-
-SOLUTIONS (sample):
-${solutions.slice(0, 10).map(s => `- ${s.name_en}: ${s.sectors?.join(', ')}, TRL ${s.trl}`).join('\n')}
-
-For each challenge, identify top 3 solution matches with:
-1. Match confidence (high/medium/low)
-2. Reason for match
-3. Recommended next action`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            total_matches: { type: "number" },
-            high_confidence: { type: "number" },
-            matches_created: { type: "number" },
-            notifications_sent: { type: "number" }
-          }
-        }
+        system_prompt: getSystemPrompt(AUTOMATED_MATCHING_SYSTEM_PROMPT),
+        prompt: buildAutomatedMatchingPrompt(challenges, solutions),
+        response_json_schema: automatedMatchingSchema
       });
 
       if (response.success) {
-        // Create sample matches
         const matchesToCreate = challenges.slice(0, 5).flatMap(c => 
           solutions.slice(0, 2).map(s => ({
             challenge_id: c.id,

@@ -9,16 +9,24 @@ export * from './competitiveAnalysis';
 export * from './successPredictor';
 export * from './complianceValidation';
 export * from './marketIntelligence';
+export * from './automatedMatching';
+export * from './contractGenerator';
+export * from './rdCollaboration';
+export * from './competitiveAnalysisWidget';
 
 export const SOLUTION_PROMPTS_CONFIG = {
   module: 'solution',
-  version: '1.0.0',
-  promptCount: 5,
+  version: '1.1.0',
+  promptCount: 9,
   prompts: [
     'pricingSuggester',
     'competitiveAnalysis',
     'successPredictor',
     'complianceValidation',
-    'marketIntelligence'
+    'marketIntelligence',
+    'automatedMatching',
+    'contractGenerator',
+    'rdCollaboration',
+    'competitiveAnalysisWidget'
   ]
 };

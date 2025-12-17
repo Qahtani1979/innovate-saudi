@@ -12,6 +12,12 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildRDCollaborationPrompt, 
+  rdCollaborationSchema,
+  RD_COLLABORATION_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/solution';
 
 export default function SolutionRDCollaborationProposal({ solution, onClose }) {
   const { t } = useLanguage();
@@ -50,43 +56,9 @@ export default function SolutionRDCollaborationProposal({ solution, onClose }) {
 
   const enhanceWithAI = async () => {
     const result = await invokeAI({
-      prompt: `Generate a comprehensive R&D collaboration proposal between a researcher/academic institution and this solution provider.
-
-SOLUTION:
-Name: ${solution.name_en}
-Provider: ${solution.provider_name}
-Description: ${solution.description_en}
-Current TRL: ${solution.trl || 'N/A'}
-Maturity: ${solution.maturity_level}
-Technical Specs: ${JSON.stringify(solution.technical_specifications || {})}
-
-RESEARCHER INPUT:
-Institution: ${formData.institution_en}
-Research Area: ${formData.research_area_en}
-Objectives: ${formData.proposed_objectives}
-
-Generate bilingual (English + Arabic) R&D proposal:
-1. Abstract (research objectives, methodology)
-2. Collaboration objectives (specific goals)
-3. Expected outcomes (TRL advancement, publications, IP)
-4. Methodology (research approach)
-5. Timeline and milestones
-6. Budget justification
-7. Mutual benefits (for provider and institution)
-
-Be academic and detailed.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          abstract_en: { type: 'string' },
-          abstract_ar: { type: 'string' },
-          objectives_en: { type: 'string' },
-          methodology_en: { type: 'string' },
-          expected_outputs: { type: 'array', items: { type: 'object', properties: { output_en: { type: 'string' }, type: { type: 'string' } } } },
-          timeline_milestones: { type: 'array', items: { type: 'object' } },
-          budget_breakdown: { type: 'array', items: { type: 'object' } }
-        }
-      }
+      system_prompt: getSystemPrompt(RD_COLLABORATION_SYSTEM_PROMPT),
+      prompt: buildRDCollaborationPrompt(solution, formData),
+      response_json_schema: rdCollaborationSchema
     });
 
     if (result.success) {
