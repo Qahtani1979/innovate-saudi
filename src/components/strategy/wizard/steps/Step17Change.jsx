@@ -22,6 +22,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid, MainAIGeneratorCard } from '../shared';
+import AIStepAnalyzer from '../AIStepAnalyzer';
 
 // Change Phase Types (ADKAR Model)
 const CHANGE_PHASES = [
@@ -1186,7 +1187,7 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
       ) : (
         /* View Mode: Cards (Tabbed) */
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-6 w-full">
+          <TabsList className="grid grid-cols-7 w-full">
             <TabsTrigger value="overview" className="gap-1 text-xs">
               <Eye className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Overview', ar: 'نظرة' })}</span>
@@ -1194,26 +1195,26 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
             <TabsTrigger value="impacts" className="gap-1 text-xs">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Impacts', ar: 'التأثيرات' })}</span>
-              <Badge variant="secondary" className="ml-1 text-xs">{stakeholderImpacts.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="resistance" className="gap-1 text-xs">
               <Shield className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Resist.', ar: 'المقاومة' })}</span>
-              <Badge variant="secondary" className="ml-1 text-xs">{resistanceStrategies.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="training" className="gap-1 text-xs">
               <GraduationCap className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Training', ar: 'التدريب' })}</span>
-              <Badge variant="secondary" className="ml-1 text-xs">{trainingPlan.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="activities" className="gap-1 text-xs">
               <RefreshCw className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Activities', ar: 'الأنشطة' })}</span>
-              <Badge variant="secondary" className="ml-1 text-xs">{changeActivities.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="summary" className="gap-1 text-xs">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
+            </TabsTrigger>
+            <TabsTrigger value="analyzer" className="gap-1 text-xs">
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">{t({ en: 'AI', ar: 'AI' })}</span>
             </TabsTrigger>
           </TabsList>
 

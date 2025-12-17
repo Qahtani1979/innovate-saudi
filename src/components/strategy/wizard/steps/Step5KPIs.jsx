@@ -19,6 +19,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
 import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import AIStepAnalyzer from '../AIStepAnalyzer';
 
 // KPI Categories with descriptions
 const KPI_CATEGORIES = [
@@ -741,6 +742,10 @@ export default function Step5KPIs({
               <TabsTrigger value="summary" className="flex items-center gap-1">
                 <PieChart className="h-4 w-4" />
                 {t({ en: 'Summary', ar: 'الملخص' })}
+              </TabsTrigger>
+              <TabsTrigger value="analyzer" className="flex items-center gap-1">
+                <Sparkles className="h-4 w-4" />
+                {t({ en: 'AI Analyzer', ar: 'محلل AI' })}
               </TabsTrigger>
             </TabsList>
 

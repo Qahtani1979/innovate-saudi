@@ -19,6 +19,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import AIStepAnalyzer from '../AIStepAnalyzer';
 
 // Phase categories with metadata
 const PHASE_CATEGORIES = {
@@ -497,7 +498,7 @@ export default function Step7Timeline({
 
       {/* View Mode Tabs */}
       <Tabs value={viewMode} onValueChange={setViewMode}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="phases" className="gap-2">
             <Layers className="h-4 w-4" />
             {t({ en: 'Phases', ar: 'المراحل' })}
@@ -513,6 +514,10 @@ export default function Step7Timeline({
           <TabsTrigger value="summary" className="gap-2">
             <BarChart3 className="h-4 w-4" />
             {t({ en: 'Summary', ar: 'ملخص' })}
+          </TabsTrigger>
+          <TabsTrigger value="analyzer" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            {t({ en: 'AI Analyzer', ar: 'محلل AI' })}
           </TabsTrigger>
         </TabsList>
 

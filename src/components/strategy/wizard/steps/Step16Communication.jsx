@@ -22,6 +22,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import AIStepAnalyzer from '../AIStepAnalyzer';
 
 // Enhanced Audience Types
 const AUDIENCE_TYPES = [
@@ -945,30 +946,30 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
       {/* View Mode Toggle & Tabs */}
       <div className="flex items-center justify-between gap-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="audiences" className="gap-1 text-xs sm:text-sm">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Audiences', ar: 'الجمهور' })}</span>
-              <Badge variant="secondary" className="ml-1 text-[10px]">{targetAudiences.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm">
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Messages', ar: 'الرسائل' })}</span>
-              <Badge variant="secondary" className="ml-1 text-[10px]">{keyMessages.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="internal" className="gap-1 text-xs sm:text-sm">
               <Mail className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Internal', ar: 'داخلي' })}</span>
-              <Badge variant="secondary" className="ml-1 text-[10px]">{internalChannels.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="external" className="gap-1 text-xs sm:text-sm">
               <Globe className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'External', ar: 'خارجي' })}</span>
-              <Badge variant="secondary" className="ml-1 text-[10px]">{externalChannels.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="summary" className="gap-1 text-xs sm:text-sm">
               <PieChart className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
+            </TabsTrigger>
+            <TabsTrigger value="analyzer" className="gap-1 text-xs sm:text-sm">
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">{t({ en: 'AI', ar: 'AI' })}</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>

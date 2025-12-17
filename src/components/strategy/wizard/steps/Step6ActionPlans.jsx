@@ -24,6 +24,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useLanguage } from '../../../LanguageContext';
 import EntityGenerationPanel from '../EntityGenerationPanel';
 import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import AIStepAnalyzer from '../AIStepAnalyzer';
 
 // Enhanced entity type configuration
 const ENTITY_TYPES = [
@@ -891,6 +892,10 @@ export default function Step6ActionPlans({
               <TabsTrigger value="summary" className="flex items-center gap-1">
                 <PieChart className="h-4 w-4" />
                 {t({ en: 'Summary', ar: 'الملخص' })}
+              </TabsTrigger>
+              <TabsTrigger value="analyzer" className="flex items-center gap-1">
+                <Sparkles className="h-4 w-4" />
+                {t({ en: 'AI Analyzer', ar: 'محلل AI' })}
               </TabsTrigger>
             </TabsList>
 

@@ -269,3 +269,9 @@ verify_jwt = false
 
 [functions.strategy-objective-similarity]
 verify_jwt = false
+
+[functions.analyze-objectives]
+verify_jwt = false
+
+[functions.analyze-step]
+verify_jwt = false
