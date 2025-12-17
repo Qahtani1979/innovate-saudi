@@ -4,7 +4,6 @@
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { buildBilingualSchema } from '../../bilingualSchemaBuilder';
 
 export const PROPOSAL_WRITER_PROMPTS = {
   systemPrompt: getSystemPrompt('rd_proposal_writer'),
@@ -64,7 +63,7 @@ Generate a comprehensive, publication-quality R&D proposal with:
 
 Make this fundable and aligned with Saudi municipal innovation priorities.`,
 
-  schema: buildBilingualSchema({
+  schema: {
     type: 'object',
     properties: {
       title_en: { type: 'string' },
@@ -138,7 +137,7 @@ Make this fundable and aligned with Saudi municipal innovation priorities.`,
       }
     },
     required: ['title_en', 'title_ar', 'abstract_en', 'abstract_ar', 'objectives_en', 'methodology_en', 'expected_outputs', 'timeline', 'budget_breakdown']
-  })
+  }
 };
 
 export default PROPOSAL_WRITER_PROMPTS;

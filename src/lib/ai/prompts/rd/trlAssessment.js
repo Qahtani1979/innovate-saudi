@@ -4,7 +4,6 @@
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { buildBilingualSchema } from '../../bilingualSchemaBuilder';
 
 export const TRL_ASSESSMENT_PROMPTS = {
   systemPrompt: getSystemPrompt('rd_trl_assessment'),
@@ -60,7 +59,7 @@ ASSESS:
 
 Be rigorous and evidence-based. Do not inflate TRL without solid evidence.`,
 
-  schema: buildBilingualSchema({
+  schema: {
     type: 'object',
     properties: {
       assessed_trl: { 
@@ -108,7 +107,7 @@ Be rigorous and evidence-based. Do not inflate TRL without solid evidence.`,
       }
     },
     required: ['assessed_trl', 'justification', 'confidence', 'evidence_quality', 'next_requirements', 'pilot_ready', 'commercialization_ready', 'recommendations']
-  })
+  }
 };
 
 export default TRL_ASSESSMENT_PROMPTS;

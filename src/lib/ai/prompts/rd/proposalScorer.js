@@ -4,7 +4,6 @@
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { buildBilingualSchema } from '../../bilingualSchemaBuilder';
 
 export const PROPOSAL_SCORER_PROMPTS = {
   systemPrompt: getSystemPrompt('rd_proposal_scorer'),
@@ -50,7 +49,7 @@ EVALUATION CRITERIA (Score 0-100 each):
 Identify weak sections and provide actionable improvement suggestions.
 Consider Saudi Arabia's Vision 2030 research priorities.`,
 
-  schema: buildBilingualSchema({
+  schema: {
     type: "object",
     properties: {
       overall_score: { 
@@ -87,7 +86,7 @@ Consider Saudi Arabia's Vision 2030 research priorities.`,
       }
     },
     required: ["overall_score", "scores", "weak_sections", "recommendation"]
-  })
+  }
 };
 
 export default PROPOSAL_SCORER_PROMPTS;

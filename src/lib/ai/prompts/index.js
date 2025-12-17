@@ -36,10 +36,10 @@ export * from './sandbox';
 // R&D prompts
 export * from './rd';
 
-// Solution prompts
-// export * from './solution';
-
 // Scaling prompts
+export * from './scaling';
+
+// Citizen prompts
 // export * from './scaling';
 
 // Citizen prompts
@@ -70,8 +70,8 @@ export const PROMPT_MODULE_STATUS = {
   matchmaker: { status: 'complete', promptCount: 5 },
   sandbox: { status: 'complete', promptCount: 5 },
   rd: { status: 'complete', promptCount: 5 },
+  scaling: { status: 'complete', promptCount: 4 },
   solution: { status: 'pending', promptCount: 0 },
-  scaling: { status: 'pending', promptCount: 0 },
   citizen: { status: 'pending', promptCount: 0 },
   livinglab: { status: 'pending', promptCount: 0 },
   profiles: { status: 'pending', promptCount: 0 },

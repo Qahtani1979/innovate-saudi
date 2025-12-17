@@ -7,6 +7,8 @@ import { Building2, Sparkles, Loader2, CheckCircle, AlertTriangle, Info } from '
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 import { useMunicipalitiesWithVisibility } from '@/hooks/visibility';
+import { SCALING_READINESS_PROMPTS } from '@/lib/ai/prompts/scaling';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIScalingReadinessPredictor({ municipalityId, solution }) {
   const { t } = useLanguage();
@@ -17,59 +19,19 @@ export default function AIScalingReadinessPredictor({ municipalityId, solution }
     fallbackData: null
   });
 
-  // Use visibility-aware municipalities hook
   const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
 
   const analyzeMunicipality = async () => {
-    try {
-      const muni = municipalities.find(m => m.id === municipalityId);
+    const muni = municipalities.find(m => m.id === municipalityId);
 
-      const { success, data } = await invokeAI({
-        prompt: `Assess municipality readiness for scaling solution:
+    const { success, data } = await invokeAI({
+      systemPrompt: getSystemPrompt('scaling_readiness'),
+      prompt: SCALING_READINESS_PROMPTS.buildPrompt(muni, solution),
+      response_json_schema: SCALING_READINESS_PROMPTS.schema
+    });
 
-MUNICIPALITY: ${muni?.name_en}
-- MII Score: ${muni?.mii_score || 'N/A'}
-- Population: ${muni?.population}
-- Active pilots: ${muni?.active_pilots || 0}
-
-SOLUTION: ${solution.name_en}
-- Type: ${solution.provider_type}
-- Requirements: ${solution.technical_specifications?.integration_requirements || 'Standard'}
-
-Assess readiness across:
-1. Infrastructure (technical capacity)
-2. Skills & Capacity (staff capability)
-3. Budget (financial readiness)
-4. Governance (political will & processes)
-5. Citizen Readiness (acceptance)
-
-Provide score (0-100) per dimension, overall score, gaps, and enabler recommendations.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            overall_score: { type: "number" },
-            dimension_scores: {
-              type: "object",
-              properties: {
-                infrastructure: { type: "number" },
-                skills_capacity: { type: "number" },
-                budget: { type: "number" },
-                governance: { type: "number" },
-                citizen_readiness: { type: "number" }
-              }
-            },
-            readiness_level: { type: "string" },
-            gaps: { type: "array", items: { type: "string" } },
-            enablers: { type: "array", items: { type: "string" } }
-          }
-        }
-      });
-
-      if (success && data) {
-        setReadiness(data);
-      }
-    } catch (fetchError) {
-      console.error('Failed to fetch municipalities:', fetchError);
+    if (success && data) {
+      setReadiness(data);
     }
   };
 
@@ -126,7 +88,7 @@ Provide score (0-100) per dimension, overall score, gaps, and enabler recommenda
               <p className="text-sm text-slate-600 mb-2">{t({ en: 'Overall Readiness', ar: 'الجاهزية الإجمالية' })}</p>
               <p className="text-5xl font-bold text-slate-900">{readiness.overall_score}</p>
               <Badge className="mt-2 text-sm">
-                {readiness.readiness_level || (readiness.overall_score >= 75 ? 'Ready' : readiness.overall_score >= 50 ? 'Needs Support' : 'Not Ready')}
+                {readiness.readiness_level || (readiness.overall_score >= 75 ? t({ en: 'Ready', ar: 'جاهز' }) : readiness.overall_score >= 50 ? t({ en: 'Needs Support', ar: 'يحتاج دعم' }) : t({ en: 'Not Ready', ar: 'غير جاهز' }))}
               </Badge>
             </div>
 

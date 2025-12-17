@@ -4,7 +4,6 @@
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { buildBilingualSchema } from '../../bilingualSchemaBuilder';
 
 export const PILOT_TRANSITION_PROMPTS = {
   systemPrompt: getSystemPrompt('rd_pilot_transition'),
@@ -59,7 +58,7 @@ Focus on:
 - Demonstrating value for municipality
 - Preparing for potential scaling`,
 
-  schema: buildBilingualSchema({
+  schema: {
     type: 'object',
     properties: {
       title_en: { type: 'string' },
@@ -96,7 +95,7 @@ Focus on:
       recommended_duration_weeks: { type: 'number' }
     },
     required: ['title_en', 'title_ar', 'description_en', 'objective_en', 'hypothesis', 'methodology', 'kpis']
-  })
+  }
 };
 
 export default PILOT_TRANSITION_PROMPTS;
