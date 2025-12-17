@@ -1,7 +1,9 @@
 /* @refresh reset */
-import { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+const useStateHook = React.useState || useState;
 
 const LOCAL_STORAGE_KEY = 'strategic_plan_draft';
 const AUTO_SAVE_DELAY = 15000; // 15 seconds - reduced for better reliability
@@ -21,10 +23,10 @@ export function useAutoSaveDraft({
   enabled = true,
   onPlanIdChange = null // Callback to update parent's planId
 }) {
-  const [lastSaved, setLastSaved] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasDraft, setHasDraft] = useState(false);
-  const [internalPlanId, setInternalPlanId] = useState(planId);
+  const [lastSaved, setLastSaved] = useStateHook(null);
+  const [isSaving, setIsSaving] = useStateHook(false);
+  const [hasDraft, setHasDraft] = useStateHook(false);
+  const [internalPlanId, setInternalPlanId] = useStateHook(planId);
   const saveTimeoutRef = useRef(null);
   const dataRef = useRef(null);
   const currentStepRef = useRef(0);
