@@ -9,6 +9,12 @@ import { FileText, Download, Loader2, Sparkles, Calendar, Award, AlertCircle, Ta
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildExecutiveBriefingPrompt, 
+  executiveBriefingSchema, 
+  EXECUTIVE_BRIEFING_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/executive';
 
 export default function ExecutiveBriefingGenerator() {
   const { language, isRTL, t } = useLanguage();
@@ -34,42 +40,18 @@ export default function ExecutiveBriefingGenerator() {
   const generateBriefing = async () => {
     if (!isAvailable) return;
     
+    const ecosystemData = {
+      totalChallenges: challenges.length,
+      activePilots: pilots.filter(p => p.stage === 'active').length,
+      scaledSolutions: pilots.filter(p => p.stage === 'scaled').length,
+      municipalityCount: municipalities.length,
+      averageMII: municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / (municipalities.length || 1)
+    };
+
     const result = await invokeAI({
-      prompt: `Generate an executive briefing for Saudi municipal innovation (${period}):
-
-Ecosystem Snapshot:
-- Total Challenges: ${challenges.length}
-- Active Pilots: ${pilots.filter(p => p.stage === 'active').length}
-- Scaled Solutions: ${pilots.filter(p => p.stage === 'scaled').length}
-- Municipalities: ${municipalities.length}
-- Average MII Score: ${(municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / municipalities.length).toFixed(1)}
-
-Generate:
-1. Executive Summary (2-3 key highlights in AR and EN)
-2. Key Metrics & Trends (5 statistics with context)
-3. Notable Achievements (3 major wins)
-4. Areas of Concern (2-3 challenges requiring attention)
-5. Strategic Recommendations (3 action items)
-6. Outlook for next period`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          executive_summary_en: { type: 'string' },
-          executive_summary_ar: { type: 'string' },
-          key_metrics: { type: 'array', items: { 
-            type: 'object',
-            properties: {
-              metric: { type: 'string' },
-              value: { type: 'string' },
-              context: { type: 'string' }
-            }
-          }},
-          achievements: { type: 'array', items: { type: 'string' } },
-          concerns: { type: 'array', items: { type: 'string' } },
-          recommendations: { type: 'array', items: { type: 'string' } },
-          outlook: { type: 'string' }
-        }
-      }
+      systemPrompt: getSystemPrompt(EXECUTIVE_BRIEFING_SYSTEM_PROMPT),
+      prompt: buildExecutiveBriefingPrompt(period, ecosystemData),
+      response_json_schema: executiveBriefingSchema
     });
 
     if (result.success && result.data) {
