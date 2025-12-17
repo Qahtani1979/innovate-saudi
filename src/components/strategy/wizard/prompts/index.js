@@ -11,9 +11,15 @@ export { getStep5Prompt, step5Schema } from './step5Swot';
 export { getStep6Prompt, step6Schema } from './step6Scenarios';
 export { getStep7Prompt, step7Schema } from './step7Risks';
 export { getStep8Prompt, step8Schema } from './step8Dependencies';
-
-// Steps 9-17 prompts will be added in subsequent updates
-// For now, they remain inline in StrategyWizardWrapper.jsx
+export { getStep9Prompt, step9Schema } from './step9Objectives';
+export { getStep10Prompt, step10Schema } from './step10National';
+export { getStep11Prompt, step11Schema } from './step11Kpis';
+export { getStep12Prompt, step12Schema } from './step12Actions';
+export { getStep13Prompt, step13Schema } from './step13Resources';
+export { getStep14Prompt, step14Schema } from './step14Timeline';
+export { getStep15Prompt, step15Schema } from './step15Governance';
+export { getStep16Prompt, step16Schema } from './step16Communication';
+export { getStep17Prompt, step17Schema } from './step17Change';
 
 /**
  * Step mapping for quick lookup
@@ -27,4 +33,20 @@ export const STEP_PROMPT_MAP = {
   6: { key: 'scenarios', getPrompt: 'getStep6Prompt', schema: 'step6Schema' },
   7: { key: 'risks', getPrompt: 'getStep7Prompt', schema: 'step7Schema' },
   8: { key: 'dependencies', getPrompt: 'getStep8Prompt', schema: 'step8Schema' },
+  9: { key: 'objectives', getPrompt: 'getStep9Prompt', schema: 'step9Schema' },
+  10: { key: 'national', getPrompt: 'getStep10Prompt', schema: 'step10Schema' },
+  11: { key: 'kpis', getPrompt: 'getStep11Prompt', schema: 'step11Schema' },
+  12: { key: 'actions', getPrompt: 'getStep12Prompt', schema: 'step12Schema' },
+  13: { key: 'resources', getPrompt: 'getStep13Prompt', schema: 'step13Schema' },
+  14: { key: 'timeline', getPrompt: 'getStep14Prompt', schema: 'step14Schema' },
+  15: { key: 'governance', getPrompt: 'getStep15Prompt', schema: 'step15Schema' },
+  16: { key: 'communication', getPrompt: 'getStep16Prompt', schema: 'step16Schema' },
+  17: { key: 'change', getPrompt: 'getStep17Prompt', schema: 'step17Schema' },
+};
+
+/**
+ * Get prompt function and schema for a given step number
+ */
+export const getStepPromptConfig = (stepNumber) => {
+  return STEP_PROMPT_MAP[stepNumber] || null;
 };
