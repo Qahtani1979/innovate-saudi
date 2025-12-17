@@ -88,12 +88,138 @@ The `StepDashboardHeader` component has been updated to match the comprehensive 
 
 ---
 
+## AI Prompt Locations
+
+### ⚠️ All AI Prompts Are INLINE (Not Separate Files)
+
+All AI prompts and context for wizard steps are defined **inline** within wrapper components, NOT in separate files.
+
+| File | Location | Description |
+|------|----------|-------------|
+| `StrategyWizardWrapper.jsx` | Lines 461-2900+ | **Main prompts object** - Contains all step-specific prompts |
+| `StrategyWizardWrapper.jsx` | Lines 2896-2901 | `system_prompt` with SAUDI_CONTEXT.FULL |
+| `StrategyWizardWrapper.jsx` | Lines 3554-3676 | `singleObjectivePrompt` for single objective generation |
+| `StrategyCreateWizard.jsx` | Lines 94-110 | Simplified prompts for create wizard |
+
+**Prompt Structure in StrategyWizardWrapper.jsx:**
+```jsx
+const prompts = {
+  context: `You are a strategic planning expert for Saudi Arabia's MoMAH...`,
+  vision: `You are generating Core Values and Strategic Pillars...`,
+  stakeholders: `Identify stakeholders for: ${context.planName}...`,
+  pestel: `Generate PESTEL analysis factors...`,
+  swot: `Generate SWOT analysis...`,
+  scenarios: `Generate strategic scenarios...`,
+  risks: `Identify and assess risks...`,
+  dependencies: `Map dependencies and constraints...`,
+  objectives: `Generate strategic objectives...`,
+  kpis: `Define KPIs for objectives...`,
+  actions: `Generate action plans...`,
+  resources: `Plan resource allocation...`,
+  timeline: `Create implementation timeline...`,
+  governance: `Define governance structure...`,
+  communication: `Create communication plan...`,
+  change: `Develop change management plan...`,
+};
+```
+
+**Recommendation**: Consider extracting prompts to separate files like:
+- `src/components/strategy/wizard/prompts/index.js`
+- `src/components/strategy/wizard/prompts/contextPrompt.js`
+- etc.
+
+---
+
+## Dashboard Fix Tasks (Post StepDashboardHeader Redesign)
+
+### 🔴 All 19 Steps Need Dashboard Updates
+
+After the StepDashboardHeader redesign to match Step 18 style, all steps need updates to:
+1. Add the new `metrics` prop (optional but recommended)
+2. Update `subtitle` to use `{ completed, total }` format where applicable
+3. Ensure 5 stat cards maximum for proper grid layout
+
+| # | Step File | Dashboard Line | Current Stats | Needs Metrics | Priority |
+|---|-----------|----------------|---------------|---------------|----------|
+| 1 | Step1Context.jsx | L173 | 4 stats | ✅ Yes | Medium |
+| 2 | Step2Vision.jsx | L173 | 4 stats | ✅ Yes | Medium |
+| 3 | Step2SWOT.jsx | L362 | 4 stats | ✅ Yes | Low |
+| 4 | Step3Objectives.jsx | L393 | 4 stats | ✅ Yes | High |
+| 5 | Step3Stakeholders.jsx | L~220 | 4 stats | ✅ Yes | Medium |
+| 6 | Step4PESTEL.jsx | L255 | 4 stats | ✅ Yes | Low |
+| 7 | Step4NationalAlignment.jsx | L189 | 4 stats | ✅ Yes | Medium |
+| 8 | Step5KPIs.jsx | L619 | 4 stats | ✅ Yes | High |
+| 9 | Step6ActionPlans.jsx | L773 | 4 stats | ✅ Yes | High |
+| 10 | Step6Scenarios.jsx | L~470 | 4 stats | ✅ Yes | Low |
+| 11 | Step7Risks.jsx | L~610 | 4 stats | ✅ Yes | High |
+| 12 | Step7Timeline.jsx | L~495 | 4 stats | ✅ Yes | Medium |
+| 13 | Step8Dependencies.jsx | L~275 | 4 stats | ✅ Yes | Low |
+| 14 | Step8Review.jsx | L~350 | 4 stats | ✅ Yes | Medium |
+| 15 | Step13Resources.jsx | L~600 | 4 stats | ✅ Yes | Medium |
+| 16 | Step15Governance.jsx | L~420 | 4 stats | ✅ Yes | Medium |
+| 17 | Step16Communication.jsx | L~940 | 4 stats | ✅ Yes | Low |
+| 18 | Step17Change.jsx | L~1170 | 4 stats | ✅ Yes | Low |
+| 19 | Step18Review.jsx | L568 | 5 stats | ✅ Already has metrics | Reference |
+
+### Dashboard Update Pattern
+
+```jsx
+// BEFORE (Current - missing metrics)
+<StepDashboardHeader
+  score={completenessScore}
+  title={t({ en: 'Section Title', ar: 'عنوان القسم' })}
+  subtitle={`${count} items`}
+  language={language}
+  stats={[
+    { icon: Icon1, value: 10, label: t({ en: 'Label 1', ar: '...' }) },
+    { icon: Icon2, value: 20, label: t({ en: 'Label 2', ar: '...' }) },
+    // ... up to 5 stats
+  ]}
+/>
+
+// AFTER (Updated - with metrics)
+<StepDashboardHeader
+  score={completenessScore}
+  title={{ en: 'Section Title', ar: 'عنوان القسم' }}
+  subtitle={{ completed: completedItems, total: totalItems }}
+  language={language}
+  stats={[
+    { icon: Icon1, value: 10, label: t({ en: 'Label 1', ar: '...' }), iconColor: 'text-primary' },
+    { icon: Icon2, value: 20, label: t({ en: 'Label 2', ar: '...' }), iconColor: 'text-blue-500' },
+    // ... up to 5 stats
+  ]}
+  metrics={[
+    { label: t({ en: 'Metric 1', ar: '...' }), value: percentage1 },
+    { label: t({ en: 'Metric 2', ar: '...' }), value: percentage2 },
+    // ... up to 5 metrics
+  ]}
+/>
+```
+
+### Step-Specific Metrics Recommendations
+
+| Step | Suggested Metrics |
+|------|-------------------|
+| Step1Context | Bilingual %, Sector Coverage %, Stakeholder Coverage % |
+| Step2Vision | Values Complete %, Pillars Defined %, Bilingual % |
+| Step3Objectives | By Priority %, Sector Coverage %, KPI Linked % |
+| Step5KPIs | Objective Coverage %, Target Set %, Baseline Set % |
+| Step6ActionPlans | Objective Coverage %, Timeline Set %, Budget Allocated % |
+| Step7Risks | Mitigated %, High Risk %, Contingency Plans % |
+| Step18Review | KPI Coverage %, Action Coverage %, Risk Mitigation %, Engagement %, Bilingual % |
+
+**Estimated Effort**: 30 minutes per step (total ~10 hours for all 19 steps)
+
+---
+
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
-2. [Full Step Assessment](#full-step-assessment)
-3. [Migration Priority Matrix](#migration-priority-matrix)
-4. [Implementation Patterns](#implementation-patterns)
-5. [Testing Checklist](#testing-checklist)
+2. [AI Prompt Locations](#ai-prompt-locations)
+3. [Dashboard Fix Tasks](#dashboard-fix-tasks-post-stepdashboardheader-redesign)
+4. [Full Step Assessment](#full-step-assessment)
+5. [Migration Priority Matrix](#migration-priority-matrix)
+6. [Implementation Patterns](#implementation-patterns)
+7. [Testing Checklist](#testing-checklist)
 
 ---
 
@@ -881,11 +1007,24 @@ import AIStrategicPlanAnalyzer from '../AIStrategicPlanAnalyzer';
 
 | Category | Steps | Est. Hours |
 |----------|-------|------------|
-| Quick Wins | 3 | 1.5 |
-| Standard | 6 | 7.5 |
+| Quick Wins (Tabs only) | 3 | 1.5 |
+| Standard Migrations | 6 | 7.5 |
 | Full Migration | 6 | 9 |
 | Complex | 4 | 8 |
-| **Total** | **19** | **~26 hours** |
+| **Dashboard Fixes** | **19** | **~10** |
+| **AI Prompt Extraction** | **1** | **~4** |
+| **Total** | **19 steps** | **~40 hours** |
+
+### Breakdown by Task Type
+
+| Task | Files Affected | Hours Each | Total |
+|------|----------------|------------|-------|
+| StepTabs migration | 17 | 0.5-2 | ~16 |
+| StepAlerts migration | 9 | 0.5 | ~4.5 |
+| MainAIGeneratorCard | 2 | 1 | ~2 |
+| Dashboard metrics update | 19 | 0.5 | ~10 |
+| ViewModeToggle | 2 | 0.5 | ~1 |
+| AI Prompt extraction | 1 | 4 | ~4 |
 
 ---
 
