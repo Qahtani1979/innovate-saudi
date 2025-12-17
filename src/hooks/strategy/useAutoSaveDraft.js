@@ -27,9 +27,6 @@ export function useAutoSaveDraft({
   const saveTimeoutRef = useRef(null);
   const dataRef = useRef(null);
   const currentStepRef = useRef(0);
-  const saveTimeoutRef = useRef(null);
-  const dataRef = useRef(null);
-  const currentStepRef = useRef(0);
 
   // Sync internal planId with prop
   useEffect(() => {
