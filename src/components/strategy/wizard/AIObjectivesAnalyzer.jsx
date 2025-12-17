@@ -273,8 +273,7 @@ export default function AIObjectivesAnalyzer({
         )}
 
         {analysis && (
-          <ScrollArea className="max-h-[600px]">
-            <div className="space-y-4 pr-4">
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
               {/* Overall Score */}
               <Collapsible open={expandedSections.overview} onOpenChange={() => toggleSection('overview')}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
@@ -379,29 +378,32 @@ export default function AIObjectivesAnalyzer({
                         key={idx} 
                         className="p-3 bg-background rounded-lg border border-green-200 dark:border-green-800"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-2 flex-1">
-                            <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5" />
-                            <div>
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                            <div className="min-w-0">
                               <p className="font-medium text-sm">{rec.title}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{rec.description}</p>
+                              <p className="text-xs text-muted-foreground mt-1 break-words">{rec.description}</p>
                               {rec.action && (
-                                <p className="text-xs text-green-600 mt-1 font-medium">
-                                  <ArrowRight className="w-3 h-3 inline mr-1" />
-                                  {rec.action}
-                                </p>
+                                <div className="flex items-start gap-1 mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded text-xs text-green-700 dark:text-green-400">
+                                  <ArrowRight className="w-3 h-3 mt-0.5 shrink-0" />
+                                  <span className="break-words">{rec.action}</span>
+                                </div>
                               )}
                             </div>
                           </div>
-                          {onApplyRecommendation && rec.autoApply && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="shrink-0"
-                              onClick={() => onApplyRecommendation(rec)}
+                          {rec.priority && (
+                            <Badge 
+                              variant="outline" 
+                              className={cn(
+                                "shrink-0",
+                                rec.priority === 'critical' && "border-red-500 text-red-600",
+                                rec.priority === 'high' && "border-orange-500 text-orange-600",
+                                rec.priority === 'medium' && "border-yellow-500 text-yellow-600"
+                              )}
                             >
-                              {t({ en: 'Apply', ar: 'تطبيق' })}
-                            </Button>
+                              {rec.priority}
+                            </Badge>
                           )}
                         </div>
                       </div>
@@ -508,8 +510,7 @@ export default function AIObjectivesAnalyzer({
                   </CollapsibleContent>
                 </Collapsible>
               )}
-            </div>
-          </ScrollArea>
+          </div>
         )}
       </CardContent>
     </Card>
