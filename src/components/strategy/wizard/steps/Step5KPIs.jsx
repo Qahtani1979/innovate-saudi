@@ -616,98 +616,18 @@ export default function Step5KPIs({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Overall Progress */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-background border-4 border-primary/20 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary">{overallCompleteness}%</span>
-                </div>
-                <Activity className="absolute -bottom-1 -right-1 h-6 w-6 text-primary bg-background rounded-full p-1" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">{t({ en: 'KPIs & Metrics', ar: 'المؤشرات والمقاييس' })}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t({ en: 'Define measurable indicators for objectives', ar: 'حدد مؤشرات قابلة للقياس للأهداف' })}
-                </p>
-              </div>
-            </div>
-            
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="text-center p-3 rounded-lg bg-background border">
-                <p className="text-2xl font-bold text-primary">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">{t({ en: 'Total KPIs', ar: 'إجمالي المؤشرات' })}</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-green-50 border border-green-200">
-                <p className="text-2xl font-bold text-green-600">{stats.objectivesWithKPIs}</p>
-                <p className="text-xs text-muted-foreground">{t({ en: 'Covered', ar: 'مغطاة' })}</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-blue-50 border border-blue-200">
-                <p className="text-2xl font-bold text-blue-600">{stats.avgSMARTScore}%</p>
-                <p className="text-xs text-muted-foreground">{t({ en: 'Avg SMART', ar: 'متوسط SMART' })}</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-purple-50 border border-purple-200">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="cursor-help">
-                        <p className="text-2xl font-bold text-purple-600">{stats.balanceRatio}%</p>
-                        <p className="text-xs text-muted-foreground">{t({ en: 'Leading', ar: 'قائدة' })}</p>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t({ en: 'Leading: ', ar: 'قائدة: ' })}{stats.leadingCount} | {t({ en: 'Lagging: ', ar: 'متأخرة: ' })}{stats.laggingCount}</p>
-                      <p className="text-xs text-muted-foreground">{t({ en: 'Aim for 30-40% leading indicators', ar: 'استهدف 30-40% مؤشرات قائدة' })}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>
-          </div>
-          
-          {/* Category Distribution Bar */}
-          {stats.total > 0 && (
-            <div className="mt-6 space-y-2">
-              <Label className="text-xs">{t({ en: 'Category Distribution', ar: 'توزيع الفئات' })}</Label>
-              <div className="flex h-3 rounded-full overflow-hidden">
-                {KPI_CATEGORIES.map((cat) => {
-                  const count = stats.categoryDistribution[cat.code] || 0;
-                  const pct = (count / stats.total) * 100;
-                  if (pct === 0) return null;
-                  const colors = { outcome: 'bg-blue-500', output: 'bg-green-500', process: 'bg-amber-500', input: 'bg-purple-500' };
-                  return (
-                    <TooltipProvider key={cat.code}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className={`${colors[cat.code]} h-full cursor-help transition-all hover:opacity-80`} style={{ width: `${pct}%` }} />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{language === 'ar' ? cat.name_ar : cat.name_en}: {count} ({Math.round(pct)}%)</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  );
-                })}
-              </div>
-              <div className="flex flex-wrap gap-4 text-xs">
-                {KPI_CATEGORIES.map((cat) => {
-                  const colors = { outcome: 'bg-blue-500', output: 'bg-green-500', process: 'bg-amber-500', input: 'bg-purple-500' };
-                  return (
-                    <div key={cat.code} className="flex items-center gap-1.5">
-                      <div className={`w-2.5 h-2.5 rounded-full ${colors[cat.code]}`} />
-                      <span className="text-muted-foreground">{language === 'ar' ? cat.name_ar : cat.name_en}</span>
-                      <span className="font-medium">({stats.categoryDistribution[cat.code] || 0})</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={overallCompleteness}
+        title={t({ en: 'KPIs & Metrics', ar: 'المؤشرات والمقاييس' })}
+        subtitle={t({ en: 'Define measurable indicators for objectives', ar: 'حدد مؤشرات قابلة للقياس للأهداف' })}
+        language={language}
+        stats={[
+          { value: stats.total, label: t({ en: 'Total KPIs', ar: 'إجمالي المؤشرات' }), icon: Activity, iconColor: 'text-primary' },
+          { value: stats.objectivesWithKPIs, label: t({ en: 'Covered', ar: 'مغطاة' }), icon: Target, iconColor: 'text-green-600', valueColor: 'text-green-600' },
+          { value: `${stats.avgSMARTScore}%`, label: t({ en: 'Avg SMART', ar: 'متوسط SMART' }), icon: Gauge, iconColor: 'text-blue-600', valueColor: 'text-blue-600' },
+          { value: `${stats.balanceRatio}%`, label: t({ en: 'Leading', ar: 'قائدة' }), icon: TrendingUp, iconColor: 'text-purple-600', valueColor: 'text-purple-600', subValue: `${stats.leadingCount}/${stats.laggingCount}` }
+        ]}
+      />
 
       {/* Alerts */}
       {alerts.length > 0 && (
