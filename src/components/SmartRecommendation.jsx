@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, X, ArrowRight, Info } from 'lucide-react';
+import { Sparkles, X, ArrowRight } from 'lucide-react';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
+import { buildSmartRecommendationPrompt, smartRecommendationSchema, SMART_RECOMMENDATION_SYSTEM_PROMPT } from '@/lib/ai/prompts/smart';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function SmartRecommendation({ context }) {
   const [recommendations, setRecommendations] = useState([]);
@@ -11,7 +13,7 @@ export default function SmartRecommendation({ context }) {
   const [hasLoaded, setHasLoaded] = useState(false);
   
   const { invokeAI, status, isLoading, isAvailable } = useAIWithFallback({
-    showToasts: false, // Silent for recommendations
+    showToasts: false,
     fallbackData: { recommendations: [] }
   });
 
@@ -25,35 +27,9 @@ export default function SmartRecommendation({ context }) {
     setHasLoaded(true);
     
     const { success, data } = await invokeAI({
-      prompt: `Generate 2-3 smart recommendations for this context:
-
-Page: ${context?.page || 'Home'}
-Entity: ${context?.entityType || 'N/A'}
-User Role: ${context?.userRole || 'user'}
-
-Provide actionable suggestions like:
-- "Create R&D Call" if on gap analysis
-- "Launch Pilot" if viewing successful challenge
-- "Budget allocation will miss target" if on budget tool
-
-Each recommendation should have: title, description, action_url (page name), priority (high/medium/low)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommendations: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                description: { type: "string" },
-                action: { type: "string" },
-                priority: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildSmartRecommendationPrompt(context),
+      systemPrompt: getSystemPrompt(SMART_RECOMMENDATION_SYSTEM_PROMPT),
+      response_json_schema: smartRecommendationSchema
     });
 
     if (success && data?.recommendations) {
@@ -67,7 +43,6 @@ Each recommendation should have: title, description, action_url (page name), pri
 
   const visibleRecommendations = recommendations.filter((_, i) => !dismissed.includes(i));
 
-  // Don't show anything if loading, rate limited, or no recommendations
   if (isLoading || status === AI_STATUS.RATE_LIMITED || visibleRecommendations.length === 0) {
     return null;
   }

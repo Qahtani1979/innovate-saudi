@@ -9,6 +9,8 @@ import { BookOpen, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildSuccessPlaybookPrompt, successPlaybookSchema, SUCCESS_PLAYBOOK_SYSTEM_PROMPT } from '@/lib/ai/prompts/bonus';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function SuccessPlaybookGenerator({ pilot }) {
   const { language, t } = useLanguage();
@@ -30,56 +32,9 @@ export default function SuccessPlaybookGenerator({ pilot }) {
 
   const generatePlaybook = async () => {
     const result = await invokeAI({
-      prompt: `Generate success playbook for scaling pilot:
-
-PILOT: ${pilot.title_en}
-SECTOR: ${pilot.sector}
-SUCCESS METRICS: ${pilot.kpis?.map(k => `${k.name}: ${k.current}/${k.target}`).join(', ')}
-LEARNINGS: ${pilot.lessons_learned?.map(l => l.lesson).join('; ')}
-
-SIMILAR SUCCESSFUL PILOTS: ${similarPilots.slice(0, 3).map(p => 
-  `${p.title_en} - ${p.success_criteria?.filter(sc => sc.met).length}/${p.success_criteria?.length} criteria met`
-).join(', ')}
-
-Create replication playbook:
-1. Critical Success Factors (5-7 key elements)
-2. Prerequisites & Requirements
-3. Step-by-Step Implementation Guide (8-10 steps)
-4. Common Pitfalls & How to Avoid
-5. Resource Requirements (team, budget, timeline)
-6. KPIs for Monitoring
-7. Adaptation Guidelines for Different Contexts`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          title: { type: "string" },
-          summary: { type: "string" },
-          success_factors: { type: "array", items: { type: "string" } },
-          prerequisites: { type: "array", items: { type: "string" } },
-          implementation_steps: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                step: { type: "string" },
-                duration: { type: "string" },
-                deliverables: { type: "array", items: { type: "string" } }
-              }
-            }
-          },
-          pitfalls: { type: "array", items: { type: "string" } },
-          resource_requirements: {
-            type: "object",
-            properties: {
-              team_size: { type: "string" },
-              budget_range: { type: "string" },
-              timeline: { type: "string" }
-            }
-          },
-          monitoring_kpis: { type: "array", items: { type: "string" } },
-          adaptation_tips: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildSuccessPlaybookPrompt(pilot, similarPilots),
+      systemPrompt: getSystemPrompt(SUCCESS_PLAYBOOK_SYSTEM_PROMPT),
+      response_json_schema: successPlaybookSchema
     });
 
     if (result.success && result.data) {

@@ -75,8 +75,14 @@ export * from './partnerships';
 // Geography prompts
 export * from './geography';
 
+// Bonus prompts
+export * from './bonus';
+
 // Smart prompts
-// export * from './smart';
+export * from './smart';
+
+// Data analytics prompts
+export * from './data';
 
 /**
  * Prompt module status tracking
@@ -104,7 +110,9 @@ export const PROMPT_MODULE_STATUS = {
   executive: { status: 'complete', promptCount: 3 },
   partnerships: { status: 'complete', promptCount: 3 },
   geography: { status: 'complete', promptCount: 1 },
-  smart: { status: 'pending', promptCount: 0 }
+  bonus: { status: 'complete', promptCount: 1 },
+  smart: { status: 'complete', promptCount: 1 },
+  data: { status: 'complete', promptCount: 1 }
 };
 
 /**
