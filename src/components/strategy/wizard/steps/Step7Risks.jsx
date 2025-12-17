@@ -600,17 +600,20 @@ export default function Step7Risks({
         ]}
       />
       
-      {/* AI Generate Button */}
+      {/* AI Generation Card */}
       {!isReadOnly && (
-        <div className="flex justify-end">
-          <AIActionButton
-            type="analyze"
-            label={t({ en: 'Identify Risks', ar: 'تحديد المخاطر' })}
-            onAction={onGenerateAI}
-            isLoading={isGenerating}
-            variant="outline"
-          />
-        </div>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Risk Analysis', ar: 'تحليل المخاطر بالذكاء الاصطناعي' }}
+          description={{ en: 'Auto-identify and assess strategic risks', ar: 'تحديد وتقييم المخاطر الاستراتيجية تلقائياً' }}
+          onGenerate={onGenerateAI}
+          onGenerateSingle={() => handleGenerateSingleRisk()}
+          isGenerating={isGenerating}
+          isGeneratingSingle={isGeneratingSingle}
+          showSingleButton={!!onGenerateSingleRisk}
+          isReadOnly={isReadOnly}
+          buttonLabel={{ en: 'Generate All', ar: 'إنشاء الكل' }}
+          singleButtonLabel={{ en: 'AI Add One', ar: 'إضافة واحد' }}
+        />
       )}
 
       {/* Alerts */}
@@ -915,6 +918,162 @@ export default function Step7Risks({
           />
         </TabsContent>
       </Tabs>
+
+      {/* AI Add One Proposal Modal */}
+      <Dialog open={showProposalModal} onOpenChange={setShowProposalModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-primary" />
+              {t({ en: 'AI-Generated Risk', ar: 'خطر مُنشأ بالذكاء الاصطناعي' })}
+            </DialogTitle>
+          </DialogHeader>
+
+          {isGeneratingSingle ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">{t({ en: 'Generating risk...', ar: 'جاري إنشاء الخطر...' })}</p>
+            </div>
+          ) : proposedRisk ? (
+            <div className="space-y-4">
+              {differentiationScore && (
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <span className="text-sm font-medium">{t({ en: 'Differentiation Score', ar: 'نقاط التمايز' })}</span>
+                  <Badge variant={differentiationScore >= 70 ? 'default' : 'secondary'}>{differentiationScore}%</Badge>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Title (English)', ar: 'العنوان (إنجليزي)' })}</Label>
+                  <Input
+                    value={proposedRisk.title_en || ''}
+                    onChange={(e) => updateProposedRiskField('title_en', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Title (Arabic)', ar: 'العنوان (عربي)' })}</Label>
+                  <Input
+                    dir="rtl"
+                    value={proposedRisk.title_ar || ''}
+                    onChange={(e) => updateProposedRiskField('title_ar', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
+                  <Textarea
+                    value={proposedRisk.description_en || ''}
+                    onChange={(e) => updateProposedRiskField('description_en', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
+                  <Textarea
+                    dir="rtl"
+                    value={proposedRisk.description_ar || ''}
+                    onChange={(e) => updateProposedRiskField('description_ar', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Category', ar: 'الفئة' })}</Label>
+                  <Select
+                    value={proposedRisk.category || 'OPERATIONAL'}
+                    onValueChange={(v) => updateProposedRiskField('category', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {riskCategories.map(cat => (
+                        <SelectItem key={cat.code} value={cat.code}>
+                          {language === 'ar' ? cat.name_ar : cat.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Likelihood', ar: 'الاحتمالية' })}</Label>
+                  <Select
+                    value={proposedRisk.likelihood || 'medium'}
+                    onValueChange={(v) => updateProposedRiskField('likelihood', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {LEVEL_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label[language]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Impact', ar: 'التأثير' })}</Label>
+                  <Select
+                    value={proposedRisk.impact || 'medium'}
+                    onValueChange={(v) => updateProposedRiskField('impact', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {LEVEL_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label[language]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Mitigation Strategy (English)', ar: 'استراتيجية التخفيف (إنجليزي)' })}</Label>
+                  <Textarea
+                    value={proposedRisk.mitigation_strategy_en || ''}
+                    onChange={(e) => updateProposedRiskField('mitigation_strategy_en', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Mitigation Strategy (Arabic)', ar: 'استراتيجية التخفيف (عربي)' })}</Label>
+                  <Textarea
+                    dir="rtl"
+                    value={proposedRisk.mitigation_strategy_ar || ''}
+                    onChange={(e) => updateProposedRiskField('mitigation_strategy_ar', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t({ en: 'Owner', ar: 'المسؤول' })}</Label>
+                <Input
+                  value={proposedRisk.owner || ''}
+                  onChange={(e) => updateProposedRiskField('owner', e.target.value)}
+                  placeholder={t({ en: 'e.g., Risk Management Department', ar: 'مثال: إدارة المخاطر' })}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => handleGenerateSingleRisk()} disabled={isGeneratingSingle}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {t({ en: 'Regenerate', ar: 'إعادة الإنشاء' })}
+            </Button>
+            <Button variant="outline" onClick={() => setShowProposalModal(false)}>
+              {t({ en: 'Cancel', ar: 'إلغاء' })}
+            </Button>
+            <Button onClick={handleApproveRisk} disabled={!proposedRisk}>
+              <Check className="w-4 h-4 mr-2" />
+              {t({ en: 'Add Risk', ar: 'إضافة الخطر' })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

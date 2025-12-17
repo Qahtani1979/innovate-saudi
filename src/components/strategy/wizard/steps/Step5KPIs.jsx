@@ -699,18 +699,20 @@ export default function Step5KPIs({
         </div>
       )}
 
-      {/* AI Generation */}
+      {/* AI Generation Card */}
       {!isReadOnly && objectives.length > 0 && (
-        <div className="flex justify-end">
-          <AIActionButton
-            type="generate"
-            label={t({ en: 'Generate KPIs', ar: 'إنشاء المؤشرات' })}
-            onAction={onGenerateAI}
-            isLoading={isGenerating}
-            disabled={objectives.length === 0}
-            description={t({ en: 'Generate SMART KPIs with balanced leading/lagging indicators', ar: 'إنشاء مؤشرات أداء ذكية مع توازن المؤشرات' })}
-          />
-        </div>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered KPI Generation', ar: 'إنشاء المؤشرات بالذكاء الاصطناعي' }}
+          description={{ en: 'Generate SMART KPIs with balanced leading/lagging indicators', ar: 'إنشاء مؤشرات أداء ذكية مع توازن المؤشرات' }}
+          onGenerate={onGenerateAI}
+          onGenerateSingle={() => handleGenerateSingleKpi()}
+          isGenerating={isGenerating}
+          isGeneratingSingle={isGeneratingSingle}
+          showSingleButton={!!onGenerateSingleKpi}
+          isReadOnly={isReadOnly}
+          buttonLabel={{ en: 'Generate All', ar: 'إنشاء الكل' }}
+          singleButtonLabel={{ en: 'AI Add One', ar: 'إضافة واحد' }}
+        />
       )}
 
       {objectives.length === 0 ? (
@@ -1147,6 +1149,163 @@ export default function Step5KPIs({
           )}
         </>
       )}
+
+      {/* AI Add One Proposal Modal */}
+      <Dialog open={showProposalModal} onOpenChange={setShowProposalModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-primary" />
+              {t({ en: 'AI-Generated KPI', ar: 'مؤشر مُنشأ بالذكاء الاصطناعي' })}
+            </DialogTitle>
+          </DialogHeader>
+
+          {isGeneratingSingle ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">{t({ en: 'Generating KPI...', ar: 'جاري إنشاء المؤشر...' })}</p>
+            </div>
+          ) : proposedKpi ? (
+            <div className="space-y-4">
+              {differentiationScore && (
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <span className="text-sm font-medium">{t({ en: 'Differentiation Score', ar: 'نقاط التمايز' })}</span>
+                  <Badge variant={differentiationScore >= 70 ? 'default' : 'secondary'}>{differentiationScore}%</Badge>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'KPI Name (English)', ar: 'اسم المؤشر (إنجليزي)' })}</Label>
+                  <Input
+                    value={proposedKpi.name_en || ''}
+                    onChange={(e) => updateProposedKpiField('name_en', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'KPI Name (Arabic)', ar: 'اسم المؤشر (عربي)' })}</Label>
+                  <Input
+                    dir="rtl"
+                    value={proposedKpi.name_ar || ''}
+                    onChange={(e) => updateProposedKpiField('name_ar', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Category', ar: 'الفئة' })}</Label>
+                  <Select
+                    value={proposedKpi.category || 'outcome'}
+                    onValueChange={(v) => updateProposedKpiField('category', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {KPI_CATEGORIES.map(cat => (
+                        <SelectItem key={cat.code} value={cat.code}>
+                          {language === 'ar' ? cat.name_ar : cat.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Linked Objective', ar: 'الهدف المرتبط' })}</Label>
+                  <Select
+                    value={proposedKpi.objective_index?.toString() || ''}
+                    onValueChange={(v) => updateProposedKpiField('objective_index', v ? parseInt(v) : null)}
+                  >
+                    <SelectTrigger><SelectValue placeholder={t({ en: 'Select...', ar: 'اختر...' })} /></SelectTrigger>
+                    <SelectContent>
+                      {objectives.map((obj, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          #{i + 1}: {language === 'ar' ? (obj.name_ar || obj.name_en) : obj.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Unit', ar: 'الوحدة' })}</Label>
+                  <Input
+                    value={proposedKpi.unit || ''}
+                    onChange={(e) => updateProposedKpiField('unit', e.target.value)}
+                    placeholder="%"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Baseline', ar: 'خط الأساس' })}</Label>
+                  <Input
+                    value={proposedKpi.baseline_value || ''}
+                    onChange={(e) => updateProposedKpiField('baseline_value', e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Target', ar: 'المستهدف' })}</Label>
+                  <Input
+                    value={proposedKpi.target_value || ''}
+                    onChange={(e) => updateProposedKpiField('target_value', e.target.value)}
+                    placeholder="100"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Frequency', ar: 'التكرار' })}</Label>
+                  <Select
+                    value={proposedKpi.frequency || 'quarterly'}
+                    onValueChange={(v) => updateProposedKpiField('frequency', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FREQUENCY_OPTIONS.map(freq => (
+                        <SelectItem key={freq.code} value={freq.code}>
+                          {language === 'ar' ? freq.name_ar : freq.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Data Source', ar: 'مصدر البيانات' })}</Label>
+                  <Input
+                    value={proposedKpi.data_source || ''}
+                    onChange={(e) => updateProposedKpiField('data_source', e.target.value)}
+                    placeholder={t({ en: 'e.g., Balady Platform', ar: 'مثال: منصة بلدي' })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Owner', ar: 'المسؤول' })}</Label>
+                  <Input
+                    value={proposedKpi.owner || ''}
+                    onChange={(e) => updateProposedKpiField('owner', e.target.value)}
+                    placeholder={t({ en: 'e.g., Performance Unit', ar: 'مثال: وحدة الأداء' })}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => handleGenerateSingleKpi()} disabled={isGeneratingSingle}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {t({ en: 'Regenerate', ar: 'إعادة الإنشاء' })}
+            </Button>
+            <Button variant="outline" onClick={() => setShowProposalModal(false)}>
+              {t({ en: 'Cancel', ar: 'إلغاء' })}
+            </Button>
+            <Button onClick={handleApproveKpi} disabled={!proposedKpi}>
+              <Check className="w-4 h-4 mr-2" />
+              {t({ en: 'Add KPI', ar: 'إضافة المؤشر' })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
