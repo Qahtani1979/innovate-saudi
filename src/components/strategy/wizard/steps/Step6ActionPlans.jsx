@@ -770,92 +770,18 @@ export default function Step6ActionPlans({
       )}
 
       {/* Dashboard Header */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Overall Progress */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-background border-4 border-primary/20 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary">{overallCompleteness}%</span>
-                </div>
-                <Layers className="absolute -bottom-1 -right-1 h-6 w-6 text-primary bg-background rounded-full p-1" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">{t({ en: 'Action Plans', ar: 'خطط العمل' })}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t({ en: 'Define initiatives and projects to achieve objectives', ar: 'حدد المبادرات والمشاريع لتحقيق الأهداف' })}
-                </p>
-              </div>
-            </div>
-            
-            {/* AI Generate Button */}
-            {!isReadOnly && (
-              <Button onClick={onGenerateAI} disabled={isGenerating || objectives.length === 0}>
-                {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                {t({ en: 'Generate Actions', ar: 'إنشاء الإجراءات' })}
-              </Button>
-            )}
-          </div>
-          
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6">
-            <div className="text-center p-3 rounded-lg bg-background border">
-              <p className="text-2xl font-bold text-primary">{portfolioStats.total}</p>
-              <p className="text-xs text-muted-foreground">{t({ en: 'Total Actions', ar: 'إجمالي الإجراءات' })}</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-              <p className="text-2xl font-bold text-emerald-600">{formatBudget(portfolioStats.totalBudget)}</p>
-              <p className="text-xs text-muted-foreground">{t({ en: 'Total Budget', ar: 'إجمالي الميزانية' })}</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-blue-50 border border-blue-200">
-              <p className="text-2xl font-bold text-blue-600">{portfolioStats.innovationScore}%</p>
-              <p className="text-xs text-muted-foreground">{t({ en: 'Innovation Score', ar: 'درجة الابتكار' })}</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-amber-50 border border-amber-200">
-              <p className="text-2xl font-bold text-amber-600">{portfolioStats.objectiveCoverage}%</p>
-              <p className="text-xs text-muted-foreground">{t({ en: 'Coverage', ar: 'التغطية' })}</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-red-50 border border-red-200">
-              <p className="text-2xl font-bold text-red-600">{portfolioStats.byPriority.high}</p>
-              <p className="text-xs text-muted-foreground">{t({ en: 'High Priority', ar: 'أولوية عالية' })}</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-purple-50 border border-purple-200">
-              <p className="text-2xl font-bold text-purple-600">{portfolioStats.queuedForGeneration}</p>
-              <p className="text-xs text-muted-foreground">{t({ en: 'Queued', ar: 'في قائمة الإنشاء' })}</p>
-            </div>
-          </div>
-
-          {/* Type Distribution */}
-          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 mt-4">
-            {ENTITY_TYPES.map(et => {
-              const count = portfolioStats.byType[et.value] || 0;
-              const Icon = et.icon;
-              return (
-                <TooltipProvider key={et.value}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className={`p-2 rounded-lg border text-center ${count > 0 ? et.bgLight : 'bg-muted/30'}`}>
-                        <Icon className={`h-4 w-4 mx-auto mb-1 ${count > 0 ? '' : 'text-muted-foreground'}`} />
-                        <p className={`text-lg font-bold ${count > 0 ? '' : 'text-muted-foreground'}`}>{count}</p>
-                        <p className="text-[10px] text-muted-foreground line-clamp-1">
-                          {language === 'ar' ? et.label_ar : et.label_en}
-                        </p>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{language === 'ar' ? et.label_ar : et.label_en}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {language === 'ar' ? et.description_ar : et.description_en}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={overallCompleteness}
+        title={t({ en: 'Action Plans', ar: 'خطط العمل' })}
+        subtitle={t({ en: 'Define initiatives and projects to achieve objectives', ar: 'حدد المبادرات والمشاريع لتحقيق الأهداف' })}
+        language={language}
+        stats={[
+          { value: portfolioStats.total, label: t({ en: 'Total Actions', ar: 'إجمالي الإجراءات' }), icon: Layers, iconColor: 'text-primary' },
+          { value: formatBudget(portfolioStats.totalBudget), label: t({ en: 'Total Budget', ar: 'إجمالي الميزانية' }), icon: DollarSign, iconColor: 'text-emerald-600', valueColor: 'text-emerald-600' },
+          { value: `${portfolioStats.objectiveCoverage}%`, label: t({ en: 'Coverage', ar: 'التغطية' }), icon: Target, iconColor: 'text-amber-600', valueColor: 'text-amber-600' },
+          { value: portfolioStats.byPriority.high, label: t({ en: 'High Priority', ar: 'أولوية عالية' }), icon: AlertTriangle, iconColor: 'text-red-600', valueColor: 'text-red-600' }
+        ]}
+      />
 
       {/* Alerts */}
       {alerts.length > 0 && (
