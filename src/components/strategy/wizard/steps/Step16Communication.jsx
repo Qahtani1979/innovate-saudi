@@ -9,20 +9,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Sparkles, Megaphone, Plus, X, Users, Radio, Mail, Globe, BookOpen, 
   ChevronUp, ChevronDown, Link2, MessageSquare, Calendar, LayoutGrid, 
   Table2, CalendarDays, Building2, Handshake, Briefcase, Newspaper,
   GraduationCap, User, Target, AlertTriangle, CheckCircle2, Send,
   Smartphone, Monitor, Tv, Mic, FileText, PresentationIcon, Video,
-  Bell, Rss, Hash, Eye, TrendingUp, BarChart3, Loader2, Layers
+  Bell, Rss, Hash, Eye, TrendingUp, BarChart3, Loader2, Layers,
+  AlertCircle, Info, PieChart
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { useCommunicationAI } from '@/hooks/strategy/useCommunicationAI';
-import { useCommunicationPlans } from '@/hooks/strategy/useCommunicationPlans';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 
-// Enhanced Audience Types with categories and engagement levels
+// Enhanced Audience Types
 const AUDIENCE_TYPES = [
   { id: 'citizens', label: { en: 'Citizens', ar: 'المواطنون' }, icon: Users, category: 'external', description: { en: 'General public and residents', ar: 'عامة الناس والمقيمين' }, priority: 'high' },
   { id: 'municipalities', label: { en: 'Municipalities', ar: 'البلديات' }, icon: Building2, category: 'internal', description: { en: 'Local government entities', ar: 'الجهات الحكومية المحلية' }, priority: 'high' },
@@ -34,7 +34,7 @@ const AUDIENCE_TYPES = [
   { id: 'investors', label: { en: 'Investors & Donors', ar: 'المستثمرون والمانحون' }, icon: TrendingUp, category: 'external', description: { en: 'Financial stakeholders', ar: 'أصحاب المصلحة الماليون' }, priority: 'medium' }
 ];
 
-// Enhanced Channel Types with categories and reach
+// Channel Types
 const CHANNEL_TYPES = [
   { value: 'portal', label: { en: 'Portal/Website', ar: 'البوابة/الموقع' }, icon: Globe, category: 'digital', reach: 'high' },
   { value: 'email', label: { en: 'Email', ar: 'البريد الإلكتروني' }, icon: Mail, category: 'digital', reach: 'medium' },
@@ -50,7 +50,7 @@ const CHANNEL_TYPES = [
   { value: 'podcast', label: { en: 'Podcast', ar: 'بودكاست' }, icon: Mic, category: 'digital', reach: 'medium' }
 ];
 
-// Message Types/Categories
+// Message Types
 const MESSAGE_TYPES = [
   { value: 'announcement', label: { en: 'Announcement', ar: 'إعلان' }, icon: Megaphone, color: 'bg-blue-500' },
   { value: 'update', label: { en: 'Progress Update', ar: 'تحديث التقدم' }, icon: TrendingUp, color: 'bg-green-500' },
@@ -69,94 +69,132 @@ const FREQUENCY_OPTIONS = [
   { value: 'as_needed', label: { en: 'As Needed', ar: 'حسب الحاجة' } }
 ];
 
-// Communication Dashboard Component
-function CommunicationDashboard({ communicationPlan, t, language }) {
+// Calculate completeness
+function calculateCompleteness(communicationPlan) {
+  const targetAudiences = communicationPlan.target_audiences || [];
+  const keyMessages = communicationPlan.key_messages || [];
+  const internalChannels = communicationPlan.internal_channels || [];
+  const externalChannels = communicationPlan.external_channels || [];
+  
+  const checks = [
+    { name: 'narrative', weight: 15, complete: !!(communicationPlan.master_narrative_en || communicationPlan.master_narrative_ar) },
+    { name: 'audiences', weight: 20, complete: targetAudiences.length >= 3 },
+    { name: 'messages', weight: 25, complete: keyMessages.length > 0 && keyMessages.every(m => m.text_en && m.audience) },
+    { name: 'internal', weight: 20, complete: internalChannels.length > 0 && internalChannels.every(c => c.name_en && c.type) },
+    { name: 'external', weight: 20, complete: externalChannels.length > 0 && externalChannels.every(c => c.name_en && c.type) }
+  ];
+  
+  const score = checks.reduce((acc, check) => acc + (check.complete ? check.weight : 0), 0);
+  return { score, checks };
+}
+
+// Calculate message completeness
+function calculateMessageCompleteness(message) {
+  const fields = [
+    { name: 'text_en', filled: !!message.text_en },
+    { name: 'text_ar', filled: !!message.text_ar },
+    { name: 'type', filled: !!message.type },
+    { name: 'audience', filled: !!message.audience },
+    { name: 'channel', filled: !!message.channel }
+  ];
+  return Math.round((fields.filter(f => f.filled).length / fields.length) * 100);
+}
+
+// Calculate channel completeness
+function calculateChannelCompleteness(channel) {
+  const fields = [
+    { name: 'name_en', filled: !!channel.name_en },
+    { name: 'name_ar', filled: !!channel.name_ar },
+    { name: 'type', filled: !!channel.type },
+    { name: 'frequency', filled: !!channel.frequency },
+    { name: 'owner', filled: !!channel.owner },
+    { name: 'purpose_en', filled: !!channel.purpose_en }
+  ];
+  return Math.round((fields.filter(f => f.filled).length / fields.length) * 100);
+}
+
+// Dashboard Header Component
+function DashboardHeader({ communicationPlan, t, language }) {
+  const { score, checks } = calculateCompleteness(communicationPlan);
   const targetAudiences = communicationPlan.target_audiences || [];
   const keyMessages = communicationPlan.key_messages || [];
   const internalChannels = communicationPlan.internal_channels || [];
   const externalChannels = communicationPlan.external_channels || [];
   const totalChannels = internalChannels.length + externalChannels.length;
   
-  // Calculate coverage and health
-  const audienceCoverage = Math.round((targetAudiences.length / AUDIENCE_TYPES.length) * 100);
-  const hasNarrative = !!(communicationPlan.master_narrative_en || communicationPlan.master_narrative_ar);
-  const hasInternalChannels = internalChannels.length > 0;
-  const hasExternalChannels = externalChannels.length > 0;
-  const hasMessages = keyMessages.length > 0;
+  const internalAudiences = targetAudiences.filter(a => AUDIENCE_TYPES.find(at => at.id === a)?.category === 'internal').length;
+  const externalAudiences = targetAudiences.filter(a => AUDIENCE_TYPES.find(at => at.id === a)?.category === 'external').length;
   
-  // Health score calculation
-  const healthChecks = [
-    hasNarrative,
-    targetAudiences.length >= 3,
-    hasMessages,
-    hasInternalChannels,
-    hasExternalChannels,
-    keyMessages.every(m => m.text_en && m.audience),
-    internalChannels.every(c => c.name_en && c.type),
-    externalChannels.every(c => c.name_en && c.type)
-  ];
-  const healthScore = Math.round((healthChecks.filter(Boolean).length / healthChecks.length) * 100);
-  
-  const getHealthColor = (score) => {
-    if (score >= 80) return 'text-emerald-500';
-    if (score >= 60) return 'text-amber-500';
-    return 'text-red-500';
+  const getScoreColor = (s) => {
+    if (s >= 80) return 'text-emerald-600';
+    if (s >= 50) return 'text-amber-600';
+    return 'text-red-600';
   };
 
   const stats = [
-    { label: { en: 'Target Audiences', ar: 'الجمهور المستهدف' }, value: targetAudiences.length, icon: Users, color: 'text-blue-500' },
-    { label: { en: 'Key Messages', ar: 'الرسائل الرئيسية' }, value: keyMessages.length, icon: MessageSquare, color: 'text-purple-500' },
-    { label: { en: 'Internal Channels', ar: 'القنوات الداخلية' }, value: internalChannels.length, icon: Mail, color: 'text-green-500' },
-    { label: { en: 'External Channels', ar: 'القنوات الخارجية' }, value: externalChannels.length, icon: Globe, color: 'text-orange-500' },
-    { label: { en: 'Audience Coverage', ar: 'تغطية الجمهور' }, value: `${audienceCoverage}%`, icon: Eye, color: 'text-cyan-500' },
-    { label: { en: 'Plan Health', ar: 'صحة الخطة' }, value: `${healthScore}%`, icon: BarChart3, color: getHealthColor(healthScore) }
+    { label: { en: 'Audiences', ar: 'الجمهور' }, value: targetAudiences.length, sub: `${internalAudiences}/${externalAudiences}`, icon: Users, color: 'text-blue-500 bg-blue-500/10' },
+    { label: { en: 'Messages', ar: 'الرسائل' }, value: keyMessages.length, icon: MessageSquare, color: 'text-purple-500 bg-purple-500/10' },
+    { label: { en: 'Internal', ar: 'داخلي' }, value: internalChannels.length, icon: Mail, color: 'text-green-500 bg-green-500/10' },
+    { label: { en: 'External', ar: 'خارجي' }, value: externalChannels.length, icon: Globe, color: 'text-orange-500 bg-orange-500/10' },
+    { label: { en: 'Total Channels', ar: 'إجمالي القنوات' }, value: totalChannels, icon: Radio, color: 'text-cyan-500 bg-cyan-500/10' }
   ];
 
   return (
-    <Card className="bg-gradient-to-br from-background to-muted/30 border-2">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          {t({ en: 'Communication Dashboard', ar: 'لوحة معلومات التواصل' })}
-        </CardTitle>
-        <CardDescription>
-          {t({ en: 'Overview of your communication plan components', ar: 'نظرة عامة على مكونات خطة التواصل' })}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {stats.map((stat, idx) => {
-            const IconComponent = stat.icon;
-            return (
-              <div key={idx} className="text-center p-3 rounded-lg bg-background/50 border">
-                <IconComponent className={`w-6 h-6 mx-auto mb-1 ${stat.color}`} />
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label[language]}</p>
+    <Card className="bg-gradient-to-br from-background via-background to-primary/5 border-2">
+      <CardContent className="pt-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Completeness Score */}
+          <div className="flex items-center gap-4 min-w-[200px]">
+            <div className="relative">
+              <svg className="w-20 h-20 transform -rotate-90">
+                <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" className="text-muted/20" />
+                <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" 
+                  className={getScoreColor(score)}
+                  strokeDasharray={`${(score / 100) * 220} 220`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className={`text-lg font-bold ${getScoreColor(score)}`}>{score}%</span>
               </div>
-            );
-          })}
-        </div>
-        
-        {/* Health Indicators */}
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-sm font-medium mb-2">{t({ en: 'Completeness Check', ar: 'التحقق من الاكتمال' })}</p>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant={hasNarrative ? 'default' : 'outline'} className={hasNarrative ? 'bg-emerald-500' : ''}>
-              {hasNarrative ? '✓' : '○'} {t({ en: 'Narrative', ar: 'السرد' })}
-            </Badge>
-            <Badge variant={targetAudiences.length >= 3 ? 'default' : 'outline'} className={targetAudiences.length >= 3 ? 'bg-emerald-500' : ''}>
-              {targetAudiences.length >= 3 ? '✓' : '○'} {t({ en: '3+ Audiences', ar: '3+ جمهور' })}
-            </Badge>
-            <Badge variant={hasMessages ? 'default' : 'outline'} className={hasMessages ? 'bg-emerald-500' : ''}>
-              {hasMessages ? '✓' : '○'} {t({ en: 'Messages', ar: 'الرسائل' })}
-            </Badge>
-            <Badge variant={hasInternalChannels ? 'default' : 'outline'} className={hasInternalChannels ? 'bg-emerald-500' : ''}>
-              {hasInternalChannels ? '✓' : '○'} {t({ en: 'Internal', ar: 'داخلي' })}
-            </Badge>
-            <Badge variant={hasExternalChannels ? 'default' : 'outline'} className={hasExternalChannels ? 'bg-emerald-500' : ''}>
-              {hasExternalChannels ? '✓' : '○'} {t({ en: 'External', ar: 'خارجي' })}
-            </Badge>
+            </div>
+            <div>
+              <p className="text-sm font-medium">{t({ en: 'Plan Completeness', ar: 'اكتمال الخطة' })}</p>
+              <p className="text-xs text-muted-foreground">
+                {checks.filter(c => c.complete).length}/{checks.length} {t({ en: 'sections complete', ar: 'أقسام مكتملة' })}
+              </p>
+            </div>
           </div>
+
+          {/* Stats Grid */}
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {stats.map((stat, idx) => {
+              const IconComponent = stat.icon;
+              return (
+                <div key={idx} className="text-center p-3 rounded-lg bg-background border">
+                  <div className={`w-8 h-8 rounded-full ${stat.color} flex items-center justify-center mx-auto mb-2`}>
+                    <IconComponent className="w-4 h-4" />
+                  </div>
+                  <p className="text-xl font-bold">{stat.value}</p>
+                  {stat.sub && <p className="text-[10px] text-muted-foreground">Int/Ext: {stat.sub}</p>}
+                  <p className="text-xs text-muted-foreground">{stat.label[language]}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Completeness Badges */}
+        <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
+          {checks.map((check, idx) => (
+            <Badge key={idx} variant={check.complete ? 'default' : 'outline'} className={check.complete ? 'bg-emerald-500' : ''}>
+              {check.complete ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <AlertCircle className="w-3 h-3 mr-1" />}
+              {t({ 
+                en: check.name.charAt(0).toUpperCase() + check.name.slice(1), 
+                ar: { narrative: 'السرد', audiences: 'الجمهور', messages: 'الرسائل', internal: 'داخلي', external: 'خارجي' }[check.name] 
+              })}
+            </Badge>
+          ))}
         </div>
       </CardContent>
     </Card>
@@ -164,23 +202,23 @@ function CommunicationDashboard({ communicationPlan, t, language }) {
 }
 
 // Audience Card Component
-function AudienceCard({ audience, isSelected, onToggle, language, t }) {
+function AudienceCard({ audience, isSelected, onToggle, language, t, isReadOnly }) {
   const IconComponent = audience.icon;
   const priorityColors = {
-    critical: 'border-red-500 bg-red-500/5',
-    high: 'border-orange-500 bg-orange-500/5',
-    medium: 'border-blue-500 bg-blue-500/5',
-    low: 'border-gray-500 bg-gray-500/5'
+    critical: 'border-red-500/50 bg-red-500/5',
+    high: 'border-orange-500/50 bg-orange-500/5',
+    medium: 'border-blue-500/50 bg-blue-500/5',
+    low: 'border-muted bg-muted/5'
   };
 
   return (
     <Card 
-      className={`cursor-pointer transition-all ${
+      className={`transition-all ${isReadOnly ? '' : 'cursor-pointer'} ${
         isSelected 
           ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
           : `hover:border-primary/50 ${priorityColors[audience.priority]}`
       }`}
-      onClick={onToggle}
+      onClick={() => !isReadOnly && onToggle()}
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
@@ -190,16 +228,19 @@ function AudienceCard({ audience, isSelected, onToggle, language, t }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <span className="font-medium truncate">{audience.label[language]}</span>
-              {isSelected && <Badge variant="default" className="shrink-0">✓</Badge>}
+              {isSelected && <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">{audience.description[language]}</p>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{audience.description[language]}</p>
             <div className="flex gap-2 mt-2">
-              <Badge variant="outline" className="text-xs">
-                {audience.category === 'internal' 
-                  ? t({ en: 'Internal', ar: 'داخلي' }) 
-                  : t({ en: 'External', ar: 'خارجي' })}
+              <Badge variant="outline" className="text-[10px]">
+                {audience.category === 'internal' ? t({ en: 'Internal', ar: 'داخلي' }) : t({ en: 'External', ar: 'خارجي' })}
               </Badge>
-              <Badge variant="outline" className="text-xs capitalize">{audience.priority}</Badge>
+              <Badge variant="outline" className={`text-[10px] capitalize ${
+                audience.priority === 'critical' ? 'border-red-500 text-red-500' :
+                audience.priority === 'high' ? 'border-orange-500 text-orange-500' : ''
+              }`}>
+                {audience.priority}
+              </Badge>
             </div>
           </div>
         </div>
@@ -209,26 +250,29 @@ function AudienceCard({ audience, isSelected, onToggle, language, t }) {
 }
 
 // Message Card Component
-function MessageCard({ message, index, onUpdate, onRemove, language, t, strategicPlanId }) {
+function MessageCard({ message, index, onUpdate, onRemove, language, t, strategicPlanId, isReadOnly }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const messageType = MESSAGE_TYPES.find(mt => mt.value === message.type) || MESSAGE_TYPES[0];
   const TypeIcon = messageType.icon;
+  const completeness = calculateMessageCompleteness(message);
+
+  const getFieldClass = (value) => value ? 'border-emerald-500/50 bg-emerald-500/5' : '';
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden ${completeness === 100 ? 'border-emerald-500/30' : ''}`}>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className={`p-1.5 rounded ${messageType.color}`}>
                   <TypeIcon className="w-4 h-4 text-white" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm line-clamp-1">
                     {message.text_en || message.text_ar || t({ en: 'New Message', ar: 'رسالة جديدة' })}
                   </p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex gap-2 mt-1 flex-wrap">
                     {message.audience && (
                       <Badge variant="outline" className="text-xs">
                         {AUDIENCE_TYPES.find(a => a.id === message.audience)?.label[language] || message.audience}
@@ -242,10 +286,16 @@ function MessageCard({ message, index, onUpdate, onRemove, language, t, strategi
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
-                  <X className="w-4 h-4" />
-                </Button>
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-2">
+                  <Progress value={completeness} className="w-16 h-1.5" />
+                  <span className="text-xs text-muted-foreground w-8">{completeness}%</span>
+                </div>
+                {!isReadOnly && (
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </div>
@@ -256,8 +306,8 @@ function MessageCard({ message, index, onUpdate, onRemove, language, t, strategi
             {/* Message Type */}
             <div>
               <Label className="text-xs">{t({ en: 'Message Type', ar: 'نوع الرسالة' })}</Label>
-              <Select value={message.type || 'announcement'} onValueChange={(v) => onUpdate('type', v)}>
-                <SelectTrigger>
+              <Select value={message.type || 'announcement'} onValueChange={(v) => onUpdate('type', v)} disabled={isReadOnly}>
+                <SelectTrigger className={getFieldClass(message.type)}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -285,6 +335,8 @@ function MessageCard({ message, index, onUpdate, onRemove, language, t, strategi
                   onChange={(e) => onUpdate('text_en', e.target.value)}
                   placeholder={t({ en: 'Enter key message...', ar: 'أدخل الرسالة الرئيسية...' })}
                   rows={3}
+                  className={getFieldClass(message.text_en)}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -295,6 +347,8 @@ function MessageCard({ message, index, onUpdate, onRemove, language, t, strategi
                   onChange={(e) => onUpdate('text_ar', e.target.value)}
                   placeholder="أدخل الرسالة الرئيسية..."
                   rows={3}
+                  className={getFieldClass(message.text_ar)}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -303,8 +357,10 @@ function MessageCard({ message, index, onUpdate, onRemove, language, t, strategi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">{t({ en: 'Target Audience', ar: 'الجمهور المستهدف' })}</Label>
-                <Select value={message.audience || ''} onValueChange={(v) => onUpdate('audience', v)}>
-                  <SelectTrigger><SelectValue placeholder={t({ en: 'Select audience', ar: 'اختر الجمهور' })} /></SelectTrigger>
+                <Select value={message.audience || ''} onValueChange={(v) => onUpdate('audience', v)} disabled={isReadOnly}>
+                  <SelectTrigger className={getFieldClass(message.audience)}>
+                    <SelectValue placeholder={t({ en: 'Select audience', ar: 'اختر الجمهور' })} />
+                  </SelectTrigger>
                   <SelectContent>
                     {AUDIENCE_TYPES.map(a => {
                       const Icon = a.icon;
@@ -322,8 +378,10 @@ function MessageCard({ message, index, onUpdate, onRemove, language, t, strategi
               </div>
               <div>
                 <Label className="text-xs">{t({ en: 'Recommended Channel', ar: 'القناة الموصى بها' })}</Label>
-                <Select value={message.channel || ''} onValueChange={(v) => onUpdate('channel', v)}>
-                  <SelectTrigger><SelectValue placeholder={t({ en: 'Select channel', ar: 'اختر القناة' })} /></SelectTrigger>
+                <Select value={message.channel || ''} onValueChange={(v) => onUpdate('channel', v)} disabled={isReadOnly}>
+                  <SelectTrigger className={getFieldClass(message.channel)}>
+                    <SelectValue placeholder={t({ en: 'Select channel', ar: 'اختر القناة' })} />
+                  </SelectTrigger>
                   <SelectContent>
                     {CHANNEL_TYPES.map(c => {
                       const Icon = c.icon;
@@ -342,19 +400,21 @@ function MessageCard({ message, index, onUpdate, onRemove, language, t, strategi
             </div>
 
             {/* Entity Allocation */}
-            <div className="space-y-1 pt-2 border-t">
-              <Label className="text-xs flex items-center gap-1">
-                <Link2 className="h-3 w-3" />
-                {t({ en: 'Link to Entity Launches', ar: 'ربط بإطلاق الكيانات' })}
-              </Label>
-              <EntityAllocationSelector
-                strategicPlanId={strategicPlanId}
-                value={message.entity_launches || []}
-                onChange={(allocations) => onUpdate('entity_launches', allocations)}
-                multiple={true}
-                placeholder={t({ en: 'Select entities this message announces...', ar: 'اختر الكيانات التي تعلن عنها هذه الرسالة...' })}
-              />
-            </div>
+            {!isReadOnly && strategicPlanId && (
+              <div className="space-y-1 pt-2 border-t">
+                <Label className="text-xs flex items-center gap-1">
+                  <Link2 className="h-3 w-3" />
+                  {t({ en: 'Link to Entity Launches', ar: 'ربط بإطلاق الكيانات' })}
+                </Label>
+                <EntityAllocationSelector
+                  strategicPlanId={strategicPlanId}
+                  value={message.entity_launches || []}
+                  onChange={(allocations) => onUpdate('entity_launches', allocations)}
+                  multiple={true}
+                  placeholder={t({ en: 'Select entities...', ar: 'اختر الكيانات...' })}
+                />
+              </div>
+            )}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
@@ -363,26 +423,29 @@ function MessageCard({ message, index, onUpdate, onRemove, language, t, strategi
 }
 
 // Channel Card Component
-function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) {
+function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t, isReadOnly }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const channelType = CHANNEL_TYPES.find(ct => ct.value === channel.type) || CHANNEL_TYPES[0];
   const ChannelIcon = channelType.icon;
+  const completeness = calculateChannelCompleteness(channel);
+
+  const getFieldClass = (value) => value ? 'border-emerald-500/50 bg-emerald-500/5' : '';
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden ${completeness === 100 ? 'border-emerald-500/30' : ''}`}>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="p-2 rounded-lg bg-muted">
                   <ChannelIcon className="w-4 h-4" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">
                     {channel.name_en || channel.name_ar || t({ en: 'New Channel', ar: 'قناة جديدة' })}
                   </p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex gap-2 mt-1 flex-wrap">
                     <Badge variant="outline" className="text-xs">
                       {type === 'internal' ? t({ en: 'Internal', ar: 'داخلي' }) : t({ en: 'External', ar: 'خارجي' })}
                     </Badge>
@@ -395,10 +458,16 @@ function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) 
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
-                  <X className="w-4 h-4" />
-                </Button>
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-2">
+                  <Progress value={completeness} className="w-16 h-1.5" />
+                  <span className="text-xs text-muted-foreground w-8">{completeness}%</span>
+                </div>
+                {!isReadOnly && (
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </div>
@@ -414,6 +483,8 @@ function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) 
                   value={channel.name_en || ''}
                   onChange={(e) => onUpdate('name_en', e.target.value)}
                   placeholder="e.g., Ministry Newsletter"
+                  className={getFieldClass(channel.name_en)}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -423,6 +494,8 @@ function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) 
                   value={channel.name_ar || ''}
                   onChange={(e) => onUpdate('name_ar', e.target.value)}
                   placeholder="مثال: النشرة الإخبارية للوزارة"
+                  className={getFieldClass(channel.name_ar)}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -431,8 +504,10 @@ function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs">{t({ en: 'Type', ar: 'النوع' })}</Label>
-                <Select value={channel.type || 'email'} onValueChange={(v) => onUpdate('type', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={channel.type || 'email'} onValueChange={(v) => onUpdate('type', v)} disabled={isReadOnly}>
+                  <SelectTrigger className={getFieldClass(channel.type)}>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {CHANNEL_TYPES.map(ct => {
                       const Icon = ct.icon;
@@ -450,8 +525,10 @@ function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) 
               </div>
               <div>
                 <Label className="text-xs">{t({ en: 'Frequency', ar: 'التكرار' })}</Label>
-                <Select value={channel.frequency || 'weekly'} onValueChange={(v) => onUpdate('frequency', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={channel.frequency || 'weekly'} onValueChange={(v) => onUpdate('frequency', v)} disabled={isReadOnly}>
+                  <SelectTrigger className={getFieldClass(channel.frequency)}>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {FREQUENCY_OPTIONS.map(f => (
                       <SelectItem key={f.value} value={f.value}>{f.label[language]}</SelectItem>
@@ -465,6 +542,8 @@ function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) 
                   value={channel.owner || ''}
                   onChange={(e) => onUpdate('owner', e.target.value)}
                   placeholder={t({ en: 'Role or department', ar: 'الدور أو الإدارة' })}
+                  className={getFieldClass(channel.owner)}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -478,6 +557,8 @@ function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) 
                   onChange={(e) => onUpdate('purpose_en', e.target.value)}
                   placeholder="What is this channel used for?"
                   rows={2}
+                  className={getFieldClass(channel.purpose_en)}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -488,11 +569,12 @@ function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) 
                   onChange={(e) => onUpdate('purpose_ar', e.target.value)}
                   placeholder="ما هو الغرض من هذه القناة؟"
                   rows={2}
+                  className={getFieldClass(channel.purpose_ar)}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
 
-            {/* External-specific: Audience */}
             {type === 'external' && (
               <div>
                 <Label className="text-xs">{t({ en: 'Target Audience', ar: 'الجمهور المستهدف' })}</Label>
@@ -500,6 +582,8 @@ function ChannelCard({ channel, index, type, onUpdate, onRemove, language, t }) 
                   value={channel.audience || ''}
                   onChange={(e) => onUpdate('audience', e.target.value)}
                   placeholder={t({ en: 'e.g., Citizens, Media', ar: 'مثال: المواطنون، الإعلام' })}
+                  className={getFieldClass(channel.audience)}
+                  disabled={isReadOnly}
                 />
               </div>
             )}
@@ -533,6 +617,15 @@ function ChannelMatrixView({ internalChannels, externalChannels, language, t }) 
       })
     })).filter(g => g.channels.length > 0);
   }, [allChannels]);
+
+  if (channelsByCategory.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+        <Layers className="w-12 h-12 mx-auto mb-4 opacity-50" />
+        {t({ en: 'No channels defined yet', ar: 'لم يتم تحديد قنوات بعد' })}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -575,7 +668,7 @@ function ChannelMatrixView({ internalChannels, externalChannels, language, t }) 
                           </Badge>
                         </td>
                         <td className="p-2">
-                          {FREQUENCY_OPTIONS.find(f => f.value === channel.frequency)?.label[language] || channel.frequency}
+                          {FREQUENCY_OPTIONS.find(f => f.value === channel.frequency)?.label[language] || channel.frequency || '-'}
                         </td>
                         <td className="p-2 text-muted-foreground">{channel.owner || '-'}</td>
                       </tr>
@@ -587,21 +680,190 @@ function ChannelMatrixView({ internalChannels, externalChannels, language, t }) 
           </CardContent>
         </Card>
       ))}
-      
-      {channelsByCategory.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-          {t({ en: 'No channels defined yet. Add channels in the Internal/External tabs.', ar: 'لم يتم تحديد قنوات بعد. أضف قنوات في علامات التبويب الداخلية/الخارجية.' })}
-        </div>
+    </div>
+  );
+}
+
+// Summary View
+function SummaryView({ communicationPlan, language, t }) {
+  const targetAudiences = communicationPlan.target_audiences || [];
+  const keyMessages = communicationPlan.key_messages || [];
+  const internalChannels = communicationPlan.internal_channels || [];
+  const externalChannels = communicationPlan.external_channels || [];
+  const { score } = calculateCompleteness(communicationPlan);
+
+  // Audience distribution
+  const internalAudiences = targetAudiences.filter(a => AUDIENCE_TYPES.find(at => at.id === a)?.category === 'internal');
+  const externalAudiences = targetAudiences.filter(a => AUDIENCE_TYPES.find(at => at.id === a)?.category === 'external');
+  
+  // Message distribution by type
+  const messagesByType = MESSAGE_TYPES.map(mt => ({
+    type: mt,
+    count: keyMessages.filter(m => m.type === mt.value).length
+  })).filter(m => m.count > 0);
+
+  // Channel distribution by category
+  const allChannels = [...internalChannels, ...externalChannels];
+  const channelCategories = ['digital', 'traditional', 'in-person', 'internal'];
+  const channelsByCategory = channelCategories.map(cat => ({
+    category: cat,
+    count: allChannels.filter(c => CHANNEL_TYPES.find(ct => ct.value === c.type)?.category === cat).length
+  })).filter(c => c.count > 0);
+
+  // Recommendations
+  const recommendations = [];
+  if (targetAudiences.length < 3) recommendations.push({ en: 'Add more target audiences (minimum 3 recommended)', ar: 'أضف المزيد من الجمهور المستهدف (يوصى بـ 3 على الأقل)' });
+  if (!communicationPlan.master_narrative_en && !communicationPlan.master_narrative_ar) recommendations.push({ en: 'Define a master narrative', ar: 'حدد السرد الأساسي' });
+  if (keyMessages.length === 0) recommendations.push({ en: 'Add key messages for your audiences', ar: 'أضف رسائل رئيسية لجمهورك' });
+  if (internalChannels.length === 0) recommendations.push({ en: 'Define internal communication channels', ar: 'حدد قنوات التواصل الداخلية' });
+  if (externalChannels.length === 0) recommendations.push({ en: 'Define external communication channels', ar: 'حدد قنوات التواصل الخارجية' });
+  if (keyMessages.some(m => !m.audience)) recommendations.push({ en: 'Assign audiences to all key messages', ar: 'حدد الجمهور لجميع الرسائل الرئيسية' });
+
+  return (
+    <div className="space-y-6">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Audience Distribution */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              {t({ en: 'Audience Distribution', ar: 'توزيع الجمهور' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">{t({ en: 'Internal', ar: 'داخلي' })}</span>
+                <Badge variant="secondary">{internalAudiences.length}</Badge>
+              </div>
+              <Progress value={targetAudiences.length > 0 ? (internalAudiences.length / targetAudiences.length) * 100 : 0} className="h-2" />
+              <div className="flex justify-between items-center">
+                <span className="text-sm">{t({ en: 'External', ar: 'خارجي' })}</span>
+                <Badge variant="secondary">{externalAudiences.length}</Badge>
+              </div>
+              <Progress value={targetAudiences.length > 0 ? (externalAudiences.length / targetAudiences.length) * 100 : 0} className="h-2" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Message Types */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              {t({ en: 'Message Types', ar: 'أنواع الرسائل' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {messagesByType.length > 0 ? (
+              <div className="space-y-2">
+                {messagesByType.map((m, idx) => {
+                  const Icon = m.type.icon;
+                  return (
+                    <div key={idx} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1 rounded ${m.type.color}`}>
+                          <Icon className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-sm">{m.type.label[language]}</span>
+                      </div>
+                      <Badge variant="outline">{m.count}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">{t({ en: 'No messages yet', ar: 'لا توجد رسائل بعد' })}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Channel Categories */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Radio className="w-4 h-4" />
+              {t({ en: 'Channel Categories', ar: 'فئات القنوات' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {channelsByCategory.length > 0 ? (
+              <div className="space-y-2">
+                {channelsByCategory.map((c, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <span className="text-sm capitalize">{c.category.replace('-', ' ')}</span>
+                    <Badge variant="outline">{c.count}</Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">{t({ en: 'No channels yet', ar: 'لا توجد قنوات بعد' })}</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Data Quality */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            {t({ en: 'Data Quality', ar: 'جودة البيانات' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 rounded-lg bg-muted/50">
+              <p className="text-2xl font-bold">{keyMessages.filter(m => m.text_en && m.text_ar).length}/{keyMessages.length}</p>
+              <p className="text-xs text-muted-foreground">{t({ en: 'Bilingual Messages', ar: 'رسائل ثنائية اللغة' })}</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-muted/50">
+              <p className="text-2xl font-bold">{keyMessages.filter(m => m.audience && m.channel).length}/{keyMessages.length}</p>
+              <p className="text-xs text-muted-foreground">{t({ en: 'Targeted Messages', ar: 'رسائل مستهدفة' })}</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-muted/50">
+              <p className="text-2xl font-bold">{allChannels.filter(c => c.owner).length}/{allChannels.length}</p>
+              <p className="text-xs text-muted-foreground">{t({ en: 'Channels with Owner', ar: 'قنوات بمسؤول' })}</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-muted/50">
+              <p className="text-2xl font-bold">{allChannels.filter(c => c.purpose_en || c.purpose_ar).length}/{allChannels.length}</p>
+              <p className="text-xs text-muted-foreground">{t({ en: 'Channels with Purpose', ar: 'قنوات بغرض' })}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recommendations */}
+      {recommendations.length > 0 && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
+              <AlertTriangle className="w-4 h-4" />
+              {t({ en: 'Recommendations', ar: 'التوصيات' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {recommendations.map((rec, idx) => (
+                <li key={idx} className="flex items-start gap-2 text-sm">
+                  <Info className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                  <span>{rec[language]}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 }
 
 // Step 16: Communication Plan
-export function Step16Communication({ data, onChange, onGenerateAI, isGenerating, strategicPlanId }) {
+export function Step16Communication({ data, onChange, onGenerateAI, isGenerating, strategicPlanId, isReadOnly = false }) {
   const { language, t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('audiences');
-  const [viewMode, setViewMode] = useState('cards'); // 'cards', 'matrix'
+  const [viewMode, setViewMode] = useState('cards');
   
   const communicationPlan = data.communication_plan || {};
   const targetAudiences = communicationPlan.target_audiences || [];
@@ -610,6 +872,7 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
   const externalChannels = communicationPlan.external_channels || [];
 
   const updatePlan = (updates) => {
+    if (isReadOnly) return;
     onChange({
       communication_plan: {
         ...communicationPlan,
@@ -618,16 +881,16 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
     });
   };
 
-  // Target Audiences handlers
   const toggleAudience = (audienceId) => {
+    if (isReadOnly) return;
     const updated = targetAudiences.includes(audienceId)
       ? targetAudiences.filter(a => a !== audienceId)
       : [...targetAudiences, audienceId];
     updatePlan({ target_audiences: updated });
   };
 
-  // Key Messages handlers
   const addKeyMessage = () => {
+    if (isReadOnly) return;
     const newMessage = {
       id: Date.now().toString(),
       text_en: '',
@@ -641,16 +904,18 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
   };
 
   const updateKeyMessage = (index, field, value) => {
+    if (isReadOnly) return;
     const updated = keyMessages.map((m, i) => (i === index ? { ...m, [field]: value } : m));
     updatePlan({ key_messages: updated });
   };
 
   const removeKeyMessage = (index) => {
+    if (isReadOnly) return;
     updatePlan({ key_messages: keyMessages.filter((_, i) => i !== index) });
   };
 
-  // Channel handlers
   const addChannel = (type) => {
+    if (isReadOnly) return;
     const channels = type === 'internal' ? internalChannels : externalChannels;
     const newChannel = {
       id: Date.now().toString(),
@@ -669,6 +934,7 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
   };
 
   const updateChannel = (type, index, field, value) => {
+    if (isReadOnly) return;
     const channels = type === 'internal' ? internalChannels : externalChannels;
     const updated = channels.map((c, i) => (i === index ? { ...c, [field]: value } : c));
     updatePlan({ 
@@ -677,33 +943,57 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
   };
 
   const removeChannel = (type, index) => {
+    if (isReadOnly) return;
     const channels = type === 'internal' ? internalChannels : externalChannels;
     updatePlan({ 
       [type === 'internal' ? 'internal_channels' : 'external_channels']: channels.filter((_, i) => i !== index)
     });
   };
 
+  // Alerts
+  const alerts = [];
+  if (targetAudiences.length === 0) alerts.push({ type: 'warning', message: { en: 'No target audiences selected', ar: 'لم يتم تحديد جمهور مستهدف' } });
+  if (keyMessages.length === 0) alerts.push({ type: 'info', message: { en: 'Add key messages to communicate with your audiences', ar: 'أضف رسائل رئيسية للتواصل مع جمهورك' } });
+  if (internalChannels.length === 0 && externalChannels.length === 0) alerts.push({ type: 'warning', message: { en: 'No communication channels defined', ar: 'لم يتم تحديد قنوات تواصل' } });
+
+  const getFieldClass = (value) => value ? 'border-emerald-500/50 bg-emerald-500/5' : '';
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header with AI Generate */}
+      {/* Header */}
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Megaphone className="w-6 h-6 text-primary" />
             {t({ en: 'Communication Plan', ar: 'خطة التواصل' })}
+            {isReadOnly && <Badge variant="secondary">{t({ en: 'View Only', ar: 'عرض فقط' })}</Badge>}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             {t({ en: 'Define your communication strategy, target audiences, and channels', ar: 'حدد استراتيجية التواصل والجمهور المستهدف والقنوات' })}
           </p>
         </div>
-        <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-          {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-          {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
-        </Button>
+        {!isReadOnly && (
+          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
+            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
+          </Button>
+        )}
       </div>
 
       {/* Dashboard */}
-      <CommunicationDashboard communicationPlan={communicationPlan} t={t} language={language} />
+      <DashboardHeader communicationPlan={communicationPlan} t={t} language={language} />
+
+      {/* Alerts */}
+      {alerts.length > 0 && !isReadOnly && (
+        <div className="space-y-2">
+          {alerts.map((alert, idx) => (
+            <Alert key={idx} variant={alert.type === 'warning' ? 'destructive' : 'default'} className={alert.type === 'warning' ? 'border-amber-500/50 bg-amber-500/10' : ''}>
+              {alert.type === 'warning' ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+              <AlertDescription>{alert.message[language]}</AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      )}
 
       {/* Master Narrative */}
       <Card>
@@ -725,6 +1015,8 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
                 onChange={(e) => updatePlan({ master_narrative_en: e.target.value })}
                 placeholder="The overarching story that connects all communications..."
                 rows={4}
+                className={getFieldClass(communicationPlan.master_narrative_en)}
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -735,60 +1027,58 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
                 onChange={(e) => updatePlan({ master_narrative_ar: e.target.value })}
                 placeholder="القصة الشاملة التي تربط جميع الاتصالات..."
                 rows={4}
+                className={getFieldClass(communicationPlan.master_narrative_ar)}
+                disabled={isReadOnly}
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* View Mode Toggle */}
-      <div className="flex items-center justify-between">
+      {/* View Mode Toggle & Tabs */}
+      <div className="flex items-center justify-between gap-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="audiences" className="gap-2">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="audiences" className="gap-1 text-xs sm:text-sm">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Audiences', ar: 'الجمهور' })}</span>
-              <Badge variant="secondary" className="ml-1">{targetAudiences.length}</Badge>
+              <Badge variant="secondary" className="ml-1 text-[10px]">{targetAudiences.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="messages" className="gap-2">
+            <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm">
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Messages', ar: 'الرسائل' })}</span>
-              <Badge variant="secondary" className="ml-1">{keyMessages.length}</Badge>
+              <Badge variant="secondary" className="ml-1 text-[10px]">{keyMessages.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="internal" className="gap-2">
+            <TabsTrigger value="internal" className="gap-1 text-xs sm:text-sm">
               <Mail className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Internal', ar: 'داخلي' })}</span>
-              <Badge variant="secondary" className="ml-1">{internalChannels.length}</Badge>
+              <Badge variant="secondary" className="ml-1 text-[10px]">{internalChannels.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="external" className="gap-2">
+            <TabsTrigger value="external" className="gap-1 text-xs sm:text-sm">
               <Globe className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'External', ar: 'خارجي' })}</span>
-              <Badge variant="secondary" className="ml-1">{externalChannels.length}</Badge>
+              <Badge variant="secondary" className="ml-1 text-[10px]">{externalChannels.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="gap-1 text-xs sm:text-sm">
+              <PieChart className="w-4 h-4" />
+              <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
         
         {(activeTab === 'internal' || activeTab === 'external') && (
-          <div className="flex gap-1 ml-4">
-            <Button
-              variant={viewMode === 'cards' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('cards')}
-            >
+          <div className="flex gap-1">
+            <Button variant={viewMode === 'cards' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('cards')}>
               <LayoutGrid className="w-4 h-4" />
             </Button>
-            <Button
-              variant={viewMode === 'matrix' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('matrix')}
-            >
+            <Button variant={viewMode === 'matrix' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('matrix')}>
               <Table2 className="w-4 h-4" />
             </Button>
           </div>
         )}
       </div>
 
-      {/* Target Audiences Tab */}
+      {/* Tab Content */}
       {activeTab === 'audiences' && (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
@@ -803,28 +1093,30 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
                 onToggle={() => toggleAudience(audience.id)}
                 language={language}
                 t={t}
+                isReadOnly={isReadOnly}
               />
             ))}
           </div>
         </div>
       )}
 
-      {/* Key Messages Tab */}
       {activeTab === 'messages' && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground">
               {t({ en: 'Define key messages for different audiences and channels', ar: 'حدد الرسائل الرئيسية لمختلف الجماهير والقنوات' })}
             </p>
-            <Button variant="outline" size="sm" onClick={addKeyMessage}>
-              <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Message', ar: 'إضافة رسالة' })}
-            </Button>
+            {!isReadOnly && (
+              <Button variant="outline" size="sm" onClick={addKeyMessage}>
+                <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Message', ar: 'إضافة رسالة' })}
+              </Button>
+            )}
           </div>
           
           {keyMessages.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>{t({ en: 'No key messages added. Click "Add Message" to create one.', ar: 'لم تتم إضافة رسائل. انقر على "إضافة رسالة" لإنشاء واحدة.' })}</p>
+              <p>{t({ en: 'No key messages added', ar: 'لم تتم إضافة رسائل' })}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -838,6 +1130,7 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
                   language={language}
                   t={t}
                   strategicPlanId={strategicPlanId}
+                  isReadOnly={isReadOnly}
                 />
               ))}
             </div>
@@ -845,30 +1138,26 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
         </div>
       )}
 
-      {/* Internal Channels Tab */}
       {activeTab === 'internal' && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              {t({ en: 'Define internal communication channels for staff and teams', ar: 'حدد قنوات التواصل الداخلية للموظفين والفرق' })}
+              {t({ en: 'Define internal communication channels', ar: 'حدد قنوات التواصل الداخلية' })}
             </p>
-            <Button variant="outline" size="sm" onClick={() => addChannel('internal')}>
-              <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Channel', ar: 'إضافة قناة' })}
-            </Button>
+            {!isReadOnly && (
+              <Button variant="outline" size="sm" onClick={() => addChannel('internal')}>
+                <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Channel', ar: 'إضافة قناة' })}
+              </Button>
+            )}
           </div>
           
           {viewMode === 'matrix' ? (
-            <ChannelMatrixView 
-              internalChannels={internalChannels} 
-              externalChannels={[]} 
-              language={language} 
-              t={t} 
-            />
+            <ChannelMatrixView internalChannels={internalChannels} externalChannels={[]} language={language} t={t} />
           ) : (
             internalChannels.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
                 <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>{t({ en: 'No internal channels defined. Click "Add Channel" to create one.', ar: 'لم يتم تحديد قنوات داخلية. انقر على "إضافة قناة" لإنشاء واحدة.' })}</p>
+                <p>{t({ en: 'No internal channels defined', ar: 'لم يتم تحديد قنوات داخلية' })}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -882,6 +1171,7 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
                     onRemove={() => removeChannel('internal', idx)}
                     language={language}
                     t={t}
+                    isReadOnly={isReadOnly}
                   />
                 ))}
               </div>
@@ -890,30 +1180,26 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
         </div>
       )}
 
-      {/* External Channels Tab */}
       {activeTab === 'external' && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              {t({ en: 'Define external communication channels for public and stakeholders', ar: 'حدد قنوات التواصل الخارجية للجمهور وأصحاب المصلحة' })}
+              {t({ en: 'Define external communication channels', ar: 'حدد قنوات التواصل الخارجية' })}
             </p>
-            <Button variant="outline" size="sm" onClick={() => addChannel('external')}>
-              <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Channel', ar: 'إضافة قناة' })}
-            </Button>
+            {!isReadOnly && (
+              <Button variant="outline" size="sm" onClick={() => addChannel('external')}>
+                <Plus className="w-4 h-4 mr-1" />{t({ en: 'Add Channel', ar: 'إضافة قناة' })}
+              </Button>
+            )}
           </div>
           
           {viewMode === 'matrix' ? (
-            <ChannelMatrixView 
-              internalChannels={[]} 
-              externalChannels={externalChannels} 
-              language={language} 
-              t={t} 
-            />
+            <ChannelMatrixView internalChannels={[]} externalChannels={externalChannels} language={language} t={t} />
           ) : (
             externalChannels.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
                 <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>{t({ en: 'No external channels defined. Click "Add Channel" to create one.', ar: 'لم يتم تحديد قنوات خارجية. انقر على "إضافة قناة" لإنشاء واحدة.' })}</p>
+                <p>{t({ en: 'No external channels defined', ar: 'لم يتم تحديد قنوات خارجية' })}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -927,6 +1213,7 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
                     onRemove={() => removeChannel('external', idx)}
                     language={language}
                     t={t}
+                    isReadOnly={isReadOnly}
                   />
                 ))}
               </div>
@@ -934,9 +1221,12 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
           )}
         </div>
       )}
+
+      {activeTab === 'summary' && (
+        <SummaryView communicationPlan={communicationPlan} language={language} t={t} />
+      )}
     </div>
   );
 }
-
 
 export default Step16Communication;

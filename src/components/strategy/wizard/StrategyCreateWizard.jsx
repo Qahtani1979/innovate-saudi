@@ -27,7 +27,8 @@ import Step12Actions from './steps/Step6ActionPlans';
 import Step13Resources from './steps/Step13Resources';
 import Step14Timeline from './steps/Step7Timeline';
 import Step15Governance from './steps/Step15Governance';
-import { Step16Communication, Step17Change } from './steps/Step16Communication';
+import Step16Communication from './steps/Step16Communication';
+import Step17Change from './steps/Step17Change';
 import Step18Review from './steps/Step18Review';
 
 export default function StrategyCreateWizard() {
