@@ -9,6 +9,12 @@ import { AlertTriangle, Sparkles, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildBottleneckDetectorPrompt, 
+  bottleneckDetectorSchema,
+  BOTTLENECK_DETECTOR_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/strategy';
 
 export default function BottleneckDetector() {
   const { language, isRTL, t } = useLanguage();
@@ -34,7 +40,6 @@ export default function BottleneckDetector() {
   });
 
   const detectBottlenecks = async () => {
-    // Calculate dwell times
     const now = new Date();
     const challengesInReview = challenges.filter(c => c.status === 'under_review').map(c => {
       const reviewDate = new Date(c.submission_date || c.created_date);
@@ -49,37 +54,9 @@ export default function BottleneckDetector() {
     });
 
     const result = await invokeAI({
-      prompt: `Analyze innovation pipeline bottlenecks:
-
-Challenges stuck in review (>30 days): ${challengesInReview.filter(c => c.days_in_review > 30).length}
-Average review time: ${challengesInReview.reduce((sum, c) => sum + c.days_in_review, 0) / Math.max(1, challengesInReview.length)} days
-
-Pilots pending approval (>45 days): ${pilotsInApproval.filter(p => p.days_pending > 45).length}
-Average approval time: ${pilotsInApproval.reduce((sum, p) => sum + p.days_pending, 0) / Math.max(1, pilotsInApproval.length)} days
-
-Identify top 3 bottlenecks with root cause and specific recommendations`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          bottlenecks: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                stage_en: { type: 'string' },
-                stage_ar: { type: 'string' },
-                severity: { type: 'string' },
-                items_affected: { type: 'number' },
-                avg_delay_days: { type: 'number' },
-                root_cause_en: { type: 'string' },
-                root_cause_ar: { type: 'string' },
-                recommendation_en: { type: 'string' },
-                recommendation_ar: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: getSystemPrompt(BOTTLENECK_DETECTOR_SYSTEM_PROMPT),
+      prompt: buildBottleneckDetectorPrompt(challengesInReview, pilotsInApproval),
+      response_json_schema: bottleneckDetectorSchema
     });
 
     if (result.success) {

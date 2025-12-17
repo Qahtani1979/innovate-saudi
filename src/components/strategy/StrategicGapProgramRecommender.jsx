@@ -13,6 +13,12 @@ import { useLanguage } from '@/components/LanguageContext';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildGapProgramRecommenderPrompt, 
+  gapProgramRecommenderSchema,
+  GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/strategy';
 
 export default function StrategicGapProgramRecommender({ strategicPlanId, onProgramCreated }) {
   const { language, isRTL, t } = useLanguage();
@@ -179,42 +185,9 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
   const generateRecommendationsMutation = useMutation({
     mutationFn: async () => {
       const result = await invokeAI({
-        prompt: `Based on these strategic gaps, recommend specific innovation programs to address them:
-
-GAPS:
-${gaps.map(g => `- ${g.title.en}: ${g.description.en}`).join('\n')}
-
-EXISTING PROGRAMS: ${programs.length}
-STRATEGIC PLANS: ${strategicPlans.map(p => p.name_en || p.title_en).join(', ')}
-
-For each gap, recommend a specific program with:
-- Program name (bilingual)
-- Program type (capacity_building, innovation_challenge, mentorship, accelerator, training)
-- Key objectives (3)
-- Expected outcomes (3)
-- Priority level (P0, P1, P2)
-- Estimated duration (months)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            recommendations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  gap_type: { type: 'string' },
-                  program_name_en: { type: 'string' },
-                  program_name_ar: { type: 'string' },
-                  program_type: { type: 'string' },
-                  objectives: { type: 'array', items: { type: 'string' } },
-                  outcomes: { type: 'array', items: { type: 'string' } },
-                  priority: { type: 'string' },
-                  duration_months: { type: 'number' }
-                }
-              }
-            }
-          }
-        }
+        system_prompt: getSystemPrompt(GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT),
+        prompt: buildGapProgramRecommenderPrompt(gaps, programs, strategicPlans),
+        response_json_schema: gapProgramRecommenderSchema
       });
 
       if (result.success && result.data?.recommendations) {

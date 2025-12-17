@@ -2,7 +2,7 @@
  * Cross-Program Synergy Prompt
  * Used by: CrossProgramSynergy.jsx
  */
-import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '../../saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 export const buildCrossProgramSynergyPrompt = (programs) => {
   const programList = programs?.length > 0 

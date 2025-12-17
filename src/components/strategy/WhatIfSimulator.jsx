@@ -9,6 +9,12 @@ import { Slider } from "@/components/ui/slider";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useTaxonomy } from '@/hooks/useTaxonomy';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildWhatIfSimulatorPrompt, 
+  whatIfSimulatorSchema,
+  WHAT_IF_SIMULATOR_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/strategy';
 import {
   Collapsible,
   CollapsibleContent,
@@ -29,13 +35,11 @@ export default function WhatIfSimulator({ currentState }) {
     fallbackData: null
   });
 
-  // Initialize with first 4 sectors when taxonomy loads
   useEffect(() => {
     if (sectors.length > 0 && selectedSectorIds.length === 0) {
       const initialSectors = sectors.slice(0, 4).map(s => s.id);
       setSelectedSectorIds(initialSectors);
       
-      // Initialize equal budget allocation
       const equalShare = Math.floor(100 / initialSectors.length);
       const allocation = {};
       initialSectors.forEach((id, idx) => {
@@ -53,14 +57,13 @@ export default function WhatIfSimulator({ currentState }) {
       let newSelection;
       
       if (isSelected) {
-        if (prev.length <= 2) return prev; // Minimum 2 sectors
+        if (prev.length <= 2) return prev;
         newSelection = prev.filter(id => id !== sectorId);
       } else {
-        if (prev.length >= 6) return prev; // Maximum 6 sectors
+        if (prev.length >= 6) return prev;
         newSelection = [...prev, sectorId];
       }
       
-      // Redistribute budget equally
       const equalShare = Math.floor(100 / newSelection.length);
       const newAllocation = {};
       newSelection.forEach((id, idx) => {
@@ -87,36 +90,9 @@ export default function WhatIfSimulator({ currentState }) {
     ).join(', ');
 
     const result = await invokeAI({
-      prompt: `Predict KPI impacts of this budget reallocation across municipal sectors:
-
-Sectors included: ${sectorNames.join(', ')}
-Proposed allocation: ${allocationText}
-
-Predict changes to:
-- Pilot success rate
-- Solutions deployed
-- Average MII score
-- R&D to pilot conversion
-
-Provide specific percentage changes for each KPI based on the budget distribution.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          kpi_changes: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                kpi_en: { type: 'string' },
-                kpi_ar: { type: 'string' },
-                current: { type: 'number' },
-                predicted: { type: 'number' },
-                change_percent: { type: 'number' }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: getSystemPrompt(WHAT_IF_SIMULATOR_SYSTEM_PROMPT),
+      prompt: buildWhatIfSimulatorPrompt(sectorNames, allocationText),
+      response_json_schema: whatIfSimulatorSchema
     });
 
     if (result.success && result.data?.kpi_changes) {
