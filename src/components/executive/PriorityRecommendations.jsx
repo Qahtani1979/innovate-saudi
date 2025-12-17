@@ -9,6 +9,12 @@ import { Target, Sparkles, Loader2, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildPriorityRecommendationsPrompt, 
+  priorityRecommendationsSchema, 
+  PRIORITY_RECOMMENDATIONS_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/executive';
 
 export default function PriorityRecommendations() {
   const { language, isRTL, t } = useLanguage();
@@ -35,44 +41,18 @@ export default function PriorityRecommendations() {
     const approvedChallenges = challenges.filter(c => c.status === 'approved');
     const lowMIIMunicipalities = municipalities.filter(m => (m.mii_score || 0) < 50);
 
+    const stateData = {
+      tier1Challenges: tier1Challenges.length,
+      approvedNoPilot: approvedChallenges.filter(c => !c.linked_pilot_ids?.length).length,
+      activePilots: pilots.filter(p => p.stage === 'active').length,
+      readyToScale: pilots.filter(p => p.stage === 'completed' && p.recommendation === 'scale').length,
+      lowMIIMunicipalities: lowMIIMunicipalities.length
+    };
+
     const result = await invokeAI({
-      prompt: `As Saudi Arabia's national innovation strategist, recommend strategic priorities for the next quarter:
-
-Current State:
-- Tier 1 Challenges: ${tier1Challenges.length}
-- Approved Challenges (no pilot yet): ${approvedChallenges.filter(c => !c.linked_pilot_ids?.length).length}
-- Active Pilots: ${pilots.filter(p => p.stage === 'active').length}
-- Pilots ready to scale: ${pilots.filter(p => p.stage === 'completed' && p.recommendation === 'scale').length}
-- Low MII municipalities: ${lowMIIMunicipalities.length}
-
-Provide 5 strategic priorities with:
-1. Priority title
-2. Rationale (why this matters now)
-3. Quick wins (2-3 immediate actions)
-4. Resource estimate (low/medium/high)
-5. Expected impact (quantified if possible)
-6. Timeline (weeks)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          priorities: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                title: { type: 'string' },
-                rank: { type: 'number' },
-                rationale: { type: 'string' },
-                quick_wins: { type: 'array', items: { type: 'string' } },
-                resources_needed: { type: 'string' },
-                expected_impact: { type: 'string' },
-                timeline_weeks: { type: 'number' },
-                related_entities: { type: 'array', items: { type: 'string' } }
-              }
-            }
-          }
-        }
-      }
+      systemPrompt: getSystemPrompt(PRIORITY_RECOMMENDATIONS_SYSTEM_PROMPT),
+      prompt: buildPriorityRecommendationsPrompt(stateData),
+      response_json_schema: priorityRecommendationsSchema
     });
 
     if (result.success) {

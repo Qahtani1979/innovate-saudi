@@ -9,6 +9,12 @@ import { AlertTriangle, TrendingDown, Shield, Zap, Loader2 } from 'lucide-react'
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildRiskForecastPrompt, 
+  riskForecastSchema, 
+  RISK_FORECAST_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/executive';
 
 export default function AIRiskForecasting() {
   const { language, isRTL, t } = useLanguage();
@@ -28,39 +34,12 @@ export default function AIRiskForecasting() {
   const generateForecast = async () => {
     const activePilots = pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring');
     const criticalChallenges = challenges.filter(c => c.priority === 'tier_1' && c.status === 'approved');
+    const highBudgetPilots = pilots.filter(p => p.budget > 5000000);
 
     const result = await invokeAI({
-      prompt: `Analyze the Saudi municipal innovation ecosystem and forecast strategic risks:
-
-Active Pilots: ${activePilots.length}
-Critical Challenges: ${criticalChallenges.length}
-High-Budget Pilots: ${pilots.filter(p => p.budget > 5000000).length}
-
-Based on this data, identify:
-1. Top 5 strategic risks (with severity: critical/high/medium)
-2. Early warning indicators for each risk
-3. Recommended mitigation actions
-4. Timeline forecast (when risk might materialize: weeks/months)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          risks: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                title: { type: 'string' },
-                severity: { type: 'string' },
-                probability: { type: 'string' },
-                early_indicators: { type: 'array', items: { type: 'string' } },
-                mitigation: { type: 'array', items: { type: 'string' } },
-                timeline: { type: 'string' },
-                affected_areas: { type: 'array', items: { type: 'string' } }
-              }
-            }
-          }
-        }
-      }
+      systemPrompt: getSystemPrompt(RISK_FORECAST_SYSTEM_PROMPT),
+      prompt: buildRiskForecastPrompt(activePilots.length, criticalChallenges.length, highBudgetPilots.length),
+      response_json_schema: riskForecastSchema
     });
 
     if (result.success) {
