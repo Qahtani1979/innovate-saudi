@@ -9,9 +9,14 @@ import { Sparkles, TrendingUp, Calendar, AlertTriangle, Loader2, Info } from 'lu
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
+import { 
+  buildCapacityPredictorPrompt, 
+  capacityPredictorSchema,
+  CAPACITY_PREDICTOR_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/core';
 
 export default function AICapacityPredictor({ sandbox }) {
-  const { isRTL, t } = useLanguage();
+  const { isRTL, t, language } = useLanguage();
   const [prediction, setPrediction] = useState(null);
 
   const { data: applications = [] } = useQuery({
@@ -27,62 +32,21 @@ export default function AICapacityPredictor({ sandbox }) {
   const runPrediction = async () => {
     const historicalData = applications.filter(a => a.sandbox_id === sandbox.id);
     
-    const prompt = `Analyze sandbox capacity and predict future demand:
-
-Sandbox: ${sandbox.name_en}
-Domain: ${sandbox.domain}
-Current Capacity: ${sandbox.capacity}
-Current Usage: ${sandbox.current_pilots}
-Historical Applications: ${historicalData.length}
-Active Projects: ${historicalData.filter(a => a.status === 'active').length}
-Completed Projects: ${historicalData.filter(a => a.status === 'completed').length}
-
-Recent application data:
-${JSON.stringify(historicalData.slice(-10).map(a => ({
-  title: a.project_title,
-  duration_months: a.duration_months,
-  start_date: a.start_date,
-  status: a.status
-})))}
-
-Provide JSON analysis with:
-1. 6-month demand forecast (monthly predictions)
-2. Peak demand periods
-3. Capacity utilization forecast
-4. Recommendations for capacity adjustments
-5. Resource allocation suggestions
-6. Bottleneck predictions`;
-
     const { success, data } = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          forecast_6_months: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                month: { type: "string" },
-                predicted_demand: { type: "number" },
-                confidence: { type: "string", enum: ["low", "medium", "high"] },
-                capacity_available: { type: "number" }
-              }
-            }
-          },
-          peak_periods: { type: "array", items: { type: "string" } },
-          utilization_forecast: { type: "number" },
-          capacity_recommendation: { type: "string", enum: ["increase", "maintain", "optimize"] },
-          recommended_capacity: { type: "number" },
-          resource_allocation: { type: "array", items: { type: "string" } },
-          potential_bottlenecks: { type: "array", items: { type: "string" } },
-          insights: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildCapacityPredictorPrompt(sandbox, historicalData),
+      response_json_schema: capacityPredictorSchema,
+      system_prompt: CAPACITY_PREDICTOR_SYSTEM_PROMPT
     });
 
     if (success && data) {
-      setPrediction(data);
+      // Map bilingual fields based on language
+      setPrediction({
+        ...data,
+        peak_periods: language === 'ar' ? data.peak_periods_ar : data.peak_periods_en,
+        resource_allocation: language === 'ar' ? data.resource_allocation_ar : data.resource_allocation_en,
+        potential_bottlenecks: language === 'ar' ? data.potential_bottlenecks_ar : data.potential_bottlenecks_en,
+        insights: language === 'ar' ? data.insights_ar : data.insights_en
+      });
     }
   };
 

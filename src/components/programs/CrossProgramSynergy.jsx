@@ -7,37 +7,34 @@ import { Network, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildCrossProgramSynergyPrompt, 
+  crossProgramSynergySchema,
+  CROSS_PROGRAM_SYNERGY_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/programs';
 
-export default function CrossProgramSynergy() {
+export default function CrossProgramSynergy({ programs }) {
   const { language, t } = useLanguage();
   const [synergies, setSynergies] = useState(null);
   const { invokeAI, status, isLoading: finding, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const findSynergies = async () => {
     const result = await invokeAI({
-      prompt: `Identify synergies across programs:
-
-Programs:
-- AI Accelerator (15 startups, focus: smart city AI)
-- GovTech Fellowship (12 participants, focus: digital services)
-- Civic Innovation Hackathon (8 teams, focus: community solutions)
-
-Find:
-1. Potential cross-program collaborations
-2. Shared resource opportunities
-3. Joint events or showcases`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          collaborations: { type: "array", items: { type: "string" } },
-          shared_resources: { type: "array", items: { type: "string" } },
-          joint_events: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildCrossProgramSynergyPrompt(programs),
+      response_json_schema: crossProgramSynergySchema,
+      system_prompt: CROSS_PROGRAM_SYNERGY_SYSTEM_PROMPT
     });
 
-    if (result.success) {
-      setSynergies(result.data);
+    if (result.success && result.data) {
+      const data = result.data;
+      // Map bilingual fields based on language
+      setSynergies({
+        collaborations: language === 'ar' ? data.collaborations_ar : data.collaborations_en,
+        shared_resources: language === 'ar' ? data.shared_resources_ar : data.shared_resources_en,
+        joint_events: language === 'ar' ? data.joint_events_ar : data.joint_events_en,
+        knowledge_transfer: language === 'ar' ? data.knowledge_transfer_ar : data.knowledge_transfer_en,
+        combined_impact: language === 'ar' ? data.combined_impact_ar : data.combined_impact_en
+      });
       toast.success(t({ en: 'Synergies found', ar: 'التآزر مُحدد' }));
     }
   };
@@ -76,6 +73,22 @@ Find:
                 ))}
               </ul>
             </div>
+            {synergies.joint_events?.length > 0 && (
+              <div className="p-3 bg-purple-50 rounded border">
+                <p className="text-xs font-semibold text-purple-900 mb-2">{t({ en: 'Joint Events:', ar: 'الفعاليات المشتركة:' })}</p>
+                <ul className="space-y-1">
+                  {synergies.joint_events?.map((e, i) => (
+                    <li key={i} className="text-xs text-purple-700">• {e}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {synergies.combined_impact && (
+              <div className="p-3 bg-amber-50 rounded border">
+                <p className="text-xs font-semibold text-amber-900 mb-1">{t({ en: 'Combined Impact:', ar: 'التأثير المشترك:' })}</p>
+                <p className="text-xs text-amber-700">{synergies.combined_impact}</p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
