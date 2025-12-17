@@ -20,7 +20,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
 
 // HR skill categories
 const HR_CATEGORIES = [
@@ -589,10 +589,13 @@ export default function Step13Resources({
       {/* AI Generate Button */}
       {!isReadOnly && (
         <div className="flex justify-end">
-          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate Resources', ar: 'إنشاء الموارد' })}
-          </Button>
+          <AIActionButton
+            type="suggest"
+            label={t({ en: 'Generate Resources', ar: 'إنشاء الموارد' })}
+            onAction={onGenerateAI}
+            isLoading={isGenerating}
+            variant="outline"
+          />
         </div>
       )}
 

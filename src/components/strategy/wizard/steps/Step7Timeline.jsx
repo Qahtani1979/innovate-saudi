@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
 
 // Phase categories with metadata
 const PHASE_CATEGORIES = {
@@ -371,25 +371,16 @@ export default function Step7Timeline({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* AI Generation */}
-      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h4 className="font-semibold flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                {t({ en: 'AI-Powered Timeline Generation', ar: 'إنشاء الجدول الزمني بالذكاء الاصطناعي' })}
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                {t({ en: 'Generate implementation phases, milestones, and critical path based on objectives and action plans', ar: 'إنشاء مراحل التنفيذ والمعالم والمسار الحرج بناءً على الأهداف وخطط العمل' })}
-              </p>
-            </div>
-            <Button onClick={onGenerateAI} disabled={isGenerating} size="lg">
-              {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              {t({ en: 'Generate Timeline', ar: 'إنشاء الجدول' })}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-end">
+        <AIActionButton
+          type="generate"
+          label={t({ en: 'Generate Timeline', ar: 'إنشاء الجدول' })}
+          onAction={onGenerateAI}
+          isLoading={isGenerating}
+          size="lg"
+          description={t({ en: 'Generate implementation phases, milestones, and critical path', ar: 'إنشاء مراحل التنفيذ والمعالم والمسار الحرج' })}
+        />
+      </div>
 
       {/* Timeline Dashboard */}
       <Card>
