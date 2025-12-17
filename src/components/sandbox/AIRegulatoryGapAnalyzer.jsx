@@ -7,6 +7,8 @@ import { Shield, Sparkles, Loader2, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getRegulatoryGapAnalyzerPrompt, regulatoryGapAnalyzerSchema } from '@/lib/ai/prompts/sandbox';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIRegulatoryGapAnalyzer({ application }) {
   const { language, t } = useLanguage();
@@ -15,39 +17,9 @@ export default function AIRegulatoryGapAnalyzer({ application }) {
 
   const analyzeRegulatory = async () => {
     const result = await invokeAI({
-      prompt: `Analyze regulatory compliance for sandbox application:
-
-PROJECT: ${application.project_name}
-SECTOR: ${application.sector}
-ACTIVITIES: ${application.project_description?.substring(0, 300)}
-LOCATION: ${application.sandbox_zone}
-
-Identify:
-1. Potential regulatory conflicts
-2. Required exemptions with specific regulations
-3. Precedent cases from database
-4. Estimated approval timeline
-5. Risk level (low/medium/high)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          conflicts: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                regulation: { type: "string" },
-                conflict_description: { type: "string" },
-                severity: { type: "string" }
-              }
-            }
-          },
-          required_exemptions: { type: "array", items: { type: "string" } },
-          precedents: { type: "array", items: { type: "string" } },
-          estimated_approval_weeks: { type: "number" },
-          risk_level: { type: "string" }
-        }
-      }
+      prompt: getRegulatoryGapAnalyzerPrompt({ application }),
+      system_prompt: getSystemPrompt('COMPACT', true),
+      response_json_schema: regulatoryGapAnalyzerSchema
     });
 
     if (result.success) {

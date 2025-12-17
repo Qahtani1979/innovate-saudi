@@ -31,7 +31,7 @@ export * from './pilots';
 export * from './matchmaker';
 
 // Sandbox prompts
-// export * from './sandbox';
+export * from './sandbox';
 
 // R&D prompts
 // export * from './rd';
@@ -68,7 +68,7 @@ export const PROMPT_MODULE_STATUS = {
   challenges: { status: 'complete', promptCount: 5 },
   pilots: { status: 'complete', promptCount: 4 },
   matchmaker: { status: 'complete', promptCount: 5 },
-  sandbox: { status: 'pending', promptCount: 0 },
+  sandbox: { status: 'complete', promptCount: 5 },
   rd: { status: 'pending', promptCount: 0 },
   solution: { status: 'pending', promptCount: 0 },
   scaling: { status: 'pending', promptCount: 0 },

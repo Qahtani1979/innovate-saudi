@@ -10,6 +10,8 @@ import { Shield, FileText, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getPolicyFeedbackPrompt, policyFeedbackSchema } from '@/lib/ai/prompts/sandbox';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function SandboxPolicyFeedbackWorkflow({ sandbox }) {
   const { t } = useLanguage();
@@ -27,43 +29,9 @@ export default function SandboxPolicyFeedbackWorkflow({ sandbox }) {
 
   const generatePolicyRecommendation = async () => {
     const response = await invokeAI({
-      prompt: `Analyze this regulatory sandbox's findings and generate a policy reform recommendation.
-
-Sandbox: ${sandbox.name_en}
-Description: ${sandbox.description_en}
-Sector: ${sandbox.sector}
-Regulatory Framework: ${sandbox.regulatory_framework_tested || 'N/A'}
-Key Findings: ${sandbox.key_findings?.join(', ') || 'N/A'}
-Regulatory Challenges: ${sandbox.regulatory_challenges_identified?.join(', ') || 'N/A'}
-Success Metrics: ${JSON.stringify(sandbox.success_metrics) || 'N/A'}
-
-Generate a policy recommendation that addresses the regulatory gaps identified. Include:
-1. Policy title (EN + AR)
-2. Problem statement
-3. Current regulatory barriers
-4. Proposed regulatory changes
-5. Expected impact
-6. Implementation approach
-7. Stakeholders affected
-8. Risk considerations
-
-Return as JSON.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          title_en: { type: "string" },
-          title_ar: { type: "string" },
-          problem_statement_en: { type: "string" },
-          problem_statement_ar: { type: "string" },
-          current_barriers: { type: "array", items: { type: "string" } },
-          proposed_changes: { type: "array", items: { type: "string" } },
-          expected_impact_en: { type: "string" },
-          expected_impact_ar: { type: "string" },
-          implementation_approach: { type: "string" },
-          stakeholders: { type: "array", items: { type: "string" } },
-          risks: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: getPolicyFeedbackPrompt({ sandbox }),
+      system_prompt: getSystemPrompt('FULL', true),
+      response_json_schema: policyFeedbackSchema
     });
 
     if (response.success && response.data) {

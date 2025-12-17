@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { getSandboxDesignPrompt, sandboxDesignSchema } from '@/lib/ai/prompts/sandbox';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function SandboxCreateWizard({ onClose }) {
   const { language, t } = useLanguage();
@@ -49,32 +51,9 @@ export default function SandboxCreateWizard({ onClose }) {
 
   const handleAIGenerate = async () => {
     const response = await invokeAI({
-      prompt: `Design a regulatory sandbox for this context:
-        
-Type: ${formData.sandbox_type}
-Sector: ${formData.sector || 'General Municipal Innovation'}
-Basic Description: ${formData.description_en || 'N/A'}
-
-Generate comprehensive bilingual sandbox design:
-1. Professional name (EN + AR)
-2. Detailed description (EN + AR) - 150+ words
-3. 5-8 regulatory framework items (bilingual objects with en/ar)
-4. 6-10 safety protocols (bilingual objects)
-5. 5-7 entry criteria (bilingual)
-6. 5-7 exit criteria (bilingual)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          name_en: { type: 'string' },
-          name_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          regulatory_framework: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          safety_protocols: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          entry_criteria: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          exit_criteria: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt: getSandboxDesignPrompt({ formData }),
+      system_prompt: getSystemPrompt('FULL', true),
+      response_json_schema: sandboxDesignSchema
     });
 
     if (response.success) {
@@ -87,7 +66,6 @@ Generate comprehensive bilingual sandbox design:
     onSuccess: async (sandbox) => {
       queryClient.invalidateQueries(['sandboxes']);
       
-      // Trigger sandbox.created email
       try {
         await triggerEmail('sandbox.created', {
           entityType: 'sandbox',
