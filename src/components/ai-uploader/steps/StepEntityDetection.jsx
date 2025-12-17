@@ -94,13 +94,6 @@ export default function StepEntityDetection({ state, updateState, onNext, onBack
       setIsDetecting(false);
     }
   };
-    } catch (error) {
-      console.error('Entity detection error:', error);
-      toast.error('AI detection failed. Please select entity type manually.');
-    } finally {
-      setIsDetecting(false);
-    }
-  };
 
   const handleEntitySelect = (entityId) => {
     setSelectedEntity(entityId);

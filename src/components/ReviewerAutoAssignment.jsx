@@ -9,6 +9,7 @@ import { Sparkles, Users, Loader2, CheckCircle2, X, RefreshCw } from 'lucide-rea
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildReviewerAssignmentPrompt, REVIEWER_ASSIGNMENT_SCHEMA } from '@/lib/ai/prompts/rd';
 
 export default function ReviewerAutoAssignment({ rdCall, onClose }) {
   const { t, isRTL } = useLanguage();
@@ -50,61 +51,14 @@ export default function ReviewerAutoAssignment({ rdCall, onClose }) {
   const handleAutoAssign = async () => {
     if (!isAvailable) return;
     
-    const prompt = `You are an expert R&D proposal reviewer assignment system for Saudi municipal innovation.
-
-R&D Call: ${rdCall.title_en}
-Focus Areas: ${rdCall.focus_areas?.join(', ') || 'N/A'}
-Sector: ${rdCall.sector || 'N/A'}
-
-Available Reviewers (Users):
-${users.filter(u => u.role === 'admin' || u.email.includes('reviewer')).map((u, i) => 
-  `${i+1}. ${u.full_name} (${u.email})`
-).join('\n')}
-
-Proposals to Assign (${proposals.length}):
-${proposals.map((p, i) => 
-  `${i+1}. ${p.title_en}
-   - Research Area: ${p.research_area_en}
-   - Themes: ${p.research_themes?.join(', ') || 'N/A'}
-   - Institution: ${p.lead_institution_en}
-`).join('\n')}
-
-ASSIGNMENT RULES:
-1. Each proposal should have 2-3 reviewers
-2. Balance workload across reviewers (similar number of proposals each)
-3. Match reviewer expertise with proposal research area when possible
-4. Avoid conflicts of interest (same institution)
-5. Ensure diversity in reviewer panels
-
-Return assignments with reasoning.`;
+    const prompt = buildReviewerAssignmentPrompt({ rdCall, users, proposals });
 
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          assignments: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                proposal_code: { type: 'string' },
-                proposal_title: { type: 'string' },
-                assigned_reviewers: {
-                  type: 'array',
-                  items: { type: 'string' }
-                },
-                reasoning: { type: 'string' }
-              }
-            }
-          },
-          workload_balance: { type: 'object' }
-        }
-      }
+      response_json_schema: REVIEWER_ASSIGNMENT_SCHEMA
     });
 
     if (result.success && result.data) {
-      // Map codes back to IDs
       const mappedAssignments = result.data.assignments.map(a => {
         const proposal = proposals.find(p => p.code === a.proposal_code || p.title_en === a.proposal_title);
         return {

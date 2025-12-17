@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { createNotification } from './AutoNotification';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildProposalFeedbackPrompt } from '@/lib/ai/prompts/rd';
 
 export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -26,7 +27,6 @@ export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
         feedback_date: new Date().toISOString()
       });
 
-      // Notify PI
       await createNotification({
         title: 'Proposal Feedback Available',
         body: `Feedback has been provided for your proposal "${proposal.title_en}"`,
@@ -51,24 +51,11 @@ export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
       ? reviewScores.reduce((sum, r) => sum + r.total, 0) / reviewScores.length 
       : 0;
 
-    const prompt = `Generate constructive feedback for a rejected R&D proposal:
-
-Proposal: ${proposal.title_en}
-Institution: ${proposal.lead_institution}
-Budget: ${proposal.budget_requested} SAR
-Average Score: ${avgScore}/100
-
-Review Comments:
-${reviewScores.map(r => r.comments).join('\n') || 'No detailed comments'}
-
-Generate:
-1. Professional, constructive feedback (200-300 words)
-2. Highlight strengths
-3. Explain weaknesses that led to rejection
-4. Provide specific recommendations for improvement
-5. Encourage resubmission if appropriate
-
-Tone: Professional, encouraging, specific`;
+    const prompt = buildProposalFeedbackPrompt({
+      proposal,
+      avgScore,
+      reviewComments: reviewScores.map(r => r.comments).join('\n') || 'No detailed comments'
+    });
 
     const response = await invokeAI({ prompt });
 
