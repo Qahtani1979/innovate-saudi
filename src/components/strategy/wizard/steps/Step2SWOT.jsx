@@ -14,7 +14,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import { useSwotAnalysis } from '@/hooks/strategy/useSwotAnalysis';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid, AIActionButton } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid, MainAIGeneratorCard } from '../shared';
 
 const CATEGORIES = [
   { 
@@ -372,16 +372,16 @@ export default function Step2SWOT({
         ]}
       />
       
-      {/* AI Generate Button */}
+      {/* AI Generation Card */}
       {!isReadOnly && (
-        <div className="flex justify-end">
-          <AIActionButton
-            type="generate"
-            label={t({ en: 'Generate SWOT', ar: 'إنشاء SWOT' })}
-            onAction={onGenerateAI}
-            isLoading={isGenerating}
-          />
-        </div>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered SWOT Analysis', ar: 'تحليل SWOT بالذكاء الاصطناعي' }}
+          description={{ en: 'Identify strengths, weaknesses, opportunities, and threats', ar: 'تحديد نقاط القوة والضعف والفرص والتهديدات' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          isReadOnly={isReadOnly}
+          buttonLabel={{ en: 'Generate SWOT', ar: 'إنشاء SWOT' }}
+        />
       )}
 
       {/* Tabs Navigation */}

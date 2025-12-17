@@ -16,7 +16,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 const PESTEL_CATEGORIES = [
   { 
@@ -265,17 +265,16 @@ export default function Step4PESTEL({
         ]}
       />
       
-      {/* AI Generate Button */}
+      {/* AI Generation Card */}
       {!isReadOnly && (
-        <div className="flex justify-end">
-          <AIActionButton
-            type="generate"
-            label={t({ en: 'Generate PESTEL', ar: 'إنشاء تحليل PESTEL' })}
-            onAction={onGenerateAI}
-            isLoading={isGenerating}
-            variant="outline"
-          />
-        </div>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered PESTEL Analysis', ar: 'تحليل PESTEL بالذكاء الاصطناعي' }}
+          description={{ en: 'Analyze political, economic, social, technological, environmental, and legal factors', ar: 'تحليل العوامل السياسية والاقتصادية والاجتماعية والتقنية والبيئية والقانونية' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          isReadOnly={isReadOnly}
+          buttonLabel={{ en: 'Generate PESTEL', ar: 'إنشاء تحليل PESTEL' }}
+        />
       )}
 
       {/* Tabs Navigation */}
