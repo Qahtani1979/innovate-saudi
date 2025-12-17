@@ -10,11 +10,16 @@ import { createPageUrl } from '../utils';
 import { useLanguage } from './LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildPeerComparisonPrompt, 
+  peerComparisonSchema,
+  PEER_COMPARISON_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/core';
 
 export default function AIPeerComparison({ pilot }) {
   const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [comparison, setComparison] = useState(null);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const analyzePeers = async () => {
     if (!isAvailable) return;
@@ -30,86 +35,38 @@ export default function AIPeerComparison({ pilot }) {
       ).slice(0, 5);
 
       const response = await invokeAI({
-        prompt: `Analyze this pilot against peer pilots and provide comparative insights:
-
-**Current Pilot:**
-- Title: ${pilot.title_en}
-- Sector: ${pilot.sector}
-- Budget: ${pilot.budget}
-- Duration: ${pilot.duration_weeks} weeks
-- KPIs: ${JSON.stringify(pilot.kpis)}
-- Success Probability: ${pilot.success_probability}%
-- Stage: ${pilot.stage}
-
-**Peer Pilots for Comparison:**
-${similarPilots.map((p, i) => `
-${i + 1}. ${p.title_en}
-   - Budget: ${p.budget}
-   - Duration: ${p.duration_weeks} weeks
-   - Stage: ${p.stage}
-   - Success: ${p.success_probability}%
-`).join('\n')}
-
-Provide:
-1. Overall comparison summary
-2. Budget comparison (above/below peers)
-3. Timeline comparison
-4. Success factors from top performers
-5. Risk areas identified in peer failures
-6. Recommendations for improvement
-
-Return JSON with structured insights.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            summary: { type: "string" },
-            budget_comparison: {
-              type: "object",
-              properties: {
-                status: { type: "string", enum: ["above_average", "average", "below_average"] },
-                insight: { type: "string" }
-              }
-            },
-            timeline_comparison: {
-              type: "object",
-              properties: {
-                status: { type: "string", enum: ["faster", "average", "slower"] },
-                insight: { type: "string" }
-              }
-            },
-            success_factors: {
-              type: "array",
-              items: { type: "string" }
-            },
-            risk_areas: {
-              type: "array",
-              items: { type: "string" }
-            },
-            recommendations: {
-              type: "array",
-              items: { type: "string" }
-            },
-            peer_rankings: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  aspect: { type: "string" },
-                  rank: { type: "number" },
-                  total: { type: "number" }
-                }
-              }
-            }
-          }
-        }
+        prompt: buildPeerComparisonPrompt(pilot, similarPilots),
+        response_json_schema: peerComparisonSchema,
+        system_prompt: PEER_COMPARISON_SYSTEM_PROMPT
       });
 
       if (response.success && response.data) {
-        setComparison({ ...response.data, peers: similarPilots });
-        toast.success('Peer analysis complete');
+        const data = response.data;
+        // Map bilingual fields based on language
+        setComparison({
+          summary: language === 'ar' ? data.summary_ar : data.summary_en,
+          budget_comparison: {
+            status: data.budget_comparison?.status,
+            insight: language === 'ar' ? data.budget_comparison?.insight_ar : data.budget_comparison?.insight_en
+          },
+          timeline_comparison: {
+            status: data.timeline_comparison?.status,
+            insight: language === 'ar' ? data.timeline_comparison?.insight_ar : data.timeline_comparison?.insight_en
+          },
+          success_factors: language === 'ar' ? data.success_factors_ar : data.success_factors_en,
+          risk_areas: language === 'ar' ? data.risk_areas_ar : data.risk_areas_en,
+          recommendations: language === 'ar' ? data.recommendations_ar : data.recommendations_en,
+          peer_rankings: data.peer_rankings?.map(r => ({
+            aspect: language === 'ar' ? r.aspect_ar : r.aspect_en,
+            rank: r.rank,
+            total: r.total
+          })),
+          peers: similarPilots
+        });
+        toast.success(t({ en: 'Peer analysis complete', ar: 'اكتمل تحليل الأقران' }));
       }
     } catch (error) {
-      toast.error('Analysis failed: ' + error.message);
+      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }) + ': ' + error.message);
     }
   };
 

@@ -54,6 +54,9 @@ export * from './profiles';
 // Programs prompts
 export * from './programs';
 
+// Core prompts (root-level components)
+export * from './core';
+
 // Smart prompts
 // export * from './smart';
 
@@ -76,6 +79,7 @@ export const PROMPT_MODULE_STATUS = {
   livinglab: { status: 'complete', promptCount: 4 },
   profiles: { status: 'complete', promptCount: 3 },
   programs: { status: 'complete', promptCount: 3 },
+  core: { status: 'complete', promptCount: 4 },
   smart: { status: 'pending', promptCount: 0 }
 };
 

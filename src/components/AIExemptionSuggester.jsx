@@ -9,6 +9,11 @@ import { Sparkles, Loader2, Plus } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildExemptionSuggesterPrompt, 
+  exemptionSuggesterSchema,
+  EXEMPTION_SUGGESTER_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/core';
 
 export default function AIExemptionSuggester({ projectData, sandbox, onSelect }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,58 +35,25 @@ export default function AIExemptionSuggester({ projectData, sandbox, onSelect })
       e.domain === sandbox.domain && e.status === 'active'
     );
 
-    const prompt = `Analyze this sandbox project and suggest relevant regulatory exemptions:
-
-Project: ${projectData.project_title}
-Description: ${projectData.project_description}
-Domain: ${sandbox.domain}
-Duration: ${projectData.duration_months} months
-Risk Assessment: ${projectData.risk_assessment}
-
-Available exemptions in this domain:
-${JSON.stringify(availableExemptions.map(e => ({
-  code: e.exemption_code,
-  title: e.title_en,
-  category: e.category,
-  conditions: e.conditions,
-  risk_level: e.risk_level
-})))}
-
-Provide JSON with:
-1. Recommended exemptions (codes)
-2. Reasoning for each
-3. Risk assessment per exemption
-4. Additional requirements`;
-
     const response = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommended_exemptions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                exemption_code: { type: "string" },
-                priority: { type: "string", enum: ["essential", "recommended", "optional"] },
-                reasoning: { type: "string" },
-                risk_notes: { type: "string" },
-                compliance_requirements: {
-                  type: "array",
-                  items: { type: "string" }
-                }
-              }
-            }
-          },
-          overall_compliance_score: { type: "number", description: "0-100" },
-          additional_notes: { type: "string" }
-        }
-      }
+      prompt: buildExemptionSuggesterPrompt(projectData, sandbox, availableExemptions),
+      response_json_schema: exemptionSuggesterSchema,
+      system_prompt: EXEMPTION_SUGGESTER_SYSTEM_PROMPT
     });
 
-    if (response.success) {
-      setSuggestions(response.data);
+    if (response.success && response.data) {
+      const data = response.data;
+      // Map bilingual fields
+      setSuggestions({
+        ...data,
+        additional_notes: language === 'ar' ? data.additional_notes_ar : data.additional_notes_en,
+        recommended_exemptions: data.recommended_exemptions?.map(rec => ({
+          ...rec,
+          reasoning: language === 'ar' ? rec.reasoning_ar : rec.reasoning_en,
+          risk_notes: language === 'ar' ? rec.risk_notes_ar : rec.risk_notes_en,
+          compliance_requirements: language === 'ar' ? rec.compliance_requirements_ar : rec.compliance_requirements_en
+        }))
+      });
     }
   };
 

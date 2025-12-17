@@ -14,6 +14,11 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildRDToPilotPrompt, 
+  rdToPilotSchema,
+  RD_TO_PILOT_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/core';
 
 export default function RDToPilotTransition({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -67,34 +72,50 @@ export default function RDToPilotTransition({ project, onClose }) {
   });
 
   const generatePilotScope = async () => {
-    const prompt = `Generate pilot project scope from R&D outcomes:
+    const response = await invokeAI({
+      prompt: buildRDToPilotPrompt(project),
+      response_json_schema: rdToPilotSchema,
+      system_prompt: RD_TO_PILOT_SYSTEM_PROMPT
+    });
 
-R&D Project: ${project.title_en}
-Institution: ${project.institution}
-Research Area: ${project.research_area}
-TRL Achieved: ${project.trl_current}
-Duration: ${project.duration_months} months
-Budget: ${project.budget} SAR
-
-Outputs:
-- Publications: ${project.publications?.length || 0}
-- Patents: ${project.patents?.length || 0}
-- Impact: ${project.impact_assessment?.practical_impact || 'Not specified'}
-
-Generate pilot scope:
-1. Pilot title (AR + EN)
-2. Pilot tagline (AR + EN)
-3. Objective (AR + EN) - what will be tested/validated
-4. Hypothesis - specific testable claim
-5. Methodology - how pilot will run
-6. Scope - geographic and demographic
-7. Duration in weeks (realistic for pilot)
-8. Budget estimate
-9. 3-5 KPIs to measure
-10. Success criteria
-11. Target population (size, demographics, location)
-
-Make it practical and focused on real-world validation.`;
+    if (response.success && response.data) {
+      const data = response.data;
+      // Map bilingual fields based on language
+      setPilotData({
+        title_en: data.title_en,
+        title_ar: data.title_ar,
+        tagline_en: data.tagline_en,
+        tagline_ar: data.tagline_ar,
+        objective_en: data.objective_en,
+        objective_ar: data.objective_ar,
+        hypothesis: data.hypothesis,
+        methodology: language === 'ar' ? data.methodology_ar : data.methodology_en,
+        scope: language === 'ar' ? data.scope_ar : data.scope_en,
+        duration_weeks: data.duration_weeks,
+        budget: data.budget,
+        kpis: data.kpis?.map(k => ({
+          name: language === 'ar' ? k.name_ar : k.name_en,
+          baseline: k.baseline,
+          target: k.target,
+          unit: k.unit
+        })),
+        success_criteria: data.success_criteria?.map(s => ({
+          criterion: language === 'ar' ? s.criterion_ar : s.criterion_en,
+          threshold: s.threshold
+        })),
+        target_population: {
+          size: data.target_population?.size,
+          demographics: language === 'ar' ? data.target_population?.demographics_ar : data.target_population?.demographics_en,
+          location: language === 'ar' ? data.target_population?.location_ar : data.target_population?.location_en
+        },
+        solution_id: project.solution_id,
+        sector: project.research_area || 'digital_services',
+        trl_start: project.trl_current || project.trl_start,
+        stage: 'design'
+      });
+      toast.success(t({ en: 'Pilot scope generated', ar: 'تم إنشاء نطاق التجربة' }));
+    }
+  };
 
     const response = await invokeAI({
       prompt,
