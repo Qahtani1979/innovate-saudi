@@ -10,6 +10,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getFailedMatchLearningPrompt, failedMatchLearningSchema } from '@/lib/ai/prompts/matchmaker';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function FailedMatchLearningEngine() {
   const { language, t } = useLanguage();
@@ -26,38 +28,9 @@ export default function FailedMatchLearningEngine() {
 
   const analyzeFailures = async () => {
     const result = await invokeAI({
-      prompt: `Analyze failed matchmaker matches to extract learnings:
-
-FAILED MATCHES DATA:
-Total failures: ${failedMatches.length}
-Sample reasons: ${failedMatches.slice(0, 10).map(m => m.failure_reason || 'Not specified').join(', ')}
-
-Identify:
-1. Top 5 failure categories with percentages
-2. Most common root cause
-3. Preventable vs unavoidable failures
-4. Algorithm improvement recommendations
-5. Pre-engagement validation suggestions`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          failure_categories: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                category: { type: "string" },
-                percentage: { type: "number" },
-                examples: { type: "array", items: { type: "string" } }
-              }
-            }
-          },
-          root_cause: { type: "string" },
-          preventable_rate: { type: "number" },
-          algorithm_improvements: { type: "array", items: { type: "string" } },
-          validation_checks: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: getFailedMatchLearningPrompt({ failedMatches }),
+      system_prompt: getSystemPrompt('COMPACT', true),
+      response_json_schema: failedMatchLearningSchema
     });
 
     if (result.success) {

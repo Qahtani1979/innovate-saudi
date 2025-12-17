@@ -7,6 +7,8 @@ import { Target, Sparkles, Loader2, Info } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
+import { getMatchSuccessPredictorPrompt, matchSuccessPredictorSchema } from '@/lib/ai/prompts/matchmaker';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIMatchSuccessPredictor({ match, provider, challenge }) {
   const { t } = useLanguage();
@@ -19,41 +21,9 @@ export default function AIMatchSuccessPredictor({ match, provider, challenge }) 
 
   const predictSuccess = async () => {
     const { success, data } = await invokeAI({
-      prompt: `Predict match success probability:
-
-PROVIDER: ${provider.name_en}
-- Track record: ${provider.success_rate || 70}% success
-- Deployments: ${provider.deployment_count || 0}
-- Sectors: ${provider.sectors?.join(', ')}
-
-CHALLENGE: ${challenge.title_en}
-- Sector: ${challenge.sector}
-- Complexity: ${challenge.overall_score || 50}/100
-- Budget: ${challenge.budget_estimate || 'TBD'}
-
-Analyze:
-1. Success probability (0-100%)
-2. Scores for: capability_fit, sector_expertise, track_record, budget_alignment, team_capacity
-3. Risk factors
-4. Recommendation (proceed/alternative/needs_support)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          success_probability: { type: "number" },
-          dimension_scores: {
-            type: "object",
-            properties: {
-              capability_fit: { type: "number" },
-              sector_expertise: { type: "number" },
-              track_record: { type: "number" },
-              budget_alignment: { type: "number" },
-              team_capacity: { type: "number" }
-            }
-          },
-          risk_factors: { type: "array", items: { type: "string" } },
-          recommendation: { type: "string" }
-        }
-      }
+      prompt: getMatchSuccessPredictorPrompt({ provider, challenge }),
+      system_prompt: getSystemPrompt('COMPACT', true),
+      response_json_schema: matchSuccessPredictorSchema
     });
 
     if (success && data) {

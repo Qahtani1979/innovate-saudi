@@ -7,47 +7,24 @@ import { Network, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getMultiPartyMatchmakerPrompt, multiPartyMatchmakerSchema } from '@/lib/ai/prompts/matchmaker';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
-export default function MultiPartyMatchmaker({ challengeId }) {
+export default function MultiPartyMatchmaker({ challengeId, challenge }) {
   const { language, t } = useLanguage();
   const [consortium, setConsortium] = useState(null);
   const { invokeAI, status, isLoading: finding, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const findConsortium = async () => {
-    try {
-      const response = await invokeAI({
-        prompt: `Create optimal consortium for complex challenge requiring:
-- Tech provider (IoT/sensors)
-- System integrator
-- Maintenance operator
-- Data analytics partner
+    const response = await invokeAI({
+      prompt: getMultiPartyMatchmakerPrompt({ challenge }),
+      system_prompt: getSystemPrompt('COMPACT', true),
+      response_json_schema: multiPartyMatchmakerSchema
+    });
 
-Suggest 3-4 party consortium with clear roles and synergy explanation.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            parties: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  party_name: { type: "string" },
-                  role: { type: "string" },
-                  contribution: { type: "string" },
-                  synergy: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      });
-
-      if (response.success) {
-        setConsortium(response.data.parties);
-        toast.success(t({ en: 'Consortium formed', ar: 'الكونسورتيوم شُكّل' }));
-      }
-    } catch (error) {
-      toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
+    if (response.success) {
+      setConsortium(response.data.parties);
+      toast.success(t({ en: 'Consortium formed', ar: 'الكونسورتيوم شُكّل' }));
     }
   };
 

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { useLanguage } from '../LanguageContext';
-import { Network, Sparkles, Loader2, Target, MapPin, Zap } from 'lucide-react';
+import { Network, Sparkles, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -13,6 +13,8 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getEnhancedMatchingPrompt, enhancedMatchingSchema } from '@/lib/ai/prompts/matchmaker';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function EnhancedMatchingEngine({ application, onMatchComplete }) {
   const { language, isRTL, t } = useLanguage();
@@ -39,50 +41,13 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
     }).slice(0, 30);
 
     const result = await invokeAI({
-      prompt: `Perform bilateral matching between this provider and available challenges:
-
-PROVIDER:
-- Organization: ${application.organization_name_en}
-- Sectors: ${application.sectors?.join(', ')}
-- Scope: ${application.geographic_scope?.join(', ')}
-- Stage: ${application.company_stage}
-- Total Score: ${application.evaluation_score?.total_score}
-- Collaboration: ${application.collaboration_approach}
-
-PREFERENCES:
-- Min Score Threshold: ${preferences.min_score}
-- Max Matches: ${preferences.max_matches}
-- Tier 1 Only: ${preferences.include_tier_1_only}
-
-AVAILABLE CHALLENGES:
-${filteredChallenges.map(c => `- ${c.code}: ${c.title_en} (Sector: ${c.sector}, Priority: ${c.priority}, Score: ${c.overall_score})`).join('\n')}
-
-Return top ${preferences.max_matches} matches with:
-- challenge_code
-- match_score (0-100)
-- sector_fit (0-100)
-- capability_fit (0-100)
-- strategic_fit (0-100)
-- match_rationale (1 sentence)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          matches: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                challenge_code: { type: 'string' },
-                match_score: { type: 'number' },
-                sector_fit: { type: 'number' },
-                capability_fit: { type: 'number' },
-                strategic_fit: { type: 'number' },
-                match_rationale: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: getEnhancedMatchingPrompt({
+        application,
+        challenges: filteredChallenges,
+        preferences
+      }),
+      system_prompt: getSystemPrompt('COMPACT', true),
+      response_json_schema: enhancedMatchingSchema
     });
 
     if (result.success) {
