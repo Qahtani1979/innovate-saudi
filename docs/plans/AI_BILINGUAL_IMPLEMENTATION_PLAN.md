@@ -2,7 +2,7 @@
 
 **Generated:** 2025-12-17 (Updated with Full Entity Dependencies & Multi-Entity Context)  
 **Status:** Ready for Implementation  
-**Total Files to Update:** 47 component files + 44 new prompt files  
+**Total Files to Update:** 50 component files + 48 new prompt files  
 **Estimated Effort:** 4 phases, ~10 days
 
 ---
@@ -151,8 +151,9 @@ Many AI prompts require data from MULTIPLE entities as input. The prompt files m
 | **livinglab/collaboration.js** | `living_lab` | `living_labs[]`, `equipment[]`, `research_themes[]` | labs: focus areas, equipment; themes: overlap |
 | **pilots/policyWorkflow.js** | `pilot` | `pilot_kpis[]`, `lessons_learned[]`, `sector`, `municipality` | pilot: evaluation; kpis: results; lessons: insights |
 | **sandbox/regulatoryGap.js** | `sandbox_application` | `sandbox`, `sector`, `regulations[]` | app: description; sandbox: framework; regulations: requirements |
-
-### DETAILED Field Requirements Per Prompt (NEW)
+| **matchmaker/enhancedMatching.js** | `matchmaker_application` | `challenges[]`, `preferences` | app: org details, sectors, score; challenges: code, title, sector, priority, score |
+| **scaling/rolloutRiskPrediction.js** | `pilot` | `municipality` (source), `targetMunicipalities[]`, `sector` | pilot: title, kpis; municipalities: names, populations; sector: typical risks |
+| **executive/briefingGeneration.js** | `ecosystem` (aggregated) | `challenges[]`, `pilots[]`, `municipalities[]` | counts, stage filtering, mii_scores |
 
 #### scaling/costBenefitAnalysis.js
 ```javascript
@@ -314,6 +315,120 @@ const sectorData = {
 const kpisData = [
   { name, name_ar, baseline, current_value, target, unit }
 ];
+```
+
+#### matchmaker/enhancedMatching.js
+```javascript
+// PRIMARY: matchmaker_application
+const applicationData = {
+  organization_name_en, organization_name_ar,
+  sectors: [], // array of sector codes
+  geographic_scope: [], // array of region codes
+  company_stage, // startup, growth, established
+  evaluation_score: { total_score }, // nested object
+  collaboration_approach
+};
+
+// RELATED: challenges[] (filtered list for matching)
+const challengesData = [
+  { 
+    id, code, title_en, title_ar,
+    sector, priority, overall_score,
+    municipality_id, status // for filtering
+  }
+];
+
+// RELATED: preferences (user input)
+const preferencesData = {
+  preferred_sectors: [],
+  preferred_regions: [],
+  min_score, max_matches,
+  include_tier_1_only
+};
+```
+
+#### scaling/rolloutRiskPrediction.js
+```javascript
+// PRIMARY: pilot
+const pilotData = {
+  title_en, title_ar,
+  municipality_id, // needs lookup for name
+  duration_weeks, stage,
+  kpis: [{ name, current }] // nested JSON
+};
+
+// RELATED: municipality (original pilot location)
+const sourceMunicipalityData = {
+  id, name_en, name_ar,
+  population, region_id
+};
+
+// RELATED: targetMunicipalities[]
+const targetMunicipalitiesData = [
+  { id, name_en, name_ar, population, region_id, innovation_readiness_score }
+];
+
+// RELATED: sector (for risk patterns)
+const sectorData = {
+  name_en, name_ar, code,
+  typical_risks // if available
+};
+```
+
+#### executive/briefingGeneration.js
+```javascript
+// PRIMARY: ecosystem snapshot (aggregated data)
+const ecosystemData = {
+  challenges_count: challenges.length,
+  active_pilots_count: pilots.filter(p => p.stage === 'active').length,
+  scaled_solutions_count: pilots.filter(p => p.stage === 'scaled').length,
+  municipalities_count: municipalities.length,
+  average_mii_score // calculated
+};
+
+// RELATED: challenges[] (for counts/status)
+const challengesData = [
+  { id, status, priority, sector, created_at }
+];
+
+// RELATED: pilots[] (for counts/stage filtering)
+const pilotsData = [
+  { id, stage, sector, success_probability, created_at }
+];
+
+// RELATED: municipalities[] (for MII scores)
+const municipalitiesData = [
+  { id, name_en, name_ar, mii_score }
+];
+
+// RELATED: period (user selection)
+const period = 'monthly' | 'weekly' | 'quarterly';
+```
+
+#### pilot/benchmarking.js
+```javascript
+// PRIMARY: pilot
+const pilotData = {
+  id, title_en, title_ar,
+  sector, // for finding similar pilots
+  duration_months, budget_allocated,
+  overall_score, status
+};
+
+// RELATED: similarPilots[] (same sector, completed)
+const similarPilotsData = [
+  { 
+    id, title_en, sector,
+    duration_months, budget_allocated,
+    overall_score, status // must be 'completed'
+  }
+];
+
+// NOTE: Filtering logic for similar pilots:
+// - Same sector as current pilot
+// - Different ID (exclude self)
+// - Status = 'completed'
+// - Limit to 10 records
 ```
 
 ### Entity Field Extraction Requirements
@@ -1091,13 +1206,19 @@ src/lib/ai/prompts/
 │   ├── multiPartyConsortium.js       # getMultiPartyConsortiumPrompt + multiPartyConsortiumSchema
 │   ├── strategicChallengeMapping.js  # getStrategicChallengeMappingPrompt + strategicChallengeMappingSchema
 │   ├── failedMatchLearning.js        # getFailedMatchLearningPrompt + failedMatchLearningSchema
-│   └── partnershipOrchestration.js   # getPartnershipOrchestrationPrompt + partnershipOrchestrationSchema
+│   ├── partnershipOrchestration.js   # getPartnershipOrchestrationPrompt + partnershipOrchestrationSchema
+│   └── enhancedMatching.js           # getEnhancedMatchingPrompt + enhancedMatchingSchema
 │
 ├── scaling/
 │   ├── index.js                      # Export all scaling prompts
 │   ├── costBenefitAnalysis.js        # getCostBenefitAnalysisPrompt + costBenefitAnalysisSchema
 │   ├── programConversion.js          # getProgramConversionPrompt + programConversionSchema
-│   └── adaptiveRollout.js            # getAdaptiveRolloutPrompt + adaptiveRolloutSchema
+│   ├── adaptiveRollout.js            # getAdaptiveRolloutPrompt + adaptiveRolloutSchema
+│   └── rolloutRiskPrediction.js      # getRolloutRiskPredictionPrompt + rolloutRiskPredictionSchema
+│
+├── executive/
+│   ├── index.js                      # Export all executive prompts
+│   └── briefingGeneration.js         # getBriefingGenerationPrompt + briefingGenerationSchema
 │
 ├── challenge/
 │   ├── index.js                      # Export all challenge prompts
@@ -1135,7 +1256,7 @@ src/lib/ai/prompts/
     └── partnershipProposal.js        # getPartnershipProposalPrompt + partnershipProposalSchema
 ```
 
-### Total New Files: 44 prompt files
+### Total New Files: 48 prompt files
 
 ---
 
@@ -1154,7 +1275,7 @@ After extracting prompts, components need minimal changes - just import and use 
 | 5 | `src/pages/RDPortfolioPlanner.jsx` | `rd/portfolioPlanning.js` | Import from `@/lib/ai/prompts/rd` |
 | 6 | `src/pages/RiskPortfolio.jsx` | `analysis/riskAnalysis.js` | Import from `@/lib/ai/prompts/analysis` |
 
-### Priority 2: Workflow Components (21 files)
+### Priority 2: Workflow Components (23 files)
 
 | # | Component File | Prompt File(s) to Create | Changes in Component |
 |---|------|----------------|------------------|
@@ -1178,6 +1299,9 @@ After extracting prompts, components need minimal changes - just import and use 
 | 18 | `src/components/citizen/AIIdeaClassifier.jsx` | `citizen/ideaClassification.js` | Import prompt, fetch sectors taxonomy + similar challenges |
 | 19 | `src/components/onboarding/FirstActionRecommender.jsx` | `onboarding/actionRecommendation.js` | Import prompt, remove inline code |
 | 20 | `src/components/partnerships/PartnershipOrchestrator.jsx` | `matchmaker/partnershipOrchestration.js` | Add AI prompt for partnership scoring |
+| 21 | `src/components/matchmaker/EnhancedMatchingEngine.jsx` | `matchmaker/enhancedMatching.js` | Import prompt, fetch challenges for matching |
+| 22 | `src/components/scaling/RolloutRiskPredictor.jsx` | `scaling/rolloutRiskPrediction.js` | Import prompt, fetch source municipality |
+| 23 | `src/components/executive/ExecutiveBriefingGenerator.jsx` | `executive/briefingGeneration.js` | Import prompt, aggregate ecosystem data |
 
 ### Priority 3: Analysis Components (10 files)
 
