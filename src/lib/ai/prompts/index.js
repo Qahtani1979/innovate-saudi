@@ -114,16 +114,28 @@ export * from './evaluation';
 // Hub prompts
 export * from './hub';
 
+// Work prompts
+export * from './work';
+
+// Feedback prompts
+export * from './feedback';
+
+// Translation prompts
+export * from './translation';
+
+// Policy prompts
+export * from './policy';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
  */
 export const PROMPT_MODULE_STATUS = {
   strategyWizard: { status: 'complete', promptCount: 24 },
-  strategyModule: { status: 'complete', promptCount: 9 },
+  strategyModule: { status: 'complete', promptCount: 10 },
   portfolio: { status: 'complete', promptCount: 3 },
   events: { status: 'complete', promptCount: 3 },
-  challenges: { status: 'complete', promptCount: 8 },
+  challenges: { status: 'complete', promptCount: 9 },
   pilots: { status: 'complete', promptCount: 6 },
   matchmaker: { status: 'complete', promptCount: 6 },
   sandbox: { status: 'complete', promptCount: 8 },
@@ -133,7 +145,7 @@ export const PROMPT_MODULE_STATUS = {
   citizen: { status: 'complete', promptCount: 6 },
   livinglab: { status: 'complete', promptCount: 4 },
   profiles: { status: 'complete', promptCount: 3 },
-  programs: { status: 'complete', promptCount: 6 },
+  programs: { status: 'complete', promptCount: 7 },
   core: { status: 'complete', promptCount: 7 },
   taxonomy: { status: 'complete', promptCount: 2 },
   mii: { status: 'complete', promptCount: 2 },
@@ -152,7 +164,11 @@ export const PROMPT_MODULE_STATUS = {
   onboarding: { status: 'complete', promptCount: 1 },
   solutions: { status: 'complete', promptCount: 2 },
   evaluation: { status: 'complete', promptCount: 2 },
-  hub: { status: 'complete', promptCount: 2 }
+  hub: { status: 'complete', promptCount: 2 },
+  work: { status: 'complete', promptCount: 1 },
+  feedback: { status: 'complete', promptCount: 1 },
+  translation: { status: 'complete', promptCount: 2 },
+  policy: { status: 'complete', promptCount: 1 }
 };
 
 /**

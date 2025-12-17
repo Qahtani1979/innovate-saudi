@@ -51,6 +51,11 @@ export {
   CHALLENGE_CLUSTER_SYSTEM_PROMPT, buildChallengeClusterPrompt, CHALLENGE_CLUSTER_SCHEMA
 } from './challengeRD';
 
+// Submission Brief
+export {
+  SUBMISSION_BRIEF_SYSTEM_PROMPT, createSubmissionBriefPrompt, SUBMISSION_BRIEF_SCHEMA
+} from './submissionBrief';
+
 /**
  * Challenges module prompt configuration
  */

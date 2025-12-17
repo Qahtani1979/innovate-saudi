@@ -10,3 +10,4 @@ export * from './successPredictor';
 export * from './crossProgramSynergy';
 export * from './programDesign';
 export * from './programWorkflows';
+export * from './lessonsToStrategy';
