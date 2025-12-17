@@ -9,6 +9,12 @@ import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildNarrativeGeneratorPrompt, 
+  narrativeGeneratorSchema,
+  NARRATIVE_GENERATOR_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/strategy';
 
 export default function StrategicNarrativeGenerator({ planId }) {
   const { language, t } = useLanguage();
@@ -19,7 +25,6 @@ export default function StrategicNarrativeGenerator({ planId }) {
     fallbackData: null
   });
 
-  // Fetch real data from supabase
   const { data: plan } = useQuery({
     queryKey: ['strategic-plan-narrative', planId],
     queryFn: async () => {
@@ -62,34 +67,9 @@ export default function StrategicNarrativeGenerator({ planId }) {
   const generateNarrative = async () => {
     try {
       const response = await invokeAI({
-        prompt: `Write a compelling strategic narrative for this municipal innovation plan:
-
-Plan: ${plan?.name_en || 'Innovation Strategy'}
-Vision: ${plan?.vision_en || 'Advancing municipal innovation'}
-Themes: ${plan?.strategic_themes?.map(t => t.name_en).join(', ') || 'Innovation, Digital Transformation, Sustainability'}
-Active Pilots: ${pilots.filter(p => p.status === 'active').length}
-Resolved Challenges: ${challenges.filter(c => c.status === 'resolved').length}
-
-Create a 2-page narrative with:
-1. Vision (inspiring opening)
-2. Current State & Context
-3. The Journey (what we've done, what we're doing)
-4. Impact & Achievements (data-driven)
-5. The Road Ahead (future focus)
-
-Make it compelling, data-driven, and bilingual (English then Arabic).`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title_en: { type: "string" },
-            title_ar: { type: "string" },
-            vision_section: { type: "string" },
-            context_section: { type: "string" },
-            journey_section: { type: "string" },
-            impact_section: { type: "string" },
-            future_section: { type: "string" }
-          }
-        }
+        system_prompt: getSystemPrompt(NARRATIVE_GENERATOR_SYSTEM_PROMPT),
+        prompt: buildNarrativeGeneratorPrompt(plan, pilots, challenges),
+        response_json_schema: narrativeGeneratorSchema
       });
 
       if (response.success) {

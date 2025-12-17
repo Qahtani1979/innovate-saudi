@@ -57,6 +57,9 @@ export * from './programs';
 // Core prompts (root-level components)
 export * from './core';
 
+// Strategy module prompts
+export * from './strategy';
+
 // Smart prompts
 // export * from './smart';
 
@@ -65,7 +68,8 @@ export * from './core';
  * Updated as modules are implemented
  */
 export const PROMPT_MODULE_STATUS = {
-  strategy: { status: 'complete', promptCount: 24 },
+  strategyWizard: { status: 'complete', promptCount: 24 },
+  strategyModule: { status: 'complete', promptCount: 4 },
   portfolio: { status: 'complete', promptCount: 3 },
   events: { status: 'complete', promptCount: 3 },
   challenges: { status: 'complete', promptCount: 5 },
@@ -78,8 +82,8 @@ export const PROMPT_MODULE_STATUS = {
   citizen: { status: 'complete', promptCount: 5 },
   livinglab: { status: 'complete', promptCount: 4 },
   profiles: { status: 'complete', promptCount: 3 },
-  programs: { status: 'complete', promptCount: 3 },
-  core: { status: 'complete', promptCount: 4 },
+  programs: { status: 'complete', promptCount: 4 },
+  core: { status: 'complete', promptCount: 5 },
   smart: { status: 'pending', promptCount: 0 }
 };
 
