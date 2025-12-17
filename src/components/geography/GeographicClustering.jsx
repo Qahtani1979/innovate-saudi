@@ -7,6 +7,8 @@ import { MapPin, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildGeographicClusteringPrompt, geographicClusteringSchema, GEOGRAPHIC_CLUSTERING_SYSTEM_PROMPT } from '@/lib/ai/prompts/geography';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function GeographicClustering({ entities, entityType = 'challenge' }) {
   const { t, language } = useLanguage();
@@ -14,56 +16,10 @@ export default function GeographicClustering({ entities, entityType = 'challenge
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeGeographicPatterns = async () => {
-    const entitiesWithGeo = entities.filter(e => e.coordinates || e.municipality_id);
-    
     const result = await invokeAI({
-      prompt: `Analyze geographic patterns in ${entitiesWithGeo.length} ${entityType}s:
-
-Data: ${entitiesWithGeo.slice(0, 30).map(e => `
-  Title: ${e.title_en || e.name_en}
-  Municipality: ${e.municipality_id}
-  Sector: ${e.sector || e.sectors?.join(',')}
-  Coordinates: ${e.coordinates ? `${e.coordinates.latitude},${e.coordinates.longitude}` : 'N/A'}
-`).join('\n')}
-
-Identify:
-1. Geographic clusters (areas with high concentration)
-2. Regional patterns (common themes by region)
-3. Underserved areas (municipalities with few initiatives)
-4. Cross-city opportunities (similar ${entityType}s that could collaborate)
-5. Geographic gaps (areas needing attention)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          clusters: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                region: { type: 'string' },
-                municipality_count: { type: 'number' },
-                entity_count: { type: 'number' },
-                common_themes: { type: 'array', items: { type: 'string' } },
-                priority_level: { type: 'string' }
-              }
-            }
-          },
-          regional_patterns: { type: 'array', items: { type: 'string' } },
-          underserved_areas: { type: 'array', items: { type: 'string' } },
-          collaboration_opportunities: { 
-            type: 'array', 
-            items: {
-              type: 'object',
-              properties: {
-                municipalities: { type: 'array', items: { type: 'string' } },
-                theme: { type: 'string' },
-                potential: { type: 'string' }
-              }
-            }
-          },
-          geographic_gaps: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildGeographicClusteringPrompt(entities, entityType),
+      systemPrompt: getSystemPrompt(GEOGRAPHIC_CLUSTERING_SYSTEM_PROMPT),
+      response_json_schema: geographicClusteringSchema
     });
 
     if (result.success) {

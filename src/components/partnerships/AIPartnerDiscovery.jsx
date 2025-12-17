@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Users, Sparkles, Loader2, ExternalLink } from 'lucide-react';
+import { Users, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildPartnerDiscoveryPrompt, partnerDiscoverySchema, PARTNER_DISCOVERY_SYSTEM_PROMPT } from '@/lib/ai/prompts/partnerships';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIPartnerDiscovery({ challengeId, sector, keywords }) {
   const { language, t } = useLanguage();
@@ -29,45 +29,9 @@ export default function AIPartnerDiscovery({ challengeId, sector, keywords }) {
     if (!isAvailable) return;
     
     const response = await invokeAI({
-      prompt: `Find ideal partners for this initiative:
-
-Sector: ${sector}
-Keywords: ${keywords?.join(', ')}
-Requirements: ${requirements}
-
-Available Organizations (${organizations.length}):
-${organizations.slice(0, 15).map(o => `
-${o.name_en}
-Type: ${o.organization_type}
-Sectors: ${o.sectors?.join(', ')}
-Expertise: ${o.expertise_areas?.join(', ')}
-Track Record: ${o.partnerships_count || 0} partnerships
-`).join('\n')}
-
-Recommend top 5 partner organizations:
-1. Best technical capability match
-2. Strong track record
-3. Sector expertise alignment
-4. Capacity availability
-5. Compatibility score (0-100)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommendations: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                organization_name: { type: "string" },
-                match_score: { type: "number" },
-                rationale: { type: "string" },
-                strengths: { type: "array", items: { type: "string" } },
-                track_record_summary: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildPartnerDiscoveryPrompt(sector, keywords, requirements, organizations),
+      systemPrompt: getSystemPrompt(PARTNER_DISCOVERY_SYSTEM_PROMPT),
+      response_json_schema: partnerDiscoverySchema
     });
 
     if (response.success && response.data) {
