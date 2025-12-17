@@ -10,16 +10,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   Sparkles, Plus, X, ChevronDown, ChevronUp, RefreshCw, Users, Target, 
   BookOpen, AlertTriangle, CheckCircle, Clock, TrendingUp, Layers,
   GraduationCap, UserCheck, Shield, Heart, Zap, ArrowRight, BarChart3,
-  Calendar, Award, MessageSquare, Lightbulb, Settings, Eye, List, GitBranch
+  Calendar, Award, MessageSquare, Lightbulb, Settings, Eye, List, GitBranch,
+  Info, AlertCircle, PieChart
 } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 
-// Change Phase Types
+// Change Phase Types (ADKAR Model)
 const CHANGE_PHASES = [
   { value: 'awareness', label: { en: 'Awareness', ar: 'الوعي' }, icon: Eye, color: 'bg-blue-500', description: { en: 'Build understanding of need for change', ar: 'بناء فهم للحاجة إلى التغيير' } },
   { value: 'desire', label: { en: 'Desire', ar: 'الرغبة' }, icon: Heart, color: 'bg-pink-500', description: { en: 'Generate motivation to participate', ar: 'توليد الدافع للمشاركة' } },
@@ -75,71 +77,109 @@ const RESISTANCE_TYPES = [
   { value: 'lack_trust', label: { en: 'Lack of Trust', ar: 'انعدام الثقة' }, icon: Heart }
 ];
 
-// Change Dashboard Component
-function ChangeDashboard({ changeManagement, language, t }) {
+// Helper: Calculate field completeness
+const getFieldCompleteness = (obj, fields) => {
+  if (!obj) return 0;
+  const filled = fields.filter(f => {
+    const val = obj[f];
+    return val && (typeof val === 'string' ? val.trim() : true);
+  }).length;
+  return Math.round((filled / fields.length) * 100);
+};
+
+// Helper: Get completeness color
+const getCompletenessColor = (pct) => {
+  if (pct >= 80) return 'text-green-500';
+  if (pct >= 50) return 'text-yellow-500';
+  return 'text-red-500';
+};
+
+const getProgressColor = (pct) => {
+  if (pct >= 80) return 'bg-green-500';
+  if (pct >= 50) return 'bg-yellow-500';
+  return 'bg-red-500';
+};
+
+// Dashboard Header Component
+function DashboardHeader({ changeManagement, language, t }) {
   const trainingCount = changeManagement?.training_plan?.length || 0;
   const stakeholderImpacts = changeManagement?.stakeholder_impacts || [];
   const changeActivities = changeManagement?.change_activities || [];
   const resistanceStrategies = changeManagement?.resistance_strategies || [];
-  
-  // Calculate readiness score
-  const readinessScore = useMemo(() => {
+
+  // Calculate overall completeness
+  const completenessScore = useMemo(() => {
     let score = 0;
-    if (changeManagement?.readiness_assessment_en) score += 20;
-    if (changeManagement?.change_approach_en) score += 20;
-    if (changeManagement?.resistance_management_en) score += 15;
-    if (trainingCount > 0) score += 15;
-    if (stakeholderImpacts.length > 0) score += 15;
-    if (changeActivities.length > 0) score += 15;
-    return Math.min(score, 100);
-  }, [changeManagement, trainingCount, stakeholderImpacts.length, changeActivities.length]);
+    let total = 0;
+    
+    // Core assessments (40%)
+    if (changeManagement?.readiness_assessment_en?.trim()) score += 15;
+    if (changeManagement?.readiness_assessment_ar?.trim()) score += 5;
+    if (changeManagement?.change_approach_en?.trim()) score += 15;
+    if (changeManagement?.change_approach_ar?.trim()) score += 5;
+    total += 40;
+    
+    // Training (20%)
+    if (trainingCount >= 3) score += 20;
+    else if (trainingCount >= 1) score += 10;
+    total += 20;
+    
+    // Stakeholder impacts (15%)
+    if (stakeholderImpacts.length >= 3) score += 15;
+    else if (stakeholderImpacts.length >= 1) score += 8;
+    total += 15;
+    
+    // Activities (15%)
+    if (changeActivities.length >= 5) score += 15;
+    else if (changeActivities.length >= 2) score += 8;
+    total += 15;
+    
+    // Resistance strategies (10%)
+    if (resistanceStrategies.length >= 2) score += 10;
+    else if (resistanceStrategies.length >= 1) score += 5;
+    total += 10;
+    
+    return Math.round((score / total) * 100);
+  }, [changeManagement, trainingCount, stakeholderImpacts.length, changeActivities.length, resistanceStrategies.length]);
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'text-green-500';
-    if (score >= 60) return 'text-blue-500';
-    if (score >= 40) return 'text-yellow-500';
-    return 'text-red-500';
-  };
+  // Calculate ADKAR coverage
+  const adkarCoverage = useMemo(() => {
+    const coverage = {};
+    CHANGE_PHASES.forEach(phase => {
+      coverage[phase.value] = changeActivities.filter(a => a.phase === phase.value).length;
+    });
+    return coverage;
+  }, [changeActivities]);
 
-  const getScoreLabel = (score) => {
-    if (score >= 80) return { en: 'Excellent', ar: 'ممتاز' };
-    if (score >= 60) return { en: 'Good', ar: 'جيد' };
-    if (score >= 40) return { en: 'Fair', ar: 'مقبول' };
-    return { en: 'Needs Work', ar: 'يحتاج تحسين' };
-  };
+  const adkarCoveredCount = Object.values(adkarCoverage).filter(c => c > 0).length;
 
   return (
-    <Card className="bg-gradient-to-br from-background to-muted/30">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-primary" />
-          {t({ en: 'Change Management Dashboard', ar: 'لوحة إدارة التغيير' })}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          {/* Readiness Score */}
+    <Card className="bg-gradient-to-br from-background to-muted/30 border-primary/20">
+      <CardContent className="pt-4">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
+          {/* Overall Score */}
           <div className="col-span-2 flex flex-col items-center justify-center p-4 rounded-lg bg-background border">
-            <div className={`text-3xl font-bold ${getScoreColor(readinessScore)}`}>{readinessScore}%</div>
-            <Progress value={readinessScore} className="w-full h-2 mt-2" />
+            <div className={`text-3xl font-bold ${getCompletenessColor(completenessScore)}`}>
+              {completenessScore}%
+            </div>
+            <Progress value={completenessScore} className="w-full h-2 mt-2" />
             <span className="text-xs text-muted-foreground mt-1">
-              {getScoreLabel(readinessScore)[language]}
+              {t({ en: 'Change Readiness', ar: 'جاهزية التغيير' })}
             </span>
-            <span className="text-xs font-medium mt-1">{t({ en: 'Readiness Score', ar: 'درجة الجاهزية' })}</span>
           </div>
           
           {/* Training Programs */}
           <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
             <GraduationCap className="w-5 h-5 text-blue-500 mb-1" />
             <span className="text-xl font-bold">{trainingCount}</span>
-            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Training Programs', ar: 'برامج التدريب' })}</span>
+            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Training', ar: 'التدريب' })}</span>
           </div>
           
           {/* Stakeholder Impacts */}
           <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30">
             <Users className="w-5 h-5 text-purple-500 mb-1" />
             <span className="text-xl font-bold">{stakeholderImpacts.length}</span>
-            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Impact Analyses', ar: 'تحليلات التأثير' })}</span>
+            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Impacts', ar: 'التأثيرات' })}</span>
           </div>
           
           {/* Change Activities */}
@@ -153,7 +193,14 @@ function ChangeDashboard({ changeManagement, language, t }) {
           <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30">
             <Shield className="w-5 h-5 text-orange-500 mb-1" />
             <span className="text-xl font-bold">{resistanceStrategies.length}</span>
-            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Strategies', ar: 'الاستراتيجيات' })}</span>
+            <span className="text-xs text-muted-foreground text-center">{t({ en: 'Strategies', ar: 'استراتيجيات' })}</span>
+          </div>
+          
+          {/* ADKAR Coverage */}
+          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-teal-50 dark:bg-teal-950/30">
+            <Layers className="w-5 h-5 text-teal-500 mb-1" />
+            <span className="text-xl font-bold">{adkarCoveredCount}/5</span>
+            <span className="text-xs text-muted-foreground text-center">{t({ en: 'ADKAR', ar: 'ADKAR' })}</span>
           </div>
         </div>
       </CardContent>
@@ -162,7 +209,7 @@ function ChangeDashboard({ changeManagement, language, t }) {
 }
 
 // ADKAR Phase Card Component
-function PhaseCard({ phase, activities, onAddActivity, onRemoveActivity, onUpdateActivity, language, t }) {
+function PhaseCard({ phase, activities, onAddActivity, onRemoveActivity, onUpdateActivity, language, t, isReadOnly }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const PhaseIcon = phase.icon;
   const phaseActivities = activities.filter(a => a.phase === phase.value);
@@ -197,59 +244,78 @@ function PhaseCard({ phase, activities, onAddActivity, onRemoveActivity, onUpdat
                 <p className="text-sm">{t({ en: `No ${phase.label.en.toLowerCase()} activities yet`, ar: `لا توجد أنشطة ${phase.label.ar} بعد` })}</p>
               </div>
             ) : (
-              phaseActivities.map((activity, idx) => (
-                <div key={activity.id} className="border rounded-lg p-3 space-y-2 bg-muted/30">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+              phaseActivities.map((activity) => {
+                const completeness = getFieldCompleteness(activity, ['name_en', 'owner', 'timeline']);
+                return (
+                  <div key={activity.id} className={`border rounded-lg p-3 space-y-2 bg-muted/30 ${completeness === 100 ? 'border-green-300' : ''}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-medium ${getCompletenessColor(completeness)}`}>{completeness}%</span>
+                        <Progress value={completeness} className="w-16 h-1" />
+                      </div>
+                      {!isReadOnly && (
+                        <Button size="icon" variant="ghost" onClick={() => onRemoveActivity(activity.id)} className="h-6 w-6">
+                          <X className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <Input
                         value={activity.name_en || ''}
                         onChange={(e) => onUpdateActivity(activity.id, 'name_en', e.target.value)}
                         placeholder={t({ en: 'Activity name (EN)', ar: 'اسم النشاط (إنجليزي)' })}
-                        className="text-sm"
+                        className={`text-sm ${activity.name_en?.trim() ? 'border-green-300' : ''}`}
+                        disabled={isReadOnly}
                       />
                       <Input
                         dir="rtl"
                         value={activity.name_ar || ''}
                         onChange={(e) => onUpdateActivity(activity.id, 'name_ar', e.target.value)}
                         placeholder="اسم النشاط (عربي)"
-                        className="text-sm"
+                        className={`text-sm ${activity.name_ar?.trim() ? 'border-green-300' : ''}`}
+                        disabled={isReadOnly}
                       />
                     </div>
-                    <Button size="icon" variant="ghost" onClick={() => onRemoveActivity(activity.id)} className="shrink-0">
-                      <X className="w-4 h-4" />
-                    </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <Input
+                        value={activity.owner || ''}
+                        onChange={(e) => onUpdateActivity(activity.id, 'owner', e.target.value)}
+                        placeholder={t({ en: 'Owner', ar: 'المسؤول' })}
+                        className={`text-sm ${activity.owner?.trim() ? 'border-green-300' : ''}`}
+                        disabled={isReadOnly}
+                      />
+                      <Input
+                        value={activity.timeline || ''}
+                        onChange={(e) => onUpdateActivity(activity.id, 'timeline', e.target.value)}
+                        placeholder={t({ en: 'Timeline', ar: 'الجدول الزمني' })}
+                        className={`text-sm ${activity.timeline?.trim() ? 'border-green-300' : ''}`}
+                        disabled={isReadOnly}
+                      />
+                      <Select 
+                        value={activity.status || 'planned'} 
+                        onValueChange={(v) => onUpdateActivity(activity.id, 'status', v)}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger className="text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="planned">{t({ en: 'Planned', ar: 'مخطط' })}</SelectItem>
+                          <SelectItem value="in_progress">{t({ en: 'In Progress', ar: 'قيد التنفيذ' })}</SelectItem>
+                          <SelectItem value="completed">{t({ en: 'Completed', ar: 'مكتمل' })}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <Input
-                      value={activity.owner || ''}
-                      onChange={(e) => onUpdateActivity(activity.id, 'owner', e.target.value)}
-                      placeholder={t({ en: 'Owner', ar: 'المسؤول' })}
-                      className="text-sm"
-                    />
-                    <Input
-                      value={activity.timeline || ''}
-                      onChange={(e) => onUpdateActivity(activity.id, 'timeline', e.target.value)}
-                      placeholder={t({ en: 'Timeline', ar: 'الجدول الزمني' })}
-                      className="text-sm"
-                    />
-                    <Select value={activity.status || 'planned'} onValueChange={(v) => onUpdateActivity(activity.id, 'status', v)}>
-                      <SelectTrigger className="text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="planned">{t({ en: 'Planned', ar: 'مخطط' })}</SelectItem>
-                        <SelectItem value="in_progress">{t({ en: 'In Progress', ar: 'قيد التنفيذ' })}</SelectItem>
-                        <SelectItem value="completed">{t({ en: 'Completed', ar: 'مكتمل' })}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
-            <Button size="sm" variant="outline" onClick={() => onAddActivity(phase.value)} className="w-full">
-              <Plus className="w-4 h-4 mr-1" />
-              {t({ en: `Add ${phase.label.en} Activity`, ar: `إضافة نشاط ${phase.label.ar}` })}
-            </Button>
+            {!isReadOnly && (
+              <Button size="sm" variant="outline" onClick={() => onAddActivity(phase.value)} className="w-full">
+                <Plus className="w-4 h-4 mr-1" />
+                {t({ en: `Add ${phase.label.en} Activity`, ar: `إضافة نشاط ${phase.label.ar}` })}
+              </Button>
+            )}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
@@ -258,20 +324,25 @@ function PhaseCard({ phase, activities, onAddActivity, onRemoveActivity, onUpdat
 }
 
 // Stakeholder Impact Card Component
-function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t }) {
+function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t, isReadOnly }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const impactLevel = IMPACT_LEVELS.find(l => l.value === impact.impact_level);
   const readinessLevel = READINESS_LEVELS.find(l => l.value === impact.readiness);
   const ReadinessIcon = readinessLevel?.icon || Clock;
+  
+  const completeness = getFieldCompleteness(impact, ['group_en', 'impact_level', 'readiness', 'description_en', 'support_needs_en']);
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden ${completeness === 100 ? 'border-green-300' : ''}`}>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-primary" />
+                <div className="relative">
+                  <Users className="w-5 h-5 text-primary" />
+                  <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${getProgressColor(completeness)}`} />
+                </div>
                 <div>
                   <CardTitle className="text-sm">
                     {language === 'ar' ? (impact.group_ar || impact.group_en) : (impact.group_en || impact.group_ar) || t({ en: 'Stakeholder Group', ar: 'مجموعة أصحاب المصلحة' })}
@@ -286,13 +357,16 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
                         {readinessLevel.label[language]}
                       </Badge>
                     )}
+                    <span className={`text-xs ${getCompletenessColor(completeness)}`}>{completeness}%</span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
-                  <X className="w-4 h-4" />
-                </Button>
+                {!isReadOnly && (
+                  <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </div>
@@ -308,6 +382,8 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
                   value={impact.group_en || ''}
                   onChange={(e) => onUpdate('group_en', e.target.value)}
                   placeholder="e.g., Municipal Staff"
+                  className={impact.group_en?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -317,6 +393,8 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
                   value={impact.group_ar || ''}
                   onChange={(e) => onUpdate('group_ar', e.target.value)}
                   placeholder="مثال: موظفو البلدية"
+                  className={impact.group_ar?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -325,8 +403,10 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">{t({ en: 'Impact Level', ar: 'مستوى التأثير' })}</Label>
-                <Select value={impact.impact_level || 'moderate'} onValueChange={(v) => onUpdate('impact_level', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={impact.impact_level || 'moderate'} onValueChange={(v) => onUpdate('impact_level', v)} disabled={isReadOnly}>
+                  <SelectTrigger className={impact.impact_level ? 'border-green-300' : ''}>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {IMPACT_LEVELS.map(level => (
                       <SelectItem key={level.value} value={level.value}>{level.label[language]}</SelectItem>
@@ -336,8 +416,10 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
               </div>
               <div>
                 <Label className="text-xs">{t({ en: 'Readiness Status', ar: 'حالة الجاهزية' })}</Label>
-                <Select value={impact.readiness || 'preparing'} onValueChange={(v) => onUpdate('readiness', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={impact.readiness || 'preparing'} onValueChange={(v) => onUpdate('readiness', v)} disabled={isReadOnly}>
+                  <SelectTrigger className={impact.readiness ? 'border-green-300' : ''}>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {READINESS_LEVELS.map(level => {
                       const Icon = level.icon;
@@ -364,6 +446,8 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
                   onChange={(e) => onUpdate('description_en', e.target.value)}
                   placeholder="How will this group be impacted?"
                   rows={2}
+                  className={impact.description_en?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -374,6 +458,8 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
                   onChange={(e) => onUpdate('description_ar', e.target.value)}
                   placeholder="كيف ستتأثر هذه المجموعة؟"
                   rows={2}
+                  className={impact.description_ar?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -387,6 +473,8 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
                   onChange={(e) => onUpdate('support_needs_en', e.target.value)}
                   placeholder="What support do they need?"
                   rows={2}
+                  className={impact.support_needs_en?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -397,6 +485,8 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
                   onChange={(e) => onUpdate('support_needs_ar', e.target.value)}
                   placeholder="ما الدعم الذي يحتاجونه؟"
                   rows={2}
+                  className={impact.support_needs_ar?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -408,26 +498,29 @@ function StakeholderImpactCard({ impact, index, onUpdate, onRemove, language, t 
 }
 
 // Training Card Component
-function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, language, t }) {
+function TrainingCard({ training, onUpdate, onRemove, strategicPlanId, language, t, isReadOnly }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const trainingType = TRAINING_TYPES.find(tt => tt.value === training.type);
   const trainingCategory = TRAINING_CATEGORIES.find(tc => tc.value === training.category);
   const TypeIcon = trainingType?.icon || BookOpen;
+  
+  const completeness = getFieldCompleteness(training, ['name_en', 'type', 'category', 'target_audience_en', 'duration_en']);
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden ${completeness === 100 ? 'border-green-300' : ''}`}>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950 relative">
                   <TypeIcon className="w-4 h-4 text-blue-600" />
+                  <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${getProgressColor(completeness)}`} />
                 </div>
                 <div>
-                    <CardTitle className="text-sm">
-                      {(language === 'ar' ? (training.name_ar || training.name_en || training.name) : (training.name_en || training.name)) || t({ en: 'Training Program', ar: 'برنامج تدريبي' })}
-                    </CardTitle>
+                  <CardTitle className="text-sm">
+                    {(language === 'ar' ? (training.name_ar || training.name_en || training.name) : (training.name_en || training.name)) || t({ en: 'Training Program', ar: 'برنامج تدريبي' })}
+                  </CardTitle>
                   <div className="flex items-center gap-2 mt-1">
                     {trainingType && (
                       <Badge variant="outline" className="text-xs">{trainingType.label[language]}</Badge>
@@ -435,16 +528,16 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
                     {trainingCategory && (
                       <Badge className={`text-xs ${trainingCategory.color}`}>{trainingCategory.label[language]}</Badge>
                     )}
-                    {training.duration_en && (
-                      <span className="text-xs text-muted-foreground">{training.duration_en}</span>
-                    )}
+                    <span className={`text-xs ${getCompletenessColor(completeness)}`}>{completeness}%</span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
-                  <X className="w-4 h-4" />
-                </Button>
+                {!isReadOnly && (
+                  <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </div>
@@ -460,6 +553,8 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
                   value={training.name_en || training.name || ''}
                   onChange={(e) => onUpdate('name_en', e.target.value)}
                   placeholder="e.g., Digital Transformation Workshop"
+                  className={training.name_en?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -469,6 +564,8 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
                   value={training.name_ar || ''}
                   onChange={(e) => onUpdate('name_ar', e.target.value)}
                   placeholder="مثال: ورشة التحول الرقمي"
+                  className={training.name_ar?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -477,8 +574,10 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs">{t({ en: 'Training Type', ar: 'نوع التدريب' })}</Label>
-                <Select value={training.type || 'workshop'} onValueChange={(v) => onUpdate('type', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={training.type || 'workshop'} onValueChange={(v) => onUpdate('type', v)} disabled={isReadOnly}>
+                  <SelectTrigger className={training.type ? 'border-green-300' : ''}>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {TRAINING_TYPES.map(tt => {
                       const Icon = tt.icon;
@@ -496,8 +595,10 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
               </div>
               <div>
                 <Label className="text-xs">{t({ en: 'Category', ar: 'الفئة' })}</Label>
-                <Select value={training.category || 'technical'} onValueChange={(v) => onUpdate('category', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={training.category || 'technical'} onValueChange={(v) => onUpdate('category', v)} disabled={isReadOnly}>
+                  <SelectTrigger className={training.category ? 'border-green-300' : ''}>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {TRAINING_CATEGORIES.map(tc => (
                       <SelectItem key={tc.value} value={tc.value}>{tc.label[language]}</SelectItem>
@@ -507,8 +608,10 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
               </div>
               <div>
                 <Label className="text-xs">{t({ en: 'Priority', ar: 'الأولوية' })}</Label>
-                <Select value={training.priority || 'medium'} onValueChange={(v) => onUpdate('priority', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={training.priority || 'medium'} onValueChange={(v) => onUpdate('priority', v)} disabled={isReadOnly}>
+                  <SelectTrigger className={training.priority ? 'border-green-300' : ''}>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="critical">{t({ en: 'Critical', ar: 'حرج' })}</SelectItem>
                     <SelectItem value="high">{t({ en: 'High', ar: 'عالي' })}</SelectItem>
@@ -527,6 +630,8 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
                   value={training.target_audience_en || training.target_audience || ''}
                   onChange={(e) => onUpdate('target_audience_en', e.target.value)}
                   placeholder="e.g., IT Staff, Managers"
+                  className={training.target_audience_en?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -536,6 +641,8 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
                   value={training.target_audience_ar || ''}
                   onChange={(e) => onUpdate('target_audience_ar', e.target.value)}
                   placeholder="مثال: موظفو تقنية المعلومات، المدراء"
+                  className={training.target_audience_ar?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -549,12 +656,16 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
                     value={training.duration_en || training.duration || ''}
                     onChange={(e) => onUpdate('duration_en', e.target.value)}
                     placeholder="e.g., 2 days"
+                    className={training.duration_en?.trim() ? 'border-green-300' : ''}
+                    disabled={isReadOnly}
                   />
                   <Input
                     dir="rtl"
                     value={training.duration_ar || ''}
                     onChange={(e) => onUpdate('duration_ar', e.target.value)}
                     placeholder="مثال: يومان"
+                    className={training.duration_ar?.trim() ? 'border-green-300' : ''}
+                    disabled={isReadOnly}
                   />
                 </div>
               </div>
@@ -565,31 +676,37 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
                     value={training.timeline_en || training.timeline || ''}
                     onChange={(e) => onUpdate('timeline_en', e.target.value)}
                     placeholder="e.g., Q2 2026"
+                    className={training.timeline_en?.trim() ? 'border-green-300' : ''}
+                    disabled={isReadOnly}
                   />
                   <Input
                     dir="rtl"
                     value={training.timeline_ar || ''}
                     onChange={(e) => onUpdate('timeline_ar', e.target.value)}
                     placeholder="مثال: الربع الثاني 2026"
+                    className={training.timeline_ar?.trim() ? 'border-green-300' : ''}
+                    disabled={isReadOnly}
                   />
                 </div>
               </div>
             </div>
 
             {/* Entity Allocation */}
-            <div className="pt-2 border-t">
-              <Label className="text-xs flex items-center gap-1 mb-2">
-                <Target className="h-3 w-3" />
-                {t({ en: 'Link to Entities', ar: 'ربط بالكيانات' })}
-              </Label>
-              <EntityAllocationSelector
-                strategicPlanId={strategicPlanId}
-                value={training.entity_training || []}
-                onChange={(allocations) => onUpdate('entity_training', allocations)}
-                multiple={true}
-                placeholder={t({ en: 'Select entities this training supports...', ar: 'اختر الكيانات التي يدعمها هذا التدريب...' })}
-              />
-            </div>
+            {!isReadOnly && (
+              <div className="pt-2 border-t">
+                <Label className="text-xs flex items-center gap-1 mb-2">
+                  <Target className="h-3 w-3" />
+                  {t({ en: 'Link to Entities', ar: 'ربط بالكيانات' })}
+                </Label>
+                <EntityAllocationSelector
+                  strategicPlanId={strategicPlanId}
+                  value={training.entity_training || []}
+                  onChange={(allocations) => onUpdate('entity_training', allocations)}
+                  multiple={true}
+                  placeholder={t({ en: 'Select entities this training supports...', ar: 'اختر الكيانات التي يدعمها هذا التدريب...' })}
+                />
+              </div>
+            )}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
@@ -598,34 +715,42 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
 }
 
 // Resistance Strategy Card
-function ResistanceStrategyCard({ strategy, index, onUpdate, onRemove, language, t }) {
+function ResistanceStrategyCard({ strategy, index, onUpdate, onRemove, language, t, isReadOnly }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const resistanceType = RESISTANCE_TYPES.find(rt => rt.value === strategy.type);
   const TypeIcon = resistanceType?.icon || AlertTriangle;
+  
+  const completeness = getFieldCompleteness(strategy, ['type', 'mitigation_en', 'owner']);
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden ${completeness === 100 ? 'border-green-300' : ''}`}>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-950">
+                <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-950 relative">
                   <TypeIcon className="w-4 h-4 text-orange-600" />
+                  <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${getProgressColor(completeness)}`} />
                 </div>
                 <div>
                   <CardTitle className="text-sm">
                     {resistanceType?.label[language] || t({ en: 'Resistance Type', ar: 'نوع المقاومة' })}
                   </CardTitle>
-                  <CardDescription className="text-xs">
-                    {language === 'ar' ? (strategy.mitigation_ar || strategy.mitigation_en)?.substring(0, 50) : (strategy.mitigation_en || strategy.mitigation_ar)?.substring(0, 50)}...
-                  </CardDescription>
+                  <div className="flex items-center gap-2 mt-1">
+                    <CardDescription className="text-xs">
+                      {language === 'ar' ? (strategy.mitigation_ar || strategy.mitigation_en)?.substring(0, 40) : (strategy.mitigation_en || strategy.mitigation_ar)?.substring(0, 40)}...
+                    </CardDescription>
+                    <span className={`text-xs ${getCompletenessColor(completeness)}`}>{completeness}%</span>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
-                  <X className="w-4 h-4" />
-                </Button>
+                {!isReadOnly && (
+                  <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </div>
@@ -636,8 +761,10 @@ function ResistanceStrategyCard({ strategy, index, onUpdate, onRemove, language,
             {/* Resistance Type */}
             <div>
               <Label className="text-xs">{t({ en: 'Resistance Type', ar: 'نوع المقاومة' })}</Label>
-              <Select value={strategy.type || 'fear_unknown'} onValueChange={(v) => onUpdate('type', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={strategy.type || 'fear_unknown'} onValueChange={(v) => onUpdate('type', v)} disabled={isReadOnly}>
+                <SelectTrigger className={strategy.type ? 'border-green-300' : ''}>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {RESISTANCE_TYPES.map(rt => {
                     const Icon = rt.icon;
@@ -663,6 +790,8 @@ function ResistanceStrategyCard({ strategy, index, onUpdate, onRemove, language,
                   onChange={(e) => onUpdate('mitigation_en', e.target.value)}
                   placeholder="How will you address this resistance?"
                   rows={3}
+                  className={strategy.mitigation_en?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -673,6 +802,8 @@ function ResistanceStrategyCard({ strategy, index, onUpdate, onRemove, language,
                   onChange={(e) => onUpdate('mitigation_ar', e.target.value)}
                   placeholder="كيف ستعالج هذه المقاومة؟"
                   rows={3}
+                  className={strategy.mitigation_ar?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -684,7 +815,9 @@ function ResistanceStrategyCard({ strategy, index, onUpdate, onRemove, language,
                 <Input
                   value={strategy.owner || ''}
                   onChange={(e) => onUpdate('owner', e.target.value)}
-                  placeholder={t({ en: 'Who is responsible?', ar: 'من المسؤول؟' })}
+                  placeholder={t({ en: 'Who will implement this?', ar: 'من سينفذ هذا؟' })}
+                  className={strategy.owner?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -692,7 +825,9 @@ function ResistanceStrategyCard({ strategy, index, onUpdate, onRemove, language,
                 <Input
                   value={strategy.timeline || ''}
                   onChange={(e) => onUpdate('timeline', e.target.value)}
-                  placeholder={t({ en: 'When will this be addressed?', ar: 'متى سيتم معالجة هذا؟' })}
+                  placeholder={t({ en: 'When will this be implemented?', ar: 'متى سيتم تنفيذ هذا؟' })}
+                  className={strategy.timeline?.trim() ? 'border-green-300' : ''}
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -703,11 +838,220 @@ function ResistanceStrategyCard({ strategy, index, onUpdate, onRemove, language,
   );
 }
 
+// Summary Tab Component
+function SummaryTab({ changeManagement, language, t }) {
+  const trainingPlan = changeManagement?.training_plan || [];
+  const stakeholderImpacts = changeManagement?.stakeholder_impacts || [];
+  const changeActivities = changeManagement?.change_activities || [];
+  const resistanceStrategies = changeManagement?.resistance_strategies || [];
+
+  // Calculate training by category
+  const trainingByCategory = useMemo(() => {
+    const counts = {};
+    TRAINING_CATEGORIES.forEach(cat => counts[cat.value] = 0);
+    trainingPlan.forEach(t => {
+      if (t.category && counts[t.category] !== undefined) counts[t.category]++;
+    });
+    return counts;
+  }, [trainingPlan]);
+
+  // Calculate impacts by level
+  const impactsByLevel = useMemo(() => {
+    const counts = {};
+    IMPACT_LEVELS.forEach(lvl => counts[lvl.value] = 0);
+    stakeholderImpacts.forEach(i => {
+      if (i.impact_level && counts[i.impact_level] !== undefined) counts[i.impact_level]++;
+    });
+    return counts;
+  }, [stakeholderImpacts]);
+
+  // Calculate ADKAR coverage
+  const adkarCoverage = useMemo(() => {
+    const coverage = {};
+    CHANGE_PHASES.forEach(phase => {
+      coverage[phase.value] = changeActivities.filter(a => a.phase === phase.value).length;
+    });
+    return coverage;
+  }, [changeActivities]);
+
+  // Generate recommendations
+  const recommendations = useMemo(() => {
+    const recs = [];
+    
+    if (!changeManagement?.readiness_assessment_en?.trim()) {
+      recs.push({ type: 'error', message: { en: 'Complete the readiness assessment', ar: 'أكمل تقييم الجاهزية' } });
+    }
+    if (!changeManagement?.change_approach_en?.trim()) {
+      recs.push({ type: 'error', message: { en: 'Define the change approach', ar: 'حدد نهج التغيير' } });
+    }
+    if (trainingPlan.length === 0) {
+      recs.push({ type: 'warning', message: { en: 'Add at least one training program', ar: 'أضف برنامج تدريب واحد على الأقل' } });
+    }
+    if (stakeholderImpacts.length === 0) {
+      recs.push({ type: 'warning', message: { en: 'Analyze stakeholder impacts', ar: 'حلل تأثيرات أصحاب المصلحة' } });
+    }
+    
+    const uncoveredPhases = CHANGE_PHASES.filter(p => adkarCoverage[p.value] === 0);
+    if (uncoveredPhases.length > 0) {
+      recs.push({ 
+        type: 'info', 
+        message: { 
+          en: `Missing ADKAR activities: ${uncoveredPhases.map(p => p.label.en).join(', ')}`, 
+          ar: `أنشطة ADKAR المفقودة: ${uncoveredPhases.map(p => p.label.ar).join('، ')}` 
+        } 
+      });
+    }
+    
+    if (resistanceStrategies.length === 0) {
+      recs.push({ type: 'info', message: { en: 'Consider adding resistance management strategies', ar: 'فكر في إضافة استراتيجيات إدارة المقاومة' } });
+    }
+    
+    const highImpactGroups = stakeholderImpacts.filter(i => ['transformational', 'significant'].includes(i.impact_level));
+    if (highImpactGroups.length > 0 && trainingPlan.length < highImpactGroups.length) {
+      recs.push({ type: 'warning', message: { en: 'High-impact groups may need more training programs', ar: 'قد تحتاج المجموعات عالية التأثير إلى المزيد من برامج التدريب' } });
+    }
+    
+    return recs;
+  }, [changeManagement, trainingPlan, stakeholderImpacts, adkarCoverage, resistanceStrategies]);
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* ADKAR Coverage */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Layers className="w-4 h-4 text-teal-500" />
+              {t({ en: 'ADKAR Coverage', ar: 'تغطية ADKAR' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {CHANGE_PHASES.map(phase => {
+                const PhaseIcon = phase.icon;
+                const count = adkarCoverage[phase.value];
+                return (
+                  <div key={phase.value} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <PhaseIcon className={`w-3 h-3 ${count > 0 ? 'text-green-500' : 'text-muted-foreground'}`} />
+                      <span className="text-xs">{phase.label[language]}</span>
+                    </div>
+                    <Badge variant={count > 0 ? 'default' : 'outline'} className="text-xs">
+                      {count}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Training by Category */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-blue-500" />
+              {t({ en: 'Training Categories', ar: 'فئات التدريب' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {TRAINING_CATEGORIES.filter(cat => trainingByCategory[cat.value] > 0).map(cat => (
+                <div key={cat.value} className="flex items-center justify-between">
+                  <span className="text-xs">{cat.label[language]}</span>
+                  <Badge className={`text-xs ${cat.color}`}>{trainingByCategory[cat.value]}</Badge>
+                </div>
+              ))}
+              {Object.values(trainingByCategory).every(v => v === 0) && (
+                <p className="text-xs text-muted-foreground text-center py-2">{t({ en: 'No training defined', ar: 'لم يتم تحديد تدريب' })}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Impact Levels Distribution */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Users className="w-4 h-4 text-purple-500" />
+              {t({ en: 'Impact Distribution', ar: 'توزيع التأثير' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {IMPACT_LEVELS.filter(lvl => impactsByLevel[lvl.value] > 0).map(lvl => (
+                <div key={lvl.value} className="flex items-center justify-between">
+                  <span className="text-xs">{lvl.label[language]}</span>
+                  <Badge className={`text-xs ${lvl.color}`}>{impactsByLevel[lvl.value]}</Badge>
+                </div>
+              ))}
+              {Object.values(impactsByLevel).every(v => v === 0) && (
+                <p className="text-xs text-muted-foreground text-center py-2">{t({ en: 'No impacts defined', ar: 'لم يتم تحديد تأثيرات' })}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Resistance Types */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Shield className="w-4 h-4 text-orange-500" />
+              {t({ en: 'Resistance Addressed', ar: 'المقاومة المعالجة' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {resistanceStrategies.length > 0 ? (
+                resistanceStrategies.map((rs, idx) => {
+                  const type = RESISTANCE_TYPES.find(rt => rt.value === rs.type);
+                  const TypeIcon = type?.icon || AlertTriangle;
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      <TypeIcon className="w-3 h-3 text-orange-500" />
+                      <span className="text-xs truncate">{type?.label[language] || rs.type}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-2">{t({ en: 'No strategies defined', ar: 'لم يتم تحديد استراتيجيات' })}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recommendations */}
+      {recommendations.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-yellow-500" />
+              {t({ en: 'Recommendations', ar: 'التوصيات' })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {recommendations.map((rec, idx) => (
+                <Alert key={idx} variant={rec.type === 'error' ? 'destructive' : 'default'} className="py-2">
+                  {rec.type === 'error' ? <AlertCircle className="h-4 w-4" /> : rec.type === 'warning' ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+                  <AlertDescription className="text-xs">{rec.message[language]}</AlertDescription>
+                </Alert>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 // Main Step 17 Component
-export default function Step17Change({ data, onChange, onGenerateAI, isGenerating, strategicPlanId }) {
+export default function Step17Change({ data, onChange, onGenerateAI, isGenerating, strategicPlanId, isReadOnly = false }) {
   const { language, t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
-  const [viewMode, setViewMode] = useState('cards'); // 'cards', 'phases', 'timeline'
+  const [viewMode, setViewMode] = useState('cards');
 
   const changeManagement = data.change_management || {};
   const trainingPlan = changeManagement.training_plan || [];
@@ -716,6 +1060,7 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
   const resistanceStrategies = changeManagement.resistance_strategies || [];
 
   const updateChangeManagement = (updates) => {
+    if (isReadOnly) return;
     onChange({
       change_management: {
         ...changeManagement,
@@ -823,6 +1168,22 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
     updateChangeManagement({ resistance_strategies: resistanceStrategies.filter((_, i) => i !== index) });
   };
 
+  // Check for issues
+  const hasIssues = useMemo(() => {
+    const issues = [];
+    if (!changeManagement?.readiness_assessment_en?.trim()) {
+      issues.push({ en: 'No readiness assessment defined', ar: 'لم يتم تحديد تقييم الجاهزية' });
+    }
+    if (!changeManagement?.change_approach_en?.trim()) {
+      issues.push({ en: 'No change approach defined', ar: 'لم يتم تحديد نهج التغيير' });
+    }
+    const uncoveredPhases = CHANGE_PHASES.filter(p => !changeActivities.some(a => a.phase === p.value));
+    if (uncoveredPhases.length >= 3) {
+      issues.push({ en: `${uncoveredPhases.length} ADKAR phases have no activities`, ar: `${uncoveredPhases.length} مراحل ADKAR ليس لها أنشطة` });
+    }
+    return issues;
+  }, [changeManagement, changeActivities]);
+
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
@@ -831,6 +1192,7 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <RefreshCw className="w-6 h-6 text-primary" />
             {t({ en: 'Change Management', ar: 'إدارة التغيير' })}
+            {isReadOnly && <Badge variant="secondary">{t({ en: 'View Only', ar: 'عرض فقط' })}</Badge>}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             {t({ en: 'Plan your change strategy using the ADKAR model for sustainable transformation', ar: 'خطط لاستراتيجية التغيير باستخدام نموذج ADKAR للتحول المستدام' })}
@@ -854,19 +1216,47 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
             >
               <GitBranch className="w-4 h-4" />
             </Button>
+            <Button 
+              variant={viewMode === 'summary' ? 'secondary' : 'ghost'} 
+              size="sm" 
+              onClick={() => setViewMode('summary')}
+              className="rounded-none"
+            >
+              <PieChart className="w-4 h-4" />
+            </Button>
           </div>
-          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
-          </Button>
+          {!isReadOnly && (
+            <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Dashboard */}
-      <ChangeDashboard changeManagement={changeManagement} language={language} t={t} />
+      <DashboardHeader changeManagement={changeManagement} language={language} t={t} />
 
-      {/* View Mode: Phases */}
-      {viewMode === 'phases' ? (
+      {/* Alerts */}
+      {hasIssues.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>{t({ en: 'Issues Found', ar: 'تم العثور على مشاكل' })}</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc list-inside text-sm">
+              {hasIssues.map((issue, idx) => (
+                <li key={idx}>{issue[language]}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* View Mode: Summary */}
+      {viewMode === 'summary' ? (
+        <SummaryTab changeManagement={changeManagement} language={language} t={t} />
+      ) : viewMode === 'phases' ? (
+        /* View Mode: Phases */
         <div className="space-y-4">
           <h3 className="font-medium flex items-center gap-2">
             <Layers className="w-5 h-5 text-primary" />
@@ -883,6 +1273,7 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                 onUpdateActivity={updateChangeActivity}
                 language={language}
                 t={t}
+                isReadOnly={isReadOnly}
               />
             ))}
           </div>
@@ -920,11 +1311,12 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4 mt-4">
             {/* Readiness Assessment */}
-            <Card>
+            <Card className={changeManagement.readiness_assessment_en?.trim() ? 'border-green-300' : ''}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Target className="w-5 h-5 text-blue-500" />
                   {t({ en: 'Readiness Assessment', ar: 'تقييم الجاهزية' })}
+                  {changeManagement.readiness_assessment_en?.trim() && <CheckCircle className="w-4 h-4 text-green-500" />}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -936,6 +1328,8 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                       onChange={(e) => updateChangeManagement({ readiness_assessment_en: e.target.value })}
                       placeholder="Assess organizational readiness for change..."
                       rows={4}
+                      className={changeManagement.readiness_assessment_en?.trim() ? 'border-green-300' : ''}
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -946,6 +1340,8 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                       onChange={(e) => updateChangeManagement({ readiness_assessment_ar: e.target.value })}
                       placeholder="تقييم جاهزية المنظمة للتغيير..."
                       rows={4}
+                      className={changeManagement.readiness_assessment_ar?.trim() ? 'border-green-300' : ''}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -953,11 +1349,12 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
             </Card>
 
             {/* Change Approach */}
-            <Card>
+            <Card className={changeManagement.change_approach_en?.trim() ? 'border-green-300' : ''}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Lightbulb className="w-5 h-5 text-yellow-500" />
                   {t({ en: 'Change Approach', ar: 'نهج التغيير' })}
+                  {changeManagement.change_approach_en?.trim() && <CheckCircle className="w-4 h-4 text-green-500" />}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -969,6 +1366,8 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                       onChange={(e) => updateChangeManagement({ change_approach_en: e.target.value })}
                       placeholder="Describe the change management approach..."
                       rows={4}
+                      className={changeManagement.change_approach_en?.trim() ? 'border-green-300' : ''}
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -979,6 +1378,8 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                       onChange={(e) => updateChangeManagement({ change_approach_ar: e.target.value })}
                       placeholder="وصف نهج إدارة التغيير..."
                       rows={4}
+                      className={changeManagement.change_approach_ar?.trim() ? 'border-green-300' : ''}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -986,11 +1387,12 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
             </Card>
 
             {/* General Resistance Management */}
-            <Card>
+            <Card className={changeManagement.resistance_management_en?.trim() ? 'border-green-300' : ''}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Shield className="w-5 h-5 text-orange-500" />
                   {t({ en: 'General Resistance Strategy', ar: 'استراتيجية المقاومة العامة' })}
+                  {changeManagement.resistance_management_en?.trim() && <CheckCircle className="w-4 h-4 text-green-500" />}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -1002,6 +1404,8 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                       onChange={(e) => updateChangeManagement({ resistance_management_en: e.target.value })}
                       placeholder="How will you address resistance to change?"
                       rows={3}
+                      className={changeManagement.resistance_management_en?.trim() ? 'border-green-300' : ''}
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -1012,6 +1416,8 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                       onChange={(e) => updateChangeManagement({ resistance_management_ar: e.target.value })}
                       placeholder="كيف ستتعامل مع مقاومة التغيير؟"
                       rows={3}
+                      className={changeManagement.resistance_management_ar?.trim() ? 'border-green-300' : ''}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -1023,10 +1429,12 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
           <TabsContent value="impacts" className="space-y-4 mt-4">
             <div className="flex justify-between items-center">
               <h3 className="font-medium">{t({ en: 'Stakeholder Impact Analysis', ar: 'تحليل تأثير أصحاب المصلحة' })}</h3>
-              <Button size="sm" variant="outline" onClick={addStakeholderImpact}>
-                <Plus className="w-4 h-4 mr-1" />
-                {t({ en: 'Add Impact Analysis', ar: 'إضافة تحليل تأثير' })}
-              </Button>
+              {!isReadOnly && (
+                <Button size="sm" variant="outline" onClick={addStakeholderImpact}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  {t({ en: 'Add Impact Analysis', ar: 'إضافة تحليل تأثير' })}
+                </Button>
+              )}
             </div>
 
             {stakeholderImpacts.length === 0 ? (
@@ -1045,6 +1453,7 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                     onRemove={() => removeStakeholderImpact(idx)}
                     language={language}
                     t={t}
+                    isReadOnly={isReadOnly}
                   />
                 ))}
               </div>
@@ -1055,10 +1464,12 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
           <TabsContent value="resistance" className="space-y-4 mt-4">
             <div className="flex justify-between items-center">
               <h3 className="font-medium">{t({ en: 'Resistance Management Strategies', ar: 'استراتيجيات إدارة المقاومة' })}</h3>
-              <Button size="sm" variant="outline" onClick={addResistanceStrategy}>
-                <Plus className="w-4 h-4 mr-1" />
-                {t({ en: 'Add Strategy', ar: 'إضافة استراتيجية' })}
-              </Button>
+              {!isReadOnly && (
+                <Button size="sm" variant="outline" onClick={addResistanceStrategy}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  {t({ en: 'Add Strategy', ar: 'إضافة استراتيجية' })}
+                </Button>
+              )}
             </div>
 
             {resistanceStrategies.length === 0 ? (
@@ -1077,6 +1488,7 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
                     onRemove={() => removeResistanceStrategy(idx)}
                     language={language}
                     t={t}
+                    isReadOnly={isReadOnly}
                   />
                 ))}
               </div>
@@ -1087,10 +1499,12 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
           <TabsContent value="training" className="space-y-4 mt-4">
             <div className="flex justify-between items-center">
               <h3 className="font-medium">{t({ en: 'Training Programs', ar: 'برامج التدريب' })}</h3>
-              <Button size="sm" variant="outline" onClick={addTraining}>
-                <Plus className="w-4 h-4 mr-1" />
-                {t({ en: 'Add Training', ar: 'إضافة تدريب' })}
-              </Button>
+              {!isReadOnly && (
+                <Button size="sm" variant="outline" onClick={addTraining}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  {t({ en: 'Add Training', ar: 'إضافة تدريب' })}
+                </Button>
+              )}
             </div>
 
             {trainingPlan.length === 0 ? (
@@ -1100,16 +1514,16 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
               </div>
             ) : (
               <div className="space-y-3">
-                {trainingPlan.map((training, idx) => (
+                {trainingPlan.map((training) => (
                   <TrainingCard
-                    key={training.id || idx}
+                    key={training.id}
                     training={training}
-                    index={idx}
                     onUpdate={(field, value) => updateTraining(training.id, field, value)}
                     onRemove={() => removeTraining(training.id)}
                     strategicPlanId={strategicPlanId}
                     language={language}
                     t={t}
+                    isReadOnly={isReadOnly}
                   />
                 ))}
               </div>
@@ -1118,40 +1532,24 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
 
           {/* Activities Tab */}
           <TabsContent value="activities" className="space-y-4 mt-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium">{t({ en: 'Change Activities by Phase', ar: 'أنشطة التغيير حسب المرحلة' })}</h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {CHANGE_PHASES.map(phase => {
-                const PhaseIcon = phase.icon;
-                const phaseActivities = changeActivities.filter(a => a.phase === phase.value);
-                return (
-                  <Card key={phase.value} className="overflow-hidden">
-                    <CardHeader className={`py-2 ${phase.color} text-white`}>
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <PhaseIcon className="w-4 h-4" />
-                        {phase.label[language]}
-                        <Badge className="bg-white/20 text-white ml-auto">{phaseActivities.length}</Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-3 space-y-2">
-                      {phaseActivities.map(activity => (
-                        <div key={activity.id} className="p-2 bg-muted/50 rounded text-sm flex items-center justify-between">
-                          <span>{language === 'ar' ? (activity.name_ar || activity.name_en) : (activity.name_en || activity.name_ar) || '...'}</span>
-                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeChangeActivity(activity.id)}>
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button size="sm" variant="ghost" className="w-full text-xs" onClick={() => addChangeActivity(phase.value)}>
-                        <Plus className="w-3 h-3 mr-1" />
-                        {t({ en: 'Add', ar: 'إضافة' })}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <h3 className="font-medium flex items-center gap-2">
+              <Layers className="w-5 h-5 text-primary" />
+              {t({ en: 'ADKAR Change Activities', ar: 'أنشطة التغيير ADKAR' })}
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              {CHANGE_PHASES.map(phase => (
+                <PhaseCard
+                  key={phase.value}
+                  phase={phase}
+                  activities={changeActivities}
+                  onAddActivity={addChangeActivity}
+                  onRemoveActivity={removeChangeActivity}
+                  onUpdateActivity={updateChangeActivity}
+                  language={language}
+                  t={t}
+                  isReadOnly={isReadOnly}
+                />
+              ))}
             </div>
           </TabsContent>
         </Tabs>
