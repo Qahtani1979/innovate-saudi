@@ -1706,7 +1706,7 @@ Based on current coverage: ${sectorCoverageSummary}
       case 6: return <Step6Scenarios {...props} />;
       case 7: return <Step7Risks {...props} onGenerateSingleRisk={generateSingleRisk} />;
       case 8: return <Step8Dependencies {...props} />;
-      case 9: return <Step9Objectives {...props} onGenerateSingleObjective={generateSingleObjective} />;
+      case 9: return <Step9Objectives {...props} wizardData={wizardData} sectors={sectors} strategicThemes={strategicThemes} onGenerateSingleObjective={generateSingleObjective} />;
       case 10: return <Step10National {...props} />;
       case 11: return <Step11KPIs {...props} onGenerateSingleKpi={generateSingleKpi} />;
       case 12: return <Step12Actions {...props} strategicPlanId={planId} wizardData={wizardData} onGenerateSingleAction={generateSingleAction} />;
