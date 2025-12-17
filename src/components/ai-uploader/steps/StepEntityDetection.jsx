@@ -14,7 +14,13 @@ import {
   Users, FileText, Briefcase, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildEntityDetectionPrompt, 
+  ENTITY_DETECTION_SCHEMA,
+  ENTITY_DETECTION_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/uploader';
 
 const ENTITY_OPTIONS = [
   { id: 'challenges', name: 'Challenges', icon: Target, description: 'Municipal challenges and problems' },
@@ -45,6 +51,7 @@ export default function StepEntityDetection({ state, updateState, onNext, onBack
   const [isDetecting, setIsDetecting] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [selectedEntity, setSelectedEntity] = useState(state.detectedEntity || '');
+  const { invokeAI, isAvailable } = useAIWithFallback({ showToasts: true });
 
   useEffect(() => {
     if (state.extractedData && !state.detectedEntity) {
@@ -59,88 +66,34 @@ export default function StepEntityDetection({ state, updateState, onNext, onBack
       const sampleData = state.extractedData.rows.slice(0, 5);
       const headers = state.extractedData.headers;
       
-      const prompt = `Analyze this data and determine which entity type it belongs to.
+      const prompt = buildEntityDetectionPrompt({ headers, sampleData });
 
-Available entity types:
-- challenges: Municipal challenges with fields like title_en, title_ar, description_en, status, priority, sector, municipality_id
-- solutions: Innovative solutions with fields like name_en, name_ar, description_en, solution_type, maturity_level, provider_id
-- pilots: Pilot projects with fields like title_en, title_ar, sector (required), stage, status, start_date, end_date, budget, municipality_id (required), challenge_id (required)
-- programs: Innovation programs with fields like name_en, name_ar, description_en, program_type, status, start_date, end_date, budget
-- municipalities: Cities with fields like name_en, name_ar, region_id, population, area
-- organizations: Companies with fields like name_en, name_ar, organization_type, website, email
-- providers: Solution providers with fields like name_en, name_ar, provider_type, website_url, contact_email, country
-- case_studies: Success stories with title_en, description_en, challenge_description, solution_description, results_achieved
-- rd_projects: Research projects with title_en, description_en, project_type, status, budget
-- rd_calls: Research funding calls with title_en, description_en, call_type, status, budget
-- events: Events and conferences with title_en, event_type, start_date, end_date, location
-- living_labs: Innovation labs with name_en, domain, status, location, contact_name, contact_email, municipality_id
-- sandboxes: Regulatory sandboxes with name (required), description, domain, status, start_date, end_date, capacity, municipality_id
-- contracts: Agreements with title_en, contract_code, contract_type, contract_value, provider_id
-- budgets: Budget allocations with name_en, budget_code, total_amount, allocated_amount, fiscal_year
-- sectors: Industry sectors with name_en, name_ar, description_en, code
-- regions: Geographic regions with name_en, name_ar, code
-- cities: Cities data with name_en, name_ar, region_id, municipality_id, population
-- strategic_plans: Strategic planning with name_en, description_en, vision_en, status, start_year, end_year, municipality_id
-- tags: Taxonomy tags with name_en, name_ar, category, color
-- kpi_references: KPI definitions with name_en, code, description_en, unit, category, target_value
-- citizen_ideas: Citizen ideas with title, description, category, status, municipality_id
-
-Data headers: ${headers.join(', ')}
-Sample rows: ${JSON.stringify(sampleData, null, 2)}
-
-Return the top 3 most likely entity types with confidence scores.`;
-
-      const response_json_schema = {
-        type: 'object',
-        properties: {
-          suggestions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                entity_type: { type: 'string' },
-                confidence: { type: 'number' },
-                reason: { type: 'string' }
-              }
-            }
-          }
-        }
-      };
-
-      // Optional anonymous session id for rate limiting
-      let sessionId = null;
-      if (typeof window !== 'undefined') {
-        sessionId = sessionStorage.getItem('ai_session_id');
-        if (!sessionId) {
-          sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          sessionStorage.setItem('ai_session_id', sessionId);
-        }
-      }
-
-      const { data: aiData, error } = await supabase.functions.invoke('invoke-llm', {
-        body: { 
-          prompt,
-          system_prompt: 'You are a data classification expert. Analyze data structures and determine entity types.',
-          response_json_schema,
-          session_id: sessionId
-        }
+      const response = await invokeAI({
+        prompt,
+        system_prompt: ENTITY_DETECTION_SYSTEM_PROMPT,
+        response_json_schema: ENTITY_DETECTION_SCHEMA
       });
 
-      if (error) {
-        throw error;
-      }
-
-      const suggestions = aiData?.suggestions || [];
-
-      if (suggestions.length > 0) {
+      if (response.success && response.data?.suggestions) {
+        const suggestions = response.data.suggestions;
         setAiSuggestions(suggestions);
-        const topMatch = suggestions[0];
-        setSelectedEntity(topMatch.entity_type);
-        updateState({
-          detectedEntity: topMatch.entity_type,
-          entityConfidence: topMatch.confidence
-        });
+        
+        if (suggestions.length > 0) {
+          const topMatch = suggestions[0];
+          setSelectedEntity(topMatch.entity_type);
+          updateState({
+            detectedEntity: topMatch.entity_type,
+            entityConfidence: topMatch.confidence
+          });
+        }
       }
+    } catch (error) {
+      console.error('Entity detection error:', error);
+      toast.error('AI detection failed. Please select entity type manually.');
+    } finally {
+      setIsDetecting(false);
+    }
+  };
     } catch (error) {
       console.error('Entity detection error:', error);
       toast.error('AI detection failed. Please select entity type manually.');

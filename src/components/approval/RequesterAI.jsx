@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,10 @@ import { Sparkles, CheckCircle2, AlertTriangle, Loader2, RefreshCw } from 'lucid
 import { useLanguage } from '../LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildRequesterAssessmentPrompt, 
+  REQUESTER_ASSESSMENT_SCHEMA 
+} from '@/lib/ai/prompts/approval';
 
 /**
  * RequesterAI - AI Assistant for Requesters
@@ -26,79 +29,12 @@ export default function RequesterAI({
   const runAIAssessment = async () => {
     if (!isAvailable) return;
     
-    const prompt = `
-🚨🚨🚨 CRITICAL BILINGUAL REQUIREMENT 🚨🚨🚨
-
-You MUST return ALL text in BILINGUAL format: {"en": "English text", "ar": "النص العربي"}
-
-❌ WRONG - DO NOT DO THIS:
-{
-  "notes": "Legal citations verified",
-  "overall_assessment": "Ready for submission"
-}
-
-✅ CORRECT - YOU MUST DO THIS:
-{
-  "notes": {
-    "en": "Legal citations from the Municipalities Law and Saudi Traffic Law have been identified and confirmed",
-    "ar": "تم تحديد وتأكيد الاستشهادات القانونية من نظام البلديات وقانون المرور السعودي"
-  },
-  "overall_assessment": {
-    "en": "The policy recommendation is fully prepared for legal review approval",
-    "ar": "التوصية السياسية معدة بالكامل لموافقة المراجعة القانونية"
-  }
-}
-
-Gate: ${gateName} (${gateConfig.label?.ar || gateName})
-Entity Type: ${entityType}
-
-Self-Check Items (BILINGUAL - use these exact texts):
-${JSON.stringify(gateConfig.selfCheckItems, null, 2)}
-
-Entity Data:
-${JSON.stringify(entityData, null, 2)}
-
-IMPORTANT: When referencing self-check items in your response, use the EXACT bilingual text from above.
-
-YOUR TASK:
-Analyze the entity data and return a readiness assessment.
-
-YOU MUST RETURN JSON MATCHING THIS EXACT STRUCTURE - NO EXCEPTIONS:
-
-{
-  "readiness_score": 95,
-  "checklist_status": [
-    {
-      "item": "Legal citations verified",
-      "status": "complete",
-      "ai_verified": true,
-      "notes": {
-        "en": "Legal citations from the Municipalities Law have been identified",
-        "ar": "تم تحديد الاستشهادات القانونية من نظام البلديات"
-      }
-    }
-  ],
-  "issues": [
-    {
-      "en": "Missing stakeholder analysis",
-      "ar": "تحليل أصحاب المصلحة مفقود"
-    }
-  ],
-  "recommendations": [
-    {
-      "en": "Add stakeholder engagement plan",
-      "ar": "أضف خطة إشراك أصحاب المصلحة"
-    }
-  ],
-  "overall_assessment": {
-    "en": "The policy is well-prepared and ready for submission",
-    "ar": "السياسة معدة بشكل جيد وجاهزة للتقديم"
-  }
-}
-
-NEVER return plain strings. ALWAYS use {"en": "...", "ar": "..."} objects.
-Write professional Arabic for Saudi government context.
-      `;
+    const prompt = buildRequesterAssessmentPrompt({
+      gateName,
+      gateConfig,
+      entityType,
+      entityData
+    });
 
     const response = await invokeAI({
       prompt,
