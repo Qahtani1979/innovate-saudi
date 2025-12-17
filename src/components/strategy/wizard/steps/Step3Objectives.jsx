@@ -417,7 +417,8 @@ export default function Step3Objectives({
           isGenerating={isGenerating}
           onGenerateSingle={() => handleGenerateSingleObjective()}
           isGeneratingSingle={isGeneratingSingle}
-          singleLabel={{ en: 'AI Add One', ar: 'إضافة واحد بالذكاء' }}
+          showSingleButton={!!onGenerateSingleObjective}
+          singleButtonLabel={{ en: 'AI Add One', ar: 'إضافة واحد بالذكاء' }}
         />
       )}
 
