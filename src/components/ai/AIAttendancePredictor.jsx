@@ -7,6 +7,8 @@ import { Users, TrendingUp, TrendingDown, Minus, Loader2, BarChart3, AlertCircle
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getAttendancePredictorPrompt, attendancePredictorSchema } from '@/lib/ai/prompts/events';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export function AIAttendancePredictor({ 
   event = {},
@@ -14,56 +16,19 @@ export function AIAttendancePredictor({
   historicalData = [],
   onPredictionComplete
 }) {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const [prediction, setPrediction] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generatePrediction = async () => {
-    const prompt = `You are an event attendance prediction expert.
-
-Analyze this event and predict attendance:
-- Event Title: ${event.title_en || event.title_ar || 'Event'}
-- Event Type: ${event.event_type || 'general'}
-- Current Registrations: ${registrationCount}
-- Max Capacity: ${event.max_participants || 'unlimited'}
-- Days Until Event: ${event.start_date ? Math.ceil((new Date(event.start_date) - new Date()) / (1000 * 60 * 60 * 24)) : 'unknown'}
-- Event Mode: ${event.event_mode || 'in-person'}
-- Historical Average Attendance Rate: ${historicalData.length > 0 ? '75%' : 'No data'}
-
-Provide your response as a JSON object:
-{
-  "predicted_attendance": 45,
-  "attendance_rate": 85,
-  "confidence": "high|medium|low",
-  "trend": "up|down|stable",
-  "factors": [
-    {"factor": "Event type popular", "impact": "positive"},
-    {"factor": "Weekday timing", "impact": "neutral"}
-  ],
-  "recommendations": [
-    "Consider sending reminder emails 2 days before",
-    "Current capacity seems appropriate"
-  ],
-  "risk_level": "low|medium|high",
-  "no_show_estimate": 15
-}`;
-
+    const prompt = getAttendancePredictorPrompt(event, registrationCount, historicalData);
+    
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          predicted_attendance: { type: 'number' },
-          attendance_rate: { type: 'number' },
-          confidence: { type: 'string' },
-          trend: { type: 'string' },
-          factors: { type: 'array' },
-          recommendations: { type: 'array' },
-          risk_level: { type: 'string' },
-          no_show_estimate: { type: 'number' }
-        }
-      }
+      response_json_schema: attendancePredictorSchema,
+      system_prompt: getSystemPrompt('COMPACT', true)
     });
+    
     if (result.success && result.data) {
       setPrediction(result.data);
       if (onPredictionComplete) {

@@ -6,6 +6,8 @@ import { Sparkles, Clock, Calendar, Tag, Loader2, Wand2, CheckCircle } from 'luc
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getEventOptimizerPrompt, eventOptimizerSchema } from '@/lib/ai/prompts/events';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export function AIEventOptimizer({ 
   eventData = {}, 
@@ -17,51 +19,14 @@ export function AIEventOptimizer({
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateSuggestions = async () => {
-    const prompt = `You are an event optimization expert for a government innovation platform.
-
-Analyze this event and provide optimization suggestions:
-- Event Title: ${eventData.title_en || eventData.title_ar || 'New Event'}
-- Event Type: ${eventData.event_type || 'Not specified'}
-- Description: ${eventData.description_en || eventData.description_ar || 'No description'}
-- Start Date: ${eventData.start_date || 'Not set'}
-- Location: ${eventData.location || 'Not specified'}
-- Target Audience: ${eventData.target_audience || 'General'}
-
-Provide your response as a JSON object with this exact structure:
-{
-  "optimal_timing": {
-    "suggested_day": "Tuesday or Wednesday",
-    "suggested_time": "10:00 AM - 12:00 PM",
-    "reasoning": "Brief explanation"
-  },
-  "description_enhancement": {
-    "en": "Enhanced English description (max 150 words)",
-    "ar": "Enhanced Arabic description (max 150 words)"
-  },
-  "suggested_tags": ["tag1", "tag2", "tag3"],
-  "event_type_recommendation": {
-    "recommended": "workshop|webinar|conference|meetup|training",
-    "reasoning": "Why this type fits"
-  },
-  "capacity_suggestion": {
-    "recommended": 50,
-    "reasoning": "Based on event type and topic"
-  }
-}`;
-
+    const prompt = getEventOptimizerPrompt(eventData);
+    
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          optimal_timing: { type: 'object' },
-          description_enhancement: { type: 'object' },
-          suggested_tags: { type: 'array', items: { type: 'string' } },
-          event_type_recommendation: { type: 'object' },
-          capacity_suggestion: { type: 'object' }
-        }
-      }
+      response_json_schema: eventOptimizerSchema,
+      system_prompt: getSystemPrompt('FULL', true)
     });
+    
     if (result.success && result.data) {
       setSuggestions(result.data);
     }

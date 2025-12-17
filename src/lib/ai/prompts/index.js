@@ -18,6 +18,9 @@ export * from '@/components/strategy/wizard/prompts';
 // Portfolio prompts
 export * from './portfolio';
 
+// Events prompts
+export * from './events';
+
 // Pilot prompts  
 // export * from './pilot';
 
@@ -51,9 +54,6 @@ export * from './portfolio';
 // Programs prompts
 // export * from './programs';
 
-// AI Components prompts
-// export * from './ai-components';
-
 // Smart prompts
 // export * from './smart';
 
@@ -64,6 +64,7 @@ export * from './portfolio';
 export const PROMPT_MODULE_STATUS = {
   strategy: { status: 'complete', promptCount: 24 },
   portfolio: { status: 'complete', promptCount: 3 },
+  events: { status: 'complete', promptCount: 3 },
   pilot: { status: 'pending', promptCount: 0 },
   matchmaker: { status: 'pending', promptCount: 0 },
   sandbox: { status: 'pending', promptCount: 0 },
@@ -75,7 +76,6 @@ export const PROMPT_MODULE_STATUS = {
   livinglab: { status: 'pending', promptCount: 0 },
   profiles: { status: 'pending', promptCount: 0 },
   programs: { status: 'pending', promptCount: 0 },
-  'ai-components': { status: 'pending', promptCount: 0 },
   smart: { status: 'pending', promptCount: 0 }
 };
 
