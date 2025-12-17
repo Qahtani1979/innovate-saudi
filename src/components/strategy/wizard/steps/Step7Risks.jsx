@@ -535,28 +535,29 @@ export default function Step7Risks({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="bg-gradient-to-br from-background to-muted/30 border-2">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
-            <CircularProgress value={completenessScore} label={t({ en: 'Complete', ar: 'مكتمل' })} />
-            
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3">
-              <StatCard icon={AlertTriangle} label={t({ en: 'Total Risks', ar: 'إجمالي المخاطر' })} value={stats.total} />
-              <StatCard icon={AlertCircle} label={t({ en: 'High Risk', ar: 'مخاطر عالية' })} value={stats.highRisk} color="text-red-500" />
-              <StatCard icon={Shield} label={t({ en: 'With Mitigation', ar: 'مع تخفيف' })} value={stats.withMitigation} color="text-green-500" />
-              <StatCard icon={User} label={t({ en: 'With Owner', ar: 'مع مالك' })} value={stats.withOwner} color="text-blue-500" />
-              <StatCard icon={Percent} label={t({ en: 'Mitigation Rate', ar: 'معدل التخفيف' })} value={`${stats.mitigationRate}%`} color="text-purple-500" />
-            </div>
-
-            {!isReadOnly && (
-              <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2 shrink-0">
-                <Sparkles className="w-4 h-4" />
-                {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Identify Risks', ar: 'تحديد المخاطر' })}
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={completenessScore}
+        title={t({ en: 'Risk Management', ar: 'إدارة المخاطر' })}
+        subtitle={t({ en: 'Identify, assess, and mitigate strategic risks', ar: 'تحديد وتقييم وتخفيف المخاطر الاستراتيجية' })}
+        language={language}
+        stats={[
+          { icon: AlertTriangle, value: stats.total, label: t({ en: 'Total Risks', ar: 'إجمالي المخاطر' }) },
+          { icon: AlertCircle, value: stats.highRisk, label: t({ en: 'High Risk', ar: 'مخاطر عالية' }) },
+          { icon: Shield, value: stats.withMitigation, label: t({ en: 'With Mitigation', ar: 'مع تخفيف' }) },
+          { icon: User, value: stats.withOwner, label: t({ en: 'With Owner', ar: 'مع مالك' }) },
+          { icon: Percent, value: `${stats.mitigationRate}%`, label: t({ en: 'Mitigation Rate', ar: 'معدل التخفيف' }) },
+        ]}
+      />
+      
+      {/* AI Generate Button */}
+      {!isReadOnly && (
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
+            <Sparkles className="w-4 h-4" />
+            {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Identify Risks', ar: 'تحديد المخاطر' })}
+          </Button>
+        </div>
+      )}
 
       {/* Alerts */}
       {alerts.length > 0 && (

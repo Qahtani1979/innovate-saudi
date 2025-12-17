@@ -250,77 +250,18 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Completeness Score */}
-            <div className="flex items-center gap-4 min-w-[200px]">
-              <div className="relative">
-                <svg className="w-20 h-20 transform -rotate-90">
-                  <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" className="text-muted/20" />
-                  <circle 
-                    cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" 
-                    className="text-primary transition-all duration-500"
-                    strokeDasharray={`${stats.completeness * 2.2} 220`}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xl font-bold">{stats.completeness}%</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t({ en: 'Overall Completeness', ar: 'الاكتمال الكلي' })}</p>
-                <p className="text-lg font-semibold">{t({ en: 'Dependencies & Constraints', ar: 'التبعيات والقيود' })}</p>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <GitBranch className="w-4 h-4" />
-                  <span className="text-xs">{t({ en: 'Dependencies', ar: 'التبعيات' })}</span>
-                </div>
-                <p className="text-2xl font-bold">{stats.totalDeps}</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.resolvedDeps} {t({ en: 'resolved', ar: 'محلولة' })}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span className="text-xs">{t({ en: 'Critical', ar: 'حرجة' })}</span>
-                </div>
-                <p className="text-2xl font-bold text-red-500">{stats.highCritDeps}</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.blockedDeps} {t({ en: 'blocked', ar: 'محظورة' })}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="text-xs">{t({ en: 'Constraints', ar: 'القيود' })}</span>
-                </div>
-                <p className="text-2xl font-bold">{stats.totalConstraints}</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.highImpactConstraints} {t({ en: 'high impact', ar: 'تأثير عالي' })}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Lightbulb className="w-4 h-4" />
-                  <span className="text-xs">{t({ en: 'Assumptions', ar: 'الافتراضات' })}</span>
-                </div>
-                <p className="text-2xl font-bold">{stats.totalAssumptions}</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.lowConfidenceAssumptions} {t({ en: 'low confidence', ar: 'ثقة منخفضة' })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={stats.completeness}
+        title={t({ en: 'Dependencies & Constraints', ar: 'التبعيات والقيود' })}
+        subtitle={t({ en: 'Map dependencies, constraints, and assumptions', ar: 'تحديد التبعيات والقيود والافتراضات' })}
+        language={language}
+        stats={[
+          { icon: GitBranch, value: stats.totalDeps, label: t({ en: 'Dependencies', ar: 'التبعيات' }), subValue: `${stats.resolvedDeps} ${t({ en: 'resolved', ar: 'محلولة' })}` },
+          { icon: AlertTriangle, value: stats.highCritDeps, label: t({ en: 'Critical', ar: 'حرجة' }), subValue: `${stats.blockedDeps} ${t({ en: 'blocked', ar: 'محظورة' })}` },
+          { icon: AlertCircle, value: stats.totalConstraints, label: t({ en: 'Constraints', ar: 'القيود' }), subValue: `${stats.highImpactConstraints} ${t({ en: 'high impact', ar: 'تأثير عالي' })}` },
+          { icon: Lightbulb, value: stats.totalAssumptions, label: t({ en: 'Assumptions', ar: 'الافتراضات' }), subValue: `${stats.lowConfidenceAssumptions} ${t({ en: 'low confidence', ar: 'ثقة منخفضة' })}` },
+        ]}
+      />
 
       {/* Header with AI Button */}
       <div className="flex items-center justify-between">

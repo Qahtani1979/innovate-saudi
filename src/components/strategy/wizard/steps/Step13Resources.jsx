@@ -572,28 +572,29 @@ export default function Step13Resources({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="bg-gradient-to-br from-background to-muted/30 border-2">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
-            <CircularProgress value={completenessScore} label={t({ en: 'Complete', ar: 'مكتمل' })} />
-            
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3">
-              <StatCard icon={Layers} label={t({ en: 'Total Resources', ar: 'إجمالي الموارد' })} value={stats.itemCount} />
-              <StatCard icon={Users} label={t({ en: 'HR Items', ar: 'موارد بشرية' })} value={stats.totals.hr.items.length} color="text-blue-500" />
-              <StatCard icon={Cpu} label={t({ en: 'Tech Items', ar: 'موارد تقنية' })} value={stats.totals.tech.items.length} color="text-purple-500" />
-              <StatCard icon={DollarSign} label={t({ en: 'Est. Cost', ar: 'التكلفة المقدرة' })} value={formatCurrency(stats.grandTotal)} color="text-green-500" />
-              <StatCard icon={Percent} label={t({ en: 'With Justification', ar: 'مع مبرر' })} value={`${stats.justificationRate}%`} color="text-amber-500" />
-            </div>
-
-            {!isReadOnly && (
-              <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2 shrink-0">
-                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate Resources', ar: 'إنشاء الموارد' })}
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={completenessScore}
+        title={t({ en: 'Resource Planning', ar: 'تخطيط الموارد' })}
+        subtitle={t({ en: 'HR, technology, infrastructure, and budget allocation', ar: 'الموارد البشرية والتقنية والبنية التحتية والميزانية' })}
+        language={language}
+        stats={[
+          { icon: Layers, value: stats.itemCount, label: t({ en: 'Total Resources', ar: 'إجمالي الموارد' }) },
+          { icon: Users, value: stats.totals.hr.items.length, label: t({ en: 'HR Items', ar: 'موارد بشرية' }) },
+          { icon: Cpu, value: stats.totals.tech.items.length, label: t({ en: 'Tech Items', ar: 'موارد تقنية' }) },
+          { icon: DollarSign, value: formatCurrency(stats.grandTotal), label: t({ en: 'Est. Cost', ar: 'التكلفة المقدرة' }) },
+          { icon: Percent, value: `${stats.justificationRate}%`, label: t({ en: 'With Justification', ar: 'مع مبرر' }) },
+        ]}
+      />
+      
+      {/* AI Generate Button */}
+      {!isReadOnly && (
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
+            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate Resources', ar: 'إنشاء الموارد' })}
+          </Button>
+        </div>
+      )}
 
       {/* Alerts */}
       {alerts.length > 0 && (
