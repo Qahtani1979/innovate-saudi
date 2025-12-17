@@ -874,10 +874,10 @@ export default function Step7Timeline({
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">{t({ en: 'Linked Phase', ar: 'المرحلة المرتبطة' })}</Label>
-                            <Select value={milestone.linked_phase?.toString() || ''} onValueChange={(v) => updateMilestone(actualIndex, { linked_phase: v ? parseInt(v) : null })}>
+                            <Select value={milestone.linked_phase?.toString() || 'none'} onValueChange={(v) => updateMilestone(actualIndex, { linked_phase: v && v !== 'none' ? parseInt(v) : null })}>
                               <SelectTrigger className="h-9"><SelectValue placeholder={t({ en: 'Select phase...', ar: 'اختر المرحلة...' })} /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">{t({ en: 'None', ar: 'لا شيء' })}</SelectItem>
+                                <SelectItem value="none">{t({ en: 'None', ar: 'لا شيء' })}</SelectItem>
                                 {phases.map((phase, pIndex) => (
                                   <SelectItem key={pIndex} value={pIndex.toString()}>
                                     {language === 'ar' ? (phase.name_ar || phase.name_en) : (phase.name_en || phase.name_ar) || `Phase ${pIndex + 1}`}
