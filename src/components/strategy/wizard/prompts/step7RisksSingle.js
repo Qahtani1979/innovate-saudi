@@ -40,8 +40,14 @@ MoMAH oversees municipal services across 13 administrative regions, 285+ municip
 - Weaknesses: ${(wizardData.swot?.weaknesses || []).slice(0, 3).map(w => w.text_en).join('; ') || 'Not defined'}
 - Threats: ${(wizardData.swot?.threats || []).slice(0, 3).map(t => t.text_en).join('; ') || 'Not defined'}
 
-## EXISTING RISKS (${existingRisks.length} total):
+## EXISTING RISKS - CRITICAL: DO NOT DUPLICATE (${existingRisks.length} total):
 ${existingRisksSummary || 'No existing risks yet'}
+
+**STRICT ANTI-DUPLICATION RULE:**
+- You MUST NOT generate a risk with the same or similar title as any existing risk
+- You MUST NOT generate a risk covering the same topic/area as existing ones
+- Each risk title above is FORBIDDEN - do not create variations of these
+- If you generate something similar to existing risks, your output will be REJECTED
 
 ## CURRENT CATEGORY COVERAGE:
 ${categoryCoverageSummary}
@@ -123,7 +129,7 @@ export const SINGLE_RISK_SCHEMA = {
  * System prompt for single risk generation
  */
 export const SINGLE_RISK_SYSTEM_PROMPT = 
-  'You are a strategic planning AI assistant. Generate exactly ONE unique risk with bilingual content. Return valid JSON matching the schema.';
+  'You are a strategic planning AI assistant. Generate exactly ONE unique risk with bilingual content. CRITICAL: Check all existing risks provided and ensure your output is completely different - no similar titles, topics, or areas. Return valid JSON matching the schema.';
 
 export default {
   generateSingleRiskPrompt,

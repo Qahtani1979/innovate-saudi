@@ -36,8 +36,14 @@ MoMAH oversees municipal services across 13 administrative regions, 285+ municip
 - Technologies: ${context.technologies?.join(', ') || 'General'}
 - Timeline: ${context.startYear}-${context.endYear}
 
-## EXISTING STAKEHOLDERS (${existingStakeholders.length} total):
+## EXISTING STAKEHOLDERS - CRITICAL: DO NOT DUPLICATE (${existingStakeholders.length} total):
 ${existingStakeholdersSummary || 'No existing stakeholders yet'}
+
+**STRICT ANTI-DUPLICATION RULE:**
+- You MUST NOT generate a stakeholder with the same or similar name as any existing one
+- You MUST NOT generate a stakeholder from the same organization/entity as existing ones
+- Each stakeholder name above is FORBIDDEN - do not create variations of these
+- If you generate something similar to existing stakeholders, your output will be REJECTED
 
 ## CURRENT TYPE COVERAGE:
 ${typeCoverageSummary}
@@ -117,7 +123,7 @@ export const SINGLE_STAKEHOLDER_SCHEMA = {
  * System prompt for single stakeholder generation
  */
 export const SINGLE_STAKEHOLDER_SYSTEM_PROMPT = 
-  'You are a strategic planning AI assistant. Generate exactly ONE unique stakeholder with bilingual content. Return valid JSON matching the schema.';
+  'You are a strategic planning AI assistant. Generate exactly ONE unique stakeholder with bilingual content. CRITICAL: Check all existing stakeholders provided and ensure your output is a completely different organization/entity - no similar names or roles. Return valid JSON matching the schema.';
 
 export default {
   generateSingleStakeholderPrompt,

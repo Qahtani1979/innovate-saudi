@@ -45,8 +45,15 @@ ${(wizardData.strategic_pillars || []).map((p, i) => `${i + 1}. ${p.name_en || p
 - Strengths: ${(wizardData.swot?.strengths || []).filter(s => s.priority === 'high').slice(0, 2).map(s => s.text_en).join('; ') || 'Not analyzed'}
 - Opportunities: ${(wizardData.swot?.opportunities || []).filter(o => o.priority === 'high').slice(0, 2).map(o => o.text_en).join('; ') || 'Not analyzed'}
 
-## EXISTING OBJECTIVES (${existingObjectives.length} total):
+## EXISTING OBJECTIVES - CRITICAL: DO NOT DUPLICATE (${existingObjectives.length} total):
 ${existingObjectivesSummary || 'No existing objectives yet'}
+
+**STRICT ANTI-DUPLICATION RULE:**
+- You MUST NOT generate an objective with the same or similar title/scope as any existing one
+- You MUST NOT generate an objective covering the same strategic theme as existing ones
+- Each objective title above is FORBIDDEN - do not create variations of these
+- Check both English AND Arabic titles to avoid duplicates in either language
+- If you generate something similar to existing objectives, your output will be REJECTED
 
 ## CURRENT SECTOR COVERAGE:
 ${sectorCoverageSummary}
@@ -144,7 +151,7 @@ export const SINGLE_OBJECTIVE_SCHEMA = {
  * System prompt for single objective generation
  */
 export const SINGLE_OBJECTIVE_SYSTEM_PROMPT = 
-  'You are a strategic planning AI assistant. Generate exactly ONE unique strategic objective with bilingual content. Return valid JSON matching the schema.';
+  'You are a strategic planning AI assistant. Generate exactly ONE unique strategic objective with bilingual content. CRITICAL: Check all existing objectives provided and ensure your output covers a completely different strategic area - no similar titles, themes, or scope. Return valid JSON matching the schema.';
 
 export default {
   generateSingleObjectivePrompt,
