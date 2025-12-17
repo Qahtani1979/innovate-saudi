@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 // Enhanced Committee Types
 const COMMITTEE_TYPES = [
@@ -417,14 +417,15 @@ export default function Step15Governance({
         ]}
       />
       
-      {/* AI Generate Button */}
+      {/* AI Generation Card */}
       {!isReadOnly && (
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate', ar: 'إنشاء' })}
-          </Button>
-        </div>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Governance Structure', ar: 'هيكل الحوكمة بالذكاء الاصطناعي' }}
+          description={{ en: 'Generate committees, roles, RACI matrix, and dashboards', ar: 'إنشاء اللجان والأدوار ومصفوفة RACI ولوحات التحكم' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          generateLabel={{ en: 'Generate Governance', ar: 'إنشاء الحوكمة' }}
+        />
       )}
 
       {/* Alerts */}

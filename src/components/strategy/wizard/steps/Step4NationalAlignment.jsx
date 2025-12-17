@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from "@/lib/utils";
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 // Vision 2030 Programs
 const VISION_2030_PROGRAMS = [
@@ -199,24 +199,16 @@ export default function Step4NationalAlignment({
         ]}
       />
 
-      {/* AI Generation */}
+      {/* AI Generation Card */}
       {!isReadOnly && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="pt-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h4 className="font-semibold">{t({ en: 'AI-Powered Alignment', ar: 'التوافق بالذكاء الاصطناعي' })}</h4>
-                <p className="text-sm text-muted-foreground">
-                  {t({ en: 'Auto-detect alignment between objectives and Vision 2030', ar: 'الكشف التلقائي عن التوافق بين الأهداف ورؤية 2030' })}
-                </p>
-              </div>
-              <Button onClick={onGenerateAI} disabled={isGenerating || objectives.length === 0}>
-                {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                {t({ en: 'Suggest Alignments', ar: 'اقتراح التوافقات' })}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Alignment', ar: 'التوافق بالذكاء الاصطناعي' }}
+          description={{ en: 'Auto-detect alignment between objectives and Vision 2030 programs', ar: 'الكشف التلقائي عن التوافق بين الأهداف وبرامج رؤية 2030' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          disabled={objectives.length === 0}
+          generateLabel={{ en: 'Suggest Alignments', ar: 'اقتراح التوافقات' }}
+        />
       )}
 
       {objectives.length === 0 ? (

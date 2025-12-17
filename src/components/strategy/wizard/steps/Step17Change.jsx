@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import EntityAllocationSelector from '../EntityAllocationSelector';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid, MainAIGeneratorCard } from '../shared';
 
 // Change Phase Types (ADKAR Model)
 const CHANGE_PHASES = [
@@ -1112,8 +1112,19 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
         ]}
       />
 
-      {/* View Mode & AI Button */}
-      <div className="flex justify-between items-center">
+      {/* AI Generation Card */}
+      {!isReadOnly && (
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Change Management', ar: 'إدارة التغيير بالذكاء الاصطناعي' }}
+          description={{ en: 'Generate training plans, stakeholder impacts, and ADKAR activities', ar: 'إنشاء خطط التدريب وتأثيرات أصحاب المصلحة وأنشطة ADKAR' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          generateLabel={{ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' }}
+        />
+      )}
+
+      {/* View Mode Toggle */}
+      <div className="flex justify-end">
         <div className="flex border rounded-lg overflow-hidden">
           <Button variant={viewMode === 'cards' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('cards')} className="rounded-none">
             <List className="w-4 h-4" />
@@ -1125,12 +1136,6 @@ export default function Step17Change({ data, onChange, onGenerateAI, isGeneratin
             <PieChart className="w-4 h-4" />
           </Button>
         </div>
-        {!isReadOnly && (
-          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
-          </Button>
-        )}
       </div>
       {hasIssues.length > 0 && (
         <Alert variant="destructive">

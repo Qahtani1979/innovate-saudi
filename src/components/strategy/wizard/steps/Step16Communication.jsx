@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 // Enhanced Audience Types
 const AUDIENCE_TYPES = [
@@ -883,14 +883,15 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
         ]}
       />
 
-      {/* AI Button */}
+      {/* AI Generation Card */}
       {!isReadOnly && (
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' })}
-          </Button>
-        </div>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Communication Plan', ar: 'خطة الاتصال بالذكاء الاصطناعي' }}
+          description={{ en: 'Generate audiences, channels, and messaging strategies', ar: 'إنشاء الجماهير والقنوات واستراتيجيات الرسائل' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          generateLabel={{ en: 'Generate with AI', ar: 'إنشاء بالذكاء الاصطناعي' }}
+        />
       )}
 
       {/* Alerts */}

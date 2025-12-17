@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 const SCENARIO_TYPES = [
   { 
@@ -456,22 +456,15 @@ export default function Step6Scenarios({
         ]}
       />
       
-      {/* AI Generate Button */}
+      {/* AI Generation Card */}
       {!isReadOnly && (
-        <div className="flex justify-end">
-          <Button 
-            variant="outline" 
-            onClick={onGenerateAI} 
-            disabled={isGenerating}
-            className="gap-2"
-          >
-            <Sparkles className="w-4 h-4" />
-            {isGenerating 
-              ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' })
-              : t({ en: 'Generate Scenarios', ar: 'إنشاء السيناريوهات' })
-            }
-          </Button>
-        </div>
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Scenario Planning', ar: 'تخطيط السيناريوهات بالذكاء الاصطناعي' }}
+          description={{ en: 'Generate best case, most likely, and worst case scenarios', ar: 'إنشاء سيناريوهات أفضل وأكثر احتمالاً وأسوأ حالة' }}
+          onGenerate={onGenerateAI}
+          isGenerating={isGenerating}
+          generateLabel={{ en: 'Generate Scenarios', ar: 'إنشاء السيناريوهات' }}
+        />
       )}
 
       {/* Tabs Navigation */}
