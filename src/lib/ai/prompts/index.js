@@ -105,6 +105,15 @@ export * from './uploader';
 // Communications prompts
 export * from './communications';
 
+// Solutions prompts
+export * from './solutions';
+
+// Evaluation prompts
+export * from './evaluation';
+
+// Hub prompts
+export * from './hub';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -124,7 +133,7 @@ export const PROMPT_MODULE_STATUS = {
   citizen: { status: 'complete', promptCount: 6 },
   livinglab: { status: 'complete', promptCount: 4 },
   profiles: { status: 'complete', promptCount: 3 },
-  programs: { status: 'complete', promptCount: 4 },
+  programs: { status: 'complete', promptCount: 6 },
   core: { status: 'complete', promptCount: 7 },
   taxonomy: { status: 'complete', promptCount: 2 },
   mii: { status: 'complete', promptCount: 2 },
@@ -140,7 +149,10 @@ export const PROMPT_MODULE_STATUS = {
   communications: { status: 'complete', promptCount: 4 },
   media: { status: 'complete', promptCount: 1 },
   workflows: { status: 'complete', promptCount: 1 },
-  onboarding: { status: 'complete', promptCount: 1 }
+  onboarding: { status: 'complete', promptCount: 1 },
+  solutions: { status: 'complete', promptCount: 2 },
+  evaluation: { status: 'complete', promptCount: 2 },
+  hub: { status: 'complete', promptCount: 2 }
 };
 
 /**
@@ -152,7 +164,7 @@ export function getImplementationProgress() {
   const completed = modules.filter(([, v]) => v.status === 'complete').length;
   const total = modules.length;
   const promptsComplete = modules.reduce((sum, [, v]) => sum + (v.status === 'complete' ? v.promptCount : 0), 0);
-  const promptsTotal = 110; // Updated target
+  const promptsTotal = 120; // Updated target
 
   return {
     modulesComplete: completed,
