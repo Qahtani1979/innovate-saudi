@@ -13,6 +13,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useStrategyInputs } from '@/hooks/strategy/useStrategyInputs';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { STRATEGY_INPUT_SYSTEM_PROMPT, buildStrategyInputPrompt, STRATEGY_INPUT_SCHEMA } from '@/lib/ai/prompts/strategy/preplanning';
 import { 
   MessageSquare, 
   Plus, 
@@ -142,39 +143,9 @@ const StrategyInputCollector = ({ strategicPlanId, onSave }) => {
       const inputTexts = inputs.map(input => input.input_text).join('\n---\n');
       
       const result = await invokeAI({
-        system_prompt: `You are a strategic planning expert. Analyze strategy inputs and extract meaningful themes.`,
-        prompt: `Analyze these strategy inputs and extract key themes for each:
-
-${inputTexts || 'No inputs to analyze yet. Generate sample strategic inputs for a municipal innovation strategy.'}
-
-For each input or for new generated inputs, provide:
-- source_type: one of "municipality", "department", "citizen", "expert", "stakeholder"
-- source_name: Name of the source
-- input_text: The strategic input text
-- theme: Primary theme
-- sentiment: "positive", "neutral", or "negative"
-- ai_extracted_themes: Array of extracted themes`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            inputs: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  source_type: { type: 'string', enum: ['municipality', 'department', 'citizen', 'expert', 'stakeholder'] },
-                  source_name: { type: 'string' },
-                  input_text: { type: 'string' },
-                  theme: { type: 'string' },
-                  sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] },
-                  ai_extracted_themes: { type: 'array', items: { type: 'string' } }
-                },
-                required: ['source_type', 'source_name', 'input_text', 'theme', 'sentiment', 'ai_extracted_themes']
-              }
-            }
-          },
-          required: ['inputs']
-        }
+        system_prompt: STRATEGY_INPUT_SYSTEM_PROMPT,
+        prompt: buildStrategyInputPrompt(inputTexts),
+        response_json_schema: STRATEGY_INPUT_SCHEMA
       });
 
       if (result.success && result.data?.inputs) {

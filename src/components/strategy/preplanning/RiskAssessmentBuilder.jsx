@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { RISK_ASSESSMENT_SYSTEM_PROMPT, buildRiskAssessmentPrompt, RISK_ASSESSMENT_SCHEMA } from '@/lib/ai/prompts/strategy/preplanning';
 import { useRiskAssessment } from '@/hooks/strategy/useRiskAssessment';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -499,39 +500,9 @@ export default function RiskAssessmentBuilder({
     }
 
     const result = await invokeAI({
-      system_prompt: `You are a risk management expert. Identify potential risks for the given strategic initiative and provide probability/impact assessments.`,
-      prompt: `Context: ${contextInput}
-
-Identify 5-8 key risks for this initiative. For each, provide:
-- name_en: Risk name in English
-- name_ar: Risk name in Arabic
-- description: Brief description
-- category: One of strategic, operational, financial, compliance, reputational, technology, political, environmental
-- probability: Probability score 1-5
-- impact: Impact score 1-5
-- mitigation_strategy: How to mitigate`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          risks: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name_en: { type: 'string' },
-                name_ar: { type: 'string' },
-                description: { type: 'string' },
-                category: { type: 'string' },
-                probability: { type: 'number', minimum: 1, maximum: 5 },
-                impact: { type: 'number', minimum: 1, maximum: 5 },
-                mitigation_strategy: { type: 'string' }
-              },
-              required: ['name_en', 'category', 'probability', 'impact']
-            }
-          }
-        },
-        required: ['risks']
-      }
+      system_prompt: RISK_ASSESSMENT_SYSTEM_PROMPT,
+      prompt: buildRiskAssessmentPrompt(contextInput),
+      response_json_schema: RISK_ASSESSMENT_SCHEMA
     });
 
     if (result.success && result.data?.risks) {
