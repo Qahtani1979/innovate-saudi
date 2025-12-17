@@ -9,11 +9,12 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Sparkles, Loader2, Plus, X, TrendingUp, TrendingDown, Target, AlertTriangle, 
-  CheckCircle2, LayoutGrid, ListChecks, Lightbulb, ArrowRight, Shield, Zap
+  CheckCircle2, LayoutGrid, ListChecks, Lightbulb, ArrowRight, Shield, Zap, BarChart3
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useSwotAnalysis } from '@/hooks/strategy/useSwotAnalysis';
 import { cn } from '@/lib/utils';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 const CATEGORIES = [
   { 
@@ -358,46 +359,32 @@ export default function Step2SWOT({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="bg-gradient-to-br from-background to-muted/30 border-2">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
-            {/* Circular Progress */}
-            <CircularProgress value={completenessScore} />
-            
-            {/* Quick Stats */}
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-primary">{stats.total}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Total Items', ar: 'إجمالي العناصر' })}</div>
-              </div>
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-blue-500">{stats.internal}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Internal', ar: 'داخلي' })}</div>
-              </div>
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-purple-500">{stats.external}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'External', ar: 'خارجي' })}</div>
-              </div>
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-red-500">{stats.highPriority}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'High Priority', ar: 'أولوية عالية' })}</div>
-              </div>
-            </div>
-
-            {/* AI Generate Button */}
-            {!isReadOnly && (
-              <Button 
-                onClick={onGenerateAI} 
-                disabled={isGenerating}
-                className="gap-2 shrink-0"
-              >
-                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {t({ en: 'Generate SWOT', ar: 'إنشاء SWOT' })}
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={completenessScore}
+        title={t({ en: 'SWOT Analysis', ar: 'تحليل SWOT' })}
+        subtitle={t({ en: 'Strengths, Weaknesses, Opportunities, Threats', ar: 'نقاط القوة والضعف والفرص والتهديدات' })}
+        language={language}
+        stats={[
+          { icon: Target, value: stats.total, label: t({ en: 'Total Items', ar: 'إجمالي العناصر' }), iconColor: 'text-primary' },
+          { icon: Shield, value: stats.internal, label: t({ en: 'Internal', ar: 'داخلي' }), iconColor: 'text-blue-500' },
+          { icon: Zap, value: stats.external, label: t({ en: 'External', ar: 'خارجي' }), iconColor: 'text-purple-500' },
+          { icon: AlertTriangle, value: stats.highPriority, label: t({ en: 'High Priority', ar: 'أولوية عالية' }), iconColor: 'text-red-500' },
+        ]}
+      />
+      
+      {/* AI Generate Button */}
+      {!isReadOnly && (
+        <div className="flex justify-end">
+          <Button 
+            onClick={onGenerateAI} 
+            disabled={isGenerating}
+            className="gap-2"
+          >
+            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {t({ en: 'Generate SWOT', ar: 'إنشاء SWOT' })}
+          </Button>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

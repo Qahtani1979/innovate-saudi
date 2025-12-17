@@ -12,10 +12,12 @@ import { Slider } from "@/components/ui/slider";
 import { 
   Sparkles, TrendingUp, TrendingDown, Minus, Plus, X, 
   ChevronDown, ChevronUp, CheckCircle2, ListChecks, BarChart3, 
-  GitBranch, Target, Lightbulb, Scale, Percent
+  GitBranch, Target, Lightbulb, Scale, Percent, Loader2
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button";
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 const SCENARIO_TYPES = [
   { 
@@ -442,50 +444,36 @@ export default function Step6Scenarios({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="bg-gradient-to-br from-background to-muted/30 border-2">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
-            {/* Circular Progress */}
-            <CircularProgress value={completenessScore} />
-            
-            {/* Quick Stats */}
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-primary">{stats.scenariosWithDescription}/3</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Scenarios Defined', ar: 'سيناريوهات محددة' })}</div>
-              </div>
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-blue-500">{stats.totalAssumptions}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Total Assumptions', ar: 'إجمالي الافتراضات' })}</div>
-              </div>
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-purple-500">{stats.totalOutcomes}</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Total Outcomes', ar: 'إجمالي النتائج' })}</div>
-              </div>
-              <div className="text-center p-3 bg-background rounded-lg border">
-                <div className="text-2xl font-bold text-green-500">{stats.scenariosWithProbability}/3</div>
-                <div className="text-xs text-muted-foreground">{t({ en: 'Probabilities Set', ar: 'احتماليات محددة' })}</div>
-              </div>
-            </div>
-
-            {/* AI Generate Button */}
-            {!isReadOnly && (
-              <Button 
-                variant="outline" 
-                onClick={onGenerateAI} 
-                disabled={isGenerating}
-                className="gap-2 shrink-0"
-              >
-                <Sparkles className="w-4 h-4" />
-                {isGenerating 
-                  ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' })
-                  : t({ en: 'Generate Scenarios', ar: 'إنشاء السيناريوهات' })
-                }
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={completenessScore}
+        title={t({ en: 'Scenario Planning', ar: 'تخطيط السيناريوهات' })}
+        subtitle={t({ en: 'Best, Most Likely, and Worst Case', ar: 'أفضل وأكثر احتمالاً وأسوأ حالة' })}
+        language={language}
+        stats={[
+          { icon: GitBranch, value: `${stats.scenariosWithDescription}/3`, label: t({ en: 'Scenarios Defined', ar: 'سيناريوهات محددة' }), iconColor: 'text-primary' },
+          { icon: Lightbulb, value: stats.totalAssumptions, label: t({ en: 'Total Assumptions', ar: 'إجمالي الافتراضات' }), iconColor: 'text-blue-500' },
+          { icon: Target, value: stats.totalOutcomes, label: t({ en: 'Total Outcomes', ar: 'إجمالي النتائج' }), iconColor: 'text-purple-500' },
+          { icon: Percent, value: `${stats.scenariosWithProbability}/3`, label: t({ en: 'Probabilities Set', ar: 'احتماليات محددة' }), iconColor: 'text-green-500' },
+        ]}
+      />
+      
+      {/* AI Generate Button */}
+      {!isReadOnly && (
+        <div className="flex justify-end">
+          <Button 
+            variant="outline" 
+            onClick={onGenerateAI} 
+            disabled={isGenerating}
+            className="gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            {isGenerating 
+              ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' })
+              : t({ en: 'Generate Scenarios', ar: 'إنشاء السيناريوهات' })
+            }
+          </Button>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

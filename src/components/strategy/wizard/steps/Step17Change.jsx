@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import EntityAllocationSelector from '../EntityAllocationSelector';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 // Change Phase Types (ADKAR Model)
 const CHANGE_PHASES = [

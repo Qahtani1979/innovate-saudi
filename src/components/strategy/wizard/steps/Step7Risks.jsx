@@ -21,6 +21,7 @@ import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { useRiskAssessment } from '@/hooks/strategy/useRiskAssessment';
 import { cn } from '@/lib/utils';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 const LEVEL_OPTIONS = [
   { value: 'low', label: { en: 'Low', ar: 'منخفض' }, color: 'bg-green-100 text-green-800 border-green-300', score: 1 },

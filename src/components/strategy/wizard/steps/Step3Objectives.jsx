@@ -18,6 +18,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { cn } from "@/lib/utils";
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 export default function Step3Objectives({ 
   data, 
@@ -389,66 +390,18 @@ export default function Step3Objectives({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Completeness Score */}
-            <div className="flex items-center gap-4 min-w-[200px]">
-              <div className="relative">
-                <svg className="w-20 h-20 transform -rotate-90">
-                  <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" className="text-muted/20" />
-                  <circle 
-                    cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" 
-                    className="text-primary transition-all duration-500"
-                    strokeDasharray={`${stats.completeness * 2.2} 220`}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xl font-bold">{stats.completeness}%</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t({ en: 'Objectives Progress', ar: 'تقدم الأهداف' })}</p>
-                <p className="text-lg font-semibold">{stats.total} {t({ en: 'Objectives', ar: 'أهداف' })}</p>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Flag className="w-4 h-4 text-red-500" />
-                  <span className="text-xs">{t({ en: 'High Priority', ar: 'أولوية عالية' })}</span>
-                </div>
-                <p className="text-2xl font-bold text-red-600">{stats.highPriority}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Flag className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs">{t({ en: 'Medium Priority', ar: 'أولوية متوسطة' })}</span>
-                </div>
-                <p className="text-2xl font-bold text-amber-600">{stats.mediumPriority}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Flag className="w-4 h-4 text-green-500" />
-                  <span className="text-xs">{t({ en: 'Low Priority', ar: 'أولوية منخفضة' })}</span>
-                </div>
-                <p className="text-2xl font-bold text-green-600">{stats.lowPriority}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Building2 className="w-4 h-4" />
-                  <span className="text-xs">{t({ en: 'Sector Coverage', ar: 'تغطية القطاعات' })}</span>
-                </div>
-                <p className="text-2xl font-bold">{stats.sectorCoverage}%</p>
-                <p className="text-xs text-muted-foreground">{stats.sectorsWithObjectives}/{stats.totalSectors}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={stats.completeness}
+        title={t({ en: 'Strategic Objectives', ar: 'الأهداف الاستراتيجية' })}
+        subtitle={`${stats.total} ${t({ en: 'Objectives', ar: 'أهداف' })}`}
+        language={language}
+        stats={[
+          { icon: Flag, value: stats.highPriority, label: t({ en: 'High Priority', ar: 'أولوية عالية' }), iconColor: 'text-red-500' },
+          { icon: Flag, value: stats.mediumPriority, label: t({ en: 'Medium Priority', ar: 'أولوية متوسطة' }), iconColor: 'text-amber-500' },
+          { icon: Flag, value: stats.lowPriority, label: t({ en: 'Low Priority', ar: 'أولوية منخفضة' }), iconColor: 'text-green-500' },
+          { icon: Building2, value: `${stats.sectorCoverage}%`, label: t({ en: 'Sector Coverage', ar: 'تغطية القطاعات' }), subValue: `${stats.sectorsWithObjectives}/${stats.totalSectors}` },
+        ]}
+      />
 
       {/* AI Generation & Actions */}
       {!isReadOnly && (
