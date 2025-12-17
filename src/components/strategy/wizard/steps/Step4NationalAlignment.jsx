@@ -480,44 +480,26 @@ export default function Step4NationalAlignment({
             })}
           </TabsContent>
 
-          {/* Summary View */}
+          {/* Summary View - Using Shared Components */}
           <TabsContent value="summary" className="space-y-4 mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Program Coverage */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" />
-                    {t({ en: 'Program Coverage', ar: 'تغطية البرامج' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {VISION_2030_PROGRAMS.map(program => {
-                    const count = getProgramAlignmentCount(program.code);
-                    const maxTargets = program.targets.length;
-                    const percentage = Math.round((count / (maxTargets * objectives.length || 1)) * 100);
-                    
-                    return (
-                      <div key={program.code} className="space-y-1">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="flex items-center gap-2">
-                            <div className={cn("w-3 h-3 rounded-full", program.color)} />
-                            {language === 'ar' ? program.name_ar : program.name_en}
-                          </span>
-                          <span className="text-muted-foreground">{count}</span>
-                        </div>
-                        <Progress value={count > 0 ? Math.max(10, percentage) : 0} className="h-2" />
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+              <DistributionChart
+                title={t({ en: 'Program Coverage', ar: 'تغطية البرامج' })}
+                language={language}
+                showPercentage={false}
+                data={VISION_2030_PROGRAMS.map(program => ({
+                  label: { en: program.name_en, ar: program.name_ar },
+                  value: getProgramAlignmentCount(program.code),
+                  icon: Flag,
+                  iconColor: program.textColor
+                }))}
+              />
 
               {/* Objective Coverage */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Target className="w-4 h-4 text-primary" />
+                  <CardTitle className="text-sm font-medium">
                     {t({ en: 'Objective Alignment Status', ar: 'حالة توافق الأهداف' })}
                   </CardTitle>
                 </CardHeader>
@@ -544,11 +526,10 @@ export default function Step4NationalAlignment({
                 </CardContent>
               </Card>
 
-              {/* Alignment Distribution */}
+              {/* Alignment Distribution Bar Chart */}
               <Card className="lg:col-span-2">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-primary" />
+                  <CardTitle className="text-sm font-medium">
                     {t({ en: 'Alignment Distribution', ar: 'توزيع التوافقات' })}
                   </CardTitle>
                 </CardHeader>
@@ -575,36 +556,27 @@ export default function Step4NationalAlignment({
               </Card>
             </div>
 
-            {/* Warnings */}
-            {(stats.objectiveCoverage < 100 || stats.programCoverage < 60) && (
-              <Card className="border-orange-500/50 bg-orange-50/50 dark:bg-orange-900/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2 text-orange-600">
-                    <AlertTriangle className="w-4 h-4" />
-                    {t({ en: 'Recommendations', ar: 'توصيات' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    {stats.objectiveCoverage < 100 && (
-                      <li className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-orange-500" />
-                        {t({ 
-                          en: `${stats.totalObjectives - stats.alignedObjectives} objectives have no national alignment`, 
-                          ar: `${stats.totalObjectives - stats.alignedObjectives} أهداف بدون توافق وطني` 
-                        })}
-                      </li>
-                    )}
-                    {stats.programCoverage < 60 && (
-                      <li className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-orange-500" />
-                        {t({ en: 'Consider covering more Vision 2030 programs for broader impact', ar: 'فكر في تغطية المزيد من برامج رؤية 2030 لتأثير أوسع' })}
-                      </li>
-                    )}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+            {/* Recommendations */}
+            <RecommendationsCard
+              title={t({ en: 'Recommendations', ar: 'توصيات' })}
+              language={language}
+              recommendations={[
+                ...(stats.objectiveCoverage < 100 ? [{
+                  type: 'warning',
+                  message: { 
+                    en: `${stats.totalObjectives - stats.alignedObjectives} objectives have no national alignment`, 
+                    ar: `${stats.totalObjectives - stats.alignedObjectives} أهداف بدون توافق وطني` 
+                  }
+                }] : []),
+                ...(stats.programCoverage < 60 ? [{
+                  type: 'warning',
+                  message: { 
+                    en: 'Consider covering more Vision 2030 programs for broader impact', 
+                    ar: 'فكر في تغطية المزيد من برامج رؤية 2030 لتأثير أوسع' 
+                  }
+                }] : [])
+              ]}
+            />
           </TabsContent>
         </Tabs>
       )}
