@@ -1033,7 +1033,6 @@ import { MainAIGeneratorCard } from '../shared';
 | `title` | string \| object | Score section title |
 | `subtitle` | string \| object | `{ completed, total }` for sections count |
 | `language` | string | Current language ('en' \| 'ar') |
-```
 
 ---
 
