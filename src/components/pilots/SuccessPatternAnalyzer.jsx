@@ -9,6 +9,8 @@ import { TrendingUp, Sparkles, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSuccessPatternPrompt, successPatternSchema } from '@/lib/ai/prompts/pilots';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function SuccessPatternAnalyzer({ sector }) {
   const { language, t } = useLanguage();
@@ -30,36 +32,9 @@ export default function SuccessPatternAnalyzer({ sector }) {
 
   const analyzePatterns = async () => {
     const result = await invokeAI({
-      prompt: `Analyze success patterns from ${pilots.length} successful pilots in ${sector} sector:
-
-${pilots.slice(0, 10).map(p => `
-PILOT: ${p.title_en}
-Team Size: ${p.team?.length || 'N/A'}
-Budget: ${p.budget || 'N/A'} SAR
-Duration: ${p.duration_weeks || 'N/A'} weeks
-KPIs Achieved: ${p.kpis?.filter(k => k.status === 'achieved').length}/${p.kpis?.length}
-TRL: ${p.trl_start} → ${p.trl_current}
-`).join('\n')}
-
-Identify:
-1. Common success factors (team structure, budget ranges, methodologies)
-2. Optimal team size and composition
-3. Typical duration for success
-4. Budget efficiency patterns
-5. Key methodologies used
-6. Critical success criteria`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          optimal_team_size: { type: "string" },
-          avg_duration_weeks: { type: "number" },
-          avg_budget_range: { type: "string" },
-          common_methodologies: { type: "array", items: { type: "string" } },
-          success_factors: { type: "array", items: { type: "string" } },
-          critical_criteria: { type: "array", items: { type: "string" } },
-          replication_template: { type: "string" }
-        }
-      }
+      prompt: getSuccessPatternPrompt(sector, pilots),
+      response_json_schema: successPatternSchema,
+      system_prompt: getSystemPrompt('municipal')
     });
 
     if (result.success && result.data) {

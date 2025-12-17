@@ -6,6 +6,8 @@ import { useLanguage } from '../LanguageContext';
 import { Sparkles, TrendingUp, AlertTriangle, Target, Loader2, X } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getPilotPortfolioInsightsPrompt, pilotPortfolioInsightsSchema } from '@/lib/ai/prompts/pilots';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function PilotsAIInsights({ pilots, challenges, municipalities }) {
   const { language, isRTL, t } = useLanguage();
@@ -28,42 +30,24 @@ export default function PilotsAIInsights({ pilots, challenges, municipalities })
       return acc;
     }, {});
 
+    const topPilots = pilots
+      .sort((a, b) => (b.success_probability || 0) - (a.success_probability || 0))
+      .slice(0, 5);
+
+    const portfolioData = {
+      totalPilots: pilots.length,
+      activePilots: activePilots.length,
+      highSuccess: highSuccess.length,
+      highRisk: highRisk.length,
+      readyToScale: readyToScale.length,
+      sectorBreakdown,
+      topPilots
+    };
+
     const { success, data } = await invokeAI({
-      prompt: `Analyze this municipal pilot portfolio for Saudi Arabia and provide BILINGUAL strategic insights:
-
-PORTFOLIO OVERVIEW:
-- Total Pilots: ${pilots.length}
-- Active Pilots: ${activePilots.length}
-- High-Success Pilots: ${highSuccess.length}
-- High-Risk Pilots: ${highRisk.length}
-- Ready to Scale: ${readyToScale.length}
-
-SECTOR BREAKDOWN:
-${Object.entries(sectorBreakdown).map(([sector, count]) => `- ${sector}: ${count}`).join('\n')}
-
-TOP 5 PILOTS BY SUCCESS:
-${pilots.sort((a, b) => (b.success_probability || 0) - (a.success_probability || 0)).slice(0, 5).map(p => 
-  `${p.code}: ${p.title_en} (${p.success_probability}% success probability)`
-).join('\n')}
-
-Provide bilingual analysis covering:
-1. Portfolio health assessment (strengths/weaknesses)
-2. Risk alerts and mitigation priorities (top 3)
-3. Scaling opportunities (which pilots to prioritize)
-4. Sector balance recommendations
-5. Resource optimization suggestions
-6. Strategic recommendations for next quarter`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          portfolio_health: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, score: { type: 'number' } } },
-          risk_alerts: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' }, priority: { type: 'string' } } } },
-          scaling_opportunities: { type: 'array', items: { type: 'object', properties: { pilot_code: { type: 'string' }, reason_en: { type: 'string' }, reason_ar: { type: 'string' } } } },
-          sector_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          resource_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          strategic_priorities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt: getPilotPortfolioInsightsPrompt(portfolioData),
+      response_json_schema: pilotPortfolioInsightsSchema,
+      system_prompt: getSystemPrompt('municipal')
     });
 
     if (success && data) {
