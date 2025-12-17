@@ -843,6 +843,22 @@ export default function Step6ActionPlans({
         ]}
       />
 
+      {/* AI Generation Card */}
+      {!isReadOnly && objectives.length > 0 && (
+        <MainAIGeneratorCard
+          title={{ en: 'AI-Powered Action Plans', ar: 'خطط العمل بالذكاء الاصطناعي' }}
+          description={{ en: 'Generate strategic action plans for your objectives', ar: 'إنشاء خطط عمل استراتيجية لأهدافك' }}
+          onGenerate={onGenerateAI}
+          onGenerateSingle={() => handleGenerateSingleAction()}
+          isGenerating={isGenerating}
+          isGeneratingSingle={isGeneratingSingle}
+          showSingleButton={!!onGenerateSingleAction}
+          isReadOnly={isReadOnly}
+          buttonLabel={{ en: 'Generate All', ar: 'إنشاء الكل' }}
+          singleButtonLabel={{ en: 'AI Add One', ar: 'إضافة واحد' }}
+        />
+      )}
+
       {/* Alerts */}
       {alerts.length > 0 && (
         <div className="space-y-2">
@@ -1255,6 +1271,173 @@ export default function Step6ActionPlans({
           )}
         </>
       )}
+
+      {/* AI Add One Proposal Modal */}
+      <Dialog open={showProposalModal} onOpenChange={setShowProposalModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-primary" />
+              {t({ en: 'AI-Generated Action Plan', ar: 'خطة عمل مُنشأة بالذكاء الاصطناعي' })}
+            </DialogTitle>
+          </DialogHeader>
+
+          {isGeneratingSingle ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">{t({ en: 'Generating action plan...', ar: 'جاري إنشاء خطة العمل...' })}</p>
+            </div>
+          ) : proposedAction ? (
+            <div className="space-y-4">
+              {differentiationScore && (
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <span className="text-sm font-medium">{t({ en: 'Differentiation Score', ar: 'نقاط التمايز' })}</span>
+                  <Badge variant={differentiationScore >= 70 ? 'default' : 'secondary'}>{differentiationScore}%</Badge>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Name (English)', ar: 'الاسم (إنجليزي)' })}</Label>
+                  <Input
+                    value={proposedAction.name_en || ''}
+                    onChange={(e) => updateProposedActionField('name_en', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Name (Arabic)', ar: 'الاسم (عربي)' })}</Label>
+                  <Input
+                    dir="rtl"
+                    value={proposedAction.name_ar || ''}
+                    onChange={(e) => updateProposedActionField('name_ar', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
+                  <Textarea
+                    value={proposedAction.description_en || ''}
+                    onChange={(e) => updateProposedActionField('description_en', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
+                  <Textarea
+                    dir="rtl"
+                    value={proposedAction.description_ar || ''}
+                    onChange={(e) => updateProposedActionField('description_ar', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Type', ar: 'النوع' })}</Label>
+                  <Select
+                    value={proposedAction.type || 'challenge'}
+                    onValueChange={(v) => updateProposedActionField('type', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ENTITY_TYPES.map(et => (
+                        <SelectItem key={et.value} value={et.value}>
+                          {language === 'ar' ? et.label_ar : et.label_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Priority', ar: 'الأولوية' })}</Label>
+                  <Select
+                    value={proposedAction.priority || 'medium'}
+                    onValueChange={(v) => updateProposedActionField('priority', v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
+                        <SelectItem key={key} value={key}>
+                          {language === 'ar' ? cfg.label_ar : cfg.label_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Linked Objective', ar: 'الهدف المرتبط' })}</Label>
+                  <Select
+                    value={proposedAction.objective_index?.toString() || ''}
+                    onValueChange={(v) => updateProposedActionField('objective_index', v ? parseInt(v) : null)}
+                  >
+                    <SelectTrigger><SelectValue placeholder={t({ en: 'Select...', ar: 'اختر...' })} /></SelectTrigger>
+                    <SelectContent>
+                      {objectives.map((obj, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          #{i + 1}: {language === 'ar' ? (obj.name_ar || obj.name_en) : obj.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Budget Estimate', ar: 'تقدير الميزانية' })}</Label>
+                  <Input
+                    value={proposedAction.budget_estimate || ''}
+                    onChange={(e) => updateProposedActionField('budget_estimate', e.target.value)}
+                    placeholder="1,000,000 SAR"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Start Date', ar: 'تاريخ البدء' })}</Label>
+                  <Input
+                    type="month"
+                    value={proposedAction.start_date || ''}
+                    onChange={(e) => updateProposedActionField('start_date', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'End Date', ar: 'تاريخ الانتهاء' })}</Label>
+                  <Input
+                    type="month"
+                    value={proposedAction.end_date || ''}
+                    onChange={(e) => updateProposedActionField('end_date', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t({ en: 'Owner', ar: 'المسؤول' })}</Label>
+                <Input
+                  value={proposedAction.owner || ''}
+                  onChange={(e) => updateProposedActionField('owner', e.target.value)}
+                  placeholder={t({ en: 'e.g., Innovation Department', ar: 'مثال: إدارة الابتكار' })}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => handleGenerateSingleAction()} disabled={isGeneratingSingle}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {t({ en: 'Regenerate', ar: 'إعادة الإنشاء' })}
+            </Button>
+            <Button variant="outline" onClick={() => setShowProposalModal(false)}>
+              {t({ en: 'Cancel', ar: 'إلغاء' })}
+            </Button>
+            <Button onClick={handleApproveAction} disabled={!proposedAction}>
+              <Check className="w-4 h-4 mr-2" />
+              {t({ en: 'Add Action', ar: 'إضافة الإجراء' })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
