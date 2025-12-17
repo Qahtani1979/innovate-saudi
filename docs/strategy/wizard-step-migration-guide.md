@@ -1,22 +1,185 @@
 # Wizard Step Standardization - Complete Migration Guide
 
 > **Last Updated**: December 17, 2024  
-> **Status**: Phase 2 Complete - AI Prompts Fully Migrated  
+> **Status**: Phase 3 In Progress - AI Add One Handlers Complete  
 > **Analysis Based On**: Full code inspection of all 19 step components
 
 ---
 
 ## Recent Updates
 
+### ✅ AI Add One Functionality Expanded (Dec 17, 2024)
+
+**"AI Add One"** functionality now supports Steps 3, 7, 9, 11, 12 with review modals.
+
+#### New Single-Item Prompt Files Created
+
+| File | Step | Description |
+|------|------|-------------|
+| `step3StakeholdersSingle.js` | Step 3 | Single stakeholder with type targeting |
+| `step7RisksSingle.js` | Step 7 | Single risk with category targeting |
+| `step9ObjectivesSingle.js` | Step 9 | Single objective with sector targeting (existed) |
+| `step11KpisSingle.js` | Step 11 | Single KPI with category/objective targeting |
+| `step12ActionsSingle.js` | Step 12 | Single action with type/objective targeting |
+
+#### Handler Functions Added to StrategyWizardWrapper
+
+| Handler | Step | Parameters |
+|---------|------|------------|
+| `generateSingleStakeholder` | 3 | `(existingStakeholders, targetType?)` |
+| `generateSingleRisk` | 7 | `(existingRisks, targetCategory?)` |
+| `generateSingleObjective` | 9 | `(existingObjectives, targetSector?)` |
+| `generateSingleKpi` | 11 | `(existingKpis, targetCategory?, targetObjectiveIndex?)` |
+| `generateSingleAction` | 12 | `(existingActions, targetType?, targetObjectiveIndex?)` |
+
+#### Props Passed to Step Components
+
+| Step Component | Prop Name | Status |
+|----------------|-----------|--------|
+| Step3Stakeholders | `onGenerateSingleStakeholder` | ✅ Passed |
+| Step7Risks | `onGenerateSingleRisk` | ✅ Passed |
+| Step9Objectives (Step3Objectives) | `onGenerateSingleObjective` | ✅ Passed |
+| Step11KPIs (Step5KPIs) | `onGenerateSingleKpi` | ✅ Passed |
+| Step12Actions (Step6ActionPlans) | `onGenerateSingleAction` | ✅ Passed |
+
+#### Remaining UI Work (Per Step)
+
+Each step needs these UI updates to enable "AI Add One":
+
+1. **Accept new prop** in component signature
+2. **Add state** for `isGeneratingSingle`, `proposedItem`, `showProposalModal`
+3. **Add handler function** to call the prop and handle result
+4. **Add UI button** using MainAIGeneratorCard with `showSingleButton={true}`
+5. **Add review modal** (Dialog) to preview and approve/reject generated item
+
+**Reference Implementation**: `Step3Objectives.jsx` (Step 9) - lines 170-250, 780-840
+
+---
+
+## Required Context & Hooks for AI Prompts
+
+### Context Object (Required in All Prompts)
+
+Every AI prompt generator must receive a `context` object with:
+
+```javascript
+const context = {
+  // Plan Identity (Required)
+  planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
+  vision: wizardData.vision_en || wizardData.vision_ar || '',
+  mission: wizardData.mission_en || wizardData.mission_ar || '',
+  
+  // Scope (Required)
+  sectors: wizardData.sectors || [],           // From TaxonomyContext
+  themes: wizardData.strategic_themes || [],
+  technologies: wizardData.focus_technologies || [],
+  
+  // Timeline (Required)
+  startYear: wizardData.start_year || new Date().getFullYear(),
+  endYear: wizardData.end_year || new Date().getFullYear() + 5,
+  
+  // Optional but recommended
+  budgetRange: wizardData.budget_range || '',
+  regions: wizardData.regions || [],
+  vision2030Programs: wizardData.vision_2030_programs || [],
+  objectives: wizardData.objectives || [],     // For Steps 11, 12
+  stakeholders: wizardData.stakeholders || [], // For Step 3
+  keyChallenges: wizardData.key_challenges || '',
+  availableResources: wizardData.available_resources || '',
+  initialConstraints: wizardData.initial_constraints || ''
+};
+```
+
+### Required Hooks
+
+```javascript
+// 1. Language & Localization
+import { useLanguage } from '../../../LanguageContext';
+const { language, t, isRTL } = useLanguage();
+
+// 2. Taxonomy Data (Sectors, Regions, Themes, etc.)
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
+const { 
+  sectors,              // Array of { code, name_en, name_ar }
+  regions,              // Array of regions
+  strategicThemes,      // Array of themes
+  technologies,         // Array of technologies
+  visionPrograms,       // Vision 2030 programs
+  stakeholderTypes,     // For Step 3
+  riskCategories        // For Step 7
+} = useTaxonomy();
+
+// 3. AI Invocation
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+const { invokeAI, isLoading, isRateLimited } = useAIWithFallback();
+
+// 4. Check AI Availability
+const aiAvailable = !!invokeAI && !isRateLimited;
+```
+
+### Single-Item Prompt Pattern
+
+```javascript
+// Example: generateSingleRisk
+const generateSingleRisk = async (existingRisks, targetCategory = null) => {
+  if (!aiAvailable) {
+    toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
+    return null;
+  }
+
+  // 1. Build context from wizardData
+  const context = { planName, vision, sectors, startYear, endYear, ... };
+
+  // 2. Build summary of existing items
+  const existingRisksSummary = existingRisks.map((r, i) => 
+    `${i + 1}. [${r.category}] "${r.title_en}" - Likelihood: ${r.likelihood}, Impact: ${r.impact}`
+  ).join('\n');
+  
+  // 3. Calculate coverage for targeting
+  const categoryCounts = {};
+  existingRisks.forEach(r => { categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1; });
+  const categoryCoverageSummary = Object.entries(categoryCounts)
+    .map(([cat, count]) => `${cat}: ${count}`).join(', ');
+
+  // 4. Build targeting instruction
+  const categoryTargetInstruction = targetCategory 
+    ? `MANDATORY: Generate a risk of category "${targetCategory}"`
+    : 'Target underrepresented categories for better coverage';
+
+  // 5. Generate prompt with all context
+  const prompt = generateSingleRiskPrompt({
+    context,
+    wizardData,
+    existingRisks,
+    existingRisksSummary,
+    categoryCoverageSummary,
+    categoryTargetInstruction,
+    targetCategory
+  });
+
+  // 6. Invoke AI with schema
+  const { success, data } = await invokeAI({
+    prompt,
+    response_json_schema: SINGLE_RISK_SCHEMA,
+    system_prompt: SINGLE_RISK_SYSTEM_PROMPT
+  });
+
+  // 7. Return result with differentiation score
+  return success && data?.risk ? { risk: data.risk, differentiation_score: data.differentiation_score || 75 } : null;
+};
+```
+
+---
+
 ### ✅ AI Prompts Extracted to Separate Files (Dec 17, 2024)
 
 All AI prompts have been moved from inline definitions in `StrategyWizardWrapper.jsx` to modular files:
 - **Location**: `src/components/strategy/wizard/prompts/`
 - **Files**: 19 prompt files (step1Context.js through step18Review.js)
-- **Special**: `step9ObjectivesSingle.js` for "AI Add One" functionality
-- **Index**: Central exports with `STEP_PROMPT_MAP` for quick lookup
+- **Single-Item**: 5 files for "AI Add One" functionality (steps 3, 7, 9, 11, 12)
+- **Index**: Central exports with `STEP_PROMPT_MAP` and `stepHasSingleAI()` helper
 
-**Migration Status**: Prompts extracted → Next: Update StrategyWizardWrapper.jsx to import from files
+**Migration Status**: Prompts extracted ✅, Handlers added ✅, UI updates remaining
 
 ### ✅ Component Redesigns Completed (Dec 17, 2024)
 
@@ -111,23 +274,27 @@ All AI prompts have been extracted from inline definitions to separate files in 
 | `step1Context.js` | Step 1 | Context & Discovery prompt + schema |
 | `step2Vision.js` | Step 2 | Vision & Values prompt + schema |
 | `step3Stakeholders.js` | Step 3 | Stakeholder Analysis prompt + schema |
+| `step3StakeholdersSingle.js` | Step 3 | **"AI Add One"** single stakeholder prompt + schema |
 | `step4Pestel.js` | Step 4 | PESTEL Analysis prompt + schema |
 | `step5Swot.js` | Step 5 | SWOT Analysis prompt + schema |
 | `step6Scenarios.js` | Step 6 | Strategic Scenarios prompt + schema |
 | `step7Risks.js` | Step 7 | Risk Assessment prompt + schema |
+| `step7RisksSingle.js` | Step 7 | **"AI Add One"** single risk prompt + schema |
 | `step8Dependencies.js` | Step 8 | Dependencies Mapping prompt + schema |
 | `step9Objectives.js` | Step 9 | Strategic Objectives prompt + schema |
 | `step9ObjectivesSingle.js` | Step 9 | **"AI Add One"** single objective prompt + schema |
 | `step10National.js` | Step 10 | National Alignment prompt + schema |
 | `step11Kpis.js` | Step 11 | KPIs Definition prompt + schema |
+| `step11KpisSingle.js` | Step 11 | **"AI Add One"** single KPI prompt + schema |
 | `step12Actions.js` | Step 12 | Action Plans prompt + schema |
+| `step12ActionsSingle.js` | Step 12 | **"AI Add One"** single action prompt + schema |
 | `step13Resources.js` | Step 13 | Resource Allocation prompt + schema |
 | `step14Timeline.js` | Step 14 | Implementation Timeline prompt + schema |
 | `step15Governance.js` | Step 15 | Governance Structure prompt + schema |
 | `step16Communication.js` | Step 16 | Communication Plan prompt + schema |
 | `step17Change.js` | Step 17 | Change Management prompt + schema |
 | `step18Review.js` | Step 18 | Review (no prompts - uses AIStrategicPlanAnalyzer) |
-| `index.js` | All | Central exports + STEP_PROMPT_MAP |
+| `index.js` | All | Central exports + STEP_PROMPT_MAP + stepHasSingleAI() |
 
 #### Usage Example
 
