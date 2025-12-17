@@ -7,6 +7,12 @@ import { toast } from 'sonner';
 import FileUploader from '../FileUploader';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildCredentialVerificationPrompt, 
+  getCredentialVerificationSchema,
+  CREDENTIAL_VERIFICATION_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/profiles';
 
 export default function CredentialVerificationAI({ profileType, profileId }) {
   const { language, isRTL, t } = useLanguage();
@@ -15,31 +21,32 @@ export default function CredentialVerificationAI({ profileType, profileId }) {
 
   const handleVerify = async (fileUrl) => {
     const result = await invokeAI({
-      prompt: `Verify the credentials for a ${profileType} profile.
-Analyze the uploaded document and extract:
-1. Credential type (degree, certification, license, etc.)
-2. Issuing institution
-3. Date issued
-4. Verification status (appears legitimate / needs review / suspicious)
-5. Extracted key details`,
+      prompt: buildCredentialVerificationPrompt(profileType, fileUrl),
       file_urls: [fileUrl],
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          credential_type: { type: 'string' },
-          issuer: { type: 'string' },
-          date_issued: { type: 'string' },
-          verification_status: { type: 'string', enum: ['legitimate', 'needs_review', 'suspicious'] },
-          details: { type: 'object' },
-          confidence_score: { type: 'number' }
-        }
-      }
+      response_json_schema: getCredentialVerificationSchema(),
+      system_prompt: getSystemPrompt(CREDENTIAL_VERIFICATION_SYSTEM_PROMPT)
     });
 
-    if (result.success) {
+    if (result.success && result.data) {
       setVerification(result.data);
       toast.success(t({ en: 'Verification complete', ar: 'اكتمل التحقق' }));
     }
+  };
+
+  const getLocalizedField = (data, field) => {
+    if (!data) return '';
+    if (language === 'ar' && data[`${field}_ar`]) {
+      return data[`${field}_ar`];
+    }
+    return data[field] || '';
+  };
+
+  const getLocalizedArray = (data, field) => {
+    if (!data) return [];
+    if (language === 'ar' && data[`${field}_ar`]) {
+      return data[`${field}_ar`];
+    }
+    return data[field] || [];
   };
 
   return (
@@ -80,12 +87,38 @@ Analyze the uploaded document and extract:
                 <AlertTriangle className="h-6 w-6 text-amber-600 mt-1" />
               )}
               <div className="flex-1">
-                <p className="font-bold text-slate-900">{verification.credential_type}</p>
-                <p className="text-sm text-slate-600 mt-1">Issued by: {verification.issuer}</p>
-                <p className="text-sm text-slate-600">Date: {verification.date_issued}</p>
+                <p className="font-bold text-slate-900">
+                  {getLocalizedField(verification, 'credential_type')}
+                </p>
+                <p className="text-sm text-slate-600 mt-1">
+                  {t({ en: 'Issued by:', ar: 'صادر من:' })} {getLocalizedField(verification, 'issuer')}
+                </p>
+                <p className="text-sm text-slate-600">
+                  {t({ en: 'Date:', ar: 'التاريخ:' })} {verification.date_issued}
+                </p>
+                
+                {verification.status_reason && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    {getLocalizedField(verification, 'status_reason')}
+                  </p>
+                )}
+                
                 <Badge className="mt-2">
                   {t({ en: 'Confidence:', ar: 'الثقة:' })} {verification.confidence_score}%
                 </Badge>
+
+                {verification.recommendations?.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    <p className="text-xs font-medium text-slate-700 mb-1">
+                      {t({ en: 'Recommendations:', ar: 'التوصيات:' })}
+                    </p>
+                    <ul className="space-y-1">
+                      {getLocalizedArray(verification, 'recommendations').map((rec, i) => (
+                        <li key={i} className="text-xs text-slate-600">• {rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>

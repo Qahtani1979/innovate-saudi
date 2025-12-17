@@ -49,10 +49,10 @@ export * from './citizen';
 export * from './livinglab';
 
 // Profiles prompts
-// export * from './profiles';
+export * from './profiles';
 
 // Programs prompts
-// export * from './programs';
+export * from './programs';
 
 // Smart prompts
 // export * from './smart';
@@ -74,8 +74,8 @@ export const PROMPT_MODULE_STATUS = {
   solution: { status: 'complete', promptCount: 5 },
   citizen: { status: 'complete', promptCount: 5 },
   livinglab: { status: 'complete', promptCount: 4 },
-  profiles: { status: 'pending', promptCount: 0 },
-  programs: { status: 'pending', promptCount: 0 },
+  profiles: { status: 'complete', promptCount: 3 },
+  programs: { status: 'complete', promptCount: 3 },
   smart: { status: 'pending', promptCount: 0 }
 };
 
