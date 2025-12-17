@@ -507,7 +507,7 @@ export default function Step7Timeline({
 
       {/* View Mode Tabs */}
       <Tabs value={viewMode} onValueChange={setViewMode}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="phases" className="gap-2">
             <Layers className="h-4 w-4" />
             {t({ en: 'Phases', ar: 'المراحل' })}
@@ -519,6 +519,10 @@ export default function Step7Timeline({
           <TabsTrigger value="gantt" className="gap-2">
             <GanttChart className="h-4 w-4" />
             {t({ en: 'Gantt View', ar: 'عرض جانت' })}
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            {t({ en: 'Summary', ar: 'ملخص' })}
           </TabsTrigger>
         </TabsList>
 
@@ -952,6 +956,211 @@ export default function Step7Timeline({
         {/* Gantt View */}
         <TabsContent value="gantt" className="mt-4">
           {renderGanttView()}
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary" className="mt-4 space-y-6">
+          {/* Phase Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Layers className="h-5 w-5 text-primary" />
+                {t({ en: 'Phase Distribution', ar: 'توزيع المراحل' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {Object.entries(PHASE_CATEGORIES).map(([key, cat]) => {
+                  const count = stats.phasesByCategory[key] || 0;
+                  const percent = stats.totalPhases > 0 ? Math.round((count / stats.totalPhases) * 100) : 0;
+                  return (
+                    <div key={key} className="text-center p-3 rounded-lg border bg-muted/20">
+                      <span className="text-2xl">{cat.icon}</span>
+                      <p className="text-xl font-bold mt-1">{count}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'ar' ? cat.label_ar : cat.label_en}
+                      </p>
+                      <Progress value={percent} className="h-1 mt-2" />
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Milestone Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Flag className="h-5 w-5 text-primary" />
+                {t({ en: 'Milestone Distribution', ar: 'توزيع المعالم' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                {Object.entries(MILESTONE_TYPES).map(([key, type]) => {
+                  const count = stats.milestonesByType[key] || 0;
+                  return (
+                    <div key={key} className="text-center p-3 rounded-lg border bg-muted/20">
+                      <span className="text-xl">{type.icon}</span>
+                      <p className="text-lg font-bold">{count}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {language === 'ar' ? type.label_ar : type.label_en}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quality Metrics */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Target className="h-5 w-5 text-primary" />
+                {t({ en: 'Quality Metrics', ar: 'مقاييس الجودة' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20">
+                  <div className="flex items-center gap-2 text-blue-600 mb-2">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm font-medium">{t({ en: 'Coverage', ar: 'التغطية' })}</span>
+                  </div>
+                  <p className="text-2xl font-bold">{stats.coveragePercent}%</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Phases with dates', ar: 'مراحل بتواريخ' })}</p>
+                </div>
+
+                <div className="p-4 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20">
+                  <div className="flex items-center gap-2 text-amber-600 mb-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm font-medium">{t({ en: 'Critical', ar: 'حرج' })}</span>
+                  </div>
+                  <p className="text-2xl font-bold">{stats.criticalMilestones}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Critical milestones', ar: 'معالم حرجة' })}</p>
+                </div>
+
+                <div className={`p-4 rounded-lg border ${stats.hasGaps ? 'bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20' : 'bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20'}`}>
+                  <div className={`flex items-center gap-2 mb-2 ${stats.hasGaps ? 'text-red-600' : 'text-green-600'}`}>
+                    {stats.hasGaps ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                    <span className="text-sm font-medium">{t({ en: 'Continuity', ar: 'الاستمرارية' })}</span>
+                  </div>
+                  <p className="text-lg font-bold">
+                    {stats.hasGaps ? t({ en: 'Has Gaps', ar: 'فجوات' }) : t({ en: 'Continuous', ar: 'متصل' })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Timeline health', ar: 'صحة الجدول' })}</p>
+                </div>
+
+                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
+                  <div className="flex items-center gap-2 text-purple-600 mb-2">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm font-medium">{t({ en: 'Duration', ar: 'المدة' })}</span>
+                  </div>
+                  <p className="text-2xl font-bold">{stats.planDuration}</p>
+                  <p className="text-xs text-muted-foreground">{t({ en: 'Years total', ar: 'سنوات إجمالي' })}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recommendations */}
+          <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Rocket className="h-5 w-5 text-primary" />
+                {t({ en: 'Recommendations', ar: 'التوصيات' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {stats.totalPhases === 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-700">
+                        {t({ en: 'No phases defined', ar: 'لم يتم تحديد مراحل' })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t({ en: 'Add implementation phases or use AI generation to create a structured timeline.', ar: 'أضف مراحل التنفيذ أو استخدم الإنشاء بالذكاء الاصطناعي لإنشاء جدول زمني منظم.' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {stats.totalMilestones === 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    <Flag className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-700">
+                        {t({ en: 'No milestones defined', ar: 'لم يتم تحديد معالم' })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t({ en: 'Define key milestones to track progress and decision points.', ar: 'حدد المعالم الرئيسية لتتبع التقدم ونقاط القرار.' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {stats.criticalMilestones === 0 && stats.totalMilestones > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                    <Target className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-blue-700">
+                        {t({ en: 'No critical milestones', ar: 'لا توجد معالم حرجة' })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t({ en: 'Consider marking key milestones as critical to highlight the critical path.', ar: 'فكر في تحديد المعالم الرئيسية كحرجة لتسليط الضوء على المسار الحرج.' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {stats.hasGaps && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                    <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-red-700">
+                        {t({ en: 'Timeline gaps detected', ar: 'تم اكتشاف فجوات في الجدول' })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t({ en: 'Review phase dates to ensure continuous coverage throughout the plan period.', ar: 'راجع تواريخ المراحل لضمان التغطية المستمرة طوال فترة الخطة.' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {stats.coveragePercent < 80 && stats.totalPhases > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    <Calendar className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-700">
+                        {t({ en: 'Low date coverage', ar: 'تغطية تواريخ منخفضة' })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t({ en: 'Add start and end dates to all phases for better timeline visualization.', ar: 'أضف تواريخ البداية والنهاية لجميع المراحل لتحسين عرض الجدول الزمني.' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {stats.totalPhases > 0 && stats.totalMilestones > 0 && stats.coveragePercent >= 80 && !stats.hasGaps && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-green-700">
+                        {t({ en: 'Timeline is well-structured', ar: 'الجدول الزمني منظم جيداً' })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t({ en: 'Your implementation timeline has good coverage and structure.', ar: 'جدول التنفيذ الخاص بك يتمتع بتغطية وهيكل جيد.' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
