@@ -8,6 +8,12 @@ import { Sparkles, Brain, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildTaxonomyGeneratorPrompt, 
+  taxonomyGeneratorSchema, 
+  TAXONOMY_GENERATOR_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/taxonomy';
 
 export default function AITaxonomyGenerator({ onGenerate }) {
   const { t } = useLanguage();
@@ -22,64 +28,9 @@ export default function AITaxonomyGenerator({ onGenerate }) {
     ]);
 
     const result = await invokeAI({
-      prompt: `Analyze the platform data and suggest taxonomy improvements:
-
-Current Sectors (${sectors.length}): ${sectors.map(s => s.name_en).join(', ')}
-Total Challenges: ${challenges.length}
-Total Solutions: ${solutions.length}
-
-Challenge themes: ${[...new Set(challenges.flatMap(c => c.keywords || []))].slice(0, 20).join(', ')}
-Solution categories: ${[...new Set(solutions.flatMap(s => s.categories || []))].slice(0, 20).join(', ')}
-
-Provide:
-1. Missing sectors (sectors that should exist based on challenge/solution patterns)
-2. Suggested subsectors for each existing sector
-3. Missing services (municipal services not in catalog)
-4. Taxonomy gaps (areas with many challenges but no clear sector)
-5. Consolidation opportunities (overlapping sectors/services)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          missing_sectors: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name_en: { type: 'string' },
-                name_ar: { type: 'string' },
-                code: { type: 'string' },
-                rationale: { type: 'string' }
-              }
-            }
-          },
-          suggested_subsectors: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                sector_name: { type: 'string' },
-                subsector_name_en: { type: 'string' },
-                subsector_name_ar: { type: 'string' },
-                rationale: { type: 'string' }
-              }
-            }
-          },
-          missing_services: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name_en: { type: 'string' },
-                name_ar: { type: 'string' },
-                sector: { type: 'string' },
-                rationale: { type: 'string' }
-              }
-            }
-          },
-          taxonomy_gaps: { type: 'array', items: { type: 'string' } },
-          consolidation_opportunities: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      systemPrompt: getSystemPrompt(TAXONOMY_GENERATOR_SYSTEM_PROMPT),
+      prompt: buildTaxonomyGeneratorPrompt(sectors, challenges, solutions),
+      response_json_schema: taxonomyGeneratorSchema
     });
 
     if (result.success) {

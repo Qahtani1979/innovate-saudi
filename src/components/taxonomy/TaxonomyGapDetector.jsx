@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +7,12 @@ import { AlertTriangle, Sparkles, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildTaxonomyGapPrompt, 
+  taxonomyGapSchema, 
+  TAXONOMY_GAP_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/taxonomy';
 
 export default function TaxonomyGapDetector({ sectors, subsectors, services }) {
   const { language, isRTL, t } = useLanguage();
@@ -15,68 +20,10 @@ export default function TaxonomyGapDetector({ sectors, subsectors, services }) {
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeGaps = async () => {
-    const taxonomyData = sectors.map(sector => ({
-      sector: sector.name_en,
-      subsector_count: subsectors.filter(ss => ss.sector_id === sector.id).length,
-      service_count: subsectors
-        .filter(ss => ss.sector_id === sector.id)
-        .reduce((sum, ss) => sum + services.filter(srv => srv.subsector_id === ss.id).length, 0)
-    }));
-
     const response = await invokeAI({
-      prompt: `Analyze taxonomy completeness for Saudi municipal innovation platform:
-
-Current Taxonomy:
-${JSON.stringify(taxonomyData, null, 2)}
-
-Sectors with no subsectors: ${sectors.filter(s => !subsectors.some(ss => ss.sector_id === s.id)).map(s => s.name_en).join(', ')}
-Subsectors with no services: ${subsectors.filter(ss => !services.some(srv => srv.subsector_id === ss.id)).length}
-
-Generate bilingual gap analysis:
-1. Missing subsectors (sectors that need more breakdown)
-2. Missing services (subsectors without mapped services)
-3. Structural gaps (taxonomy imbalances or missing areas)
-4. Recommendations (specific additions needed)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          missing_subsectors: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                sector_en: { type: 'string' },
-                sector_ar: { type: 'string' },
-                suggested_subsectors: { type: 'array', items: { type: 'string' } }
-              }
-            }
-          },
-          missing_services: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                subsector_en: { type: 'string' },
-                subsector_ar: { type: 'string' },
-                suggested_services: { type: 'array', items: { type: 'string' } }
-              }
-            }
-          },
-          structural_gaps: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                gap_en: { type: 'string' },
-                gap_ar: { type: 'string' },
-                severity: { type: 'string' },
-                recommendation_en: { type: 'string' },
-                recommendation_ar: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      systemPrompt: getSystemPrompt(TAXONOMY_GAP_SYSTEM_PROMPT),
+      prompt: buildTaxonomyGapPrompt(sectors, subsectors, services),
+      response_json_schema: taxonomyGapSchema
     });
 
     if (response.success) {

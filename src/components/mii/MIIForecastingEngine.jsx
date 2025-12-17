@@ -7,6 +7,12 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getSystemPrompt } from '@/lib/saudiContext';
+import { 
+  buildMIIForecastPrompt, 
+  miiForecastSchema, 
+  MII_FORECAST_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/mii';
 
 export default function MIIForecastingEngine({ municipalityId }) {
   const { language, t } = useLanguage();
@@ -15,29 +21,14 @@ export default function MIIForecastingEngine({ municipalityId }) {
 
   const generateForecast = async () => {
     const result = await invokeAI({
-      prompt: `Forecast MII score for next 12 months based on:
-- Current score: 68
-- Active pilots: 5
-- Planned investments: Infrastructure upgrade, 2 new programs
-- Historical trend: +3 points/year
-
-Provide monthly forecast with reasoning.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          forecasts: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                month: { type: "string" },
-                score: { type: "number" }
-              }
-            }
-          },
-          drivers: { type: "array", items: { type: "string" } }
-        }
-      }
+      systemPrompt: getSystemPrompt(MII_FORECAST_SYSTEM_PROMPT),
+      prompt: buildMIIForecastPrompt({
+        currentScore: 68,
+        activePilots: 5,
+        plannedInvestments: 'Infrastructure upgrade, 2 new programs',
+        historicalTrend: '+3 points/year'
+      }),
+      response_json_schema: miiForecastSchema
     });
 
     if (result.success) {
