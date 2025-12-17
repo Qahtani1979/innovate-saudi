@@ -10,6 +10,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildHistoricalTrendPrompt, historicalTrendSchema, HISTORICAL_TREND_SYSTEM_PROMPT } from '@/lib/ai/prompts/data';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function HistoricalTrendAnalyzer({ entityType, metric }) {
   const { language, t } = useLanguage();
@@ -31,28 +33,9 @@ export default function HistoricalTrendAnalyzer({ entityType, metric }) {
 
   const analyzePattern = async () => {
     const result = await invokeAI({
-      prompt: `Analyze trend pattern:
-
-METRIC: ${metric}
-DATA POINTS: ${trends.length}
-VALUES: ${trends.slice(0, 10).map(t => t.metric_value).join(', ')}
-
-Identify:
-1. Overall trend (increasing/decreasing/stable)
-2. Rate of change
-3. Anomalies or inflection points
-4. Forecast for next quarter
-5. Recommendations based on trend`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          trend_direction: { type: "string" },
-          rate_of_change: { type: "string" },
-          anomalies: { type: "array", items: { type: "string" } },
-          forecast: { type: "string" },
-          recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildHistoricalTrendPrompt(metric, trends),
+      systemPrompt: getSystemPrompt(HISTORICAL_TREND_SYSTEM_PROMPT),
+      response_json_schema: historicalTrendSchema
     });
 
     if (result.success) {
