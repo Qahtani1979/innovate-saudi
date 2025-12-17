@@ -16,7 +16,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
 
 const PESTEL_CATEGORIES = [
   { 
@@ -268,18 +268,13 @@ export default function Step4PESTEL({
       {/* AI Generate Button */}
       {!isReadOnly && (
         <div className="flex justify-end">
-          <Button 
-            variant="outline" 
-            onClick={onGenerateAI} 
-            disabled={isGenerating}
-            className="gap-2"
-          >
-            <Sparkles className="w-4 h-4" />
-            {isGenerating 
-              ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' })
-              : t({ en: 'Generate PESTEL', ar: 'إنشاء تحليل PESTEL' })
-            }
-          </Button>
+          <AIActionButton
+            type="generate"
+            label={t({ en: 'Generate PESTEL', ar: 'إنشاء تحليل PESTEL' })}
+            onAction={onGenerateAI}
+            isLoading={isGenerating}
+            variant="outline"
+          />
         </div>
       )}
 

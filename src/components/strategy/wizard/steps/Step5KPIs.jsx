@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
 
 // KPI Categories with descriptions
 const KPI_CATEGORIES = [
@@ -642,23 +642,17 @@ export default function Step5KPIs({
       )}
 
       {/* AI Generation */}
-      {!isReadOnly && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h4 className="font-semibold">{t({ en: 'AI-Powered KPI Generation', ar: 'إنشاء مؤشرات الأداء بالذكاء الاصطناعي' })}</h4>
-                <p className="text-sm text-muted-foreground">
-                  {t({ en: 'Generate SMART KPIs with balanced leading/lagging indicators and year-by-year targets', ar: 'إنشاء مؤشرات أداء ذكية مع توازن المؤشرات القائدة والمتأخرة وأهداف سنوية' })}
-                </p>
-              </div>
-              <Button onClick={onGenerateAI} disabled={isGenerating || objectives.length === 0}>
-                {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                {t({ en: 'Generate KPIs', ar: 'إنشاء المؤشرات' })}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {!isReadOnly && objectives.length > 0 && (
+        <div className="flex justify-end">
+          <AIActionButton
+            type="generate"
+            label={t({ en: 'Generate KPIs', ar: 'إنشاء المؤشرات' })}
+            onAction={onGenerateAI}
+            isLoading={isGenerating}
+            disabled={objectives.length === 0}
+            description={t({ en: 'Generate SMART KPIs with balanced leading/lagging indicators', ar: 'إنشاء مؤشرات أداء ذكية مع توازن المؤشرات' })}
+          />
+        </div>
       )}
 
       {objectives.length === 0 ? (

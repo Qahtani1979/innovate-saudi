@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from "@/lib/utils";
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
 
 export default function Step8Dependencies({ data, onChange, onGenerateAI, isGenerating, isReadOnly = false }) {
   const { language, t, isRTL } = useLanguage();
@@ -269,10 +269,13 @@ export default function Step8Dependencies({ data, onChange, onGenerateAI, isGene
           {t({ en: 'Map dependencies, identify constraints, and document key assumptions.', ar: 'تحديد التبعيات والقيود وتوثيق الافتراضات الرئيسية.' })}
         </p>
         {!isReadOnly && (
-          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-            <Sparkles className="w-4 h-4" />
-            {isGenerating ? t({ en: 'Analyzing...', ar: 'جاري التحليل...' }) : t({ en: 'AI Analyze', ar: 'تحليل ذكي' })}
-          </Button>
+          <AIActionButton
+            type="analyze"
+            label={t({ en: 'AI Analyze', ar: 'تحليل ذكي' })}
+            onAction={onGenerateAI}
+            isLoading={isGenerating}
+            variant="outline"
+          />
         )}
       </div>
 

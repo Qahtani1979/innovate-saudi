@@ -21,7 +21,7 @@ import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { useRiskAssessment } from '@/hooks/strategy/useRiskAssessment';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, AIActionButton } from '../shared';
 
 const LEVEL_OPTIONS = [
   { value: 'low', label: { en: 'Low', ar: 'منخفض' }, color: 'bg-green-100 text-green-800 border-green-300', score: 1 },
@@ -552,10 +552,13 @@ export default function Step7Risks({
       {/* AI Generate Button */}
       {!isReadOnly && (
         <div className="flex justify-end">
-          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
-            <Sparkles className="w-4 h-4" />
-            {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Identify Risks', ar: 'تحديد المخاطر' })}
-          </Button>
+          <AIActionButton
+            type="analyze"
+            label={t({ en: 'Identify Risks', ar: 'تحديد المخاطر' })}
+            onAction={onGenerateAI}
+            isLoading={isGenerating}
+            variant="outline"
+          />
         </div>
       )}
 

@@ -22,7 +22,8 @@ import {
   StepDashboardHeader, 
   QualityMetrics, 
   RecommendationsCard,
-  DistributionChart 
+  DistributionChart,
+  AIActionButton
 } from '../shared';
 
 export default function Step3Stakeholders({ 
@@ -216,25 +217,15 @@ export default function Step3Stakeholders({
 
       {/* AI Generation Card */}
       {!isReadOnly && (
-        <Card className="border-primary/20">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-semibold flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  {t({ en: 'AI Stakeholder Analysis', ar: 'تحليل أصحاب المصلحة بالذكاء الاصطناعي' })}
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  {t({ en: 'Auto-identify stakeholders based on your plan context', ar: 'تحديد أصحاب المصلحة تلقائيًا بناءً على سياق خطتك' })}
-                </p>
-              </div>
-              <Button onClick={onGenerateAI} disabled={isGenerating}>
-                {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                {t({ en: 'Suggest Stakeholders', ar: 'اقتراح أصحاب المصلحة' })}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex justify-end">
+          <AIActionButton
+            type="suggest"
+            label={t({ en: 'Suggest Stakeholders', ar: 'اقتراح أصحاب المصلحة' })}
+            onAction={onGenerateAI}
+            isLoading={isGenerating}
+            description={t({ en: 'Auto-identify stakeholders based on your plan context', ar: 'تحديد أصحاب المصلحة تلقائيًا بناءً على سياق خطتك' })}
+          />
+        </div>
       )}
 
       {/* Tabs */}

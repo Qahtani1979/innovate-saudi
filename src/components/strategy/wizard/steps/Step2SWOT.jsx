@@ -14,7 +14,7 @@ import {
 import { useLanguage } from '../../../LanguageContext';
 import { useSwotAnalysis } from '@/hooks/strategy/useSwotAnalysis';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid, AIActionButton } from '../shared';
 
 const CATEGORIES = [
   { 
@@ -375,14 +375,12 @@ export default function Step2SWOT({
       {/* AI Generate Button */}
       {!isReadOnly && (
         <div className="flex justify-end">
-          <Button 
-            onClick={onGenerateAI} 
-            disabled={isGenerating}
-            className="gap-2"
-          >
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {t({ en: 'Generate SWOT', ar: 'إنشاء SWOT' })}
-          </Button>
+          <AIActionButton
+            type="generate"
+            label={t({ en: 'Generate SWOT', ar: 'إنشاء SWOT' })}
+            onAction={onGenerateAI}
+            isLoading={isGenerating}
+          />
         </div>
       )}
 
