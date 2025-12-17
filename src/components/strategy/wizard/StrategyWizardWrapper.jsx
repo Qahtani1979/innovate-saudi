@@ -2709,17 +2709,18 @@ Return alignments as an array under the "alignments" key with proper objective_i
         properties: {
           master_narrative_en: { type: 'string' },
           master_narrative_ar: { type: 'string' },
-          target_audiences: { type: 'array', items: { type: 'string' } },
+          target_audiences: { type: 'array', items: { type: 'string', enum: ['citizens', 'municipalities', 'partners', 'leadership', 'media', 'academia', 'staff', 'investors'] } },
           key_messages: { 
             type: 'array', 
             items: { 
               type: 'object', 
-              required: ['text_en', 'text_ar', 'audience', 'channel'],
+              required: ['text_en', 'text_ar', 'type', 'audience', 'channel'],
               properties: { 
                 text_en: { type: 'string' }, 
                 text_ar: { type: 'string' },
-                audience: { type: 'string' },
-                channel: { type: 'string' }
+                type: { type: 'string', enum: ['announcement', 'update', 'alert', 'milestone', 'success', 'educational'] },
+                audience: { type: 'string', enum: ['citizens', 'municipalities', 'partners', 'leadership', 'media', 'academia', 'staff', 'investors'] },
+                channel: { type: 'string', enum: ['portal', 'email', 'social', 'press', 'events', 'newsletter', 'intranet', 'workshops', 'mobile_app', 'tv_radio', 'video', 'podcast'] }
               } 
             } 
           },
@@ -2731,10 +2732,10 @@ Return alignments as an array under the "alignments" key with proper objective_i
               properties: { 
                 name_en: { type: 'string' }, 
                 name_ar: { type: 'string' },
-                type: { type: 'string' },
+                type: { type: 'string', enum: ['portal', 'email', 'social', 'press', 'events', 'newsletter', 'intranet', 'workshops', 'mobile_app', 'tv_radio', 'video', 'podcast'] },
                 purpose_en: { type: 'string' },
                 purpose_ar: { type: 'string' },
-                frequency: { type: 'string' },
+                frequency: { type: 'string', enum: ['daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'as_needed'] },
                 owner: { type: 'string' }
               } 
             } 
@@ -2747,10 +2748,10 @@ Return alignments as an array under the "alignments" key with proper objective_i
               properties: { 
                 name_en: { type: 'string' }, 
                 name_ar: { type: 'string' },
-                type: { type: 'string' },
+                type: { type: 'string', enum: ['portal', 'email', 'social', 'press', 'events', 'newsletter', 'intranet', 'workshops', 'mobile_app', 'tv_radio', 'video', 'podcast'] },
                 purpose_en: { type: 'string' },
                 purpose_ar: { type: 'string' },
-                frequency: { type: 'string' },
+                frequency: { type: 'string', enum: ['daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'as_needed'] },
                 audience: { type: 'string' }
               } 
             } 
@@ -3332,14 +3333,24 @@ Return alignments as an array under the "alignments" key with proper objective_i
             escalation_path: mapEscalationPath(data.escalation_path)
           };
         } else if (stepKey === 'communication') {
-          // Convert string key_messages to bilingual objects
+          // Convert string key_messages to bilingual objects with type
           const keyMessages = (data.key_messages || []).map((m, i) => 
             typeof m === 'string' 
-              ? { id: Date.now().toString() + i, text_en: m, text_ar: '' } 
-              : { id: Date.now().toString() + i, text_en: m.text_en || '', text_ar: m.text_ar || '' }
+              ? { id: Date.now().toString() + i, text_en: m, text_ar: '', type: 'announcement', audience: '', channel: '' } 
+              : { 
+                  id: Date.now().toString() + i, 
+                  text_en: m.text_en || '', 
+                  text_ar: m.text_ar || '',
+                  type: m.type || 'announcement',
+                  audience: m.audience || '',
+                  channel: m.channel || ''
+                }
           );
           updates.communication_plan = {
             ...wizardData.communication_plan,
+            master_narrative_en: data.master_narrative_en || wizardData.communication_plan?.master_narrative_en || '',
+            master_narrative_ar: data.master_narrative_ar || wizardData.communication_plan?.master_narrative_ar || '',
+            target_audiences: data.target_audiences || wizardData.communication_plan?.target_audiences || [],
             key_messages: keyMessages,
             internal_channels: data.internal_channels || [],
             external_channels: data.external_channels || []
