@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { 
   Sparkles, GitBranch, Link2, AlertCircle, Plus, X, CheckCircle, 
   ChevronDown, ChevronUp, Network, FileCheck, AlertTriangle,
-  ArrowRight, Shield, Lightbulb, Target, TrendingUp
+  ArrowRight, Shield, Lightbulb, Target, TrendingUp, BarChart3
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from "@/lib/utils";
