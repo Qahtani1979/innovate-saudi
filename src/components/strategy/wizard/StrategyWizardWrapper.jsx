@@ -39,7 +39,8 @@ import Step12Actions from './steps/Step6ActionPlans';
 import Step13Resources from './steps/Step13Resources';
 import Step14Timeline from './steps/Step7Timeline';
 import Step15Governance from './steps/Step15Governance';
-import { Step16Communication, Step17Change } from './steps/Step16Communication';
+import Step16Communication from './steps/Step16Communication';
+import Step17Change from './steps/Step17Change';
 import Step18Review from './steps/Step18Review';
 import AIStrategicPlanAnalyzer from './AIStrategicPlanAnalyzer';
 
@@ -2772,18 +2773,67 @@ Return alignments as an array under the "alignments" key with proper objective_i
             type: 'array', 
             items: { 
               type: 'object', 
-              required: ['name_en', 'name_ar', 'target_audience_en', 'target_audience_ar', 'duration_en', 'duration_ar', 'timeline_en', 'timeline_ar'],
+              required: ['name_en', 'name_ar', 'type', 'category', 'target_audience_en', 'target_audience_ar', 'duration_en', 'duration_ar', 'timeline_en', 'timeline_ar', 'priority'],
               properties: { 
                 name_en: { type: 'string' }, 
-                name_ar: { type: 'string' }, 
+                name_ar: { type: 'string' },
+                type: { type: 'string', enum: ['workshop', 'elearning', 'coaching', 'certification', 'onthejob', 'mentoring'] },
+                category: { type: 'string', enum: ['technical', 'leadership', 'process', 'soft', 'compliance', 'culture'] },
                 target_audience_en: { type: 'string' }, 
                 target_audience_ar: { type: 'string' }, 
                 duration_en: { type: 'string' }, 
                 duration_ar: { type: 'string' }, 
                 timeline_en: { type: 'string' }, 
-                timeline_ar: { type: 'string' } 
+                timeline_ar: { type: 'string' },
+                priority: { type: 'string', enum: ['critical', 'high', 'medium', 'low'] }
               } 
             } 
+          },
+          stakeholder_impacts: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['group_en', 'group_ar', 'impact_level', 'readiness', 'description_en', 'description_ar', 'support_needs_en', 'support_needs_ar'],
+              properties: {
+                group_en: { type: 'string' },
+                group_ar: { type: 'string' },
+                impact_level: { type: 'string', enum: ['transformational', 'significant', 'moderate', 'minor', 'minimal'] },
+                readiness: { type: 'string', enum: ['ready', 'preparing', 'at_risk', 'not_ready'] },
+                description_en: { type: 'string' },
+                description_ar: { type: 'string' },
+                support_needs_en: { type: 'string' },
+                support_needs_ar: { type: 'string' }
+              }
+            }
+          },
+          change_activities: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['phase', 'name_en', 'name_ar', 'owner', 'timeline', 'status'],
+              properties: {
+                phase: { type: 'string', enum: ['awareness', 'desire', 'knowledge', 'ability', 'reinforcement'] },
+                name_en: { type: 'string' },
+                name_ar: { type: 'string' },
+                owner: { type: 'string' },
+                timeline: { type: 'string' },
+                status: { type: 'string', enum: ['planned', 'in_progress', 'completed'] }
+              }
+            }
+          },
+          resistance_strategies: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['type', 'mitigation_en', 'mitigation_ar', 'owner', 'timeline'],
+              properties: {
+                type: { type: 'string', enum: ['fear_unknown', 'loss_control', 'skill_gaps', 'past_failures', 'poor_communication', 'lack_trust'] },
+                mitigation_en: { type: 'string' },
+                mitigation_ar: { type: 'string' },
+                owner: { type: 'string' },
+                timeline: { type: 'string' }
+              }
+            }
           }
         }
       }
@@ -3368,12 +3418,44 @@ Return alignments as an array under the "alignments" key with proper objective_i
               id: Date.now().toString() + 'train' + i,
               name_en: tp.name_en || tp.name || '',
               name_ar: tp.name_ar || '',
+              type: tp.type || 'workshop',
+              category: tp.category || 'technical',
               target_audience_en: tp.target_audience_en || tp.target_audience || '',
               target_audience_ar: tp.target_audience_ar || '',
               duration_en: tp.duration_en || tp.duration || '',
               duration_ar: tp.duration_ar || '',
               timeline_en: tp.timeline_en || tp.timeline || '',
-              timeline_ar: tp.timeline_ar || ''
+              timeline_ar: tp.timeline_ar || '',
+              priority: tp.priority || 'medium',
+              entity_training: []
+            })),
+            stakeholder_impacts: (data.stakeholder_impacts || []).map((si, i) => ({
+              id: Date.now().toString() + 'si' + i,
+              group_en: si.group_en || si.group || '',
+              group_ar: si.group_ar || '',
+              impact_level: si.impact_level || 'moderate',
+              readiness: si.readiness || 'preparing',
+              description_en: si.description_en || si.description || '',
+              description_ar: si.description_ar || '',
+              support_needs_en: si.support_needs_en || si.support_needs || '',
+              support_needs_ar: si.support_needs_ar || ''
+            })),
+            change_activities: (data.change_activities || []).map((ca, i) => ({
+              id: Date.now().toString() + 'ca' + i,
+              phase: ca.phase || 'awareness',
+              name_en: ca.name_en || ca.name || '',
+              name_ar: ca.name_ar || '',
+              owner: ca.owner || '',
+              timeline: ca.timeline || '',
+              status: ca.status || 'planned'
+            })),
+            resistance_strategies: (data.resistance_strategies || []).map((rs, i) => ({
+              id: Date.now().toString() + 'rs' + i,
+              type: rs.type || 'fear_unknown',
+              mitigation_en: rs.mitigation_en || rs.mitigation || '',
+              mitigation_ar: rs.mitigation_ar || '',
+              owner: rs.owner || '',
+              timeline: rs.timeline || ''
             }))
           };
         }
