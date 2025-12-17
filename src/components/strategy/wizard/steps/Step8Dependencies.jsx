@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
-  Sparkles, GitBranch, Link2, AlertCircle, Plus, X, CheckCircle, 
+  Sparkles, GitBranch, Link2, AlertCircle, Plus, X, CheckCircle, CheckCircle2,
   ChevronDown, ChevronUp, Network, FileCheck, AlertTriangle,
   ArrowRight, Shield, Lightbulb, Target, TrendingUp, BarChart3
 } from 'lucide-react';
