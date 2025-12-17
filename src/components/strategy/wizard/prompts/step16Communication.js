@@ -49,12 +49,12 @@ For EACH message, provide bilingual content:
 - "Our innovation pilots in ${(wizardData.target_regions || ['Riyadh', 'Jeddah']).slice(0, 2).join(' and ')} are testing cutting-edge solutions that will transform municipal services nationwide"
 
 ### PART 2: INTERNAL CHANNELS (Generate 5-7 channels)
-For EACH channel, provide:
+For EACH channel, provide (BILINGUAL):
 - name_en / name_ar: Channel name
 - type: "portal" | "email" | "social" | "press" | "events" | "newsletter" | "intranet" | "workshops" | "mobile_app" | "tv_radio" | "video" | "podcast"
 - purpose_en / purpose_ar: What it's used for
 - frequency: "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "as_needed"
-- owner: Who manages it
+- owner_en / owner_ar: Who manages it (e.g., "Communications Team" / "فريق الاتصالات")
 
 **MANDATORY Innovation Internal Channels:**
 - "Innovation Newsletter" - Monthly R&D updates, pilot progress, tech insights
@@ -103,7 +103,7 @@ export const step16Schema = {
       type: 'array', 
       items: { 
         type: 'object',
-        required: ['name_en', 'name_ar', 'type', 'purpose_en', 'purpose_ar', 'frequency', 'owner'],
+        required: ['name_en', 'name_ar', 'type', 'purpose_en', 'purpose_ar', 'frequency', 'owner_en', 'owner_ar'],
         properties: { 
           name_en: { type: 'string' }, 
           name_ar: { type: 'string' },
@@ -111,7 +111,8 @@ export const step16Schema = {
           purpose_en: { type: 'string' },
           purpose_ar: { type: 'string' },
           frequency: { type: 'string', enum: ['daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'as_needed'] },
-          owner: { type: 'string' }
+          owner_en: { type: 'string' },
+          owner_ar: { type: 'string' }
         } 
       } 
     },

@@ -30,7 +30,7 @@ ${(wizardData.risks || []).filter(r => r.impact === 'high').slice(0, 3).map(r =>
 ## REQUIREMENTS:
 Generate 2-4 action plans per objective, including INNOVATION/R&D ACTIONS.
 
-For EACH action plan, provide ALL fields (bilingual):
+For EACH action plan, provide ALL fields (BILINGUAL where applicable):
 - name_en / name_ar: Clear action name
 - description_en / description_ar: Detailed description (2-3 sentences)
 - objective_index: Which objective this supports (0-based index)
@@ -39,9 +39,9 @@ For EACH action plan, provide ALL fields (bilingual):
 - budget_estimate: Estimated cost in SAR
 - start_date: Planned start (YYYY-MM format)
 - end_date: Planned end (YYYY-MM format)
-- owner: Role/department responsible
-- deliverables: Array of specific outputs
-- dependencies: Array of prerequisites
+- owner_en / owner_ar: Role/department responsible (bilingual, e.g., "Digital Transformation Office" / "مكتب التحول الرقمي")
+- deliverables: Array of objects with text_en and text_ar (e.g., [{"text_en": "Pilot report", "text_ar": "تقرير تجريبي"}])
+- dependencies: Array of objects with text_en and text_ar (e.g., [{"text_en": "Budget approval", "text_ar": "موافقة الميزانية"}])
 - innovation_impact: 1-4 scale (4 = transformational innovation)
 - success_criteria_en / success_criteria_ar: How success will be measured
 - should_create_entity: Boolean - whether to create as formal entity in system
@@ -136,14 +136,36 @@ export const step12Schema = {
           budget_estimate: { type: 'string' },
           start_date: { type: 'string' },
           end_date: { type: 'string' },
-          owner: { type: 'string' },
-          deliverables: { type: 'array', items: { type: 'string' } },
-          dependencies: { type: 'array', items: { type: 'string' } },
+          owner_en: { type: 'string' },
+          owner_ar: { type: 'string' },
+          deliverables: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                text_en: { type: 'string' },
+                text_ar: { type: 'string' }
+              },
+              required: ['text_en', 'text_ar']
+            } 
+          },
+          dependencies: { 
+            type: 'array', 
+            items: { 
+              type: 'object',
+              properties: {
+                text_en: { type: 'string' },
+                text_ar: { type: 'string' }
+              },
+              required: ['text_en', 'text_ar']
+            } 
+          },
           innovation_impact: { type: 'number', minimum: 1, maximum: 4 },
           success_criteria_en: { type: 'string' },
           success_criteria_ar: { type: 'string' },
           should_create_entity: { type: 'boolean' }
-        }
+        },
+        required: ['name_en', 'name_ar', 'description_en', 'description_ar', 'objective_index', 'type', 'priority', 'budget_estimate', 'start_date', 'end_date', 'owner_en', 'owner_ar', 'deliverables', 'dependencies', 'innovation_impact', 'success_criteria_en', 'success_criteria_ar', 'should_create_entity']
       }
     }
   }

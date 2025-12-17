@@ -77,17 +77,17 @@ ${targetObjectiveIndex !== null ? `- MANDATORY: Link to objective_index = ${targ
 - 50-69: Moderately unique, some similarity
 - Below 50: Too similar to existing KPIs
 
-## REQUIRED OUTPUT:
+## REQUIRED OUTPUT (BILINGUAL):
 - name_en / name_ar: Specific, measurable KPI name (avoid vague terms)
 - category: ${targetCategory ? `MUST BE "${targetCategory}"` : '"outcome" | "output" | "process" | "input"'}
-- unit: Measurement unit (%, count, SAR, days, score, rating, etc.)
+- unit_en / unit_ar: Measurement unit in both languages (e.g., "%" / "٪", "days" / "أيام")
 - baseline_value: Current/starting value (be specific)
 - target_value: Target to achieve by end of plan
 - objective_index: ${targetObjectiveIndex !== null ? `MUST BE ${targetObjectiveIndex}` : 'Which objective this KPI measures (0-based index)'}
 - frequency: "monthly" | "quarterly" | "biannual" | "annual"
-- data_source: Specific system/platform where data comes from
-- data_collection_method: How data will be collected
-- owner: Role/department responsible for tracking
+- data_source_en / data_source_ar: Specific system/platform (e.g., "Balady Platform" / "منصة بلدي")
+- data_collection_method_en / data_collection_method_ar: How data will be collected (e.g., "Automated API" / "واجهة برمجة آلية")
+- owner_en / owner_ar: Role/department responsible (e.g., "Digital Transformation Office" / "مكتب التحول الرقمي")
 - milestones: Array of year-by-year targets from ${context.startYear} to ${context.endYear}
 
 ## MILESTONE FORMAT:
@@ -98,14 +98,14 @@ ${targetObjectiveIndex !== null ? `- MANDATORY: Link to objective_index = ${targ
   { "year": ${context.endYear}, "target": "value" }
 ]
 
-## DATA SOURCES (be specific):
-- Balady Platform Analytics
-- Citizen Pulse Survey System
-- SDAIA AI Governance Dashboard
-- Municipal ERP/Finance System
-- IoT Command Center Platform
-- HR LMS (Learning Management System)
-- Innovation Portfolio Tracker
+## DATA SOURCES (be specific, BILINGUAL):
+- "Balady Platform Analytics" / "تحليلات منصة بلدي"
+- "Citizen Pulse Survey System" / "نظام استطلاع نبض المواطن"
+- "SDAIA AI Governance Dashboard" / "لوحة حوكمة الذكاء الاصطناعي - سدايا"
+- "Municipal ERP/Finance System" / "نظام تخطيط موارد البلدية"
+- "IoT Command Center Platform" / "منصة مركز قيادة إنترنت الأشياء"
+- "HR LMS" / "نظام إدارة التعلم للموارد البشرية"
+- "Innovation Portfolio Tracker" / "متتبع محفظة الابتكار"
 
 Use formal Arabic (فصحى). Be specific to Saudi municipal context. Ensure SMART criteria compliance.`;
 };
@@ -119,19 +119,23 @@ export const SINGLE_KPI_SCHEMA = {
   properties: {
     kpi: {
       type: 'object',
-      required: ['name_en', 'name_ar', 'category', 'unit', 'baseline_value', 'target_value', 'objective_index', 'frequency', 'data_source', 'data_collection_method', 'owner', 'milestones'],
+      required: ['name_en', 'name_ar', 'category', 'unit_en', 'unit_ar', 'baseline_value', 'target_value', 'objective_index', 'frequency', 'data_source_en', 'data_source_ar', 'data_collection_method_en', 'data_collection_method_ar', 'owner_en', 'owner_ar', 'milestones'],
       properties: {
         name_en: { type: 'string' },
         name_ar: { type: 'string' },
         category: { type: 'string', enum: ['outcome', 'output', 'process', 'input'] },
-        unit: { type: 'string' },
+        unit_en: { type: 'string' },
+        unit_ar: { type: 'string' },
         baseline_value: { type: 'string' },
         target_value: { type: 'string' },
         objective_index: { type: 'number' },
         frequency: { type: 'string', enum: ['monthly', 'quarterly', 'biannual', 'annual'] },
-        data_source: { type: 'string' },
-        data_collection_method: { type: 'string' },
-        owner: { type: 'string' },
+        data_source_en: { type: 'string' },
+        data_source_ar: { type: 'string' },
+        data_collection_method_en: { type: 'string' },
+        data_collection_method_ar: { type: 'string' },
+        owner_en: { type: 'string' },
+        owner_ar: { type: 'string' },
         milestones: { 
           type: 'array', 
           items: { 
