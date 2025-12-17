@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,69 +6,19 @@ import { useLanguage } from '../LanguageContext';
 import { Network, Loader2, Zap } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getCausalGraphPrompt, causalGraphSchema } from '@/lib/ai/prompts/challenges';
+import { getSystemPrompt } from '@/lib/saudiContext';
+
 export default function CausalGraphVisualizer({ challenge }) {
   const { language, isRTL, t } = useLanguage();
   const [graph, setGraph] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateCausalGraph = async () => {
-    const prompt = `Analyze this municipal challenge and build a causal graph showing root causes, intermediate factors, and the main problem:
-
-Challenge: ${challenge.title_en}
-Description: ${challenge.description_en}
-Root Causes: ${JSON.stringify(challenge.root_causes || [])}
-Sector: ${challenge.sector}
-
-Create a causal graph structure showing:
-1. Deep root causes (fundamental issues)
-2. Intermediate factors (contributing causes)
-3. Direct causes (immediate triggers)
-4. The main problem
-
-Return as hierarchical structure for visualization.`;
-
     const response = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          deep_roots: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                cause: { type: 'string' },
-                impact_level: { type: 'string' }
-              }
-            }
-          },
-          intermediate: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                factor: { type: 'string' },
-                connected_to: { type: 'array', items: { type: 'string' } }
-              }
-            }
-          },
-          direct_causes: {
-            type: 'array',
-            items: { type: 'string' }
-          },
-          relationships: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                from: { type: 'string' },
-                to: { type: 'string' },
-                strength: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: getCausalGraphPrompt(challenge),
+      response_json_schema: causalGraphSchema,
+      system_prompt: getSystemPrompt('municipal')
     });
 
     if (response.success && response.data) {

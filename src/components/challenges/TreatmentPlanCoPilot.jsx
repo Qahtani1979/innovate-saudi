@@ -7,6 +7,8 @@ import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getTreatmentPlanPrompt, treatmentPlanSchema } from '@/lib/ai/prompts/challenges';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function TreatmentPlanCoPilot({ challenge }) {
   const { language, t } = useLanguage();
@@ -15,42 +17,9 @@ export default function TreatmentPlanCoPilot({ challenge }) {
 
   const generatePlan = async () => {
     const { success, data } = await invokeAI({
-      prompt: `Generate treatment plan for challenge:
-
-CHALLENGE: ${challenge.title_en}
-SECTOR: ${challenge.sector}
-ROOT CAUSE: ${challenge.root_cause_en || 'Not specified'}
-PRIORITY: ${challenge.priority}
-
-Based on similar challenges, suggest:
-1. Recommended approach (pilot/R&D/program/procurement)
-2. Step-by-step treatment plan (5-7 milestones)
-3. Timeline estimation (weeks/months)
-4. Resource allocation (team size, budget range)
-5. Key success factors
-6. Potential risks and mitigation`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommended_approach: { type: "string" },
-          milestones: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                duration: { type: "string" },
-                deliverables: { type: "array", items: { type: "string" } }
-              }
-            }
-          },
-          timeline_weeks: { type: "number" },
-          team_size: { type: "string" },
-          budget_estimate: { type: "string" },
-          success_factors: { type: "array", items: { type: "string" } },
-          risks: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: getTreatmentPlanPrompt(challenge),
+      response_json_schema: treatmentPlanSchema,
+      system_prompt: getSystemPrompt('municipal')
     });
 
     if (success) {

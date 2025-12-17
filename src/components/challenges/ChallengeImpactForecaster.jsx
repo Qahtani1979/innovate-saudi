@@ -7,6 +7,8 @@ import { TrendingUp, Sparkles, Loader2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getImpactForecasterPrompt, impactForecasterSchema } from '@/lib/ai/prompts/challenges';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function ChallengeImpactForecaster({ challenge }) {
   const { language, t } = useLanguage();
@@ -15,34 +17,9 @@ export default function ChallengeImpactForecaster({ challenge }) {
 
   const generateForecast = async () => {
     const result = await invokeAI({
-      prompt: `Forecast impact if challenge is resolved:
-
-CHALLENGE: ${challenge.title_en}
-SECTOR: ${challenge.sector}
-AFFECTED POPULATION: ${challenge.affected_population?.size || 'Unknown'}
-CURRENT SEVERITY: ${challenge.severity_score || 'Not scored'}
-BUDGET ESTIMATE: ${challenge.budget_estimate || 'Not estimated'}
-
-Predict if resolved:
-1. MII impact: estimated point increase (0-10 scale)
-2. Complaint reduction: percentage decrease
-3. Annual cost savings: estimated in SAR
-4. Citizen satisfaction: improvement percentage
-5. Confidence level: 0-100%
-6. ROI estimate: cost to solve vs annual value`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          mii_impact: { type: "number" },
-          complaint_reduction_percent: { type: "number" },
-          annual_savings_sar: { type: "number" },
-          satisfaction_improvement: { type: "number" },
-          confidence: { type: "number" },
-          roi_multiple: { type: "number" },
-          summary: { type: "string" },
-          comparison: { type: "string" }
-        }
-      }
+      prompt: getImpactForecasterPrompt(challenge),
+      response_json_schema: impactForecasterSchema,
+      system_prompt: getSystemPrompt('municipal')
     });
 
     if (result.success) {

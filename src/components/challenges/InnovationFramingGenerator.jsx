@@ -9,6 +9,13 @@ import { useLanguage } from '../LanguageContext';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  getInnovationFramingPrompt, 
+  innovationFramingSchema,
+  getTranslationPrompt,
+  translationSchema 
+} from '@/lib/ai/prompts/challenges';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function InnovationFramingGenerator({ challenge, onFramingGenerated }) {
   const [framing, setFraming] = useState(challenge?.innovation_framing || null);
@@ -17,86 +24,10 @@ export default function InnovationFramingGenerator({ challenge, onFramingGenerat
   const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateFraming = async () => {
-    const prompt = `Transform this municipal PROBLEM into innovation OPPORTUNITIES. Generate BILINGUAL content (English AND Arabic).
-
-Challenge: ${challenge.title_en} / ${challenge.title_ar || ''}
-Description: ${challenge.description_en} / ${challenge.description_ar || ''}
-Problem: ${challenge.problem_statement_en || ''} / ${challenge.problem_statement_ar || ''}
-Desired Outcome: ${challenge.desired_outcome_en || ''} / ${challenge.desired_outcome_ar || ''}
-
-Generate innovation framing:
-
-1. HMW Questions (5 bilingual): "How Might We..." reframing problems as opportunities
-2. What If Scenarios (5 bilingual): "What if..." exploring future possibilities
-3. Guiding Questions (ALL BILINGUAL):
-   - For Startups (4): Market opportunity, scalability, business model, customer value
-   - For Researchers (4): Technical challenges, research gaps, validation, collaboration
-   - Technology Opportunities (5): Specific tech domains (AI, IoT, sensors, data, etc)
-
-ALL content BILINGUAL, ACTIONABLE, INSPIRING.`;
-
     const result = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          hmw_questions: {
-            type: 'array',
-            items: { 
-              type: 'object',
-              properties: {
-                en: { type: 'string' },
-                ar: { type: 'string' }
-              }
-            }
-          },
-          what_if_scenarios: {
-            type: 'array',
-            items: { 
-              type: 'object',
-              properties: {
-                en: { type: 'string' },
-                ar: { type: 'string' }
-              }
-            }
-          },
-          guiding_questions: {
-            type: 'object',
-            properties: {
-              for_startups: {
-                type: 'array',
-                items: { 
-                  type: 'object',
-                  properties: {
-                    en: { type: 'string' },
-                    ar: { type: 'string' }
-                  }
-                }
-              },
-              for_researchers: {
-                type: 'array',
-                items: { 
-                  type: 'object',
-                  properties: {
-                    en: { type: 'string' },
-                    ar: { type: 'string' }
-                  }
-                }
-              },
-              technology_opportunities: {
-                type: 'array',
-                items: { 
-                  type: 'object',
-                  properties: {
-                    en: { type: 'string' },
-                    ar: { type: 'string' }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+      prompt: getInnovationFramingPrompt(challenge),
+      response_json_schema: innovationFramingSchema,
+      system_prompt: getSystemPrompt('innovation')
     });
 
     if (result.success) {
@@ -152,11 +83,9 @@ ALL content BILINGUAL, ACTIONABLE, INSPIRING.`;
     }
 
     const result = await invokeAI({
-      prompt: `Translate to ${targetLang === 'ar' ? 'Arabic' : 'English'}:\n${sourceText}`,
-      response_json_schema: {
-        type: 'object',
-        properties: { translation: { type: 'string' } }
-      }
+      prompt: getTranslationPrompt(sourceText, targetLang),
+      response_json_schema: translationSchema,
+      system_prompt: getSystemPrompt('general')
     });
     
     if (result.success) {

@@ -21,6 +21,9 @@ export * from './portfolio';
 // Events prompts
 export * from './events';
 
+// Challenges prompts
+export * from './challenges';
+
 // Pilot prompts  
 // export * from './pilot';
 
@@ -32,9 +35,6 @@ export * from './events';
 
 // R&D prompts
 // export * from './rd';
-
-// Challenge prompts
-// export * from './challenge';
 
 // Solution prompts
 // export * from './solution';
@@ -65,11 +65,11 @@ export const PROMPT_MODULE_STATUS = {
   strategy: { status: 'complete', promptCount: 24 },
   portfolio: { status: 'complete', promptCount: 3 },
   events: { status: 'complete', promptCount: 3 },
+  challenges: { status: 'complete', promptCount: 5 },
   pilot: { status: 'pending', promptCount: 0 },
   matchmaker: { status: 'pending', promptCount: 0 },
   sandbox: { status: 'pending', promptCount: 0 },
   rd: { status: 'pending', promptCount: 0 },
-  challenge: { status: 'pending', promptCount: 0 },
   solution: { status: 'pending', promptCount: 0 },
   scaling: { status: 'pending', promptCount: 0 },
   citizen: { status: 'pending', promptCount: 0 },

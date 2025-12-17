@@ -10,6 +10,8 @@ import { Sparkles, Mic, ChevronRight, CheckCircle2, Loader2 } from 'lucide-react
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { getChallengeIntakePrompt, challengeIntakeSchema } from '@/lib/ai/prompts/challenges';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIChallengeIntakeWizard({ onSubmit, onCancel }) {
   const { language, isRTL, t } = useLanguage();
@@ -27,36 +29,9 @@ export default function AIChallengeIntakeWizard({ onSubmit, onCancel }) {
     if (!challengeData.description || !isAvailable) return;
     
     const response = await invokeAI({
-      prompt: `Analyze this municipal challenge description and extract structured information:
-
-"${challengeData.description}"
-
-Extract:
-1. Primary sector (urban_design, transport, environment, digital_services, health, education, safety, economic_development, social_services, other)
-2. 5-10 relevant keywords for matching
-3. 2-4 potential root causes
-4. 3-5 suggested KPIs for measuring success
-5. 2-3 intelligent follow-up questions to gather more context`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          sector: { type: "string" },
-          keywords: { type: "array", items: { type: "string" } },
-          root_causes: { type: "array", items: { type: "string" } },
-          suggested_kpis: { 
-            type: "array", 
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                baseline: { type: "string" },
-                target: { type: "string" }
-              }
-            }
-          },
-          follow_up_questions: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: getChallengeIntakePrompt(challengeData.description),
+      response_json_schema: challengeIntakeSchema,
+      system_prompt: getSystemPrompt('municipal')
     });
 
     if (response.success && response.data) {
@@ -179,7 +154,6 @@ Extract:
 
         {step === 2 && (
           <div className="space-y-6">
-            {/* AI Analysis Results */}
             <div className="p-4 bg-green-50 rounded-lg border-2 border-green-300">
               <div className="flex items-center gap-2 mb-3">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -233,7 +207,6 @@ Extract:
               </div>
             </div>
 
-            {/* Follow-up Questions */}
             {challengeData.follow_up_questions?.length > 0 && (
               <div>
                 <h4 className="font-semibold text-sm text-slate-700 mb-2">
