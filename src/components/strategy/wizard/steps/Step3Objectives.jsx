@@ -19,6 +19,7 @@ import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { cn } from "@/lib/utils";
 import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import AIObjectivesAnalyzer from '../AIObjectivesAnalyzer';
 
 export default function Step3Objectives({ 
   data, 
@@ -26,6 +27,9 @@ export default function Step3Objectives({
   onGenerateAI, 
   isGenerating,
   onGenerateSingleObjective,
+  wizardData = {},
+  sectors: propSectors,
+  strategicThemes = [],
   isReadOnly = false
 }) {
   const { language, t, isRTL } = useLanguage();
@@ -446,6 +450,10 @@ export default function Step3Objectives({
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">{t({ en: 'Summary', ar: 'ملخص' })}</span>
             </TabsTrigger>
+            <TabsTrigger value="analyzer" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">{t({ en: 'AI Analyzer', ar: 'محلل الذكاء' })}</span>
+            </TabsTrigger>
           </TabsList>
 
           {!isReadOnly && (
@@ -713,6 +721,20 @@ export default function Step3Objectives({
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* AI Analyzer Tab */}
+        <TabsContent value="analyzer" className="mt-4">
+          <AIObjectivesAnalyzer
+            objectives={objectives}
+            wizardData={wizardData}
+            sectors={propSectors || sectors}
+            strategicThemes={strategicThemes}
+            onApplyRecommendation={(rec) => {
+              // Handle applying recommendations if needed
+              console.log('Apply recommendation:', rec);
+            }}
+          />
         </TabsContent>
       </Tabs>
 
