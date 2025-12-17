@@ -1069,43 +1069,25 @@ export default function Step6ActionPlans({
               </Card>
             </TabsContent>
 
-            {/* Summary View */}
+            {/* Summary View - Using Shared Components */}
             <TabsContent value="summary" className="mt-4 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Priority Distribution */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5" />
-                      {t({ en: 'Priority Distribution', ar: 'توزيع الأولوية' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => {
-                        const count = portfolioStats.byPriority[key] || 0;
-                        const pct = portfolioStats.total > 0 ? (count / portfolioStats.total) * 100 : 0;
-                        return (
-                          <div key={key} className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                              <span>{language === 'ar' ? cfg.label_ar : cfg.label_en}</span>
-                              <span className="font-medium">{count}</span>
-                            </div>
-                            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                              <div className={`h-full ${cfg.color.replace('text-', 'bg-').split(' ')[0]} transition-all`} style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
+                <DistributionChart
+                  title={t({ en: 'Priority Distribution', ar: 'توزيع الأولوية' })}
+                  language={language}
+                  data={Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => ({
+                    label: { en: cfg.label_en, ar: cfg.label_ar },
+                    value: portfolioStats.byPriority[key] || 0,
+                    icon: AlertTriangle,
+                    iconColor: cfg.color.split(' ')[0]
+                  }))}
+                />
 
                 {/* Objective Coverage */}
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Target className="h-5 w-5" />
+                    <CardTitle className="text-sm font-medium">
                       {t({ en: 'Objective Coverage', ar: 'تغطية الأهداف' })}
                     </CardTitle>
                   </CardHeader>
@@ -1132,97 +1114,72 @@ export default function Step6ActionPlans({
                 </Card>
 
                 {/* Data Completeness */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      {t({ en: 'Data Completeness', ar: 'اكتمال البيانات' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">{t({ en: 'With Owner', ar: 'مع مسؤول' })}</span>
-                        <div className="flex items-center gap-2">
-                          <Progress value={portfolioStats.total > 0 ? (portfolioStats.withOwner / portfolioStats.total) * 100 : 0} className="w-24 h-2" />
-                          <span className="text-sm font-medium">{portfolioStats.withOwner}/{portfolioStats.total}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">{t({ en: 'With Timeline', ar: 'مع جدول زمني' })}</span>
-                        <div className="flex items-center gap-2">
-                          <Progress value={portfolioStats.total > 0 ? (portfolioStats.withTimeline / portfolioStats.total) * 100 : 0} className="w-24 h-2" />
-                          <span className="text-sm font-medium">{portfolioStats.withTimeline}/{portfolioStats.total}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">{t({ en: 'With Deliverables', ar: 'مع مخرجات' })}</span>
-                        <div className="flex items-center gap-2">
-                          <Progress value={portfolioStats.total > 0 ? (portfolioStats.withDeliverables / portfolioStats.total) * 100 : 0} className="w-24 h-2" />
-                          <span className="text-sm font-medium">{portfolioStats.withDeliverables}/{portfolioStats.total}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <QualityMetrics
+                  title={t({ en: 'Data Completeness', ar: 'اكتمال البيانات' })}
+                  language={language}
+                  metrics={[
+                    { 
+                      value: `${portfolioStats.withOwner}/${portfolioStats.total}`, 
+                      label: { en: 'With Owner', ar: 'مع مسؤول' },
+                      icon: User,
+                      iconColor: portfolioStats.withOwner === portfolioStats.total ? 'text-green-600' : 'text-amber-600'
+                    },
+                    { 
+                      value: `${portfolioStats.withTimeline}/${portfolioStats.total}`, 
+                      label: { en: 'With Timeline', ar: 'مع جدول زمني' },
+                      icon: Calendar,
+                      iconColor: portfolioStats.withTimeline === portfolioStats.total ? 'text-green-600' : 'text-amber-600'
+                    },
+                    { 
+                      value: `${portfolioStats.withDeliverables}/${portfolioStats.total}`, 
+                      label: { en: 'With Deliverables', ar: 'مع مخرجات' },
+                      icon: FileText,
+                      iconColor: portfolioStats.withDeliverables === portfolioStats.total ? 'text-green-600' : 'text-amber-600'
+                    },
+                    { 
+                      value: `${portfolioStats.withBudget}/${portfolioStats.total}`, 
+                      label: { en: 'With Budget', ar: 'مع ميزانية' },
+                      icon: DollarSign,
+                      iconColor: portfolioStats.withBudget === portfolioStats.total ? 'text-green-600' : 'text-amber-600'
+                    }
+                  ]}
+                />
 
                 {/* Recommendations */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Zap className="h-5 w-5" />
-                      {t({ en: 'Recommendations', ar: 'التوصيات' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {portfolioStats.objectiveCoverage < 100 && (
-                        <div className="flex items-start gap-2 text-sm">
-                          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                          <span>
-                            {t({ 
-                              en: 'Add action plans for all objectives to ensure complete coverage.',
-                              ar: 'أضف خطط عمل لجميع الأهداف لضمان التغطية الكاملة.'
-                            })}
-                          </span>
-                        </div>
-                      )}
-                      {portfolioStats.innovationScore < 50 && portfolioStats.total > 0 && (
-                        <div className="flex items-start gap-2 text-sm">
-                          <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                          <span>
-                            {t({ 
-                              en: 'Consider adding more innovation-focused actions (R&D, pilots, living labs).',
-                              ar: 'فكر في إضافة المزيد من الإجراءات المركزة على الابتكار (البحث والتطوير، التجارب، المختبرات الحية).'
-                            })}
-                          </span>
-                        </div>
-                      )}
-                      {portfolioStats.withOwner < portfolioStats.total && portfolioStats.total > 0 && (
-                        <div className="flex items-start gap-2 text-sm">
-                          <User className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                          <span>
-                            {t({ 
-                              en: `Assign owners to ${portfolioStats.total - portfolioStats.withOwner} action(s) to ensure accountability.`,
-                              ar: `عيّن مسؤولين لـ ${portfolioStats.total - portfolioStats.withOwner} إجراء(ات) لضمان المساءلة.`
-                            })}
-                          </span>
-                        </div>
-                      )}
-                      {portfolioStats.total === 0 && (
-                        <div className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                          <span>
-                            {t({ 
-                              en: 'Start by using AI generation or manually adding action plans for each objective.',
-                              ar: 'ابدأ باستخدام الذكاء الاصطناعي أو إضافة خطط العمل يدوياً لكل هدف.'
-                            })}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <RecommendationsCard
+                  title={t({ en: 'Recommendations', ar: 'التوصيات' })}
+                  language={language}
+                  recommendations={[
+                    ...(portfolioStats.objectiveCoverage < 100 ? [{
+                      type: 'warning',
+                      message: { 
+                        en: 'Add action plans for all objectives to ensure complete coverage.',
+                        ar: 'أضف خطط عمل لجميع الأهداف لضمان التغطية الكاملة.'
+                      }
+                    }] : []),
+                    ...(portfolioStats.innovationScore < 50 && portfolioStats.total > 0 ? [{
+                      type: 'info',
+                      message: { 
+                        en: 'Consider adding more innovation-focused actions (R&D, pilots, living labs).',
+                        ar: 'فكر في إضافة المزيد من الإجراءات المركزة على الابتكار.'
+                      }
+                    }] : []),
+                    ...(portfolioStats.withOwner < portfolioStats.total && portfolioStats.total > 0 ? [{
+                      type: 'info',
+                      message: { 
+                        en: `Assign owners to ${portfolioStats.total - portfolioStats.withOwner} action(s) to ensure accountability.`,
+                        ar: `عيّن مسؤولين لـ ${portfolioStats.total - portfolioStats.withOwner} إجراء(ات) لضمان المساءلة.`
+                      }
+                    }] : []),
+                    ...(portfolioStats.total === 0 ? [{
+                      type: 'info',
+                      message: { 
+                        en: 'Start by using AI generation or manually adding action plans for each objective.',
+                        ar: 'ابدأ باستخدام الذكاء الاصطناعي أو إضافة خطط العمل يدوياً لكل هدف.'
+                      }
+                    }] : [])
+                  ]}
+                />
               </div>
             </TabsContent>
           </Tabs>
