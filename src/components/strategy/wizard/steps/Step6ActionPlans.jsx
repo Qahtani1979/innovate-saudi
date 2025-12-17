@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Slider } from "@/components/ui/slider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StepAlerts } from '../shared/StepAlerts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Sparkles, Loader2, Plus, X, Lightbulb, ChevronDown, ChevronUp, Zap,
@@ -860,16 +860,7 @@ export default function Step6ActionPlans({
       )}
 
       {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="space-y-2">
-          {alerts.map((alert, i) => (
-            <Alert key={i} variant={alert.type === 'warning' ? 'destructive' : 'default'} className={alert.type === 'info' ? 'border-blue-200 bg-blue-50' : ''}>
-              <alert.icon className="h-4 w-4" />
-              <AlertDescription>{alert.message}</AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
+      <StepAlerts alerts={alerts} />
 
       {objectives.length === 0 ? (
         <Card className="border-dashed">

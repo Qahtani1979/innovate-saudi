@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StepAlerts } from '../shared/StepAlerts';
 import { 
   Sparkles, Megaphone, Plus, X, Users, Radio, Mail, Globe, BookOpen, 
   ChevronUp, ChevronDown, Link2, MessageSquare, Calendar, LayoutGrid, 
@@ -900,16 +900,7 @@ export function Step16Communication({ data, onChange, onGenerateAI, isGenerating
       )}
 
       {/* Alerts */}
-      {alerts.length > 0 && !isReadOnly && (
-        <div className="space-y-2">
-          {alerts.map((alert, idx) => (
-            <Alert key={idx} variant={alert.type === 'warning' ? 'destructive' : 'default'} className={alert.type === 'warning' ? 'border-amber-500/50 bg-amber-500/10' : ''}>
-              {alert.type === 'warning' ? <AlertTriangle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
-              <AlertDescription>{alert.message[language]}</AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
+      {!isReadOnly && <StepAlerts alerts={alerts} />}
 
       {/* Master Narrative */}
       <Card>

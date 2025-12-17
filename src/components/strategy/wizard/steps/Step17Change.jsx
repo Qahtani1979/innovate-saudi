@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { StepAlerts } from '../shared/StepAlerts';
 import { 
   Sparkles, Plus, X, ChevronDown, ChevronUp, RefreshCw, Users, Target, 
   BookOpen, AlertTriangle, CheckCircle, Clock, TrendingUp, Layers,
