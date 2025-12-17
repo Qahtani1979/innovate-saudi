@@ -1,12 +1,22 @@
 # Wizard Step Standardization - Complete Migration Guide
 
 > **Last Updated**: December 17, 2024  
-> **Status**: Phase 1.1 Complete - Core Components Redesigned  
+> **Status**: Phase 1.2 Complete - AI Prompts Extracted  
 > **Analysis Based On**: Full code inspection of all 19 step components
 
 ---
 
 ## Recent Updates
+
+### ✅ AI Prompts Extracted to Separate Files (Dec 17, 2024)
+
+All AI prompts have been moved from inline definitions in `StrategyWizardWrapper.jsx` to modular files:
+- **Location**: `src/components/strategy/wizard/prompts/`
+- **Files**: 19 prompt files (step1Context.js through step18Review.js)
+- **Special**: `step9ObjectivesSingle.js` for "AI Add One" functionality
+- **Index**: Central exports with `STEP_PROMPT_MAP` for quick lookup
+
+**Migration Status**: Prompts extracted → Next: Update StrategyWizardWrapper.jsx to import from files
 
 ### ✅ Component Redesigns Completed (Dec 17, 2024)
 
@@ -90,43 +100,74 @@ The `StepDashboardHeader` component has been updated to match the comprehensive 
 
 ## AI Prompt Locations
 
-### ⚠️ All AI Prompts Are INLINE (Not Separate Files)
+### ✅ AI Prompts Extracted to Separate Files (COMPLETED Dec 17, 2024)
 
-All AI prompts and context for wizard steps are defined **inline** within wrapper components, NOT in separate files.
+All AI prompts have been extracted from inline definitions to separate files in `src/components/strategy/wizard/prompts/`.
 
-| File | Location | Description |
-|------|----------|-------------|
-| `StrategyWizardWrapper.jsx` | Lines 461-2900+ | **Main prompts object** - Contains all step-specific prompts |
-| `StrategyWizardWrapper.jsx` | Lines 2896-2901 | `system_prompt` with SAUDI_CONTEXT.FULL |
-| `StrategyWizardWrapper.jsx` | Lines 3554-3676 | `singleObjectivePrompt` for single objective generation |
-| `StrategyCreateWizard.jsx` | Lines 94-110 | Simplified prompts for create wizard |
+#### Prompt Files Structure
 
-**Prompt Structure in StrategyWizardWrapper.jsx:**
+| File | Step | Description |
+|------|------|-------------|
+| `step1Context.js` | Step 1 | Context & Discovery prompt + schema |
+| `step2Vision.js` | Step 2 | Vision & Values prompt + schema |
+| `step3Stakeholders.js` | Step 3 | Stakeholder Analysis prompt + schema |
+| `step4Pestel.js` | Step 4 | PESTEL Analysis prompt + schema |
+| `step5Swot.js` | Step 5 | SWOT Analysis prompt + schema |
+| `step6Scenarios.js` | Step 6 | Strategic Scenarios prompt + schema |
+| `step7Risks.js` | Step 7 | Risk Assessment prompt + schema |
+| `step8Dependencies.js` | Step 8 | Dependencies Mapping prompt + schema |
+| `step9Objectives.js` | Step 9 | Strategic Objectives prompt + schema |
+| `step9ObjectivesSingle.js` | Step 9 | **"AI Add One"** single objective prompt + schema |
+| `step10National.js` | Step 10 | National Alignment prompt + schema |
+| `step11Kpis.js` | Step 11 | KPIs Definition prompt + schema |
+| `step12Actions.js` | Step 12 | Action Plans prompt + schema |
+| `step13Resources.js` | Step 13 | Resource Allocation prompt + schema |
+| `step14Timeline.js` | Step 14 | Implementation Timeline prompt + schema |
+| `step15Governance.js` | Step 15 | Governance Structure prompt + schema |
+| `step16Communication.js` | Step 16 | Communication Plan prompt + schema |
+| `step17Change.js` | Step 17 | Change Management prompt + schema |
+| `step18Review.js` | Step 18 | Review (no prompts - uses AIStrategicPlanAnalyzer) |
+| `index.js` | All | Central exports + STEP_PROMPT_MAP |
+
+#### Usage Example
+
 ```jsx
-const prompts = {
-  context: `You are a strategic planning expert for Saudi Arabia's MoMAH...`,
-  vision: `You are generating Core Values and Strategic Pillars...`,
-  stakeholders: `Identify stakeholders for: ${context.planName}...`,
-  pestel: `Generate PESTEL analysis factors...`,
-  swot: `Generate SWOT analysis...`,
-  scenarios: `Generate strategic scenarios...`,
-  risks: `Identify and assess risks...`,
-  dependencies: `Map dependencies and constraints...`,
-  objectives: `Generate strategic objectives...`,
-  kpis: `Define KPIs for objectives...`,
-  actions: `Generate action plans...`,
-  resources: `Plan resource allocation...`,
-  timeline: `Create implementation timeline...`,
-  governance: `Define governance structure...`,
-  communication: `Create communication plan...`,
-  change: `Develop change management plan...`,
-};
+import { 
+  getStep1Prompt, 
+  step1Schema,
+  generateSingleObjectivePrompt,
+  SINGLE_OBJECTIVE_SCHEMA,
+  STEP_PROMPT_MAP 
+} from './prompts';
+
+// Get prompt for context step
+const contextPrompt = getStep1Prompt(context);
+
+// Get single objective prompt for "AI Add One"
+const singlePrompt = generateSingleObjectivePrompt({
+  context,
+  wizardData,
+  existingObjectives,
+  taxonomySectorCodes
+});
 ```
 
-**Recommendation**: Consider extracting prompts to separate files like:
-- `src/components/strategy/wizard/prompts/index.js`
-- `src/components/strategy/wizard/prompts/contextPrompt.js`
-- etc.
+#### Migration Status
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Extract Steps 1-8 prompts | ✅ Complete | All prompts + schemas |
+| Extract Steps 9-17 prompts | ✅ Complete | All prompts + schemas |
+| Extract Step 9 Single prompt | ✅ Complete | "AI Add One" functionality |
+| Create Step 18 documentation | ✅ Complete | No prompts (review step) |
+| Update index.js exports | ✅ Complete | All exports + STEP_PROMPT_MAP |
+| Update StrategyWizardWrapper.jsx | 🔴 Pending | Import prompts from files |
+
+#### Next Steps
+
+1. **Update StrategyWizardWrapper.jsx** to import prompts from `./prompts` instead of inline definitions
+2. **Remove inline prompts** (lines 461-2900+) after import is working
+3. **Test all AI generation** to ensure prompts work correctly
 
 ---
 
