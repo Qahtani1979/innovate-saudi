@@ -425,9 +425,9 @@ function TrainingCard({ training, index, onUpdate, onRemove, strategicPlanId, la
                   <TypeIcon className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-sm">
-                    {language === 'ar' ? (training.name_ar || training.name_en || training.name) : (training.name_en || training.name)} || t({ en: 'Training Program', ar: 'برنامج تدريبي' })}
-                  </CardTitle>
+                    <CardTitle className="text-sm">
+                      {(language === 'ar' ? (training.name_ar || training.name_en || training.name) : (training.name_en || training.name)) || t({ en: 'Training Program', ar: 'برنامج تدريبي' })}
+                    </CardTitle>
                   <div className="flex items-center gap-2 mt-1">
                     {trainingType && (
                       <Badge variant="outline" className="text-xs">{trainingType.label[language]}</Badge>
