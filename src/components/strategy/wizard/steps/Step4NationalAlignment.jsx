@@ -186,77 +186,18 @@ export default function Step4NationalAlignment({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Completeness Score */}
-            <div className="flex items-center gap-4 min-w-[200px]">
-              <div className="relative">
-                <svg className="w-20 h-20 transform -rotate-90">
-                  <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" className="text-muted/20" />
-                  <circle 
-                    cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="none" 
-                    className="text-primary transition-all duration-500"
-                    strokeDasharray={`${stats.completeness * 2.2} 220`}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xl font-bold">{stats.completeness}%</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t({ en: 'Alignment Progress', ar: 'تقدم التوافق' })}</p>
-                <p className="text-lg font-semibold">{t({ en: 'Vision 2030', ar: 'رؤية 2030' })}</p>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Link2 className="w-4 h-4" />
-                  <span className="text-xs">{t({ en: 'Total Alignments', ar: 'إجمالي التوافقات' })}</span>
-                </div>
-                <p className="text-2xl font-bold">{stats.totalAlignments}</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.avgAlignments} {t({ en: 'per objective', ar: 'لكل هدف' })}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Target className="w-4 h-4" />
-                  <span className="text-xs">{t({ en: 'Objectives Aligned', ar: 'الأهداف المتوافقة' })}</span>
-                </div>
-                <p className="text-2xl font-bold">{stats.objectiveCoverage}%</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.alignedObjectives}/{stats.totalObjectives}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Layers className="w-4 h-4" />
-                  <span className="text-xs">{t({ en: 'Programs Covered', ar: 'البرامج المغطاة' })}</span>
-                </div>
-                <p className="text-2xl font-bold">{stats.programCoverage}%</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.alignedPrograms}/{stats.totalPrograms}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-background/60 border">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Flag className="w-4 h-4" />
-                  <span className="text-xs">{t({ en: 'Targets Linked', ar: 'الأهداف المرتبطة' })}</span>
-                </div>
-                <p className="text-2xl font-bold">{stats.targetCoverage}%</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.alignedTargets}/{stats.totalTargets}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={stats.completeness}
+        title={t({ en: 'Vision 2030 Alignment', ar: 'التوافق مع رؤية 2030' })}
+        subtitle={t({ en: 'Map objectives to national programs and targets', ar: 'ربط الأهداف بالبرامج والأهداف الوطنية' })}
+        language={language}
+        stats={[
+          { icon: Link2, value: stats.totalAlignments, label: t({ en: 'Alignments', ar: 'التوافقات' }), subValue: `${stats.avgAlignments} ${t({ en: 'per obj', ar: 'لكل هدف' })}` },
+          { icon: Target, value: `${stats.objectiveCoverage}%`, label: t({ en: 'Objectives', ar: 'الأهداف' }), subValue: `${stats.alignedObjectives}/${stats.totalObjectives}` },
+          { icon: Layers, value: `${stats.programCoverage}%`, label: t({ en: 'Programs', ar: 'البرامج' }), subValue: `${stats.alignedPrograms}/${stats.totalPrograms}` },
+          { icon: Flag, value: `${stats.targetCoverage}%`, label: t({ en: 'Targets', ar: 'الأهداف' }), subValue: `${stats.alignedTargets}/${stats.totalTargets}` },
+        ]}
+      />
 
       {/* AI Generation */}
       {!isReadOnly && (

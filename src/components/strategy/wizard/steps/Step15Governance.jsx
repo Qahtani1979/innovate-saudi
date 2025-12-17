@@ -403,28 +403,29 @@ export default function Step15Governance({
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dashboard Header */}
-      <Card className="bg-gradient-to-br from-background to-muted/30 border-2">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row items-center gap-6">
-            <CircularProgress value={completenessScore} label={t({ en: 'Complete', ar: 'مكتمل' })} />
-            
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3">
-              <StatCard icon={Building2} label={t({ en: 'Committees', ar: 'اللجان' })} value={stats.totalCommittees} color="text-purple-500" />
-              <StatCard icon={Users} label={t({ en: 'Roles', ar: 'الأدوار' })} value={stats.totalRoles} color="text-blue-500" />
-              <StatCard icon={GitBranch} label={t({ en: 'Escalation', ar: 'التصعيد' })} value={stats.escalationLevels} color="text-red-500" />
-              <StatCard icon={LayoutDashboard} label={t({ en: 'Dashboards', ar: 'لوحات' })} value={stats.totalDashboards} color="text-green-500" />
-              <StatCard icon={Grid3X3} label={t({ en: 'RACI Entries', ar: 'إدخالات' })} value={stats.totalRaciEntries} color="text-amber-500" />
-            </div>
-
-            {!isReadOnly && (
-              <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2 shrink-0">
-                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate', ar: 'إنشاء' })}
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <StepDashboardHeader
+        score={completenessScore}
+        title={t({ en: 'Governance Structure', ar: 'هيكل الحوكمة' })}
+        subtitle={t({ en: 'Define committees, roles, and accountability', ar: 'تحديد اللجان والأدوار والمساءلة' })}
+        language={language}
+        stats={[
+          { icon: Building2, value: stats.totalCommittees, label: t({ en: 'Committees', ar: 'اللجان' }) },
+          { icon: Users, value: stats.totalRoles, label: t({ en: 'Roles', ar: 'الأدوار' }) },
+          { icon: GitBranch, value: stats.escalationLevels, label: t({ en: 'Escalation', ar: 'التصعيد' }) },
+          { icon: LayoutDashboard, value: stats.totalDashboards, label: t({ en: 'Dashboards', ar: 'لوحات' }) },
+          { icon: Grid3X3, value: stats.totalRaciEntries, label: t({ en: 'RACI Entries', ar: 'إدخالات' }) },
+        ]}
+      />
+      
+      {/* AI Generate Button */}
+      {!isReadOnly && (
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={onGenerateAI} disabled={isGenerating} className="gap-2">
+            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {isGenerating ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'Generate', ar: 'إنشاء' })}
+          </Button>
+        </div>
+      )}
 
       {/* Alerts */}
       {alerts.length > 0 && (
