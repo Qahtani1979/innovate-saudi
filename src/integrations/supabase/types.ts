@@ -12180,44 +12180,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_functional_roles: {
-        Row: {
-          assigned_at: string
-          assigned_by: string | null
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          role_id: string
-          user_id: string
-        }
-        Insert: {
-          assigned_at?: string
-          assigned_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          role_id: string
-          user_id: string
-        }
-        Update: {
-          assigned_at?: string
-          assigned_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          role_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_functional_roles_role_id_fkey"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "roles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_invitations: {
         Row: {
           accepted_date: string | null
@@ -12585,7 +12547,7 @@ export type Database = {
           municipality_id: string | null
           organization_id: string | null
           revoked_at: string | null
-          role: Database["public"]["Enums"]["app_role"]
+          role: string | null
           role_id: string
           user_email: string | null
           user_id: string
@@ -12598,7 +12560,7 @@ export type Database = {
           municipality_id?: string | null
           organization_id?: string | null
           revoked_at?: string | null
-          role: Database["public"]["Enums"]["app_role"]
+          role?: string | null
           role_id: string
           user_email?: string | null
           user_id: string
@@ -12611,7 +12573,7 @@ export type Database = {
           municipality_id?: string | null
           organization_id?: string | null
           revoked_at?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: string | null
           role_id?: string
           user_email?: string | null
           user_id?: string
@@ -12902,13 +12864,6 @@ export type Database = {
         Args: { _permission_code: string; _user_id: string }
         Returns: boolean
       }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
       has_role_by_id: {
         Args: { _role_id: string; _user_id: string }
         Returns: boolean
@@ -12938,88 +12893,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role:
-        | "admin"
-        | "municipality_staff"
-        | "provider"
-        | "researcher"
-        | "citizen"
-        | "viewer"
-        | "expert"
-        | "investor"
-        | "ministry"
-        | "moderator"
-        | "user"
-        | "municipality_coordinator"
-        | "municipality_admin"
-        | "deputyship_admin"
-        | "deputyship_staff"
-        | "gdibs_internal"
-        | "super_admin"
-        | "gdibs_analyst"
-        | "gdibs_coordinator"
-        | "executive"
-        | "auditor"
-        | "program_manager"
-        | "data_analyst"
-        | "evaluator"
-        | "living_lab_admin"
-        | "knowledge_manager"
-        | "legal_officer"
-        | "financial_controller"
-        | "executive_leader"
-        | "executive_director"
-        | "deputyship_analyst"
-        | "deputyship_director"
-        | "deputyship_manager"
-        | "municipality_director"
-        | "municipality_manager"
-        | "municipality_viewer"
-        | "municipality_innovation_officer"
-        | "gdisb_data_analyst"
-        | "gdisb_operations_manager"
-        | "gdisb_strategy_lead"
-        | "platform_admin"
-        | "system_administrator"
-        | "security_administrator"
-        | "pilot_manager"
-        | "challenge_lead"
-        | "challenge_reviewer"
-        | "policy_officer"
-        | "partnership_manager"
-        | "risk_manager"
-        | "budget_officer"
-        | "data_manager"
-        | "content_manager"
-        | "content_moderator"
-        | "communication_manager"
-        | "communications_lead"
-        | "program_director"
-        | "program_evaluator"
-        | "program_operator"
-        | "research_lead"
-        | "research_evaluator"
-        | "rd_manager"
-        | "solution_provider"
-        | "solution_evaluator"
-        | "solution_verifier"
-        | "living_lab_director"
-        | "living_lab_manager"
-        | "sandbox_manager"
-        | "sandbox_operator"
-        | "ai_analyst"
-        | "report_analyst"
-        | "domain_expert"
-        | "idea_moderator"
-        | "implementation_officer"
-        | "council_member"
-        | "ministry_representative"
-        | "matchmaker_manager"
-        | "team_lead"
-        | "technical_lead"
-        | "citizen_engagement_manager"
-        | "executive_leadership"
-        | "strategy_officer"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -13146,90 +13020,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: [
-        "admin",
-        "municipality_staff",
-        "provider",
-        "researcher",
-        "citizen",
-        "viewer",
-        "expert",
-        "investor",
-        "ministry",
-        "moderator",
-        "user",
-        "municipality_coordinator",
-        "municipality_admin",
-        "deputyship_admin",
-        "deputyship_staff",
-        "gdibs_internal",
-        "super_admin",
-        "gdibs_analyst",
-        "gdibs_coordinator",
-        "executive",
-        "auditor",
-        "program_manager",
-        "data_analyst",
-        "evaluator",
-        "living_lab_admin",
-        "knowledge_manager",
-        "legal_officer",
-        "financial_controller",
-        "executive_leader",
-        "executive_director",
-        "deputyship_analyst",
-        "deputyship_director",
-        "deputyship_manager",
-        "municipality_director",
-        "municipality_manager",
-        "municipality_viewer",
-        "municipality_innovation_officer",
-        "gdisb_data_analyst",
-        "gdisb_operations_manager",
-        "gdisb_strategy_lead",
-        "platform_admin",
-        "system_administrator",
-        "security_administrator",
-        "pilot_manager",
-        "challenge_lead",
-        "challenge_reviewer",
-        "policy_officer",
-        "partnership_manager",
-        "risk_manager",
-        "budget_officer",
-        "data_manager",
-        "content_manager",
-        "content_moderator",
-        "communication_manager",
-        "communications_lead",
-        "program_director",
-        "program_evaluator",
-        "program_operator",
-        "research_lead",
-        "research_evaluator",
-        "rd_manager",
-        "solution_provider",
-        "solution_evaluator",
-        "solution_verifier",
-        "living_lab_director",
-        "living_lab_manager",
-        "sandbox_manager",
-        "sandbox_operator",
-        "ai_analyst",
-        "report_analyst",
-        "domain_expert",
-        "idea_moderator",
-        "implementation_officer",
-        "council_member",
-        "ministry_representative",
-        "matchmaker_manager",
-        "team_lead",
-        "technical_lead",
-        "citizen_engagement_manager",
-        "executive_leadership",
-        "strategy_officer",
-      ],
-    },
+    Enums: {},
   },
 } as const
