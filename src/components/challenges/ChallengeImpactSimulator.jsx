@@ -6,6 +6,11 @@ import { Slider } from "@/components/ui/slider";
 import { TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  IMPACT_SIMULATOR_SYSTEM_PROMPT, 
+  buildImpactSimulationPrompt, 
+  IMPACT_SIMULATION_SCHEMA 
+} from '@/lib/ai/prompts/challenges/impactSimulator';
 
 export default function ChallengeImpactSimulator({ challenge }) {
   const [scenario, setScenario] = useState({
@@ -23,42 +28,9 @@ export default function ChallengeImpactSimulator({ challenge }) {
 
   const runSimulation = async () => {
     const response = await invokeAI({
-      prompt: `Simulate the impact of resolving this municipal challenge:
-
-Challenge: ${challenge.title_en}
-Sector: ${challenge.sector}
-Current Impact Score: ${challenge.impact_score}
-Current Severity: ${challenge.severity_score}
-Affected Population: ${challenge.affected_population_size}
-
-Scenario Parameters:
-- Budget: ${scenario.budget_allocated} SAR
-- Timeline: ${scenario.timeline_months} months
-- Resource Level: ${scenario.resource_level}%
-- Stakeholder Buy-in: ${scenario.stakeholder_buy_in}%
-
-Predict:
-1. Probability of Success (0-100)
-2. Expected Impact Score (0-100)
-3. Population Benefited (number)
-4. ROI Multiplier (e.g., 2.5x)
-5. Risk Level (low/medium/high)
-6. Key Success Factors (array)
-7. Potential Obstacles (array)
-8. Recommendations (array)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          success_probability: { type: "number" },
-          expected_impact_score: { type: "number" },
-          population_benefited: { type: "number" },
-          roi_multiplier: { type: "number" },
-          risk_level: { type: "string" },
-          success_factors: { type: "array", items: { type: "string" } },
-          obstacles: { type: "array", items: { type: "string" } },
-          recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildImpactSimulationPrompt({ challenge, scenario }),
+      system_prompt: IMPACT_SIMULATOR_SYSTEM_PROMPT,
+      response_json_schema: IMPACT_SIMULATION_SCHEMA
     });
 
     if (response.success) {

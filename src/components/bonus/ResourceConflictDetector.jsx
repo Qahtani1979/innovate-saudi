@@ -8,6 +8,11 @@ import { useLanguage } from '../LanguageContext';
 import { AlertCircle, Sparkles, Loader2, Users } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  CONFLICT_DETECTOR_SYSTEM_PROMPT,
+  buildConflictDetectorPrompt,
+  CONFLICT_DETECTOR_SCHEMA
+} from '@/lib/ai/prompts/bonus/conflictDetector';
 
 export default function ResourceConflictDetector() {
   const { language, t } = useLanguage();
@@ -34,74 +39,14 @@ export default function ResourceConflictDetector() {
   });
 
   const detectConflicts = async () => {
-    // Collect all resource allocations
     const activePilots = pilots.filter(p => ['active', 'preparation'].includes(p.stage));
     const activePrograms = programs.filter(p => p.status === 'active');
     const activeRD = rdProjects.filter(r => r.status === 'active');
 
     const response = await invokeAI({
-      prompt: `Analyze resource conflicts across platform:
-
-ACTIVE PILOTS (${activePilots.length}):
-${activePilots.slice(0, 5).map(p => 
-  `${p.title_en} - ${p.team?.length || 0} team, ${p.budget || 0} SAR, ${p.municipality_id}`
-).join('\n')}
-
-ACTIVE PROGRAMS (${activePrograms.length}):
-${activePrograms.slice(0, 5).map(p => 
-  `${p.name_en} - ${p.participant_count || 0} participants`
-).join('\n')}
-
-ACTIVE R&D (${activeRD.length}):
-${activeRD.slice(0, 5).map(r => 
-  `${r.title_en} - ${r.budget || 0} SAR`
-).join('\n')}
-
-Detect:
-1. Team member over-allocation (same person on 3+ projects)
-2. Budget conflicts (municipality exceeding capacity)
-3. Timeline overlaps (same sandbox/lab double-booked)
-4. Expertise gaps (high-demand skills bottlenecks)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          team_conflicts: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                person: { type: "string" },
-                assigned_to: { type: "array", items: { type: "string" } },
-                severity: { type: "string" }
-              }
-            }
-          },
-          budget_conflicts: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                municipality: { type: "string" },
-                total_allocated: { type: "number" },
-                capacity: { type: "number" },
-                overage: { type: "number" }
-              }
-            }
-          },
-          timeline_conflicts: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                resource: { type: "string" },
-                overlapping_items: { type: "array", items: { type: "string" } },
-                dates: { type: "string" }
-              }
-            }
-          },
-          recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildConflictDetectorPrompt({ activePilots, activePrograms, activeRD }),
+      system_prompt: CONFLICT_DETECTOR_SYSTEM_PROMPT,
+      response_json_schema: CONFLICT_DETECTOR_SCHEMA
     });
 
     if (response.success) {

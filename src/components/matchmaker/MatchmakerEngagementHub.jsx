@@ -10,6 +10,11 @@ import { Calendar, FileText, Send, Loader2, Sparkles, Users } from 'lucide-react
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  ENGAGEMENT_HUB_SYSTEM_PROMPT,
+  buildEngagementProposalPrompt,
+  ENGAGEMENT_PROPOSAL_SCHEMA
+} from '@/lib/ai/prompts/matchmaker/engagementHub';
 
 export default function MatchmakerEngagementHub({ application, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
@@ -38,31 +43,9 @@ export default function MatchmakerEngagementHub({ application, onUpdate }) {
 
   const generateProposal = async () => {
     const result = await invokeAI({
-      prompt: `Generate a partnership proposal template for this Matchmaker application:
-
-Organization: ${application.organization_name_en}
-Sectors: ${application.sectors?.join(', ')}
-Collaboration Approach: ${application.collaboration_approach}
-
-Generate professional proposal in both English and Arabic with:
-1. Executive summary
-2. Organization overview
-3. Proposed collaboration model
-4. Value proposition for municipalities
-5. Implementation timeline
-6. Success metrics
-7. Next steps`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          executive_summary_en: { type: 'string' },
-          executive_summary_ar: { type: 'string' },
-          collaboration_model_en: { type: 'string' },
-          collaboration_model_ar: { type: 'string' },
-          timeline: { type: 'string' },
-          success_metrics: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildEngagementProposalPrompt({ application }),
+      system_prompt: ENGAGEMENT_HUB_SYSTEM_PROMPT,
+      response_json_schema: ENGAGEMENT_PROPOSAL_SCHEMA
     });
 
     if (result.success) {

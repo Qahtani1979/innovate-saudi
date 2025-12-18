@@ -1,7 +1,7 @@
 /**
  * Challenge Impact Simulator Prompts
  * @module challenges/impactSimulator
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
@@ -10,69 +10,53 @@ export const IMPACT_SIMULATOR_SYSTEM_PROMPT = getSystemPrompt('impact_simulator'
 You are an impact simulation specialist for Saudi Arabia's municipal innovation platform.
 Your role is to simulate and predict the impact of resolving municipal challenges on various stakeholders and systems.
 Consider economic, social, environmental, and governance dimensions aligned with Vision 2030.
+Provide realistic estimates based on scenario parameters.
 `);
 
-export function buildImpactSimulationPrompt({ challenge }) {
+/**
+ * Build impact simulation prompt with scenario parameters
+ * @param {Object} params - Challenge and scenario details
+ * @returns {string} Formatted prompt
+ */
+export function buildImpactSimulationPrompt({ challenge, scenario }) {
   return `Simulate the impact of resolving this municipal challenge:
 
 Challenge: ${challenge.title_en}
 Sector: ${challenge.sector}
-Priority: ${challenge.priority}
+Current Impact Score: ${challenge.impact_score || 'Not assessed'}
+Current Severity: ${challenge.severity_score || 'Not assessed'}
 Affected Population: ${challenge.affected_population_size || 'Unknown'}
-Budget Estimate: ${challenge.budget_estimate || 'Not specified'}
 
-Simulate impact across:
-1. Economic benefits (cost savings, productivity gains)
-2. Social outcomes (quality of life, accessibility)
-3. Environmental impact (sustainability metrics)
-4. Governance efficiency (process improvements)
-5. Timeline to realize benefits
-6. Confidence level of predictions`;
+Scenario Parameters:
+- Budget: ${scenario?.budget_allocated || challenge.budget_estimate || 500000} SAR
+- Timeline: ${scenario?.timeline_months || 12} months
+- Resource Level: ${scenario?.resource_level || 50}%
+- Stakeholder Buy-in: ${scenario?.stakeholder_buy_in || 70}%
+
+Predict:
+1. Probability of Success (0-100)
+2. Expected Impact Score (0-100)
+3. Population Benefited (number)
+4. ROI Multiplier (e.g., 2.5x)
+5. Risk Level (low/medium/high)
+6. Key Success Factors (array)
+7. Potential Obstacles (array)
+8. Recommendations (array)`;
 }
 
 export const IMPACT_SIMULATION_SCHEMA = {
   type: 'object',
   properties: {
-    economic_impact: {
-      type: 'object',
-      properties: {
-        cost_savings_sar: { type: 'number' },
-        productivity_gain_percent: { type: 'number' },
-        roi_estimate: { type: 'number' },
-        description: { type: 'string' }
-      }
-    },
-    social_impact: {
-      type: 'object',
-      properties: {
-        beneficiaries_count: { type: 'number' },
-        quality_of_life_improvement: { type: 'string' },
-        accessibility_improvement: { type: 'string' },
-        description: { type: 'string' }
-      }
-    },
-    environmental_impact: {
-      type: 'object',
-      properties: {
-        carbon_reduction_tons: { type: 'number' },
-        sustainability_score: { type: 'number' },
-        description: { type: 'string' }
-      }
-    },
-    governance_impact: {
-      type: 'object',
-      properties: {
-        efficiency_gain_percent: { type: 'number' },
-        process_improvements: { type: 'array', items: { type: 'string' } },
-        description: { type: 'string' }
-      }
-    },
-    timeline_months: { type: 'number' },
-    confidence_level: { type: 'number', minimum: 0, maximum: 100 },
-    key_assumptions: { type: 'array', items: { type: 'string' } },
-    risks: { type: 'array', items: { type: 'string' } }
+    success_probability: { type: 'number' },
+    expected_impact_score: { type: 'number' },
+    population_benefited: { type: 'number' },
+    roi_multiplier: { type: 'number' },
+    risk_level: { type: 'string' },
+    success_factors: { type: 'array', items: { type: 'string' } },
+    obstacles: { type: 'array', items: { type: 'string' } },
+    recommendations: { type: 'array', items: { type: 'string' } }
   },
-  required: ['economic_impact', 'social_impact', 'timeline_months', 'confidence_level']
+  required: ['success_probability', 'expected_impact_score', 'risk_level', 'recommendations']
 };
 
 export const IMPACT_SIMULATOR_PROMPTS = {
