@@ -839,14 +839,14 @@ function PilotEditPage() {
             <div className="space-y-2">
               <Label>Living Lab (Optional) | المختبر الحي</Label>
               <Select
-                value={formData.living_lab_id || ''}
-                onValueChange={(v) => setFormData({...formData, living_lab_id: v})}
+                value={formData.living_lab_id || 'none'}
+                onValueChange={(v) => setFormData({...formData, living_lab_id: v === 'none' ? null : v})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select living lab" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {livingLabs.map(lab => (
                     <SelectItem key={lab.id} value={lab.id}>
                       {lab.name}
@@ -858,14 +858,14 @@ function PilotEditPage() {
             <div className="space-y-2">
               <Label>Sandbox (Optional) | منطقة الاختبار</Label>
               <Select
-                value={formData.sandbox_id || ''}
-                onValueChange={(v) => setFormData({...formData, sandbox_id: v})}
+                value={formData.sandbox_id || 'none'}
+                onValueChange={(v) => setFormData({...formData, sandbox_id: v === 'none' ? null : v})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select sandbox" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {sandboxes.map(sb => (
                     <SelectItem key={sb.id} value={sb.id}>
                       {sb.name}

@@ -154,18 +154,18 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
             <div className="space-y-2">
               <Label>{t({ en: 'Link to Challenge (Optional)', ar: 'ربط بتحدي (اختياري)' })}</Label>
               <Select
-                value={formData.challenge_id}
+                value={formData.challenge_id || 'none'}
                 onValueChange={(v) => setFormData({ 
                   ...formData, 
-                  challenge_id: v, 
-                  interest_type: v ? 'for_challenge' : 'general' 
+                  challenge_id: v === 'none' ? null : v, 
+                  interest_type: v !== 'none' ? 'for_challenge' : 'general' 
                 })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t({ en: 'Select a challenge...', ar: 'اختر تحدياً...' })} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>{t({ en: 'No specific challenge', ar: 'لا تحدي محدد' })}</SelectItem>
+                  <SelectItem value="none">{t({ en: 'No specific challenge', ar: 'لا تحدي محدد' })}</SelectItem>
                   {challenges.map(c => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.code} - {c.title_en}

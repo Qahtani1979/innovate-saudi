@@ -646,14 +646,14 @@ Return actual IDs from the lists provided.`;
                 <div className="space-y-2">
                   <Label className="text-xs">{t({ en: 'Citizen Idea', ar: 'فكرة مواطن' })}</Label>
                   <Select
-                    value={linkedIdea}
-                    onValueChange={(value) => setLinkedIdea(value)}
+                    value={linkedIdea || 'none'}
+                    onValueChange={(value) => setLinkedIdea(value === 'none' ? null : value)}
                   >
                     <SelectTrigger className="text-sm">
                       <SelectValue placeholder={t({ en: 'None', ar: 'لا شيء' })} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={null}>{t({ en: 'None', ar: 'لا شيء' })}</SelectItem>
+                      <SelectItem value="none">{t({ en: 'None', ar: 'لا شيء' })}</SelectItem>
                       {citizenIdeas.map(idea => (
                         <SelectItem key={idea.id} value={idea.id}>
                           {idea.title} ({idea.votes_count} votes)

@@ -310,12 +310,12 @@ function SandboxCreate() {
               </div>
               <div>
                 <Label>{t({ en: 'Linked Living Lab', ar: 'المختبر الحي المرتبط' })}</Label>
-                <Select value={formData.living_lab_id} onValueChange={(val) => setFormData({...formData, living_lab_id: val})}>
+                <Select value={formData.living_lab_id || 'none'} onValueChange={(val) => setFormData({...formData, living_lab_id: val === 'none' ? null : val})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Optional" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={null}>None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {livingLabs.map(lab => (
                       <SelectItem key={lab.id} value={lab.id}>{lab.name_en}</SelectItem>
                     ))}

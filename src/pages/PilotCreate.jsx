@@ -894,14 +894,14 @@ function PilotCreatePage() {
               <div className="space-y-2">
                 <Label>Living Lab (Optional) | المختبر الحي</Label>
                 <Select
-                  value={formData.living_lab_id}
-                  onValueChange={(value) => setFormData({...formData, living_lab_id: value})}
+                  value={formData.living_lab_id || 'none'}
+                  onValueChange={(value) => setFormData({...formData, living_lab_id: value === 'none' ? null : value})}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select living lab" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={null}>None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {livingLabs.map(lab => (
                       <SelectItem key={lab.id} value={lab.id}>
                         {lab.name}
