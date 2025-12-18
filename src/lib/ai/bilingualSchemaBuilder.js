@@ -1,7 +1,8 @@
+/* @refresh reset */
 /**
  * Bilingual Schema Builder Utilities
  * Helpers for creating consistent bilingual JSON schemas for AI responses
- * @version 1.0.0
+ * @version 1.0.1
  */
 
 /**
