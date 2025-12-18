@@ -7,6 +7,11 @@ import { Shield, CheckCircle2, XCircle, AlertTriangle, Sparkles, Loader2 } from 
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildReadinessGatePrompt, 
+  READINESS_GATE_SYSTEM_PROMPT, 
+  READINESS_GATE_SCHEMA 
+} from '@/lib/ai/prompts/solutions/readinessGate';
 
 export default function SolutionReadinessGate({ solution, onProceed }) {
   const { language, t } = useLanguage();
@@ -15,47 +20,9 @@ export default function SolutionReadinessGate({ solution, onProceed }) {
 
   const checkReadiness = async () => {
     const result = await invokeAI({
-      prompt: `Assess if this solution is ready for municipal piloting:
-
-SOLUTION: ${solution.name_en}
-PROVIDER: ${solution.provider_name}
-MATURITY: ${solution.maturity_level}
-TRL: ${solution.trl || 'N/A'}
-VERIFIED: ${solution.is_verified}
-DEPLOYMENTS: ${solution.deployment_count || 0}
-CERTIFICATIONS: ${solution.certifications?.length || 0}
-DOCUMENTATION: ${solution.documentation_url ? 'Yes' : 'No'}
-PRICING: ${solution.pricing_model || 'N/A'}
-
-Check against pilot readiness criteria:
-1. Technical maturity (TRL ≥ 6 for pilots)
-2. Provider verification status
-3. Documentation completeness
-4. Pricing clarity
-5. Support infrastructure
-6. Compliance certifications
-
-Return: ready (boolean), score (0-100), blockers (critical issues), warnings (minor issues)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          ready: { type: "boolean" },
-          score: { type: "number" },
-          blockers: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                issue: { type: "string" },
-                severity: { type: "string" },
-                resolution: { type: "string" }
-              }
-            }
-          },
-          warnings: { type: "array", items: { type: "string" } },
-          passed_checks: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: READINESS_GATE_SYSTEM_PROMPT,
+      prompt: buildReadinessGatePrompt({ solution }),
+      response_json_schema: READINESS_GATE_SCHEMA
     });
 
     if (result.success) {

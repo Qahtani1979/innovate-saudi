@@ -7,6 +7,11 @@ import { MessageSquare, Sparkles, Loader2, CheckCircle, Calendar } from 'lucide-
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildConversationIntelligencePrompt, 
+  CONVERSATION_INTELLIGENCE_SYSTEM_PROMPT, 
+  CONVERSATION_INTELLIGENCE_SCHEMA 
+} from '@/lib/ai/prompts/communications/conversationIntelligence';
 
 export default function ConversationIntelligence({ messages }) {
   const { language, t } = useLanguage();
@@ -17,34 +22,9 @@ export default function ConversationIntelligence({ messages }) {
     const threadText = messages.map(m => `${m.sender}: ${m.content}`).join('\n');
     
     const result = await invokeAI({
-      prompt: `Analyze this conversation thread and extract:
-
-${threadText}
-
-Provide:
-1. Brief summary (2-3 sentences)
-2. Action items with owners and deadlines
-3. Key decisions made
-4. Follow-up recommendations`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          summary: { type: "string" },
-          action_items: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                action: { type: "string" },
-                owner: { type: "string" },
-                deadline: { type: "string" }
-              }
-            }
-          },
-          decisions: { type: "array", items: { type: "string" } },
-          follow_ups: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: CONVERSATION_INTELLIGENCE_SYSTEM_PROMPT,
+      prompt: buildConversationIntelligencePrompt({ threadText }),
+      response_json_schema: CONVERSATION_INTELLIGENCE_SCHEMA
     });
 
     if (result.success && result.data) {

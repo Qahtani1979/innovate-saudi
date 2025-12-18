@@ -10,6 +10,11 @@ import { MessageSquare, ThumbsUp, TrendingUp, ThumbsDown, Meh } from 'lucide-rea
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildFeedbackSentimentPrompt, 
+  FEEDBACK_SENTIMENT_SYSTEM_PROMPT, 
+  FEEDBACK_SENTIMENT_SCHEMA 
+} from '@/lib/ai/prompts/citizen/feedbackSentiment';
 
 export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
   const { language, isRTL, t } = useLanguage();
@@ -29,14 +34,9 @@ export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
   const addFeedbackMutation = useMutation({
     mutationFn: async (data) => {
       const sentimentResult = await invokeAI({
-        prompt: `Analyze sentiment of this citizen feedback: "${data.content}". Return: positive, neutral, or negative.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            sentiment: { type: "string" },
-            score: { type: "number" }
-          }
-        }
+        system_prompt: FEEDBACK_SENTIMENT_SYSTEM_PROMPT,
+        prompt: buildFeedbackSentimentPrompt({ content: data.content }),
+        response_json_schema: FEEDBACK_SENTIMENT_SCHEMA
       });
 
       const sentiment = sentimentResult.success ? sentimentResult.data : { sentiment: 'neutral', score: 0 };
