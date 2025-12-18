@@ -55,3 +55,4 @@ export {
 } from './crossEntity';
 
 export * from './platformInsights';
+export * from './workPrioritizer';

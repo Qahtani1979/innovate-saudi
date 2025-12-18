@@ -1,7 +1,7 @@
 /**
  * AI Prompts Index
  * Central export point for all AI prompt modules
- * @version 1.0.3
+ * @version 1.0.4
  */
 
 // Foundation exports
@@ -274,22 +274,23 @@ export const PROMPT_MODULE_STATUS = {
   portfolio: { status: 'complete', promptCount: 3 },
   events: { status: 'complete', promptCount: 3 },
   challenges: { status: 'complete', promptCount: 11 },
-  pilots: { status: 'complete', promptCount: 18 },
-  matchmaker: { status: 'complete', promptCount: 11 },
+  pilots: { status: 'complete', promptCount: 19 },
+  matchmaker: { status: 'complete', promptCount: 12 },
   sandbox: { status: 'complete', promptCount: 10 },
-  rd: { status: 'complete', promptCount: 11 },
-  scaling: { status: 'complete', promptCount: 7 },
+  rd: { status: 'complete', promptCount: 12 },
+  scaling: { status: 'complete', promptCount: 8 },
   solution: { status: 'complete', promptCount: 9 },
   citizen: { status: 'complete', promptCount: 10 },
   livinglab: { status: 'complete', promptCount: 5 },
   profiles: { status: 'complete', promptCount: 3 },
-  programs: { status: 'complete', promptCount: 10 },
-  core: { status: 'complete', promptCount: 12 },
+  programs: { status: 'complete', promptCount: 11 },
+  core: { status: 'complete', promptCount: 13 },
   taxonomy: { status: 'complete', promptCount: 2 },
   mii: { status: 'complete', promptCount: 2 },
   executive: { status: 'complete', promptCount: 3 },
   partnerships: { status: 'complete', promptCount: 3 },
   geography: { status: 'complete', promptCount: 1 },
+  policy: { status: 'complete', promptCount: 2 },
   bonus: { status: 'complete', promptCount: 1 },
   smart: { status: 'complete', promptCount: 1 },
   data: { status: 'complete', promptCount: 2 },

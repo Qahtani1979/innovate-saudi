@@ -24,6 +24,9 @@ export {
 export {
   RD_PORTFOLIO_SYSTEM_PROMPT, createRDPortfolioPlanPrompt, RD_PORTFOLIO_SCHEMA
 } from './portfolioPlanner';
+export {
+  RD_TO_POLICY_SYSTEM_PROMPT, buildRDToPolicyPrompt, RD_TO_POLICY_SCHEMA, RD_TO_POLICY_PROMPTS
+} from './rdToPolicy';
 
 export const RD_PROMPT_MANIFEST = {
   proposalScorer: {

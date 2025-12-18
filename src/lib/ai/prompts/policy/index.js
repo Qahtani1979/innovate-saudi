@@ -4,3 +4,4 @@
  */
 
 export * from './executiveSummary.js';
+export * from './conflictDetector';
