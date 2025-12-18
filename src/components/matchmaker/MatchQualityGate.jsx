@@ -8,6 +8,11 @@ import { Sparkles, CheckCircle2, AlertTriangle, Loader2, Network } from 'lucide-
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  QUALITY_GATE_SYSTEM_PROMPT,
+  buildQualityGatePrompt,
+  QUALITY_GATE_SCHEMA
+} from '@/lib/ai/prompts/matchmaker/qualityGate';
 
 export default function MatchQualityGate({ application, matchedChallenges = [], onApprove }) {
   const { language, isRTL, t } = useLanguage();
@@ -16,41 +21,9 @@ export default function MatchQualityGate({ application, matchedChallenges = [], 
 
   const runQualityAnalysis = async () => {
     const result = await invokeAI({
-      prompt: `Analyze match quality for this Matchmaker application:
-
-APPLICATION:
-- Organization: ${application.organization_name_en}
-- Sectors: ${application.sectors?.join(', ')}
-- Total Score: ${application.evaluation_score?.total_score}
-- Classification: ${application.classification}
-
-MATCHED CHALLENGES (${matchedChallenges.length}):
-${matchedChallenges.map(c => `- ${c.code}: ${c.title_en} (${c.sector})`).join('\n')}
-
-Evaluate match quality on:
-1. Sector alignment (0-100)
-2. Capability fit (0-100)
-3. Geographic suitability (0-100)
-4. Strategic priority (0-100)
-5. Overall match quality (0-100)
-
-Also provide:
-- recommendation (approve / review_required / reject)
-- concerns (array of strings)
-- opportunities (array of strings)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          sector_alignment: { type: 'number' },
-          capability_fit: { type: 'number' },
-          geographic_suitability: { type: 'number' },
-          strategic_priority: { type: 'number' },
-          overall_quality: { type: 'number' },
-          recommendation: { type: 'string' },
-          concerns: { type: 'array', items: { type: 'string' } },
-          opportunities: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildQualityGatePrompt({ application, matchedChallenges }),
+      system_prompt: QUALITY_GATE_SYSTEM_PROMPT,
+      response_json_schema: QUALITY_GATE_SCHEMA
     });
 
     if (result.success) {

@@ -8,6 +8,11 @@ import { Sparkles, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  PROGRAM_CONVERTER_SYSTEM_PROMPT,
+  buildProgramConverterPrompt,
+  PROGRAM_CONVERTER_SCHEMA
+} from '@/lib/ai/prompts/scaling/programConverter';
 
 export default function ScalingToProgramConverter({ scalingPlan, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
@@ -50,45 +55,9 @@ export default function ScalingToProgramConverter({ scalingPlan, onClose, onSucc
 
   const generateWithAI = async () => {
     const result = await invokeAI({
-      prompt: `Design a knowledge transfer training program from scaling initiative lessons.
-
-SCALING PLAN:
-Title: ${scalingPlan.title_en}
-Deployed Cities: ${scalingPlan.deployed_count}
-Success Factors: ${scalingPlan.success_factors?.join(', ')}
-Lessons Learned: ${JSON.stringify(scalingPlan.lessons_learned)}
-
-Generate training program:
-- Program name (bilingual) - focus on "Knowledge Transfer" or "Best Practices"
-- Objectives (bilingual) - transfer learning from scaling
-- 6-8 training modules with topics, activities, duration
-- Target participants: municipal teams
-- Success metrics
-
-Extract best practices and common challenges from scaling data.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          name_en: { type: "string" },
-          name_ar: { type: "string" },
-          tagline_en: { type: "string" },
-          tagline_ar: { type: "string" },
-          objectives_en: { type: "string" },
-          objectives_ar: { type: "string" },
-          curriculum: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                week: { type: "number" },
-                topic_en: { type: "string" },
-                topic_ar: { type: "string" },
-                activities: { type: "array", items: { type: "string" } }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildProgramConverterPrompt({ scalingPlan }),
+      system_prompt: PROGRAM_CONVERTER_SYSTEM_PROMPT,
+      response_json_schema: PROGRAM_CONVERTER_SCHEMA
     });
 
     if (result.success) {
