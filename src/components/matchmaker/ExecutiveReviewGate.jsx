@@ -9,6 +9,11 @@ import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  EXECUTIVE_REVIEW_PROMPTS,
+  buildExecutiveBriefPrompt,
+  EXECUTIVE_BRIEF_SCHEMA 
+} from '@/lib/ai/prompts/matchmaker';
 
 export default function ExecutiveReviewGate({ application, onComplete }) {
   const { language, isRTL, t } = useLanguage();
@@ -25,40 +30,21 @@ export default function ExecutiveReviewGate({ application, onComplete }) {
   });
 
   const generateExecutiveBrief = async () => {
+    // Build application context for the prompt
+    const applicationContext = {
+      provider_name: application.organization_name_en,
+      challenge_title: application.strategic_challenges?.join(', ') || 'Multiple Challenges',
+      proposed_solution: `Sectors: ${application.sectors?.join(', ')}`,
+      budget_estimate: application.evaluation_score?.total_score * 10000, // Estimate based on score
+      timeline: application.company_stage,
+      team_size: 'TBD',
+      status: application.classification
+    };
+
     const { success, data } = await invokeAI({
-      prompt: `Generate a concise executive briefing for this Matchmaker application in BOTH Arabic and English.
-
-APPLICATION:
-- Organization: ${application.organization_name_en}
-- Sectors: ${application.sectors?.join(', ')}
-- Stage: ${application.company_stage}
-- Base Score: ${application.evaluation_score?.base_score}/100
-- Bonus Points: ${application.evaluation_score?.bonus_points}
-- Total Score: ${application.evaluation_score?.total_score}
-- Classification: ${application.classification}
-- Strategic Challenges Addressed: ${application.strategic_challenges?.length || 0}
-
-Create executive summary with:
-1. Organization snapshot (1 paragraph each language)
-2. Strategic alignment (why this matters - 2-3 bullets)
-3. Risk assessment (2-3 key risks)
-4. Resource requirements (estimated)
-5. Recommendation (approve / conditional / defer)
-6. Next steps (3 actions)
-
-Format as professional brief suitable for leadership review.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          snapshot_en: { type: 'string' },
-          snapshot_ar: { type: 'string' },
-          strategic_alignment: { type: 'array', items: { type: 'string' } },
-          risks: { type: 'array', items: { type: 'string' } },
-          resource_estimate: { type: 'string' },
-          recommendation: { type: 'string' },
-          next_steps: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      systemPrompt: EXECUTIVE_REVIEW_PROMPTS.systemPrompt,
+      prompt: buildExecutiveBriefPrompt(applicationContext),
+      response_json_schema: EXECUTIVE_BRIEF_SCHEMA
     });
 
     if (success && data) {

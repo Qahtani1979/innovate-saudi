@@ -15,6 +15,11 @@ import {
   Target, Lightbulb, CheckCircle2, AlertTriangle, TrendingUp
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { 
+  CASE_STUDY_PROMPTS,
+  buildCaseStudyPrompt,
+  CASE_STUDY_SCHEMA 
+} from '@/lib/ai/prompts/strategy';
 
 export default function CaseStudyGenerator({ entity, entityType }) {
   const { t, language } = useLanguage();
@@ -29,59 +34,49 @@ export default function CaseStudyGenerator({ entity, entityType }) {
     if (!entity) return;
 
     const result = await invokeAI({
-      prompt: `Generate a comprehensive case study for this municipal innovation ${entityType}:
-
-Entity Details:
-- Title: ${entity.title_en || entity.name_en}
-- Description: ${entity.description_en || ''}
-- Sector: ${entity.sector || ''}
-- Status: ${entity.status || ''}
-- Challenge Description: ${entity.problem_statement_en || entity.current_situation_en || ''}
-- Solution: ${entity.desired_outcome_en || entity.solution_summary || ''}
-- Impact: ${JSON.stringify(entity.kpis || entity.outcomes || [])}
-- Lessons Learned: ${JSON.stringify(entity.lessons_learned || [])}
-
-Create a professional case study with the following sections (in BOTH English and Arabic):
-1. Executive Summary (2-3 sentences)
-2. Challenge Description (what problem was addressed)
-3. Solution Approach (what was implemented)
-4. Implementation Process (key steps taken)
-5. Results & Impact (measurable outcomes)
-6. Key Success Factors (what made it work)
-7. Lessons Learned (what can be replicated)
-8. Recommendations (for similar initiatives)
-
-Make it suitable for publication and knowledge sharing across Saudi municipalities.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          executive_summary_en: { type: 'string' },
-          executive_summary_ar: { type: 'string' },
-          challenge_description_en: { type: 'string' },
-          challenge_description_ar: { type: 'string' },
-          solution_approach_en: { type: 'string' },
-          solution_approach_ar: { type: 'string' },
-          implementation_en: { type: 'string' },
-          implementation_ar: { type: 'string' },
-          results_en: { type: 'string' },
-          results_ar: { type: 'string' },
-          success_factors_en: { type: 'array', items: { type: 'string' } },
-          success_factors_ar: { type: 'array', items: { type: 'string' } },
-          lessons_learned_en: { type: 'array', items: { type: 'string' } },
-          lessons_learned_ar: { type: 'array', items: { type: 'string' } },
-          recommendations_en: { type: 'array', items: { type: 'string' } },
-          recommendations_ar: { type: 'array', items: { type: 'string' } },
-          tags: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      systemPrompt: CASE_STUDY_PROMPTS.systemPrompt,
+      prompt: buildCaseStudyPrompt(entity, entityType),
+      response_json_schema: CASE_STUDY_SCHEMA
     });
 
     if (result.success) {
       setCaseStudy(result.data);
       setEditedContent(result.data);
       toast.success(t({ en: 'Case study generated', ar: 'تم إنشاء دراسة الحالة' }));
+    }
+  };
+
+  const saveCaseStudy = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('case_studies')
+        .insert({
+          entity_type: entityType,
+          entity_id: entity.id,
+          title_en: editedContent.title_en,
+          title_ar: editedContent.title_ar,
+          description_en: editedContent.executive_summary_en,
+          description_ar: editedContent.executive_summary_ar,
+          challenge_description: editedContent.challenge_description_en,
+          solution_description: editedContent.solution_approach_en,
+          implementation_details: editedContent.implementation_en,
+          results_achieved: editedContent.results_en,
+          lessons_learned: editedContent.lessons_learned_en?.join('\n'),
+          tags: editedContent.tags,
+          is_published: false,
+          sector_id: entity.sector_id,
+          municipality_id: entity.municipality_id
+        });
+
+      if (error) throw error;
+      toast.success(t({ en: 'Case study saved successfully', ar: 'تم حفظ دراسة الحالة بنجاح' }));
+      setEditMode(false);
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error(t({ en: 'Failed to save case study', ar: 'فشل في حفظ دراسة الحالة' }));
+    } finally {
+      setIsSaving(false);
     }
   };
 
