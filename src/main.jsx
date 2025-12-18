@@ -1,12 +1,8 @@
+/* @refresh reset */
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
-
-// Force React to be available globally for HMR
-if (typeof window !== 'undefined') {
-  window.React = React;
-}
 
 // Error boundary for the entire app
 class AppErrorBoundary extends React.Component {
