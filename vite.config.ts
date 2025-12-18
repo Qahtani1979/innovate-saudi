@@ -16,17 +16,11 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
-
         // Force a single React instance across the entire app.
-        // Important: point aliases to REAL files (with extensions) so Vite cannot fall back
-        // to normal resolution (which can reintroduce mixed runtimes).
-        react: path.resolve(__dirname, "./node_modules/react/index.js"),
-        "react-dom": path.resolve(__dirname, "./node_modules/react-dom/index.js"),
-        "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client.js"),
-        "react-dom/server": path.resolve(__dirname, "./node_modules/react-dom/server.browser.js"),
-        "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime.js"),
-        "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime.js"),
-        scheduler: path.resolve(__dirname, "./node_modules/scheduler/index.js"),
+        // Use directory paths (not files) so subpath imports like react/jsx-runtime work correctly.
+        react: path.resolve(__dirname, "./node_modules/react"),
+        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+        scheduler: path.resolve(__dirname, "./node_modules/scheduler"),
       },
       dedupe: [
         "react",
@@ -43,12 +37,11 @@ export default defineConfig(({ mode }) => {
         "react",
         "react-dom",
         "react-dom/client",
-        "react-dom/server",
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
         "scheduler",
       ],
-      force: true, // Force rebuild of deps cache
+      force: true,
     },
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
