@@ -176,21 +176,13 @@ function PolicyEdit() {
   });
 
   const handleAIAssist = async () => {
+    const { POLICY_ENHANCEMENT_PROMPT_TEMPLATE } = await import('@/lib/ai/prompts/policy/enhancement');
+    const promptConfig = POLICY_ENHANCEMENT_PROMPT_TEMPLATE(formData);
+
     const result = await invokeAI({
-      prompt: `Enhance this Saudi municipal policy with professional Arabic content:
-
-Title AR: ${formData.title_ar}
-Recommendation AR: ${formData.recommendation_text_ar}
-Framework: ${formData.regulatory_framework}
-
-TASK: Provide enhanced Arabic version with formal government policy language suitable for ministerial review. Make it more precise, professional, and aligned with Saudi regulatory standards.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_ar: { type: 'string' },
-          recommendation_text_ar: { type: 'string' }
-        }
-      }
+      prompt: promptConfig.prompt,
+      system_prompt: promptConfig.system,
+      response_json_schema: promptConfig.schema
     });
 
     if (result.success) {
