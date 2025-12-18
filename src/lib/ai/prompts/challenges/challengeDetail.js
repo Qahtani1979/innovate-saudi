@@ -4,7 +4,7 @@
  * @module prompts/challenges/challengeDetail
  */
 
-import { SAUDI_CONTEXT } from '@/lib/ai/prompts/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 /**
  * Challenge detail analysis prompt template

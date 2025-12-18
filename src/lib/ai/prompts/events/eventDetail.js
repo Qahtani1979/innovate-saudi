@@ -4,7 +4,7 @@
  * @module prompts/events/eventDetail
  */
 
-import { SAUDI_CONTEXT } from '@/lib/ai/prompts/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 /**
  * Event detail analysis prompt template

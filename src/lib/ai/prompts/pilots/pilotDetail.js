@@ -4,7 +4,7 @@
  * @module prompts/pilots/pilotDetail
  */
 
-import { SAUDI_CONTEXT } from '@/lib/ai/prompts/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 /**
  * Pilot detail analysis prompt template

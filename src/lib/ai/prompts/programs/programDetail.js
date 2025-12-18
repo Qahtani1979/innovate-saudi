@@ -4,7 +4,7 @@
  * @module prompts/programs/programDetail
  */
 
-import { SAUDI_CONTEXT } from '@/lib/ai/prompts/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 /**
  * Program detail analysis prompt template
