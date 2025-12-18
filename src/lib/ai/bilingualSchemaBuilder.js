@@ -227,6 +227,53 @@ export function wrapForInvocation(schema) {
   };
 }
 
+/**
+ * Build a bilingual response schema with en/ar properties
+ * @param {Object} config - Schema configuration
+ * @returns {Object} JSON schema with bilingual fields
+ */
+export function buildBilingualResponseSchema(config) {
+  const { properties = {}, required = [] } = config;
+  
+  const bilingualProperties = {};
+  
+  Object.entries(properties).forEach(([key, prop]) => {
+    if (prop.bilingual) {
+      // Convert to bilingual object with en/ar
+      bilingualProperties[key] = {
+        type: 'object',
+        properties: {
+          en: { type: 'string', description: `${prop.description || key} (English)` },
+          ar: { type: 'string', description: `${prop.description || key} (Arabic)` }
+        },
+        required: ['en', 'ar']
+      };
+    } else if (prop.type === 'array' && prop.items?.bilingual) {
+      // Array of bilingual items
+      bilingualProperties[key] = {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            en: { type: 'string' },
+            ar: { type: 'string' },
+            ...prop.items.additionalProperties
+          },
+          required: ['en', 'ar']
+        }
+      };
+    } else {
+      bilingualProperties[key] = prop;
+    }
+  });
+  
+  return {
+    type: 'object',
+    properties: bilingualProperties,
+    required
+  };
+}
+
 export default {
   bilingualTextField,
   flatBilingualFields,
@@ -237,5 +284,6 @@ export default {
   bilingualListSchema,
   createBilingualSchema,
   wrapForInvocation,
+  buildBilingualResponseSchema,
   SCHEMA_PATTERNS
 };
