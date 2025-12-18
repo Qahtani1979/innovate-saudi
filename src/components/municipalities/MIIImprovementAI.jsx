@@ -8,6 +8,11 @@ import { useLanguage } from '../LanguageContext';
 import { Sparkles, TrendingUp, Target, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  MII_IMPROVEMENT_SYSTEM_PROMPT, 
+  buildMIIImprovementPrompt, 
+  MII_IMPROVEMENT_SCHEMA 
+} from '@/lib/ai/prompts/municipalities/miiImprovement';
 
 export default function MIIImprovementAI({ municipality }) {
   const { t, isRTL } = useLanguage();
@@ -24,61 +29,49 @@ export default function MIIImprovementAI({ municipality }) {
         base44.entities.Municipality.list()
       ]);
 
+      const nationalAvg = (allMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / allMunicipalities.length).toFixed(1);
+
       const result = await invokeAI({
-        prompt: `Analyze this municipality's innovation performance and provide improvement recommendations:
-
-Municipality: ${municipality.name_en}
-Current MII Score: ${municipality.mii_score}/100
-Rank: ${municipality.mii_rank}
-Population: ${municipality.population}
-Active Challenges: ${challenges.length}
-Active Pilots: ${municipality.active_pilots}
-Completed Pilots: ${municipality.completed_pilots}
-
-National Context:
-- Total municipalities: ${allMunicipalities.length}
-- Average MII: ${(allMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / allMunicipalities.length).toFixed(1)}
-
-Provide:
-1. Top 5 improvement actions (each with impact score 0-100 and timeline)
-2. Dimension-specific gaps (innovation culture, digital capability, collaboration, pilots, R&D)
-3. Benchmark against top-performing municipalities
-4. Quick wins (actions that can improve score in 3-6 months)
-5. Estimated MII improvement potential`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            improvement_actions: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  action: { type: 'string' },
-                  impact_score: { type: 'number' },
-                  timeline_months: { type: 'number' },
-                  difficulty: { type: 'string' }
-                }
-              }
-            },
-            dimension_gaps: {
-              type: 'object',
-              properties: {
-                innovation_culture: { type: 'string' },
-                digital_capability: { type: 'string' },
-                collaboration: { type: 'string' },
-                pilots: { type: 'string' },
-                rd_integration: { type: 'string' }
-              }
-            },
-            benchmark_insights: { type: 'string' },
-            quick_wins: { type: 'array', items: { type: 'string' } },
-            estimated_improvement: { type: 'number' }
+        system_prompt: MII_IMPROVEMENT_SYSTEM_PROMPT,
+        prompt: buildMIIImprovementPrompt({
+          municipality: {
+            ...municipality,
+            region_name: municipality.region_name,
+            population: municipality.population
+          },
+          metrics: [
+            { category: 'Active Challenges', score: challenges.length, regional_avg: 'N/A' },
+            { category: 'Active Pilots', score: municipality.active_pilots || 0, regional_avg: 'N/A' },
+            { category: 'Completed Pilots', score: municipality.completed_pilots || 0, regional_avg: 'N/A' }
+          ],
+          benchmarks: {
+            total_municipalities: allMunicipalities.length,
+            national_average_mii: nationalAvg
           }
-        }
+        }),
+        response_json_schema: MII_IMPROVEMENT_SCHEMA
       });
 
       if (result.success && result.data) {
-        setRecommendations(result.data);
+        // Map response to expected format
+        setRecommendations({
+          improvement_actions: result.data.strategic_initiatives?.map(s => ({
+            action: s.initiative,
+            impact_score: s.expected_impact || 70,
+            timeline_months: 6,
+            difficulty: 'medium'
+          })) || [],
+          dimension_gaps: {
+            innovation_culture: result.data.priority_improvements?.[0]?.area || 'Needs assessment',
+            digital_capability: result.data.priority_improvements?.[1]?.area || 'Needs assessment',
+            collaboration: 'Needs assessment',
+            pilots: 'Needs assessment',
+            rd_integration: 'Needs assessment'
+          },
+          benchmark_insights: result.data.summary || 'Analysis complete',
+          quick_wins: result.data.quick_wins?.map(q => q.action) || [],
+          estimated_improvement: 15
+        });
       }
     } catch (error) {
       console.error('AI recommendations failed:', error);

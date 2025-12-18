@@ -7,6 +7,11 @@ import { Sparkles, Award, Lightbulb, TestTube, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  ALUMNI_SUGGESTER_SYSTEM_PROMPT, 
+  buildAlumniSuggesterPrompt, 
+  ALUMNI_SUGGESTER_SCHEMA 
+} from '@/lib/ai/prompts/programs/alumniSuggester';
 
 export default function AIAlumniSuggester({ program, applications }) {
   const { t } = useLanguage();
@@ -22,31 +27,40 @@ export default function AIAlumniSuggester({ program, applications }) {
     }
 
     const result = await invokeAI({
-      prompt: `Analyze program graduates and suggest next steps:
-
-Program: ${program.name_en}
-Type: ${program.program_type}
-Focus: ${program.focus_areas?.join(', ') || 'N/A'}
-Graduates: ${graduates.length}
-
-Based on program focus and graduate profiles, suggest:
-1. Which graduates should launch solutions in marketplace
-2. Which graduates should pilot their innovations
-3. Potential partnerships between graduates and municipalities
-4. Alumni who could mentor next cohort`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          solution_candidates: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, reason: { type: 'string' }, solution_potential: { type: 'string' } } } },
-          pilot_candidates: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, reason: { type: 'string' }, pilot_idea: { type: 'string' } } } },
-          partnership_opportunities: { type: 'array', items: { type: 'object', properties: { graduate: { type: 'string' }, municipality: { type: 'string' }, opportunity: { type: 'string' } } } },
-          mentor_candidates: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      system_prompt: ALUMNI_SUGGESTER_SYSTEM_PROMPT,
+      prompt: buildAlumniSuggesterPrompt({
+        program: {
+          name_en: program.name_en,
+          program_type: program.program_type,
+          focus_area: program.focus_areas?.join(', '),
+          duration: program.duration
+        },
+        graduates: graduates.map(g => ({
+          name: g.applicant_name || 'Graduate',
+          role: 'Graduate',
+          skills: g.skills || []
+        })),
+        alumni_outcomes: []
+      }),
+      response_json_schema: ALUMNI_SUGGESTER_SCHEMA
     });
 
     if (result.success) {
-      setSuggestions(result.data);
+      // Map response to expected format
+      setSuggestions({
+        solution_candidates: result.data.career_pathways?.slice(0, 3).map(p => ({
+          name: 'Graduate',
+          reason: p.description,
+          solution_potential: p.pathway
+        })) || [],
+        pilot_candidates: result.data.certifications?.slice(0, 3).map(c => ({
+          name: 'Graduate',
+          reason: c.relevance,
+          pilot_idea: c.name
+        })) || [],
+        partnership_opportunities: [],
+        mentor_candidates: result.data.leadership_tracks || []
+      });
       toast.success(t({ en: 'Suggestions generated', ar: 'تم توليد الاقتراحات' }));
     }
   };

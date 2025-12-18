@@ -10,6 +10,11 @@ import { XCircle, Loader2, AlertTriangle, FileText, Lightbulb } from 'lucide-rea
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  POST_MORTEM_SYSTEM_PROMPT, 
+  buildPostMortemPrompt, 
+  POST_MORTEM_SCHEMA 
+} from '@/lib/ai/prompts/pilots/postMortem';
 
 function PilotTerminationWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -38,7 +43,7 @@ function PilotTerminationWorkflow({ pilot, onClose }) {
         termination_reason: reason,
         termination_date: new Date().toISOString(),
         lessons_learned: lessonsLearned ? [
-          { category: 'termination', lesson: lessonsLearned, recommendation: aiAnalysis?.recommendations || '' }
+          { category: 'termination', lesson: lessonsLearned, recommendation: aiAnalysis?.recommendations?.[0]?.recommendation || '' }
         ] : pilot.lessons_learned
       });
       await base44.entities.SystemActivity.create({
@@ -58,37 +63,35 @@ function PilotTerminationWorkflow({ pilot, onClose }) {
 
   const generatePostMortem = async () => {
     const result = await invokeAI({
-      prompt: `Analyze this terminated pilot and generate a post-mortem report:
-
-Title: ${pilot.title_en}
-Duration: ${pilot.duration_weeks || 'N/A'} weeks
-Budget: ${pilot.budget || 'N/A'} SAR
-Termination Reason: ${selectedReason}
-Additional Context: ${reason}
-
-KPIs Performance:
-${pilot.kpis?.map(k => `- ${k.name}: ${k.current || 'N/A'} (Target: ${k.target})`).join('\n') || 'No KPIs available'}
-
-Provide:
-1. Root cause analysis (what went wrong and why)
-2. Key lessons learned (3-5 points)
-3. Recommendations for future similar pilots
-4. Salvageable insights (what was learned that can be reused)
-5. Stakeholder communication summary`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          root_cause: { type: 'string' },
-          lessons: { type: 'array', items: { type: 'string' } },
-          recommendations: { type: 'string' },
-          salvageable_insights: { type: 'array', items: { type: 'string' } },
-          communication_summary: { type: 'string' }
-        }
-      }
+      system_prompt: POST_MORTEM_SYSTEM_PROMPT,
+      prompt: buildPostMortemPrompt({
+        pilot: {
+          title_en: pilot.title_en,
+          start_date: pilot.start_date,
+          end_date: pilot.end_date,
+          municipality_name: pilot.municipality_name,
+          solution_name: pilot.solution_name,
+          status: 'Terminated'
+        },
+        termination_reason: selectedReason,
+        metrics: pilot.kpis?.reduce((acc, k) => {
+          acc[k.name] = { current: k.current, target: k.target };
+          return acc;
+        }, {}) || {},
+        stakeholder_feedback: []
+      }),
+      response_json_schema: POST_MORTEM_SCHEMA
     });
 
     if (result.success) {
-      setAiAnalysis(result.data);
+      // Map response to expected format
+      setAiAnalysis({
+        root_cause: result.data.root_cause_analysis?.primary_causes?.join('. ') || result.data.executive_summary,
+        lessons: result.data.lessons_learned?.map(l => l.lesson) || [],
+        recommendations: result.data.recommendations?.map(r => r.recommendation).join('. ') || '',
+        salvageable_insights: result.data.successes?.map(s => s.description) || [],
+        communication_summary: result.data.executive_summary
+      });
     }
   };
 

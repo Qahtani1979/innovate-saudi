@@ -9,6 +9,11 @@ import { Users, Sparkles, Loader2, CheckCircle, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  PROVIDER_COLLABORATION_SYSTEM_PROMPT, 
+  buildProviderCollaborationPrompt, 
+  PROVIDER_COLLABORATION_SCHEMA 
+} from '@/lib/ai/prompts/solutions/providerCollaboration';
 
 export default function ProviderCollaborationNetwork({ providerId }) {
   const { language, t } = useLanguage();
@@ -25,43 +30,36 @@ export default function ProviderCollaborationNetwork({ providerId }) {
     const currentSolution = solutions.find(s => s.provider_id === providerId);
     
     const result = await invokeAI({
-      prompt: `Analyze complementary partnership opportunities for this provider:
-
-Provider Solution: ${currentSolution?.name_en}
-Sectors: ${currentSolution?.sectors?.join(', ')}
-Features: ${currentSolution?.features?.join(', ')}
-
-Other Available Solutions:
-${solutions.filter(s => s.provider_id !== providerId).slice(0, 20).map(s => 
-  `- ${s.name_en} (${s.sectors?.join(', ')}) - Features: ${s.features?.slice(0, 3).join(', ')}`
-).join('\n')}
-
-Suggest 3 partnership opportunities where solutions complement each other:
-1. Joint end-to-end solutions
-2. Feature gaps that others fill
-3. Geographic/sector expansion`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          partnerships: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                partner_solution: { type: "string" },
-                synergy_score: { type: "number" },
-                value_proposition: { type: "string" },
-                target_challenges: { type: "string" },
-                revenue_model: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: PROVIDER_COLLABORATION_SYSTEM_PROMPT,
+      prompt: buildProviderCollaborationPrompt({
+        currentSolution: {
+          name_en: currentSolution?.name_en,
+          sector: currentSolution?.sectors?.join(', '),
+          capabilities: currentSolution?.features,
+          target_municipalities: 'All'
+        },
+        potentialPartners: solutions
+          .filter(s => s.provider_id !== providerId)
+          .slice(0, 15)
+          .map(s => ({
+            name_en: s.name_en,
+            sector: s.sectors?.join(', '),
+            capabilities: s.features?.slice(0, 3)
+          })),
+        sectorData: {}
+      }),
+      response_json_schema: PROVIDER_COLLABORATION_SCHEMA
     });
 
     if (result.success) {
-      setSuggestions(result.data.partnerships);
+      // Map response to expected format
+      setSuggestions(result.data.recommended_partners?.map(p => ({
+        partner_solution: p.partner_name,
+        synergy_score: p.compatibility_score,
+        value_proposition: p.rationale,
+        target_challenges: p.complementary_capabilities?.join(', ') || '',
+        revenue_model: p.partnership_model
+      })) || []);
       toast.success(t({ en: 'Found partnership opportunities', ar: 'وُجدت فرص الشراكة' }));
     }
   };
