@@ -12,6 +12,10 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  PORTFOLIO_REBALANCING_SCHEMA,
+  PORTFOLIO_REBALANCING_PROMPT_TEMPLATE
+} from '@/lib/ai/prompts/portfolio/rebalancing';
 
 function PortfolioRebalancing() {
   const { language, isRTL, t } = useLanguage();
@@ -48,81 +52,14 @@ function PortfolioRebalancing() {
     }));
 
     const result = await invokeAI({
-      prompt: `Analyze this innovation portfolio and recommend rebalancing strategy for Saudi municipalities:
-
-Current Distribution:
-${JSON.stringify(currentPortfolio, null, 2)}
-
-Total Challenges: ${challenges.length}
-Total Pilots: ${pilots.length}
-High Priority Challenges: ${challenges.filter(c => c.priority === 'tier_1').length}
-Active Pilots at Risk: ${pilots.filter(p => p.risk_level === 'high').length}
-
-Provide bilingual recommendations:
-1. Overinvested sectors (too many pilots vs challenges)
-2. Underinvested sectors (high challenges, low coverage)
-3. Recommended reallocations (move resources from X to Y)
-4. Quick wins (low-hanging fruit to address)
-5. Strategic shifts needed
-6. What-if scenarios (e.g., "If we reduce X by 20%, we could increase Y by 30%")`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          overinvested: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                sector_en: { type: 'string' },
-                sector_ar: { type: 'string' },
-                reason_en: { type: 'string' },
-                reason_ar: { type: 'string' },
-                suggested_reduction: { type: 'number' }
-              }
-            }
-          },
-          underinvested: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                sector_en: { type: 'string' },
-                sector_ar: { type: 'string' },
-                reason_en: { type: 'string' },
-                reason_ar: { type: 'string' },
-                suggested_increase: { type: 'number' }
-              }
-            }
-          },
-          reallocations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                from_en: { type: 'string' },
-                from_ar: { type: 'string' },
-                to_en: { type: 'string' },
-                to_ar: { type: 'string' },
-                amount_percentage: { type: 'number' },
-                impact_en: { type: 'string' },
-                impact_ar: { type: 'string' }
-              }
-            }
-          },
-          quick_wins: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                action_en: { type: 'string' },
-                action_ar: { type: 'string' },
-                expected_impact_en: { type: 'string' },
-                expected_impact_ar: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: PORTFOLIO_REBALANCING_PROMPT_TEMPLATE({
+        currentPortfolio,
+        totalChallenges: challenges.length,
+        totalPilots: pilots.length,
+        highPriorityChallenges: challenges.filter(c => c.priority === 'tier_1').length,
+        atRiskPilots: pilots.filter(p => p.risk_level === 'high').length
+      }),
+      response_json_schema: PORTFOLIO_REBALANCING_SCHEMA
     });
 
     if (result.success) {
