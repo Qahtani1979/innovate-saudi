@@ -8,6 +8,7 @@ import { useLanguage } from '../LanguageContext';
 import { Sparkles, User, Mail, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildConnectionsSuggesterPrompt, CONNECTIONS_SUGGESTER_SCHEMA } from '@/lib/ai/prompts/profiles';
 
 export default function AIConnectionsSuggester({ currentUser }) {
   const { t, language } = useLanguage();
@@ -40,61 +41,8 @@ export default function AIConnectionsSuggester({ currentUser }) {
     const otherUsers = allUsers.filter(u => u.email !== currentUser.email);
     
     const result = await invokeAI({
-      prompt: `You are a professional networking AI for the Saudi Municipal Innovation Platform.
-
-Current User Profile:
-- Name: ${currentUser.full_name}
-- Email: ${currentUser.email}
-- Job Title: ${currentUser.job_title || 'Not specified'}
-- Department: ${currentUser.department || 'Not specified'}
-- Skills: ${currentUser.skills?.join(', ') || 'None listed'}
-- Areas of Expertise: ${currentUser.areas_of_expertise?.join(', ') || 'None listed'}
-- Role: ${currentUser.role}
-
-Other Platform Users:
-${otherUsers.slice(0, 50).map(u => `
-- ${u.full_name} (${u.email})
-  Job: ${u.job_title || 'N/A'}
-  Dept: ${u.department || 'N/A'}
-  Skills: ${u.skills?.join(', ') || 'None'}
-  Expertise: ${u.areas_of_expertise?.join(', ') || 'None'}
-  Teams: ${u.assigned_teams?.length || 0}
-`).join('\n')}
-
-Analyze the current user's profile and suggest 5-8 users they should connect with for collaboration opportunities.
-For each suggestion, provide:
-1. The user's email (for lookup)
-2. Connection strength score (0-100)
-3. Shared interests/skills
-4. Why they should connect
-5. Suggested collaboration opportunities
-
-Prioritize users with complementary skills, shared domains, or potential for cross-functional collaboration.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          connections: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                user_email: { type: 'string' },
-                connection_strength: { type: 'number' },
-                shared_interests: {
-                  type: 'array',
-                  items: { type: 'string' }
-                },
-                reason: { type: 'string' },
-                collaboration_opportunities: {
-                  type: 'array',
-                  items: { type: 'string' }
-                }
-              }
-            }
-          },
-          summary: { type: 'string' }
-        }
-      }
+      prompt: buildConnectionsSuggesterPrompt(currentUser, otherUsers),
+      response_json_schema: CONNECTIONS_SUGGESTER_SCHEMA
     });
 
     if (result.success) {

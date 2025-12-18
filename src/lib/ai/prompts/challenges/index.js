@@ -65,6 +65,22 @@ export {
   RD_PROPOSAL_SCHEMA
 } from './challengeToRD';
 
+// Impact Report Generator
+export {
+  IMPACT_REPORT_SYSTEM_PROMPT,
+  buildImpactReportPrompt,
+  IMPACT_REPORT_SCHEMA,
+  IMPACT_REPORT_PROMPTS
+} from './impactReport';
+
+// Strategic Alignment Validator
+export {
+  STRATEGIC_ALIGNMENT_SYSTEM_PROMPT,
+  buildStrategicAlignmentPrompt,
+  STRATEGIC_ALIGNMENT_SCHEMA,
+  STRATEGIC_ALIGNMENT_PROMPTS
+} from './strategicAlignment';
+
 /**
  * Challenges module prompt configuration
  */
