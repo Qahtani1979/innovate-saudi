@@ -56,11 +56,11 @@ function RBACHub() {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="w-full min-w-[8.5rem] justify-center gap-2 px-2 py-2 text-xs md:min-w-0"
+                className="w-full min-w-[8.5rem] flex-col justify-center gap-1 px-2 py-2 text-[11px] whitespace-normal md:min-w-0 md:flex-row md:gap-2 md:text-xs"
                 title={label}
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden md:inline">{label}</span>
+                <span className="text-center leading-tight">{label}</span>
               </TabsTrigger>
             );
           })}
