@@ -10,8 +10,9 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Total Prompt Modules Created | **372+** | ✅ Complete |
+| Total Prompt Modules Created | **395+** | ✅ Complete |
 | Prompt Module Categories | **145+ directories** | ✅ Organized |
+| **Strategy System** | **23 files** | ✅ Complete |
 | **Components Migrated** | **94/94 files** | ✅ Complete (100%) |
 | **Pages Migrated** | **102/102 files** | ✅ Complete (100%) |
 | **Edge Functions Migrated** | **2/2 files** | ✅ Complete (100%) |
@@ -83,7 +84,55 @@ src/lib/ai/prompts/
 
 ---
 
+## 🎯 STRATEGY SYSTEM - COMPREHENSIVE MODULE (23 files)
+
+The Strategy module is the most comprehensive prompt system, supporting the full strategic planning lifecycle.
+
+### Strategy Module Files (`src/lib/ai/prompts/strategy/`)
+
+| File | Description | Exports |
+|------|-------------|---------|
+| `index.js` | Module exports | All strategy prompts |
+| `pestel.js` | PESTEL analysis | `PESTEL_ANALYSIS_PROMPTS` |
+| `riskAssessment.js` | Risk identification & mitigation | `RISK_ASSESSMENT_PROMPTS` |
+| `dependencies.js` | Strategic dependencies mapping | `DEPENDENCIES_PROMPTS` |
+| `timeline.js` | Timeline generation | `TIMELINE_PROMPTS` |
+| `actionPlans.js` | Action plan generation | `ACTION_PLAN_PROMPTS` |
+| `kpis.js` | KPI generation & tracking | `KPI_GENERATION_PROMPTS` |
+| `wizard.js` | Strategy wizard core prompts | `STRATEGY_WIZARD_PROMPTS` |
+| `wizardPrompts.js` | Step-specific wizard prompts | `buildStrategyWizardPrompt` |
+| `wizardContent.js` | Wizard content generation | `WIZARD_CONTENT_PROMPTS` |
+| `copilot.js` | Strategy AI copilot | `STRATEGY_COPILOT_PROMPTS` |
+| `preplanning.js` | Pre-planning analysis | `PREPLANNING_PROMPTS` |
+| `impactAssessment.js` | Impact assessment | `IMPACT_ASSESSMENT_PROMPTS` |
+| `adjustment.js` | Strategy adjustments | `ADJUSTMENT_PROMPTS` |
+| `adjustmentWizard.js` | Adjustment wizard | `ADJUSTMENT_WIZARD_PROMPTS` |
+| `bottleneckDetector.js` | Bottleneck detection | `BOTTLENECK_DETECTOR_PROMPTS` |
+| `whatIfSimulator.js` | What-if scenarios | `WHAT_IF_SIMULATOR_PROMPTS` |
+| `narrativeGenerator.js` | Strategy narratives | `NARRATIVE_GENERATOR_PROMPTS` |
+| `gapProgramRecommender.js` | Gap-based recommendations | `GAP_PROGRAM_RECOMMENDER_PROMPTS` |
+| `partnership.js` | Partnership strategies | `PARTNERSHIP_PROMPTS` |
+| `caseStudy.js` | Case study generation | `CASE_STUDY_PROMPTS` |
+| `reprioritizer.js` | Priority rebalancing | `REPRIORITIZER_PROMPTS` |
+| `strategyGeneration.js` | Full strategy generation | `STRATEGY_GENERATION_PROMPTS` |
+
+### Strategy Wizard Steps (19 prompt sets)
+The strategy wizard uses dedicated prompts for each step:
+- Steps 1-18: Full strategic planning workflow
+- Single-item prompts for steps 3, 7, 9, 11, 12
+
+### Related Edge Functions (25+)
+- `strategy-analyze`, `strategy-generate`, `strategy-adjust`
+- `strategy-kpi-*`, `strategy-action-*`
+- Full list in `supabase/functions/`
+
+### Related Hooks (27 hooks)
+Located in `src/hooks/strategy/`
+
+---
+
 ## ✅ RECENTLY CREATED MODULES BY SESSION
+
 
 ### Session 54 (FINAL - Migration Complete)
 | Module | Description |
