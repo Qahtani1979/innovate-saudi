@@ -32,14 +32,11 @@ function StrategyCopilotChat() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
 
+    // Import centralized prompt module
+    const { STRATEGY_COPILOT_PROMPT_TEMPLATE } = await import('@/lib/ai/prompts/strategy/copilot');
+    
     const result = await invokeAI({
-      prompt: `You are a strategic advisor for Saudi municipal innovation. Answer this question:
-
-${input}
-
-You have access to data about challenges, pilots, R&D projects, programs, and strategic plans.
-Provide specific, actionable advice based on Saudi municipal context.
-Use data-driven insights when possible.`
+      prompt: STRATEGY_COPILOT_PROMPT_TEMPLATE(input)
     });
 
     if (result.success) {
