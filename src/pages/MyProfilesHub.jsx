@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,13 +9,16 @@ import { createPageUrl } from '../utils';
 import { 
   UserCircle, Building2, Briefcase, GraduationCap, Microscope, 
   Users, Shield, CheckCircle2, AlertCircle, ArrowRight, Settings,
-  Mail, Award
+  Mail, Award, UserPlus
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import RoleRequestDialog from '../components/access/RoleRequestDialog';
 
 function MyProfilesHub() {
   const { isRTL, t } = useLanguage();
   const { user, profile, roles } = useAuth();
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [selectedRoleForRequest, setSelectedRoleForRequest] = useState(null);
 
   const profileTypes = [
     {
@@ -175,16 +178,17 @@ function MyProfilesHub() {
             {t({ en: 'Available Profile Types', ar: 'أنواع الملفات المتاحة' })}
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            {t({ en: 'These profiles can be activated based on your role. Contact admin for access.', ar: 'يمكن تفعيل هذه الملفات بناءً على دورك. تواصل مع المسؤول للوصول.' })}
+            {t({ en: 'Request access to activate additional profile types based on your role.', ar: 'اطلب الوصول لتفعيل أنواع ملفات إضافية بناءً على دورك.' })}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {inactiveProfiles.map((profileType) => {
               const Icon = profileType.icon;
+              const requestableRoles = profileType.roles || [];
               return (
-                <Card key={profileType.id} className="opacity-60 hover:opacity-80 transition-all">
+                <Card key={profileType.id} className="opacity-75 hover:opacity-100 transition-all hover:shadow-md">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="p-3 rounded-lg bg-gray-100 text-gray-500">
+                      <div className="p-3 rounded-lg bg-muted text-muted-foreground">
                         <Icon className="h-6 w-6" />
                       </div>
                       <Badge variant="outline" className="text-muted-foreground">
@@ -199,7 +203,15 @@ function MyProfilesHub() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button className="w-full" variant="ghost" disabled>
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedRoleForRequest(requestableRoles[0] || profileType.id);
+                        setRequestDialogOpen(true);
+                      }}
+                    >
+                      <UserPlus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                       {t({ en: 'Request Access', ar: 'طلب الوصول' })}
                     </Button>
                   </CardContent>
@@ -245,6 +257,13 @@ function MyProfilesHub() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Role Request Dialog */}
+      <RoleRequestDialog
+        open={requestDialogOpen}
+        onOpenChange={setRequestDialogOpen}
+        preSelectedRole={selectedRoleForRequest}
+      />
     </div>
   );
 }

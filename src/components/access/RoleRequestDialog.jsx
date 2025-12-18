@@ -35,16 +35,23 @@ const ROLE_OPTIONS = [
   { id: 'admin', name: { en: 'Administrator', ar: 'مسؤول' } },
 ];
 
-export default function RoleRequestDialog({ open, onOpenChange, availableRoles }) {
+export default function RoleRequestDialog({ open, onOpenChange, availableRoles, preSelectedRole }) {
   const { t, language } = useLanguage();
   const { user, userProfile } = useAuth();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
-    requested_role: '',
+    requested_role: preSelectedRole || '',
     justification: ''
   });
   const [rateLimitError, setRateLimitError] = useState(null);
   const [remainingRequests, setRemainingRequests] = useState(3);
+
+  // Update form when preSelectedRole changes
+  useEffect(() => {
+    if (preSelectedRole) {
+      setFormData(prev => ({ ...prev, requested_role: preSelectedRole }));
+    }
+  }, [preSelectedRole]);
 
   const roleOptions = availableRoles || ROLE_OPTIONS;
 
