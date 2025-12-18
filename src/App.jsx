@@ -93,6 +93,9 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<PublicLayout><Privacy /></PublicLayout>} />
       <Route path="/terms" element={<PublicLayout><Terms /></PublicLayout>} />
       <Route path="/public-idea-submission" element={<PublicLayout><PublicIdeaSubmission /></PublicLayout>} />
+      
+      {/* Legacy route redirects */}
+      <Route path="/profile-settings" element={<Navigate to="/settings" replace />} />
       <Route path="/citizen-challenges-browser" element={
         isAuthenticated ? (
           <LayoutWrapper currentPageName="CitizenChallengesBrowser">
