@@ -7,6 +7,11 @@ import { useLanguage } from '../LanguageContext';
 import { FileText, Download, Sparkles, Copy, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import {
+  CONTRACT_TEMPLATE_SYSTEM_PROMPT,
+  buildContractTemplatePrompt,
+  CONTRACT_TEMPLATE_SCHEMA
+} from '@/lib/ai/prompts/solutions';
 
 export default function ContractTemplateLibrary({ solutionType }) {
   const { language, t } = useLanguage();
@@ -47,21 +52,9 @@ export default function ContractTemplateLibrary({ solutionType }) {
 
   const generateCustomContract = async (template) => {
     const result = await invokeAI({
-      prompt: `Generate a customized ${template.name} contract for a Saudi municipal innovation project.
-Template type: ${template.type}
-Required clauses: ${template.clauses.join(', ')}
-Solution type: ${solutionType || 'General innovation solution'}
-
-Generate a professional contract document in both English and Arabic that includes all required clauses. Make it specific to Saudi Arabia's regulatory environment and Vision 2030 alignment.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          contract_en: { type: 'string' },
-          contract_ar: { type: 'string' },
-          key_terms: { type: 'array', items: { type: 'string' } }
-        }
-      },
-      system_prompt: 'You are an expert in Saudi Arabian legal contracts and municipal procurement. Generate professional, legally-sound contract templates.'
+      prompt: buildContractTemplatePrompt(template, solutionType),
+      response_json_schema: CONTRACT_TEMPLATE_SCHEMA,
+      system_prompt: CONTRACT_TEMPLATE_SYSTEM_PROMPT
     });
 
     if (result.success && result.data) {
