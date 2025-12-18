@@ -59,15 +59,10 @@ function PersonaSwitcherContent({ compact = false, showLabel = true }) {
   const language = languageContext?.language || 'en';
   const isRTL = languageContext?.isRTL || false;
   
-  // Use persona hook with error handling
-  let personaData;
-  try {
-    personaData = useActivePersona();
-  } catch (error) {
-    console.error('useActivePersona error:', error);
-    return null;
-  }
+  // Call hook unconditionally (hooks must not be in try-catch)
+  const personaData = useActivePersona();
   
+  // Safe destructure with defaults
   const {
     activePersona = 'user',
     setActivePersona = () => {},
