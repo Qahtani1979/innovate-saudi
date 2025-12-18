@@ -4,7 +4,7 @@
  * @module prompts/admin/contentModeration
  */
 
-import { SAUDI_CONTEXT } from '@/lib/ai/prompts/common/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 /**
  * Content moderation analysis prompt

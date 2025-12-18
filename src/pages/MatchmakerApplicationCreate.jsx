@@ -63,25 +63,13 @@ function MatchmakerApplicationCreate() {
   });
 
   const handleAIEnhance = async () => {
+    const { MATCHMAKER_PROFILE_ENHANCE_PROMPT_TEMPLATE } = await import('@/lib/ai/prompts/matchmaker/application');
+    const promptConfig = MATCHMAKER_PROFILE_ENHANCE_PROMPT_TEMPLATE(formData);
+
     const result = await invokeAI({
-      prompt: `Based on this organization info, generate bilingual profile. CRITICAL: Provide BOTH English AND Arabic.
-
-Organization: ${formData.organization_name_en}
-Website: ${formData.website}
-Sectors: ${formData.sectors.join(', ')}
-Collaboration: ${formData.collaboration_approach}
-
-Generate:
-- organization_name_ar (Arabic translation if missing)
-- collaboration_approach enhanced version (2-3 sentences each language)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          organization_name_ar: { type: 'string' },
-          collaboration_approach_en: { type: 'string' },
-          collaboration_approach_ar: { type: 'string' }
-        }
-      }
+      prompt: promptConfig.prompt,
+      system_prompt: promptConfig.system,
+      response_json_schema: promptConfig.schema
     });
 
     if (result.success) {

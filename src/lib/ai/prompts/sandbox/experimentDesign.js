@@ -4,7 +4,7 @@
  * @module prompts/sandbox/experimentDesign
  */
 
-import { SAUDI_CONTEXT } from '@/lib/ai/prompts/common/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 /**
  * Experiment design generation prompt
