@@ -6,297 +6,309 @@
 
 The AI Prompt Modules System provides a structured approach to managing AI prompts across the platform. All prompts are centralized in `src/lib/ai/prompts/` with consistent patterns for easy maintenance, testing, and reuse.
 
-### Current Migration Status
+### Current Migration Status (ACCURATE)
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Total Prompt Modules | 126 | ✅ Created |
-| Total Prompts Defined | ~404 | ✅ Available |
-| Categories | 16 | ✅ Organized |
-| Files Using Centralized Prompts | ~147 | ✅ Migrated |
-| Files with Inline Prompts | ~57 | ⚠️ Pending |
-| Edge Functions with Inline Prompts | ~17 | ⚠️ Pending |
-| **Overall Migration Progress** | **~70%** | 🔄 In Progress |
-
-## Architecture
-
-```
-src/lib/ai/prompts/
-├── index.js                    # Main entry point & registry
-├── core/                       # Core platform prompts (10 modules)
-├── challenges/                 # Challenge management (12 modules)
-├── solutions/                  # Solution prompts (8 modules)
-├── pilots/                     # Pilot project prompts (7 modules)
-├── programs/                   # Program management (10 modules)
-├── strategy/                   # Strategic planning (14 modules)
-├── policy/                     # Policy analysis (5 modules)
-├── events/                     # Event management (3 modules)
-├── executive/                  # Executive dashboards (5 modules)
-├── portfolio/                  # Portfolio management (4 modules)
-├── profiles/                   # User profiles (5 modules)
-├── onboarding/                 # User onboarding (3 modules)
-├── forms/                      # Form assistance (1 module)
-├── evaluation/                 # Evaluation prompts (3 modules)
-├── quality/                    # Quality assurance (3 modules)
-├── analytics/                  # Analytics prompts (4 modules)
-└── rd/                         # R&D management (6 modules)
-
-src/components/strategy/wizard/prompts/
-├── index.js                    # Strategy wizard prompts
-├── stepPrompts.js              # Step 1-17 prompts
-└── singleItemPrompts.js        # Single item generation
-```
-
-## Module Categories
-
-### Core Modules (`core/`)
-Foundation prompts used across the platform.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `capacityPredictor` | 1 | Predicts resource capacity needs |
-| `peerComparison` | 1 | Compares entities against peers |
-| `exemptionSuggester` | 1 | Suggests policy exemptions |
-| `formAssistant` | 1 | Assists with form completion |
-| `rdToPilot` | 1 | Converts R&D to pilot proposals |
-| `successPredictor` | 1 | Predicts success likelihood |
-| `proposalBrief` | 1 | Generates proposal briefs |
-| `crossEntity` | 2 | Cross-entity analysis & matching |
-| `platformInsights` | 3 | Platform-wide insights |
-| `workPrioritizer` | 1 | Prioritizes work items |
-
-### Challenge Modules (`challenges/`)
-AI prompts for challenge lifecycle management.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `challengeAnalysis` | 3 | Root cause & impact analysis |
-| `challengeMatching` | 2 | Solution-challenge matching |
-| `challengeSummary` | 1 | Executive summaries |
-| `challengeScoring` | 2 | Priority scoring |
-| `challengeRecommendations` | 2 | Action recommendations |
-| `submissionBrief` | 1 | Bilingual submission briefs |
-| `challengeRD` | 3 | Challenge to R&D conversion |
-
-### Solution Modules (`solutions/`)
-Solution discovery and matching prompts.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `solutionAnalysis` | 2 | Solution viability analysis |
-| `solutionMatching` | 3 | Challenge-solution matching |
-| `solutionScoring` | 2 | Solution ranking |
-| `deploymentSuccess` | 3 | Deployment & ROI analysis |
-
-### Pilot Modules (`pilots/`)
-Pilot project management prompts.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `pilotDesign` | 3 | Pilot design assistance |
-| `pilotEvaluation` | 2 | Pilot outcome evaluation |
-| `pilotScaling` | 2 | Scale-up recommendations |
-| `pilotRisks` | 1 | Risk assessment |
-| `pilotTransition` | 2 | Pilot transition workflows |
-
-### Program Modules (`programs/`)
-Program management and impact tracking.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `impactStory` | 1 | Narrative impact stories |
-| `impactCalculator` | 1 | Quantified impact metrics |
-| `curriculumGenerator` | 1 | Training curriculum |
-| `successPredictor` | 1 | Program success prediction |
-| `crossProgramSynergy` | 1 | Cross-program opportunities |
-| `programDesign` | 2 | Program structure design |
-| `programWorkflows` | 1 | Workflow automation |
-| `lessonsToStrategy` | 1 | Lessons learned synthesis |
-| `applicationScreening` | 1 | Application review |
-
-### Strategy Modules (`strategy/`)
-Strategic planning and analysis.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `wizard` | 9 | Strategy creation wizard |
-| `wizardPrompts` | 17 | Step-by-step wizard prompts |
-| `strategyAnalysis` | 3 | Strategic analysis |
-| `strategyAlignment` | 2 | Goal alignment |
-| `narrativeGenerator` | 1 | Strategic narratives |
-| `gapProgramRecommender` | 1 | Gap-based recommendations |
-
-### Strategy Wizard (`components/strategy/wizard/prompts/`)
-Dedicated prompts for the 17-step strategy wizard.
-
-| Prompt | Description |
-|--------|-------------|
-| `getStep1Prompt` - `getStep17Prompt` | Context, Vision, Stakeholders, PESTEL, SWOT, Scenarios, Risks, Dependencies, Objectives, National Alignment, KPIs, Actions, Resources, Timeline, Governance, Communication, Change Management |
-| `generateSingleStakeholderPrompt` | Add individual stakeholder |
-| `generateSingleRiskPrompt` | Add individual risk |
-| `generateSingleObjectivePrompt` | Add individual objective |
-| `generateSingleKpiPrompt` | Add individual KPI |
-| `generateSingleActionPrompt` | Add individual action |
-
-### Policy Modules (`policy/`)
-Policy analysis and recommendations.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `executiveSummary` | 1 | Policy summaries |
-| `conflictDetector` | 1 | Policy conflict detection |
-| `policyAnalysis` | 2 | Comprehensive analysis |
-
-### Events Modules (`events/`)
-Event optimization and prediction.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `eventOptimizer` | 1 | Event timing & capacity |
-| `attendancePredictor` | 1 | Attendance forecasting |
-| `programEventCorrelator` | 1 | Program-event analysis |
-
-### Executive Modules (`executive/`)
-Executive dashboard insights.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `riskForecast` | 1 | Strategic risk forecasting |
-| `executiveBriefing` | 1 | Executive briefings |
-| `priorityRecommendations` | 1 | Priority recommendations |
-| `executiveNarrative` | 2 | Narrative generation |
-
-### Portfolio Modules (`portfolio/`)
-Portfolio health and optimization.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `portfolioHealth` | 1 | Portfolio health analysis |
-| `portfolioOptimizer` | 1 | Optimization recommendations |
-| `collaborationSuggester` | 1 | Collaboration opportunities |
-| `portfolioNarrative` | 1 | Portfolio narratives |
-
-### Profile Modules (`profiles/`)
-User profile management.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `profileCompletion` | 1 | Profile completion suggestions |
-| `expertFinder` | 1 | Expert matching |
-| `credentialVerification` | 1 | Credential verification |
-| `connections` | 1 | Connection recommendations |
-| `roleAssignment` | 1 | Role suggestions |
-
-### Onboarding Modules (`onboarding/`)
-User onboarding assistance.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `translationPrompts` | 1 | Content translation |
-| `linkedinImport` | 1 | LinkedIn data import |
-| `profileSuggestions` | 1 | Profile setup suggestions |
-
-### Forms Modules (`forms/`)
-Form assistance prompts.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `formAssistant` | 1 | Form field assistance |
-
-### Evaluation Modules (`evaluation/`)
-Evaluation and assessment prompts.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `evaluationAssist` | 1 | Evaluation assistance |
-| `criteriaGenerator` | 1 | Evaluation criteria |
-| `scoringHelper` | 1 | Scoring recommendations |
-
-### Quality Modules (`quality/`)
-Quality assurance prompts.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `assurance` | 3 | Quality checks |
-
-### Analytics Modules (`analytics/`)
-Analytics and insights prompts.
-
-| Module | Prompts | Description |
-|--------|---------|-------------|
-| `trendAnalysis` | 1 | Trend detection |
-| `anomalyDetection` | 1 | Anomaly identification |
-| `forecastGeneration` | 1 | Predictive forecasts |
-| `insightsSynthesis` | 1 | Insights compilation |
+| Total Prompt Modules Created | 80+ | ✅ Created |
+| Prompt Module Categories | 80 directories | ✅ Organized |
+| **Components with Inline Prompts** | **94 files** | ❌ Pending |
+| **Pages with Inline Prompts** | **85 files** | ❌ Pending |
+| Edge Functions with Inline Prompts | 2 files | ⚠️ Partial |
+| **Overall Migration Progress** | **~30%** | 🔄 In Progress |
 
 ---
 
-## Implementation Plan
+## DETAILED REMAINING WORK
 
-### Phase 1: Component Migration (Priority: High)
-**~57 files with inline prompts**
+### Components with Inline Prompts (94 files)
 
-#### Batch 1: Pages (15 files)
-| File | New Prompt Module | Priority |
-|------|-------------------|----------|
-| `ChallengeCreate.jsx` | `challenges/challengeCreate.js` | High |
-| `PolicyCreate.jsx` | `policy/policyCreate.js` | High |
-| `PolicyDetail.jsx` | `policy/policyDetail.js` | Medium |
-| `RDProjectEdit.jsx` | `rd/rdProjectEdit.js` | Medium |
-| `PatternRecognition.jsx` | `analytics/patternRecognition.js` | Medium |
-| `SandboxDetail.jsx` | `sandbox/sandboxDetail.js` | Medium |
-| `EventsAnalyticsDashboard.jsx` | `events/eventsAnalytics.js` | Medium |
-| `ExpertMatchingEngine.jsx` | `profiles/expertMatching.js` | Medium |
-| `InternationalBenchmarkingSuite.jsx` | `analytics/benchmarking.js` | Low |
-| `MunicipalityEdit.jsx` | `municipalities/municipalityEdit.js` | Low |
+#### Category: Communications (5 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `AINotificationRouter.jsx` | `src/components/communications/` | Notification routing analysis |
+| `EmailTemplateEditorContent.jsx` | `src/components/communications/` | Email template generation |
+| `AISentimentMonitor.jsx` | `src/components/communications/` | Sentiment analysis |
+| `CommunicationAudienceBuilder.jsx` | `src/components/communications/` | Audience segmentation |
+| `SmartNotificationCenter.jsx` | `src/components/communications/` | Notification prioritization |
 
-#### Batch 2: Core Components (20 files)
-| File | New Prompt Module | Priority |
-|------|-------------------|----------|
-| `AutoTranslator.jsx` | `translation/autoTranslator.js` | High |
-| `KPIBenchmarkData.jsx` | `challenges/kpiBenchmark.js` | High |
-| `MIIImprovementAI.jsx` | `municipalities/miiImprovement.js` | Medium |
-| `PilotLearningEngine.jsx` | `pilots/learningEngine.js` | Medium |
-| `AdaptiveManagement.jsx` | `pilots/adaptiveManagement.js` | Medium |
-| `RealTimeMarketIntelligence.jsx` | `solutions/marketIntelligence.js` | Medium |
-| `SolutionVerificationWizard.jsx` | `solutions/verification.js` | Medium |
-| `LivingLabExpertMatching.jsx` | `livinglab/expertMatching.js` | Medium |
-| `MatchQualityGate.jsx` | `matchmaker/qualityGate.js` | Medium |
-| `TRLAssessmentTool.jsx` | `solutions/trlAssessment.js` | Medium |
-| `MentorMatchingEngine.jsx` | `programs/mentorMatching.js` | Medium |
-| `AlumniSuccessStoryGenerator.jsx` | `programs/alumniStory.js` | Low |
-| `ProgramCreateWizard.jsx` | `programs/programCreate.js` | Medium |
-| `DynamicPricingIntelligence.jsx` | `solutions/dynamicPricing.js` | Low |
-| `PilotToPolicyWorkflow.jsx` | `pilots/policyWorkflow.js` | Medium |
-| `AIRoleAssigner.jsx` | `onboarding/roleAssigner.js` | Low |
-| `RDToPilotTransition.jsx` | `rd/pilotTransition.js` | Medium |
-| `ProgramMentorMatching.jsx` | `programs/mentorMatching.js` | Low |
+#### Category: Challenges (12 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `BatchProcessor.jsx` | `src/components/challenges/` | Batch validation |
+| `ChallengeImpactSimulator.jsx` | `src/components/challenges/` | Impact simulation |
+| `CitizenFeedbackWidget.jsx` | `src/components/challenges/` | Sentiment analysis |
+| `ChallengeToRDGenerator.jsx` | `src/components/challenges/` | R&D conversion |
+| `ChallengePriorityMatrix.jsx` | `src/components/challenges/` | Priority scoring |
+| `ChallengeClusterAnalyzer.jsx` | `src/components/challenges/` | Cluster analysis |
+| `ChallengeTrendPredictor.jsx` | `src/components/challenges/` | Trend prediction |
+| `CrossSectorChallengeLinker.jsx` | `src/components/challenges/` | Cross-sector linking |
+| `ChallengeDeduplicator.jsx` | `src/components/challenges/` | Duplicate detection |
+| `ChallengeEscalationEngine.jsx` | `src/components/challenges/` | Escalation rules |
+| `ChallengeTranslator.jsx` | `src/components/challenges/` | Translation |
+| `SmartChallengeRouter.jsx` | `src/components/challenges/` | Smart routing |
 
-#### Batch 3: Remaining Components (22 files)
-See full list in implementation tracking below.
+#### Category: Citizen (6 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `IdeaToRDConverter.jsx` | `src/components/citizen/` | R&D conversion |
+| `IdeaToPilotConverter.jsx` | `src/components/citizen/` | Pilot conversion |
+| `CitizenIdeaEnhancer.jsx` | `src/components/citizen/` | Idea enhancement |
+| `CitizenFeedbackAnalyzer.jsx` | `src/components/citizen/` | Feedback analysis |
+| `CitizenEngagementOptimizer.jsx` | `src/components/citizen/` | Engagement optimization |
+| `VotingPatternAnalyzer.jsx` | `src/components/citizen/` | Voting analysis |
 
-### Phase 2: Edge Function Migration (Priority: High)
-**~17 edge functions with inline prompts**
+#### Category: Solutions (8 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `AIProfileEnhancer.jsx` | `src/components/solutions/` | Profile enhancement |
+| `DynamicPricingIntelligence.jsx` | `src/components/solutions/` | Pricing intelligence |
+| `SolutionVerificationWizard.jsx` | `src/components/solutions/` | Verification workflow |
+| `SolutionMatchScorer.jsx` | `src/components/solutions/` | Match scoring |
+| `CompetitorAnalyzer.jsx` | `src/components/solutions/` | Competitor analysis |
+| `TRLAssessmentTool.jsx` | `src/components/solutions/` | TRL assessment |
+| `SolutionROICalculator.jsx` | `src/components/solutions/` | ROI calculation |
+| `SolutionDeploymentPlanner.jsx` | `src/components/solutions/` | Deployment planning |
 
-| Edge Function | Action | Priority |
-|---------------|--------|----------|
-| `strategy-workflow-ai` | Create `_shared/prompts/workflow.ts` | High |
-| `strategy-committee-ai` | Create `_shared/prompts/committee.ts` | High |
-| `strategy-signoff-ai` | Create `_shared/prompts/signoff.ts` | High |
-| `strategy-version-ai` | Create `_shared/prompts/version.ts` | Medium |
-| `strategy-action-plan-generator` | Create `_shared/prompts/actionPlan.ts` | Medium |
-| `strategy-context-generator` | Create `_shared/prompts/context.ts` | Medium |
-| `strategy-ownership-ai` | Create `_shared/prompts/ownership.ts` | Medium |
-| `strategy-swot-generator` | Create `_shared/prompts/swot.ts` | Medium |
-| `strategy-national-linker` | Create `_shared/prompts/nationalLink.ts` | Medium |
-| `translate-policy` | Create `_shared/prompts/translate.ts` | Low |
-| Others (7 functions) | Create respective prompt modules | Low |
+#### Category: Programs (10 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `CohortOptimizer.jsx` | `src/components/programs/` | Cohort optimization |
+| `ProgramToPilotWorkflow.jsx` | `src/components/programs/` | Pilot workflow |
+| `ProgramLessonsToStrategy.jsx` | `src/components/programs/` | Lessons synthesis |
+| `AlumniSuccessStoryGenerator.jsx` | `src/components/programs/` | Story generation |
+| `MentorMatchingEngine.jsx` | `src/components/programs/` | Mentor matching |
+| `ProgramCreateWizard.jsx` | `src/components/programs/` | Program creation |
+| `CurriculumGenerator.jsx` | `src/components/programs/` | Curriculum generation |
+| `ApplicationScreeningAI.jsx` | `src/components/programs/` | Application screening |
+| `GraduateTracker.jsx` | `src/components/programs/` | Graduate tracking |
+| `ProgramImpactNarrative.jsx` | `src/components/programs/` | Impact narratives |
 
-### Phase 3: Prompt Library Enhancement
-1. Add missing schemas for all prompts
-2. Add JSDoc documentation
-3. Add version tags
-4. Create unit tests for prompt builders
+#### Category: Pilots (8 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `PilotLearningEngine.jsx` | `src/components/pilots/` | Learning extraction |
+| `AdaptiveManagement.jsx` | `src/components/pilots/` | Adaptive recommendations |
+| `PilotToPolicyWorkflow.jsx` | `src/components/pilots/` | Policy workflow |
+| `PilotRiskMonitor.jsx` | `src/components/pilots/` | Risk monitoring |
+| `PilotScalingRecommender.jsx` | `src/components/pilots/` | Scaling recommendations |
+| `PilotOutcomePredictor.jsx` | `src/components/pilots/` | Outcome prediction |
+| `PilotResourceOptimizer.jsx` | `src/components/pilots/` | Resource optimization |
+| `PilotStakeholderMapper.jsx` | `src/components/pilots/` | Stakeholder mapping |
+
+#### Category: Scaling (5 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `ScalingToProgramConverter.jsx` | `src/components/scaling/` | Program conversion |
+| `AdaptiveRolloutSequencing.jsx` | `src/components/scaling/` | Rollout sequencing |
+| `ScalingRiskAssessor.jsx` | `src/components/scaling/` | Risk assessment |
+| `CapacityPlanner.jsx` | `src/components/scaling/` | Capacity planning |
+| `RegionalAdaptation.jsx` | `src/components/scaling/` | Regional adaptation |
+
+#### Category: Living Lab (6 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `LabPolicyEvidenceWorkflow.jsx` | `src/components/livinglab/` | Evidence synthesis |
+| `LivingLabExpertMatching.jsx` | `src/components/livinglab/` | Expert matching |
+| `ExperimentDesigner.jsx` | `src/components/livinglab/` | Experiment design |
+| `CitizenScienceAnalyzer.jsx` | `src/components/livinglab/` | Citizen science analysis |
+| `LabInsightsGenerator.jsx` | `src/components/livinglab/` | Insights generation |
+| `PrototypeEvaluator.jsx` | `src/components/livinglab/` | Prototype evaluation |
+
+#### Category: Matchmaker (5 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `MatchmakerEngagementHub.jsx` | `src/components/matchmaker/` | Proposal generation |
+| `MatchQualityGate.jsx` | `src/components/matchmaker/` | Quality gate |
+| `PartnerCompatibilityScorer.jsx` | `src/components/matchmaker/` | Compatibility scoring |
+| `ConsortiumBuilder.jsx` | `src/components/matchmaker/` | Consortium building |
+| `MatchNegotiationAssist.jsx` | `src/components/matchmaker/` | Negotiation assistance |
+
+#### Category: Onboarding (4 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `SmartWelcomeEmail.jsx` | `src/components/onboarding/` | Welcome email |
+| `AIRoleAssigner.jsx` | `src/components/onboarding/` | Role assignment |
+| `ProfileCompletionSuggester.jsx` | `src/components/onboarding/` | Profile suggestions |
+| `SkillGapAnalyzer.jsx` | `src/components/onboarding/` | Skill gap analysis |
+
+#### Category: Data Management (5 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `AutomatedDataEnrichment.jsx` | `src/components/data/` | Data enrichment |
+| `DataQualityScorer.jsx` | `src/components/data/` | Quality scoring |
+| `DuplicateDetector.jsx` | `src/components/data/` | Duplicate detection |
+| `DataMigrationValidator.jsx` | `src/components/data/` | Migration validation |
+| `SchemaMapper.jsx` | `src/components/data/` | Schema mapping |
+
+#### Category: Bonus/Misc (10 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `ResourceConflictDetector.jsx` | `src/components/bonus/` | Conflict detection |
+| `AdvancedResourceOptimizer.jsx` | `src/components/bonus/` | Resource optimization |
+| `CrossPlatformSynergy.jsx` | `src/components/bonus/` | Synergy analysis |
+| `PredictiveAnalytics.jsx` | `src/components/bonus/` | Predictive analytics |
+| `SmartScheduler.jsx` | `src/components/bonus/` | Scheduling |
+| `BudgetOptimizer.jsx` | `src/components/bonus/` | Budget optimization |
+| `RiskHeatmapGenerator.jsx` | `src/components/bonus/` | Risk heatmaps |
+| `PerformancePredictor.jsx` | `src/components/bonus/` | Performance prediction |
+| `ResourceAllocationAI.jsx` | `src/components/bonus/` | Resource allocation |
+| `StrategicAdvisor.jsx` | `src/components/bonus/` | Strategic advice |
+
+#### Category: R&D (6 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `RDToPilotTransition.jsx` | `src/components/` | R&D to pilot |
+| `ResearcherMatcher.jsx` | `src/components/rd/` | Researcher matching |
+| `ResearchImpactPredictor.jsx` | `src/components/rd/` | Impact prediction |
+| `IPValueEstimator.jsx` | `src/components/rd/` | IP valuation |
+| `TechnologyRadar.jsx` | `src/components/rd/` | Technology radar |
+| `GrantProposalAssist.jsx` | `src/components/rd/` | Grant assistance |
+
+#### Category: AI Assistants (9 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `AIAssistant.jsx` | `src/components/` | General assistant |
+| `IncidentReportForm.jsx` | `src/components/` | Incident reporting |
+| `AIExemptionSuggester.jsx` | `src/components/` | Exemption suggestions |
+| `AICapacityPredictor.jsx` | `src/components/` | Capacity prediction |
+| `AIFormAssistant.jsx` | `src/components/` | Form assistance |
+| `AITranslationService.jsx` | `src/components/` | Translation |
+| `AISummaryGenerator.jsx` | `src/components/` | Summary generation |
+| `AIRecommendationEngine.jsx` | `src/components/` | Recommendations |
+| `AIContentGenerator.jsx` | `src/components/` | Content generation |
+
+---
+
+### Pages with Inline Prompts (85 files)
+
+#### High Priority Pages (25 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `ChallengeDetail.jsx` | `src/pages/` | Research insights |
+| `DecisionSimulator.jsx` | `src/pages/` | Outcome prediction |
+| `BudgetAllocationTool.jsx` | `src/pages/` | Budget optimization |
+| `CompetitiveIntelligenceDashboard.jsx` | `src/pages/` | Competitive analysis |
+| `ExecutiveBriefGenerator.jsx` | `src/pages/` | Executive briefs |
+| `ProgramsControlDashboard.jsx` | `src/pages/` | Portfolio insights |
+| `PilotLaunchWizard.jsx` | `src/pages/` | Launch checklist |
+| `RDProjectDetail.jsx` | `src/pages/` | Project insights |
+| `MII.jsx` | `src/pages/` | MII analysis |
+| `OrganizationCreate.jsx` | `src/pages/` | Translation |
+| `ProgramPortfolioPlanner.jsx` | `src/pages/` | Roadmap generation |
+| `MyLearning.jsx` | `src/pages/` | Learning recommendations |
+| `RDProposalDetail.jsx` | `src/pages/` | Proposal insights |
+| `RDPortfolioControlDashboard.jsx` | `src/pages/` | Portfolio analysis |
+| `SandboxCreate.jsx` | `src/pages/` | Sandbox enhancement |
+| `PersonalizedDashboard.jsx` | `src/pages/` | Daily briefing |
+| `MyApprovals.jsx` | `src/pages/` | Approval recommendations |
+| `PolicyDetail.jsx` | `src/pages/` | Policy analysis |
+| `InternationalBenchmarkingSuite.jsx` | `src/pages/` | Benchmark analysis |
+| `PatternRecognition.jsx` | `src/pages/` | Pattern detection |
+| `ChallengeCreate.jsx` | `src/pages/` | Challenge creation |
+| `PolicyCreate.jsx` | `src/pages/` | Policy creation |
+| `RDProjectEdit.jsx` | `src/pages/` | Project editing |
+| `SandboxDetail.jsx` | `src/pages/` | Sandbox analysis |
+| `EventsAnalyticsDashboard.jsx` | `src/pages/` | Event analytics |
+
+#### Medium Priority Pages (35 files)
+| File | Location | Prompt Type |
+|------|----------|-------------|
+| `ExpertMatchingEngine.jsx` | `src/pages/` | Expert matching |
+| `MunicipalityEdit.jsx` | `src/pages/` | Municipality editing |
+| `ProviderDetail.jsx` | `src/pages/` | Provider analysis |
+| `SolutionDetail.jsx` | `src/pages/` | Solution insights |
+| `PilotDetail.jsx` | `src/pages/` | Pilot analysis |
+| `ProgramDetail.jsx` | `src/pages/` | Program insights |
+| `EventDetail.jsx` | `src/pages/` | Event optimization |
+| `MunicipalityDetail.jsx` | `src/pages/` | Municipality insights |
+| `StrategicPlanDetail.jsx` | `src/pages/` | Strategy analysis |
+| `ActionPlanDetail.jsx` | `src/pages/` | Action plan insights |
+| `KPIManagement.jsx` | `src/pages/` | KPI analysis |
+| `BudgetManagement.jsx` | `src/pages/` | Budget insights |
+| `RiskManagement.jsx` | `src/pages/` | Risk analysis |
+| `StakeholderManagement.jsx` | `src/pages/` | Stakeholder insights |
+| `ResourceManagement.jsx` | `src/pages/` | Resource optimization |
+| `TimelineManagement.jsx` | `src/pages/` | Timeline optimization |
+| `GovernanceManagement.jsx` | `src/pages/` | Governance insights |
+| `CommunicationManagement.jsx` | `src/pages/` | Communication planning |
+| `ChangeManagement.jsx` | `src/pages/` | Change analysis |
+| `DependencyManagement.jsx` | `src/pages/` | Dependency mapping |
+| `ScenarioPlanning.jsx` | `src/pages/` | Scenario generation |
+| `NationalAlignment.jsx` | `src/pages/` | Vision alignment |
+| `StrategicObjectives.jsx` | `src/pages/` | Objective generation |
+| `PerformanceMonitoring.jsx` | `src/pages/` | Performance insights |
+| `ImpactAssessment.jsx` | `src/pages/` | Impact analysis |
+| `PortfolioOverview.jsx` | `src/pages/` | Portfolio insights |
+| `CollaborationHub.jsx` | `src/pages/` | Collaboration suggestions |
+| `InnovationPipeline.jsx` | `src/pages/` | Pipeline analysis |
+| `KnowledgeBase.jsx` | `src/pages/` | Knowledge search |
+| `ReportsGenerator.jsx` | `src/pages/` | Report generation |
+| `DataExplorer.jsx` | `src/pages/` | Data insights |
+| `UserManagement.jsx` | `src/pages/` | User recommendations |
+| `RoleManagement.jsx` | `src/pages/` | Role suggestions |
+| `PermissionManagement.jsx` | `src/pages/` | Permission analysis |
+| `AuditLog.jsx` | `src/pages/` | Audit insights |
+
+#### Lower Priority Pages (25 files)
+- Various admin pages with translation prompts
+- Settings pages with suggestion prompts
+- Analytics pages with insight generation
+- Report pages with summary generation
+
+---
+
+### Edge Functions with Inline Prompts (2 files)
+
+| Edge Function | File | Prompt Type | Priority |
+|---------------|------|-------------|----------|
+| `invoke-llm` | `supabase/functions/invoke-llm/index.ts` | System prompt enhancement | High |
+| `chat-agent` | `supabase/functions/chat-agent/index.ts` | Agent system prompts | High |
+
+**Note:** Most strategy-related edge functions reference prompts from client-side modules. Need to create `_shared/prompts/` directory for edge function prompt sharing.
+
+---
+
+## Implementation Phases
+
+### Phase 1: Create Missing Prompt Modules (Priority: Critical)
+**Estimated: 40+ new modules needed**
+
+| Category | New Modules Needed |
+|----------|-------------------|
+| `communications/` | 5 modules |
+| `challenges/` | 8 modules (add to existing) |
+| `citizen/` | 4 modules |
+| `solutions/` | 4 modules (add to existing) |
+| `programs/` | 6 modules (add to existing) |
+| `pilots/` | 5 modules (add to existing) |
+| `scaling/` | 5 modules |
+| `livinglab/` | 6 modules |
+| `matchmaker/` | 5 modules |
+| `data/` | 5 modules |
+| `pages/` | 15+ modules |
+
+### Phase 2: Component Migration (Priority: High)
+1. Update all 94 component files to use prompt modules
+2. Remove inline prompt definitions
+3. Add proper schemas for structured output
+4. Test each component after migration
+
+### Phase 3: Page Migration (Priority: High)
+1. Update all 85 page files to use prompt modules
+2. Create page-specific prompt modules where needed
+3. Consolidate duplicate prompts
+
+### Phase 4: Edge Function Migration (Priority: Medium)
+1. Create `supabase/functions/_shared/prompts/` directory
+2. Move prompts to shared modules
+3. Update edge functions to import from shared
+
+### Phase 5: Quality Enhancement (Priority: Low)
+1. Add JSDoc documentation to all modules
+2. Add version tags
+3. Create unit tests for prompt builders
+4. Add few-shot examples to system prompts
 
 ---
 
