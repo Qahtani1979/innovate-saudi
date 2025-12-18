@@ -24,25 +24,15 @@ function InternationalBenchmarkingSuite() {
   ];
 
   const generateBenchmarkAnalysis = async () => {
+    // Import centralized prompt module
+    const { 
+      BENCHMARKING_PROMPT_TEMPLATE, 
+      BENCHMARKING_RESPONSE_SCHEMA 
+    } = await import('@/lib/ai/prompts/analytics/benchmarking');
+    
     const response = await invokeAI({
-      prompt: `Analyze Saudi innovation performance vs global leaders:
-
-${JSON.stringify(benchmarkData)}
-
-Identify:
-1. Where Saudi leads globally
-2. Critical performance gaps
-3. Best practices from top performers
-4. Priority improvement areas`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          strengths: { type: 'array', items: { type: 'string' } },
-          gaps: { type: 'array', items: { type: 'string' } },
-          best_practices: { type: 'array', items: { type: 'string' } },
-          priorities: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: BENCHMARKING_PROMPT_TEMPLATE(benchmarkData),
+      response_json_schema: BENCHMARKING_RESPONSE_SCHEMA
     });
     if (response.success) {
       setAnalysis(response.data);
