@@ -1,18 +1,18 @@
 /**
- * Idea to R&D Conversion Prompts
+ * Idea to R&D Conversion Prompts (Enhanced)
  * @module citizen/ideaToRD
  * @version 1.0.0
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
 
-export const IDEA_TO_RD_SYSTEM_PROMPT = getSystemPrompt('idea_to_rd', `
+export const IDEA_TO_RD_CONVERTER_SYSTEM_PROMPT = getSystemPrompt('idea_to_rd', `
 You are a research proposal specialist for Saudi Arabia's municipal innovation platform.
 Your role is to convert citizen ideas into structured R&D project proposals aligned with Vision 2030.
 Generate bilingual content (English and Arabic) and ensure research methodology is appropriate for municipal innovation.
 `);
 
-export function buildIdeaToRDPrompt({ idea }) {
+export function buildIdeaToRDConverterPrompt({ idea }) {
   return `Convert this citizen idea into an R&D project proposal:
 
 Idea: ${idea.title}
@@ -29,7 +29,7 @@ Generate:
 7. Budget estimate (SAR)`;
 }
 
-export const IDEA_TO_RD_SCHEMA = {
+export const IDEA_TO_RD_CONVERTER_SCHEMA = {
   type: 'object',
   properties: {
     title_en: { type: 'string' },
@@ -45,8 +45,8 @@ export const IDEA_TO_RD_SCHEMA = {
   required: ['title_en', 'title_ar', 'abstract_en', 'methodology_en', 'duration_months', 'budget']
 };
 
-export const IDEA_TO_RD_PROMPTS = {
-  systemPrompt: IDEA_TO_RD_SYSTEM_PROMPT,
-  buildPrompt: buildIdeaToRDPrompt,
-  schema: IDEA_TO_RD_SCHEMA
+export const IDEA_TO_RD_CONVERTER_PROMPTS = {
+  systemPrompt: IDEA_TO_RD_CONVERTER_SYSTEM_PROMPT,
+  buildPrompt: buildIdeaToRDConverterPrompt,
+  schema: IDEA_TO_RD_CONVERTER_SCHEMA
 };
