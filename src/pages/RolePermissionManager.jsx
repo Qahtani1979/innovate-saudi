@@ -219,13 +219,13 @@ function RolePermissionManagerContent() {
     }
   });
 
-  // Fetch user functional roles for counting
-  const { data: userFunctionalRoles = [] } = useQuery({
-    queryKey: ['user-functional-roles-count'],
+  // Fetch user roles for counting (Phase 4: uses user_roles with role_id)
+  const { data: userRolesCount = [] } = useQuery({
+    queryKey: ['user-roles-count'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('user_functional_roles')
-        .select('*')
+        .from('user_roles')
+        .select('*, roles:role_id(id, name)')
         .eq('is_active', true);
       if (error) throw error;
       return data || [];
@@ -346,8 +346,8 @@ function RolePermissionManagerContent() {
     mutationFn: async (id) => {
       // Delete role permissions first
       await supabase.from('role_permissions').delete().eq('role_id', id);
-      // Delete user functional roles
-      await supabase.from('user_functional_roles').delete().eq('role_id', id);
+      // Deactivate user_roles with this role_id (Phase 4: no user_functional_roles)
+      await supabase.from('user_roles').update({ is_active: false }).eq('role_id', id);
       // Delete the role
       const { error } = await supabase.from('roles').delete().eq('id', id);
       if (error) throw error;
@@ -370,9 +370,9 @@ function RolePermissionManagerContent() {
       .filter(Boolean);
   };
 
-  // Get user count for a role
+  // Get user count for a role (Phase 4: uses user_roles)
   const getRoleUserCount = (roleId) => {
-    return userFunctionalRoles.filter(ufr => ufr.role_id === roleId).length;
+    return userRolesCount.filter(ur => ur.role_id === roleId).length;
   };
 
   const togglePermission = (permission) => {
@@ -522,7 +522,7 @@ function RolePermissionManagerContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">{t({ en: 'Role Assignments', ar: 'تعيينات الأدوار' })}</p>
-                    <p className="text-3xl font-bold text-pink-600">{userFunctionalRoles.length}</p>
+                    <p className="text-3xl font-bold text-pink-600">{userRolesCount.length}</p>
                   </div>
                   <Lock className="h-8 w-8 text-pink-600" />
                 </div>

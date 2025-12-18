@@ -129,8 +129,8 @@ export default function BulkRoleActions({ roles, users }) {
       for (const roleId of deletable) {
         // Delete role permissions first
         await supabase.from('role_permissions').delete().eq('role_id', roleId);
-        // Delete user functional roles
-        await supabase.from('user_functional_roles').delete().eq('role_id', roleId);
+        // Deactivate user_roles with this role_id (Phase 4: no user_functional_roles)
+        await supabase.from('user_roles').update({ is_active: false }).eq('role_id', roleId);
         // Delete the role
         await supabase.from('roles').delete().eq('id', roleId);
       }

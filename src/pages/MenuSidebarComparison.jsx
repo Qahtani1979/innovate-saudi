@@ -17,7 +17,7 @@ export default function MenuSidebarComparison() {
   const { t, isRTL } = useLanguage();
   const [selectedPersona, setSelectedPersona] = useState('admin');
 
-  // Complete System Roles (from database app_role enum)
+  // Complete System Roles (Phase 4: roles table with role_id references)
   const systemRoles = [
     { role: 'admin', label: 'Platform Administrator', persona: 'admin', dashboard: '/home', gdisbMapping: 'Platform Administrator', permissions: ['Full system access', 'User management', 'Role management', 'System configuration', 'All entity CRUD'], color: 'bg-red-100 text-red-700' },
     { role: 'municipality_admin', label: 'Municipality Admin', persona: 'municipality', dashboard: '/municipality-dashboard', gdisbMapping: null, permissions: ['Municipality data CRUD', 'Local user management', 'Challenge/Pilot creation', 'Budget management'], color: 'bg-emerald-100 text-emerald-700' },

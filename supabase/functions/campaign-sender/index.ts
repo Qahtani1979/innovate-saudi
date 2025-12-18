@@ -40,10 +40,10 @@ async function getRecipients(
       if (u.user_email) recipients.add(u.user_email);
     });
   } else if (audienceType === 'role' && audienceFilter?.roles?.length) {
-    // Get users with specific roles
+    // Get users with specific roles (Phase 4: uses user_roles with role_id)
     const { data: roleUsers } = await supabase
-      .from('user_functional_roles')
-      .select('user_id, roles(name)')
+      .from('user_roles')
+      .select('user_id, roles:role_id(name)')
       .in('role_id', audienceFilter.roles)
       .eq('is_active', true);
     
