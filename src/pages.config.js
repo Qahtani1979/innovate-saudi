@@ -46,7 +46,6 @@ import PublicPortal from './pages/PublicPortal';
 import MunicipalityDashboard from './pages/MunicipalityDashboard';
 import AdminPortal from './pages/AdminPortal';
 import PortalSwitcher from './pages/PortalSwitcher';
-// BulkImport - DELETED (migrated to ImportExportHub)
 import TaskManagement from './pages/TaskManagement';
 import Messaging from './pages/Messaging';
 import PredictiveAnalytics from './pages/PredictiveAnalytics';
@@ -104,7 +103,6 @@ import RegionManagement from './pages/RegionManagement';
 import CityManagement from './pages/CityManagement';
 import PilotGatesOverview from './pages/PilotGatesOverview';
 import SystemHealthDashboard from './pages/SystemHealthDashboard';
-// BulkDataOperations - DELETED (migrated to ImportExportHub)
 import UsageAnalytics from './pages/UsageAnalytics';
 import MediaLibrary from './pages/MediaLibrary';
 import AnnouncementSystem from './pages/AnnouncementSystem';
@@ -162,7 +160,6 @@ import ProfilesIdentityCoverageReport from './pages/ProfilesIdentityCoverageRepo
 import UserSettingsCoverageReport from './pages/UserSettingsCoverageReport';
 import PlatformSettingsCoverageReport from './pages/PlatformSettingsCoverageReport';
 import UserAccessManagementCoverageReport from './pages/UserAccessManagementCoverageReport';
-// UserInvitationManager, RoleManager, TeamManagement - DELETED (migrated to UserManagementHub)
 import UserActivityDashboard from './pages/UserActivityDashboard';
 import SessionDeviceManager from './pages/SessionDeviceManager';
 import TeamWorkspace from './pages/TeamWorkspace';
@@ -170,7 +167,6 @@ import BrandingSettings from './pages/BrandingSettings';
 import SystemDefaultsConfig from './pages/SystemDefaultsConfig';
 import SecurityPolicyManager from './pages/SecurityPolicyManager';
 import DataRetentionConfig from './pages/DataRetentionConfig';
-// EmailTemplateEditor - DELETED (migrated to CommunicationsHub)
 import CommunicationsHub from './pages/CommunicationsHub';
 import FeatureFlagsDashboard from './pages/FeatureFlagsDashboard';
 import UserProfile from './pages/UserProfile';
@@ -210,7 +206,6 @@ import DecisionSimulator from './pages/DecisionSimulator';
 import PredictiveForecastingDashboard from './pages/PredictiveForecastingDashboard';
 import CollaborationHub from './pages/CollaborationHub';
 import NetworkIntelligence from './pages/NetworkIntelligence';
-// Note: 'Collaboration Hub.jsx' with space removed, using CollaborationHub.jsx instead
 import StrategicAdvisorChat from './pages/StrategicAdvisorChat';
 import PatternRecognition from './pages/PatternRecognition';
 import ExecutiveBriefGenerator from './pages/ExecutiveBriefGenerator';
@@ -257,8 +252,6 @@ import StakeholderAlignmentDashboard from './pages/StakeholderAlignmentDashboard
 import MidYearReviewDashboard from './pages/MidYearReviewDashboard';
 import AnnualPlanningWizard from './pages/AnnualPlanningWizard';
 import StrategicCommunicationsHub from './pages/StrategicCommunicationsHub';
-// DataQualityDashboard, MasterDataGovernance - DELETED (migrated to DataManagementHub)
-// DataImportExportManager, AdvancedUserFilters, BulkUserActions - DELETED (migrated to hubs)
 import ImportExportHub from './pages/ImportExportHub';
 import ValidationRulesEngine from './pages/ValidationRulesEngine';
 import APIManagementConsole from './pages/APIManagementConsole';
@@ -288,7 +281,6 @@ import DataManagementHub from './pages/DataManagementHub';
 import UserManagementHub from './pages/UserManagementHub';
 import TeamOverview from './pages/TeamOverview';
 import UserExperienceProgress from './pages/UserExperienceProgress';
-// UserDirectory - DELETED (migrated to UserManagementHub)
 import UserGamification from './pages/UserGamification';
 import NotificationPreferences from './pages/NotificationPreferences';
 import DelegationManager from './pages/DelegationManager';
