@@ -8,6 +8,11 @@ import { useLanguage } from './LanguageContext';
 import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, Target, Loader2, RefreshCw } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  PLATFORM_INSIGHTS_SYSTEM_PROMPT,
+  buildPlatformInsightsPrompt,
+  PLATFORM_INSIGHTS_SCHEMA
+} from '@/lib/ai/prompts/core';
 
 export default function PlatformInsightsWidget() {
   const { language, isRTL, t } = useLanguage();
@@ -34,32 +39,15 @@ export default function PlatformInsightsWidget() {
       return acc;
     }, {});
 
+    const statusCounts = challenges.reduce((acc, c) => {
+      acc[c.status] = (acc[c.status] || 0) + 1;
+      return acc;
+    }, {});
+
     const result = await invokeAI({
-      prompt: `Analyze platform trends and generate 3 strategic insights:
-
-Sector distribution: ${JSON.stringify(sectorCounts)}
-Total challenges: ${challenges.length}
-
-Generate insights about:
-1. Emerging trends (which sectors are growing)
-2. Strategic opportunities (gaps or patterns)
-3. Risk alerts (areas needing attention)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          insights: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                type: { type: 'string' },
-                title: { type: 'string' },
-                description: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      systemPrompt: PLATFORM_INSIGHTS_SYSTEM_PROMPT,
+      prompt: buildPlatformInsightsPrompt(sectorCounts, statusCounts, challenges.length),
+      response_json_schema: PLATFORM_INSIGHTS_SCHEMA
     });
 
     if (result.success) {

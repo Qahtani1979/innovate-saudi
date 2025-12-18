@@ -10,6 +10,11 @@ import { CheckCircle2, XCircle, AlertTriangle, FileText, Sparkles, Loader2 } fro
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  STRATEGIC_APPROVAL_SYSTEM_PROMPT,
+  buildStrategicApprovalPrompt,
+  STRATEGIC_APPROVAL_SCHEMA
+} from '@/lib/ai/prompts/gates';
 
 export default function StrategicPlanApprovalGate({ plan, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -36,36 +41,21 @@ export default function StrategicPlanApprovalGate({ plan, onClose }) {
 
   const generateAIBrief = async () => {
     const result = await invokeAI({
-      prompt: `Analyze this strategic plan and provide executive decision brief in BOTH English and Arabic:
-
-Plan: ${plan.name_en}
-Duration: ${plan.start_year} - ${plan.end_year}
-Vision: ${plan.vision_en}
-Themes: ${plan.strategic_themes?.map(t => t.name_en).join(', ')}
-KPIs: ${plan.kpis?.length || 0}
-Budget Allocation: ${JSON.stringify(plan.budget_allocation)}
-
-Provide:
-1. Strengths and alignment with national goals
-2. Potential risks or gaps
-3. Feasibility assessment
-4. Recommendation (approve/revise/reject) with justification`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          strengths: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          risks: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          feasibility_en: { type: 'string' },
-          feasibility_ar: { type: 'string' },
-          recommendation: { type: 'string' },
-          justification_en: { type: 'string' },
-          justification_ar: { type: 'string' }
-        }
-      }
+      systemPrompt: STRATEGIC_APPROVAL_SYSTEM_PROMPT,
+      prompt: buildStrategicApprovalPrompt(plan),
+      response_json_schema: STRATEGIC_APPROVAL_SCHEMA
     });
 
     if (result.success) {
-      setAiAnalysis(result.data);
+      setAiAnalysis({
+        strengths: result.data.strengths?.map(s => ({ en: s.point_en, ar: s.point_ar })),
+        risks: result.data.risks?.map(r => ({ en: r.risk_en, ar: r.risk_ar })),
+        feasibility_en: result.data.recommendation_reason_en,
+        feasibility_ar: result.data.recommendation_reason_ar,
+        recommendation: result.data.recommendation,
+        justification_en: result.data.recommendation_reason_en,
+        justification_ar: result.data.recommendation_reason_ar
+      });
     }
   };
 

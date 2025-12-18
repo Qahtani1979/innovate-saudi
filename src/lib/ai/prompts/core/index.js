@@ -53,3 +53,5 @@ export {
   createEntityMatchingPrompt,
   ENTITY_MATCHING_SCHEMA
 } from './crossEntity';
+
+export * from './platformInsights';

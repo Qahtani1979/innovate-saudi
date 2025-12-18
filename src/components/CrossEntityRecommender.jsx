@@ -94,35 +94,6 @@ export default function CrossEntityRecommender({ sourceEntity, sourceType, recom
     return titles[type]?.[language] || type;
   };
 
-  const getEntityIcon = (type) => {
-    const icons = {
-      rdcalls: Megaphone,
-      rdprojects: Microscope,
-      pilots: TestTube,
-      challenges: Target
-    };
-    return icons[type] || LinkIcon;
-  };
-
-  const getEntityUrl = (type, id) => {
-    const pages = {
-      rdcalls: 'RDCallDetail',
-      rdprojects: 'RDProjectDetail',
-      pilots: 'PilotDetail',
-      challenges: 'ChallengeDetail'
-    };
-    return createPageUrl(`${pages[type]}?id=${id}`);
-  };
-
-  const getEntityTitle = (type) => {
-    const titles = {
-      rdcalls: { en: 'R&D Calls', ar: 'دعوات البحث' },
-      rdprojects: { en: 'R&D Projects', ar: 'مشاريع البحث' },
-      pilots: { en: 'Pilots', ar: 'التجارب' },
-      challenges: { en: 'Challenges', ar: 'التحديات' }
-    };
-    return titles[type]?.[language] || type;
-  };
 
   return (
     <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white" dir={isRTL ? 'rtl' : 'ltr'}>
