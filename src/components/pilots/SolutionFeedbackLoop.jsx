@@ -10,6 +10,11 @@ import { toast } from 'sonner';
 import { Lightbulb, TrendingUp, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  SOLUTION_FEEDBACK_SYSTEM_PROMPT, 
+  buildSolutionFeedbackPrompt, 
+  SOLUTION_FEEDBACK_SCHEMA 
+} from '@/lib/ai/prompts/pilots/solutionFeedback';
 
 export default function SolutionFeedbackLoop({ pilot }) {
   const { language, isRTL, t } = useLanguage();
@@ -31,56 +36,9 @@ export default function SolutionFeedbackLoop({ pilot }) {
 
   const analyzeImprovements = async () => {
     const result = await invokeAI({
-      prompt: `Analyze pilot results and generate solution improvement recommendations:
-
-Pilot: ${pilot.title_en}
-Solution: ${solution?.name_en || 'N/A'}
-KPIs: ${pilot.kpis?.map(k => `${k.name}: baseline ${k.baseline}, target ${k.target}, current ${k.current || 'N/A'}`).join('; ')}
-Issues: ${pilot.issues?.map(i => i.issue).join('; ') || 'None'}
-Lessons: ${pilot.lessons_learned?.map(l => l.lesson).join('; ') || 'None'}
-Evaluation: ${pilot.evaluation_summary_en || 'In progress'}
-
-Generate bilingual improvement recommendations:
-1. Feature enhancements (3-5 items)
-2. Performance optimizations (2-3 items)
-3. Integration improvements (2-3 items)
-4. Priority ranking`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          features: { 
-            type: 'array', 
-            items: { 
-              type: 'object',
-              properties: {
-                en: { type: 'string' },
-                ar: { type: 'string' },
-                priority: { type: 'string' }
-              }
-            }
-          },
-          performance: { 
-            type: 'array', 
-            items: { 
-              type: 'object',
-              properties: {
-                en: { type: 'string' },
-                ar: { type: 'string' }
-              }
-            }
-          },
-          integration: { 
-            type: 'array', 
-            items: { 
-              type: 'object',
-              properties: {
-                en: { type: 'string' },
-                ar: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: SOLUTION_FEEDBACK_SYSTEM_PROMPT,
+      prompt: buildSolutionFeedbackPrompt({ pilot, solution }),
+      response_json_schema: SOLUTION_FEEDBACK_SCHEMA
     });
 
     if (result.success && result.data) {

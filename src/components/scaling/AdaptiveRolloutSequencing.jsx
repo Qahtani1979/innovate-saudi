@@ -7,6 +7,11 @@ import { TrendingUp, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  ROLLOUT_SEQUENCING_SYSTEM_PROMPT, 
+  buildRolloutSequencingPrompt, 
+  ROLLOUT_SEQUENCING_SCHEMA 
+} from '@/lib/ai/prompts/scaling/rolloutSequencing';
 
 export default function AdaptiveRolloutSequencing({ scalingPlan, municipalities }) {
   const { language, t } = useLanguage();
@@ -15,29 +20,9 @@ export default function AdaptiveRolloutSequencing({ scalingPlan, municipalities 
 
   const optimizeSequence = async () => {
     const response = await invokeAI({
-      prompt: `Optimize rollout sequence based on real-time performance:
-
-Current Plan: ${scalingPlan?.phases?.map(p => p.municipalities?.join(', ')).join(' → ')}
-
-Municipality Performance:
-${municipalities?.map(m => 
-  `${m.name_en}: Adoption ${m.adoption_rate || 0}%, Issues: ${m.issue_count || 0}`
-).join('\n')}
-
-Recommend:
-1. Should we accelerate any phase?
-2. Should we delay/support any municipality?
-3. Optimal next sequence
-4. Specific interventions needed`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          accelerate: { type: "array", items: { type: "string" } },
-          delay_support: { type: "array", items: { type: "string" } },
-          next_sequence: { type: "array", items: { type: "string" } },
-          interventions: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: ROLLOUT_SEQUENCING_SYSTEM_PROMPT,
+      prompt: buildRolloutSequencingPrompt({ scalingPlan, municipalities }),
+      response_json_schema: ROLLOUT_SEQUENCING_SCHEMA
     });
 
     if (response.success && response.data) {
