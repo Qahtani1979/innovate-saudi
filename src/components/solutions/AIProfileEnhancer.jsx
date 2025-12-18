@@ -7,6 +7,10 @@ import { Sparkles, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  buildProfileEnhancerPrompt,
+  PROFILE_ENHANCER_SCHEMA
+} from '@/lib/ai/prompts/solutions';
 
 export default function AIProfileEnhancer({ solution, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,61 +34,8 @@ export default function AIProfileEnhancer({ solution, onUpdate }) {
 
   const analyzeProfile = async () => {
     const result = await invokeAI({
-      prompt: `Analyze this solution profile and suggest improvements:
-
-SOLUTION: ${solution.name_en}
-PROVIDER: ${solution.provider_name}
-DESCRIPTION: ${solution.description_en || 'N/A'}
-FEATURES: ${solution.features?.length || 0}
-CASE STUDIES: ${solution.case_studies?.length || 0}
-CERTIFICATIONS: ${solution.certifications?.length || 0}
-DEPLOYMENTS: ${solution.deployment_count || 0}
-
-Provide:
-1. Missing critical fields
-2. Weak areas needing improvement
-3. Competitive gaps (compared to top solutions)
-4. Specific content suggestions
-5. Impact of improvements on visibility/matching`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          completeness_score: { type: "number" },
-          missing_fields: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                field: { type: "string" },
-                importance: { type: "string" },
-                impact: { type: "string" }
-              }
-            }
-          },
-          weak_areas: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                area: { type: "string" },
-                issue: { type: "string" },
-                suggestion: { type: "string" }
-              }
-            }
-          },
-          competitive_gaps: { type: "array", items: { type: "string" } },
-          quick_wins: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                action: { type: "string" },
-                estimated_impact: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildProfileEnhancerPrompt({ solution }),
+      response_json_schema: PROFILE_ENHANCER_SCHEMA
     });
 
     if (result.success && result.data) {
