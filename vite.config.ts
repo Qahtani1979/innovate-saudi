@@ -17,7 +17,6 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
         // Force a single React instance across the entire app.
-        // Use directory paths (not files) so subpath imports like react/jsx-runtime work correctly.
         react: path.resolve(__dirname, "./node_modules/react"),
         "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
         scheduler: path.resolve(__dirname, "./node_modules/scheduler"),
@@ -30,6 +29,7 @@ export default defineConfig(({ mode }) => {
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
         "scheduler",
+        "@tanstack/react-query",
       ],
     },
     optimizeDeps: {
@@ -40,8 +40,22 @@ export default defineConfig(({ mode }) => {
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
         "scheduler",
+        "@tanstack/react-query",
       ],
+      exclude: [],
       force: true,
+      esbuildOptions: {
+        // Ensure consistent React resolution
+        define: {
+          global: "globalThis",
+        },
+      },
+    },
+    build: {
+      commonjsOptions: {
+        include: [/node_modules/],
+        transformMixedEsModules: true,
+      },
     },
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
