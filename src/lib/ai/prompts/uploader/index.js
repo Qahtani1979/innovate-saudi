@@ -1,7 +1,9 @@
 /**
  * Uploader Prompts Index
  * Centralized exports for AI uploader prompts
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 export * from './entityDetection';
+export * from './validation';
+export * from './fieldMapping';

@@ -15,6 +15,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import {
+  FIELD_MAPPING_SYSTEM_PROMPT,
+  buildFieldMappingPrompt,
+  FIELD_MAPPING_SCHEMA
+} from '@/lib/ai/prompts/uploader';
 
 // Entity field definitions - synced with actual database schema
 const ENTITY_FIELDS = {
@@ -269,39 +274,17 @@ export default function StepFieldMapping({ state, updateState, onNext, onBack })
     setIsMapping(true);
     
     try {
-      const prompt = `Map these source columns to target entity fields.
-
-Source columns: ${sourceColumns.join(', ')}
-
-Target fields for "${state.detectedEntity}":
-${entityFields.map(f => `- ${f.name}: ${f.label} (${f.required ? 'required' : 'optional'}, type: ${f.type})`).join('\n')}
-
-Sample data:
-${JSON.stringify(state.extractedData.rows.slice(0, 3), null, 2)}
-
-Return mappings as key-value pairs where key is target field name and value is source column name.
-Also include confidence score (0-1) for each mapping.`;
+      const prompt = buildFieldMappingPrompt(
+        sourceColumns,
+        state.detectedEntity,
+        entityFields,
+        state.extractedData.rows.slice(0, 3)
+      );
 
       const result = await invokeAI({
         prompt,
-        system_prompt: 'You are a data mapping expert. Analyze column headers and sample data to create accurate field mappings.',
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            mappings: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  target_field: { type: 'string' },
-                  source_column: { type: 'string' },
-                  confidence: { type: 'number' },
-                  reason: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
+        system_prompt: FIELD_MAPPING_SYSTEM_PROMPT,
+        response_json_schema: FIELD_MAPPING_SCHEMA
       });
 
       if (result.success && result.data?.mappings) {

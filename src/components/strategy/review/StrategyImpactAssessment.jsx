@@ -13,6 +13,11 @@ import {
   BarChart3, TrendingUp, TrendingDown, Minus, 
   Download, RefreshCw, Target, Leaf, Building2, Users, Lightbulb, Sparkles, Loader2
 } from 'lucide-react';
+import {
+  IMPACT_ASSESSMENT_SYSTEM_PROMPT,
+  buildImpactAssessmentPrompt,
+  IMPACT_ASSESSMENT_SCHEMA
+} from '@/lib/ai/prompts/strategy';
 
 export default function StrategyImpactAssessment({ strategicPlanId, strategicPlan, planId }) {
   const activePlanId = strategicPlanId || planId;
@@ -145,28 +150,9 @@ export default function StrategyImpactAssessment({ strategicPlanId, strategicPla
 
     try {
       const result = await invokeAI({
-        system_prompt: 'You are a strategic impact assessment expert. Analyze the impact data and provide actionable insights.',
-        prompt: `Analyze this strategic impact assessment data and provide insights:
-
-Overall Score: ${impactData.overall.score}/100
-Dimensions:
-${impactData.dimensions.map(d => `- ${d.name}: ${d.score}/${d.target} (${d.trend})`).join('\n')}
-
-Provide:
-1. Key strengths (2-3)
-2. Areas needing improvement (2-3) 
-3. Recommended actions (3-4)
-4. Risk factors to monitor`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strengths: { type: 'array', items: { type: 'string' } },
-            improvements: { type: 'array', items: { type: 'string' } },
-            recommendations: { type: 'array', items: { type: 'string' } },
-            risks: { type: 'array', items: { type: 'string' } }
-          },
-          required: ['strengths', 'improvements', 'recommendations', 'risks']
-        }
+        system_prompt: IMPACT_ASSESSMENT_SYSTEM_PROMPT,
+        prompt: buildImpactAssessmentPrompt(impactData),
+        response_json_schema: IMPACT_ASSESSMENT_SCHEMA
       });
 
       if (result.success && result.data) {

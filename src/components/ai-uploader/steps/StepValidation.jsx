@@ -16,6 +16,14 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import {
+  TRANSLATION_SYSTEM_PROMPT,
+  buildTranslationPrompt,
+  TRANSLATION_SCHEMA,
+  DATA_QUALITY_SYSTEM_PROMPT,
+  buildDataQualityPrompt,
+  DATA_QUALITY_SCHEMA
+} from '@/lib/ai/prompts/uploader';
 
 export default function StepValidation({ state, updateState, onNext, onBack }) {
   const [isValidating, setIsValidating] = useState(false);
@@ -252,28 +260,9 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
         }));
 
         const aiResult = await invokeAI({
-          prompt: `Translate the following English texts to Arabic. Maintain formal tone suitable for government/municipal context.
-
-${JSON.stringify(textsToTranslate, null, 2)}
-
-Return translations in the exact format specified.`,
-          system_prompt: 'You are an expert Arabic translator specializing in government and municipal terminology. Provide accurate, formal Arabic translations.',
-          response_json_schema: {
-            type: 'object',
-            properties: {
-              translations: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    rowIndex: { type: 'number' },
-                    field: { type: 'string' },
-                    arabic: { type: 'string' }
-                  }
-                }
-              }
-            }
-          }
+          prompt: buildTranslationPrompt(textsToTranslate),
+          system_prompt: TRANSLATION_SYSTEM_PROMPT,
+          response_json_schema: TRANSLATION_SCHEMA
         });
 
         if (aiResult.success && aiResult.data?.translations) {
@@ -304,54 +293,14 @@ Return translations in the exact format specified.`,
           .join('\n');
 
         const aiResult = await invokeAI({
-          prompt: `Analyze this data for quality issues and suggest improvements.
-
-Entity type: ${state.detectedEntity}
-Sample data: ${JSON.stringify(sampleRows, null, 2)}
-
-Available reference entities for linking:
-${availableRefs}
-
-Fields in data: ${Object.keys(state.fieldMappings).join(', ')}
-
-Look for:
-1. Typos or inconsistencies
-2. Invalid formats (dates, numbers)
-3. Missing links that could be inferred from context
-4. Standardization opportunities
-
-Return corrections and enrichments.`,
-          system_prompt: 'You are a data quality expert. Analyze data for issues and suggest improvements.',
-          response_json_schema: {
-            type: 'object',
-            properties: {
-              corrections: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    rowIndex: { type: 'number' },
-                    field: { type: 'string' },
-                    originalValue: { type: 'string' },
-                    suggestedValue: { type: 'string' },
-                    reason: { type: 'string' }
-                  }
-                }
-              },
-              enrichments: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    rowIndex: { type: 'number' },
-                    field: { type: 'string' },
-                    suggestedValue: { type: 'string' },
-                    reason: { type: 'string' }
-                  }
-                }
-              }
-            }
-          }
+          prompt: buildDataQualityPrompt(
+            state.detectedEntity, 
+            sampleRows, 
+            availableRefs, 
+            Object.keys(state.fieldMappings).join(', ')
+          ),
+          system_prompt: DATA_QUALITY_SYSTEM_PROMPT,
+          response_json_schema: DATA_QUALITY_SCHEMA
         });
 
         if (aiResult.success && aiResult.data) {

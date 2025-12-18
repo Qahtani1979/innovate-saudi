@@ -1,6 +1,6 @@
 /**
  * Solutions AI prompts index
- * @version 1.2.0
+ * @version 1.3.0
  */
 
 export {
@@ -29,3 +29,10 @@ export {
   createSolutionToPilotPrompt,
   SOLUTION_TO_PILOT_SCHEMA
 } from './solutionToPilot';
+
+export {
+  CONTRACT_TEMPLATE_SYSTEM_PROMPT,
+  buildContractTemplatePrompt,
+  CONTRACT_TEMPLATE_SCHEMA,
+  CONTRACT_TEMPLATE_PROMPTS
+} from './contractTemplate';
