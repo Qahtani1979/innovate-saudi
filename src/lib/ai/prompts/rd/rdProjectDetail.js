@@ -4,7 +4,7 @@
  * @module prompts/rd/rdProjectDetail
  */
 
-import { SAUDI_CONTEXT } from '@/lib/ai/prompts/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 /**
  * R&D project detail analysis prompt template
