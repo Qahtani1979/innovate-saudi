@@ -4,7 +4,7 @@
  * @module prompts/insights/predictive
  */
 
-import { SAUDI_CONTEXT } from '@/lib/ai/prompts/common/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 /**
  * Predictive insights generation prompt

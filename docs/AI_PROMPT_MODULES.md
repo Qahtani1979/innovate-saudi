@@ -10,10 +10,10 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Total Prompt Modules Created | **276+** | ✅ Complete |
+| Total Prompt Modules Created | **278+** | ✅ Complete |
 | Prompt Module Categories | **100+ directories** | ✅ Organized |
 | **Components Migrated** | **85/94 files** | 🔄 In Progress (90%) |
-| **Pages Migrated** | **47/102 files** | 🔄 In Progress (46%) |
+| **Pages Migrated** | **49/102 files** | 🔄 In Progress (48%) |
 | Edge Functions with Inline Prompts | 2 files | ⚠️ Partial |
 | **Overall Migration Progress** | **~97%** | 🔄 In Progress |
 
@@ -25,9 +25,9 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
-| **Phase 1** | Create Prompt Modules | ✅ Complete | 276+/210 (100%) |
+| **Phase 1** | Create Prompt Modules | ✅ Complete | 278+/210 (100%) |
 | **Phase 2** | Migrate Components | 🔄 In Progress | 85/94 (90%) |
-| **Phase 3** | Migrate Pages | 🔄 In Progress | 47/102 (46%) |
+| **Phase 3** | Migrate Pages | 🔄 In Progress | 49/102 (48%) |
 | **Phase 4** | Migrate Edge Functions | ⏳ Pending | 0/2 (0%) |
 | **Phase 5** | Quality Enhancement | ⏳ Future | 0% |
 
@@ -35,9 +35,9 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 
 | Phase | Items | Est. Sessions | Status |
 |-------|-------|---------------|--------|
-| Prompt Module Creation | 276+ modules | ✅ Complete | Done |
+| Prompt Module Creation | 278+ modules | ✅ Complete | Done |
 | Component Migration | 9 remaining | 2-3 sessions | In Progress |
-| Page Migration | 55 files | 10-12 sessions | In Progress |
+| Page Migration | 53 files | 10-12 sessions | In Progress |
 | Edge Functions | 2 files | 1 session | Pending |
 | Quality Enhancement | All modules | 3-4 sessions | Future |
 | **Total Remaining** | | **~13-17 sessions** | |
@@ -94,11 +94,15 @@ src/lib/ai/prompts/
 | `presentation/generator.js` | Strategic plan presentation generation |
 | `insights/predictive.js` | AI-powered predictive insights |
 | `policy/enhancement.js` | Policy editing and enhancement |
+| `policy/analysis.js` | Policy detail analysis with bilingual output |
+| `matchmaker/application.js` | Matchmaker profile enhancement |
 
 **Pages Migrated in Session 38:**
 - `PresentationMode.jsx` → `PRESENTATION_GENERATOR_PROMPT_TEMPLATE`
 - `PredictiveInsights.jsx` → `PREDICTIVE_INSIGHTS_PROMPT_TEMPLATE`
 - `PolicyEdit.jsx` → `POLICY_ENHANCEMENT_PROMPT_TEMPLATE`
+- `PolicyDetail.jsx` → `POLICY_ANALYSIS_DETAIL_PROMPT_TEMPLATE`
+- `MatchmakerApplicationCreate.jsx` → `MATCHMAKER_PROFILE_ENHANCE_PROMPT_TEMPLATE`
 
 ### Session 37
 | Module | Description |
