@@ -141,14 +141,14 @@ export default function AutoApprovalRuleDialog({
                 {t({ en: 'Municipality (optional)', ar: 'البلدية (اختياري)' })}
               </label>
               <Select 
-                value={formData.municipality_id || ''} 
-                onValueChange={(val) => setFormData({...formData, municipality_id: val || null})}
+                value={formData.municipality_id || 'all'} 
+                onValueChange={(val) => setFormData({...formData, municipality_id: val === 'all' ? null : val})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t({ en: 'All municipalities', ar: 'جميع البلديات' })} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All municipalities</SelectItem>
+                  <SelectItem value="all">All municipalities</SelectItem>
                   {municipalities.map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.name_en}</SelectItem>
                   ))}
