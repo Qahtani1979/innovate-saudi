@@ -1,22 +1,28 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
+import rbacService from '@/services/rbac/rbacService';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * React Hook for Backend Permission Validation
- * Validates permissions via backend before allowing operations
+ * Validates permissions via unified rbac-manager edge function
  */
 
 export const useBackendPermission = () => {
+  const { user } = useAuth();
+  
   const validatePermission = async (permission, entity_type = null, entity_id = null, action = null) => {
     try {
-      const response = await base44.functions.invoke('validatePermission', {
+      // Use unified rbac-manager
+      const result = await rbacService.validatePermission({
+        user_id: user?.id,
+        user_email: user?.email,
         permission,
-        entity_type,
-        entity_id,
+        resource: entity_type,
         action
       });
 
-      return response.data;
+      return result;
     } catch (error) {
       console.error('Permission validation error:', error);
       return { allowed: false, reason: 'Validation failed' };
