@@ -8,6 +8,11 @@ import { Sparkles, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildPolicyToProgramPrompt, 
+  POLICY_TO_PROGRAM_SYSTEM_PROMPT, 
+  POLICY_TO_PROGRAM_SCHEMA 
+} from '@/lib/ai/prompts/policy/policyToProgram';
 
 export default function PolicyToProgramConverter({ policy, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
@@ -49,49 +54,9 @@ export default function PolicyToProgramConverter({ policy, onClose, onSuccess })
 
   const generateWithAI = async () => {
     const result = await invokeAI({
-      prompt: `Design a training program to implement this policy.
-
-POLICY:
-Title: ${policy.title_en}
-Recommendation: ${policy.recommendation_text_en}
-Implementation Steps: ${JSON.stringify(policy.implementation_steps || [])}
-Affected Stakeholders: ${policy.affected_stakeholders?.join(', ')}
-
-Generate implementation training program:
-- Program name (bilingual) - "Implementation of [Policy]"
-- Objectives (what stakeholders will learn)
-- Training curriculum (4-6 modules covering policy understanding, change management, practical implementation)
-- Target participants (stakeholder groups)
-- Timeline and rollout plan
-
-Focus on practical implementation and stakeholder readiness.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          name_en: { type: "string" },
-          name_ar: { type: "string" },
-          objectives_en: { type: "string" },
-          objectives_ar: { type: "string" },
-          curriculum: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                week: { type: "number" },
-                topic_en: { type: "string" },
-                topic_ar: { type: "string" },
-                activities: { type: "array", items: { type: "string" } }
-              }
-            }
-          },
-          target_participants: {
-            type: "object",
-            properties: {
-              stakeholder_groups: { type: "array", items: { type: "string" } }
-            }
-          }
-        }
-      }
+      system_prompt: POLICY_TO_PROGRAM_SYSTEM_PROMPT,
+      prompt: buildPolicyToProgramPrompt({ policy }),
+      response_json_schema: POLICY_TO_PROGRAM_SCHEMA
     });
 
     if (result.success) {

@@ -7,6 +7,11 @@ import { useLanguage } from '../LanguageContext';
 import { Copy, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildDuplicateDetectorPrompt, 
+  DUPLICATE_DETECTOR_SYSTEM_PROMPT, 
+  DUPLICATE_DETECTOR_SCHEMA 
+} from '@/lib/ai/prompts/data/duplicateDetector';
 
 export default function DuplicateRecordDetector({ entityType }) {
   const { language, t } = useLanguage();
@@ -21,34 +26,9 @@ export default function DuplicateRecordDetector({ entityType }) {
     const entities = await base44.entities[entityType].list();
     
     const response = await invokeAI({
-      prompt: `Detect duplicate or highly similar records:
-
-RECORDS: ${entities.slice(0, 50).map(e => 
-  `ID: ${e.id}, Title: ${e.title_en || e.name_en || e.title}, Code: ${e.code || 'N/A'}`
-).join('\n')}
-
-Identify:
-1. Exact duplicates (100% match)
-2. Near duplicates (>85% similar)
-3. Reason for similarity
-4. Recommendation (merge, keep both, delete)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          duplicate_groups: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                record_ids: { type: "array", items: { type: "string" } },
-                similarity: { type: "number" },
-                reason: { type: "string" },
-                recommendation: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: DUPLICATE_DETECTOR_SYSTEM_PROMPT,
+      prompt: buildDuplicateDetectorPrompt({ entities }),
+      response_json_schema: DUPLICATE_DETECTOR_SCHEMA
     });
 
     if (response.success && response.data?.duplicate_groups) {

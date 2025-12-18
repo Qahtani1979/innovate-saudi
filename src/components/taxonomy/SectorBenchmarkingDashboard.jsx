@@ -10,6 +10,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, Target, Globe, Sparkles, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildSectorBenchmarkPrompt, 
+  SECTOR_BENCHMARK_SYSTEM_PROMPT, 
+  SECTOR_BENCHMARK_SCHEMA 
+} from '@/lib/ai/prompts/taxonomy/sectorBenchmark';
 
 export default function SectorBenchmarkingDashboard({ sectorId }) {
   const { t } = useLanguage();
@@ -35,50 +40,19 @@ export default function SectorBenchmarkingDashboard({ sectorId }) {
   const generateBenchmark = async () => {
     if (!isAvailable) return;
     
+    const activePilotCount = pilots.filter(p => ['active', 'monitoring'].includes(p.stage)).length;
+    const completedPilotCount = pilots.filter(p => p.stage === 'completed').length;
+    const successRate = pilots.length > 0 ? Math.round((pilots.filter(p => p.recommendation === 'scale').length / pilots.length) * 100) : 0;
+    
     const result = await invokeAI({
-      prompt: `Benchmark this sector against national/international standards:
-
-Sector Performance:
-- Total Challenges: ${challenges.length}
-- Active Pilots: ${pilots.filter(p => ['active', 'monitoring'].includes(p.stage)).length}
-- Completed Pilots: ${pilots.filter(p => p.stage === 'completed').length}
-- Success Rate: ${pilots.length > 0 ? Math.round((pilots.filter(p => p.recommendation === 'scale').length / pilots.length) * 100) : 0}%
-
-Provide benchmarking against:
-1. National average for this sector
-2. International best practices
-3. Top performing municipalities in this sector
-4. Areas for improvement
-5. Recommendations`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          national_average: {
-            type: 'object',
-            properties: {
-              challenges_per_municipality: { type: 'number' },
-              pilot_success_rate: { type: 'number' },
-              innovation_score: { type: 'number' }
-            }
-          },
-          international_benchmarks: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                country: { type: 'string' },
-                metric: { type: 'string' },
-                value: { type: 'number' },
-                source: { type: 'string' }
-              }
-            }
-          },
-          performance_gap: { type: 'number' },
-          strengths: { type: 'array', items: { type: 'string' } },
-          areas_for_improvement: { type: 'array', items: { type: 'string' } },
-          recommendations: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      system_prompt: SECTOR_BENCHMARK_SYSTEM_PROMPT,
+      prompt: buildSectorBenchmarkPrompt({
+        challengeCount: challenges.length,
+        activePilots: activePilotCount,
+        completedPilots: completedPilotCount,
+        successRate
+      }),
+      response_json_schema: SECTOR_BENCHMARK_SCHEMA
     });
 
     if (result.success && result.data) {
