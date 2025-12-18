@@ -42,22 +42,17 @@ export default defineConfig(({ mode }) => {
       ],
     },
     optimizeDeps: {
-      include: [
+      // IMPORTANT: do NOT prebundle React. With complex aliasing/dedupe setups,
+      // Vite dep optimization can create a second React copy under /node_modules/.vite,
+      // which leads to "dispatcher is null" and hook crashes.
+      exclude: [
         "react",
         "react-dom",
         "react-dom/client",
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
         "scheduler",
-        "@tanstack/react-query",
       ],
-      exclude: [],
-      force: true,
-      esbuildOptions: {
-        define: {
-          global: "globalThis",
-        },
-      },
     },
     build: {
       commonjsOptions: {
