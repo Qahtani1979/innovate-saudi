@@ -4,7 +4,7 @@
  * @module prompts/solutions/solutionDetail
  */
 
-import { SAUDI_CONTEXT } from '../saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/ai/prompts/saudiContext';
 
 /**
  * Solution detail analysis prompt template

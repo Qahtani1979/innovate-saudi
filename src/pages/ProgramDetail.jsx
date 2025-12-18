@@ -49,7 +49,8 @@ import AlumniSuccessStoryGenerator from '../components/programs/AlumniSuccessSto
 import MunicipalImpactCalculator from '../components/programs/MunicipalImpactCalculator';
 import ProgramOutcomeKPITracker from '../components/programs/ProgramOutcomeKPITracker';
 import ProgramLessonsToStrategy from '../components/programs/ProgramLessonsToStrategy';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { PROGRAM_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/programs/programDetail';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
@@ -61,7 +62,7 @@ export default function ProgramDetail() {
   const [comment, setComment] = useState('');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
   const [showLaunch, setShowLaunch] = useState(false);
   const [showScreening, setShowScreening] = useState(false);
   const [showSelection, setShowSelection] = useState(false);
@@ -119,34 +120,13 @@ export default function ProgramDetail() {
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     try {
+      // Use centralized prompt template
+      const promptConfig = PROGRAM_DETAIL_PROMPT_TEMPLATE(program);
+      
       const result = await invokeAI({
-        prompt: `Analyze this program for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
-
-Program: ${program.name_en}
-Type: ${program.program_type}
-Status: ${program.status}
-Applications: ${program.application_count || applications.length}
-Accepted: ${program.accepted_count || 0}
-Duration: ${program.duration_weeks || 'N/A'} weeks
-Focus Areas: ${program.focus_areas?.join(', ') || 'N/A'}
-Outcomes: Pilots=${program.outcomes?.pilots_generated || 0}, Partnerships=${program.outcomes?.partnerships_formed || 0}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Program effectiveness assessment
-2. Participant engagement recommendations
-3. Outcome optimization strategies
-4. Scaling potential for successful models
-5. Partnership and collaboration opportunities`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            effectiveness: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            engagement_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            outcome_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            scaling_potential: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            partnership_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
-        }
+        prompt: promptConfig.prompt,
+        system_prompt: promptConfig.system,
+        response_json_schema: promptConfig.schema
       });
       if (result.success) {
         setAiInsights(result.data);
