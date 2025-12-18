@@ -3,12 +3,16 @@ import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Beaker, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  POLICY_EVIDENCE_SYSTEM_PROMPT,
+  buildPolicyEvidencePrompt,
+  POLICY_EVIDENCE_SCHEMA
+} from '@/lib/ai/prompts/livinglab/policyEvidence';
 
 export default function LabPolicyEvidenceWorkflow({ livingLab }) {
   const { t } = useLanguage();
@@ -26,38 +30,9 @@ export default function LabPolicyEvidenceWorkflow({ livingLab }) {
 
   const generateFromCitizenEvidence = async () => {
     const result = await invokeAI({
-      prompt: `Generate a policy recommendation based on citizen science findings from this living lab.
-
-Living Lab: ${livingLab.name_en}
-Research Focus: ${livingLab.research_focus_areas?.join(', ') || 'N/A'}
-Active Projects: ${livingLab.active_projects_count || 0}
-Key Findings: ${livingLab.research_outputs?.map(o => o.summary).join('; ') || 'N/A'}
-Citizen Feedback: ${livingLab.citizen_feedback_summary || 'N/A'}
-
-Generate a policy recommendation based on citizen evidence with:
-1. Title (EN + AR)
-2. Evidence summary from citizen participation
-3. Policy problem identified
-4. Recommended policy changes
-5. Expected citizen impact
-6. Implementation steps
-
-Return as JSON.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          title_en: { type: "string" },
-          title_ar: { type: "string" },
-          evidence_summary_en: { type: "string" },
-          evidence_summary_ar: { type: "string" },
-          problem_statement_en: { type: "string" },
-          problem_statement_ar: { type: "string" },
-          recommended_changes: { type: "array", items: { type: "string" } },
-          citizen_impact_en: { type: "string" },
-          citizen_impact_ar: { type: "string" },
-          implementation_steps: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildPolicyEvidencePrompt({ livingLab }),
+      system_prompt: POLICY_EVIDENCE_SYSTEM_PROMPT,
+      response_json_schema: POLICY_EVIDENCE_SCHEMA
     });
 
     if (result.success) {

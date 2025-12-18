@@ -1,7 +1,7 @@
 /**
  * Matchmaker Engagement Hub Prompts
  * @module matchmaker/engagementHub
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
@@ -12,22 +12,26 @@ Your role is to generate professional partnership proposals based on matchmaker 
 Create compelling, bilingual proposals that highlight mutual benefits and Vision 2030 alignment.
 `);
 
+/**
+ * Build engagement proposal prompt
+ * @param {Object} params - Application details
+ * @returns {string} Formatted prompt
+ */
 export function buildEngagementProposalPrompt({ application }) {
   return `Generate a partnership proposal template for this Matchmaker application:
 
 Organization: ${application.organization_name_en || application.organization_name}
-Interest Type: ${application.interest_type}
-Capabilities: ${(application.capabilities || []).join(', ')}
-Target Sectors: ${(application.target_sectors || []).join(', ')}
-Experience: ${application.experience_description || 'Not specified'}
+Sectors: ${application.sectors?.join(', ') || 'Not specified'}
+Collaboration Approach: ${application.collaboration_approach || 'Not specified'}
 
-Generate:
-1. Executive summary (EN & AR)
-2. Value proposition
+Generate professional proposal in both English and Arabic with:
+1. Executive summary
+2. Organization overview
 3. Proposed collaboration model
-4. Key deliverables
-5. Success metrics
-6. Next steps`;
+4. Value proposition for municipalities
+5. Implementation timeline
+6. Success metrics
+7. Next steps`;
 }
 
 export const ENGAGEMENT_PROPOSAL_SCHEMA = {
@@ -35,46 +39,12 @@ export const ENGAGEMENT_PROPOSAL_SCHEMA = {
   properties: {
     executive_summary_en: { type: 'string' },
     executive_summary_ar: { type: 'string' },
-    value_proposition: {
-      type: 'object',
-      properties: {
-        for_municipality: { type: 'array', items: { type: 'string' } },
-        for_partner: { type: 'array', items: { type: 'string' } }
-      }
-    },
-    collaboration_model: {
-      type: 'object',
-      properties: {
-        type: { type: 'string' },
-        structure: { type: 'string' },
-        governance: { type: 'string' }
-      }
-    },
-    key_deliverables: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          deliverable: { type: 'string' },
-          timeline: { type: 'string' },
-          responsible_party: { type: 'string' }
-        }
-      }
-    },
-    success_metrics: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          metric: { type: 'string' },
-          target: { type: 'string' },
-          measurement_method: { type: 'string' }
-        }
-      }
-    },
-    next_steps: { type: 'array', items: { type: 'string' } }
+    collaboration_model_en: { type: 'string' },
+    collaboration_model_ar: { type: 'string' },
+    timeline: { type: 'string' },
+    success_metrics: { type: 'array', items: { type: 'string' } }
   },
-  required: ['executive_summary_en', 'executive_summary_ar', 'value_proposition', 'key_deliverables']
+  required: ['executive_summary_en', 'executive_summary_ar']
 };
 
 export const ENGAGEMENT_HUB_PROMPTS = {

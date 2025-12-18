@@ -1,7 +1,7 @@
 /**
  * Resource Conflict Detector Prompts
  * @module bonus/conflictDetector
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
@@ -12,49 +12,76 @@ Your role is to detect and analyze resource conflicts across pilots, programs, a
 Identify scheduling conflicts, budget overlaps, personnel constraints, and infrastructure bottlenecks.
 `);
 
-export function buildConflictDetectorPrompt({ activePilots, activePrograms, resources }) {
+/**
+ * Build conflict detection prompt
+ * @param {Object} params - Active entities data
+ * @returns {string} Formatted prompt
+ */
+export function buildConflictDetectorPrompt({ activePilots, activePrograms, activeRD }) {
   return `Analyze resource conflicts across platform:
 
 ACTIVE PILOTS (${activePilots?.length || 0}):
-${activePilots?.slice(0, 10).map((p, i) => `${i+1}. ${p.title_en} - ${p.status}`).join('\n') || 'None'}
+${activePilots?.slice(0, 5).map(p => 
+  `${p.title_en} - ${p.team?.length || 0} team, ${p.budget || 0} SAR, ${p.municipality_id}`
+).join('\n') || 'None'}
 
 ACTIVE PROGRAMS (${activePrograms?.length || 0}):
-${activePrograms?.slice(0, 10).map((p, i) => `${i+1}. ${p.name_en} - ${p.status}`).join('\n') || 'None'}
+${activePrograms?.slice(0, 5).map(p => 
+  `${p.name_en} - ${p.participant_count || 0} participants`
+).join('\n') || 'None'}
 
-RESOURCES:
-${JSON.stringify(resources || {}).substring(0, 500)}
+ACTIVE R&D (${activeRD?.length || 0}):
+${activeRD?.slice(0, 5).map(r => 
+  `${r.title_en} - ${r.budget || 0} SAR`
+).join('\n') || 'None'}
 
 Detect:
-1. Scheduling conflicts (overlapping timelines)
-2. Budget conflicts (competing for same funds)
-3. Personnel conflicts (shared team members)
-4. Infrastructure bottlenecks
-5. Risk level for each conflict
-6. Resolution recommendations`;
+1. Team member over-allocation (same person on 3+ projects)
+2. Budget conflicts (municipality exceeding capacity)
+3. Timeline overlaps (same sandbox/lab double-booked)
+4. Expertise gaps (high-demand skills bottlenecks)`;
 }
 
 export const CONFLICT_DETECTOR_SCHEMA = {
   type: 'object',
   properties: {
-    conflicts: {
+    team_conflicts: {
       type: 'array',
       items: {
         type: 'object',
         properties: {
-          conflict_type: { type: 'string', enum: ['scheduling', 'budget', 'personnel', 'infrastructure'] },
-          entities_involved: { type: 'array', items: { type: 'string' } },
-          severity: { type: 'string', enum: ['critical', 'high', 'medium', 'low'] },
-          description: { type: 'string' },
-          impact: { type: 'string' },
-          resolution: { type: 'string' }
+          person: { type: 'string' },
+          assigned_to: { type: 'array', items: { type: 'string' } },
+          severity: { type: 'string' }
         }
       }
     },
-    overall_risk_score: { type: 'number', minimum: 0, maximum: 100 },
-    priority_resolutions: { type: 'array', items: { type: 'string' } },
-    resource_recommendations: { type: 'array', items: { type: 'string' } }
+    budget_conflicts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          municipality: { type: 'string' },
+          total_allocated: { type: 'number' },
+          capacity: { type: 'number' },
+          overage: { type: 'number' }
+        }
+      }
+    },
+    timeline_conflicts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          resource: { type: 'string' },
+          overlapping_items: { type: 'array', items: { type: 'string' } },
+          dates: { type: 'string' }
+        }
+      }
+    },
+    recommendations: { type: 'array', items: { type: 'string' } }
   },
-  required: ['conflicts', 'overall_risk_score']
+  required: ['recommendations']
 };
 
 export const CONFLICT_DETECTOR_PROMPTS = {
