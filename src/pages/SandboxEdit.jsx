@@ -17,6 +17,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
+import { SANDBOX_ENHANCEMENT_PROMPT_TEMPLATE, SANDBOX_ENHANCEMENT_RESPONSE_SCHEMA } from '@/lib/ai/prompts/sandbox/enhancement';
 
 function SandboxEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -54,33 +55,14 @@ function SandboxEdit() {
 
   const handleAIEnhance = async () => {
     try {
-      const prompt = `Enhance this regulatory sandbox description with professional, detailed bilingual content:
-
-Sandbox: ${formData.name_en}
-Domain: ${formData.domain}
-Location: ${formData.location || 'Saudi Arabia'}
-Current Description: ${formData.description_en || 'N/A'}
-
-Generate comprehensive bilingual (English + Arabic) content:
-1. Improved names (EN + AR) - professional and clear
-2. Compelling taglines (EN + AR)
-3. Detailed descriptions (EN + AR) - 200+ words each
-4. Regulatory framework summary`;
-
       const result = await invokeAI({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            name_en: { type: 'string' },
-            name_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            regulatory_framework: { type: 'string' }
-          }
-        }
+        prompt: SANDBOX_ENHANCEMENT_PROMPT_TEMPLATE({
+          sandboxType: formData.sandbox_type,
+          domain: formData.domain,
+          location: formData.location || 'Saudi Arabia',
+          description: formData.description_en
+        }),
+        response_json_schema: SANDBOX_ENHANCEMENT_RESPONSE_SCHEMA
       });
 
       if (result.success) {

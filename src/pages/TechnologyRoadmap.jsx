@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { TECHNOLOGY_ROADMAP_PROMPT_TEMPLATE, TECHNOLOGY_ROADMAP_RESPONSE_SCHEMA } from '@/lib/ai/prompts/technology/roadmap';
 
 function TechnologyRoadmap() {
   const { language, isRTL, t } = useLanguage();
@@ -32,83 +33,13 @@ function TechnologyRoadmap() {
   });
 
   const generateRoadmap = async () => {
+    const pilotTech = pilots.map(p => p.technology_stack?.map(t => t.technology).join(', ')).filter(Boolean).slice(0, 10).join('; ');
+    const solutionTech = solutions.map(s => s.technical_specifications?.technology_stack?.join(', ')).filter(Boolean).slice(0, 10).join('; ');
+    const rdFocus = rdProjects.map(r => r.research_area_en).filter(Boolean).slice(0, 8).join(', ');
+
     const response = await invokeAI({
-      prompt: `Create a comprehensive technology adoption roadmap for Saudi municipal innovation:
-
-Current Technology Landscape:
-- Pilot Technologies: ${pilots.map(p => p.technology_stack?.map(t => t.technology).join(', ')).filter(Boolean).slice(0, 10).join('; ')}
-- Solution Technologies: ${solutions.map(s => s.technical_specifications?.technology_stack?.join(', ')).filter(Boolean).slice(0, 10).join('; ')}
-- R&D Focus: ${rdProjects.map(r => r.research_area_en).filter(Boolean).slice(0, 8).join(', ')}
-
-Generate bilingual technology roadmap for municipal innovation (2025-2030):
-
-1. **Emerging Technologies** (0-12 months) - Technologies to explore/pilot
-2. **Maturing Technologies** (1-2 years) - Technologies being validated
-3. **Mainstream Technologies** (2+ years) - Technologies ready for scale
-4. **Technology by Sector** - Map technologies to municipal sectors
-5. **Integration Priorities** - Key tech integrations needed
-6. **Skills & Capacity Gaps** - Training needs for each tech
-
-Return detailed roadmap with timelines, sectors, and implementation guidance.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          emerging_tech: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                tech_name_en: { type: 'string' },
-                tech_name_ar: { type: 'string' },
-                sectors: { type: 'array', items: { type: 'string' } },
-                use_cases_en: { type: 'string' },
-                use_cases_ar: { type: 'string' },
-                timeline: { type: 'string' },
-                priority: { type: 'string' }
-              }
-            }
-          },
-          maturing_tech: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                tech_name_en: { type: 'string' },
-                tech_name_ar: { type: 'string' },
-                current_stage: { type: 'string' },
-                pilots_count: { type: 'number' },
-                next_steps_en: { type: 'string' },
-                next_steps_ar: { type: 'string' }
-              }
-            }
-          },
-          mainstream_tech: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                tech_name_en: { type: 'string' },
-                tech_name_ar: { type: 'string' },
-                deployment_readiness: { type: 'string' },
-                scaling_plan_en: { type: 'string' },
-                scaling_plan_ar: { type: 'string' }
-              }
-            }
-          },
-          sector_tech_map: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                sector_en: { type: 'string' },
-                sector_ar: { type: 'string' },
-                priority_technologies: { type: 'array', items: { type: 'string' } },
-                investment_recommendation: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: TECHNOLOGY_ROADMAP_PROMPT_TEMPLATE({ pilotTech, solutionTech, rdFocus }),
+      response_json_schema: TECHNOLOGY_ROADMAP_RESPONSE_SCHEMA
     });
 
     if (response.success) {

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RD_CALLS_INSIGHTS_PROMPT_TEMPLATE, RD_CALLS_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/rd/callsInsights';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -101,32 +102,8 @@ function RDCallsPage() {
     }));
 
     const { success, data } = await invokeAI({
-      prompt: `Analyze these R&D calls for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
-
-R&D Calls: ${JSON.stringify(callSummary)}
-
-Statistics:
-- Total Calls: ${stats.totalCalls}
-- Open Calls: ${stats.openCalls}
-- Total Proposals: ${stats.totalProposals}
-- Approved Proposals: ${stats.approvedProposals}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Research priority alignment with national needs
-2. Proposal quality and competitiveness trends
-3. Funding allocation optimization
-4. Emerging research themes to prioritize
-5. Success factors for future calls`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          research_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          proposal_trends: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          funding_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          emerging_themes: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          success_factors: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt: RD_CALLS_INSIGHTS_PROMPT_TEMPLATE({ callSummary, stats }),
+      response_json_schema: RD_CALLS_INSIGHTS_RESPONSE_SCHEMA
     });
 
     if (success) {
