@@ -195,6 +195,21 @@ export * from './security';
 // Performance prompts
 export * from './performance';
 
+// Documents prompts
+export * from './documents';
+
+// Meetings prompts
+export * from './meetings';
+
+// Change management prompts
+export * from './change';
+
+// Search prompts
+export * from './search';
+
+// UX prompts
+export * from './ux';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -260,7 +275,12 @@ export const PROMPT_MODULE_STATUS = {
   integration: { status: 'complete', promptCount: 3 },
   visualization: { status: 'complete', promptCount: 3 },
   security: { status: 'complete', promptCount: 3 },
-  performance: { status: 'complete', promptCount: 3 }
+  performance: { status: 'complete', promptCount: 3 },
+  documents: { status: 'complete', promptCount: 3 },
+  meetings: { status: 'complete', promptCount: 3 },
+  change: { status: 'complete', promptCount: 3 },
+  search: { status: 'complete', promptCount: 3 },
+  ux: { status: 'complete', promptCount: 3 }
 };
 
 /**
@@ -272,7 +292,7 @@ export function getImplementationProgress() {
   const completed = modules.filter(([, v]) => v.status === 'complete').length;
   const total = modules.length;
   const promptsComplete = modules.reduce((sum, [, v]) => sum + (v.status === 'complete' ? v.promptCount : 0), 0);
-  const promptsTotal = 265; // Updated target
+  const promptsTotal = 280; // Updated target
 
   return {
     modulesComplete: completed,
