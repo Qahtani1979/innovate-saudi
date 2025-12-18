@@ -7,6 +7,11 @@ import { Bell, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  NOTIFICATION_ROUTER_SYSTEM_PROMPT, 
+  buildNotificationRouterPrompt, 
+  NOTIFICATION_ROUTER_SCHEMA 
+} from '@/lib/ai/prompts/communications';
 
 export default function AINotificationRouter({ notification, userPreferences }) {
   const { language, t } = useLanguage();
@@ -15,27 +20,9 @@ export default function AINotificationRouter({ notification, userPreferences }) 
 
   const analyzeAndRoute = async () => {
     const result = await invokeAI({
-      prompt: `Analyze notification and determine optimal routing:
-
-NOTIFICATION: ${notification.title} - ${notification.message}
-TYPE: ${notification.notification_type}
-USER PREFS: ${JSON.stringify(userPreferences || {})}
-
-Determine:
-1. Urgency level (critical/high/medium/low)
-2. Delivery channels (email, sms, in_app, digest)
-3. Timing (immediate, scheduled, digest_only)
-4. Priority score (0-100)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          urgency: { type: "string" },
-          channels: { type: "array", items: { type: "string" } },
-          timing: { type: "string" },
-          priority: { type: "number" },
-          reasoning: { type: "string" }
-        }
-      }
+      system_prompt: NOTIFICATION_ROUTER_SYSTEM_PROMPT,
+      prompt: buildNotificationRouterPrompt({ notification, userPreferences }),
+      response_json_schema: NOTIFICATION_ROUTER_SCHEMA
     });
 
     if (result.success) {

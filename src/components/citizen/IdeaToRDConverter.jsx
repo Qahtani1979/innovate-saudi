@@ -11,6 +11,11 @@ import { Microscope, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  IDEA_TO_RD_SYSTEM_PROMPT,
+  buildIdeaToRDPrompt,
+  IDEA_TO_RD_SCHEMA
+} from '@/lib/ai/prompts/citizen';
 
 export default function IdeaToRDConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -34,32 +39,9 @@ export default function IdeaToRDConverter({ idea, onClose }) {
 
   const enhanceWithAI = async () => {
     const response = await invokeAI({
-      prompt: `Convert this citizen idea into an R&D project proposal:
-
-Idea: ${idea.title}
-Description: ${idea.description}
-
-Generate:
-1. R&D project title (EN & AR)
-2. Research abstract (EN & AR)
-3. Research methodology
-4. Expected outputs
-5. Keywords
-6. Duration estimate (months)
-7. Budget estimate`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          abstract_en: { type: 'string' },
-          abstract_ar: { type: 'string' },
-          methodology_en: { type: 'string' },
-          keywords: { type: 'array', items: { type: 'string' } },
-          duration_months: { type: 'number' },
-          budget: { type: 'number' }
-        }
-      }
+      system_prompt: IDEA_TO_RD_SYSTEM_PROMPT,
+      prompt: buildIdeaToRDPrompt({ idea }),
+      response_json_schema: IDEA_TO_RD_SCHEMA
     });
 
     if (response.success && response.data) {

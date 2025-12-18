@@ -81,6 +81,22 @@ export {
   STRATEGIC_ALIGNMENT_PROMPTS
 } from './strategicAlignment';
 
+// Batch Processor
+export {
+  BATCH_PROCESSOR_SYSTEM_PROMPT,
+  buildBatchValidationPrompt,
+  BATCH_VALIDATION_SCHEMA,
+  BATCH_PROCESSOR_PROMPTS
+} from './batchProcessor';
+
+// Impact Simulator
+export {
+  IMPACT_SIMULATOR_SYSTEM_PROMPT,
+  buildImpactSimulationPrompt,
+  IMPACT_SIMULATION_SCHEMA,
+  IMPACT_SIMULATOR_PROMPTS
+} from './impactSimulator';
+
 /**
  * Challenges module prompt configuration
  */
