@@ -10,6 +10,11 @@ import { Share2, CheckCircle2, Loader2, Zap } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  CROSS_CITY_SHARING_SYSTEM_PROMPT,
+  buildCrossCitySharingPrompt,
+  CROSS_CITY_SHARING_SCHEMA
+} from '@/lib/ai/prompts/challenges/crossCitySharing';
 
 export default function CrossCitySolutionSharing({ challenge }) {
   const { language, isRTL, t } = useLanguage();
@@ -71,38 +76,10 @@ export default function CrossCitySolutionSharing({ challenge }) {
   });
 
   const autoSuggestCities = async () => {
-    const prompt = `Recommend which municipalities should adopt this solution:
-
-Challenge: ${challenge.title_en}
-Sector: ${challenge.sector}
-Municipality: ${challenge.municipality_id}
-
-Available municipalities: ${municipalities.map(m => `${m.name_en} (population: ${m.population}, MII: ${m.mii_score})`).join(', ')}
-
-Recommend top 5 municipalities that would benefit most, considering:
-- Similar demographics
-- MII capacity
-- Sector alignment
-- Geographic proximity`;
-
     const result = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          recommended_cities: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                municipality_name: { type: 'string' },
-                reason: { type: 'string' },
-                priority: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: CROSS_CITY_SHARING_SYSTEM_PROMPT,
+      prompt: buildCrossCitySharingPrompt({ challenge, municipalities }),
+      response_json_schema: CROSS_CITY_SHARING_SCHEMA
     });
 
     if (result.success && result.data?.recommended_cities) {
