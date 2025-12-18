@@ -17,6 +17,11 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { 
+  PROGRAM_PILOT_SYSTEM_PROMPT, 
+  buildProgramPilotPrompt, 
+  PROGRAM_PILOT_SCHEMA 
+} from '@/lib/ai/prompts/programs/pilotWorkflow';
 
 export default function ProgramToPilotWorkflow({ program, graduateApplication }) {
   const { language, t } = useLanguage();
@@ -43,26 +48,9 @@ export default function ProgramToPilotWorkflow({ program, graduateApplication })
 
   const handleAIGenerate = async () => {
     const result = await invokeAI({
-      prompt: `Graduate from "${program.name_en}" wants to pilot their innovation:
-
-Graduate: ${graduateApplication?.applicant_name}
-Project: ${graduateApplication?.project_description || 'Innovation project'}
-Program Focus: ${program.focus_areas?.join(', ')}
-
-Generate pilot proposal:`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          objective_en: { type: 'string' },
-          objective_ar: { type: 'string' },
-          hypothesis: { type: 'string' },
-          methodology: { type: 'string' }
-        }
-      }
+      system_prompt: PROGRAM_PILOT_SYSTEM_PROMPT,
+      prompt: buildProgramPilotPrompt({ program, graduateApplication }),
+      response_json_schema: PROGRAM_PILOT_SCHEMA
     });
     
     if (result.success) {
