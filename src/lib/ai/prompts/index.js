@@ -1,7 +1,7 @@
 /**
  * AI Prompts Index
  * Central export point for all AI prompt modules
- * @version 1.0.4
+ * @version 1.0.5
  */
 
 // Foundation exports
@@ -134,6 +134,9 @@ export * from './organizations';
 
 // Knowledge prompts
 export * from './knowledge';
+
+// Forms prompts
+export * from './forms';
 
 // Admin prompts
 export * from './admin';

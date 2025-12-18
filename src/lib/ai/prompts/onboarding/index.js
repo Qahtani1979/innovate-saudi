@@ -1,11 +1,12 @@
 /**
  * Onboarding Prompts
  * AI prompts for profile completion and onboarding
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
 
+// Profile completeness prompts
 export const PROFILE_COMPLETENESS_SYSTEM_PROMPT = getSystemPrompt('profile_completeness', `
 You are a profile optimization coach for Saudi municipal innovation platforms.
 
@@ -47,3 +48,8 @@ export const PROFILE_COMPLETENESS_SCHEMA = {
     }
   }
 };
+
+// Re-export from sub-modules
+export * from './translationPrompts';
+export * from './linkedinImport';
+export * from './profileSuggestions';

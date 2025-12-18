@@ -1,7 +1,7 @@
 /**
  * Strategy Prompts Index
  * Exports all strategy-related AI prompts
- * @version 1.3.0
+ * @version 1.4.0
  */
 
 export * from './bottleneckDetector';
@@ -15,3 +15,4 @@ export * from './reprioritizer';
 export * from './impactAssessment';
 export * from './adjustmentWizard';
 export * from './wizard';
+export * from './wizardPrompts';

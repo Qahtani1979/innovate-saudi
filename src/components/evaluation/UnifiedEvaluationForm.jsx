@@ -14,6 +14,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { buildEvaluationAssistPrompt, EVALUATION_ASSIST_SCHEMA } from '@/lib/ai/prompts/evaluation';
 
 export default function UnifiedEvaluationForm({ 
   entityType, 
@@ -89,37 +90,8 @@ export default function UnifiedEvaluationForm({
 
   const getAIAssistance = async () => {
     const response = await invokeAI({
-      prompt: `You are evaluating a ${entityType} (ID: ${entityId}).
-        
-Based on best practices, suggest:
-1. Evaluation scores (0-100) for: feasibility, impact, innovation, cost-effectiveness, risk, strategic alignment
-2. 3 key strengths
-3. 3 key weaknesses  
-4. 3 improvement suggestions
-5. Overall recommendation
-
-Be thorough and constructive.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          scores: {
-            type: 'object',
-            properties: {
-              feasibility_score: { type: 'number' },
-              impact_score: { type: 'number' },
-              innovation_score: { type: 'number' },
-              cost_effectiveness_score: { type: 'number' },
-              risk_score: { type: 'number' },
-              strategic_alignment_score: { type: 'number' }
-            }
-          },
-          strengths: { type: 'array', items: { type: 'string' } },
-          weaknesses: { type: 'array', items: { type: 'string' } },
-          improvements: { type: 'array', items: { type: 'string' } },
-          recommendation: { type: 'string' },
-          feedback: { type: 'string' }
-        }
-      }
+      prompt: buildEvaluationAssistPrompt(entityType, entityId),
+      response_json_schema: EVALUATION_ASSIST_SCHEMA
     });
 
     if (response.success) {
