@@ -14,20 +14,21 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
     resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
+      // IMPORTANT: use an ordered alias array so specific subpaths (e.g. react-dom/client)
+      // are resolved before their parent package aliases (e.g. react-dom).
+      alias: [
+        { find: "@", replacement: path.resolve(__dirname, "./src") },
 
-        // Force a single React instance across the entire app.
-        // NOTE: Vite alias string matches are exact, so we also alias common subpath imports.
-        react: path.resolve(__dirname, "./node_modules/react"),
-        "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime.js"),
-        "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime.js"),
+        // Force a single React instance across the entire app
+        { find: "react/jsx-runtime", replacement: path.resolve(__dirname, "./node_modules/react/jsx-runtime.js") },
+        { find: "react/jsx-dev-runtime", replacement: path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime.js") },
+        { find: "react", replacement: path.resolve(__dirname, "./node_modules/react") },
 
-        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
-        "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client.js"),
+        { find: "react-dom/client", replacement: path.resolve(__dirname, "./node_modules/react-dom/client.js") },
+        { find: "react-dom", replacement: path.resolve(__dirname, "./node_modules/react-dom") },
 
-        scheduler: path.resolve(__dirname, "./node_modules/scheduler"),
-      },
+        { find: "scheduler", replacement: path.resolve(__dirname, "./node_modules/scheduler") },
+      ],
       dedupe: [
         "react",
         "react-dom",

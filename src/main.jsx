@@ -1,10 +1,11 @@
 /* @refresh reset */
 import React from 'react'
-import ReactDOM from 'react-dom/client'
+import { createRoot } from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 
-// Error boundary for the entire app
+console.info('[runtime] React version:', React.version);
+
 class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -38,7 +39,7 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById('root')).render(
   <AppErrorBoundary>
     <App />
   </AppErrorBoundary>
