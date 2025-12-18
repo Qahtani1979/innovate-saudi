@@ -262,7 +262,7 @@ import ComplianceDashboard from './pages/ComplianceDashboard';
 import BackupRecoveryManager from './pages/BackupRecoveryManager';
 import TemplateLibraryManager from './pages/TemplateLibraryManager';
 import DocumentVersionControl from './pages/DocumentVersionControl';
-import ConditionalAccessRules from './pages/ConditionalAccessRules';
+// ConditionalAccessRules - DELETED (merged into RBACHub)
 import FeatureUsageHeatmap from './pages/FeatureUsageHeatmap';
 import MyRDProjects from './pages/MyRDProjects';
 import MyPartnershipsPage from './pages/MyPartnershipsPage';
@@ -284,14 +284,14 @@ import TeamOverview from './pages/TeamOverview';
 import UserExperienceProgress from './pages/UserExperienceProgress';
 import UserGamification from './pages/UserGamification';
 import NotificationPreferences from './pages/NotificationPreferences';
-import DelegationManager from './pages/DelegationManager';
+// DelegationManager - DELETED (merged into RBACHub)
 import PersonalizedDashboard from './pages/PersonalizedDashboard';
 import UserFeatureAudit from './pages/UserFeatureAudit';
-import RolePermissionManager from './pages/RolePermissionManager';
+// RolePermissionManager - DELETED (merged into RBACHub)
 import PlatformCoverageAudit from './pages/PlatformCoverageAudit';
 import EnhancementRoadmapMaster from './pages/EnhancementRoadmapMaster';
 import RBACHub from './pages/RBACHub';
-import RoleRequestCenter from './pages/RoleRequestCenter';
+// RoleRequestCenter - DELETED (merged into RBACHub)
 import BilingualRTLAudit from './pages/BilingualRTLAudit';
 import ContentAudit from './pages/ContentAudit';
 import MobileResponsivenessAudit from './pages/MobileResponsivenessAudit';
