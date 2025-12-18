@@ -6,6 +6,11 @@ import { useLanguage } from '../LanguageContext';
 import { Database, Sparkles, Loader2, Check } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  DATA_ENRICHMENT_SYSTEM_PROMPT,
+  buildDataEnrichmentPrompt,
+  DATA_ENRICHMENT_SCHEMA
+} from '@/lib/ai/prompts/data/enrichment';
 
 export default function AutomatedDataEnrichment({ entity, entityType, onEnriched }) {
   const { language, t } = useLanguage();
@@ -18,44 +23,9 @@ export default function AutomatedDataEnrichment({ entity, entityType, onEnriched
 
   const enrichData = async () => {
     const response = await invokeAI({
-      prompt: `Enrich ${entityType} data with AI insights:
-
-CURRENT DATA: ${JSON.stringify(entity).substring(0, 800)}
-
-Provide enrichments:
-1. Missing translations (if title_en exists but not title_ar, suggest Arabic)
-2. Suggested tags/keywords (5-10 relevant terms)
-3. Sector classification (if ambiguous)
-4. Related entities (suggest connections to other challenges/pilots/solutions)
-5. Recommended KPIs (if not defined)
-6. Estimated complexity/priority (if missing)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          translations: {
-            type: "object",
-            properties: {
-              title_ar: { type: "string" },
-              description_ar: { type: "string" }
-            }
-          },
-          tags: { type: "array", items: { type: "string" } },
-          sector: { type: "string" },
-          related_codes: { type: "array", items: { type: "string" } },
-          kpis: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                baseline: { type: "string" },
-                target: { type: "string" }
-              }
-            }
-          },
-          priority: { type: "string" }
-        }
-      }
+      prompt: buildDataEnrichmentPrompt({ entity, entityType }),
+      system_prompt: DATA_ENRICHMENT_SYSTEM_PROMPT,
+      response_json_schema: DATA_ENRICHMENT_SCHEMA
     });
 
     if (response.success) {

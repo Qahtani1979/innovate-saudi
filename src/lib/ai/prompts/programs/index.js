@@ -1,7 +1,7 @@
 /**
  * Programs Prompts Index
  * Central export for all program-related AI prompts
- * @version 1.6.0
+ * @version 1.7.0
  */
 
 export * from './impactStory';
@@ -14,3 +14,4 @@ export * from './programWorkflows';
 export * from './lessonsToStrategy';
 export * from './applicationScreening';
 export * from './cohortOptimizer';
+export * from './mentorMatching';

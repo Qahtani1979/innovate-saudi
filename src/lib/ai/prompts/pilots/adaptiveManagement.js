@@ -1,46 +1,65 @@
 /**
- * Adaptive pilot management prompts
+ * Adaptive Pilot Management Prompts
  * @module pilots/adaptiveManagement
+ * @version 1.1.0
  */
 
-export const ADAPTIVE_MANAGEMENT_SYSTEM_PROMPT = `You are an expert in adaptive management for municipal innovation pilots in Saudi Arabia.`;
+import { getSystemPrompt } from '@/lib/saudiContext';
 
-export const createAdaptiveAdjustmentPrompt = (pilot, metrics) => `Analyze pilot and suggest adaptive adjustments:
+export const ADAPTIVE_MANAGEMENT_SYSTEM_PROMPT = getSystemPrompt('adaptive_management', `
+You are an expert in adaptive management for municipal innovation pilots in Saudi Arabia.
+Your role is to analyze pilot progress, identify issues, and recommend course corrections.
+Provide actionable adjustments aligned with Vision 2030 innovation goals.
+`);
 
-Pilot: ${pilot.title_en}
-Status: ${pilot.status}
-Progress: ${metrics.completedMilestones}/${metrics.totalMilestones} milestones
-Velocity: ${metrics.velocity}%
-Budget Utilization: ${metrics.budgetUtilization}%
-Timeline Status: ${metrics.timelineStatus}
+/**
+ * Build adaptive management analysis prompt
+ * @param {Object} params - Pilot and progress metrics
+ * @returns {string} Formatted prompt
+ */
+export function buildAdaptiveManagementPrompt({ pilot, velocity, completedMilestones, totalMilestones }) {
+  return `Pilot adaptive management analysis:
 
-Provide adaptive management recommendations:
-1. Course corrections needed
-2. Resource reallocation suggestions
-3. Timeline adjustments
-4. Stakeholder communication updates
-5. Risk mitigation actions`;
+PILOT: ${pilot.title_en}
+PROGRESS: ${completedMilestones}/${totalMilestones} milestones (${velocity}%)
+TIMELINE: ${pilot.duration_weeks || 12} weeks planned
+BUDGET: ${pilot.budget || 'Not specified'} SAR
 
-export const ADAPTIVE_ADJUSTMENT_SCHEMA = {
+MILESTONES STATUS:
+${pilot.milestones?.slice(0, 5).map(m => `${m.name}: ${m.status}`).join('\n') || 'No milestones defined'}
+
+Velocity is ${velocity < 80 ? 'BELOW' : 'ON'} target.
+
+Recommend:
+1. Should we adjust scope, timeline, or resources?
+2. Specific changes to milestones
+3. Resource reallocation suggestions
+4. Impact assessment of changes
+5. Risk mitigation`;
+}
+
+export const ADAPTIVE_MANAGEMENT_SCHEMA = {
   type: 'object',
   properties: {
-    course_corrections: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          area: { type: 'string' },
-          current_state: { type: 'string' },
-          recommended_action_en: { type: 'string' },
-          recommended_action_ar: { type: 'string' },
-          priority: { type: 'string', enum: ['high', 'medium', 'low'] }
-        }
-      }
+    recommendation_type: { 
+      type: 'string',
+      enum: ['continue_as_planned', 'reduce_scope', 'extend_timeline', 'add_resources', 'pivot_approach']
     },
-    resource_suggestions_en: { type: 'array', items: { type: 'string' } },
-    resource_suggestions_ar: { type: 'array', items: { type: 'string' } },
-    timeline_adjustments: { type: 'string' },
-    communication_updates: { type: 'array', items: { type: 'string' } },
-    risk_actions: { type: 'array', items: { type: 'string' } }
-  }
+    rationale: { type: 'string' },
+    proposed_changes: { type: 'array', items: { type: 'string' } },
+    impact_assessment: { type: 'string' },
+    new_velocity_estimate: { type: 'number' },
+    risks: { type: 'array', items: { type: 'string' } }
+  },
+  required: ['recommendation_type', 'rationale', 'proposed_changes']
+};
+
+// Legacy exports for backwards compatibility
+export const createAdaptiveAdjustmentPrompt = buildAdaptiveManagementPrompt;
+export const ADAPTIVE_ADJUSTMENT_SCHEMA = ADAPTIVE_MANAGEMENT_SCHEMA;
+
+export const ADAPTIVE_MANAGEMENT_PROMPTS = {
+  systemPrompt: ADAPTIVE_MANAGEMENT_SYSTEM_PROMPT,
+  buildPrompt: buildAdaptiveManagementPrompt,
+  schema: ADAPTIVE_MANAGEMENT_SCHEMA
 };

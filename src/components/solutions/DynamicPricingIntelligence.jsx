@@ -9,6 +9,11 @@ import { DollarSign, Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  DYNAMIC_PRICING_SYSTEM_PROMPT,
+  buildDynamicPricingPrompt,
+  DYNAMIC_PRICING_SCHEMA
+} from '@/lib/ai/prompts/solutions/dynamicPricing';
 
 export default function DynamicPricingIntelligence({ solution }) {
   const { language, t } = useLanguage();
@@ -28,43 +33,9 @@ export default function DynamicPricingIntelligence({ solution }) {
     );
 
     const result = await invokeAI({
-      prompt: `Pricing intelligence for solution:
-
-SOLUTION: ${solution.name_en}
-MATURITY: ${solution.maturity_level}
-TRL: ${solution.trl || 'N/A'}
-SECTORS: ${solution.sectors?.join(', ') || 'N/A'}
-DEPLOYMENTS: ${solution.deployment_count || 0}
-
-COMPETITOR DATA: ${peers.length} similar solutions
-Sample pricing: ${peers.slice(0, 5).map(s => 
-  `${s.name_en}: ${s.pricing_details?.setup_cost || '?'} SAR`
-).join(', ')}
-
-Provide:
-1. Recommended price range (min-max SAR)
-2. Average competitor pricing
-3. Price elasticity estimate (win rate at different prices)
-4. Optimal price for conversion vs margin
-5. Market positioning advice`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommended_min: { type: "number" },
-          recommended_max: { type: "number" },
-          optimal_price: { type: "number" },
-          competitor_average: { type: "number" },
-          elasticity: {
-            type: "object",
-            properties: {
-              low_price_winrate: { type: "number" },
-              mid_price_winrate: { type: "number" },
-              high_price_winrate: { type: "number" }
-            }
-          },
-          positioning_advice: { type: "string" }
-        }
-      }
+      prompt: buildDynamicPricingPrompt({ solution, peers }),
+      system_prompt: DYNAMIC_PRICING_SYSTEM_PROMPT,
+      response_json_schema: DYNAMIC_PRICING_SCHEMA
     });
 
     if (result.success) {
