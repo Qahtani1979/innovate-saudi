@@ -245,8 +245,8 @@ const functionNameMap = {
   'translatePolicy': 'translate-policy',
   'checkConsensus': 'check-consensus',
   'citizenNotifications': 'citizen-notifications',
-  'approveDelegation': 'approve-delegation',
-  'validatePermission': 'validate-permission',
+  'approveDelegation': 'rbac-manager', // Consolidated - use action: 'delegation.approve'
+  'validatePermission': 'rbac-manager', // Consolidated - use action: 'permission.validate'
   'checkFieldSecurity': 'check-field-security',
   'budgetApproval': 'budget-approval',
   'initiativeLaunch': 'initiative-launch',
@@ -268,13 +268,14 @@ const functionNameMap = {
   'challengeRDBacklink': 'challenge-rd-backlink',
   'autoGenerateSuccessStory': 'auto-generate-success-story',
   'autoProgramStartupLink': 'auto-program-startup-link',
-  'autoRoleAssignment': 'auto-role-assignment',
+  'autoRoleAssignment': 'rbac-manager', // Consolidated - use action: 'role.assign' | 'role.check_auto_approve'
+  'rbacManager': 'rbac-manager', // Unified RBAC manager
   'miiCitizenIntegration': 'mii-citizen-integration',
   'portfolioReview': 'portfolio-review',
   'programSLAAutomation': 'program-sla-automation',
   'providerMatchNotifications': 'provider-match-notifications',
   'publicationsAutoTracker': 'publications-auto-tracker',
-  'runRBACSecurityAudit': 'run-rbac-security-audit',
+  'runRBACSecurityAudit': 'rbac-manager', // Consolidated - use action: 'audit.run_security_audit'
   'strategicPlanApproval': 'strategic-plan-approval',
   'strategicPriorityScoring': 'strategic-priority-scoring',
   'strategyLabResearchGenerator': 'strategy-lab-research-generator',

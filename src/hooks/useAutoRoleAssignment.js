@@ -1,10 +1,14 @@
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
 /**
  * Hook for auto-role assignment during onboarding
+ * Uses unified rbac-manager edge function
+ * 
  * Checks auto-approval rules and assigns roles or creates pending requests
  */
+
+import { supabase } from '@/integrations/supabase/client';
+import rbacService from '@/services/rbac/rbacService';
+import { toast } from 'sonner';
+
 export const useAutoRoleAssignment = () => {
   
   /**
@@ -31,22 +35,14 @@ export const useAutoRoleAssignment = () => {
     try {
       console.log(`[AutoRole] Checking auto-approval for ${userEmail} as ${personaType}`);
       
-      // Call the auto-role-assignment edge function to check auto-approval
-      const { data: result, error: checkError } = await supabase.functions.invoke('auto-role-assignment', {
-        body: {
-          user_id: userId,
-          user_email: userEmail,
-          persona_type: personaType,
-          municipality_id: municipalityId,
-          organization_id: organizationId,
-          action: 'check_auto_approve'
-        }
+      // Call unified rbac-manager via rbacService
+      const result = await rbacService.checkAutoApproval({
+        user_id: userId,
+        user_email: userEmail,
+        persona_type: personaType,
+        municipality_id: municipalityId,
+        organization_id: organizationId
       });
-
-      if (checkError) {
-        console.error('[AutoRole] Check error:', checkError);
-        throw checkError;
-      }
 
       console.log('[AutoRole] Check result:', result);
 
@@ -85,17 +81,16 @@ export const useAutoRoleAssignment = () => {
         }
       }
 
-      // Send notification about the pending request
+      // Send notification about the pending request via unified service
       try {
-        await supabase.functions.invoke('role-request-notification', {
-          body: {
-            type: 'submitted',
-            user_id: userId,
-            user_email: userEmail,
-            requested_role: personaType,
-            justification,
-            language
-          }
+        await rbacService.sendRoleNotification({
+          type: 'submitted',
+          user_id: userId,
+          user_email: userEmail,
+          user_name: userEmail?.split('@')[0] || 'User',
+          requested_role: personaType,
+          justification,
+          language
         });
       } catch (notifError) {
         console.warn('[AutoRole] Notification error:', notifError);
@@ -124,19 +119,15 @@ export const useAutoRoleAssignment = () => {
    */
   const assignRole = async ({ userId, userEmail, role, municipalityId = null, organizationId = null }) => {
     try {
-      const { data, error } = await supabase.functions.invoke('auto-role-assignment', {
-        body: {
-          user_id: userId,
-          user_email: userEmail,
-          role,
-          municipality_id: municipalityId,
-          organization_id: organizationId,
-          action: 'assign'
-        }
+      const result = await rbacService.assignRole({
+        user_id: userId,
+        user_email: userEmail,
+        role,
+        municipality_id: municipalityId,
+        organization_id: organizationId
       });
 
-      if (error) throw error;
-      return { success: true, data };
+      return { success: true, data: result };
     } catch (error) {
       console.error('[AutoRole] Direct assign error:', error);
       return { success: false, error: error.message };
