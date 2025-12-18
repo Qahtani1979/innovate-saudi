@@ -83,10 +83,14 @@ function RBACAuditContentInner() {
     }
   });
 
-  const { data: userFunctionalRoles = [], isLoading: loadingUFR } = useQuery({
-    queryKey: ['audit-user-functional-roles'],
+  // Phase 4: Query user_roles with role_id join instead of dropped user_functional_roles
+  const { data: userRolesData = [], isLoading: loadingUserRoles } = useQuery({
+    queryKey: ['audit-user-roles'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('user_functional_roles').select('*');
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('*, roles:role_id(id, name)')
+        .eq('is_active', true);
       if (error) throw error;
       return data || [];
     }
@@ -126,31 +130,31 @@ function RBACAuditContentInner() {
     }
   });
 
-  const isLoading = loadingUsers || loadingUserRoles || loadingRoles || loadingPermissions || loadingUFR || loadingRP || loadingDelegations || loadingLogs;
+  const isLoading = loadingUsers || loadingUserRoles || loadingRoles || loadingPermissions || loadingUserRoles || loadingRP || loadingDelegations || loadingLogs;
 
   // Generate comprehensive audit report
   const auditResults = useMemo(() => {
     const userIdsWithRoles = new Set(userRoles.map(ur => ur.user_id));
-    const userIdsWithFunctionalRoles = new Set(userFunctionalRoles.map(ufr => ufr.user_id));
+    const userIdsWithUserRolesData = new Set(userRolesData.map(ur => ur.user_id));
     
-    const usersWithoutRoles = allUsers.filter(u => !userIdsWithRoles.has(u.user_id) && !userIdsWithFunctionalRoles.has(u.user_id));
-    const roleIdsWithUsers = new Set(userFunctionalRoles.map(ufr => ufr.role_id));
+    const usersWithoutRoles = allUsers.filter(u => !userIdsWithRoles.has(u.user_id) && !userIdsWithUserRolesData.has(u.user_id));
+    const roleIdsWithUsers = new Set(userRolesData.map(ur => ur.role_id));
     const rolesWithoutUsers = roles.filter(r => !roleIdsWithUsers.has(r.id));
     const permissionIdsInRoles = new Set(rolePermissions.map(rp => rp.permission_id));
     const orphanedPermissions = permissions.filter(p => !permissionIdsInRoles.has(p.id));
     
     const now = new Date();
-    const expiredAssignments = userFunctionalRoles.filter(ufr => ufr.expires_at && new Date(ufr.expires_at) < now);
-    const inactiveAssignments = userFunctionalRoles.filter(ufr => !ufr.is_active);
+    const expiredAssignments = userRolesData.filter(ur => ur.expires_at && new Date(ur.expires_at) < now);
+    const inactiveAssignments = userRolesData.filter(ur => !ur.is_active);
     const expiredDelegations = delegations.filter(d => d.end_date && new Date(d.end_date) < now && d.is_active);
     const activeDelegations = delegations.filter(d => d.is_active && (!d.end_date || new Date(d.end_date) >= now));
 
     // Duplicate assignments check
     const roleAssignmentMap = new Map();
-    userFunctionalRoles.forEach(ufr => {
-      const key = `${ufr.user_id}-${ufr.role_id}`;
-      if (roleAssignmentMap.has(key)) roleAssignmentMap.get(key).push(ufr);
-      else roleAssignmentMap.set(key, [ufr]);
+    userRolesData.forEach(ur => {
+      const key = `${ur.user_id}-${ur.role_id}`;
+      if (roleAssignmentMap.has(key)) roleAssignmentMap.get(key).push(ur);
+      else roleAssignmentMap.set(key, [ur]);
     });
     const duplicateAssignments = [...roleAssignmentMap.entries()].filter(([, a]) => a.length > 1);
 
@@ -161,9 +165,9 @@ function RBACAuditContentInner() {
 
     // Users with excessive permissions
     const userPermissionCounts = {};
-    userFunctionalRoles.filter(ufr => ufr.is_active).forEach(ufr => {
-      const permCount = rolePermissions.filter(rp => rp.role_id === ufr.role_id).length;
-      userPermissionCounts[ufr.user_id] = (userPermissionCounts[ufr.user_id] || 0) + permCount;
+    userRolesData.filter(ur => ur.is_active).forEach(ur => {
+      const permCount = rolePermissions.filter(rp => rp.role_id === ur.role_id).length;
+      userPermissionCounts[ur.user_id] = (userPermissionCounts[ur.user_id] || 0) + permCount;
     });
     const avgPermissions = Object.values(userPermissionCounts).length > 0 
       ? Object.values(userPermissionCounts).reduce((a, b) => a + b, 0) / Object.values(userPermissionCounts).length
@@ -211,9 +215,9 @@ function RBACAuditContentInner() {
       excessivePermissionRoles, excessivePermissionUsers, risks, recommendations,
       healthScore, highRisks, mediumRisks, denialRate, deniedAttempts: deniedAttempts.length,
       totalUsers: allUsers.length, totalRoles: roles.length, totalPermissions: permissions.length, 
-      totalAssignments: userFunctionalRoles.length, totalAccessAttempts: accessLogs.length
+      totalAssignments: userRolesData.length, totalAccessAttempts: accessLogs.length
     };
-  }, [allUsers, userRoles, roles, permissions, userFunctionalRoles, rolePermissions, delegations, accessLogs]);
+  }, [allUsers, userRoles, roles, permissions, userRolesData, rolePermissions, delegations, accessLogs]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -222,7 +226,7 @@ function RBACAuditContentInner() {
       queryClient.invalidateQueries({ queryKey: ['audit-user-roles'] }),
       queryClient.invalidateQueries({ queryKey: ['audit-roles'] }),
       queryClient.invalidateQueries({ queryKey: ['audit-permissions'] }),
-      queryClient.invalidateQueries({ queryKey: ['audit-user-functional-roles'] }),
+      queryClient.invalidateQueries({ queryKey: ['audit-user-roles'] }),
       queryClient.invalidateQueries({ queryKey: ['audit-role-permissions'] }),
       queryClient.invalidateQueries({ queryKey: ['audit-delegations'] }),
       queryClient.invalidateQueries({ queryKey: ['audit-access-logs'] })
@@ -535,8 +539,8 @@ function RBACAuditContentInner() {
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {allUsers.map(user => {
                   const userAppRoles = userRoles.filter(ur => ur.user_id === user.user_id);
-                  const userFuncRoles = userFunctionalRoles.filter(ufr => ufr.user_id === user.user_id && ufr.is_active);
-                  const hasAnyRole = userAppRoles.length > 0 || userFuncRoles.length > 0;
+                  const userDataRoles = userRolesData.filter(ur => ur.user_id === user.user_id && ur.is_active);
+                  const hasAnyRole = userAppRoles.length > 0 || userDataRoles.length > 0;
                   
                   return (
                     <div key={user.user_id} className={`p-3 rounded border ${!hasAnyRole ? 'border-red-200 bg-red-50' : ''}`}>
@@ -549,9 +553,9 @@ function RBACAuditContentInner() {
                           {userAppRoles.map(ur => (
                             <Badge key={ur.id} variant="default" className="text-xs">{ur.role}</Badge>
                           ))}
-                          {userFuncRoles.map(ufr => {
-                            const role = roles.find(r => r.id === ufr.role_id);
-                            return <Badge key={ufr.id} variant="outline" className="text-xs">{role?.name || 'Unknown'}</Badge>;
+                          {userDataRoles.map(ur => {
+                            const role = roles.find(r => r.id === ur.role_id);
+                            return <Badge key={ur.id} variant="outline" className="text-xs">{role?.name || ur.roles?.name || 'Unknown'}</Badge>;
                           })}
                           {!hasAnyRole && <Badge variant="destructive" className="text-xs">{t({ en: 'No Roles', ar: 'بدون أدوار' })}</Badge>}
                         </div>
@@ -566,7 +570,7 @@ function RBACAuditContentInner() {
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {roles.map(role => {
                   const permCount = rolePermissions.filter(rp => rp.role_id === role.id).length;
-                  const userCount = userFunctionalRoles.filter(ufr => ufr.role_id === role.id && ufr.is_active).length;
+                  const userCount = userRolesData.filter(ur => ur.role_id === role.id && ur.is_active).length;
                   
                   return (
                     <div key={role.id} className={`p-3 rounded border ${userCount === 0 ? 'border-yellow-200 bg-yellow-50' : ''}`}>

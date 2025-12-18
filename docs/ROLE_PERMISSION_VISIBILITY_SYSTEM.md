@@ -1,7 +1,7 @@
 # Role, Permission & Visibility System Documentation
 
 **Last Updated:** December 18, 2024  
-**Status:** Current State Analysis
+**Status:** ✅ Phase 4 Complete - Unified RBAC System
 
 ---
 
@@ -15,26 +15,27 @@
 6. [Frontend Components](#frontend-components)
 7. [Pages & Routes](#pages--routes)
 8. [Data Flow Diagrams](#data-flow-diagrams)
-9. [Current Issues & Bugs](#current-issues--bugs)
+9. [Migration History](#migration-history)
 10. [File Reference Index](#file-reference-index)
 
 ---
 
 ## System Overview
 
-The application uses a **multi-layered** access control system consisting of:
+The application uses a **unified role-based access control (RBAC)** system:
 
 | Layer | Purpose | Primary Table |
 |-------|---------|---------------|
-| **Roles** | Core access control (admin, municipality_staff, etc.) | `user_roles` |
-| **Functional Roles** | Granular role assignments (unused/broken) | `user_functional_roles` |
-| **Permissions** | Action-based access (challenge_create, etc.) | `permissions`, `role_permissions` |
+| **Roles** | Role definitions with metadata | `roles` |
+| **User Roles** | User-to-role assignments via `role_id` | `user_roles` |
+| **Permissions** | Action-based access (challenge_create, etc.) | `permissions` |
+| **Role Permissions** | Role-to-permission mappings | `role_permissions` |
 | **Visibility** | Data scoping based on user context | Computed from `user_roles` |
 
-### Key Insight
-There are **TWO separate role systems** that are not properly integrated:
-- `user_roles` - The **actual** permission system used by RLS and `is_admin()`
-- `user_functional_roles` - A **parallel** system that approval queue writes to (broken)
+### Key Architecture (Phase 4 Complete)
+- **Single role path**: `user_roles.role_id` → `roles` → `role_permissions` → `permissions`
+- **No enums**: `app_role` enum removed, roles stored in `roles` table
+- **`user_functional_roles` table**: DROPPED (legacy, no longer used)
 
 ---
 
@@ -80,8 +81,8 @@ There are **TWO separate role systems** that are not properly integrated:
 │           ▼                    ▼                        ▼                    │
 │  ┌─────────────────────────────────────────────────────────────────────────┐│
 │  │                    DATABASE FUNCTIONS                                    ││
-│  │  is_admin() │ get_user_permissions() │ get_user_visibility_scope()      ││
-│  │  has_role() │ can_view_entity()      │ get_user_functional_roles()      ││
+│  │  has_role_by_name() │ get_user_permissions() │ get_user_visibility_scope()││
+│  │  has_permission()   │ can_view_entity()      │ get_user_functional_roles()││
 │  └─────────────────────────────────────────────────────────────────────────┘│
 │                                      │                                       │
 │                                      ▼                                       │
@@ -98,83 +99,47 @@ There are **TWO separate role systems** that are not properly integrated:
 
 ### Core Tables
 
-#### 1. `user_roles` (PRIMARY ROLE SYSTEM)
+#### 1. `user_roles` (PRIMARY - Phase 4 Schema)
 **Location:** Supabase Database  
-**Purpose:** Core role assignments that RLS policies check
+**Purpose:** Core role assignments with role_id references
 
 ```sql
 CREATE TABLE public.user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    role app_role NOT NULL,  -- ENUM: admin, municipality_staff, provider, etc.
+    role TEXT,                              -- DEPRECATED: Legacy column (nullable)
+    role_id UUID REFERENCES roles(id) NOT NULL,  -- NEW: FK to roles table
     municipality_id UUID REFERENCES municipalities(id),
     organization_id UUID REFERENCES organizations(id),
-    created_at TIMESTAMPTZ DEFAULT now(),
-    assigned_by UUID,
-    UNIQUE (user_id, role, municipality_id, organization_id)
-);
-```
-
-**Current Data:**
-| user_id | role | municipality_id | organization_id |
-|---------|------|-----------------|-----------------|
-| `qahtani1979@gmail.com` | admin | NULL | NULL |
-
-**Used By:**
-- `is_admin()` function
-- `get_user_permissions()` function
-- `get_user_visibility_scope()` function
-- All RLS policies via `is_admin(auth.uid())`
-- `useUserRoles` hook
-- `RoleRequestCard.jsx` (display only)
-
----
-
-#### 2. `user_functional_roles` (SECONDARY/BROKEN SYSTEM)
-**Location:** Supabase Database  
-**Purpose:** Granular functional role assignments (NOT connected to permission system)
-
-```sql
-CREATE TABLE public.user_functional_roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
     user_email TEXT,
-    role_type TEXT NOT NULL,  -- e.g., 'innovation_officer', 'challenge_manager'
-    scope_type TEXT,          -- 'global', 'municipality', 'organization'
-    scope_id UUID,
-    assigned_by TEXT,
-    assigned_at TIMESTAMPTZ DEFAULT now(),
-    expires_at TIMESTAMPTZ,
     is_active BOOLEAN DEFAULT true,
-    metadata JSONB,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    assigned_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    UNIQUE (user_id, role_id)
 );
 ```
 
-**Current Data:** Empty (0 rows)
-
 **Used By:**
-- `RoleRequestApprovalQueue.jsx` - WRITES approved roles here (BUG!)
-- `get_user_functional_roles()` function
-- `FunctionalRolesManager.jsx`
-
-**⚠️ CRITICAL BUG:** Approval queue writes here but permission system reads from `user_roles`
+- All database functions via `role_id` joins
+- All RLS policies via `role_id` joins
+- `usePermissions` hook
+- `rbac-manager` edge function
 
 ---
 
-#### 3. `roles` (Role Definitions)
+#### 2. `roles` (Role Definitions)
 **Location:** Supabase Database  
 **Purpose:** Defines available roles and their metadata
 
 ```sql
 CREATE TABLE public.roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL UNIQUE,        -- e.g., 'admin', 'municipality_staff'
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
     display_name_en TEXT,
     display_name_ar TEXT,
-    description_en TEXT,
-    description_ar TEXT,
-    category TEXT,                     -- 'system', 'municipal', 'provider'
+    category TEXT,
     is_system_role BOOLEAN DEFAULT false,
     is_assignable BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT now()
@@ -182,13 +147,13 @@ CREATE TABLE public.roles (
 ```
 
 **Used By:**
-- `useRoles` hook
-- Role selection dropdowns
-- `RoleRequestApprovalQueue.jsx`
+- `user_roles.role_id` foreign key
+- Role selection UI components
+- `map_enum_to_role_id()` function
 
 ---
 
-#### 4. `permissions` (Permission Definitions)
+#### 3. `permissions` (Permission Definitions)
 **Location:** Supabase Database  
 **Purpose:** Defines granular permissions
 

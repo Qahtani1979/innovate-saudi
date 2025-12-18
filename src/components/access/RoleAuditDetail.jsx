@@ -39,13 +39,13 @@ export default function RoleAuditDetail({ roleId }) {
     enabled: !!roleId
   });
 
-  // Fetch users with this role
+  // Fetch users with this role (Phase 4: uses user_roles with role_id)
   const { data: usersWithRole = [] } = useQuery({
     queryKey: ['role-users-detail', roleId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('user_functional_roles')
-        .select('*, user_profiles(full_name, user_email)')
+        .from('user_roles')
+        .select('*, user_profiles:user_id(full_name, user_email)')
         .eq('role_id', roleId)
         .eq('is_active', true);
       if (error) throw error;
