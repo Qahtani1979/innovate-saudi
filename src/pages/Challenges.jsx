@@ -134,34 +134,11 @@ function Challenges() {
         return;
       }
 
-      const prompt = `Analyze these top Saudi municipal challenges and provide BILINGUAL (Arabic + English) strategic insights:
-      
-${topChallenges.map(c => `
-- Code: ${c.code}
-  Title EN: ${c.title_en}
-  Title AR: ${c.title_ar || 'N/A'}
-  Sector: ${c.sector}
-  Municipality: ${c.municipality_id}
-  Priority: ${c.priority}
-  Score: ${c.overall_score}
-  Status: ${c.status}
-  Track: ${c.track}
-`).join('\n')}
-
-Provide COMPLETE BILINGUAL analysis (Arabic + English for each point):
-1. Cross-cutting patterns (3-5 common themes) - AR + EN
-2. Priority sectors needing immediate attention (top 3) - AR + EN with reasoning
-3. Systemic solutions (3-4 strategic interventions) - AR + EN
-4. Risk alerts (3-4 emerging trends/dangers) - AR + EN
-5. Quick wins (2-3 challenges resolvable in <3 months) - AR + EN with approach
-6. Resource allocation recommendations - AR + EN strategic guidance
-7. Coordination opportunities (cross-municipality synergies) - AR + EN
-8. Technology opportunities (AI/IoT/platforms to leverage) - AR + EN
-
-Use Saudi municipal context and data-driven insights.`;
+      // Import centralized prompt module
+      const { CHALLENGE_PORTFOLIO_PROMPT_TEMPLATE, CHALLENGE_PORTFOLIO_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/challenges/portfolioAnalysis');
 
       const result = await invokeAI({
-        prompt,
+        prompt: CHALLENGE_PORTFOLIO_PROMPT_TEMPLATE(topChallenges),
         response_json_schema: {
           type: 'object',
           properties: {

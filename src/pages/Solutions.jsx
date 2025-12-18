@@ -113,6 +113,10 @@ function SolutionsPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
+    
+    // Import centralized prompt module
+    const { SOLUTION_PORTFOLIO_PROMPT_TEMPLATE, SOLUTION_PORTFOLIO_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/solutions/portfolioAnalysis');
+    
     const solutionSummary = solutions.slice(0, 15).map(s => ({
       name: s.name_en,
       provider: s.provider_name,
@@ -123,32 +127,14 @@ function SolutionsPage() {
     }));
 
     const result = await invokeAI({
-      prompt: `Analyze this solution portfolio for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
-
-Solutions: ${JSON.stringify(solutionSummary)}
-
-Statistics:
-- Total Solutions: ${solutions.length}
-- Market Ready: ${solutions.filter(s => s.maturity_level === 'market_ready' || s.maturity_level === 'proven').length}
-- From Startups: ${solutions.filter(s => s.provider_type === 'startup').length}
-- Average Deployments: ${Math.round(solutions.reduce((acc, s) => acc + (s.deployment_count || 0), 0) / solutions.length || 0)}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Solution landscape gaps and opportunities
-2. Provider ecosystem health assessment
-3. Deployment acceleration strategies
-4. High-potential solutions for scaling
-5. Market development recommendations`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          landscape_gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          ecosystem_health: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          deployment_strategies: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          high_potential_solutions: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          market_development: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt: SOLUTION_PORTFOLIO_PROMPT_TEMPLATE({
+        solutionSummary,
+        totalSolutions: solutions.length,
+        marketReadyCount: solutions.filter(s => s.maturity_level === 'market_ready' || s.maturity_level === 'proven').length,
+        startupCount: solutions.filter(s => s.provider_type === 'startup').length,
+        avgDeployments: Math.round(solutions.reduce((acc, s) => acc + (s.deployment_count || 0), 0) / solutions.length || 0)
+      }),
+      response_json_schema: SOLUTION_PORTFOLIO_RESPONSE_SCHEMA
     });
     if (result.success) {
       setAiInsights(result.data);
