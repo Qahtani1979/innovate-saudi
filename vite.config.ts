@@ -17,10 +17,13 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
         // Force a single React instance across the entire app.
-        // Use directory paths (not files) so subpath imports like react/jsx-runtime work correctly.
-        react: path.resolve(__dirname, "./node_modules/react"),
+        // Use directory paths so subpath imports work correctly.
+        "react": path.resolve(__dirname, "./node_modules/react"),
         "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
-        scheduler: path.resolve(__dirname, "./node_modules/scheduler"),
+        "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client"),
+        "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
+        "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime"),
+        "scheduler": path.resolve(__dirname, "./node_modules/scheduler"),
       },
       dedupe: [
         "react",
@@ -43,6 +46,10 @@ export default defineConfig(({ mode }) => {
         "scheduler",
         "@tanstack/react-query",
       ],
+      esbuildOptions: {
+        // Ensure consistent JSX runtime
+        jsx: "automatic",
+      },
       force: true,
     },
     define: {
