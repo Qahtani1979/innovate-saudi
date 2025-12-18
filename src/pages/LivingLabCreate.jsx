@@ -85,31 +85,14 @@ function LivingLabCreate() {
       return;
     }
 
+    const { 
+      LIVING_LAB_ENHANCE_PROMPT_TEMPLATE, 
+      LIVING_LAB_ENHANCE_RESPONSE_SCHEMA 
+    } = await import('@/lib/ai/prompts/livinglabs/creation');
+    
     const result = await invokeAI({
-      prompt: `Enhance this Living Lab proposal with professional content:
-        
-Lab Name: ${formData.name_en}
-Type: ${formData.type || 'N/A'}
-Description: ${formData.description_en || 'N/A'}
-
-Provide bilingual enhancements:
-1. Professional tagline (AR + EN)
-2. Expanded description highlighting innovation impact (AR + EN)
-3. Clear objectives for research and testing (AR + EN)
-4. Suggested equipment catalog (5-7 items)
-5. Key capabilities this lab should offer`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          tagline_en: { type: 'string' },
-          tagline_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          objectives_en: { type: 'string' },
-          objectives_ar: { type: 'string' },
-          equipment_suggestions: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: LIVING_LAB_ENHANCE_PROMPT_TEMPLATE(formData),
+      response_json_schema: LIVING_LAB_ENHANCE_RESPONSE_SCHEMA
     });
 
     if (result.success) {

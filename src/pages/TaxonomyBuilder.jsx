@@ -103,39 +103,18 @@ function TaxonomyBuilder() {
   });
 
   const generateAISuggestions = async () => {
+    const { 
+      TAXONOMY_SUGGESTIONS_PROMPT_TEMPLATE, 
+      TAXONOMY_SUGGESTIONS_RESPONSE_SCHEMA 
+    } = await import('@/lib/ai/prompts/taxonomy/suggestions');
+    
     const result = await invokeAI({
-      prompt: `Analyze current taxonomy and suggest improvements for Saudi municipal innovation:
-
-Current Sectors: ${sectors.map(s => s.name_en).join(', ')}
-Total Subsectors: ${subsectors.length}
-Total Services: ${services.length}
-
-Provide bilingual suggestions for:
-1. Missing critical sectors
-2. Subsectors that should be added to existing sectors
-3. Service gaps and missing service types
-
-Focus on Vision 2030, smart cities, and municipal service excellence.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          suggested_sectors: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name_en: { type: 'string' },
-                name_ar: { type: 'string' },
-                code: { type: 'string' },
-                description_en: { type: 'string' },
-                description_ar: { type: 'string' },
-                rationale_en: { type: 'string' },
-                rationale_ar: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: TAXONOMY_SUGGESTIONS_PROMPT_TEMPLATE({
+        sectors,
+        subsectorsCount: subsectors.length,
+        servicesCount: services.length
+      }),
+      response_json_schema: TAXONOMY_SUGGESTIONS_RESPONSE_SCHEMA
     });
 
     if (result.success) {

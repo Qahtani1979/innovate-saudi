@@ -97,40 +97,14 @@ export default function PilotLaunchWizard() {
 
   const generateAIChecklist = async () => {
     try {
+      const { 
+        PILOT_LAUNCH_CHECKLIST_PROMPT_TEMPLATE, 
+        PILOT_LAUNCH_CHECKLIST_RESPONSE_SCHEMA 
+      } = await import('@/lib/ai/prompts/pilots/launchChecklist');
+      
       const response = await invokeAI({
-        prompt: `Generate pre-launch readiness checklist for this pilot:
-Title: ${pilot.title_en}
-Sector: ${pilot.sector}
-Budget: ${pilot.budget}
-Team size: ${pilot.team?.length || 0}
-Technology: ${pilot.technology_stack?.map(t => t.technology).join(', ')}
-
-Generate 8-12 specific, actionable checklist items covering:
-- Team readiness
-- Stakeholder alignment
-- Equipment/technology setup
-- Data collection systems
-- Safety & compliance
-- Communication plan
-- Budget confirmation
-
-Return as JSON object with boolean flags for each item.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            checklist_items: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  key: { type: "string" },
-                  label: { type: "string" },
-                  category: { type: "string" }
-                }
-              }
-            }
-          }
-        }
+        prompt: PILOT_LAUNCH_CHECKLIST_PROMPT_TEMPLATE(pilot),
+        response_json_schema: PILOT_LAUNCH_CHECKLIST_RESPONSE_SCHEMA
       });
       
       if (response.success) {
