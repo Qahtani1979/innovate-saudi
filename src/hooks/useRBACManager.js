@@ -129,6 +129,7 @@ export function useApproveDelegation() {
     mutationFn: (delegationId) => rbacService.approveDelegation(delegationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['delegations'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-delegations'] });
       toast.success('Delegation approved');
     },
     onError: (error) => {
@@ -147,6 +148,7 @@ export function useRejectDelegation() {
     mutationFn: ({ delegationId, reason }) => rbacService.rejectDelegation(delegationId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['delegations'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-delegations'] });
       toast.success('Delegation rejected');
     },
     onError: (error) => {
