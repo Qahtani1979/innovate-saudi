@@ -1,12 +1,18 @@
 /**
  * Scaling Module Prompts Index
  * Central export for all scaling-related AI prompts
+ * @version 1.1.0
  */
 
 export { SCALING_READINESS_PROMPTS } from './scalingReadiness';
 export { ROLLOUT_RISK_PROMPTS } from './rolloutRisk';
 export { COST_BENEFIT_PROMPTS } from './costBenefit';
 export { SCALING_INSIGHTS_PROMPTS } from './scalingInsights';
+export {
+  ADAPTIVE_ROLLOUT_SYSTEM_PROMPT,
+  createAdaptiveRolloutPrompt,
+  ADAPTIVE_ROLLOUT_SCHEMA
+} from './adaptiveRollout';
 
 export const SCALING_PROMPT_MANIFEST = {
   scalingReadiness: {
@@ -28,5 +34,10 @@ export const SCALING_PROMPT_MANIFEST = {
     file: 'scalingInsights.js',
     purpose: 'Generate national scaling insights',
     component: 'ScalingListAIInsights'
+  },
+  adaptiveRollout: {
+    file: 'adaptiveRollout.js',
+    purpose: 'Optimize rollout sequence adaptively',
+    component: 'AdaptiveRolloutSequencing'
   }
 };

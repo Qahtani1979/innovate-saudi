@@ -1,6 +1,6 @@
 /**
  * Sandbox Module AI Prompts Index
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 // Regulatory Gap Analyzer
@@ -26,6 +26,12 @@ export { buildRiskAssessmentPrompt, RISK_ASSESSMENT_SCHEMA, RISK_ASSESSMENT_SYST
 
 // Safety Protocol
 export { buildSafetyProtocolPrompt, SAFETY_PROTOCOL_SCHEMA, SAFETY_PROTOCOL_SYSTEM_PROMPT } from './safetyProtocol';
+
+// Sandbox Enhancement & Analysis
+export {
+  SANDBOX_ENHANCE_SYSTEM_PROMPT, createSandboxEnhancePrompt, SANDBOX_ENHANCE_SCHEMA,
+  createSandboxAnalysisPrompt, SANDBOX_ANALYSIS_SCHEMA
+} from './enhance';
 
 /**
  * Sandbox module prompt configuration
@@ -70,6 +76,16 @@ export const SANDBOX_PROMPTS = {
     promptFn: 'buildSafetyProtocolPrompt',
     schema: 'SAFETY_PROTOCOL_SCHEMA',
     description: 'Safety protocol generation'
+  },
+  sandboxEnhance: {
+    promptFn: 'createSandboxEnhancePrompt',
+    schema: 'SANDBOX_ENHANCE_SCHEMA',
+    description: 'Enhance sandbox proposals'
+  },
+  sandboxAnalysis: {
+    promptFn: 'createSandboxAnalysisPrompt',
+    schema: 'SANDBOX_ANALYSIS_SCHEMA',
+    description: 'Analyze sandbox portfolio'
   }
 };
 
