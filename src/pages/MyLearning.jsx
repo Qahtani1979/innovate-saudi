@@ -47,36 +47,23 @@ function MyLearning() {
   });
 
   const generateRecommendations = async () => {
+    const { 
+      LEARNING_RECOMMENDATIONS_PROMPT_TEMPLATE, 
+      LEARNING_RECOMMENDATIONS_RESPONSE_SCHEMA 
+    } = await import('@/lib/ai/prompts/learning/recommendations');
+
+    const conversionRate = myChallenges.length > 0 
+      ? Math.round((myChallenges.filter(c => c.linked_pilot_ids?.length > 0).length / myChallenges.length) * 100) 
+      : 0;
+
     const result = await invokeAI({
-      prompt: `Based on this user's activity, recommend learning resources:
-
-Role: ${user?.role}
-Challenges created: ${myChallenges.length}
-Pilots launched: ${myPilots.length}
-Challenge→Pilot conversion: ${myChallenges.length > 0 ? Math.round((myChallenges.filter(c => c.linked_pilot_ids?.length > 0).length / myChallenges.length) * 100) : 0}%
-
-Identify skill gaps and recommend 5 learning topics to improve performance. For each:
-1. Topic name
-2. Why needed (skill gap identified)
-3. Expected improvement
-4. Priority (high/medium/low)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          recommendations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                topic: { type: 'string' },
-                skill_gap: { type: 'string' },
-                expected_improvement: { type: 'string' },
-                priority: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: LEARNING_RECOMMENDATIONS_PROMPT_TEMPLATE({
+        role: user?.role,
+        challengesCount: myChallenges.length,
+        pilotsCount: myPilots.length,
+        conversionRate
+      }),
+      response_json_schema: LEARNING_RECOMMENDATIONS_RESPONSE_SCHEMA
     });
     if (result.success) {
       setRecommendations(result.data.recommendations || []);

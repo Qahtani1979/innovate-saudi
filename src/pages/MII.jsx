@@ -130,33 +130,20 @@ function MIIPage() {
         completed_pilots: m.completed_pilots
       }));
 
+      const { 
+        MII_NATIONAL_INSIGHTS_PROMPT_TEMPLATE, 
+        MII_NATIONAL_INSIGHTS_RESPONSE_SCHEMA 
+      } = await import('@/lib/ai/prompts/mii/nationalInsights');
+
       const result = await invokeAI({
-        prompt: `Analyze the Municipal Innovation Index (MII) performance across Saudi municipalities and provide strategic insights in BOTH English AND Arabic:
-
-Top Municipalities: ${JSON.stringify(topMunicipalities)}
-
-National Statistics:
-- Average MII Score: ${stats.avgScore}
-- High Performers (>60): ${stats.improving}
-- Total Municipalities: ${stats.totalCities}
-- Active Pilots Nationally: ${stats.activePilots}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. National innovation performance trends
-2. Strategies to improve lower-performing municipalities
-3. Best practices from top performers
-4. Regional disparity analysis and solutions
-5. Accelerated improvement pathways`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            performance_trends: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            improvement_strategies: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            best_practices: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            disparity_solutions: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            improvement_pathways: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
-        }
+        prompt: MII_NATIONAL_INSIGHTS_PROMPT_TEMPLATE({
+          topMunicipalities,
+          avgScore: stats.avgScore,
+          improving: stats.improving,
+          totalCities: stats.totalCities,
+          activePilots: stats.activePilots
+        }),
+        response_json_schema: MII_NATIONAL_INSIGHTS_RESPONSE_SCHEMA
       });
       if (result.success && result.data) {
         setAiInsights(result.data);
