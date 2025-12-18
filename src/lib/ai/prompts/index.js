@@ -240,6 +240,18 @@ export * from './templates';
 // Recommendations prompts
 export * from './recommendations';
 
+// Extraction prompts
+export * from './extraction';
+
+// Comparison prompts
+export * from './comparison';
+
+// Generation prompts
+export * from './generation';
+
+// Classification prompts
+export * from './classification';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -320,7 +332,11 @@ export const PROMPT_MODULE_STATUS = {
   linking: { status: 'complete', promptCount: 3 },
   summarization: { status: 'complete', promptCount: 3 },
   templates: { status: 'complete', promptCount: 3 },
-  recommendations: { status: 'complete', promptCount: 3 }
+  recommendations: { status: 'complete', promptCount: 3 },
+  extraction: { status: 'complete', promptCount: 3 },
+  comparison: { status: 'complete', promptCount: 3 },
+  generation: { status: 'complete', promptCount: 3 },
+  classification: { status: 'complete', promptCount: 3 }
 };
 
 /**
@@ -332,7 +348,7 @@ export function getImplementationProgress() {
   const completed = modules.filter(([, v]) => v.status === 'complete').length;
   const total = modules.length;
   const promptsComplete = modules.reduce((sum, [, v]) => sum + (v.status === 'complete' ? v.promptCount : 0), 0);
-  const promptsTotal = 310; // Final target
+  const promptsTotal = 322; // Final target
 
   return {
     modulesComplete: completed,
@@ -342,4 +358,18 @@ export function getImplementationProgress() {
     promptsTotal,
     promptProgress: Math.round((promptsComplete / promptsTotal) * 100)
   };
+}
+
+/**
+ * Get all available prompts grouped by category
+ */
+export function getAllPromptsByCategory() {
+  return PROMPT_MODULE_STATUS;
+}
+
+/**
+ * Quick prompt lookup by module and type
+ */
+export function getPromptInfo(moduleName) {
+  return PROMPT_MODULE_STATUS[moduleName] || null;
 }
