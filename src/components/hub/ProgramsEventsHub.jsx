@@ -240,6 +240,5 @@ function ProgramsEventsHub() {
 }
 
 export default ProtectedPage(ProgramsEventsHub, { 
-  requiredPermissions: [], 
-  requiredRoles: ['Executive Leadership', 'Program Director', 'Municipality Coordinator', 'admin'] 
+  requiredPermissions: [] 
 });

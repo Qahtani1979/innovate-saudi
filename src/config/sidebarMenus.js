@@ -187,6 +187,7 @@ export const SIDEBAR_MENUS = {
       // MII & Benchmarking
       { name: 'MIIDrillDown', icon: PieChart, label: { en: 'MII Score Details', ar: 'تفاصيل المؤشر' }, permission: 'analytics_view', useMyMunicipality: true },
       { name: 'MunicipalityPeerMatcher', icon: Users, label: { en: 'Peer Benchmarking', ar: 'المقارنة المعيارية' }, permission: 'analytics_view' },
+      { name: 'CrossCityLearningHub', icon: BookOpen, label: { en: 'Cross-City Learning', ar: 'التعلم عبر المدن' }, permission: 'analytics_view' },
       // Challenges
       { name: 'Challenges', icon: AlertCircle, label: { en: 'Challenges', ar: 'التحديات' }, permission: 'challenge_view' },
       { name: 'ChallengeCreate', icon: AlertCircle, label: { en: 'Create Challenge', ar: 'إنشاء تحدي' }, permission: 'challenge_create' },
@@ -200,6 +201,7 @@ export const SIDEBAR_MENUS = {
       { name: 'MyChallenges', icon: Target, label: { en: 'My Challenges', ar: 'تحدياتي' }, permission: 'challenge_view' },
       { name: 'MyPilots', icon: Rocket, label: { en: 'My Pilots', ar: 'تجاربي' }, permission: 'pilot_view' },
       // Programs, Events & Labs
+      { name: 'ProgramsEventsHub', icon: Calendar, label: { en: 'Programs & Events Hub', ar: 'مركز البرامج والفعاليات' }, permission: 'program_view' },
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' }, permission: 'program_view' },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' }, permission: 'event_view' },
       { name: 'LivingLabs', icon: FlaskConical, label: { en: 'Living Labs', ar: 'المختبرات الحية' }, permission: 'living_lab_view' },
