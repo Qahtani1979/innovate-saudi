@@ -27,9 +27,12 @@ export default defineConfig(({ mode }) => {
       include: [
         "react",
         "react-dom",
+        "react-dom/client",
         "react/jsx-runtime",
+        "react/jsx-dev-runtime",
         "@tanstack/react-query",
       ],
+      force: true,
     },
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
