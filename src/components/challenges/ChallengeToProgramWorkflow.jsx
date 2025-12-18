@@ -11,6 +11,11 @@ import { Sparkles, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  PROGRAM_CONVERSION_SYSTEM_PROMPT,
+  buildProgramConversionPrompt,
+  PROGRAM_CONVERSION_SCHEMA
+} from '@/lib/ai/prompts/challenges/programConversion';
 
 export default function ChallengeToProgramWorkflow({ challenge, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
@@ -71,68 +76,9 @@ export default function ChallengeToProgramWorkflow({ challenge, onClose, onSucce
     }
 
     const { success, data } = await invokeAI({
-      prompt: `Design a ${programType} program to address this challenge.
-
-CHALLENGE:
-Title: ${challenge.title_en}
-Problem: ${challenge.problem_statement_en}
-Desired Outcome: ${challenge.desired_outcome_en}
-Sector: ${challenge.sector}
-Complexity: ${challenge.challenge_type}
-
-Program Type: ${programType}
-
-Generate program design:
-- Program name (bilingual) - compelling and sector-specific
-- Objectives (bilingual) - address challenge
-- Curriculum/Activities (6-10 modules for ${programType})
-- Target participants (who needs to participate to solve this)
-- Duration estimate
-- Success metrics aligned with challenge KPIs
-
-Make it actionable for ${programType} format.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          name_en: { type: "string" },
-          name_ar: { type: "string" },
-          tagline_en: { type: "string" },
-          tagline_ar: { type: "string" },
-          objectives_en: { type: "string" },
-          objectives_ar: { type: "string" },
-          curriculum: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                week: { type: "number" },
-                topic_en: { type: "string" },
-                topic_ar: { type: "string" },
-                activities: { type: "array", items: { type: "string" } }
-              }
-            }
-          },
-          target_participants: {
-            type: "object",
-            properties: {
-              type: { type: "array", items: { type: "string" } },
-              min_participants: { type: "number" },
-              max_participants: { type: "number" }
-            }
-          },
-          duration_weeks: { type: "number" },
-          success_metrics: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                metric_en: { type: "string" },
-                metric_ar: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: PROGRAM_CONVERSION_SYSTEM_PROMPT,
+      prompt: buildProgramConversionPrompt({ challenge, programType }),
+      response_json_schema: PROGRAM_CONVERSION_SCHEMA
     });
 
     if (success && data) {
