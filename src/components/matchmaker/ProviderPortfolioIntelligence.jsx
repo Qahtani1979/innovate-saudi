@@ -10,6 +10,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  PORTFOLIO_ANALYSIS_SYSTEM_PROMPT,
+  buildPortfolioAnalysisPrompt,
+  PORTFOLIO_ANALYSIS_SCHEMA
+} from '@/lib/ai/prompts/matchmaker/portfolioAnalysis';
 
 export default function ProviderPortfolioIntelligence({ providerId }) {
   const { language, t } = useLanguage();
@@ -32,25 +37,9 @@ export default function ProviderPortfolioIntelligence({ providerId }) {
     }, {});
 
     const result = await invokeAI({
-      prompt: `Analyze provider portfolio and recommend expansion:
-
-Success by Sector:
-${Object.entries(successBySector).map(([s, d]) => `${s}: ${d.success}/${d.total} success`).join('\n')}
-
-Provide:
-1. Strong sectors (win rate >70%)
-2. Weak sectors (win rate <40%)
-3. Untapped opportunities (sectors not explored)
-4. Growth recommendations (which capabilities to develop)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          strong_sectors: { type: "array", items: { type: "string" } },
-          weak_sectors: { type: "array", items: { type: "string" } },
-          opportunities: { type: "array", items: { type: "string" } },
-          recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: PORTFOLIO_ANALYSIS_SYSTEM_PROMPT,
+      prompt: buildPortfolioAnalysisPrompt({ successBySector }),
+      response_json_schema: PORTFOLIO_ANALYSIS_SCHEMA
     });
 
     if (result.success) {
