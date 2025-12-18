@@ -7,7 +7,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { MessageSquare, Send, Sparkles, Loader2, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function StrategyCopilotChat() {
@@ -15,7 +15,7 @@ function StrategyCopilotChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
-  const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = usePrompt(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

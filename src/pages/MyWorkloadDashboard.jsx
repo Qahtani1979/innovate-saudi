@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,7 @@ import { WORKLOAD_PRIORITIES_PROMPT_TEMPLATE, WORKLOAD_PRIORITIES_SCHEMA, format
 function MyWorkloadDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiPriorities, setAiPriorities] = useState(null);
-  const { invokeAI, status, isLoading: loadingAI, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { invoke: invokeAI, status, isLoading: loadingAI, rateLimitInfo, isAvailable } = usePrompt(null);
   const { user } = useAuth();
 
   const { data: myChallenges = [] } = useQuery({

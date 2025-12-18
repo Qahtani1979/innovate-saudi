@@ -13,7 +13,8 @@ import { createPageUrl } from '../utils';
 import { AlertCircle, Plus, Search, Filter, Edit, Eye, LayoutGrid, List, Sparkles, Loader2, TrendingUp, Target, Zap, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { CHALLENGE_QUICK_SUGGESTION_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/myChallenges';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
@@ -25,7 +26,7 @@ function MyChallenges() {
   const [aiSuggestions, setAiSuggestions] = useState({});
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
-  const { invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = usePrompt(null);
   const [analyzingId, setAnalyzingId] = useState(null);
 
   const { data: createdChallenges = [], isLoading: loadingCreated } = useQuery({
@@ -104,30 +105,18 @@ function MyChallenges() {
         setAnalyzingId(null);
         return;
       }
-      const prompt = `Analyze this municipal challenge and provide quick actionable suggestions:
-      
-Title: ${challenge.title_en}
-Description: ${challenge.description_en?.substring(0, 200)}
-Status: ${challenge.status}
-Sector: ${challenge.sector}
-
-Provide:
-1. Next recommended action
-2. Priority level suggestion (keep/increase/decrease)
-3. Track recommendation (pilot/r_and_d/program/procurement/policy)
-4. One quick improvement tip`;
+      const promptConfig = CHALLENGE_QUICK_SUGGESTION_PROMPT_TEMPLATE({
+        title: challenge.title_en,
+        description: challenge.description_en,
+        status: challenge.status,
+        sector: challenge.sector,
+        language
+      });
 
       const response = await invokeAI({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            next_action: { type: 'string' },
-            priority_suggestion: { type: 'string' },
-            track_recommendation: { type: 'string' },
-            improvement_tip: { type: 'string' }
-          }
-        }
+        prompt: promptConfig.prompt,
+        system_prompt: promptConfig.system,
+        response_json_schema: promptConfig.schema
       });
 
       if (response.success) {

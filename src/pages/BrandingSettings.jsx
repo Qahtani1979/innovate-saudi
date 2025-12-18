@@ -8,13 +8,14 @@ import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { BRANDING_OPTIMIZATION_PROMPT_TEMPLATE } from '@/lib/ai/prompts/branding/optimizer';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function BrandingSettings() {
   const { language, isRTL, t } = useLanguage();
-  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
   const [branding, setBranding] = useState({
     platform_name_en: 'Saudi Innovates',
     platform_name_ar: 'الابتكار السعودي',
@@ -29,26 +30,21 @@ function BrandingSettings() {
   });
 
   const handleAIOptimize = async () => {
-    const result = await invokeAI({
-      prompt: `Analyze this platform branding and suggest improvements:
-Platform: ${branding.platform_name_en} / ${branding.platform_name_ar}
-Tagline: ${branding.tagline_en} / ${branding.tagline_ar}
-Colors: Primary ${branding.primary_color}, Secondary ${branding.secondary_color}
+    const promptConfig = BRANDING_OPTIMIZATION_PROMPT_TEMPLATE({
+      platformNameEn: branding.platform_name_en,
+      platformNameAr: branding.platform_name_ar,
+      taglineEn: branding.tagline_en,
+      taglineAr: branding.tagline_ar,
+      primaryColor: branding.primary_color,
+      secondaryColor: branding.secondary_color,
+      accentColor: branding.accent_color,
+      language
+    });
 
-Provide bilingual recommendations for:
-1. Brand positioning improvements
-2. Color psychology alignment with innovation
-3. Tagline alternatives
-4. Visual identity suggestions`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          positioning: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } },
-          color_recommendations: { type: 'array', items: { type: 'object', properties: { color: { type: 'string' }, reason_en: { type: 'string' }, reason_ar: { type: 'string' } } } },
-          tagline_alternatives: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          visual_suggestions: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+    const result = await invokeAI({
+      prompt: promptConfig.prompt,
+      system_prompt: promptConfig.system,
+      response_json_schema: promptConfig.schema
     });
     if (result.success) {
       toast.success(t({ en: 'AI analysis complete', ar: 'اكتمل التحليل الذكي' }));

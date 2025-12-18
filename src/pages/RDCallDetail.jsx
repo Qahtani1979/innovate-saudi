@@ -25,7 +25,8 @@ import ReviewerAutoAssignment from '../components/ReviewerAutoAssignment';
 import CommitteeMeetingScheduler from '../components/CommitteeMeetingScheduler';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { RD_CALL_INSIGHTS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/rd/callInsights';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
@@ -47,7 +48,7 @@ function RDCallDetailPage() {
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const queryClient = useQueryClient();
-  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
 
   const { data: call, isLoading } = useQuery({
     queryKey: ['rd-call', callId],
@@ -116,34 +117,22 @@ function RDCallDetailPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
+    const promptConfig = RD_CALL_INSIGHTS_PROMPT_TEMPLATE({
+      title: call.title_en,
+      callType: call.call_type,
+      status: call.status,
+      totalFunding: call.total_funding,
+      researchThemes: call.research_themes,
+      focusAreas: call.focus_areas,
+      proposalCount: proposals.length,
+      deadline: call.timeline?.submission_close,
+      language
+    });
+
     const response = await invokeAI({
-      prompt: `Analyze this R&D Call for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
-
-Call: ${call.title_en}
-Type: ${call.call_type}
-Status: ${call.status}
-Total Funding: ${call.total_funding || 'N/A'} SAR
-Research Themes: ${call.research_themes?.map(t => t.theme).join(', ') || 'N/A'}
-Focus Areas: ${call.focus_areas?.join(', ') || 'N/A'}
-Number of Proposals: ${proposals.length}
-Deadline: ${call.timeline?.submission_close || 'N/A'}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Strategic alignment with Vision 2030
-2. Expected research impact
-3. Recommendations to attract quality proposals
-4. Potential collaboration opportunities with universities/research centers
-5. Risk factors and mitigation suggestions`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          strategic_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          expected_impact: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          proposal_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          collaboration_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt: promptConfig.prompt,
+      system_prompt: promptConfig.system,
+      response_json_schema: promptConfig.schema
     });
     if (response.success) {
       setAiInsights(response.data);

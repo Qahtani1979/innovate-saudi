@@ -32,7 +32,7 @@ import {
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
@@ -46,7 +46,7 @@ function SolutionsPage() {
   const [selectedSolutions, setSelectedSolutions] = useState([]);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
   const { language, isRTL, t } = useLanguage();
 
   const queryClient = useQueryClient();
