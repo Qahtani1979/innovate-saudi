@@ -1,7 +1,7 @@
 /**
  * AI Prompts Index
  * Central export point for all AI prompt modules
- * @version 1.0.2
+ * @version 1.0.3
  */
 
 // Foundation exports
@@ -261,6 +261,9 @@ export * from './finance';
 // Startup prompts
 export * from './startup';
 
+// Data Management prompts
+export * from './dataManagement';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -348,9 +351,9 @@ export const PROMPT_MODULE_STATUS = {
   generation: { status: 'complete', promptCount: 3 },
   classification: { status: 'complete', promptCount: 3 },
   finance: { status: 'complete', promptCount: 1 },
-  startup: { status: 'complete', promptCount: 1 }
+  startup: { status: 'complete', promptCount: 1 },
+  dataManagement: { status: 'complete', promptCount: 1 }
 };
-
 /**
  * Get implementation progress
  * @returns {Object} Progress stats

@@ -12,8 +12,18 @@ import {
   Languages, BarChart3, Loader2, Copy, Check, RefreshCw,
   Lightbulb, PenTool, Zap
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import {
+  CAMPAIGN_CONTENT_SYSTEM_PROMPT,
+  CAMPAIGN_TRANSLATION_SYSTEM_PROMPT,
+  CAMPAIGN_IMPROVEMENT_SYSTEM_PROMPT,
+  CAMPAIGN_SUBJECT_SYSTEM_PROMPT,
+  buildCampaignContentPrompt,
+  buildCampaignTranslationPrompt,
+  buildCampaignImprovementPrompt,
+  buildSubjectLinesPrompt
+} from '@/lib/ai/prompts/communications/campaignHelpers';
 
 const TONES = [
   { value: 'professional', label: { en: 'Professional', ar: 'احترافي' }, icon: '💼' },
@@ -61,22 +71,7 @@ export default function CampaignAIHelpers({ onUseSubject, onUseBody, campaignCon
   const [subjectContext, setSubjectContext] = useState('');
   const [generatedSubjects, setGeneratedSubjects] = useState([]);
 
-  const invokeAI = async (prompt, systemPrompt) => {
-    const { data, error } = await supabase.functions.invoke('invoke-llm', {
-      body: {
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        model: 'google/gemini-2.5-flash',
-        temperature: 0.7,
-        max_tokens: 2000
-      }
-    });
-    
-    if (error) throw error;
-    return data?.choices?.[0]?.message?.content || data?.content || '';
-  };
+  const { invokeAI } = useAIWithFallback();
 
   const handleGenerateContent = async () => {
     if (!topic.trim()) {
@@ -86,47 +81,23 @@ export default function CampaignAIHelpers({ onUseSubject, onUseBody, campaignCon
     
     setIsLoading(true);
     try {
-      const systemPrompt = `You are an expert email copywriter for a government innovation platform. 
-Generate compelling email content that is:
-- Clear and concise
-- Action-oriented with clear CTAs
-- Appropriate for the specified tone
-- Engaging and professional
-- Culturally appropriate for Saudi Arabia
-
-Return your response in this exact JSON format:
-{
-  "subject_en": "English subject line",
-  "subject_ar": "Arabic subject line",
-  "body_en": "Full English email body in HTML format",
-  "body_ar": "Full Arabic email body in HTML format"
-}`;
-
-      const prompt = `Generate a ${campaignType} email with a ${tone} tone.
-
-Topic: ${topic}
-${keyPoints ? `Key Points to Include:\n${keyPoints}` : ''}
-
-The email should:
-1. Have an attention-grabbing subject line
-2. Include a compelling opening
-3. Clearly communicate the main message
-4. Have a clear call-to-action
-5. Include proper HTML formatting with paragraphs
-
-Generate both English and Arabic versions.`;
-
-      const result = await invokeAI(prompt, systemPrompt);
+      const prompt = buildCampaignContentPrompt({ campaignType, tone, topic, keyPoints });
       
-      // Parse JSON response
-      const jsonMatch = result.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        setGeneratedSubject(language === 'ar' ? parsed.subject_ar : parsed.subject_en);
-        setGeneratedBody(language === 'ar' ? parsed.body_ar : parsed.body_en);
-      } else {
-        // Fallback: use raw text
-        setGeneratedBody(result);
+      const result = await invokeAI({
+        prompt,
+        system_prompt: CAMPAIGN_CONTENT_SYSTEM_PROMPT
+      });
+
+      if (result.success) {
+        const jsonMatch = JSON.stringify(result.data).match(/\{[\s\S]*\}/);
+        if (result.data?.subject_en) {
+          setGeneratedSubject(language === 'ar' ? result.data.subject_ar : result.data.subject_en);
+          setGeneratedBody(language === 'ar' ? result.data.body_ar : result.data.body_en);
+        } else if (typeof result.data === 'string') {
+          const parsed = JSON.parse(result.data.match(/\{[\s\S]*\}/)?.[0] || '{}');
+          setGeneratedSubject(language === 'ar' ? parsed.subject_ar : parsed.subject_en);
+          setGeneratedBody(language === 'ar' ? parsed.body_ar : parsed.body_en);
+        }
       }
       
       toast.success(t({ en: 'Content generated!', ar: 'تم إنشاء المحتوى!' }));
@@ -146,20 +117,16 @@ Generate both English and Arabic versions.`;
     
     setIsLoading(true);
     try {
-      const systemPrompt = `You are a professional translator specializing in government and innovation communications.
-Translate the text accurately while:
-- Maintaining the original tone and style
-- Using appropriate formal language
-- Preserving any HTML formatting
-- Being culturally appropriate for Saudi Arabia
+      const prompt = buildCampaignTranslationPrompt({ text: textToTranslate, targetLanguage: targetLang === 'ar' ? 'Arabic' : 'English' });
+      
+      const result = await invokeAI({
+        prompt,
+        system_prompt: CAMPAIGN_TRANSLATION_SYSTEM_PROMPT
+      });
 
-Return ONLY the translated text, no explanations.`;
-
-      const targetLanguage = targetLang === 'ar' ? 'Arabic' : 'English';
-      const prompt = `Translate the following text to ${targetLanguage}:\n\n${textToTranslate}`;
-
-      const result = await invokeAI(prompt, systemPrompt);
-      setTranslatedText(result.trim());
+      if (result.success) {
+        setTranslatedText(typeof result.data === 'string' ? result.data.trim() : JSON.stringify(result.data));
+      }
       
       toast.success(t({ en: 'Translation complete!', ar: 'اكتملت الترجمة!' }));
     } catch (err) {
@@ -178,24 +145,16 @@ Return ONLY the translated text, no explanations.`;
     
     setIsLoading(true);
     try {
-      const improvementInstructions = {
-        clarity: 'Make it clearer and easier to understand',
-        concise: 'Make it more concise without losing meaning',
-        engaging: 'Make it more engaging and compelling',
-        formal: 'Make it more formal and professional',
-        friendly: 'Make it warmer and more friendly',
-        persuasive: 'Make it more persuasive with stronger CTAs'
-      };
+      const prompt = buildCampaignImprovementPrompt({ text: textToImprove, improvementType });
+      
+      const result = await invokeAI({
+        prompt,
+        system_prompt: CAMPAIGN_IMPROVEMENT_SYSTEM_PROMPT
+      });
 
-      const systemPrompt = `You are an expert email copywriter.
-Improve the given email text according to the instruction.
-Preserve any HTML formatting.
-Return ONLY the improved text, no explanations.`;
-
-      const prompt = `${improvementInstructions[improvementType]}:\n\n${textToImprove}`;
-
-      const result = await invokeAI(prompt, systemPrompt);
-      setImprovedText(result.trim());
+      if (result.success) {
+        setImprovedText(typeof result.data === 'string' ? result.data.trim() : JSON.stringify(result.data));
+      }
       
       toast.success(t({ en: 'Text improved!', ar: 'تم تحسين النص!' }));
     } catch (err) {
@@ -214,28 +173,22 @@ Return ONLY the improved text, no explanations.`;
     
     setIsLoading(true);
     try {
-      const systemPrompt = `You are an email marketing expert specializing in subject lines that get opened.
-Generate 5 compelling subject line variations.
-
-Return your response as a JSON array:
-["Subject 1", "Subject 2", "Subject 3", "Subject 4", "Subject 5"]`;
-
-      const prompt = `Generate 5 email subject line variations for:
-${subjectContext}
-
-Requirements:
-- Under 60 characters each
-- Mix of styles: curiosity, benefit-driven, urgency, personalization
-- Appropriate for government/innovation platform
-- Generate in ${language === 'ar' ? 'Arabic' : 'English'}`;
-
-      const result = await invokeAI(prompt, systemPrompt);
+      const prompt = buildSubjectLinesPrompt({ context: subjectContext, language });
       
-      // Parse JSON array
-      const jsonMatch = result.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        setGeneratedSubjects(parsed);
+      const result = await invokeAI({
+        prompt,
+        system_prompt: CAMPAIGN_SUBJECT_SYSTEM_PROMPT
+      });
+
+      if (result.success) {
+        if (Array.isArray(result.data)) {
+          setGeneratedSubjects(result.data);
+        } else if (typeof result.data === 'string') {
+          const jsonMatch = result.data.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            setGeneratedSubjects(JSON.parse(jsonMatch[0]));
+          }
+        }
       }
       
       toast.success(t({ en: 'Subject lines generated!', ar: 'تم إنشاء عناوين البريد!' }));
