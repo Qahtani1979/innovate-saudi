@@ -620,34 +620,34 @@ Return a list of permission codes this role should have.`,
                     className={isRTL ? 'pr-10' : 'pl-10'}
                   />
                 </div>
-                <Select value={skillFilter} onValueChange={setSkillFilter}>
+                <Select value={skillFilter || 'all'} onValueChange={(val) => setSkillFilter(val === 'all' ? '' : val)}>
                   <SelectTrigger>
                     <SelectValue placeholder={t({ en: 'Filter by skill', ar: 'تصفية بالمهارة' })} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Skills</SelectItem>
+                    <SelectItem value="all">All Skills</SelectItem>
                     {allSkills.sort().map(skill => (
                       <SelectItem key={skill} value={skill}>{skill}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <Select value={roleFilter || 'all'} onValueChange={(val) => setRoleFilter(val === 'all' ? '' : val)}>
                   <SelectTrigger>
                     <SelectValue placeholder={t({ en: 'Filter by role', ar: 'تصفية بالدور' })} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Roles</SelectItem>
+                    <SelectItem value="all">All Roles</SelectItem>
                     {allRoles.map(role => (
                       <SelectItem key={role} value={role}>{role}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <Select value={departmentFilter || 'all'} onValueChange={(val) => setDepartmentFilter(val === 'all' ? '' : val)}>
                   <SelectTrigger>
                     <SelectValue placeholder={t({ en: 'Filter by department', ar: 'تصفية بالإدارة' })} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all">All Departments</SelectItem>
                     {allDepartments.sort().map(dept => (
                       <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                     ))}
@@ -980,12 +980,12 @@ Return a list of permission codes this role should have.`,
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">{t({ en: 'Organization', ar: 'المنظمة' })}</label>
-                    <Select value={formData.organization_id || ''} onValueChange={(val) => setFormData({...formData, organization_id: val})}>
+                    <Select value={formData.organization_id || 'none'} onValueChange={(val) => setFormData({...formData, organization_id: val === 'none' ? '' : val})}>
                       <SelectTrigger>
                         <SelectValue placeholder={t({ en: 'Select organization...', ar: 'اختر منظمة...' })} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {organizations.map(org => (
                           <SelectItem key={org.id} value={org.id}>{org.name_en}</SelectItem>
                         ))}
@@ -994,12 +994,12 @@ Return a list of permission codes this role should have.`,
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">{t({ en: 'Municipality', ar: 'البلدية' })}</label>
-                    <Select value={formData.municipality_id || ''} onValueChange={(val) => setFormData({...formData, municipality_id: val})}>
+                    <Select value={formData.municipality_id || 'none'} onValueChange={(val) => setFormData({...formData, municipality_id: val === 'none' ? '' : val})}>
                       <SelectTrigger>
                         <SelectValue placeholder={t({ en: 'Select municipality...', ar: 'اختر بلدية...' })} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {municipalitiesData.map(mun => (
                           <SelectItem key={mun.id} value={mun.id}>{mun.name_en}</SelectItem>
                         ))}
