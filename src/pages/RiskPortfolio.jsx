@@ -33,23 +33,19 @@ function RiskPortfolio() {
   });
 
   const analyzeRisks = async () => {
+    // Import centralized prompt module
+    const { RISK_PORTFOLIO_PROMPT_TEMPLATE, RISK_PORTFOLIO_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/analytics/riskPortfolio');
+    
+    const highRiskPilots = pilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical');
+    const activePilotsCount = pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length;
+    const activeChallengesCount = challenges.filter(c => c.status === 'approved' || c.status === 'in_treatment').length;
+    
     const result = await invokeAI({
-      prompt: `Perform comprehensive risk portfolio analysis for municipal innovation:
-
-Pilots at Risk:
-${pilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical').map(p => 
-  `${p.code}: ${p.title_en}, Risk: ${p.risk_level}, Issues: ${p.issues?.length || 0}`
-).join('\n')}
-
-All Active Pilots: ${pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length}
-All Active Challenges: ${challenges.filter(c => c.status === 'approved' || c.status === 'in_treatment').length}
-
-Generate bilingual risk analysis:
-1. Risk heat map (categorize risks by type and severity)
-2. Risk trends (increasing/decreasing patterns)
-3. Mitigation recommendations (prioritized actions)
-4. Early warning indicators (signals to watch)
-5. Portfolio-level risk score and interpretation`,
+      prompt: RISK_PORTFOLIO_PROMPT_TEMPLATE({
+        highRiskPilots,
+        activePilotsCount,
+        activeChallengesCount
+      }),
       response_json_schema: {
         type: 'object',
         properties: {
