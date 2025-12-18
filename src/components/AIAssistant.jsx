@@ -8,6 +8,11 @@ import { Sparkles, X, Send, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildPlatformAssistantPrompt, 
+  PLATFORM_ASSISTANT_SYSTEM_PROMPT,
+  QUICK_ACTIONS 
+} from '@/lib/ai/prompts/core';
 
 export default function AIAssistant({ context = {} }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,32 +21,10 @@ export default function AIAssistant({ context = {} }) {
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const quickActions = [
-    { 
-      label: { en: 'Summarize this page', ar: 'لخص هذه الصفحة' },
-      prompt: 'Summarize the current page content'
-    },
-    { 
-      label: { en: 'Suggest improvements', ar: 'اقترح تحسينات' },
-      prompt: 'Suggest improvements for this item'
-    },
-    { 
-      label: { en: 'Find similar items', ar: 'ابحث عن مشابهات' },
-      prompt: 'Find similar challenges or solutions'
-    },
-    { 
-      label: { en: 'Generate report', ar: 'أنشئ تقرير' },
-      prompt: 'Generate a summary report'
-    },
-    { 
-      label: { en: 'Strategic alignment', ar: 'التوافق الاستراتيجي' },
-      prompt: 'How does this align with our strategic plans? What objectives should this be linked to?'
-    },
-    { 
-      label: { en: 'Strategy gaps', ar: 'فجوات الاستراتيجية' },
-      prompt: 'What are the current gaps in strategic alignment across our challenges and pilots?'
-    }
-  ];
+  const quickActions = Object.values(QUICK_ACTIONS).map(action => ({
+    label: { en: action.en, ar: action.ar },
+    prompt: action.prompt
+  }));
 
   const handleSend = async () => {
     if (!prompt.trim() || isLoading || !isAvailable) return;
@@ -71,12 +54,30 @@ export default function AIAssistant({ context = {} }) {
 
       const platformContext = {
         page: context.page,
-        total_challenges: challenges.length,
-        total_pilots: pilots.length,
-        total_solutions: solutions.length,
-        total_rd_projects: rdProjects.length,
-        total_programs: programs.length,
-        strategic_context: {
+        platformData: {
+          total_challenges: challenges.length,
+          total_pilots: pilots.length,
+          total_solutions: solutions.length,
+          total_rd_projects: rdProjects.length,
+          total_programs: programs.length,
+          recent_items: {
+            challenges: challenges.slice(0, 3).map(c => ({ 
+              code: c.code, 
+              title: c.title_en, 
+              sector: c.sector,
+              is_strategy_derived: c.is_strategy_derived,
+              strategic_plan_ids: c.strategic_plan_ids 
+            })),
+            pilots: pilots.slice(0, 3).map(p => ({ 
+              code: p.code, 
+              title: p.title_en, 
+              stage: p.stage,
+              is_strategy_derived: p.is_strategy_derived 
+            })),
+            solutions: solutions.slice(0, 3).map(s => ({ name: s.name_en, provider: s.provider_name }))
+          }
+        },
+        strategicContext: {
           total_strategic_plans: strategicPlans.length,
           active_plans: activeStrategicPlans.length,
           active_plan_names: activeStrategicPlans.slice(0, 3).map(p => p.name_en),
@@ -86,46 +87,12 @@ export default function AIAssistant({ context = {} }) {
           strategy_alignment_percentage: challenges.length > 0 
             ? Math.round((strategyDerivedChallenges / challenges.length) * 100) 
             : 0
-        },
-        recent_items: {
-          challenges: challenges.slice(0, 3).map(c => ({ 
-            code: c.code, 
-            title: c.title_en, 
-            sector: c.sector,
-            is_strategy_derived: c.is_strategy_derived,
-            strategic_plan_ids: c.strategic_plan_ids 
-          })),
-          pilots: pilots.slice(0, 3).map(p => ({ 
-            code: p.code, 
-            title: p.title_en, 
-            stage: p.stage,
-            is_strategy_derived: p.is_strategy_derived 
-          })),
-          solutions: solutions.slice(0, 3).map(s => ({ name: s.name_en, provider: s.provider_name }))
         }
       };
 
       const response = await invokeAI({
-        prompt: `You are the Saudi Innovates Platform AI Assistant with semantic search AND STRATEGIC AWARENESS.
-Context: User is on page "${context.page}".
-
-STRATEGIC CONTEXT (IMPORTANT - Use this to guide recommendations):
-- Active Strategic Plans: ${platformContext.strategic_context.active_plan_names.join(', ') || 'None'}
-- Strategy Alignment: ${platformContext.strategic_context.strategy_alignment_percentage}% of challenges are strategy-derived
-- Strategy-derived entities: ${platformContext.strategic_context.strategy_derived_challenges} challenges, ${platformContext.strategic_context.strategy_derived_pilots} pilots, ${platformContext.strategic_context.strategy_derived_programs} programs
-
-Platform Data: ${JSON.stringify(platformContext)}
-
-User question: ${prompt}
-
-Provide:
-- Context-aware, actionable guidance with STRATEGIC ALIGNMENT recommendations
-- When relevant, suggest linking entities to strategic plans
-- Recommend strategic objectives that align with user's query
-- Search platform data when relevant
-- Suggest specific pages or entities
-- Be concise and bilingual when helpful (AR/EN)
-- If user asks about strategy, reference the active plans and alignment metrics`
+        prompt: buildPlatformAssistantPrompt(platformContext, prompt),
+        system_prompt: PLATFORM_ASSISTANT_SYSTEM_PROMPT
       });
 
       if (response.success && response.data) {
