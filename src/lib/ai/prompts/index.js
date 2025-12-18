@@ -225,6 +225,9 @@ export * from './accessibility';
 // Governance prompts
 export * from './governance';
 
+// Alerts prompts
+export * from './alerts';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -300,7 +303,8 @@ export const PROMPT_MODULE_STATUS = {
   scheduling: { status: 'complete', promptCount: 3 },
   localization: { status: 'complete', promptCount: 3 },
   accessibility: { status: 'complete', promptCount: 3 },
-  governance: { status: 'complete', promptCount: 3 }
+  governance: { status: 'complete', promptCount: 3 },
+  alerts: { status: 'complete', promptCount: 3 }
 };
 
 /**
@@ -312,7 +316,7 @@ export function getImplementationProgress() {
   const completed = modules.filter(([, v]) => v.status === 'complete').length;
   const total = modules.length;
   const promptsComplete = modules.reduce((sum, [, v]) => sum + (v.status === 'complete' ? v.promptCount : 0), 0);
-  const promptsTotal = 295; // Final target
+  const promptsTotal = 300; // Final target
 
   return {
     modulesComplete: completed,
