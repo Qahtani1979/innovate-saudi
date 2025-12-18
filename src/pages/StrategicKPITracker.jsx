@@ -14,6 +14,10 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  STRATEGIC_KPI_INSIGHTS_SCHEMA,
+  STRATEGIC_KPI_INSIGHTS_PROMPT_TEMPLATE
+} from '@/lib/ai/prompts/kpi/strategicKPI';
 
 function StrategicKPITracker() {
   const { language, isRTL, t } = useLanguage();
@@ -124,76 +128,12 @@ function StrategicKPITracker() {
     }));
 
     const result = await invokeAI({
-      prompt: `Analyze strategic KPI performance for Saudi municipal innovation platform:
-
-KPI Performance:
-${JSON.stringify(kpiData, null, 2)}
-
-Active Pilots: ${pilots.length}
-Challenges: ${challenges.length}
-
-Generate bilingual AI insights:
-1. **Anomaly Detection** - Unusual KPI movements or patterns
-2. **Predictive Forecasting** - Trajectory predictions for next 3-6 months
-3. **Correlation Analysis** - Which KPIs move together, interdependencies
-4. **Target Adjustment** - Suggest realistic target revisions if needed
-5. **Alert Recommendations** - When should stakeholders be notified
-6. **Intervention Strategies** - Specific actions to improve at-risk KPIs`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          anomalies: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                kpi_en: { type: 'string' },
-                kpi_ar: { type: 'string' },
-                anomaly_en: { type: 'string' },
-                anomaly_ar: { type: 'string' },
-                severity: { type: 'string' }
-              }
-            }
-          },
-          forecasts: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                kpi_en: { type: 'string' },
-                kpi_ar: { type: 'string' },
-                forecast_en: { type: 'string' },
-                forecast_ar: { type: 'string' },
-                confidence: { type: 'string' }
-              }
-            }
-          },
-          correlations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                correlation_en: { type: 'string' },
-                correlation_ar: { type: 'string' },
-                strength: { type: 'string' }
-              }
-            }
-          },
-          interventions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                kpi_en: { type: 'string' },
-                kpi_ar: { type: 'string' },
-                strategy_en: { type: 'string' },
-                strategy_ar: { type: 'string' },
-                urgency: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: STRATEGIC_KPI_INSIGHTS_PROMPT_TEMPLATE({
+        kpiData,
+        activePilots: pilots.length,
+        totalChallenges: challenges.length
+      }),
+      response_json_schema: STRATEGIC_KPI_INSIGHTS_SCHEMA
     });
 
     if (result.success) {

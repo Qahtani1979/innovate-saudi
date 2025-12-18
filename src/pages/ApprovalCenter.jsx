@@ -22,6 +22,11 @@ import { getGateConfig } from '../components/approval/ApprovalGateConfig';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import {
+  APPROVAL_ANALYSIS_SCHEMA,
+  CHALLENGE_APPROVAL_PROMPT_TEMPLATE,
+  MILESTONE_APPROVAL_PROMPT_TEMPLATE
+} from '@/lib/ai/prompts/approval/approvalAnalysis';
 
 function ApprovalCenter() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
@@ -379,38 +384,14 @@ function ApprovalCenter() {
     try {
       let prompt = '';
       if (item.entity === 'challenge') {
-        prompt = `Analyze this challenge for approval decision:
-Title: ${item.title_en}
-Description: ${item.description_en}
-Sector: ${item.sector}
-Priority: ${item.priority}
-
-Provide:
-1. Key strengths
-2. Risk factors
-3. Approval recommendation (approve/reject/request changes)
-4. Suggested conditions`;
+        prompt = CHALLENGE_APPROVAL_PROMPT_TEMPLATE(item);
       } else if (item.type === 'milestone') {
-        prompt = `Analyze this pilot milestone for approval:
-Pilot: ${item.pilotTitle}
-Milestone: ${item.milestone.name}
-Due Date: ${item.milestone.due_date}
-Status: ${item.milestone.status}
-
-Provide approval recommendation with reasoning.`;
+        prompt = MILESTONE_APPROVAL_PROMPT_TEMPLATE(item.pilotTitle, item.milestone);
       }
 
       const result = await invokeAI({
         prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strengths: { type: 'array', items: { type: 'string' } },
-            risks: { type: 'array', items: { type: 'string' } },
-            recommendation: { type: 'string' },
-            conditions: { type: 'array', items: { type: 'string' } }
-          }
-        }
+        response_json_schema: APPROVAL_ANALYSIS_SCHEMA
       });
 
       if (result.success) {
