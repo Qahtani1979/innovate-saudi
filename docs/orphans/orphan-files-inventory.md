@@ -1,7 +1,7 @@
 # Orphan Files Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
+> **Version:** 2.0  
+> **Last Updated:** 2025-12-18  
 > **Purpose:** Track files not yet assigned to any system inventory
 
 ---
@@ -10,7 +10,7 @@
 
 | ⬅️ Previous | ⬆️ Parent | ➡️ Next |
 |-------------|-----------|---------|
-| [← Approvals](../approvals/approvals-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Strategy →](../strategy/strategy-system-inventory.md) |
+| [← Approvals](../approvals/approvals-system-inventory.md) | [Master Index](../SYSTEM_INVENTORIES_INDEX.md) | [Shared →](../shared/shared-system-inventory.md) |
 
 ---
 
@@ -33,31 +33,17 @@
 | Public Solutions | `PublicSolutions.jsx` | → Solutions System |
 | Terms | `Terms.jsx` | Needs assignment |
 
-### Audit & Coverage Pages
+### Remaining Audit & Coverage Pages (few remaining)
 
 | Page | File | Suggested System |
 |------|------|------------------|
-| AdminCoverageReport | `AdminCoverageReport.jsx` | Admin |
-| AnalyticsClusterAudit | `AnalyticsClusterAudit.jsx` | Portfolio |
-| BilingualCoverageReports | `BilingualCoverageReports.jsx` | Admin |
-| BilingualRTLAudit | `BilingualRTLAudit.jsx` | Admin |
-| BilingualSystemAudit | `BilingualSystemAudit.jsx` | Admin |
-| CommentSystemClusterAudit | `CommentSystemClusterAudit.jsx` | Admin |
-| ComprehensiveReportAudit | `ComprehensiveReportAudit.jsx` | Portfolio |
-| ContentAudit | `ContentAudit.jsx` | Admin |
-| CoverageReportStandardization | `CoverageReportStandardization.jsx` | Admin |
-| CoverageReportUpdateTracker | `CoverageReportUpdateTracker.jsx` | Admin |
-| CoverageReportsAudit | `CoverageReportsAudit.jsx` | Admin |
 | ExpertSystemClusterAudit | `ExpertSystemClusterAudit.jsx` | Matchmaker |
-| MobileResponsivenessAudit | `MobileResponsivenessAudit.jsx` | Admin |
-| ModuleConsistencyValidator | `ModuleConsistencyValidator.jsx` | Admin |
-| ModuleCoverageHub | `ModuleCoverageHub.jsx` | Admin |
-| PlatformAudit | `PlatformAudit.jsx` | Admin |
-| PlatformCompletionReport | `PlatformCompletionReport.jsx` | Admin |
-| PlatformCoverageAudit | `PlatformCoverageAudit.jsx` | Admin |
-| Priority6MasterAudit | `Priority6MasterAudit.jsx` | Admin |
 
-### Profile & Identity Pages
+### Profile & Identity Pages (Assigned to Citizens - ✅ MOVED)
+
+> ⚠️ **Note:** Profile pages have been moved to Citizens System inventory. See [citizens-system-inventory.md](../citizens/citizens-system-inventory.md)
+
+### Remaining Pages Needing Assignment
 
 | Page | File | Suggested System |
 |------|------|------------------|
@@ -66,16 +52,7 @@
 | ExpertOnboarding | `ExpertOnboarding.jsx` | Matchmaker |
 | ExpertProfileEdit | `ExpertProfileEdit.jsx` | Matchmaker |
 | ExpertRegistry | `ExpertRegistry.jsx` | Matchmaker |
-| FollowersList | `FollowersList.jsx` | Citizens |
-| MyActivityTimeline | `MyActivityTimeline.jsx` | Citizens |
-| MyApplications | `MyApplications.jsx` | Citizens |
-| MyApprovals | `MyApprovals.jsx` | Approvals |
-| MyBookmarks | `MyBookmarks.jsx` | Citizens |
-| MyConnections | `MyConnections.jsx` | Citizens |
-| MyDeadlines | `MyDeadlines.jsx` | Citizens |
-| MyDelegation | `MyDelegation.jsx` | Admin |
 | MyEvaluatorProfile | `MyEvaluatorProfile.jsx` | Matchmaker |
-| MyFollowing | `MyFollowing.jsx` | Citizens |
 | MyImpactDashboard | `MyImpactDashboard.jsx` | Portfolio |
 | MyLearning | `MyLearning.jsx` | Knowledge |
 | MyMunicipalityStaffProfile | `MyMunicipalityStaffProfile.jsx` | Municipalities |
@@ -83,21 +60,14 @@
 | MyPartnershipsPage | `MyPartnershipsPage.jsx` | Partnerships |
 | MyPerformance | `MyPerformance.jsx` | Portfolio |
 | MyPilots | `MyPilots.jsx` | Pilots |
-| MyProfileAnalytics | `MyProfileAnalytics.jsx` | Citizens |
-| MyProfilesHub | `MyProfilesHub.jsx` | Citizens |
 | MyProgramDashboard | `MyProgramDashboard.jsx` | Programs |
 | MyPrograms | `MyPrograms.jsx` | Programs |
 | MyRDProjects | `MyRDProjects.jsx` | R&D |
 | MyResearcherProfileEditor | `MyResearcherProfileEditor.jsx` | Startups & Academia |
 | MyWorkloadDashboard | `MyWorkloadDashboard.jsx` | Portfolio |
-| ProfileAchievementsBadges | `ProfileAchievementsBadges.jsx` | Citizens |
-| ProfileCompletenessWidget | `ProfileCompletenessWidget.jsx` | Citizens |
-| ProfileEndorsements | `ProfileEndorsements.jsx` | Citizens |
-| ProfilePrivacyControls | `ProfilePrivacyControls.jsx` | Citizens |
-| ProfileReputationScoring | `ProfileReputationScoring.jsx` | Citizens |
-| ProfileSwitcher | `ProfileSwitcher.jsx` | Citizens |
-| ProfileVerification | `ProfileVerification.jsx` | Citizens |
-| ProfileVerificationRequest | `ProfileVerificationRequest.jsx` | Citizens |
+| GanttView | `GanttView.jsx` | Portfolio |
+| IterationWorkflow | `IterationWorkflow.jsx` | Admin |
+| PipelineStageAutomation | `PipelineStageAutomation.jsx` | Admin |
 
 ### Data & API Management
 

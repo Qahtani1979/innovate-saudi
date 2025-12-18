@@ -1,8 +1,8 @@
 # Citizens & Engagement System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
-> **Total Assets:** 55 files (18 pages, 34 components, 3 hooks)  
+> **Version:** 2.0  
+> **Last Updated:** 2025-12-18  
+> **Total Assets:** 75 files (30 pages, 45 components, 5 hooks)  
 > **Parent System:** Citizen Engagement Platform  
 > **Hub Page:** `/citizen-dashboard`
 
@@ -18,11 +18,11 @@
 
 ## Overview
 
-The Citizens System enables citizen participation in innovation through idea submission, voting, feedback, pilot enrollment, and living lab participation.
+The Citizens System enables citizen participation in innovation through idea submission, voting, feedback, pilot enrollment, living lab participation, and personal profile management.
 
 ---
 
-## 📄 Pages (18)
+## 📄 Pages (30)
 
 ### Citizen Dashboard Pages
 
@@ -32,6 +32,28 @@ The Citizens System enables citizen participation in innovation through idea sub
 | Citizen Onboarding | `CitizenOnboarding.jsx` | `/citizen-onboarding` | `public` | Citizen Dashboard |
 | Citizen Leaderboard | `CitizenLeaderboard.jsx` | `/citizen-leaderboard` | `public` | Citizen Dashboard |
 | Citizen Engagement Dashboard | `CitizenEngagementDashboard.jsx` | `/citizen-engagement-dashboard` | `engagement_view` | Admin |
+
+### Profile & Identity Pages (NEW - moved from orphans)
+
+| Page | File | Route | Permission | Parent |
+|------|------|-------|------------|--------|
+| **My Profiles Hub** | `MyProfilesHub.jsx` | `/my-profiles-hub` | `multi_profile` | Personal |
+| My Activity Timeline | `MyActivityTimeline.jsx` | `/my-activity-timeline` | `authenticated` | Personal |
+| My Applications | `MyApplications.jsx` | `/my-applications` | `authenticated` | Personal |
+| My Bookmarks | `MyBookmarks.jsx` | `/my-bookmarks` | `authenticated` | Personal |
+| My Connections | `MyConnections.jsx` | `/my-connections` | `authenticated` | Personal |
+| My Deadlines | `MyDeadlines.jsx` | `/my-deadlines` | `authenticated` | Personal |
+| My Following | `MyFollowing.jsx` | `/my-following` | `authenticated` | Personal |
+| Followers List | `FollowersList.jsx` | `/followers-list` | `authenticated` | Personal |
+| My Profile Analytics | `MyProfileAnalytics.jsx` | `/my-profile-analytics` | `authenticated` | Personal |
+| Profile Switcher | `ProfileSwitcher.jsx` | `/profile-switcher` | `multi_profile` | Personal |
+| Profile Achievements Badges | `ProfileAchievementsBadges.jsx` | `/profile-achievements-badges` | `authenticated` | Personal |
+| Profile Completeness Widget | `ProfileCompletenessWidget.jsx` | `/profile-completeness-widget` | `authenticated` | Personal |
+| Profile Endorsements | `ProfileEndorsements.jsx` | `/profile-endorsements` | `authenticated` | Personal |
+| Profile Privacy Controls | `ProfilePrivacyControls.jsx` | `/profile-privacy-controls` | `authenticated` | Personal |
+| Profile Reputation Scoring | `ProfileReputationScoring.jsx` | `/profile-reputation-scoring` | `authenticated` | Personal |
+| Profile Verification | `ProfileVerification.jsx` | `/profile-verification` | `authenticated` | Personal |
+| Profile Verification Request | `ProfileVerificationRequest.jsx` | `/profile-verification-request` | `authenticated` | Personal |
 
 ### Citizen Idea Pages
 
