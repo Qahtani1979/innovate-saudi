@@ -86,6 +86,13 @@ function SandboxesPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
+    
+    // Import centralized prompt module
+    const { 
+      SANDBOX_PORTFOLIO_PROMPT_TEMPLATE, 
+      SANDBOX_PORTFOLIO_RESPONSE_SCHEMA 
+    } = await import('@/lib/ai/prompts/sandbox/portfolioAnalysis');
+    
     const sandboxSummary = sandboxes.slice(0, 10).map(s => ({
       name: s.name_en,
       domain: s.domain,
@@ -96,33 +103,8 @@ function SandboxesPage() {
     }));
 
     const result = await invokeAI({
-      prompt: `Analyze these regulatory sandboxes for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
-
-Sandboxes: ${JSON.stringify(sandboxSummary)}
-
-Statistics:
-- Total: ${stats.total}
-- Active: ${stats.active}
-- Total Capacity: ${stats.capacity}
-- Current Pilots: ${stats.currentPilots}
-- Utilization: ${((stats.currentPilots / stats.capacity) * 100).toFixed(0)}%
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. National sandbox capacity optimization recommendations
-2. Domain-specific regulatory insights and trends
-3. Risk management strategies across sandboxes
-4. Expansion opportunities for new sandbox zones
-5. Best practices from high-performing sandboxes`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          capacity_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          domain_insights: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          risk_management: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          expansion_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          best_practices: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt: SANDBOX_PORTFOLIO_PROMPT_TEMPLATE({ sandboxSummary, stats }),
+      response_json_schema: SANDBOX_PORTFOLIO_RESPONSE_SCHEMA
     });
     if (result.success) {
       setAiInsights(result.data);

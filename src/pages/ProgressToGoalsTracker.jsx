@@ -68,35 +68,20 @@ function ProgressToGoalsTracker() {
   const generateAIRecommendations = async () => {
     if (!activePlan?.kpis) return;
 
+    // Import centralized prompt module
+    const { 
+      KPI_PROGRESS_PROMPT_TEMPLATE, 
+      KPI_PROGRESS_RESPONSE_SCHEMA 
+    } = await import('@/lib/ai/prompts/analytics/kpiProgress');
+
     const kpiData = activePlan.kpis.map(kpi => ({
       name: kpi.name_en,
       ...calculateKPIProgress(kpi)
     }));
 
     const result = await invokeAI({
-      prompt: `Analyze KPI progress and provide specific, actionable recommendations to achieve targets.
-
-Strategic KPIs:
-${JSON.stringify(kpiData)}
-
-For each off-track or at-risk KPI, suggest specific actions to improve velocity. Be concrete and tactical.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommendations: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                kpi_name: { type: "string" },
-                issue: { type: "string" },
-                action: { type: "string" },
-                expected_impact: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: KPI_PROGRESS_PROMPT_TEMPLATE(kpiData),
+      response_json_schema: KPI_PROGRESS_RESPONSE_SCHEMA
     });
 
     if (result.success) {
