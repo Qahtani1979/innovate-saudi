@@ -904,51 +904,17 @@ User loads Challenges List
 
 ---
 
-## Current Issues & Bugs
+## Status (Phase 4)
 
-### 🔴 CRITICAL: Role Approval Writes to Wrong Table
+No open RBAC migration blockers are known at this time.
 
-**Location:** `src/components/access/RoleRequestApprovalQueue.jsx`
+### Recently Resolved (Historical)
+- **Role request approvals**: Approval flow now writes to `user_roles` (role assignments) via the unified RBAC manager.
+- **Route protection**: Role checks are based on backend role assignments / permission checks (not profile fields).
+- **Legacy table**: `user_functional_roles` is **dropped** and not used by any runtime code paths.
 
-**Problem:** When admin approves a role request, it writes to `user_functional_roles` instead of `user_roles`. The permission system (`is_admin()`, `get_user_permissions()`, RLS policies) all read from `user_roles`, so approved roles grant NO actual access.
-
-**Impact:** Users who get their roles "approved" cannot actually do anything with those roles.
-
-**Fix Required:** Change approval logic to write to `user_roles` table.
-
----
-
-### 🟠 HIGH: Inconsistent Role Checking in ProtectedPage
-
-**Location:** `src/components/auth/ProtectedPage.jsx`
-
-**Problem:** Checks `user?.assigned_roles` (from user profile) instead of querying `user_roles` table.
-
-**Impact:** Role-based route protection may not work correctly.
-
-**Fix Required:** Query `user_roles` table for role checks.
-
----
-
-### 🟡 MEDIUM: Two Disconnected Role Systems
-
-**Problem:** Two tables exist for roles:
-- `user_roles` - Used by permission system
-- `user_functional_roles` - Written to by approval queue, unused
-
-**Impact:** Confusion, maintenance burden, broken features.
-
-**Fix Required:** Decide on single system and migrate.
-
----
-
-### 🟡 MEDIUM: Empty Permission Data
-
-**Problem:** `role_permissions` table may be empty or incomplete.
-
-**Impact:** Non-admin users may have no permissions even with roles.
-
-**Fix Required:** Seed `role_permissions` with proper mappings.
+### Operational Note
+- Non-admin access depends on `role_permissions` being populated for the relevant roles.
 
 ---
 
@@ -1015,26 +981,14 @@ User loads Challenges List
 ## Summary
 
 ### What Works ✅
-- `is_admin()` function correctly checks `user_roles` table
-- RLS policies correctly use `is_admin(auth.uid())`
-- `usePermissions` hook correctly calls `get_user_permissions()`
-- `useVisibilitySystem` hook correctly scopes data
-- `PermissionGate` component correctly uses permissions
-- Admin user (qahtani1979@gmail.com) has full access
+- RBAC storage is unified on `user_roles.role_id` → `roles` → `role_permissions` → `permissions`
+- `usePermissions` reads permissions via `get_user_permissions()`
+- Visibility scope uses `get_user_visibility_scope()`
+- Admin gating uses backend role checks (no client-side role storage)
 
-### What's Broken ❌
-1. **Role approval queue writes to wrong table** - Critical bug
-2. **ProtectedPage checks wrong source for roles** - Route protection issue
-3. **Two parallel role systems exist** - Architectural issue
-4. **Functional roles table unused by permission system** - Dead code
-
-### Recommended Actions
-1. Fix `RoleRequestApprovalQueue.jsx` to write to `user_roles`
-2. Fix `ProtectedPage.jsx` to query `user_roles` table
-3. Decide whether to keep or remove `user_functional_roles`
-4. Seed `role_permissions` table with proper mappings
-5. Add proper role management UI for admins
+### Open Items (If Applicable)
+- Ensure each non-admin role has the intended `role_permissions` mappings.
 
 ---
 
-*Document generated for system analysis. Review and update as changes are made.*
+*Document generated for system analysis and updated to reflect Phase 4 implementation.*
