@@ -16,23 +16,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
-        // Force a single React instance across the entire app.
-        // Use directory paths so subpath imports work correctly.
-        "react": path.resolve(__dirname, "./node_modules/react"),
-        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
-        "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client"),
-        "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
-        "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime"),
-        "scheduler": path.resolve(__dirname, "./node_modules/scheduler"),
       },
       dedupe: [
         "react",
         "react-dom",
-        "react-dom/client",
-        "react-dom/server",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime",
-        "scheduler",
         "@tanstack/react-query",
       ],
     },
@@ -40,17 +27,9 @@ export default defineConfig(({ mode }) => {
       include: [
         "react",
         "react-dom",
-        "react-dom/client",
         "react/jsx-runtime",
-        "react/jsx-dev-runtime",
-        "scheduler",
         "@tanstack/react-query",
       ],
-      esbuildOptions: {
-        // Ensure consistent JSX runtime
-        jsx: "automatic",
-      },
-      force: true,
     },
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
