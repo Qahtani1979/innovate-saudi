@@ -63,57 +63,20 @@ function BudgetAllocationTool() {
   ];
 
   const handleAIOptimize = async () => {
+    // Import centralized prompt module
+    const { BUDGET_OPTIMIZER_PROMPT_TEMPLATE, BUDGET_OPTIMIZER_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/budget/allocationOptimizer');
+    
+    const promptData = {
+      totalBudget,
+      challengeCount: challenges.length,
+      sectorBreakdown: sectors.map(s => `${s.name_en}: ${challenges.filter(c => c.sector === s.code).length}`).join(', '),
+      pilotCount: pilots.length,
+      highPriorityChallenges: challenges.filter(c => c.priority === 'tier_1').length
+    };
+
     const result = await invokeAI({
-      prompt: `Optimize budget allocation for Saudi municipal innovation platform:
-
-Total Budget: ${totalBudget} SAR
-Active Challenges: ${challenges.length} (by sector: ${sectors.map(s => `${s.name_en}: ${challenges.filter(c => c.sector === s.code).length}`).join(', ')})
-Active Pilots: ${pilots.length}
-High Priority Challenges: ${challenges.filter(c => c.priority === 'tier_1').length}
-
-Recommend optimal allocation across:
-- Pilot Programs
-- R&D Initiatives
-- Capacity Building Programs
-- Infrastructure (Labs, Sandboxes)
-- Scaling Operations
-- Platform Operations
-
-Consider:
-1. Sector priorities and challenge density
-2. ROI potential
-3. Strategic impact
-4. Risk diversification
-
-Return percentage allocations and brief justification for each.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          allocations: {
-            type: 'object',
-            properties: {
-              pilots: { type: 'number' },
-              rd: { type: 'number' },
-              programs: { type: 'number' },
-              infrastructure: { type: 'number' },
-              scaling: { type: 'number' },
-              operations: { type: 'number' }
-            }
-          },
-          justification: { type: 'string' },
-          sector_priorities: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                sector: { type: 'string' },
-                allocation: { type: 'number' },
-                reason: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: BUDGET_OPTIMIZER_PROMPT_TEMPLATE(promptData),
+      response_json_schema: BUDGET_OPTIMIZER_RESPONSE_SCHEMA
     });
 
     if (result.success) {

@@ -10,10 +10,10 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Total Prompt Modules Created | **247+** | ✅ Complete |
+| Total Prompt Modules Created | **250+** | ✅ Complete |
 | Prompt Module Categories | **96+ directories** | ✅ Organized |
 | **Components Migrated** | **83/94 files** | 🔄 In Progress (88%) |
-| **Pages Migrated** | **22/102 files** | 🔄 In Progress (22%) |
+| **Pages Migrated** | **25/102 files** | 🔄 In Progress (25%) |
 | Edge Functions with Inline Prompts | 2 files | ⚠️ Partial |
 | **Overall Migration Progress** | **~97%** | 🔄 In Progress |
 
@@ -91,9 +91,15 @@ src/lib/ai/prompts/
 | `rd/callCreate.js` | R&D Call creation prompts |
 | `dashboard/executive.js` | Executive dashboard insights |
 | `matching/challengeSolution.js` | Challenge-solution matching |
+| `executive/briefGenerator.js` | Executive brief generation |
+| `decisions/simulator.js` | Decision scenario prediction |
+| `budget/allocationOptimizer.js` | Budget optimization |
 
 **Pages Migrated in Session 31:**
 - `RDCallCreate.jsx` → `RD_CALL_CREATE_PROMPT_TEMPLATE`
+- `ExecutiveBriefGenerator.jsx` → `EXECUTIVE_BRIEF_PROMPT_TEMPLATE`
+- `DecisionSimulator.jsx` → `DECISION_SCENARIO_PROMPT_TEMPLATE`
+- `BudgetAllocationTool.jsx` → `BUDGET_OPTIMIZER_PROMPT_TEMPLATE`
 
 ### Session 30
 | Module | Description |

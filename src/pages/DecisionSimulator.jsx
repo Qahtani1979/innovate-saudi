@@ -74,46 +74,18 @@ function DecisionSimulator() {
   const predictOutcomes = async () => {
     const historicalData = {
       pilot_count: pilots.length,
-      pilot_success_rate: pilots.filter(p => p.stage === 'scaled').length / pilots.length,
-      challenge_resolution_rate: challenges.filter(c => c.status === 'resolved').length / challenges.length,
+      pilot_success_rate: Math.round((pilots.filter(p => p.stage === 'scaled').length / pilots.length) * 100),
+      challenge_resolution_rate: Math.round((challenges.filter(c => c.status === 'resolved').length / challenges.length) * 100),
       current_mii_avg: 58
     };
 
+    // Import centralized prompt module
+    const { DECISION_SCENARIO_PROMPT_TEMPLATE, DECISION_SCENARIO_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/decisions/simulator');
+
     const scenarioPromises = scenarios.map(async (scenario) => {
       const result = await invokeAI({
-        prompt: `Predict outcomes for this budget allocation scenario:
-
-Scenario: ${scenario.name}
-Budget Allocation:
-- Pilots: ${scenario.budget_pilot}%
-- R&D: ${scenario.budget_rd}%
-- Programs: ${scenario.budget_program}%
-- Scaling: ${scenario.budget_scaling}%
-
-Historical Context:
-- Current Pilots: ${historicalData.pilot_count}
-- Pilot Success Rate: ${(historicalData.pilot_success_rate * 100).toFixed(0)}%
-- Challenge Resolution: ${(historicalData.challenge_resolution_rate * 100).toFixed(0)}%
-- Current MII Average: ${historicalData.current_mii_avg}
-
-Predict realistic outcomes for:
-1. Expected new pilots launched (number)
-2. Challenge resolution rate change (+/- %)
-3. MII score change (+/- points)
-4. Risk level (low/medium/high)
-5. Success probability (%)
-6. Key trade-offs (brief)`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            pilots_expected: { type: "number" },
-            challenge_resolution_change: { type: "number" },
-            mii_change: { type: "number" },
-            risk_level: { type: "string" },
-            success_probability: { type: "number" },
-            trade_offs: { type: "string" }
-          }
-        }
+        prompt: DECISION_SCENARIO_PROMPT_TEMPLATE(scenario, historicalData),
+        response_json_schema: DECISION_SCENARIO_RESPONSE_SCHEMA
       });
 
       if (result.success) {
