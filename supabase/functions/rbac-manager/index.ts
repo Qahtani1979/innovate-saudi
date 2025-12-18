@@ -44,6 +44,23 @@ function getResendClient() {
 
 // ========== ROLE HANDLERS ==========
 
+// Helper: Get role_id from role name/enum using database function
+async function lookupRoleId(supabase: ReturnType<typeof getSupabaseClient>, roleName: string): Promise<string | null> {
+  // First try direct name match
+  const { data: directMatch } = await supabase
+    .from('roles')
+    .select('id')
+    .ilike('name', roleName.replace(/_/g, ' '))
+    .limit(1)
+    .single();
+  
+  if (directMatch?.id) return directMatch.id;
+  
+  // Fallback to mapping function
+  const { data: mappedId } = await supabase.rpc('map_enum_to_role_id', { _enum_role: roleName });
+  return mappedId || null;
+}
+
 async function handleRoleAssign(supabase: ReturnType<typeof getSupabaseClient>, payload: Record<string, unknown>) {
   const { user_id, user_email, role, organization_id, municipality_id } = payload;
   
@@ -53,12 +70,21 @@ async function handleRoleAssign(supabase: ReturnType<typeof getSupabaseClient>, 
   
   console.log(`[rbac-manager] Assigning role '${role}' to ${user_email}`);
   
+  // PHASE 2: Lookup role_id for dual-mode operation
+  const roleId = await lookupRoleId(supabase, role as string);
+  if (roleId) {
+    console.log(`[rbac-manager] Found role_id: ${roleId} for role '${role}'`);
+  } else {
+    console.warn(`[rbac-manager] No role_id found for role '${role}', continuing with enum only`);
+  }
+  
   const { data, error } = await supabase
     .from('user_roles')
     .upsert({
       user_id,
       user_email,
-      role,
+      role,                              // Keep enum (backward compat)
+      role_id: roleId,                   // NEW: FK to roles table
       organization_id: organization_id || null,
       municipality_id: municipality_id || null,
       assigned_at: new Date().toISOString(),
@@ -69,7 +95,7 @@ async function handleRoleAssign(supabase: ReturnType<typeof getSupabaseClient>, 
 
   if (error) throw error;
   
-  console.log(`[rbac-manager] Role assigned successfully`);
+  console.log(`[rbac-manager] Role assigned successfully with role_id: ${roleId}`);
   return { assigned: true, role: data };
 }
 
@@ -161,13 +187,20 @@ async function handleCheckAutoApprove(supabase: ReturnType<typeof getSupabaseCli
   }
 
   if (autoApproved && assignedRole) {
-    // Auto-assign the role to user_roles table
+    // PHASE 2: Lookup role_id for the assigned role
+    const roleId = await lookupRoleId(supabase, assignedRole);
+    if (roleId) {
+      console.log(`[rbac-manager] Auto-approve: Found role_id ${roleId} for '${assignedRole}'`);
+    }
+    
+    // Auto-assign the role to user_roles table with role_id
     const { data: autoAssigned, error: autoAssignError } = await supabase
       .from('user_roles')
       .upsert({
         user_id,
         user_email,
-        role: assignedRole,
+        role: assignedRole,              // Keep enum (backward compat)
+        role_id: roleId,                 // NEW: FK to roles table
         organization_id: organization_id || null,
         municipality_id: municipality_id || null,
         assigned_at: new Date().toISOString(),
@@ -180,10 +213,11 @@ async function handleCheckAutoApprove(supabase: ReturnType<typeof getSupabaseCli
       console.error('[rbac-manager] Auto-assign error:', autoAssignError);
     }
 
-    console.log(`[rbac-manager] Auto-approved with role: ${assignedRole}`);
+    console.log(`[rbac-manager] Auto-approved with role: ${assignedRole}, role_id: ${roleId}`);
     return { 
       auto_approved: true, 
       role: assignedRole,
+      role_id: roleId,
       role_data: autoAssigned
     };
   }
@@ -240,13 +274,20 @@ async function handleApproveRoleRequest(supabase: ReturnType<typeof getSupabaseC
   
   if (updateError) throw updateError;
   
-  // 2. CRITICAL: Write to user_roles table (NOT user_functional_roles)
+  // PHASE 2: Lookup role_id for the approved role
+  const roleId = await lookupRoleId(supabase, role as string);
+  if (roleId) {
+    console.log(`[rbac-manager] Approve: Found role_id ${roleId} for '${role}'`);
+  }
+  
+  // 2. CRITICAL: Write to user_roles table with role_id
   const { data: roleData, error: roleError } = await supabase
     .from('user_roles')
     .upsert({
       user_id,
       user_email,
-      role,  // Role NAME, not ID
+      role,                              // Keep enum (backward compat)
+      role_id: roleId,                   // NEW: FK to roles table
       municipality_id: municipality_id || null,
       organization_id: organization_id || null,
       is_active: true,
@@ -262,12 +303,13 @@ async function handleApproveRoleRequest(supabase: ReturnType<typeof getSupabaseC
     throw roleError;
   }
   
-  console.log(`[rbac-manager] Role '${role}' assigned to user_roles for ${user_email}`);
+  console.log(`[rbac-manager] Role '${role}' assigned with role_id: ${roleId} to ${user_email}`);
   
   return { 
     approved: true, 
     request_id,
-    role: roleData 
+    role: roleData,
+    role_id: roleId
   };
 }
 
