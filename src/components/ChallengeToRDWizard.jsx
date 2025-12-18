@@ -14,6 +14,11 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { createPageUrl } from '../utils';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { 
+  CHALLENGE_TO_RD_PROMPTS,
+  buildRDScopePrompt,
+  RD_SCOPE_SCHEMA 
+} from '@/lib/ai/prompts/challenges';
 
 export default function ChallengeToRDWizard({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -80,28 +85,9 @@ export default function ChallengeToRDWizard({ challenge, onClose }) {
 
   const generateScope = async () => {
     const result = await invokeAI({
-      prompt: `Generate R&D project scope for this challenge:
-
-Title: ${challenge.title_en}
-Description: ${challenge.description_en}
-Sector: ${challenge.sector}
-
-Provide:
-1. R&D project title
-2. Research questions (3-5)
-3. Expected research outputs
-4. Methodology suggestions
-5. Timeline estimate (months)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          project_title: { type: 'string' },
-          research_questions: { type: 'array', items: { type: 'string' } },
-          expected_outputs: { type: 'array', items: { type: 'string' } },
-          methodology: { type: 'string' },
-          timeline_months: { type: 'number' }
-        }
-      }
+      systemPrompt: CHALLENGE_TO_RD_PROMPTS.systemPrompt,
+      prompt: buildRDScopePrompt(challenge),
+      response_json_schema: RD_SCOPE_SCHEMA
     });
     
     if (result.success && result.data) {

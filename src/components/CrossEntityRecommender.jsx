@@ -10,6 +10,11 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  CROSS_ENTITY_PROMPTS,
+  buildCrossEntityPrompt,
+  CROSS_ENTITY_SCHEMA 
+} from '@/lib/ai/prompts/recommendations';
 
 export default function CrossEntityRecommender({ sourceEntity, sourceType, recommendations = ['rdcalls', 'rdprojects', 'pilots', 'challenges'] }) {
   const { language, isRTL, t } = useLanguage();
@@ -18,98 +23,17 @@ export default function CrossEntityRecommender({ sourceEntity, sourceType, recom
 
   const handleRecommend = async () => {
     try {
-      const context = `
-        Source: ${sourceType}
-        Title: ${sourceEntity.title_en || sourceEntity.name_en}
-        Description: ${sourceEntity.description_en || sourceEntity.abstract_en || ''}
-        Sector: ${sourceEntity.sector || sourceEntity.research_area || ''}
-        ${sourceType === 'Challenge' ? `Root Cause: ${sourceEntity.root_cause_en || ''}` : ''}
-        ${sourceType === 'Pilot' ? `Success Probability: ${sourceEntity.success_probability}%` : ''}
-        ${sourceType === 'RDProject' ? `TRL: ${sourceEntity.trl_current}` : ''}
-      `;
-
       const rdCalls = recommendations.includes('rdcalls') ? await base44.entities.RDCall.filter({ status: 'open' }) : [];
       const rdProjects = recommendations.includes('rdprojects') ? await base44.entities.RDProject.filter({ is_published: true }) : [];
       const pilots = recommendations.includes('pilots') ? await base44.entities.Pilot.filter({ stage: 'active' }) : [];
       const challenges = recommendations.includes('challenges') ? await base44.entities.Challenge.filter({ status: 'approved' }) : [];
 
+      const availableEntities = { rdCalls, rdProjects, pilots, challenges };
+
       const result = await invokeAI({
-        prompt: `Analyze and recommend related entities for this ${sourceType}:
-
-${context}
-
-Available entities to match:
-${recommendations.includes('rdcalls') ? `R&D Calls: ${rdCalls.slice(0, 10).map(c => `${c.title_en} (${c.call_type})`).join(', ')}` : ''}
-${recommendations.includes('rdprojects') ? `R&D Projects: ${rdProjects.slice(0, 10).map(p => `${p.title_en} (TRL ${p.trl_current})`).join(', ')}` : ''}
-${recommendations.includes('pilots') ? `Pilots: ${pilots.slice(0, 10).map(p => `${p.title_en} (${p.sector})`).join(', ')}` : ''}
-${recommendations.includes('challenges') ? `Challenges: ${challenges.slice(0, 10).map(c => `${c.title_en} (${c.sector})`).join(', ')}` : ''}
-
-Return top 3-5 recommendations for EACH entity type with:
-- Entity ID (match from the provided lists)
-- Match score (0-100)
-- Reason for match (bilingual EN/AR)
-- Recommended action (bilingual EN/AR)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            rdcall_recommendations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  entity_id: { type: 'string' },
-                  match_score: { type: 'number' },
-                  reason_en: { type: 'string' },
-                  reason_ar: { type: 'string' },
-                  action_en: { type: 'string' },
-                  action_ar: { type: 'string' }
-                }
-              }
-            },
-            rdproject_recommendations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  entity_id: { type: 'string' },
-                  match_score: { type: 'number' },
-                  reason_en: { type: 'string' },
-                  reason_ar: { type: 'string' },
-                  action_en: { type: 'string' },
-                  action_ar: { type: 'string' }
-                }
-              }
-            },
-            pilot_recommendations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  entity_id: { type: 'string' },
-                  match_score: { type: 'number' },
-                  reason_en: { type: 'string' },
-                  reason_ar: { type: 'string' },
-                  action_en: { type: 'string' },
-                  action_ar: { type: 'string' }
-                }
-              }
-            },
-            challenge_recommendations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  entity_id: { type: 'string' },
-                  match_score: { type: 'number' },
-                  reason_en: { type: 'string' },
-                  reason_ar: { type: 'string' },
-                  action_en: { type: 'string' },
-                  action_ar: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
+        systemPrompt: CROSS_ENTITY_PROMPTS.systemPrompt,
+        prompt: buildCrossEntityPrompt(sourceEntity, sourceType, availableEntities),
+        response_json_schema: CROSS_ENTITY_SCHEMA
       });
 
       if (result.success) {
@@ -138,6 +62,36 @@ Return top 3-5 recommendations for EACH entity type with:
     } catch (error) {
       toast.error(t({ en: 'Failed to generate recommendations', ar: 'فشل توليد التوصيات' }));
     }
+  };
+
+  const getEntityIcon = (type) => {
+    const icons = {
+      rdcalls: Megaphone,
+      rdprojects: Microscope,
+      pilots: TestTube,
+      challenges: Target
+    };
+    return icons[type] || LinkIcon;
+  };
+
+  const getEntityUrl = (type, id) => {
+    const pages = {
+      rdcalls: 'RDCallDetail',
+      rdprojects: 'RDProjectDetail',
+      pilots: 'PilotDetail',
+      challenges: 'ChallengeDetail'
+    };
+    return createPageUrl(`${pages[type]}?id=${id}`);
+  };
+
+  const getEntityTitle = (type) => {
+    const titles = {
+      rdcalls: { en: 'R&D Calls', ar: 'دعوات البحث' },
+      rdprojects: { en: 'R&D Projects', ar: 'مشاريع البحث' },
+      pilots: { en: 'Pilots', ar: 'التجارب' },
+      challenges: { en: 'Challenges', ar: 'التحديات' }
+    };
+    return titles[type]?.[language] || type;
   };
 
   const getEntityIcon = (type) => {

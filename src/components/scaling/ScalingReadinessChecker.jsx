@@ -7,6 +7,11 @@ import { Shield, Target, FileText, Users, DollarSign, Sparkles, Loader2 } from '
 import { Progress } from "@/components/ui/progress";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildScalingReadinessPrompt, 
+  SCALING_READINESS_SCHEMA,
+  SCALING_READINESS_SYSTEM_PROMPT 
+} from '@/lib/ai/prompts/scaling';
 
 export default function ScalingReadinessChecker({ pilot }) {
   const { language, isRTL, t } = useLanguage();
@@ -35,30 +40,20 @@ export default function ScalingReadinessChecker({ pilot }) {
       riskScore * 0.15
     );
 
+    const scores = {
+      total: totalScore,
+      kpi: kpiScore,
+      cost: costModelScore,
+      stakeholder: stakeholderScore,
+      documentation: documentationScore,
+      risk: riskScore
+    };
+
     // Get AI enhancement suggestions
     const result = await invokeAI({
-      prompt: `Analyze this pilot's scaling readiness and provide specific improvement actions:
-
-Pilot: ${pilot.title_en}
-Overall Readiness: ${totalScore}%
-- KPI Achievement: ${kpiScore}%
-- Cost Model Clarity: ${costModelScore}%
-- Stakeholder Alignment: ${stakeholderScore}%
-- Documentation: ${documentationScore}%
-- Risk Mitigation: ${riskScore}%
-
-For each dimension below 80%, provide 2-3 specific actionable steps to improve.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          kpi_actions: { type: 'array', items: { type: 'string' } },
-          cost_actions: { type: 'array', items: { type: 'string' } },
-          stakeholder_actions: { type: 'array', items: { type: 'string' } },
-          documentation_actions: { type: 'array', items: { type: 'string' } },
-          risk_actions: { type: 'array', items: { type: 'string' } },
-          overall_recommendation: { type: 'string' }
-        }
-      }
+      systemPrompt: SCALING_READINESS_SYSTEM_PROMPT,
+      prompt: buildScalingReadinessPrompt(pilot, scores),
+      response_json_schema: SCALING_READINESS_SCHEMA
     });
 
     const actions = result.success ? result.data : {
@@ -81,6 +76,40 @@ For each dimension below 80%, provide 2-3 specific actionable steps to improve.`
       },
       actions
     });
+  };
+
+  const calculateKPIScore = (p) => {
+    if (!p.kpis || p.kpis.length === 0) return 0;
+    const onTrack = p.kpis.filter(k => k.status === 'on_track' || k.status === 'achieved').length;
+    return Math.round((onTrack / p.kpis.length) * 100);
+  };
+
+  const calculateCostModelScore = (p) => {
+    let score = 0;
+    if (p.budget && p.budget > 0) score += 30;
+    if (p.budget_breakdown && p.budget_breakdown.length > 0) score += 40;
+    if (p.scaling_plan?.estimated_cost) score += 30;
+    return score;
+  };
+
+  const calculateStakeholderScore = (p) => {
+    if (!p.stakeholders || p.stakeholders.length === 0) return 20;
+    return Math.min(100, p.stakeholders.length * 20);
+  };
+
+  const calculateDocumentationScore = (p) => {
+    let score = 0;
+    if (p.description_en) score += 20;
+    if (p.methodology) score += 20;
+    if (p.evaluation_summary_en || p.evaluation_summary_ar) score += 30;
+    if (p.lessons_learned && p.lessons_learned.length > 0) score += 30;
+    return score;
+  };
+
+  const calculateRiskScore = (p) => {
+    if (!p.risks || p.risks.length === 0) return 30;
+    const mitigated = p.risks.filter(r => r.status === 'mitigated').length;
+    return Math.round((mitigated / p.risks.length) * 100);
   };
 
   const calculateKPIScore = (p) => {

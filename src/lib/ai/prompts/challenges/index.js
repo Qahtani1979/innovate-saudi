@@ -56,6 +56,15 @@ export {
   SUBMISSION_BRIEF_SYSTEM_PROMPT, createSubmissionBriefPrompt, SUBMISSION_BRIEF_SCHEMA
 } from './submissionBrief';
 
+// Challenge to R&D Wizard
+export {
+  CHALLENGE_TO_RD_PROMPTS,
+  buildRDScopePrompt,
+  RD_SCOPE_SCHEMA,
+  buildRDProposalPrompt,
+  RD_PROPOSAL_SCHEMA
+} from './challengeToRD';
+
 /**
  * Challenges module prompt configuration
  */

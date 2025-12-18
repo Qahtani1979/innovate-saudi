@@ -7,9 +7,14 @@ import { useLanguage } from '../LanguageContext';
 import { Sparkles, Network, Users, Target, TrendingUp, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  NETWORK_ANALYSIS_SYSTEM_PROMPT,
+  createNetworkAnalysisPrompt,
+  NETWORK_ANALYSIS_SCHEMA 
+} from '@/lib/ai/prompts/organizations';
 
 export default function AINetworkAnalysis({ organization }) {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const [analysis, setAnalysis] = useState(null);
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
@@ -25,46 +30,16 @@ export default function AINetworkAnalysis({ organization }) {
       base44.entities.RDProject.list()
     ]);
 
+    const stats = {
+      partnerCount: organization.partners?.length || 0,
+      pilotCount: pilots.filter(p => p.provider_id === organization.id).length,
+      solutionCount: solutions.length
+    };
+
     const result = await invokeAI({
-      prompt: `Analyze the network position and collaboration opportunities for this organization:
-
-Organization: ${organization.name_en}
-Type: ${organization.org_type}
-City: ${organization.city_id}
-Solutions: ${solutions.length}
-
-Context:
-- Total organizations: ${orgs.length}
-- Total pilots: ${pilots.length}
-- Total R&D projects: ${rdProjects.length}
-
-Provide:
-1. Network centrality score (0-100)
-2. Top 5 recommended partnership organizations (with rationale)
-3. Collaboration gaps
-4. Strategic positioning assessment
-5. Growth recommendations`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          centrality_score: { type: 'number' },
-          network_tier: { type: 'string' },
-          recommended_partners: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                organization_type: { type: 'string' },
-                rationale: { type: 'string' },
-                synergy_score: { type: 'number' }
-              }
-            }
-          },
-          collaboration_gaps: { type: 'array', items: { type: 'string' } },
-          strategic_position: { type: 'string' },
-          growth_recommendations: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      systemPrompt: NETWORK_ANALYSIS_SYSTEM_PROMPT,
+      prompt: createNetworkAnalysisPrompt(organization, stats),
+      response_json_schema: NETWORK_ANALYSIS_SCHEMA
     });
 
     if (result.success) {
