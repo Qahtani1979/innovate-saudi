@@ -42,12 +42,16 @@ graph TD
 
 ### RLS Scope
 ```sql
--- Admins bypass most RLS with wildcard
--- or have policies like:
-WHERE user.role = 'admin'
-   OR auth.uid() IN (
-     SELECT user_id FROM user_roles WHERE role = 'admin'
-   )
+-- Admins bypass RLS by being assigned the admin role via role_id
+-- (role name stored in roles table)
+SELECT EXISTS (
+  SELECT 1
+  FROM public.user_roles ur
+  JOIN public.roles r ON ur.role_id = r.id
+  WHERE ur.user_id = auth.uid()
+    AND ur.is_active = true
+    AND LOWER(r.name) = 'admin'
+);
 ```
 
 ## Dashboard Features

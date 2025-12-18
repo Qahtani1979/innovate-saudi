@@ -337,50 +337,28 @@ $$;
 ---
 
 ### 3. `get_user_visibility_scope(user_id UUID)`
-**Location:** Supabase Database  
-**Purpose:** Returns visibility scope for entity filtering
+**Location:** Backend Database  
+**Purpose:** Returns visibility scope for entity filtering (Phase 4)
 
 ```sql
-CREATE OR REPLACE FUNCTION public.get_user_visibility_scope(p_user_id UUID)
-RETURNS JSONB
-LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION public.get_user_visibility_scope(p_user_id uuid)
+RETURNS TABLE(scope_type text, municipality_id uuid, sector_ids uuid[], is_national boolean)
+LANGUAGE sql
 STABLE
 SECURITY DEFINER
+SET search_path TO 'public'
 AS $$
-DECLARE
-    result JSONB;
-    user_role RECORD;
-BEGIN
-    -- Check admin first
-    IF is_admin(p_user_id) THEN
-        RETURN jsonb_build_object(
-            'level', 'full',
-            'municipality_ids', NULL,
-            'organization_ids', NULL
-        );
-    END IF;
-    
-    -- Get user's roles from user_roles table
-    SELECT * INTO user_role FROM user_roles WHERE user_id = p_user_id LIMIT 1;
-    
-    IF user_role IS NULL THEN
-        RETURN jsonb_build_object('level', 'public', 'municipality_ids', NULL);
-    END IF;
-    
-    -- Return scope based on role
-    RETURN jsonb_build_object(
-        'level', CASE 
-            WHEN user_role.role = 'national_staff' THEN 'national'
-            WHEN user_role.municipality_id IS NOT NULL THEN 'municipality'
-            WHEN user_role.organization_id IS NOT NULL THEN 'organization'
-            ELSE 'public'
-        END,
-        'municipality_ids', CASE WHEN user_role.municipality_id IS NOT NULL 
-            THEN jsonb_build_array(user_role.municipality_id) ELSE NULL END,
-        'organization_ids', CASE WHEN user_role.organization_id IS NOT NULL 
-            THEN jsonb_build_array(user_role.organization_id) ELSE NULL END
-    );
-END;
+  SELECT 
+    CASE WHEN r.code = 'NATIONAL' THEN 'sectoral' ELSE 'geographic' END as scope_type,
+    ur.municipality_id,
+    COALESCE(m.focus_sectors, ARRAY[m.sector_id]::uuid[]) as sector_ids,
+    (r.code = 'NATIONAL') as is_national
+  FROM user_roles ur
+  LEFT JOIN municipalities m ON ur.municipality_id = m.id
+  LEFT JOIN regions r ON m.region_id = r.id
+  WHERE ur.user_id = p_user_id
+  AND ur.municipality_id IS NOT NULL
+  LIMIT 1;
 $$;
 ```
 
@@ -390,28 +368,30 @@ $$;
 ---
 
 ### 4. `get_user_functional_roles(user_id UUID)`
-**Location:** Supabase Database  
-**Purpose:** Returns functional roles (from broken table)
+**Location:** Backend Database  
+**Purpose:** Returns active user roles via `user_roles.role_id` join (Phase 4)
 
 ```sql
-CREATE OR REPLACE FUNCTION public.get_user_functional_roles(p_user_id UUID)
-RETURNS TABLE(role_type TEXT, scope_type TEXT, scope_id UUID)
+CREATE OR REPLACE FUNCTION public.get_user_functional_roles(_user_id uuid)
+RETURNS TABLE(role_id uuid, role_name text, role_description text)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path TO 'public'
 AS $$
 BEGIN
-    RETURN QUERY
-    SELECT ufr.role_type, ufr.scope_type, ufr.scope_id
-    FROM user_functional_roles ufr
-    WHERE ufr.user_id = p_user_id AND ufr.is_active = true;
+  RETURN QUERY
+  SELECT r.id, r.name, r.description
+  FROM public.user_roles ur
+  JOIN public.roles r ON ur.role_id = r.id
+  WHERE ur.user_id = _user_id
+    AND ur.is_active = true;
 END;
 $$;
 ```
 
 **Used By:**
-- `useFunctionalRoles` hook (if exists)
-- Not connected to main permission system
+- `usePermissions` hook
 
 ---
 
@@ -717,23 +697,16 @@ export function withEntityAccess(WrappedComponent, entityType) {
 
 ---
 
-### 5. `RoleRequestApprovalQueue` - ⚠️ BUGGY COMPONENT
+### 5. `RoleRequestApprovalQueue` - FIXED COMPONENT
 **File:** `src/components/access/RoleRequestApprovalQueue.jsx`
 
 ```jsx
-// ⚠️ BUG: Writes to WRONG table on approval
-const handleApprove = async (request) => {
-  // Updates role_requests status
-  await supabase.from('role_requests').update({ status: 'approved' })...
-  
-  // ⚠️ WRITES TO WRONG TABLE - should write to user_roles!
-  await supabase.from('user_functional_roles').insert({
-    user_id: request.user_id,
-    role_type: request.requested_role,  // Wrong column name too
-    // ...
-  });
-};
+// On approval, the UI calls a backend handler that writes to user_roles (role_id)
+// e.g. via useApproveRoleRequest() / rbac-manager
+await approveRoleRequest({ requestId: request.id });
 ```
+
+**Location:** Admin panel, Role Request Center
 
 **Location:** Admin panel, Role Request Center
 
@@ -985,9 +958,9 @@ User loads Challenges List
 
 | Category | Location |
 |----------|----------|
-| Tables | Supabase: `user_roles`, `user_functional_roles`, `roles`, `permissions`, `role_permissions`, `role_requests` |
-| Functions | Supabase: `is_admin()`, `get_user_permissions()`, `get_user_visibility_scope()`, `can_view_entity()`, `get_user_functional_roles()` |
-| RLS Policies | All tables use `is_admin(auth.uid())` pattern |
+| Tables | Backend: `user_roles`, `roles`, `permissions`, `role_permissions`, `role_requests`, `delegation_rules`, `user_profiles` |
+| Functions | Backend: `is_admin()`, `get_user_permissions()`, `get_user_visibility_scope()`, `can_view_entity()`, `get_user_functional_roles()` |
+| RLS Policies | Policies use admin/permission helper functions (no enum / no legacy tables) |
 
 ### Frontend - Hooks
 
