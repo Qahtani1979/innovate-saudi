@@ -229,9 +229,6 @@ function ExpertMatchingEnginePage() {
       expertWorkload[a.expert_email] = (expertWorkload[a.expert_email] || 0) + (a.hours_estimated || 0);
     });
 
-    const entityDesc = entity.title_en || entity.name_en || entity.description_en || entity.abstract_en || '';
-    const entitySector = entity.sector || entity.research_area_en || '';
-
     const result = await invokeAI({
       prompt: EXPERT_MATCHING_PROMPT_TEMPLATE({
         entityType,
