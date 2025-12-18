@@ -9,6 +9,11 @@ import { toast } from 'sonner';
 import { Shield, Sparkles, ArrowRight, Loader2, X } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  POLICY_WORKFLOW_SYSTEM_PROMPT,
+  buildPolicyWorkflowPrompt,
+  POLICY_WORKFLOW_SCHEMA
+} from '@/lib/ai/prompts/pilots/policyWorkflow';
 
 export default function PilotToPolicyWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -25,32 +30,9 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
 
   const generateAI = async () => {
     const result = await invokeAI({
-      prompt: `Based on this pilot's results, generate policy recommendations:
-
-Pilot: ${pilot.title_en}
-Sector: ${pilot.sector}
-Municipality: ${pilot.municipality_id}
-Evaluation: ${pilot.evaluation_summary_en || 'In progress'}
-Success Probability: ${pilot.success_probability || 'N/A'}%
-Lessons: ${pilot.lessons_learned?.map(l => l.lesson).join('; ') || 'N/A'}
-
-Generate bilingual policy recommendation:
-1. Policy recommendation (what regulatory/policy change is needed)
-2. Rationale (why this policy change, based on pilot evidence)
-3. Expected impact
-
-Must be in both Arabic and English.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          recommendation_ar: { type: 'string' },
-          recommendation_en: { type: 'string' },
-          rationale_ar: { type: 'string' },
-          rationale_en: { type: 'string' },
-          impact_en: { type: 'string' },
-          impact_ar: { type: 'string' }
-        }
-      }
+      prompt: buildPolicyWorkflowPrompt({ pilot }),
+      system_prompt: POLICY_WORKFLOW_SYSTEM_PROMPT,
+      response_json_schema: POLICY_WORKFLOW_SCHEMA
     });
 
     if (result.success && result.data) {
