@@ -225,17 +225,16 @@ const { error: roleError } = await supabase
 
 **Correct Fix:**
 ```javascript
-// Should write to user_roles table
+// Should write to user_roles table using role_id (Phase 4 schema)
 const { error: roleError } = await supabase
-  .from('user_roles')  // ✅ CORRECT TABLE
+  .from('user_roles')
   .upsert({
     user_id: targetUser.user_id,
-    user_email: userEmail,
-    role: role.name,    // Note: user_roles uses role NAME, not ID
+    role_id: roleId,
     is_active: true,
     assigned_at: new Date().toISOString()
   }, {
-    onConflict: 'user_id,role'
+    onConflict: 'user_id,role_id'
   });
 ```
 
@@ -551,17 +550,16 @@ async function handleApproveRoleRequest(supabase, payload) {
     })
     .eq('id', request_id);
   
-  // 2. Write to CORRECT table (user_roles)
+  // 2. Write to CORRECT table (user_roles) using role_id (Phase 4 schema)
   const { data, error } = await supabase
-    .from('user_roles')  // ✅ CORRECT TABLE
+    .from('user_roles')
     .upsert({
       user_id: user_id,
-      user_email: user_email,
-      role: role_name,  // ✅ Uses role NAME, not ID
+      role_id: role_id,
       is_active: true,
       assigned_at: new Date().toISOString()
     }, { 
-      onConflict: 'user_id,role' 
+      onConflict: 'user_id,role_id' 
     })
     .select()
     .single();
@@ -586,47 +584,36 @@ async function handleApproveRoleRequest(supabase, payload) {
 
 ---
 
-## Appendix A: Database Function Dependencies
+## Appendix A: Database Function Dependencies (Phase 4)
 
 | DB Function | Reads From | Critical For |
 |-------------|------------|--------------|
-| `is_admin(email)` | `user_roles` | All RLS policies |
-| `get_user_permissions(user_id)` | `user_roles`, `role_permissions` | Frontend permission checks |
-| `get_user_functional_roles(user_id)` | `user_functional_roles` | ❌ Almost never used |
-| `can_view_entity(entity, id)` | `user_roles` | Entity visibility |
+| `is_admin(email)` | `user_roles`, `roles`, `user_profiles` | RLS admin bypass |
+| `get_user_permissions(user_id)` | `user_roles`, `roles`, `role_permissions`, `permissions`, `delegation_rules` | Frontend permission checks |
+| `get_user_functional_roles(user_id)` | `user_roles`, `roles` | Role list in UI |
+| `can_view_entity(...)` | `user_roles`, `municipalities`, `regions` | Entity visibility |
 
 ---
 
-## Appendix B: Table Schema
+## Appendix B: Table Schema (Phase 4)
 
-### user_roles (PRIMARY - Used by RLS/DB Functions)
+### user_roles (PRIMARY - Used by permission system)
 ```sql
 CREATE TABLE user_roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users,
-  user_email TEXT,
-  role TEXT NOT NULL,  -- Role NAME (e.g., 'admin', 'municipality_staff')
-  municipality_id UUID,
-  organization_id UUID,
-  is_active BOOLEAN DEFAULT true,
-  assigned_at TIMESTAMPTZ DEFAULT now(),
-  revoked_at TIMESTAMPTZ,
-  UNIQUE(user_id, role)
-);
-```
-
-### user_functional_roles (DEPRECATED - Do not use)
-```sql
-CREATE TABLE user_functional_roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users,
-  role_id UUID REFERENCES roles(id),  -- Uses role ID, not name
-  assigned_by UUID,
-  assigned_at TIMESTAMPTZ DEFAULT now(),
-  is_active BOOLEAN DEFAULT true,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users NOT NULL,
+  role_id uuid REFERENCES roles(id) NOT NULL,
+  municipality_id uuid,
+  organization_id uuid,
+  is_active boolean DEFAULT true,
+  assigned_at timestamptz DEFAULT now(),
+  expires_at timestamptz,
   UNIQUE(user_id, role_id)
 );
 ```
+
+### user_functional_roles
+DROPPED in Phase 4 (legacy table; do not use).
 
 ---
 

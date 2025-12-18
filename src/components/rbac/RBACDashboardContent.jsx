@@ -39,8 +39,8 @@ export default function RBACDashboardContent() {
     }
   });
 
-  // Phase 4: Query user_roles with role_id join instead of dropped user_functional_roles
-  const { data: userRolesData = [] } = useQuery({
+  // Phase 4: Query user_roles assignments (role_id join)
+  const { data: userRoleAssignments = [] } = useQuery({
     queryKey: ['rbac-user-roles'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -92,7 +92,7 @@ export default function RBACDashboardContent() {
     const entityAccess = {};
 
     roles.forEach(role => {
-      const userCount = userRolesData.filter(ur => ur.role_id === role.id && ur.is_active).length;
+      const userCount = userRoleAssignments.filter(ur => ur.role_id === role.id && ur.is_active).length;
       const permCount = rolePermissions.filter(rp => rp.role_id === role.id).length;
       
       roleUsage[role.name] = { users: userCount, permissions: permCount, active: userCount > 0 };
@@ -120,7 +120,7 @@ export default function RBACDashboardContent() {
       activeDelegations: delegations.filter(d => d.is_active).length,
       avgPermissionsPerRole: roles.length > 0 ? totalPermissions / roles.length : 0
     };
-  }, [users, roles, userRolesData, rolePermissions, delegations, accessLogs]);
+  }, [users, roles, userRoleAssignments, rolePermissions, delegations, accessLogs]);
 
   const roleUsageData = Object.entries(analytics.roleUsage)
     .map(([name, data]) => ({ name, users: data.users, permissions: data.permissions }))
@@ -175,7 +175,7 @@ export default function RBACDashboardContent() {
         <Card>
           <CardContent className="pt-6">
             <Network className="h-8 w-8 text-green-600 mb-2" />
-            <p className="text-3xl font-bold">{userRolesData.filter(ur => ur.is_active).length}</p>
+            <p className="text-3xl font-bold">{userRoleAssignments.filter(ur => ur.is_active).length}</p>
             <p className="text-sm text-muted-foreground">{t({ en: 'Assignments', ar: 'التعيينات' })}</p>
           </CardContent>
         </Card>
