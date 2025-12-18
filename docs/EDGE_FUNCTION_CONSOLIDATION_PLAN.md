@@ -63,10 +63,8 @@
 
 This document provides a comprehensive analysis of RBAC-related edge functions, their current usage, critical bugs discovered, and a detailed implementation plan for consolidation.
 
-### Critical Bug Found
-🚨 **RoleRequestApprovalQueue.jsx writes approved roles to `user_functional_roles` instead of `user_roles`, causing approved users to have NO ACCESS.**
-
----
+### Historical Bug (Fixed)
+✅ Previously, RoleRequestApprovalQueue approvals wrote to `user_functional_roles`. The current flow uses the unified `rbac-manager` and writes role assignments to `user_roles`.
 
 ## Part 1: Current State Analysis
 
@@ -875,11 +873,11 @@ export function useSecurityAudit() {
 
 #### Files to Update
 
-| File | Current Call | New Call |
-|------|--------------|----------|
-| `RoleRequestApprovalQueue.jsx` | Direct DB + `user_functional_roles` | `useApproveRoleRequest()` → writes to `user_roles` |
+| File | Legacy Behavior | Current Behavior |
+|------|------------------|-----------------|
+| `RoleRequestApprovalQueue.jsx` | Direct DB write (legacy) | `useApproveRoleRequest()` → `rbac-manager` (writes to `user_roles`) |
 | `RoleRequestCard.jsx` | Direct DB | Keep (creates requests only) |
-| `FunctionalRolesManager.jsx` | Direct edge function | `rbacService.assignRole()` |
+| `FunctionalRolesManager.jsx` | Direct backend function | `rbacService.assignRole()` |
 | `DelegationApprovalPanel.jsx` | `approve-delegation` | `rbacService.approveDelegation()` |
 | `SecurityDashboard.jsx` | `run-rbac-security-audit` | `useSecurityAudit()` |
 
