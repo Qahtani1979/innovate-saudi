@@ -7,6 +7,11 @@ import { Target, Sparkles, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  DEPLOYMENT_TRACKER_SYSTEM_PROMPT,
+  buildDeploymentTrackerPrompt,
+  DEPLOYMENT_TRACKER_SCHEMA
+} from '@/lib/ai/prompts/solutions/deploymentTracker';
 
 export default function DeploymentSuccessTracker({ solution }) {
   const { language, isRTL, t } = useLanguage();
@@ -26,35 +31,9 @@ export default function DeploymentSuccessTracker({ solution }) {
 
   const predictRenewal = async () => {
     const response = await invokeAI({
-      prompt: `Predict renewal probability for solution deployments:
-
-SOLUTION: ${solution.name_en}
-DEPLOYMENTS: ${deployments.length}
-AVG SATISFACTION: ${avgSatisfaction.toFixed(1)}/5
-ACTIVE: ${activeDeployments}
-
-For each active deployment, predict:
-1. Renewal probability (0-100%)
-2. Key risk factors
-3. Actions to improve renewal likelihood`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          overall_renewal_probability: { type: "number" },
-          deployment_predictions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                client: { type: "string" },
-                renewal_probability: { type: "number" },
-                risk_factors: { type: "array", items: { type: "string" } },
-                recommendations: { type: "array", items: { type: "string" } }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildDeploymentTrackerPrompt({ solution, deployments, avgSatisfaction, activeDeployments }),
+      system_prompt: DEPLOYMENT_TRACKER_SYSTEM_PROMPT,
+      response_json_schema: DEPLOYMENT_TRACKER_SCHEMA
     });
 
     if (response.success) {

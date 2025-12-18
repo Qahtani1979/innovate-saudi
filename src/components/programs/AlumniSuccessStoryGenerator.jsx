@@ -7,6 +7,11 @@ import { Sparkles, Award, Loader2, Copy, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  ALUMNI_STORY_SYSTEM_PROMPT,
+  buildAlumniStoryPrompt,
+  ALUMNI_STORY_SCHEMA
+} from '@/lib/ai/prompts/programs/alumniStory';
 
 export default function AlumniSuccessStoryGenerator({ alumnus, program }) {
   const { t, language } = useLanguage();
@@ -20,48 +25,9 @@ export default function AlumniSuccessStoryGenerator({ alumnus, program }) {
 
   const generateStory = async () => {
     const { success, data } = await invokeAI({
-      prompt: `Generate a compelling alumni success story for a Saudi municipal innovation program graduate.
-
-Program: ${program.name_en}
-Graduate: ${alumnus.applicant_name}
-Organization: ${alumnus.applicant_org_name || 'N/A'}
-Sector: ${alumnus.focus_sector || 'Innovation'}
-Achievements:
-- Solutions created: ${alumnus.solutions_count || 0}
-- Pilots launched: ${alumnus.pilots_count || 0}
-- Program completion: ${alumnus.graduation_date || 'Recent'}
-
-Generate a professional success story in BOTH English and Arabic with:
-1. Compelling headline (bilingual)
-2. Challenge they faced before program
-3. Journey through the program (key moments)
-4. Impact achieved after graduation
-5. Quote from the graduate (fictional but realistic)
-6. Future aspirations
-
-Make it inspiring and suitable for social media, website, and reports.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          headline_en: { type: 'string' },
-          headline_ar: { type: 'string' },
-          story_en: { type: 'string' },
-          story_ar: { type: 'string' },
-          quote_en: { type: 'string' },
-          quote_ar: { type: 'string' },
-          key_metrics: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                metric_en: { type: 'string' },
-                metric_ar: { type: 'string' },
-                value: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildAlumniStoryPrompt({ alumnus, program }),
+      system_prompt: ALUMNI_STORY_SYSTEM_PROMPT,
+      response_json_schema: ALUMNI_STORY_SCHEMA
     });
 
     if (success && data) {
