@@ -31,6 +31,14 @@ export {
   SCALING_PLANNING_PROMPTS
 } from './planningWizard';
 
+// Adaptive Management
+export {
+  ADAPTIVE_SCALING_SYSTEM_PROMPT,
+  buildAdaptiveScalingPrompt,
+  ADAPTIVE_SCALING_SCHEMA,
+  ADAPTIVE_SCALING_PROMPTS
+} from './adaptiveManagement';
+
 export const SCALING_PROMPT_MANIFEST = {
   scalingReadiness: {
     file: 'scalingReadiness.js',

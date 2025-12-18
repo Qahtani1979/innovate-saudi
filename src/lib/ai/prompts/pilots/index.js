@@ -66,6 +66,14 @@ export {
   PILOT_TO_RD_PROMPTS
 } from './pilotToRD';
 
+// Learning Engine
+export {
+  PILOT_LEARNING_ENGINE_SYSTEM_PROMPT,
+  buildPilotLearningEnginePrompt,
+  PILOT_LEARNING_ENGINE_SCHEMA,
+  PILOT_LEARNING_ENGINE_PROMPTS
+} from './learningEngine';
+
 /**
  * Pilots module prompt configuration
  */

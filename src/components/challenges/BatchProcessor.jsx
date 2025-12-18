@@ -9,6 +9,10 @@ import { Upload, FileText, AlertTriangle, CheckCircle2, Loader2, X } from 'lucid
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  buildBatchValidationPrompt,
+  BATCH_VALIDATION_SCHEMA
+} from '@/lib/ai/prompts/challenges';
 
 export default function BatchProcessor() {
   const { language, isRTL, t } = useLanguage();
@@ -69,53 +73,8 @@ export default function BatchProcessor() {
     setProcessing(true);
     try {
       const result = await invokeAI({
-        prompt: `Validate these ${challenges.length} challenges for import:
-
-${challenges.map((c, i) => `${i+1}. ${c.title_en || c.title_ar}`).join('\n')}
-
-Check for:
-1. Duplicates (semantic similarity >85%)
-2. Missing required fields
-3. Data quality issues
-4. Suggested improvements
-
-Return validation results.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            duplicates: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  challenge_index: { type: "number" },
-                  similar_to_index: { type: "number" },
-                  similarity: { type: "number" }
-                }
-              }
-            },
-            missing_fields: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  challenge_index: { type: "number" },
-                  fields: { type: "array", items: { type: "string" } }
-                }
-              }
-            },
-            quality_issues: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  challenge_index: { type: "number" },
-                  issue: { type: "string" }
-                }
-              }
-            }
-          }
-        }
+        prompt: buildBatchValidationPrompt({ challenges }),
+        response_json_schema: BATCH_VALIDATION_SCHEMA
       });
 
       if (result.success) {

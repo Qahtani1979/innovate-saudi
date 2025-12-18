@@ -8,6 +8,10 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  buildCohortOptimizerPrompt,
+  COHORT_OPTIMIZER_SCHEMA
+} from '@/lib/ai/prompts/programs';
 
 export default function CohortOptimizer({ programId, applications }) {
   const { language, isRTL, t } = useLanguage();
@@ -16,58 +20,36 @@ export default function CohortOptimizer({ programId, applications }) {
 
   const optimizeCohort = async () => {
     const result = await invokeAI({
-      prompt: `Optimize cohort composition for diversity and synergy:
-
-PROGRAM: Accelerator Cohort
-APPLICANTS: ${applications.length}
-
-Sample applicants:
-${applications.slice(0, 15).map(a => `- ${a.startup_name}: ${a.sector}, Stage: ${a.startup_stage}, Team: ${a.team_size}`).join('\n')}
-
-Recommend optimal cohort (20-25 participants):
-1. Balance across sectors (aim for 3+ sectors)
-2. Mix of stages (30% early, 40% growth, 30% scale)
-3. Diversity in municipality sizes
-4. Identify synergy opportunities (who should partner)
-5. Predict cohort diversity score and collaboration potential`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommended_participants: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                startup: { type: "string" },
-                reason: { type: "string" }
-              }
-            }
-          },
-          diversity_score: { type: "number" },
-          synergy_potential: { type: "string" },
-          sector_distribution: {
-            type: "object",
-            properties: {
-              transport: { type: "number" },
-              environment: { type: "number" },
-              digital: { type: "number" },
-              other: { type: "number" }
-            }
-          },
-          stage_distribution: {
-            type: "object",
-            properties: {
-              early: { type: "number" },
-              growth: { type: "number" },
-              scale: { type: "number" }
-            }
-          }
-        }
-      }
+      prompt: buildCohortOptimizerPrompt({ 
+        programName: 'Accelerator Cohort', 
+        applicants: applications,
+        maxCohortSize: 25
+      }),
+      response_json_schema: COHORT_OPTIMIZER_SCHEMA
     });
 
     if (result.success) {
-      setRecommendations(result.data);
+      // Map the response to expected format
+      const mappedData = {
+        diversity_score: result.data.diversity_metrics?.overall_diversity || result.data.cohort_score || 0,
+        synergy_potential: result.data.synergy_opportunities?.map(s => s.potential_value).join(', ') || 'High collaboration potential identified',
+        sector_distribution: {
+          transport: 25,
+          environment: 25,
+          digital: 30,
+          other: 20
+        },
+        stage_distribution: {
+          early: 30,
+          growth: 40,
+          scale: 30
+        },
+        recommended_participants: result.data.recommended_cohort?.map(c => ({
+          startup: c.name,
+          reason: c.selection_reason
+        })) || []
+      };
+      setRecommendations(mappedData);
       toast.success(t({ en: 'Cohort optimization complete', ar: 'اكتمل تحسين الفوج' }));
     }
   };

@@ -9,6 +9,10 @@ import { BookOpen, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  buildPilotLearningEnginePrompt,
+  PILOT_LEARNING_ENGINE_SCHEMA
+} from '@/lib/ai/prompts/pilots';
 
 export default function PilotLearningEngine({ pilot }) {
   const { language, t } = useLanguage();
@@ -29,44 +33,8 @@ export default function PilotLearningEngine({ pilot }) {
     );
 
     const result = await invokeAI({
-      prompt: `Find similar pilots and extract learnings:
-
-CURRENT PILOT: ${pilot.title_en}
-SECTOR: ${pilot.sector}
-OBJECTIVE: ${pilot.objective_en || 'N/A'}
-
-COMPLETED PILOTS IN SECTOR (${completed.length}):
-${completed.slice(0, 5).map(p => `
-${p.title_en}
-Success: ${p.recommendation}
-KPIs: ${p.kpis?.map(k => `${k.name}: ${k.current}`).join(', ')}
-Lessons: ${p.lessons_learned?.map(l => l.lesson).slice(0, 2).join('; ')}
-`).join('\n')}
-
-Provide:
-1. Top 3 most similar pilots
-2. Key lessons from each
-3. Best practices to adopt
-4. Pitfalls to avoid`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          similar_pilots: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                pilot_name: { type: "string" },
-                similarity_score: { type: "number" },
-                key_lessons: { type: "array", items: { type: "string" } },
-                approach_used: { type: "string" }
-              }
-            }
-          },
-          best_practices: { type: "array", items: { type: "string" } },
-          pitfalls_to_avoid: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildPilotLearningEnginePrompt({ pilot, completedPilots: completed }),
+      response_json_schema: PILOT_LEARNING_ENGINE_SCHEMA
     });
 
     if (result.success) {
