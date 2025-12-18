@@ -14,51 +14,19 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
     resolve: {
-      preserveSymlinks: false,
-      // IMPORTANT: use an ordered alias array so specific subpaths (e.g. react-dom/client)
-      // are resolved before their parent package aliases (e.g. react-dom).
-      alias: [
-        { find: "@", replacement: path.resolve(__dirname, "./src") },
-
-        // Force a single React instance across the entire app
-        { find: /^react$/, replacement: path.resolve(__dirname, "./node_modules/react/index.js") },
-        { find: /^react\/jsx-runtime$/, replacement: path.resolve(__dirname, "./node_modules/react/jsx-runtime.js") },
-        { find: /^react\/jsx-dev-runtime$/, replacement: path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime.js") },
-
-        { find: /^react-dom$/, replacement: path.resolve(__dirname, "./node_modules/react-dom/index.js") },
-        { find: /^react-dom\/client$/, replacement: path.resolve(__dirname, "./node_modules/react-dom/client.js") },
-
-        { find: /^scheduler$/, replacement: path.resolve(__dirname, "./node_modules/scheduler/index.js") },
-      ],
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
+      // Force all React-related packages to resolve to the same copy
       dedupe: [
         "react",
         "react-dom",
-        "react-dom/client",
-        "react-dom/server",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime",
         "scheduler",
-        "@tanstack/react-query",
       ],
     },
     optimizeDeps: {
-      // IMPORTANT: do NOT prebundle React. With complex aliasing/dedupe setups,
-      // Vite dep optimization can create a second React copy under /node_modules/.vite,
-      // which leads to "dispatcher is null" and hook crashes.
-      exclude: [
-        "react",
-        "react-dom",
-        "react-dom/client",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime",
-        "scheduler",
-      ],
-    },
-    build: {
-      commonjsOptions: {
-        include: [/node_modules/],
-        transformMixedEsModules: true,
-      },
+      // Force Vite to re-bundle dependencies on each restart
+      force: true,
     },
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
