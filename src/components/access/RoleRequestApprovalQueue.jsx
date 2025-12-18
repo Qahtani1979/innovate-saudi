@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { CheckCircle, XCircle, Clock, User, FileText, RefreshCw } from 'lucide-react';
+import { useApproveRoleRequest, useRejectRoleRequest, useSendRoleNotification } from '@/hooks/useRBACManager';
+import { CheckCircle, XCircle, Clock, User, RefreshCw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +22,13 @@ export default function RoleRequestApprovalQueue() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { triggerEmail } = useEmailTrigger();
   const [reviewDialog, setReviewDialog] = useState(null);
   const [reviewNotes, setReviewNotes] = useState('');
+
+  // Use unified RBAC hooks
+  const { mutateAsync: approveRequest, isPending: isApproving } = useApproveRoleRequest();
+  const { mutateAsync: rejectRequest, isPending: isRejecting } = useRejectRoleRequest();
+  const { mutateAsync: sendNotification } = useSendRoleNotification();
 
   // Fetch pending requests from Supabase
   const { data: requests = [], isLoading } = useQuery({
@@ -54,157 +58,68 @@ export default function RoleRequestApprovalQueue() {
     }
   });
 
-  // Approve mutation
-  const approveMutation = useMutation({
-    mutationFn: async ({ requestId, requestedRole, userEmail, userName }) => {
-      // Update request status
-      const { error: updateError } = await supabase
-        .from('role_requests')
-        .update({
-          status: 'approved',
-          reviewed_by: user?.email,
-          reviewed_date: new Date().toISOString()
-        })
-        .eq('id', requestId);
-      
-      if (updateError) throw updateError;
+  const handleApprove = async () => {
+    try {
+      // Use unified rbac-manager - writes to user_roles (CORRECT table)
+      await approveRequest({
+        request_id: reviewDialog.id,
+        user_id: reviewDialog.user_id,
+        user_email: reviewDialog.user_email,
+        role: reviewDialog.requested_role,
+        municipality_id: reviewDialog.municipality_id,
+        organization_id: reviewDialog.organization_id,
+        approver_email: user?.email
+      });
 
-      // Find role ID if it's a role name
-      const role = roles.find(r => r.name === requestedRole || r.id === requestedRole);
-      
-      if (role) {
-        // Assign functional role to user via user_functional_roles table
-        const { data: targetUser } = await supabase
-          .from('user_profiles')
-          .select('user_id, preferred_language')
-          .eq('user_email', userEmail)
-          .maybeSingle();
-
-        if (targetUser?.user_id) {
-          const { error: roleError } = await supabase
-            .from('user_functional_roles')
-            .upsert({
-              user_id: targetUser.user_id,
-              role_id: role.id,
-              assigned_by: user?.id,
-              assigned_at: new Date().toISOString(),
-              is_active: true
-            }, {
-              onConflict: 'user_id,role_id'
-            });
-          
-          if (roleError) {
-            console.error('Error assigning role:', roleError);
-          }
-
-          // Send approval email notification using unified trigger
-          try {
-            await triggerEmail('role.approved', {
-              entity_type: 'role_request',
-              entity_id: requestId,
-              recipient_email: userEmail,
-              recipient_user_id: targetUser.user_id,
-              variables: {
-                userName: userName || userEmail.split('@')[0],
-                roleName: role.name || requestedRole,
-                dashboardUrl: window.location.origin + '/dashboard'
-              },
-              language: targetUser.preferred_language || 'en'
-            });
-          } catch (emailError) {
-            console.error('Failed to send approval email:', emailError);
-          }
-        }
+      // Send notification
+      try {
+        await sendNotification({
+          type: 'approved',
+          user_id: reviewDialog.user_id,
+          user_email: reviewDialog.user_email,
+          user_name: reviewDialog.user_name || reviewDialog.user_email?.split('@')[0],
+          requested_role: reviewDialog.requested_role,
+          language: language
+        });
+      } catch (e) {
+        console.error('Notification error:', e);
       }
 
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['role-requests']);
-      queryClient.invalidateQueries(['user-functional-roles']);
-      toast.success(t({ en: 'Request approved!', ar: 'تمت الموافقة على الطلب!' }));
       setReviewDialog(null);
       setReviewNotes('');
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to approve request', ar: 'فشل في الموافقة على الطلب' }));
+    } catch (error) {
       console.error('Approve error:', error);
     }
-  });
-
-  // Reject mutation
-  const rejectMutation = useMutation({
-    mutationFn: async ({ requestId, requestedRole, userEmail, userName }) => {
-      const { error } = await supabase
-        .from('role_requests')
-        .update({
-          status: 'rejected',
-          reviewed_by: user?.email,
-          reviewed_date: new Date().toISOString(),
-          rejection_reason: reviewNotes || null
-        })
-        .eq('id', requestId);
-      
-      if (error) throw error;
-
-      // Get user info for email
-      const { data: targetUser } = await supabase
-        .from('user_profiles')
-        .select('user_id, preferred_language')
-        .eq('user_email', userEmail)
-        .maybeSingle();
-
-      // Send rejection email notification using unified trigger
-      if (targetUser) {
-        try {
-          await triggerEmail('role.rejected', {
-            entity_type: 'role_request',
-            entity_id: requestId,
-            recipient_email: userEmail,
-            recipient_user_id: targetUser.user_id,
-            variables: {
-              userName: userName || userEmail.split('@')[0],
-              roleName: requestedRole,
-              rejectionReason: reviewNotes || 'No specific reason provided',
-              dashboardUrl: window.location.origin + '/dashboard'
-            },
-            language: targetUser.preferred_language || 'en'
-          });
-        } catch (emailError) {
-          console.error('Failed to send rejection email:', emailError);
-        }
-      }
-
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['role-requests']);
-      toast.success(t({ en: 'Request rejected', ar: 'تم رفض الطلب' }));
-      setReviewDialog(null);
-      setReviewNotes('');
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to reject request', ar: 'فشل في رفض الطلب' }));
-      console.error('Reject error:', error);
-    }
-  });
-
-  const handleApprove = () => {
-    approveMutation.mutate({
-      requestId: reviewDialog.id,
-      requestedRole: reviewDialog.requested_role,
-      userEmail: reviewDialog.user_email,
-      userName: reviewDialog.user_name || reviewDialog.user_email?.split('@')[0]
-    });
   };
 
-  const handleReject = () => {
-    rejectMutation.mutate({
-      requestId: reviewDialog.id,
-      requestedRole: reviewDialog.requested_role,
-      userEmail: reviewDialog.user_email,
-      userName: reviewDialog.user_name || reviewDialog.user_email?.split('@')[0]
-    });
+  const handleReject = async () => {
+    try {
+      await rejectRequest({
+        request_id: reviewDialog.id,
+        reason: reviewNotes,
+        approver_email: user?.email
+      });
+
+      // Send notification
+      try {
+        await sendNotification({
+          type: 'rejected',
+          user_id: reviewDialog.user_id,
+          user_email: reviewDialog.user_email,
+          user_name: reviewDialog.user_name || reviewDialog.user_email?.split('@')[0],
+          requested_role: reviewDialog.requested_role,
+          rejection_reason: reviewNotes,
+          language: language
+        });
+      } catch (e) {
+        console.error('Notification error:', e);
+      }
+
+      setReviewDialog(null);
+      setReviewNotes('');
+    } catch (error) {
+      console.error('Reject error:', error);
+    }
   };
 
   const getRoleName = (requestedRole) => {
@@ -339,7 +254,7 @@ export default function RoleRequestApprovalQueue() {
               variant="outline"
               onClick={handleReject}
               className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-              disabled={rejectMutation.isPending}
+              disabled={isRejecting}
             >
               <XCircle className="h-4 w-4 mr-2" />
               {t({ en: 'Reject', ar: 'رفض' })}
@@ -347,7 +262,7 @@ export default function RoleRequestApprovalQueue() {
             <Button 
               onClick={handleApprove}
               className="bg-green-600 hover:bg-green-700"
-              disabled={approveMutation.isPending}
+              disabled={isApproving}
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               {t({ en: 'Approve', ar: 'موافقة' })}
