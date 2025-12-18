@@ -9,6 +9,11 @@ import { Network, Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  CROSS_JOURNEY_SYSTEM_PROMPT, 
+  buildCrossJourneyPrompt, 
+  CROSS_JOURNEY_SCHEMA 
+} from '@/lib/ai/prompts/bonus/crossJourney';
 
 export default function CrossJourneyInsightsDashboard() {
   const { language, t } = useLanguage();
@@ -37,42 +42,9 @@ export default function CrossJourneyInsightsDashboard() {
 
   const analyzeCrossJourney = async () => {
     const result = await invokeAI({
-      prompt: `Analyze cross-journey patterns and insights:
-
-CHALLENGES: ${challenges.length} (${challenges.filter(c => c.status === 'approved').length} approved)
-PILOTS: ${pilots.length} (${pilots.filter(p => p.stage === 'active').length} active)
-SOLUTIONS: ${solutions.length}
-R&D PROJECTS: ${rdProjects.length}
-
-Challenge Sectors: ${[...new Set(challenges.map(c => c.sector))].join(', ')}
-Pilot Success Rate: ${pilots.filter(p => p.recommendation === 'scale').length}/${pilots.length}
-
-Identify:
-1. Cross-sector patterns (recurring themes across sectors)
-2. Innovation bottlenecks (where things get stuck)
-3. Underutilized resources (labs, programs, partnerships)
-4. Success patterns (what works consistently)
-5. Strategic recommendations (3-5 actionable insights)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          cross_sector_patterns: { type: "array", items: { type: "string" } },
-          bottlenecks: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                stage: { type: "string" },
-                description: { type: "string" },
-                impact: { type: "string" }
-              }
-            }
-          },
-          underutilized: { type: "array", items: { type: "string" } },
-          success_patterns: { type: "array", items: { type: "string" } },
-          recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: CROSS_JOURNEY_SYSTEM_PROMPT,
+      prompt: buildCrossJourneyPrompt({ challenges, pilots, solutions, rdProjects }),
+      response_json_schema: CROSS_JOURNEY_SCHEMA
     });
 
     if (result.success) {

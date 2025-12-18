@@ -12,6 +12,11 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { 
+  TRACK_DECISION_SYSTEM_PROMPT, 
+  buildTrackDecisionPrompt, 
+  TRACK_DECISION_SCHEMA 
+} from '@/lib/ai/prompts/challenges/trackDecision';
 
 export default function ChallengeTrackAssignmentDecision({ challenge, onClose }) {
   const { language, t } = useLanguage();
@@ -58,36 +63,9 @@ export default function ChallengeTrackAssignmentDecision({ challenge, onClose })
     if (!isAvailable) return;
     
     const result = await invokeAI({
-      prompt: `Analyze this municipal challenge and recommend treatment tracks:
-
-Challenge: ${challenge.title_en}
-Description: ${challenge.description_en || 'N/A'}
-Sector: ${challenge.sector}
-Problem Statement: ${challenge.problem_statement_en || 'N/A'}
-Root Cause: ${challenge.root_cause_en || 'N/A'}
-Budget Estimate: ${challenge.budget_estimate || 'N/A'}
-Timeline: ${challenge.timeline_estimate || 'N/A'}
-
-Available tracks: pilot, r_and_d, program, procurement, policy
-
-Recommend which track(s) are most appropriate and provide brief rationale for each.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          recommended_tracks: { type: 'array', items: { type: 'string' } },
-          rationale: { type: 'string' },
-          track_justifications: {
-            type: 'object',
-            properties: {
-              pilot: { type: 'string' },
-              r_and_d: { type: 'string' },
-              program: { type: 'string' },
-              procurement: { type: 'string' },
-              policy: { type: 'string' }
-            }
-          }
-        }
-      }
+      system_prompt: TRACK_DECISION_SYSTEM_PROMPT,
+      prompt: buildTrackDecisionPrompt({ challenge }),
+      response_json_schema: TRACK_DECISION_SCHEMA
     });
 
     if (result.success && result.data) {
