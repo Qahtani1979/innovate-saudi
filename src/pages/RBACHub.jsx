@@ -1,10 +1,8 @@
 import React, { useState, lazy, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { 
-  Shield, BarChart3, FileCheck, AlertTriangle, Menu, Loader2
+  Shield, BarChart3, FileCheck, AlertTriangle, Menu, Loader2, Users, UserPlus, Calendar, Lock
 } from 'lucide-react';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
@@ -14,6 +12,10 @@ const RBACDashboardContent = lazy(() => import('@/components/rbac/RBACDashboardC
 const RBACAuditContent = lazy(() => import('@/components/rbac/RBACAuditContent'));
 const RBACCoverageContent = lazy(() => import('@/components/rbac/RBACCoverageContent'));
 const MenuRBACContent = lazy(() => import('@/components/rbac/MenuRBACContent'));
+const RolePermissionContent = lazy(() => import('@/components/rbac/RolePermissionContent'));
+const RoleRequestContent = lazy(() => import('@/components/rbac/RoleRequestContent'));
+const DelegationContent = lazy(() => import('@/components/rbac/DelegationContent'));
+const AccessRulesContent = lazy(() => import('@/components/rbac/AccessRulesContent'));
 
 const TabLoader = () => (
   <div className="flex items-center justify-center min-h-[400px]">
@@ -26,10 +28,14 @@ function RBACHub() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const tabs = [
-    { id: 'dashboard', label: { en: 'Dashboard', ar: 'لوحة التحكم' }, icon: BarChart3, color: 'text-blue-600' },
-    { id: 'audit', label: { en: 'Security Audit', ar: 'تدقيق الأمان' }, icon: AlertTriangle, color: 'text-red-600' },
-    { id: 'coverage', label: { en: 'Coverage Report', ar: 'تقرير التغطية' }, icon: FileCheck, color: 'text-green-600' },
-    { id: 'menu', label: { en: 'Menu RBAC', ar: 'صلاحيات القائمة' }, icon: Menu, color: 'text-purple-600' }
+    { id: 'dashboard', label: { en: 'Dashboard', ar: 'لوحة التحكم' }, icon: BarChart3 },
+    { id: 'roles', label: { en: 'Roles & Permissions', ar: 'الأدوار والصلاحيات' }, icon: Shield },
+    { id: 'requests', label: { en: 'Role Requests', ar: 'طلبات الأدوار' }, icon: UserPlus },
+    { id: 'delegations', label: { en: 'Delegations', ar: 'التفويضات' }, icon: Calendar },
+    { id: 'access-rules', label: { en: 'Access Rules', ar: 'قواعد الوصول' }, icon: Lock },
+    { id: 'audit', label: { en: 'Security Audit', ar: 'تدقيق الأمان' }, icon: AlertTriangle },
+    { id: 'coverage', label: { en: 'Coverage', ar: 'التغطية' }, icon: FileCheck },
+    { id: 'menu', label: { en: 'Menu RBAC', ar: 'صلاحيات القائمة' }, icon: Menu }
   ];
 
   return (
@@ -40,40 +46,28 @@ function RBACHub() {
         description={t({ en: 'Comprehensive role-based access control management, auditing, and monitoring', ar: 'إدارة شاملة للتحكم بالوصول القائم على الأدوار والتدقيق والمراقبة' })}
       />
 
-      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
-              <TabsTrigger 
-                key={tab.id} 
-                value={tab.id}
-                className="flex items-center gap-2"
-              >
-                <Icon className={`h-4 w-4 ${tab.color}`} />
-                <span className="hidden sm:inline">{t(tab.label)}</span>
+              <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-1 text-xs">
+                <Icon className="h-4 w-4" />
+                <span className="hidden lg:inline">{t(tab.label)}</span>
               </TabsTrigger>
             );
           })}
         </TabsList>
 
         <Suspense fallback={<TabLoader />}>
-          <TabsContent value="dashboard" className="space-y-6">
-            <RBACDashboardContent />
-          </TabsContent>
-
-          <TabsContent value="audit" className="space-y-6">
-            <RBACAuditContent />
-          </TabsContent>
-
-          <TabsContent value="coverage" className="space-y-6">
-            <RBACCoverageContent />
-          </TabsContent>
-
-          <TabsContent value="menu" className="space-y-6">
-            <MenuRBACContent />
-          </TabsContent>
+          <TabsContent value="dashboard"><RBACDashboardContent /></TabsContent>
+          <TabsContent value="roles"><RolePermissionContent /></TabsContent>
+          <TabsContent value="requests"><RoleRequestContent /></TabsContent>
+          <TabsContent value="delegations"><DelegationContent /></TabsContent>
+          <TabsContent value="access-rules"><AccessRulesContent /></TabsContent>
+          <TabsContent value="audit"><RBACAuditContent /></TabsContent>
+          <TabsContent value="coverage"><RBACCoverageContent /></TabsContent>
+          <TabsContent value="menu"><MenuRBACContent /></TabsContent>
         </Suspense>
       </Tabs>
     </PageLayout>
