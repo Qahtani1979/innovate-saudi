@@ -12,9 +12,9 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import {
-  IDEA_TO_RD_SYSTEM_PROMPT,
-  buildIdeaToRDPrompt,
-  IDEA_TO_RD_SCHEMA
+  IDEA_TO_RD_CONVERTER_SYSTEM_PROMPT,
+  buildIdeaToRDConverterPrompt,
+  IDEA_TO_RD_CONVERTER_SCHEMA
 } from '@/lib/ai/prompts/citizen';
 
 export default function IdeaToRDConverter({ idea, onClose }) {
@@ -39,9 +39,9 @@ export default function IdeaToRDConverter({ idea, onClose }) {
 
   const enhanceWithAI = async () => {
     const response = await invokeAI({
-      system_prompt: IDEA_TO_RD_SYSTEM_PROMPT,
-      prompt: buildIdeaToRDPrompt({ idea }),
-      response_json_schema: IDEA_TO_RD_SCHEMA
+      system_prompt: IDEA_TO_RD_CONVERTER_SYSTEM_PROMPT,
+      prompt: buildIdeaToRDConverterPrompt({ idea }),
+      response_json_schema: IDEA_TO_RD_CONVERTER_SCHEMA
     });
 
     if (response.success && response.data) {
