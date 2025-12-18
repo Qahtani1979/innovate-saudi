@@ -1,6 +1,7 @@
 /**
  * Core AI Prompts Module
  * Root-level AI components prompts
+ * @version 1.1.0
  */
 
 export {
@@ -44,3 +45,11 @@ export {
   proposalBriefSchema,
   PROPOSAL_BRIEF_SYSTEM_PROMPT
 } from './proposalBrief';
+
+export {
+  CROSS_ENTITY_SYSTEM_PROMPT,
+  createCrossEntityPrompt,
+  CROSS_ENTITY_SCHEMA,
+  createEntityMatchingPrompt,
+  ENTITY_MATCHING_SCHEMA
+} from './crossEntity';

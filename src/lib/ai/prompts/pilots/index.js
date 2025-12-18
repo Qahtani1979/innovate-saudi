@@ -42,6 +42,22 @@ export {
   PILOT_ANALYSIS_SYSTEM_PROMPT, createPilotAnalysisPrompt, PILOT_ANALYSIS_SCHEMA
 } from './pilotAnalysis';
 
+// Pilot Create Wizard
+export {
+  PILOT_CREATE_SYSTEM_PROMPT,
+  createPilotTeamPrompt, PILOT_TEAM_SCHEMA,
+  createPilotStakeholderPrompt, PILOT_STAKEHOLDER_SCHEMA,
+  createPilotTechStackPrompt, PILOT_TECH_STACK_SCHEMA,
+  createPilotBudgetPrompt, PILOT_BUDGET_SCHEMA
+} from './pilotCreate';
+
+// Adaptive Management
+export {
+  ADAPTIVE_MANAGEMENT_SYSTEM_PROMPT,
+  createAdaptiveAdjustmentPrompt,
+  ADAPTIVE_ADJUSTMENT_SCHEMA
+} from './adaptiveManagement';
+
 /**
  * Pilots module prompt configuration
  */

@@ -132,6 +132,9 @@ export * from './organizations';
 // Knowledge prompts
 export * from './knowledge';
 
+// Admin prompts
+export * from './admin';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -142,8 +145,8 @@ export const PROMPT_MODULE_STATUS = {
   portfolio: { status: 'complete', promptCount: 3 },
   events: { status: 'complete', promptCount: 3 },
   challenges: { status: 'complete', promptCount: 9 },
-  pilots: { status: 'complete', promptCount: 12 },
-  matchmaker: { status: 'complete', promptCount: 6 },
+  pilots: { status: 'complete', promptCount: 18 },
+  matchmaker: { status: 'complete', promptCount: 8 },
   sandbox: { status: 'complete', promptCount: 10 },
   rd: { status: 'complete', promptCount: 11 },
   scaling: { status: 'complete', promptCount: 5 },
@@ -152,7 +155,7 @@ export const PROMPT_MODULE_STATUS = {
   livinglab: { status: 'complete', promptCount: 5 },
   profiles: { status: 'complete', promptCount: 3 },
   programs: { status: 'complete', promptCount: 7 },
-  core: { status: 'complete', promptCount: 7 },
+  core: { status: 'complete', promptCount: 9 },
   taxonomy: { status: 'complete', promptCount: 2 },
   mii: { status: 'complete', promptCount: 2 },
   executive: { status: 'complete', promptCount: 3 },
@@ -164,7 +167,7 @@ export const PROMPT_MODULE_STATUS = {
   approval: { status: 'complete', promptCount: 2 },
   content: { status: 'complete', promptCount: 1 },
   uploader: { status: 'complete', promptCount: 1 },
-  communications: { status: 'complete', promptCount: 4 },
+  communications: { status: 'complete', promptCount: 7 },
   media: { status: 'complete', promptCount: 1 },
   workflows: { status: 'complete', promptCount: 1 },
   onboarding: { status: 'complete', promptCount: 1 },
@@ -176,7 +179,8 @@ export const PROMPT_MODULE_STATUS = {
   translation: { status: 'complete', promptCount: 2 },
   policy: { status: 'complete', promptCount: 1 },
   organizations: { status: 'complete', promptCount: 1 },
-  knowledge: { status: 'complete', promptCount: 1 }
+  knowledge: { status: 'complete', promptCount: 1 },
+  admin: { status: 'complete', promptCount: 1 }
 };
 
 /**
@@ -188,7 +192,7 @@ export function getImplementationProgress() {
   const completed = modules.filter(([, v]) => v.status === 'complete').length;
   const total = modules.length;
   const promptsComplete = modules.reduce((sum, [, v]) => sum + (v.status === 'complete' ? v.promptCount : 0), 0);
-  const promptsTotal = 180; // Updated target
+  const promptsTotal = 200; // Updated target
 
   return {
     modulesComplete: completed,
