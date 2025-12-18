@@ -6,14 +6,14 @@
 
 The AI Prompt Modules System provides a structured approach to managing AI prompts across the platform. All prompts are centralized in `src/lib/ai/prompts/` with consistent patterns for easy maintenance, testing, and reuse.
 
-### Current Migration Status (Updated: December 18, 2024 - Session 34)
+### Current Migration Status (Updated: December 18, 2024 - Session 35)
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Total Prompt Modules Created | **261+** | ✅ Complete |
+| Total Prompt Modules Created | **264+** | ✅ Complete |
 | Prompt Module Categories | **100+ directories** | ✅ Organized |
 | **Components Migrated** | **85/94 files** | 🔄 In Progress (90%) |
-| **Pages Migrated** | **35/102 files** | 🔄 In Progress (34%) |
+| **Pages Migrated** | **38/102 files** | 🔄 In Progress (37%) |
 | Edge Functions with Inline Prompts | 2 files | ⚠️ Partial |
 | **Overall Migration Progress** | **~97%** | 🔄 In Progress |
 
@@ -25,9 +25,9 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
-| **Phase 1** | Create Prompt Modules | ✅ Complete | 261+/210 (100%) |
+| **Phase 1** | Create Prompt Modules | ✅ Complete | 264+/210 (100%) |
 | **Phase 2** | Migrate Components | 🔄 In Progress | 85/94 (90%) |
-| **Phase 3** | Migrate Pages | 🔄 In Progress | 35/102 (34%) |
+| **Phase 3** | Migrate Pages | 🔄 In Progress | 38/102 (37%) |
 | **Phase 4** | Migrate Edge Functions | ⏳ Pending | 0/2 (0%) |
 | **Phase 5** | Quality Enhancement | ⏳ Future | 0% |
 
@@ -35,12 +35,12 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 
 | Phase | Items | Est. Sessions | Status |
 |-------|-------|---------------|--------|
-| Prompt Module Creation | 261+ modules | ✅ Complete | Done |
+| Prompt Module Creation | 264+ modules | ✅ Complete | Done |
 | Component Migration | 9 remaining | 2-3 sessions | In Progress |
-| Page Migration | 67 files | 11-13 sessions | In Progress |
+| Page Migration | 64 files | 10-12 sessions | In Progress |
 | Edge Functions | 2 files | 1 session | Pending |
 | Quality Enhancement | All modules | 3-4 sessions | Future |
-| **Total Remaining** | | **~16-20 sessions** | |
+| **Total Remaining** | | **~15-19 sessions** | |
 
 ---
 
@@ -85,7 +85,19 @@ src/lib/ai/prompts/
 
 ## ✅ RECENTLY CREATED MODULES BY SESSION
 
-### Session 34 (Latest)
+### Session 35 (Latest)
+| Module | Description |
+|--------|-------------|
+| `rd/callsInsights.js` | R&D calls strategic insights |
+| `technology/roadmap.js` | Technology adoption roadmap generation |
+| `sandbox/enhancement.js` | Sandbox content enhancement |
+
+**Pages Migrated in Session 35:**
+- `RDCalls.jsx` → `RD_CALLS_INSIGHTS_PROMPT_TEMPLATE`
+- `TechnologyRoadmap.jsx` → `TECHNOLOGY_ROADMAP_PROMPT_TEMPLATE`
+- `SandboxEdit.jsx` → `SANDBOX_ENHANCEMENT_PROMPT_TEMPLATE`
+
+### Session 34
 | Module | Description |
 |--------|-------------|
 | `network/insights.js` | Network & Partners ecosystem analysis |
