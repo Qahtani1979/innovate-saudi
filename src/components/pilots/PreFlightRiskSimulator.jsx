@@ -9,6 +9,12 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 import { Progress } from "@/components/ui/progress";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  PREFLIGHT_RISK_SYSTEM_PROMPT, 
+  createPreflightRiskPrompt, 
+  PREFLIGHT_RISK_SCHEMA 
+} from '@/lib/ai/prompts/pilots';
+import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function PreFlightRiskSimulator({ pilot }) {
   const { language, isRTL, t } = useLanguage();
@@ -84,47 +90,28 @@ export default function PreFlightRiskSimulator({ pilot }) {
       };
 
       const result = await invokeAI({
-        prompt: `Generate mitigation strategies for this pilot launch based on risk assessment:
-
-Pilot: ${pilot.title_en}
-Sector: ${pilot.sector}
-Budget: ${pilot.budget} SAR
-Duration: ${pilot.duration_weeks} weeks
-Team Size: ${pilot.team?.length || 0}
-
-Identified Risks:
-- Budget Overrun: ${risks.budget_overrun.probability}% probability (based on ${risks.budget_overrun.evidence_count} similar pilots)
-- Timeline Delays: ${risks.timeline_delays.probability}%
-- Low KPI Achievement: ${risks.low_kpi_achievement.probability}%
-- Stakeholder Issues: ${risks.stakeholder_issues.probability}%
-- Technical Failures: ${risks.technical_failures.probability}%
-
-For each risk >30% probability, provide:
-1. Specific mitigation actions (3-4 concrete steps)
-2. Estimated cost/effort
-3. Expected risk reduction
-
-Return as structured JSON.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            mitigations: {
-              type: 'object',
-              properties: {
-                budget_overrun: { type: 'array', items: { type: 'string' } },
-                timeline_delays: { type: 'array', items: { type: 'string' } },
-                low_kpi_achievement: { type: 'array', items: { type: 'string' } },
-                stakeholder_issues: { type: 'array', items: { type: 'string' } },
-                technical_failures: { type: 'array', items: { type: 'string' } }
-              }
-            },
-            overall_recommendation: { type: 'string' }
-          }
-        }
+        prompt: createPreflightRiskPrompt(pilot, risks),
+        response_json_schema: PREFLIGHT_RISK_SCHEMA,
+        system_prompt: getSystemPrompt(PREFLIGHT_RISK_SYSTEM_PROMPT)
       });
 
       if (result.success) {
-        setRiskAssessment({ risks, mitigations: result.data.mitigations, recommendation: result.data.overall_recommendation, similarPilots: totalSimilar });
+        // Map response to expected format
+        const mitigations = {};
+        if (result.data.mitigation_strategies) {
+          result.data.mitigation_strategies.forEach(strategy => {
+            const category = strategy.risk_category?.toLowerCase().replace(/\s+/g, '_') || 'general';
+            if (!mitigations[category]) mitigations[category] = [];
+            mitigations[category].push(language === 'ar' ? strategy.strategy_ar : strategy.strategy_en);
+          });
+        }
+        
+        setRiskAssessment({ 
+          risks, 
+          mitigations, 
+          recommendation: result.data.contingency_plans_en?.[0] || '', 
+          similarPilots: totalSimilar 
+        });
       } else {
         setRiskAssessment({ risks, mitigations: {}, recommendation: '', similarPilots: totalSimilar });
       }
