@@ -47,6 +47,10 @@ function getResendClient() {
 async function handleRoleAssign(supabase: ReturnType<typeof getSupabaseClient>, payload: Record<string, unknown>) {
   const { user_id, user_email, role, organization_id, municipality_id } = payload;
   
+  // Validation guards
+  if (!user_id) throw new Error('user_id is required');
+  if (!role) throw new Error('role is required');
+  
   console.log(`[rbac-manager] Assigning role '${role}' to ${user_email}`);
   
   const { data, error } = await supabase
@@ -215,6 +219,12 @@ async function handleGetUserRoles(supabase: ReturnType<typeof getSupabaseClient>
 
 async function handleApproveRoleRequest(supabase: ReturnType<typeof getSupabaseClient>, payload: Record<string, unknown>) {
   const { request_id, user_id, user_email, role, municipality_id, organization_id, approver_email } = payload;
+  
+  // Validation guards
+  if (!request_id) throw new Error('request_id is required');
+  if (!user_id) throw new Error('user_id is required - cannot assign role without user_id');
+  if (!user_email) throw new Error('user_email is required');
+  if (!role) throw new Error('role is required');
   
   console.log(`[rbac-manager] Approving role request ${request_id} for ${user_email}`);
   
