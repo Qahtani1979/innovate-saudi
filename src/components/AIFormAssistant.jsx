@@ -85,11 +85,6 @@ export default function AIFormAssistant({ onDataExtracted, entityType = 'Challen
 
     const response = await invokeAI({
       prompt,
-      response_json_schema: FORM_ASSISTANT_SCHEMA
-    });
-
-    const response = await invokeAI({
-      prompt,
       response_json_schema: {
         type: 'object',
         properties: {

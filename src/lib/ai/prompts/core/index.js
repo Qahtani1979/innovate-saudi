@@ -56,3 +56,4 @@ export {
 
 export * from './platformInsights';
 export * from './workPrioritizer';
+export * from './platformAssistant';
