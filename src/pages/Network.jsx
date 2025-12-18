@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { NETWORK_INSIGHTS_PROMPT_TEMPLATE, NETWORK_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/network/insights';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,32 +97,11 @@ function NetworkPage() {
       }));
 
       const response = await invokeAI({
-        prompt: `Analyze this innovation ecosystem network for Saudi municipalities and provide strategic insights in BOTH English AND Arabic:
-
-Organizations: ${JSON.stringify(orgSummary)}
-
-Statistics:
-- Total: ${stats.total}
-- Startups: ${stats.startups}
-- Universities: ${stats.universities}
-- Active Partners: ${stats.partners}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Ecosystem gaps and missing stakeholder types
-2. Strategic partnership opportunities
-3. Network strengthening recommendations
-4. Cross-sector collaboration potential
-5. Capacity building priorities for the network`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            ecosystem_gaps: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            partnership_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            network_strengthening: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            collaboration_potential: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            capacity_priorities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
-        }
+        prompt: NETWORK_INSIGHTS_PROMPT_TEMPLATE({
+          orgSummary,
+          stats
+        }),
+        response_json_schema: NETWORK_INSIGHTS_RESPONSE_SCHEMA
       });
       if (response.success) {
         setAiInsights(response.data);

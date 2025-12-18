@@ -41,6 +41,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { PROGRAMS_INSIGHTS_PROMPT_TEMPLATE, PROGRAMS_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/programs/insights';
 
 function ProgramsPage({ embedded = false }) {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
@@ -130,32 +131,11 @@ function ProgramsPage({ embedded = false }) {
       }));
 
       const result = await invokeAI({
-        prompt: `Analyze these innovation programs for Saudi municipalities and provide strategic insights in BOTH English AND Arabic:
-
-Programs: ${JSON.stringify(programSummary)}
-
-Statistics:
-- Total: ${stats.total}
-- Active: ${stats.active}
-- Completed: ${stats.completed}
-- Total Participants: ${stats.participants}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Program effectiveness patterns across different types
-2. Participant engagement optimization strategies
-3. Outcome improvement recommendations
-4. Recommendations for new program types or focus areas
-5. Partnership and collaboration opportunities`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            effectiveness_patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            engagement_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            outcome_improvements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            new_program_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            partnership_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
-        }
+        prompt: PROGRAMS_INSIGHTS_PROMPT_TEMPLATE({
+          programSummary,
+          stats
+        }),
+        response_json_schema: PROGRAMS_INSIGHTS_RESPONSE_SCHEMA
       });
       if (result.success && result.data) {
         setAiInsights(result.data);
