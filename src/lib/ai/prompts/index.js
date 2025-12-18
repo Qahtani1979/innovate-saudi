@@ -165,6 +165,21 @@ export * from './timeline';
 // Collaboration prompts
 export * from './collaboration';
 
+// Impact prompts
+export * from './impact';
+
+// Forecasting prompts
+export * from './forecasting';
+
+// Quality prompts
+export * from './quality';
+
+// Decisions prompts
+export * from './decisions';
+
+// Learning prompts
+export * from './learning';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -220,7 +235,12 @@ export const PROMPT_MODULE_STATUS = {
   compliance: { status: 'complete', promptCount: 3 },
   resources: { status: 'complete', promptCount: 3 },
   timeline: { status: 'complete', promptCount: 3 },
-  collaboration: { status: 'complete', promptCount: 3 }
+  collaboration: { status: 'complete', promptCount: 3 },
+  impact: { status: 'complete', promptCount: 3 },
+  forecasting: { status: 'complete', promptCount: 3 },
+  quality: { status: 'complete', promptCount: 3 },
+  decisions: { status: 'complete', promptCount: 3 },
+  learning: { status: 'complete', promptCount: 3 }
 };
 
 /**
@@ -232,7 +252,7 @@ export function getImplementationProgress() {
   const completed = modules.filter(([, v]) => v.status === 'complete').length;
   const total = modules.length;
   const promptsComplete = modules.reduce((sum, [, v]) => sum + (v.status === 'complete' ? v.promptCount : 0), 0);
-  const promptsTotal = 235; // Updated target
+  const promptsTotal = 250; // Updated target
 
   return {
     modulesComplete: completed,
