@@ -15,6 +15,11 @@ import { useLanguage } from '@/components/LanguageContext';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  LESSONS_STRATEGY_SYSTEM_PROMPT, 
+  buildLessonsStrategyPrompt, 
+  LESSONS_STRATEGY_SCHEMA 
+} from '@/lib/ai/prompts/programs/lessonsStrategy';
 
 export default function ProgramLessonsToStrategy({ program }) {
   const { language, isRTL, t } = useLanguage();
@@ -77,48 +82,15 @@ export default function ProgramLessonsToStrategy({ program }) {
   const generateStrategySummaryMutation = useMutation({
     mutationFn: async () => {
       const result = await invokeAI({
-        prompt: `Analyze these lessons learned from a municipal innovation program and generate strategic recommendations:
-
-PROGRAM: ${program.name_en}
-TYPE: ${program.program_type}
-STATUS: ${program.status}
-LINKED STRATEGIC PLANS: ${linkedPlans.map(p => p.name_en || p.title_en).join(', ')}
-
-SUCCESS LESSONS:
-${successLessons.map(l => `- ${l.description}`).join('\n')}
-
-CHALLENGES/FAILURES:
-${challengeLessons.map(l => `- ${l.description}`).join('\n')}
-
-IMPROVEMENTS:
-${improvementLessons.map(l => `- ${l.description}`).join('\n')}
-
-Generate bilingual strategic recommendations:
-1. Strategy refinement suggestions (what should change in strategic plans)
-2. Capacity building needs (skills/resources to develop)
-3. Process improvements (how to improve program execution)
-4. Replication opportunities (where else to apply learnings)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strategy_refinements: { 
-              type: 'array', 
-              items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } 
-            },
-            capacity_needs: { 
-              type: 'array', 
-              items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } 
-            },
-            process_improvements: { 
-              type: 'array', 
-              items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } 
-            },
-            replication_opportunities: { 
-              type: 'array', 
-              items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } 
-            }
-          }
-        }
+        system_prompt: LESSONS_STRATEGY_SYSTEM_PROMPT,
+        prompt: buildLessonsStrategyPrompt({
+          program,
+          successLessons,
+          challengeLessons,
+          improvementLessons,
+          linkedPlans
+        }),
+        response_json_schema: LESSONS_STRATEGY_SCHEMA
       });
 
       if (result.success && result.data) {

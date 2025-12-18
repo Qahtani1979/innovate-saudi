@@ -8,6 +8,11 @@ import { AlertTriangle, ExternalLink, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { 
+  SIMILAR_POLICY_SYSTEM_PROMPT, 
+  buildSimilarPolicyPrompt, 
+  SIMILAR_POLICY_SCHEMA 
+} from '@/lib/ai/prompts/policy/similarPolicy';
 
 export default function SimilarPolicyDetector({ policyData, onDismiss }) {
   const { language, isRTL, t } = useLanguage();
@@ -60,47 +65,12 @@ export default function SimilarPolicyDetector({ policyData, onDismiss }) {
 
       // Strategy 2: AI-powered semantic analysis (for new policies without embeddings)
       const result = await invokeAI({
-        prompt: `Analyze this new policy and find semantically similar policies from the database:
-
-NEW POLICY:
-Title AR: ${policyData.title_ar}
-Recommendation AR: ${policyData.recommendation_text_ar}
-Framework: ${policyData.regulatory_framework || 'N/A'}
-Type: ${policyData.policy_type || 'N/A'}
-
-EXISTING POLICIES DATABASE (${allPolicies.length} policies):
-${allPolicies.slice(0, 50).map(p => `
-ID: ${p.id}
-Title AR: ${p.title_ar}
-Title EN: ${p.title_en}
-Recommendation AR: ${p.recommendation_text_ar?.substring(0, 200)}
-Type: ${p.policy_type}
-Framework: ${p.regulatory_framework}
-`).join('\n---\n')}
-
-Return the IDs of the 3 most semantically similar policies with similarity scores (0-100). Consider:
-- Subject matter overlap
-- Regulatory framework similarity
-- Policy type alignment
-- Stakeholder impact similarity
-
-Only return policies with >60% similarity.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            similar_policies: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  policy_id: { type: 'string' },
-                  similarity_score: { type: 'number' },
-                  reason: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
+        system_prompt: SIMILAR_POLICY_SYSTEM_PROMPT,
+        prompt: buildSimilarPolicyPrompt({
+          newPolicy: policyData,
+          existingPolicies: allPolicies.filter(p => p.id !== policyData.id)
+        }),
+        response_json_schema: SIMILAR_POLICY_SCHEMA
       });
 
       if (result.success && result.data?.similar_policies) {

@@ -7,6 +7,11 @@ import { Tags, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  AUTO_TAGGER_SYSTEM_PROMPT, 
+  buildAutoTaggerPrompt, 
+  AUTO_TAGGER_SCHEMA 
+} from '@/lib/ai/prompts/knowledge/autoTagger';
 
 export default function AIContentAutoTagger({ document, onTagsGenerated }) {
   const { language, t } = useLanguage();
@@ -15,28 +20,9 @@ export default function AIContentAutoTagger({ document, onTagsGenerated }) {
 
   const generateTags = async () => {
     const result = await invokeAI({
-      prompt: `Analyze document and suggest metadata tags:
-
-TITLE: ${document.title_en || document.title}
-CONTENT: ${(document.content_en || document.content || '').substring(0, 500)}
-TYPE: ${document.type || 'general'}
-
-Extract:
-1. Primary sector (urban_design, transport, environment, etc.)
-2. Keywords (5-10 relevant terms)
-3. Categories (best_practice, case_study, guide, template, etc.)
-4. Related entities (mention Challenge codes, Pilot codes, municipalities)
-5. Topics/themes`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          sector: { type: "string" },
-          keywords: { type: "array", items: { type: "string" } },
-          categories: { type: "array", items: { type: "string" } },
-          related_entity_codes: { type: "array", items: { type: "string" } },
-          themes: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: AUTO_TAGGER_SYSTEM_PROMPT,
+      prompt: buildAutoTaggerPrompt({ document }),
+      response_json_schema: AUTO_TAGGER_SCHEMA
     });
 
     if (result.success) {
