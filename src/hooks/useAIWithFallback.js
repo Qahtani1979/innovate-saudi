@@ -4,9 +4,11 @@
  * @version 2.1.5
  */
 
-import { useState, useCallback } from 'react';
+import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+const { useState, useCallback } = React;
 
 export const AI_STATUS = {
   IDLE: 'idle',
