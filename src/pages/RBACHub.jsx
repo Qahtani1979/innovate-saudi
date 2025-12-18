@@ -47,13 +47,20 @@ function RBACHub() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full">
-          {tabs.map(tab => {
+        <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground md:grid md:grid-cols-8 md:overflow-visible">
+          {tabs.map((tab) => {
             const Icon = tab.icon;
+            const label = t(tab.label);
+
             return (
-              <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-1 text-xs">
-                <Icon className="h-4 w-4" />
-                <span className="hidden lg:inline">{t(tab.label)}</span>
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="w-full min-w-[8.5rem] justify-center gap-2 px-2 py-2 text-xs md:min-w-0"
+                title={label}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden md:inline">{label}</span>
               </TabsTrigger>
             );
           })}
