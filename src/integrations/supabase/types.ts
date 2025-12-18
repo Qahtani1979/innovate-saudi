@@ -12589,6 +12589,7 @@ export type Database = {
           organization_id: string | null
           revoked_at: string | null
           role: Database["public"]["Enums"]["app_role"]
+          role_id: string | null
           user_email: string | null
           user_id: string
         }
@@ -12601,6 +12602,7 @@ export type Database = {
           organization_id?: string | null
           revoked_at?: string | null
           role: Database["public"]["Enums"]["app_role"]
+          role_id?: string | null
           user_email?: string | null
           user_id: string
         }
@@ -12613,10 +12615,19 @@ export type Database = {
           organization_id?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          role_id?: string | null
           user_email?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_sessions: {
         Row: {
@@ -12871,6 +12882,7 @@ export type Database = {
         Args: { p_media_file_id: string }
         Returns: number
       }
+      get_role_id_by_name: { Args: { _role_name: string }; Returns: string }
       get_user_functional_roles: {
         Args: { _user_id: string }
         Returns: {
@@ -12900,6 +12912,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role_by_id: {
+        Args: { _role_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_role_by_name: {
+        Args: { _role_name: string; _user_id: string }
+        Returns: boolean
+      }
       increment_media_download: {
         Args: { p_media_id: string }
         Returns: undefined
@@ -12914,6 +12934,7 @@ export type Database = {
         Args: { p_municipality_id: string }
         Returns: boolean
       }
+      map_enum_to_role_id: { Args: { _enum_role: string }; Returns: string }
       rate_template: {
         Args: { p_rating: number; p_template_id: string; p_user_email: string }
         Returns: Json
